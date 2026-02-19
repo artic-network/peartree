@@ -70,6 +70,8 @@
     }
 
     button:hover { background: #1a5080; }
+    button:disabled { opacity: 0.35; cursor: not-allowed; }
+    button:disabled:hover { background: #0f3460; }
     button.active {
       background: #e94560;
       border-color: #e94560;
@@ -162,6 +164,8 @@
   <div class="controls">
     <label>Label size <input type="range" id="font-size-slider" min="6" max="20" value="11" /></label>
     <label>Tip size <input type="range" id="tip-size-slider" min="1" max="12" value="3" /></label>
+    <button id="btn-back"      disabled title="Navigate back (⌘[)">&#8249;</button>
+    <button id="btn-forward"   disabled title="Navigate forward (⌘])">&#8250;</button>
     <button id="btn-order-asc" title="Order branches descending by tip count (⌘D)">Order ↑</button>
     <button id="btn-order-desc" title="Order branches ascending by tip count (⌘U)">Order ↓</button>
     <button id="btn-fit">Fit vertically</button>
@@ -474,6 +478,14 @@ class TreeRenderer {
     this._hoveredNodeId   = null;
     this._selectedTipIds  = new Set();
 
+    // Subtree navigation
+    this._rawRoot     = null;   // full-tree raw node (set via setRawTree)
+    this._rawNodeMap  = new Map(); // id → raw node
+    this._viewRawRoot = null;   // null = showing full tree
+    this._navStack    = [];     // [{rawNode, scaleY, offsetY}, …] – back history
+    this._fwdStack    = [];     // forward history
+    this._onNavChange = null;   // callback(canBack, canFwd) – wired by main code
+
     // animation targets (lerp toward these each frame)
     this._targetOffsetY = 0;
     this._targetScaleY  = 1;
@@ -512,6 +524,86 @@ class TreeRenderer {
     this._measureLabels(); // label offset depends on tip radius
     this._updateScaleX();
     this._dirty = true;
+  }
+
+  /** Store the parsed raw tree so subtree navigation can re-run computeLayout. */
+  setRawTree(rawRoot) {
+    this._rawRoot    = rawRoot;
+    this._rawNodeMap = new Map();
+    const stack = [rawRoot];
+    while (stack.length) {
+      const n = stack.pop();
+      this._rawNodeMap.set(n.id, n);
+      if (n.children) for (const c of n.children) stack.push(c);
+    }
+  }
+
+  /** Compute layout from rawNode, update all data, and animate viewport. */
+  _applyLayout(rawNode, immediate = false) {
+    const { nodes, nodeMap, maxX, maxY } = computeLayout(rawNode);
+    this.nodes   = nodes;
+    this.nodeMap = nodeMap;
+    this.maxX    = maxX;
+    this.maxY    = maxY;
+    this._measureLabels();
+    this._updateScaleX();
+    this._updateMinScaleY();
+    // Keep current zoom if subtree is still bigger than viewport; else fit.
+    const newScaleY  = Math.max(this.minScaleY, this._targetScaleY);
+    const newOffsetY = this.paddingTop + newScaleY * 0.5;
+    this._setTarget(newOffsetY, newScaleY, immediate);
+    this._dirty = true;
+  }
+
+  /** Snapshot the current view state for the nav stacks. */
+  _currentViewState() {
+    return { rawNode: this._viewRawRoot, scaleY: this._targetScaleY, offsetY: this._targetOffsetY };
+  }
+
+  /** Double-click on an internal layout node id → drill into its subtree. */
+  navigateInto(layoutNodeId) {
+    const rawNode = this._rawNodeMap.get(layoutNodeId);
+    if (!rawNode || !rawNode.children || rawNode.children.length === 0) return;
+    this._navStack.push(this._currentViewState());
+    this._fwdStack = [];
+    this._viewRawRoot = rawNode;
+    this._selectedTipIds.clear();
+    this._applyLayout(rawNode);
+    if (this._onNavChange) this._onNavChange(true, false);
+  }
+
+  navigateBack() {
+    if (!this._navStack.length) return;
+    this._fwdStack.push(this._currentViewState());
+    const state   = this._navStack.pop();
+    this._viewRawRoot = state.rawNode;
+    this._selectedTipIds.clear();
+    const rawNode = state.rawNode || this._rawRoot;
+    const { nodes, nodeMap, maxX, maxY } = computeLayout(rawNode);
+    this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
+    this._measureLabels();
+    this._updateScaleX();
+    this._updateMinScaleY();
+    this._setTarget(state.offsetY, state.scaleY, false);
+    this._dirty = true;
+    if (this._onNavChange) this._onNavChange(this._navStack.length > 0, true);
+  }
+
+  navigateForward() {
+    if (!this._fwdStack.length) return;
+    this._navStack.push(this._currentViewState());
+    const state   = this._fwdStack.pop();
+    this._viewRawRoot = state.rawNode;
+    this._selectedTipIds.clear();
+    const rawNode = state.rawNode || this._rawRoot;
+    const { nodes, nodeMap, maxX, maxY } = computeLayout(rawNode);
+    this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
+    this._measureLabels();
+    this._updateScaleX();
+    this._updateMinScaleY();
+    this._setTarget(state.offsetY, state.scaleY, false);
+    this._dirty = true;
+    if (this._onNavChange) this._onNavChange(true, this._fwdStack.length > 0);
   }
 
   /** Measure the widest tip label once so _updateScaleX can stay cheap. */
@@ -950,6 +1042,15 @@ class TreeRenderer {
   _setupEvents() {
     const canvas = this.canvas;
 
+    // ── Double-click on internal node: drill into subtree.
+    canvas.addEventListener('dblclick', e => {
+      if (this._spaceDown || !this._rawRoot) return;
+      const rect = canvas.getBoundingClientRect();
+      const node = this._findNodeAtScreen(e.clientX - rect.left, e.clientY - rect.top);
+      if (!node || node.isTip) return;
+      this.navigateInto(node.id);
+    });
+
     // ── Click: plain click replaces selection; Cmd+click toggles.
     canvas.addEventListener('click', e => {
       if (this._spaceDown) return;
@@ -1210,13 +1311,24 @@ class TreeRenderer {
     fileInfoEl.textContent = `ebov.tree  ·  ${tipCount.toLocaleString()} taxa  ·  1 tree`;
 
     renderer.setData(nodes, nodeMap, maxX, maxY);
+    renderer.setRawTree(root);
 
     loadingEl.style.display = 'none';
 
     // ── Control bindings (need root in scope) ──────────────────────────────
 
+    const btnBack      = document.getElementById('btn-back');
+    const btnForward   = document.getElementById('btn-forward');
     const btnOrderAsc  = document.getElementById('btn-order-asc');
     const btnOrderDesc = document.getElementById('btn-order-desc');
+
+    renderer._onNavChange = (canBack, canFwd) => {
+      btnBack.disabled    = !canBack;
+      btnForward.disabled = !canFwd;
+    };
+
+    btnBack.addEventListener('click',    () => renderer.navigateBack());
+    btnForward.addEventListener('click', () => renderer.navigateForward());
 
     let currentOrder = null; // null | 'asc' | 'desc'
 
@@ -1230,7 +1342,8 @@ class TreeRenderer {
       const anchorId  = isZoomed ? renderer.nodeIdAtViewportCenter() : null;
 
       reorderTree(root, ascending);
-      const layout = computeLayout(root);
+      const viewRoot = renderer._viewRawRoot || root;
+      const layout = computeLayout(viewRoot);
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
 
       // If the tree was zoomed, restore the same vertical zoom level and
@@ -1257,6 +1370,8 @@ class TreeRenderer {
       if (!e.metaKey && !e.ctrlKey) return;
       if (e.key === 'u' || e.key === 'U') { e.preventDefault(); applyOrder(false); }
       if (e.key === 'd' || e.key === 'D') { e.preventDefault(); applyOrder(true);  }
+      if (e.key === '[' || e.key === '<') { e.preventDefault(); renderer.navigateBack(); }
+      if (e.key === ']' || e.key === '>') { e.preventDefault(); renderer.navigateForward(); }
     });
 
   } catch (err) {
