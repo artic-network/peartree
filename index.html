@@ -5,37 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PearTree — Phylogenetic Tree Viewer</title>
 
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" />
-  <!-- Bootstrap 5 -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <!-- Bootstrap 5 / Solar Bootswatch (same theme as Sealion) -->
+  <link rel="stylesheet" href="https://artic-network.github.io/sealion/bootstrap.min-artic.css" />
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
   <!-- Markdown renderer -->
   <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
 
   <style>
     /*
-     * Palette derived from DEFAULT_THEME in treerenderer.js:
-     *   bg           #02292E  deep dark teal
-     *   branch/text  #F2F1E6  warm off-white
-     *   tip          #BF4B43  muted coral-red
-     *   internal     #19A699  teal accent
-     *   label        #F7EECA  warm cream
-     *   dimLabel     #E6D595  muted gold
+     * Palette aligned with Sealion / Solar Bootswatch:
+     *   Solar body bg:  #005B68  (dark teal)
+     *   Solar dark bg:  #073642  (darker teal – used for dropdowns, modal)
+     *   Solar primary:  #b58900  (amber)
+     *   Solar success:  #2aa198  (teal accent)
+     *   Solar light:    #F7EECA  (cream – body text)
+     *
+     *   PearTree keeps its coral-red brand only for the logo text.
      */
     :root {
-      --pt-bg:       #02292E;
-      --pt-bg-dark:  #021E22;
-      --pt-border:   #05494F;
-      --pt-red:      #BF4B43;
-      --pt-teal:     #19A699;
-      --pt-cream:    #F7EECA;
-      --pt-gold:     #E6D595;
-      --pt-off-white:#F2F1E6;
-      --pt-btn-bg:   #033A42;
-      --pt-btn-bdr:  #066878;
-      --pt-btn-hover:#04545E;
+      --pt-bg:       #005B68;   /* Solar body bg */
+      --pt-bg-dark:  #073642;   /* Solar secondary-bg, toolbar / modal */
+      --pt-border:   #073642;   /* Solar dark border */
+      --pt-primary:  #b58900;   /* Solar amber (matches --bs-primary) */
+      --pt-teal:     #2aa198;   /* Solar success teal */
+      --pt-cream:    #F7EECA;   /* Solar light / body color */
+      --pt-gold:     #b58900;   /* Solar primary */
+      --pt-off-white:#F7EECA;
+      --pt-red:      #BF4B43;   /* PearTree brand – logo only */
     }
 
     /* ── Layout ── */
@@ -45,7 +42,7 @@
       flex-direction: column;
       background: var(--pt-bg);
       color: var(--pt-off-white);
-      font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: var(--bs-body-font-family);
       font-size: 13px;
     }
 
@@ -161,21 +158,7 @@
 
     /* ── Sliders ── */
     .form-label-sm { font-size: 0.67rem; color: var(--pt-gold); margin-bottom: 0; }
-    .form-range { width: 90px; accent-color: var(--pt-red); }
-
-    /* ── Buttons ── */
-    .btn-pt {
-      background: var(--pt-btn-bg);
-      color: var(--pt-off-white);
-      border: 1px solid var(--pt-btn-bdr);
-      font-family: inherit;
-      font-size: 0.67rem;
-      padding: 3px 10px;
-      transition: background .15s;
-    }
-    .btn-pt:hover:not(:disabled) { background: var(--pt-btn-hover); color: var(--pt-off-white); }
-    .btn-pt:disabled { opacity: 0.35; }
-    .btn-pt.active  { background: var(--pt-red); border-color: var(--pt-red); color: var(--pt-cream); }
+    .form-range { width: 90px; accent-color: var(--bs-primary); }
 
     /* ── Status bar ── */
     #status-bar {
@@ -210,8 +193,8 @@
     #loading p { font-size: 0.72rem; color: var(--pt-gold); }
     .pt-spinner {
       width: 36px; height: 36px;
-      border: 3px solid #044D59;
-      border-top-color: var(--pt-red);
+      border: 3px solid var(--pt-bg-dark);
+      border-top-color: var(--bs-primary);
       border-radius: 50%;
       animation: pt-spin 0.8s linear infinite;
     }
@@ -300,12 +283,12 @@
     .help-md hr { border: none; border-top: 1px solid var(--pt-border); margin: 14px 0; }
     .help-md table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 0.67rem; }
     .help-md th { color: var(--pt-gold); font-weight: 600; text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--pt-border); }
-    .help-md td { padding: 3px 8px; border-bottom: 1px solid rgba(5,73,79,0.5); vertical-align: top; }
+    .help-md td { padding: 3px 8px; border-bottom: 1px solid rgba(7,54,66,0.5); vertical-align: top; }
     .help-md tr:last-child td { border-bottom: none; }
     /* ? button in menubar */
     #btn-help {
       background: none;
-      border: 1px solid var(--pt-btn-bdr);
+      border: 1px solid var(--pt-border);
       color: var(--pt-off-white);
       font-size: 0.67rem;
       line-height: 1;
@@ -322,13 +305,13 @@
       justify-content: center;
     }
     #btn-help:hover { background: rgba(255,255,255,0.08); opacity: 1; }
-    #btn-help.active { background: var(--pt-red); border-color: var(--pt-red); opacity: 1; }
+    #btn-help.active { background: var(--bs-primary); border-color: var(--bs-primary); opacity: 1; }
 
     /* ── Tooltip ── */
     #tooltip {
       position: absolute;
-      background: rgba(3,58,66,0.97);
-      border: 1px solid var(--pt-btn-bdr);
+      background: var(--pt-bg-dark);
+      border: 1px solid var(--pt-border);
       border-radius: 4px;
       padding: 5px 10px;
       font-size: 0.63rem;
@@ -339,6 +322,143 @@
       word-break: break-all;
       z-index: 10;
       line-height: 1.6;
+    }
+
+    /* ── Open Tree Modal ── */
+    .pt-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 800;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .pt-modal-overlay.open { display: flex; }
+    .pt-modal {
+      background: var(--bs-modal-bg, #033940);
+      border: 1px solid var(--bs-modal-border-color, #002b36);
+      border-radius: var(--bs-modal-border-radius, 0.5rem);
+      box-shadow: var(--bs-box-shadow, 0 0.5rem 1rem rgba(0,0,0,0.15));
+      width: 480px;
+      max-width: calc(100vw - 40px);
+    }
+    .pt-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      border-bottom: 1px solid var(--bs-modal-header-border-color, #002b36);
+    }
+    .pt-modal-header h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--bs-body-color);
+      margin: 0;
+    }
+    .pt-modal-close-btn {
+      background: none;
+      border: none;
+      color: var(--bs-body-color);
+      font-size: 1.25rem;
+      line-height: 1;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--bs-border-radius-sm);
+      opacity: 0.5;
+      cursor: pointer;
+    }
+    .pt-modal-close-btn:hover:not(:disabled) { opacity: 0.75; background: rgba(255,255,255,0.08); }
+    .pt-modal-close-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+    .pt-modal-body { padding: 1rem; }
+    /* Tabs */
+    .pt-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--bs-nav-tabs-border-color, #073642);
+      margin-bottom: 1rem;
+      gap: 0;
+    }
+    .pt-tab-btn {
+      background: none;
+      border: 1px solid transparent;
+      border-bottom: none;
+      color: var(--bs-nav-link-color, var(--bs-link-color));
+      font-family: inherit;
+      font-size: 0.875rem;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      margin-bottom: -1px;
+      border-radius: var(--bs-border-radius) var(--bs-border-radius) 0 0;
+    }
+    .pt-tab-btn:hover { color: var(--bs-nav-link-hover-color); border-color: var(--bs-nav-tabs-link-hover-border-color, #073642); }
+    .pt-tab-btn.active {
+      color: var(--bs-nav-tabs-link-active-color, rgba(255,255,255,0.75));
+      background-color: var(--bs-nav-tabs-link-active-bg, #002b36);
+      border-color: var(--bs-nav-tabs-link-active-border-color, #073642);
+    }
+    .pt-tab-panel { display: none; }
+    .pt-tab-panel.active { display: block; }
+    /* Drop zone – matching Sealion's .file-drop-zone */
+    .pt-drop-zone {
+      border: 2px dashed #404040;
+      border-radius: var(--bs-border-radius);
+      padding: 28px 16px 22px;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+    .pt-drop-zone:hover {
+      background-color: rgba(13, 110, 253, 0.05);
+    }
+    .pt-drop-zone.drag-over {
+      background-color: rgba(13, 110, 253, 0.1);
+      border-color: #0d6efd;
+    }
+    .pt-drop-zone p { margin: 0 0 4px; font-size: 0.875rem; }
+    .pt-drop-icon { font-size: 2rem; color: var(--bs-primary); margin-bottom: 10px; line-height: 1; }
+    /* URL input */
+    .pt-modal-url-input {
+      width: 100%;
+      background: var(--bs-secondary-bg, var(--pt-bg-dark));
+      border: 1px solid var(--bs-border-color, #073642);
+      border-radius: var(--bs-border-radius-sm);
+      color: var(--bs-body-color);
+      font-family: inherit;
+      font-size: 0.875rem;
+      padding: 0.375rem 0.75rem;
+      margin-bottom: 1rem;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .pt-modal-url-input:focus { border-color: var(--bs-primary); box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb),0.25); }
+    .pt-modal-url-input::placeholder { opacity: 0.35; }
+    /* Modal loading */
+    .pt-modal-loading {
+      text-align: center;
+      padding: 14px 0 4px;
+      font-size: 0.875rem;
+      color: var(--bs-secondary-color);
+    }
+    .pt-modal-loading .pt-spinner { margin: 0 auto 8px; }
+    /* Modal error */
+    .pt-modal-error {
+      background: var(--bs-danger-bg-subtle);
+      border: 1px solid var(--bs-danger-border-subtle);
+      border-radius: var(--bs-border-radius-sm);
+      color: var(--bs-danger-text-emphasis);
+      font-size: 0.875rem;
+      padding: 0.75rem 1rem;
+      margin-top: 1rem;
+    }
+    /* Example panel */
+    .pt-example-center {
+      text-align: center;
+      padding: 1.25rem 0 0.5rem;
+    }
+    .pt-example-center p {
+      font-size: 0.875rem;
+      color: var(--bs-secondary-color);
+      margin: 0 0 1rem;
+      line-height: 1.55;
     }
   </style>
 </head>
@@ -365,18 +485,20 @@
 </div>
 
 <div class="pt-toolbar">
-  <button id="btn-back"       class="btn btn-pt" disabled title="Navigate back (⌘[)">&#8249;</button>
-  <button id="btn-forward"    class="btn btn-pt" disabled title="Navigate forward (⌘])">&#8250;</button>
+  <button id="btn-open-tree" class="btn btn-sm btn-outline-primary" title="Open tree file (⌘O)"><i class="bi bi-folder2-open me-1"></i>Open…</button>
   <div class="pt-toolbar-sep"></div>
-  <button id="btn-fit"        class="btn btn-pt" title="Fit all (⌘0)">Fit all</button>
-  <button id="btn-fit-labels" class="btn btn-pt" title="Fit labels (⌘⌥0)">Fit labels</button>
+  <button id="btn-back"       class="btn btn-sm btn-outline-secondary" disabled title="Navigate back (⌘[)">&#8249;</button>
+  <button id="btn-forward"    class="btn btn-sm btn-outline-secondary" disabled title="Navigate forward (⌘])">&#8250;</button>
   <div class="pt-toolbar-sep"></div>
-  <button id="btn-reroot" class="btn btn-pt" disabled title="Reroot tree at branch selection">Reroot</button>
+  <button id="btn-fit"        class="btn btn-sm btn-outline-secondary" title="Fit all (⌘0)">Fit all</button>
+  <button id="btn-fit-labels" class="btn btn-sm btn-outline-secondary" title="Fit labels (⌘⌥0)">Fit labels</button>
+  <div class="pt-toolbar-sep"></div>
+  <button id="btn-reroot" class="btn btn-sm btn-outline-secondary" disabled title="Reroot tree at branch selection">Reroot</button>
   <div class="pt-toolbar-sep"></div>
   <span class="form-label-sm" style="padding: 0 2px 0 4px;">Select:</span>
   <div class="btn-group" role="group">
-    <button id="btn-mode-nodes"    class="btn btn-pt active" style="border-radius: 3px 0 0 3px; border-right-width: 0;" title="Select nodes mode (⌘N)">Nodes</button>
-    <button id="btn-mode-branches" class="btn btn-pt"        style="border-radius: 0 3px 3px 0;" title="Select branches mode (⌘B)">Branches</button>
+    <button id="btn-mode-nodes"    class="btn btn-sm btn-outline-secondary active" title="Select nodes mode (⌘N)">Nodes</button>
+    <button id="btn-mode-branches" class="btn btn-sm btn-outline-secondary" title="Select branches mode (⌘B)">Branches</button>
   </div>
   <div class="pt-toolbar-sep"></div>
   <label class="d-flex align-items-center gap-1">
@@ -398,6 +520,60 @@
 
 <div id="status-bar">
   <canvas id="status-canvas"></canvas>
+</div>
+
+<!-- Open Tree Modal -->
+<div id="open-tree-modal" class="pt-modal-overlay">
+  <div class="pt-modal">
+    <div class="pt-modal-header">
+      <h2>Open Tree File</h2>
+      <button class="pt-modal-close-btn" id="btn-modal-close" title="Close" disabled>&times;</button>
+    </div>
+    <div class="pt-modal-body">
+      <div class="pt-tabs">
+        <button class="pt-tab-btn active" data-tab="file"><i class="bi bi-folder2-open me-1"></i>File</button>
+        <button class="pt-tab-btn" data-tab="url"><i class="bi bi-link-45deg me-1"></i>URL</button>
+        <button class="pt-tab-btn" data-tab="example"><i class="bi bi-tree me-1"></i>Example</button>
+      </div>
+
+      <!-- File panel -->
+      <div class="pt-tab-panel active" id="tab-panel-file">
+        <div id="tree-drop-zone" class="pt-drop-zone">
+          <div class="pt-drop-icon"><i class="bi bi-file-earmark-arrow-down"></i></div>
+          <p>Drag and drop your tree file here</p>
+          <p class="text-secondary" style="font-size:0.8rem; margin-bottom:1rem">NEXUS (.nex, .nexus, .tre, .tree) &nbsp;or&nbsp; Newick (.nwk, .newick)</p>
+          <input type="file" id="tree-file-input" accept=".nex,.nexus,.tre,.tree,.nwk,.newick,.txt" style="display:none">
+          <button class="btn btn-sm btn-outline-primary" id="btn-file-choose"><i class="bi bi-folder2-open me-1"></i>Choose File</button>
+        </div>
+      </div>
+
+      <!-- URL panel -->
+      <div class="pt-tab-panel" id="tab-panel-url">
+        <label class="form-label">Tree file URL</label>
+        <input type="url" class="pt-modal-url-input" id="tree-url-input" placeholder="https://example.com/tree.nexus" />
+        <div style="text-align:center">
+          <button class="btn btn-sm btn-outline-primary" id="btn-load-url"><i class="bi bi-cloud-download me-1"></i>Load from URL</button>
+        </div>
+      </div>
+
+      <!-- Example panel -->
+      <div class="pt-tab-panel" id="tab-panel-example">
+        <div class="pt-example-center">
+          <p>Load the example <strong>Ebola virus (EBOV)</strong> phylogenetic tree<br/>from the 2014–2016 West Africa epidemic.</p>
+          <button class="btn btn-sm btn-outline-success" id="btn-load-example"><i class="bi bi-tree me-1"></i>Load Example Data</button>
+        </div>
+      </div>
+
+      <!-- Loading indicator -->
+      <div class="pt-modal-loading" id="modal-loading" style="display:none">
+        <div class="pt-spinner"></div>
+        Loading&hellip;
+      </div>
+
+      <!-- Error display -->
+      <div class="pt-modal-error" id="modal-error" style="display:none"></div>
+    </div>
+  </div>
 </div>
 
 <!-- Help panel -->

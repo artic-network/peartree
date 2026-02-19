@@ -1,12 +1,10 @@
-import { parseNexus } from './treeio.js';
+import { parseNexus, parseNewick } from './treeio.js';
 import { computeLayout, computeLayoutFrom, reorderTree, rerootTree } from './treeutils.js';
 import { TreeRenderer } from './treerenderer.js';
 
 (async () => {
   const canvas       = document.getElementById('tree-canvas');
   const loadingEl    = document.getElementById('loading');
-  const loadingMsg   = document.getElementById('loading-msg');
-  const errorEl      = document.getElementById('error');
   const fileInfoEl   = document.getElementById('file-info');
   const fontSlider   = document.getElementById('font-size-slider');
   const tipSlider    = document.getElementById('tip-size-slider');
@@ -33,35 +31,200 @@ import { TreeRenderer } from './treerenderer.js';
 
   const renderer = new TreeRenderer(canvas, undefined, statusCanvas);
 
-  try {
-    loadingMsg.textContent = 'Fetching tree file…';
-    const resp = await fetch('data/ebov.tree');
-    if (!resp.ok) throw new Error(`HTTP ${resp.status} – could not load data/ebov.tree`);
+  // Hide the initial loading overlay; the Open Tree modal replaces it on startup
+  loadingEl.style.display = 'none';
 
-    loadingMsg.textContent = 'Parsing NEXUS…';
-    const text = await resp.text();
+  // ── Modal management ──────────────────────────────────────────────────────
 
-    const trees = parseNexus(text);
-    if (!trees.length) throw new Error('No trees found in the NEXUS file.');
+  const modal         = document.getElementById('open-tree-modal');
+  const btnModalClose = document.getElementById('btn-modal-close');
+  let treeLoaded = false;
 
-    loadingMsg.textContent = 'Computing layout…';
-    // Give the browser a frame to update the UI
+  function openModal() {
+    setModalError(null);
+    setModalLoading(false);
+    modal.classList.add('open');
+  }
+
+  function closeModal() {
+    modal.classList.remove('open');
+  }
+
+  function setModalError(msg) {
+    const el = document.getElementById('modal-error');
+    if (msg) { el.textContent = msg; el.style.display = 'block'; }
+    else      { el.style.display = 'none'; }
+  }
+
+  function setModalLoading(on) {
+    document.getElementById('modal-loading').style.display = on ? 'block' : 'none';
+    modal.querySelectorAll('.pt-modal-body button, .pt-tab-btn').forEach(b => {
+      if (b !== btnModalClose) b.disabled = on;
+    });
+  }
+
+  // Tab switching
+  modal.querySelectorAll('.pt-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('.pt-tab-btn').forEach(b => b.classList.remove('active'));
+      modal.querySelectorAll('.pt-tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-panel-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Close button (only works after a tree has been loaded)
+  btnModalClose.addEventListener('click', () => { if (treeLoaded) closeModal(); });
+
+  // Escape key also closes when a tree is loaded
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && treeLoaded && modal.classList.contains('open')) closeModal();
+  });
+
+  // ── File tab ──────────────────────────────────────────────────────────────
+
+  const dropZone  = document.getElementById('tree-drop-zone');
+  const fileInput = document.getElementById('tree-file-input');
+
+  document.getElementById('btn-file-choose').addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) handleFile(file);
+    fileInput.value = '';  // reset so the same file can be re-selected
+  });
+
+  dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+
+  async function handleFile(file) {
+    setModalLoading(true);
+    setModalError(null);
+    try {
+      const text = await file.text();
+      await loadTree(text, file.name);
+    } catch (err) {
+      setModalError(err.message);
+      setModalLoading(false);
+    }
+  }
+
+  // ── URL tab ───────────────────────────────────────────────────────────────
+
+  document.getElementById('btn-load-url').addEventListener('click', async () => {
+    const url = document.getElementById('tree-url-input').value.trim();
+    if (!url) { setModalError('Please enter a URL.'); return; }
+    setModalLoading(true);
+    setModalError(null);
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status + ' – ' + url);
+      const text = await resp.text();
+      await loadTree(text, url.split('/').pop() || 'tree');
+    } catch (err) {
+      setModalError(err.message);
+      setModalLoading(false);
+    }
+  });
+
+  // ── Example tab ───────────────────────────────────────────────────────────
+
+  document.getElementById('btn-load-example').addEventListener('click', async () => {
+    setModalLoading(true);
+    setModalError(null);
+    try {
+      const resp = await fetch('data/ebov.tree');
+      if (!resp.ok) throw new Error('HTTP ' + resp.status + ' – could not fetch data/ebov.tree');
+      const text = await resp.text();
+      await loadTree(text, 'ebov.tree');
+    } catch (err) {
+      setModalError(err.message);
+      setModalLoading(false);
+    }
+  });
+
+  // Show the modal on startup
+  openModal();
+
+  // ── Tree loading ──────────────────────────────────────────────────────────
+
+  let root          = null;
+  let currentOrder  = null;  // null | 'asc' | 'desc'
+  let controlsBound = false;
+
+  async function loadTree(text, filename) {
+    setModalLoading(true);
+    setModalError(null);
+    // Yield to the browser so the spinner renders before heavy parsing
     await new Promise(r => setTimeout(r, 0));
 
-    const { root: parsedRoot, tipNameMap } = trees[0];
-    let root = parsedRoot;   // mutable – updated on every reroot
-    const { nodes, nodeMap, maxX, maxY } = computeLayout(root);
+    try {
+      let parsedRoot = null;
 
-    const tipCount = nodes.filter(n => n.isTip).length;
-    fileInfoEl.textContent = `ebov.tree  ·  ${tipCount.toLocaleString()} taxa  ·  1 tree`;
+      // Try NEXUS first; fall back to bare Newick
+      const nexusTrees = parseNexus(text);
+      if (nexusTrees.length > 0) {
+        parsedRoot = nexusTrees[0].root;
+      } else {
+        const trimmed = text.trim();
+        if (trimmed.startsWith('(')) {
+          parsedRoot = parseNewick(trimmed);
+        } else {
+          throw new Error('No trees found. File must be in NEXUS or Newick format.');
+        }
+      }
 
-    renderer.setData(nodes, nodeMap, maxX, maxY);
-    renderer.setRawTree(root);
+      root         = parsedRoot;
+      currentOrder = null;
 
-    loadingEl.style.display = 'none';
+      const { nodes, nodeMap, maxX, maxY } = computeLayout(root);
+      const tipCount = nodes.filter(n => n.isTip).length;
+      fileInfoEl.textContent = filename + '  \xb7  ' + tipCount.toLocaleString() + ' taxa  \xb7  1 tree';
 
-    // ── Control bindings (need root in scope) ──────────────────────────────
+      renderer.setData(nodes, nodeMap, maxX, maxY);
+      renderer.setRawTree(root);
 
+      // Reset navigation and selection state for the new tree
+      renderer._navStack         = [];
+      renderer._fwdStack         = [];
+      renderer._viewRawRoot      = null;
+      renderer._branchSelectNode = null;
+      renderer._branchSelectX    = null;
+      renderer._branchHoverNode  = null;
+      renderer._branchHoverX     = null;
+      if (renderer._onNavChange)          renderer._onNavChange(false, false);
+      if (renderer._onBranchSelectChange) renderer._onBranchSelectChange(false);
+
+      if (!treeLoaded) {
+        treeLoaded = true;
+        btnModalClose.disabled = false;
+      }
+
+      if (!controlsBound) {
+        bindControls();
+        controlsBound = true;
+      }
+
+      closeModal();
+    } catch (err) {
+      setModalError(err.message);
+    }
+
+    setModalLoading(false);
+  }
+
+  // ── Control bindings (set up once after the first tree loads) ─────────────
+
+  function bindControls() {
     const btnBack      = document.getElementById('btn-back');
     const btnForward   = document.getElementById('btn-forward');
     const btnOrderAsc  = document.getElementById('btn-order-asc');
@@ -80,13 +243,10 @@ import { TreeRenderer } from './treerenderer.js';
     btnBack.addEventListener('click',    () => renderer.navigateBack());
     btnForward.addEventListener('click', () => renderer.navigateForward());
 
-    let currentOrder = null; // null | 'asc' | 'desc'
-
     function applyOrder(ascending) {
       const label = ascending ? 'asc' : 'desc';
-      if (currentOrder === label) return; // already in this order
+      if (currentOrder === label) return;
 
-      // Snapshot zoom state before the reorder so we can restore it.
       const isZoomed  = renderer._targetScaleY > renderer.minScaleY * 1.005;
       const zoomRatio = renderer._targetScaleY / renderer.minScaleY;
       const anchorId  = isZoomed ? renderer.nodeIdAtViewportCenter() : null;
@@ -96,8 +256,6 @@ import { TreeRenderer } from './treerenderer.js';
       const layout = computeLayoutFrom(viewRoot);
       renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
 
-      // If the tree was zoomed, restore the same vertical zoom level and
-      // scroll so the previously-centred node sits at the viewport midpoint.
       if (isZoomed && anchorId) {
         const H          = renderer.canvas.clientHeight;
         const newScaleY  = renderer.minScaleY * zoomRatio;
@@ -133,22 +291,16 @@ import { TreeRenderer } from './treerenderer.js';
       const selX    = renderer._branchSelectX;
       if (!selNode || selX === null) return;
 
-      // Compute distFromParent in raw branch-length units.
-      // Layout x values equal cumulative divergence from (sub)root, so the
-      // difference between two layout x values IS the raw branch length.
       const parentLayoutNode = renderer.nodeMap.get(selNode.parentId);
       if (!parentLayoutNode) return;
       const distFromParent = selX - parentLayoutNode.x;
 
-      // Reroot the raw tree.
       const newRoot = rerootTree(root, selNode.id, distFromParent);
       root = newRoot;
 
-      // Re-apply any current ordering to the rerooted tree.
       if (currentOrder === 'asc')  reorderTree(root, true);
       if (currentOrder === 'desc') reorderTree(root, false);
 
-      // Reset navigation, then load new layout. Stay in branches mode.
       renderer._navStack         = [];
       renderer._fwdStack         = [];
       renderer._viewRawRoot      = null;
@@ -163,7 +315,8 @@ import { TreeRenderer } from './treerenderer.js';
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
 
       const tipCount2 = layout.nodes.filter(n => n.isTip).length;
-      fileInfoEl.textContent = `ebov.tree  ·  ${tipCount2.toLocaleString()} taxa  ·  1 tree (rerooted)`;
+      const fname = fileInfoEl.textContent.split('  \xb7  ')[0];
+      fileInfoEl.textContent = fname + '  \xb7  ' + tipCount2.toLocaleString() + ' taxa  \xb7  1 tree (rerooted)';
     });
 
     window.addEventListener('keydown', e => {
@@ -175,17 +328,9 @@ import { TreeRenderer } from './treerenderer.js';
       if (e.key === 'n' || e.key === 'N') { e.preventDefault(); applyMode('nodes'); }
       if (e.key === 'b' || e.key === 'B') { e.preventDefault(); applyMode('branches'); }
     });
-
-  } catch (err) {
-    errorEl.style.display = 'flex';
-    errorEl.innerHTML = `<strong>Error loading tree</strong><br/>${err.message}<br/><br/>
-      Make sure you are serving this page from the repository root via a local HTTP server,<br/>
-      e.g. <code>npx serve .</code> or <code>python3 -m http.server</code>, so that <code>data/ebov.tree</code> can be fetched.`;
-    loadingEl.style.display = 'none';
-    return;
   }
 
-  // ── Other control bindings ─────────────────────────────────────────────────
+  // ── Always-active bindings ────────────────────────────────────────────────
 
   fontSlider.addEventListener('input', () => {
     renderer.setFontSize(parseInt(fontSlider.value));
@@ -196,8 +341,16 @@ import { TreeRenderer } from './treerenderer.js';
   });
 
   btnFit.addEventListener('click', () => renderer.fitToWindow());
+  document.getElementById('btn-fit-labels').addEventListener('click', () => renderer.fitLabels());
 
-  const btnFitLabels = document.getElementById('btn-fit-labels');
-  btnFitLabels.addEventListener('click', () => renderer.fitLabels());
+  // Open button and Cmd/Ctrl-O keyboard shortcut reopen the modal
+  document.getElementById('btn-open-tree').addEventListener('click', () => openModal());
+  window.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'o' || e.key === 'O')) {
+      e.preventDefault();
+      openModal();
+    }
+  });
 
 })();
+
