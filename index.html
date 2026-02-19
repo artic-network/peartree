@@ -222,6 +222,87 @@
       border-color: var(--bs-primary);
     }
 
+    /* ── Tool palette (slides in from left) ── */
+    #palette-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 240px;
+      background: var(--pt-bg-dark);
+      border-right: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 4px 0 24px rgba(0,0,0,0.55);
+      z-index: 600;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform 0.22s cubic-bezier(.4,0,.2,1);
+      overflow: hidden;
+    }
+    #palette-panel.open { transform: translateX(0); }
+    #palette-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px 8px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      flex-shrink: 0;
+    }
+    #palette-panel-header h2 {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--pt-red);
+      margin: 0;
+      letter-spacing: 0.3px;
+    }
+    #btn-palette-close {
+      background: none;
+      border: none;
+      color: var(--pt-off-white);
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 3px;
+      opacity: 0.6;
+      cursor: pointer;
+    }
+    #btn-palette-close:hover { background: rgba(255,255,255,0.08); opacity: 1; }
+    #palette-panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 16px 24px;
+    }
+    .pt-palette-section {
+      margin-bottom: 18px;
+    }
+    .pt-palette-section h3 {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--pt-teal);
+      margin: 0 0 8px;
+    }
+    .pt-palette-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .pt-palette-row .form-range { width: 140px; flex: 1; }
+    .pt-palette-row .pt-val {
+      font-size: 0.65rem;
+      color: var(--pt-gold);
+      width: 18px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    /* palette button active state */
+    #btn-palette.active {
+      color: var(--bs-primary);
+      border-color: var(--bs-primary);
+    }
+
     /* ── Tooltip ── */
     #tooltip {
       position: absolute;
@@ -421,19 +502,10 @@
 
     <!-- Reroot -->
   <button id="btn-reroot" class="btn btn-sm btn-outline-secondary" disabled title="Reroot tree at branch selection"><i class="bi bi-arrow-clockwise">Root</i></button>
-  <div class="pt-toolbar-sep"></div>
-
-  <!-- Sliders -->
-  <label class="d-flex align-items-center gap-1" title="Label font size">
-    <span class="form-label-sm"><i class="bi bi-fonts"></i></span>
-    <input type="range" class="form-range" id="font-size-slider" min="6" max="20" value="11" />
-  </label>
-  <label class="d-flex align-items-center gap-1" title="Node size">
-    <span class="form-label-sm"><i class="bi bi-record-circle"></i></span>
-    <input type="range" class="form-range" id="tip-size-slider" min="1" max="12" value="3" />
-  </label>
 
   <div class="ms-auto"></div>
+  <!-- Palette toggle -->
+  <button id="btn-palette" class="btn btn-sm btn-outline-secondary" title="Visual options (Tab)"><i class="bi bi-sliders"></i></button>
   <!-- Help -->
   <button id="btn-help" class="btn btn-sm btn-outline-secondary" title="Help (⌘?)"><i class="bi bi-question-circle"></i></button>
 </nav>
@@ -503,6 +575,35 @@
   </div>
 </div>
 
+<!-- Tool palette panel -->
+<div id="palette-panel">
+  <div id="palette-panel-header">
+    <h2><i class="bi bi-sliders me-1"></i>Visual Options</h2>
+    <button id="btn-palette-close" title="Close">&times;</button>
+  </div>
+  <div id="palette-panel-body">
+
+    <div class="pt-palette-section">
+      <h3>Label Size</h3>
+      <div class="pt-palette-row">
+        <i class="bi bi-fonts form-label-sm"></i>
+        <input type="range" class="form-range" id="font-size-slider" min="6" max="20" value="11" />
+        <span class="pt-val" id="font-size-value">11</span>
+      </div>
+    </div>
+
+    <div class="pt-palette-section">
+      <h3>Node Size</h3>
+      <div class="pt-palette-row">
+        <i class="bi bi-record-circle form-label-sm"></i>
+        <input type="range" class="form-range" id="tip-size-slider" min="1" max="12" value="3" />
+        <span class="pt-val" id="tip-size-value">3</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- Help panel -->
 <div id="help-panel">
   <div id="help-panel-header">
@@ -515,6 +616,34 @@
 </div>
 
 <script>
+  // ── Tool palette panel ────────────────────────────────────────────────────
+  const palettePanel     = document.getElementById('palette-panel');
+  const btnPalette       = document.getElementById('btn-palette');
+  const btnPaletteClose  = document.getElementById('btn-palette-close');
+
+  function openPalette() {
+    palettePanel.classList.add('open');
+    btnPalette.classList.add('active');
+  }
+  function closePalette() {
+    palettePanel.classList.remove('open');
+    btnPalette.classList.remove('active');
+  }
+
+  btnPalette.addEventListener('click', e => {
+    e.stopPropagation();
+    palettePanel.classList.contains('open') ? closePalette() : openPalette();
+  });
+  btnPaletteClose.addEventListener('click', closePalette);
+
+  // Slider live value readouts
+  const fontSliderEl = document.getElementById('font-size-slider');
+  const tipSliderEl  = document.getElementById('tip-size-slider');
+  const fontValEl    = document.getElementById('font-size-value');
+  const tipValEl     = document.getElementById('tip-size-value');
+  fontSliderEl.addEventListener('input', () => { fontValEl.textContent = fontSliderEl.value; });
+  tipSliderEl.addEventListener('input',  () => { tipValEl.textContent  = tipSliderEl.value; });
+
   // Help panel
   const helpPanel   = document.getElementById('help-panel');
   const helpContent = document.getElementById('help-content');
@@ -549,9 +678,19 @@
   });
   btnHelpClose.addEventListener('click', closeHelp);
 
+  // Tab key toggles palette (unless focus is in a form element)
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Tab' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      const tag = document.activeElement && document.activeElement.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      e.preventDefault();
+      palettePanel.classList.contains('open') ? closePalette() : openPalette();
+    }
+  });
+
   // Close help on Escape
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeHelp();
+    if (e.key === 'Escape') { closeHelp(); closePalette(); }
   });
 </script>
 <script type="module" src="js/peartree.js"></script>
