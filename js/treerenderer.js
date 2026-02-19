@@ -4,8 +4,56 @@
 
 import { computeLayoutFrom } from './treeutils.js';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Theme
+// ─────────────────────────────────────────────────────────────────────────────
+
+export class Theme {
+  constructor({
+    fontSize         = 11,
+    tipRadius        = 3,
+    tipOutlineColor  = '#033940',
+    branchColor      = '#F2F1E6',
+    tipColor         = '#BF4B43',
+    internalColor    = '#19A699',
+    selectedRingColor  = '#E06961',
+    labelColor         = '#F7EECA',
+    dimLabelColor      = '#E6D595',
+    selectedLabelColor = '#F2F1E6',
+    bgColor          = '#02292E',
+    paddingLeft      = 60,
+    paddingTop       = 20,
+    paddingBottom    = 20,
+    elbowRadius      = 2,
+    rootStubLength   = 20,
+  } = {}) {
+    this.fontSize          = fontSize;
+    this.tipRadius         = tipRadius;
+    this.tipOutlineColor   = tipOutlineColor;
+    this.branchColor       = branchColor;
+    this.tipColor          = tipColor;
+    this.internalColor     = internalColor;
+    this.selectedRingColor = selectedRingColor;
+    this.labelColor        = labelColor;
+    this.dimLabelColor     = dimLabelColor;
+    this.selectedLabelColor = selectedLabelColor;
+    this.bgColor           = bgColor;
+    this.paddingLeft       = paddingLeft;
+    this.paddingTop        = paddingTop;
+    this.paddingBottom     = paddingBottom;
+    this.elbowRadius       = elbowRadius;
+    this.rootStubLength    = rootStubLength;
+  }
+}
+
+export const DEFAULT_THEME = new Theme();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Canvas renderer
+// ─────────────────────────────────────────────────────────────────────────────
+
 export class TreeRenderer {
-  constructor(canvas) {
+  constructor(canvas, theme = DEFAULT_THEME) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.dpr = window.devicePixelRatio || 1;
@@ -16,25 +64,11 @@ export class TreeRenderer {
     this.maxX = 1;
     this.maxY = 1;
 
-    // rendering options
-    this.fontSize = 11;
-    this.tipRadius      = 3;
-    this.tipOutlineColor = '#000000'; // drawn slightly larger, behind the fill
-    this.branchColor = '#4a9eff';
-    this.tipColor = '#e94560';
-    this.internalColor    = '#4a9eff'; // same hue as branches – visible on hover only
-    this.selectedRingColor  = '#ffe066'; // bright gold ring for selected tips
-    this.labelColor         = '#c8d8e8'; // normal tip label colour
-    this.dimLabelColor      = '#6a7a8a'; // unselected label colour when a selection is active
-    this.selectedLabelColor = '#ffffff'; // selected tip label colour
-    this.bgColor = '#1a1a2e';
-    this.paddingLeft = 60;
-    this.paddingTop = 20;
-    this.paddingBottom = 20;
-    this.elbowRadius    = 2;    // pixels of curvature at branch elbows (0 = sharp)
-    this.rootStubLength = 20;   // px of horizontal stub shown to the left of the root
     // labelRightPad is measured after font is known
     this.labelRightPad = 200;
+
+    // Apply theme (sets all rendering option properties)
+    this.setTheme(theme, /*redraw*/ false);
 
     // X scale: always fills the viewport width – recomputed on resize / font change.
     this.scaleX = 1;
@@ -76,6 +110,35 @@ export class TreeRenderer {
 
     this._setupEvents();
     this._loop();
+  }
+
+  /**
+   * Apply a Theme instance, overwriting all rendering-option properties.
+   * Pass redraw=false during construction to skip the draw call.
+   */
+  setTheme(theme = DEFAULT_THEME, redraw = true) {
+    this.fontSize          = theme.fontSize;
+    this.tipRadius         = theme.tipRadius;
+    this.tipOutlineColor   = theme.tipOutlineColor;
+    this.branchColor       = theme.branchColor;
+    this.tipColor          = theme.tipColor;
+    this.internalColor     = theme.internalColor;
+    this.selectedRingColor = theme.selectedRingColor;
+    this.labelColor        = theme.labelColor;
+    this.dimLabelColor     = theme.dimLabelColor;
+    this.selectedLabelColor = theme.selectedLabelColor;
+    this.bgColor           = theme.bgColor;
+    this.paddingLeft       = theme.paddingLeft;
+    this.paddingTop        = theme.paddingTop;
+    this.paddingBottom     = theme.paddingBottom;
+    this.elbowRadius       = theme.elbowRadius;
+    this.rootStubLength    = theme.rootStubLength;
+    if (redraw && this.nodes) {
+      this._measureLabels();
+      this._updateScaleX();
+      this._updateMinScaleY();
+      this._dirty = true;
+    }
   }
 
   setData(nodes, nodeMap, maxX, maxY) {
