@@ -94,8 +94,8 @@ import { TreeRenderer } from './treerenderer.js';
       }
 
       currentOrder = label;
-      btnOrderAsc.classList.toggle('active',  ascending);
-      btnOrderDesc.classList.toggle('active', !ascending);
+      btnOrderAsc.classList.toggle('active',  !ascending);
+      btnOrderDesc.classList.toggle('active', ascending);
     }
 
     btnOrderAsc.addEventListener('click',  () => applyOrder(false));
