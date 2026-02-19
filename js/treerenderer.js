@@ -115,6 +115,7 @@ export class TreeRenderer {
     this._fwdStack    = [];     // forward history
     this._onNavChange          = null;   // callback(canBack, canFwd) – wired by main code
     this._onBranchSelectChange = null;   // callback(hasSelection) – wired by main code
+    this._onNodeSelectChange   = null;   // callback(hasSelection) – wired by main code
 
     // animation targets (lerp toward these each frame)
     this._targetOffsetY = 0;
@@ -239,6 +240,7 @@ export class TreeRenderer {
     this._branchSelectX    = null;
     this._mode = mode;
     if (this._onBranchSelectChange) this._onBranchSelectChange(false);
+    if (this._onNodeSelectChange)   this._onNodeSelectChange(false);
     this._drawStatusBar(this._lastStatusMx);
     this._dirty = true;
   }
@@ -1179,6 +1181,7 @@ export class TreeRenderer {
         }
       }
       this._updateMRCA();
+      if (this._onNodeSelectChange) this._onNodeSelectChange(this._selectedTipIds.size > 0);
       this._drawStatusBar(this._lastStatusMx);
       this._dirty = true;
     });

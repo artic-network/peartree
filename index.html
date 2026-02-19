@@ -389,27 +389,38 @@
   </div>
   <div class="pt-toolbar-sep"></div>
 
+   <!-- Zoom -->
+  <div class="btn-group" role="group" aria-label="Zoom">
+    <button id="btn-zoom-in"  class="btn btn-sm btn-outline-secondary" title="Zoom in (⌘+)"><i class="bi bi-zoom-in"></i></button>
+    <button id="btn-zoom-out" class="btn btn-sm btn-outline-secondary" title="Zoom out (⌘−)"><i class="bi bi-zoom-out"></i></button>
+  </div>
+
   <!-- Fit -->
   <div class="btn-group" role="group" aria-label="Fit view">
     <button id="btn-fit"        class="btn btn-sm btn-outline-secondary" title="Fit all (⌘0)"><i class="bi bi-arrows-fullscreen"></i></button>
     <button id="btn-fit-labels" class="btn btn-sm btn-outline-secondary" title="Fit labels (⌘⌥0)"><i class="bi bi-type"></i></button>
   </div>
-  <!-- Zoom -->
-  <div class="btn-group" role="group" aria-label="Zoom">
-    <button id="btn-zoom-in"  class="btn btn-sm btn-outline-secondary" title="Zoom in (⌘+)"><i class="bi bi-zoom-in"></i></button>
-    <button id="btn-zoom-out" class="btn btn-sm btn-outline-secondary" title="Zoom out (⌘−)"><i class="bi bi-zoom-out"></i></button>
-  </div>
   <div class="pt-toolbar-sep"></div>
 
-  <!-- Reroot -->
-  <button id="btn-reroot" class="btn btn-sm btn-outline-secondary" disabled title="Reroot tree at branch selection"><i class="bi bi-arrow-clockwise"></i></button>
+  <!-- Order -->
+  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Order:</span>
+  <div class="btn-group" role="group" aria-label="Branch order">
+    <button id="btn-order-asc"  class="btn btn-sm btn-outline-secondary" title="Order branches ascending by clade size (⌘D)"><i class="bi bi-sort-up"></i></button>
+    <button id="btn-order-desc" class="btn btn-sm btn-outline-secondary" title="Order branches descending by clade size (⌘U)"><i class="bi bi-sort-down"></i></button>
+  </div>
+
   <div class="pt-toolbar-sep"></div>
 
   <!-- Select mode -->
+  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Select:</span>
   <div class="btn-group" role="group" aria-label="Selection mode">
-    <button id="btn-mode-nodes"    class="btn btn-sm btn-outline-secondary active" title="Select nodes mode (⌘N)"><i class="bi bi-circle me-1"></i>Nodes</button>
-    <button id="btn-mode-branches" class="btn btn-sm btn-outline-secondary"        title="Select branches mode (⌘B)"><i class="bi bi-bezier me-1"></i>Branches</button>
+    <button id="btn-mode-nodes"    class="btn btn-sm btn-outline-secondary active" title="Select nodes mode (⌘N)"><i class="bi bi-circle me-1"></i></button>
+    <button id="btn-mode-branches" class="btn btn-sm btn-outline-secondary"        title="Select branches mode (⌘B)"><i class="bi bi-bezier me-1"></i></button>
   </div>
+  <div class="pt-toolbar-sep"></div>
+
+    <!-- Reroot -->
+  <button id="btn-reroot" class="btn btn-sm btn-outline-secondary" disabled title="Reroot tree at branch selection"><i class="bi bi-arrow-clockwise">Root</i></button>
   <div class="pt-toolbar-sep"></div>
 
   <!-- Sliders -->
@@ -421,14 +432,6 @@
     <span class="form-label-sm"><i class="bi bi-record-circle"></i></span>
     <input type="range" class="form-range" id="tip-size-slider" min="1" max="12" value="3" />
   </label>
-  <div class="pt-toolbar-sep"></div>
-
-  <!-- Order -->
-  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Order:</span>
-  <div class="btn-group" role="group" aria-label="Branch order">
-    <button id="btn-order-asc"  class="btn btn-sm btn-outline-secondary" title="Order branches ascending by clade size (⌘D)"><i class="bi bi-sort-up"></i></button>
-    <button id="btn-order-desc" class="btn btn-sm btn-outline-secondary" title="Order branches descending by clade size (⌘U)"><i class="bi bi-sort-down"></i></button>
-  </div>
 
   <div class="ms-auto"></div>
   <!-- Help -->

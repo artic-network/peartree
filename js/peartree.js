@@ -197,8 +197,11 @@ import { TreeRenderer } from './treerenderer.js';
       renderer._branchSelectX    = null;
       renderer._branchHoverNode  = null;
       renderer._branchHoverX     = null;
+      renderer._selectedTipIds.clear();
+      renderer._mrcaNodeId       = null;
       if (renderer._onNavChange)          renderer._onNavChange(false, false);
       if (renderer._onBranchSelectChange) renderer._onBranchSelectChange(false);
+      if (renderer._onNodeSelectChange)   renderer._onNodeSelectChange(false);
 
       if (!treeLoaded) {
         treeLoaded = true;
@@ -235,7 +238,10 @@ import { TreeRenderer } from './treerenderer.js';
     };
 
     renderer._onBranchSelectChange = (hasSelection) => {
-      btnReroot.disabled = !hasSelection;
+      if (renderer._mode === 'branches') btnReroot.disabled = !hasSelection;
+    };
+    renderer._onNodeSelectChange = (hasSelection) => {
+      if (renderer._mode === 'nodes') btnReroot.disabled = !hasSelection;
     };
 
     btnBack.addEventListener('click',    () => renderer.navigateBack());
@@ -285,13 +291,37 @@ import { TreeRenderer } from './treerenderer.js';
 
     // Reroot
     btnReroot.addEventListener('click', () => {
-      const selNode = renderer._branchSelectNode;
-      const selX    = renderer._branchSelectX;
-      if (!selNode || selX === null) return;
+      let targetNode, distFromParent;
 
-      const parentLayoutNode = renderer.nodeMap.get(selNode.parentId);
-      if (!parentLayoutNode) return;
-      const distFromParent = selX - parentLayoutNode.x;
+      if (renderer._mode === 'branches') {
+        const selNode = renderer._branchSelectNode;
+        const selX    = renderer._branchSelectX;
+        if (!selNode || selX === null) return;
+        const parentLayoutNode = renderer.nodeMap.get(selNode.parentId);
+        if (!parentLayoutNode) return;
+        targetNode      = selNode;
+        distFromParent  = selX - parentLayoutNode.x;
+      } else {
+        // Nodes mode: single tip → that node; ≥2 tips → their MRCA.
+        let nodeId;
+        if (renderer._selectedTipIds.size === 1) {
+          nodeId = [...renderer._selectedTipIds][0];
+        } else if (renderer._mrcaNodeId) {
+          nodeId = renderer._mrcaNodeId;
+        } else {
+          return;
+        }
+        const layoutNode = renderer.nodeMap.get(nodeId);
+        if (!layoutNode || !layoutNode.parentId) return;
+        const parentLayoutNode = renderer.nodeMap.get(layoutNode.parentId);
+        if (!parentLayoutNode) return;
+        targetNode     = layoutNode;
+        // Root at the midpoint of the branch above the selected node.
+        distFromParent = (layoutNode.x - parentLayoutNode.x) / 2;
+      }
+
+      const selNode = targetNode;
+      if (!selNode) return;
 
       const newRoot = rerootTree(root, selNode.id, distFromParent);
       root = newRoot;
@@ -306,7 +336,11 @@ import { TreeRenderer } from './treerenderer.js';
       renderer._branchSelectX    = null;
       renderer._branchHoverNode  = null;
       renderer._branchHoverX     = null;
+      renderer._selectedTipIds.clear();
+      renderer._mrcaNodeId       = null;
       if (renderer._onBranchSelectChange) renderer._onBranchSelectChange(false);
+      if (renderer._onNodeSelectChange)   renderer._onNodeSelectChange(false);
+      btnReroot.disabled = true;
       renderer.setRawTree(root);
 
       const layout = computeLayout(root);
