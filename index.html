@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PearTree — Phylogenetic Tree Viewer</title>
+
+  <!-- Bootstrap 5 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+
   <style>
     /*
      * Palette derived from DEFAULT_THEME in treerenderer.js:
@@ -14,105 +18,88 @@
      *   label        #F7EECA  warm cream
      *   dimLabel     #E6D595  muted gold
      */
+    :root {
+      --pt-bg:       #02292E;
+      --pt-bg-dark:  #021E22;
+      --pt-border:   #05494F;
+      --pt-red:      #BF4B43;
+      --pt-teal:     #19A699;
+      --pt-cream:    #F7EECA;
+      --pt-gold:     #E6D595;
+      --pt-off-white:#F2F1E6;
+      --pt-btn-bg:   #033A42;
+      --pt-btn-bdr:  #066878;
+      --pt-btn-hover:#04545E;
+    }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+    /* ── Layout ── */
+    html, body { height: 100%; overflow: hidden; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #02292E;
-      color: #F2F1E6;
-      height: 100vh;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      background: var(--pt-bg);
+      color: var(--pt-off-white);
     }
 
-    header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 8px 16px;
-      background: #021E22;
-      border-bottom: 1px solid #05494F;
-      flex-shrink: 0;
-      height: 46px;
+    /* ── Navbar overrides ── */
+    .navbar {
+      background: var(--pt-bg-dark) !important;
+      border-bottom: 1px solid var(--pt-border);
+      min-height: 46px;
+      padding: 0 1rem;
     }
-
-    header h1 {
-      font-size: 16px;
+    .navbar-brand {
+      font-size: 1rem;
       font-weight: 600;
-      letter-spacing: 0.5px;
-      color: #BF4B43;
+      color: var(--pt-red) !important;
+      letter-spacing: 0.4px;
+      padding: 0;
     }
-
     #file-info {
-      font-size: 12px;
-      color: #E6D595;
-      margin-left: 4px;
-      opacity: 0.7;
+      font-size: 0.75rem;
+      color: var(--pt-gold);
+      opacity: 0.75;
     }
 
-    .controls {
-      display: flex;
-      gap: 8px;
-      margin-left: auto;
-      align-items: center;
-    }
+    /* ── Sliders ── */
+    .form-label-sm { font-size: 0.75rem; color: var(--pt-gold); margin-bottom: 0; }
+    .form-range { width: 90px; accent-color: var(--pt-red); }
 
-    .controls label {
-      font-size: 12px;
-      color: #E6D595;
+    /* ── Buttons ── */
+    .btn-pt {
+      background: var(--pt-btn-bg);
+      color: var(--pt-off-white);
+      border: 1px solid var(--pt-btn-bdr);
+      font-size: 0.75rem;
+      padding: 3px 10px;
+      transition: background .15s;
     }
+    .btn-pt:hover:not(:disabled) { background: var(--pt-btn-hover); color: var(--pt-off-white); }
+    .btn-pt:disabled { opacity: 0.35; }
+    .btn-pt.active  { background: var(--pt-red); border-color: var(--pt-red); color: var(--pt-cream); }
 
-    .controls input[type=range] {
-      width: 100px;
-      accent-color: #BF4B43;
-    }
-
-    button {
-      background: #033A42;
-      color: #F2F1E6;
-      border: 1px solid #066878;
-      border-radius: 4px;
-      padding: 4px 10px;
-      font-size: 12px;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-
-    button:hover { background: #04545E; }
-    button:disabled { opacity: 0.35; cursor: not-allowed; }
-    button:disabled:hover { background: #033A42; }
-    button.active {
-      background: #BF4B43;
-      border-color: #BF4B43;
-      color: #F7EECA;
-    }
-
+    /* ── Canvas area ── */
     #canvas-container {
       flex: 1;
       position: relative;
       overflow: hidden;
     }
+    canvas            { display: block; cursor: default; }
+    canvas.space      { cursor: grab; }
+    canvas.grabbing   { cursor: grabbing; }
 
-    canvas {
-      display: block;
-      cursor: default;
-    }
-
-    canvas.space  { cursor: grab; }
-    canvas.grabbing { cursor: grabbing; }
-
+    /* ── Status bar ── */
     #status {
       position: absolute;
       bottom: 8px;
       left: 12px;
-      font-size: 11px;
-      color: #19A699;
+      font-size: 0.7rem;
+      color: var(--pt-teal);
       opacity: 0.6;
       pointer-events: none;
     }
 
+    /* ── Loading overlay ── */
     #loading {
       position: absolute;
       inset: 0;
@@ -120,45 +107,44 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: #02292E;
+      background: var(--pt-bg);
       gap: 14px;
     }
-
-    #loading p { font-size: 14px; color: #E6D595; }
-
-    .spinner {
+    #loading p { font-size: 0.875rem; color: var(--pt-gold); }
+    .pt-spinner {
       width: 36px; height: 36px;
       border: 3px solid #044D59;
-      border-top-color: #BF4B43;
+      border-top-color: var(--pt-red);
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: pt-spin 0.8s linear infinite;
     }
+    @keyframes pt-spin { to { transform: rotate(360deg); } }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
-
+    /* ── Error overlay ── */
     #error {
       display: none;
       position: absolute;
       inset: 0;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: #02292E;
-      flex-direction: column;
+      background: var(--pt-bg);
       gap: 10px;
-      color: #BF4B43;
-      font-size: 14px;
+      color: var(--pt-red);
+      font-size: 0.875rem;
       padding: 40px;
       text-align: center;
     }
 
+    /* ── Tooltip ── */
     #tooltip {
       position: absolute;
-      background: rgba(3, 58, 66, 0.97);
-      border: 1px solid #066878;
-      border-radius: 5px;
-      padding: 6px 10px;
-      font-size: 11px;
-      color: #F2F1E6;
+      background: rgba(3,58,66,0.97);
+      border: 1px solid var(--pt-btn-bdr);
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-size: 0.7rem;
+      color: var(--pt-off-white);
       pointer-events: none;
       display: none;
       max-width: 320px;
@@ -170,22 +156,30 @@
 </head>
 <body>
 
-<header>
-  <h1>PearTree</h1>
-  <span id="file-info">Loading…</span>
-  <div class="controls">
-    <label>Label size <input type="range" id="font-size-slider" min="6" max="20" value="11" /></label>
-    <label>Tip size <input type="range" id="tip-size-slider" min="1" max="12" value="3" /></label>
-    <button id="btn-back"      disabled title="Navigate back (⌘[)">&#8249;</button>
-    <button id="btn-forward"   disabled title="Navigate forward (⌘])">&#8250;</button>
-    <button id="btn-order-asc" title="Order branches descending by tip count (⌘D)">Order ↑</button>
-    <button id="btn-order-desc" title="Order branches ascending by tip count (⌘U)">Order ↓</button>
-    <button id="btn-fit">Fit vertically</button>
+<nav class="navbar">
+  <span class="navbar-brand">PearTree</span>
+  <span id="file-info" class="me-3">Loading…</span>
+
+  <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
+    <label class="d-flex align-items-center gap-1">
+      <span class="form-label-sm">Label size</span>
+      <input type="range" class="form-range" id="font-size-slider" min="6" max="20" value="11" />
+    </label>
+    <label class="d-flex align-items-center gap-1">
+      <span class="form-label-sm">Tip size</span>
+      <input type="range" class="form-range" id="tip-size-slider" min="1" max="12" value="3" />
+    </label>
+    <button id="btn-back"       class="btn btn-pt" disabled title="Navigate back (⌘[)">&#8249;</button>
+    <button id="btn-forward"    class="btn btn-pt" disabled title="Navigate forward (⌘])">&#8250;</button>
+    <button id="btn-order-asc"  class="btn btn-pt" title="Order branches descending by tip count (⌘D)">Order ↑</button>
+    <button id="btn-order-desc" class="btn btn-pt" title="Order branches ascending by tip count (⌘U)">Order ↓</button>
+    <button id="btn-fit"        class="btn btn-pt" title="Fit all (⌘0)">Fit all</button>
+    <button id="btn-fit-labels" class="btn btn-pt" title="Fit labels (⌘⌥0)">Fit labels</button>
   </div>
-</header>
+</nav>
 
 <div id="canvas-container">
-  <div id="loading"><div class="spinner"></div><p id="loading-msg">Fetching tree file…</p></div>
+  <div id="loading"><div class="pt-spinner"></div><p id="loading-msg">Fetching tree file…</p></div>
   <div id="error"></div>
   <canvas id="tree-canvas"></canvas>
   <div id="status"></div>

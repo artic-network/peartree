@@ -93,6 +93,7 @@ export class TreeRenderer {
     this._hoveredNodeId   = null;
     this._selectedTipIds  = new Set();
     this._mrcaNodeId      = null;
+    this._fitLabelsMode   = false;
 
     // Subtree navigation
     this._rawRoot     = null;   // full-tree raw node (set via setRawTree)
@@ -157,12 +158,17 @@ export class TreeRenderer {
   setFontSize(sz) {
     this.fontSize = sz;
     this._measureLabels();
-    // Recompute x scale for new label width, keep relative vertical zoom.
-    const prevMin = this.minScaleY;
     this._updateScaleX();
     this._updateMinScaleY();
-    const newScaleY = Math.max(this.minScaleY, this._targetScaleY * (this.minScaleY / prevMin));
-    this._setTarget(this._targetOffsetY, newScaleY, true);
+    if (this._fitLabelsMode) {
+      // Re-apply fit-labels at the new font size, keeping the vertical centre stable.
+      this.fitLabels();
+    } else {
+      // Preserve the current relative vertical zoom.
+      const prevMin = this.minScaleY;
+      const newScaleY = Math.max(this.minScaleY, this._targetScaleY * (this.minScaleY / prevMin));
+      this._setTarget(this._targetOffsetY, newScaleY, true);
+    }
     this._dirty = true;
   }
 
@@ -361,10 +367,29 @@ export class TreeRenderer {
 
   fitToWindow() {
     if (!this.nodes) return;
+    this._fitLabelsMode = false;
     this._updateScaleX();
     this._updateMinScaleY();
     const newOffsetY = this.paddingTop + this.minScaleY * 0.5;
     this._setTarget(newOffsetY, this.minScaleY, /*immediate*/ false);
+    this._dirty = true;
+  }
+
+  /**
+   * Zoom to the level where consecutive tip labels no longer overlap.
+   * Each tip occupies 1 world unit; we need at least (fontSize + 2) screen px per unit.
+   */
+  fitLabels() {
+    if (!this.nodes) return;
+    this._fitLabelsMode = true;
+    this._updateMinScaleY();
+    const labelScaleY = this.fontSize + 2;   // px per world unit – labels just clear each other
+    const newScaleY   = Math.max(this.minScaleY, labelScaleY);
+    // Try to keep the current centre stable; fall back to top of tree.
+    const H         = this.canvas.clientHeight;
+    const centreWorldY = this._worldYfromScreen(H / 2);
+    const newOffsetY   = H / 2 - centreWorldY * newScaleY;
+    this._setTarget(newOffsetY, newScaleY, /*immediate*/ false);
     this._dirty = true;
   }
 
@@ -954,6 +979,7 @@ export class TreeRenderer {
         // Pinch-to-zoom: deltaY in this mode is a small dimensionless zoom delta.
         // Positive deltaY = pinch in (zoom out), negative = spread (zoom in).
         const factor = Math.pow(0.99, e.deltaY); // smooth continuous zoom
+        this._fitLabelsMode = false;
         this._setTarget(
           this._targetOffsetY,
           this._targetScaleY * factor,
@@ -1071,12 +1097,21 @@ export class TreeRenderer {
       // Cmd/Ctrl + '=' or '+' → zoom in; Cmd/Ctrl + '-' → zoom out.
       if ((e.metaKey || e.ctrlKey) && (e.key === '=' || e.key === '+')) {
         e.preventDefault();
+        this._fitLabelsMode = false;
         this._setTarget(this._targetOffsetY, this._targetScaleY * zoomStep, false, centerY);
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.key === '-') {
         e.preventDefault();
+        this._fitLabelsMode = false;
         this._setTarget(this._targetOffsetY, this._targetScaleY / zoomStep, false, centerY);
+        return;
+      }
+
+      // Cmd/Ctrl + Alt + 0 → fit labels zoom.
+      if ((e.metaKey || e.ctrlKey) && e.altKey && e.key === '0') {
+        e.preventDefault();
+        this.fitLabels();
         return;
       }
 

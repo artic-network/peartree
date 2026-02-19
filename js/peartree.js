@@ -130,4 +130,7 @@ import { TreeRenderer } from './treerenderer.js';
 
   btnFit.addEventListener('click', () => renderer.fitToWindow());
 
+  const btnFitLabels = document.getElementById('btn-fit-labels');
+  btnFitLabels.addEventListener('click', () => renderer.fitLabels());
+
 })();
