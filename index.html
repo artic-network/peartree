@@ -462,12 +462,16 @@ class TreeRenderer {
     this.branchColor = '#4a9eff';
     this.tipColor = '#e94560';
     this.internalColor    = '#4a9eff'; // same hue as branches – visible on hover only
-    this.selectedRingColor = '#ffe066'; // bright gold ring for selected tips
-    this.labelColor       = '#c8d8e8';
+    this.selectedRingColor  = '#ffe066'; // bright gold ring for selected tips
+    this.labelColor         = '#c8d8e8'; // normal tip label colour
+    this.dimLabelColor      = '#6a7a8a'; // unselected label colour when a selection is active
+    this.selectedLabelColor = '#ffffff'; // selected tip label colour
     this.bgColor = '#1a1a2e';
     this.paddingLeft = 60;
     this.paddingTop = 20;
     this.paddingBottom = 20;
+    this.elbowRadius    = 2;    // pixels of curvature at branch elbows (0 = sharp)
+    this.rootStubLength = 20;   // px of horizontal stub shown to the left of the root
     // labelRightPad is measured after font is known
     this.labelRightPad = 200;
 
@@ -848,12 +852,13 @@ class TreeRenderer {
     ctx.strokeStyle = this.branchColor;
 
     const nodeMap = this.nodeMap;
+    const er = this.elbowRadius;
 
-    // Draw branches: for each node (except root) draw an L-shaped branch
+    // Draw branches: horizontal segments.  Start each one 'er' px right of the
+    // corner so the arc pass can fill the gap with a rounded elbow.
     ctx.beginPath();
     for (const node of this.nodes) {
       if (!node.parentId) continue;
-      // cull: skip if both parent and child are out of view
       if (node.y < yWorldMin && node.y > yWorldMax) continue;
 
       const parent = nodeMap.get(node.parentId);
@@ -863,26 +868,55 @@ class TreeRenderer {
       const nx = this._wx(node.x);
       const ny = this._wy(node.y);
 
-      // Rectangular layout: horizontal line from parent.x to node.x at node.y
-      // then vertical line from parent.y to node.y at parent.x
-      ctx.moveTo(px, ny); // corner
-      ctx.lineTo(nx, ny); // horizontal to node
+      // Clamp er so it never exceeds half the branch length or half the vertical gap.
+      const py = this._wy(parent.y);
+      const cer = Math.min(er, Math.abs(ny - py) * 0.4, (nx - px) * 0.4);
+
+      ctx.moveTo(px + cer, ny); // leave gap at corner for arc
+      ctx.lineTo(nx, ny);
     }
     ctx.stroke();
+
+    // Draw rounded-elbow arcs at each branch corner.
+    if (er > 0) {
+      ctx.beginPath();
+      for (const node of this.nodes) {
+        if (!node.parentId) continue;
+        if (node.y < yWorldMin && node.y > yWorldMax) continue;
+
+        const parent = nodeMap.get(node.parentId);
+        if (!parent) continue;
+
+        const px  = this._wx(parent.x);
+        const nx  = this._wx(node.x);
+        const ny  = this._wy(node.y);
+        const py  = this._wy(parent.y);
+        if (Math.abs(ny - py) < 0.5) continue; // only child – no corner needed
+
+        const cer = Math.min(er, Math.abs(ny - py) * 0.4, (nx - px) * 0.4);
+        // Approach the corner from the vertical; leave toward horizontal.
+        const fromY = ny + (ny < py ? cer : -cer);
+        ctx.moveTo(px, fromY);
+        ctx.arcTo(px, ny, px + cer, ny, cer);
+      }
+      ctx.stroke();
+    }
 
     // Draw root stub: a short horizontal line to the left of the root node.
     const rootNode = this.nodes.find(n => !n.parentId);
     if (rootNode) {
       const rx        = this._wx(rootNode.x);
       const ry        = this._wy(rootNode.y);
-      const stubLen   = Math.max(10, Math.min(30, this.paddingLeft * 0.45));
+      const stubLen   = this.rootStubLength;
       ctx.beginPath();
       ctx.moveTo(rx - stubLen, ry);
       ctx.lineTo(rx, ry);
       ctx.stroke();
     }
 
-    // Draw vertical elbow lines per internal node
+    // Draw vertical elbow lines per internal node.
+    // Each end is pulled in by the same cer used at that child's arc so the
+    // line abuts the curved segment cleanly.
     ctx.beginPath();
     for (const node of this.nodes) {
       if (node.isTip) continue;
@@ -891,15 +925,29 @@ class TreeRenderer {
       const childNodes = node.children.map(cid => nodeMap.get(cid)).filter(Boolean);
       if (childNodes.length < 2) continue;
 
-      const ys = childNodes.map(c => c.y);
-      const minY = Math.min(...ys);
-      const maxY = Math.max(...ys);
+      const ys     = childNodes.map(c => c.y);
+      const minY   = Math.min(...ys);
+      const maxY   = Math.max(...ys);
 
       if (maxY < yWorldMin || minY > yWorldMax) continue;
 
-      const nx = this._wx(node.x);
-      ctx.moveTo(nx, this._wy(minY));
-      ctx.lineTo(nx, this._wy(maxY));
+      const nx     = this._wx(node.x);
+      const py     = this._wy(node.y);
+
+      // Find the children at the two extremes of the vertical span.
+      const topChild = childNodes.find(c => c.y === minY);
+      const botChild = childNodes.find(c => c.y === maxY);
+
+      const ny_top = this._wy(topChild.y);
+      const ny_bot = this._wy(botChild.y);
+
+      // Use the same cer formula as the arc pass so the line ends exactly where
+      // the arc begins.
+      const cer_top = er > 0 ? Math.min(er, Math.abs(ny_top - py) * 0.4, (this._wx(topChild.x) - nx) * 0.4) : 0;
+      const cer_bot = er > 0 ? Math.min(er, Math.abs(ny_bot - py) * 0.4, (this._wx(botChild.x) - nx) * 0.4) : 0;
+
+      ctx.moveTo(nx, ny_top + cer_top); // just below topmost child's arc start
+      ctx.lineTo(nx, ny_bot - cer_bot); // just above bottommost child's arc start
     }
     ctx.stroke();
 
@@ -976,7 +1024,7 @@ class TreeRenderer {
     // Pass 3 – labels (two sub-passes when selection active: dim then bright)
     if (showLabels) {
       const hasSelection = this._selectedTipIds.size > 0;
-      const dimColor = '#6a7a8a'; // muted grey for unselected labels
+      const dimColor = this.dimLabelColor;
 
       if (hasSelection) {
         // Sub-pass 3a: unselected labels in dim grey
@@ -986,8 +1034,8 @@ class TreeRenderer {
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
         }
-        // Sub-pass 3b: selected labels in white
-        ctx.fillStyle = '#ffffff';
+        // Sub-pass 3b: selected labels in selected colour
+        ctx.fillStyle = this.selectedLabelColor;
         for (const node of this.nodes) {
           if (!node.isTip || !this._selectedTipIds.has(node.id)) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
@@ -1321,6 +1369,13 @@ class TreeRenderer {
       if ((e.metaKey || e.ctrlKey) && e.key === '-') {
         e.preventDefault();
         this._setTarget(this._targetOffsetY, this._targetScaleY / zoomStep, false, centerY);
+        return;
+      }
+
+      // Cmd/Ctrl + 0 → fit current subtree vertically.
+      if ((e.metaKey || e.ctrlKey) && e.key === '0') {
+        e.preventDefault();
+        this.fitToWindow();
         return;
       }
 
