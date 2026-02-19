@@ -886,7 +886,26 @@ class TreeRenderer {
       const d2 = dx * dx + dy * dy;
       if (d2 < bestDist2) { bestDist2 = d2; best = node; }
     }
-    return best;
+    if (best) return best;
+
+    // Label hit-test for tip nodes when labels are visible
+    if (this.scaleY > 1) {
+      const r        = this.tipRadius;
+      const outlineR = r + Math.max(1, Math.round(r * 0.45));
+      const labelX0  = outlineR + 3;
+      const halfH    = this.fontSize / 2 + 2;
+      this.ctx.font  = `${this.fontSize}px monospace`;
+      for (const node of this.nodes) {
+        if (!node.isTip || !node.name) continue;
+        if (node.y < yWorldMin || node.y > yWorldMax) continue;
+        const sy = this._wy(node.y);
+        if (my < sy - halfH || my > sy + halfH) continue;
+        const lx0 = this._wx(node.x) + labelX0;
+        if (mx < lx0) continue;
+        if (mx <= lx0 + this.ctx.measureText(node.name).width) return node;
+      }
+    }
+    return null;
   }
 
   /** Returns the id of the node whose world-y is closest to the viewport centre. */
