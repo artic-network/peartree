@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PearTree — Phylogenetic Tree Viewer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 16px;
+      background: #16213e;
+      border-bottom: 1px solid #0f3460;
+      flex-shrink: 0;
+      height: 46px;
+    }
+
+    header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: #e94560;
+    }
+
+    #file-info {
+      font-size: 12px;
+      color: #888;
+      margin-left: 4px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+      align-items: center;
+    }
+
+    .controls label {
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    .controls input[type=range] {
+      width: 100px;
+      accent-color: #e94560;
+    }
+
+    button {
+      background: #0f3460;
+      color: #e0e0e0;
+      border: 1px solid #1a4a7a;
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    button:hover { background: #1a5080; }
+    button.active {
+      background: #e94560;
+      border-color: #e94560;
+      color: #fff;
+    }
+
+    #canvas-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      cursor: default;
+    }
+
+    canvas.space  { cursor: grab; }
+    canvas.grabbing { cursor: grabbing; }
+
+    #status {
+      position: absolute;
+      bottom: 8px;
+      left: 12px;
+      font-size: 11px;
+      color: #666;
+      pointer-events: none;
+    }
+
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #1a1a2e;
+      gap: 14px;
+    }
+
+    #loading p { font-size: 14px; color: #aaa; }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #0f3460;
+      border-top-color: #e94560;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #error {
+      display: none;
+      position: absolute;
+      inset: 0;
+      align-items: center;
+      justify-content: center;
+      background: #1a1a2e;
+      flex-direction: column;
+      gap: 10px;
+      color: #e94560;
+      font-size: 14px;
+      padding: 40px;
+      text-align: center;
+    }
+
+    #tooltip {
+      position: absolute;
+      background: rgba(15, 52, 96, 0.95);
+      border: 1px solid #1a5080;
+      border-radius: 5px;
+      padding: 6px 10px;
+      font-size: 11px;
+      color: #e0e0e0;
+      pointer-events: none;
+      display: none;
+      max-width: 320px;
+      word-break: break-all;
+      z-index: 10;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>PearTree</h1>
+  <span id="file-info">Loading…</span>
+  <div class="controls">
+    <label>Label size <input type="range" id="font-size-slider" min="6" max="20" value="11" /></label>
+    <button id="btn-order-asc" title="Order branches descending by tip count (⌘D)">Order ↑</button>
+    <button id="btn-order-desc" title="Order branches ascending by tip count (⌘U)">Order ↓</button>
+    <button id="btn-fit">Fit vertically</button>
+  </div>
+</header>
+
+<div id="canvas-container">
+  <div id="loading"><div class="spinner"></div><p id="loading-msg">Fetching tree file…</p></div>
+  <div id="error"></div>
+  <canvas id="tree-canvas"></canvas>
+  <div id="status"></div>
+  <div id="tooltip"></div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// NEXUS / Newick parser  (adapted from src/tree.js – no npm deps required)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Parse a Newick string into a lightweight nested node object.
+ * Returns the root node { name, length, label, annotations, children }
+ */
+function parseNewick(newickString, tipNameMap = null) {
+  const tokens = newickString.split(/\s*('[^']+'|"[^"]+"|;|\(|\)|,|:|=|\[&|\]|\{|\})\s*/);
+  let level = 0;
+  let currentNode = null;
+  let nodeStack = [];
+  let labelNext = false;
+  let lengthNext = false;
+  let inAnnotation = false;
+  let annotationKeyNext = true;
+  let annotationKey = null;
+  let isAnnotationARange = false;
+
+  let idCounter = 0;
+  function newId() { return `n${idCounter++}`; }
+
+  for (const token of tokens.filter(t => t.length > 0)) {
+    if (inAnnotation) {
+      if (token === "=")          { annotationKeyNext = false; }
+      else if (token === ",")     { if (!isAnnotationARange) annotationKeyNext = true; }
+      else if (token === "{")     { isAnnotationARange = true; currentNode.annotations[annotationKey] = []; }
+      else if (token === "}")     { isAnnotationARange = false; }
+      else if (token === "]")     { inAnnotation = false; annotationKeyNext = true; }
+      else {
+        let t = token;
+        if (t.startsWith('"') || t.startsWith("'")) t = t.slice(1);
+        if (t.endsWith('"')   || t.endsWith("'"))   t = t.slice(0, -1);
+        if (annotationKeyNext) {
+          annotationKey = t.replace('.', '_');
+        } else {
+          if (isAnnotationARange) {
+            currentNode.annotations[annotationKey].push(t);
+          } else {
+            currentNode.annotations[annotationKey] = isNaN(t) ? t : parseFloat(t);
+          }
+        }
+      }
+    } else if (token === "(") {
+      const node = { id: newId(), level, parent: currentNode, children: [], annotations: {} };
+      level++;
+      if (currentNode) nodeStack.push(currentNode);
+      currentNode = node;
+    } else if (token === ",") {
+      labelNext = false;
+      const parent = nodeStack.pop();
+      parent.children.push(currentNode);
+      currentNode = parent;
+    } else if (token === ")") {
+      labelNext = false;
+      const parent = nodeStack.pop();
+      parent.children.push(currentNode);
+      level--;
+      currentNode = parent;
+      labelNext = true;
+    } else if (token === ":") {
+      labelNext = false;
+      lengthNext = true;
+    } else if (token === ";") {
+      if (level > 0) throw new Error("Unbalanced brackets in Newick string");
+      break;
+    } else if (token === "[&") {
+      inAnnotation = true;
+    } else {
+      if (lengthNext) {
+        currentNode.length = parseFloat(token);
+        lengthNext = false;
+      } else if (labelNext) {
+        currentNode.label = token;
+        if (!token.startsWith("#")) {
+          const v = parseFloat(token);
+          currentNode.annotations["label"] = isNaN(v) ? token : v;
+        } else {
+          currentNode.id = token.slice(1);
+        }
+        labelNext = false;
+      } else {
+        // external node
+        if (!currentNode.children) currentNode.children = [];
+        let name = tipNameMap ? (tipNameMap.get(token) || token) : token;
+        name = name.replace(/^['"]|['"]$/g, '').trim().replace(/'/g, '');
+        const externalNode = {
+          id: newId(),
+          name,
+          parent: currentNode,
+          annotations: {}
+        };
+        if (currentNode) nodeStack.push(currentNode);
+        currentNode = externalNode;
+      }
+    }
+  }
+
+  if (level > 0) throw new Error("Unbalanced brackets in Newick string");
+  return currentNode;
+}
+
+/**
+ * Parse a NEXUS string, return array of root-node objects.
+ */
+function parseNexus(nexus) {
+  const trees = [];
+  // split on block delimiters
+  const nexusTokens = nexus.split(
+    /\s*(?:^|(?<=\s))begin(?=\s)|(?<=\s)end(?=\s*;)\s*;/gi
+  );
+  // Fallback simpler split for environments where lookbehind isn't supported:
+  const rawText = nexus;
+
+  // Robust block extraction using a simple state machine
+  const lines = rawText.split('\n');
+  let inTreesBlock = false;
+  const tipNameMap = new Map();
+  let inTranslate = false;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    const lower = line.toLowerCase();
+
+    if (lower === 'begin trees;' || lower.startsWith('begin trees;')) {
+      inTreesBlock = true; inTranslate = false; continue;
+    }
+    if (inTreesBlock) {
+      if (lower === 'end;' || lower === 'end') { inTreesBlock = false; continue; }
+      if (lower === 'translate') { inTranslate = true; continue; }
+      if (inTranslate) {
+        if (line === ';') { inTranslate = false; continue; }
+        // lines like: 1 TaxonName,
+        const clean = line.replace(/,$/, '').replace(/;$/, '');
+        const parts = clean.split(/\s+/);
+        if (parts.length >= 2) tipNameMap.set(parts[0], parts.slice(1).join(' '));
+        if (line.endsWith(';')) inTranslate = false;
+      } else {
+        // line like: tree TREE1 = [&R] (...)
+        const idx = line.indexOf('(');
+        if (idx !== -1) {
+          const newickStr = line.slice(idx);
+          const root = parseNewick(
+            newickStr,
+            tipNameMap.size > 0 ? tipNameMap : null
+          );
+          trees.push({ root, tipNameMap });
+        }
+      }
+    }
+  }
+  return trees;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Layout  – rectangular: x = divergence from root, y = equal spacing for tips
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Walks the tree once, computing:
+ *   node.divergence  – sum of branch lengths from root
+ *   node.y           – vertical position (tips evenly spaced 1 apart)
+ * Returns { nodes: [], maxDivergence, tipCount }
+ *
+ * Each entry in `nodes`:
+ *   { id, name, label, x, y, isTip, children: [id,…], parentId }
+ */
+function computeLayout(root) {
+  let tipCounter = 0;
+  const nodes = [];
+  const nodeMap = new Map();
+
+  function traverse(node, parentDivergence, parentId) {
+    const divergence = parentDivergence + (node.length || 0);
+    const entry = {
+      id: node.id,
+      name: node.name || null,
+      label: node.label || null,
+      annotations: node.annotations || {},
+      x: divergence,
+      y: null,
+      isTip: !node.children || node.children.length === 0,
+      children: node.children ? node.children.map(c => c.id) : [],
+      parentId,
+    };
+
+    if (entry.isTip) {
+      tipCounter++;
+      entry.y = tipCounter;
+    }
+
+    nodes.push(entry);
+    nodeMap.set(entry.id, entry);
+
+    if (node.children) {
+      for (const child of node.children) {
+        traverse(child, divergence, node.id);
+      }
+    }
+
+    // place internal node at centre of its children (post-order)
+    if (!entry.isTip) {
+      const childYs = node.children.map(c => nodeMap.get(c.id).y).filter(y => y !== null);
+      entry.y = childYs.reduce((a, b) => a + b, 0) / childYs.length;
+    }
+
+    return entry.y;
+  }
+
+  traverse(root, 0, null);
+
+  const maxX = nodes.reduce((m, n) => Math.max(m, n.x), 0);
+  const maxY = tipCounter;
+
+  return { nodes, nodeMap, maxX, maxY };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Branch ordering  – sorts children at every internal node by clade tip count
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Post-order traversal: counts tips in each clade, then sorts children so that
+ * the clade with fewer tips comes first (ascending=true) or last (ascending=false).
+ * Ascending  → smaller clades on top  ("ladder up"   / comb toward root)
+ * Descending → larger  clades on top  ("ladder down" / comb toward tips)
+ * Works directly on the raw parsed node objects (mutates children arrays).
+ * Returns the tip count of the subtree rooted at `node`.
+ */
+function reorderTree(node, ascending) {
+  if (!node.children || node.children.length === 0) {
+    node._tipCount = 1;
+    return 1;
+  }
+  let total = 0;
+  for (const child of node.children) {
+    total += reorderTree(child, ascending);
+  }
+  node._tipCount = total;
+  node.children.sort((a, b) =>
+    ascending ? a._tipCount - b._tipCount : b._tipCount - a._tipCount
+  );
+  return total;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Canvas renderer
+// ─────────────────────────────────────────────────────────────────────────────
+
+class TreeRenderer {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.dpr = window.devicePixelRatio || 1;
+
+    // layout data
+    this.nodes = null;
+    this.nodeMap = null;
+    this.maxX = 1;
+    this.maxY = 1;
+
+    // rendering options
+    this.fontSize = 11;
+    this.tipRadius = 3;
+    this.branchColor = '#4a9eff';
+    this.tipColor = '#e94560';
+    this.labelColor = '#c8d8e8';
+    this.bgColor = '#1a1a2e';
+    this.paddingLeft = 60;
+    this.paddingTop = 20;
+    this.paddingBottom = 20;
+    // labelRightPad is measured after font is known
+    this.labelRightPad = 200;
+
+    // X scale: always fills the viewport width – recomputed on resize / font change.
+    this.scaleX = 1;
+
+    // Y scale: user-adjustable vertical zoom.
+    //   minScaleY = fit-to-window (never allowed to go below this).
+    //   offsetY   = screen-y for world-y = 0  (the scrolling state).
+    this.scaleY = 1;
+    this.minScaleY = 1;
+    this.offsetY = 0;
+
+    // interaction state
+    this._dragging        = false;
+    this._spaceDown       = false;
+    this._lastY           = 0;
+    this._dragStartOffsetY = 0;
+    this._snapTimer       = null;
+
+    // animation targets (lerp toward these each frame)
+    this._targetOffsetY = 0;
+    this._targetScaleY  = 1;
+    this._animating     = false;
+
+    this._rafId = null;
+    this._dirty = true;
+
+    this._setupEvents();
+    this._loop();
+  }
+
+  setData(nodes, nodeMap, maxX, maxY) {
+    this.nodes = nodes;
+    this.nodeMap = nodeMap;
+    this.maxX = maxX;
+    this.maxY = maxY;
+    this._measureLabels();
+    this.fitToWindow();
+  }
+
+  setFontSize(sz) {
+    this.fontSize = sz;
+    this._measureLabels();
+    // Recompute x scale for new label width, keep relative vertical zoom.
+    const prevMin = this.minScaleY;
+    this._updateScaleX();
+    this._updateMinScaleY();
+    const newScaleY = Math.max(this.minScaleY, this._targetScaleY * (this.minScaleY / prevMin));
+    this._setTarget(this._targetOffsetY, newScaleY, true);
+    this._dirty = true;
+  }
+
+  /** Measure the widest tip label once so _updateScaleX can stay cheap. */
+  _measureLabels() {
+    if (!this.nodes) return;
+    const ctx = this.ctx;
+    ctx.font = `${this.fontSize}px monospace`;
+    let max = 0;
+    for (const n of this.nodes) {
+      if (n.isTip && n.name) {
+        const w = ctx.measureText(n.name).width;
+        if (w > max) max = w;
+      }
+    }
+    this.labelRightPad = max + this.tipRadius + 8;
+  }
+
+  /** Recompute scaleX so the tree always fills the full viewport width. */
+  _updateScaleX() {
+    const W = this.canvas.clientWidth;
+    const plotW = W - this.paddingLeft - this.labelRightPad;
+    this.scaleX = plotW / this.maxX;
+  }
+
+  /** Recompute the minimum scaleY (tree fits the viewport vertically). */
+  _updateMinScaleY() {
+    const H = this.canvas.clientHeight;
+    const plotH = H - this.paddingTop - this.paddingBottom;
+    // tips sit at world y = 1 … maxY; add 1 unit of padding total
+    this.minScaleY = plotH / (this.maxY + 1);
+  }
+
+  // _clampOffsetY is replaced by _clampedOffsetY (pure) + _setTarget.
+
+  fitToWindow() {
+    if (!this.nodes) return;
+    this._updateScaleX();
+    this._updateMinScaleY();
+    const newOffsetY = this.paddingTop + this.minScaleY * 0.5;
+    this._setTarget(newOffsetY, this.minScaleY, /*immediate*/ true);
+    this._dirty = true;
+  }
+
+  /**
+   * Compute the clamped offsetY for a given scaleY and desired raw offsetY.
+   * Does NOT mutate state.
+   */
+  _clampedOffsetY(offsetY, scaleY) {
+    const H = this.canvas.clientHeight;
+    const maxOY = this.paddingTop - scaleY * 0.5;
+    const minOY = (H - this.paddingBottom) - (this.maxY + 0.5) * scaleY;
+    if (minOY > maxOY) return (minOY + maxOY) / 2; // tree fits – centre it
+    return Math.min(maxOY, Math.max(minOY, offsetY));
+  }
+
+  /**
+   * Set animation targets (and optionally apply immediately).
+   * @param {number} offsetY  desired raw offsetY
+   * @param {number} scaleY   desired scaleY
+   * @param {boolean} immediate  if true, snap with no animation
+   * @param {number|null} pivotScreenY  screen-y to hold fixed during zoom
+   */
+  _setTarget(offsetY, scaleY, immediate = false, pivotScreenY = null) {
+    const newScaleY = Math.max(this.minScaleY, scaleY);
+
+    // If a zoom pivot was supplied, recompute offsetY to keep that world-y fixed.
+    let newOffsetY = offsetY;
+    if (pivotScreenY !== null) {
+      const worldY = (pivotScreenY - this._targetOffsetY) / this._targetScaleY;
+      newOffsetY   = pivotScreenY - worldY * newScaleY;
+    }
+
+    this._targetScaleY  = newScaleY;
+    this._targetOffsetY = this._clampedOffsetY(newOffsetY, newScaleY);
+
+    if (immediate) {
+      this.scaleY  = this._targetScaleY;
+      this.offsetY = this._targetOffsetY;
+      this._animating = false;
+    } else {
+      this._animating = true;
+    }
+    this._dirty = true;
+  }
+
+  // X is always anchored to paddingLeft – no horizontal offset variable.
+  _wx(worldX) { return this.paddingLeft + worldX * this.scaleX; }
+  _wy(worldY) { return this.offsetY    + worldY * this.scaleY; }
+  _worldYfromScreen(sy) { return (sy - this.offsetY) / this.scaleY; }
+  _worldXfromScreen(sx) { return (sx - this.paddingLeft) / this.scaleX; }
+
+  _resize() {
+    const W = this.canvas.parentElement.clientWidth;
+    const H = this.canvas.parentElement.clientHeight;
+    this.canvas.style.width  = W + 'px';
+    this.canvas.style.height = H + 'px';
+    this.canvas.width  = W * this.dpr;
+    this.canvas.height = H * this.dpr;
+    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    if (this.nodes) {
+      // X always re-fits; preserve the current vertical zoom ratio if already zoomed in.
+      const zoomRatio = (this.minScaleY > 0) ? this._targetScaleY / this.minScaleY : 1;
+      this._updateScaleX();
+      this._updateMinScaleY();
+      const newScaleY = Math.max(this.minScaleY, this.minScaleY * zoomRatio);
+      this._setTarget(this._targetOffsetY, newScaleY, true);
+    }
+    this._dirty = true;
+  }
+
+  _loop() {
+    if (this._animating) {
+      const EASE = 0.16; // fraction to close per frame (~60 fps → ~200 ms settle)
+      const dY = this._targetOffsetY - this.offsetY;
+      const dS = this._targetScaleY  - this.scaleY;
+      if (Math.abs(dY) < 0.05 && Math.abs(dS) < 5e-5) {
+        this.offsetY = this._targetOffsetY;
+        this.scaleY  = this._targetScaleY;
+        this._animating = false;
+      } else {
+        this.offsetY += dY * EASE;
+        this.scaleY  += dS * EASE;
+      }
+      this._dirty = true;
+    }
+    if (this._dirty) {
+      this._draw();
+      this._dirty = false;
+    }
+    this._rafId = requestAnimationFrame(() => this._loop());
+  }
+
+  _draw() {
+    const ctx = this.ctx;
+    const W = this.canvas.clientWidth;
+    const H = this.canvas.clientHeight;
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = this.bgColor;
+    ctx.fillRect(0, 0, W, H);
+
+    if (!this.nodes) return;
+
+    // Viewport culling: world y range visible on screen (with a little margin)
+    const yWorldMin = this._worldYfromScreen(-this.fontSize * 2);
+    const yWorldMax = this._worldYfromScreen(H + this.fontSize * 2);
+
+    ctx.font = `${this.fontSize}px monospace`;
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = this.branchColor;
+
+    const nodeMap = this.nodeMap;
+
+    // Draw branches: for each node (except root) draw an L-shaped branch
+    ctx.beginPath();
+    for (const node of this.nodes) {
+      if (!node.parentId) continue;
+      // cull: skip if both parent and child are out of view
+      if (node.y < yWorldMin && node.y > yWorldMax) continue;
+
+      const parent = nodeMap.get(node.parentId);
+      if (!parent) continue;
+
+      const px = this._wx(parent.x);
+      const nx = this._wx(node.x);
+      const ny = this._wy(node.y);
+
+      // Rectangular layout: horizontal line from parent.x to node.x at node.y
+      // then vertical line from parent.y to node.y at parent.x
+      ctx.moveTo(px, ny); // corner
+      ctx.lineTo(nx, ny); // horizontal to node
+    }
+    ctx.stroke();
+
+    // Draw vertical elbow lines per internal node
+    ctx.beginPath();
+    for (const node of this.nodes) {
+      if (node.isTip) continue;
+      if (node.children.length === 0) continue;
+
+      const childNodes = node.children.map(cid => nodeMap.get(cid)).filter(Boolean);
+      if (childNodes.length < 2) continue;
+
+      const ys = childNodes.map(c => c.y);
+      const minY = Math.min(...ys);
+      const maxY = Math.max(...ys);
+
+      if (maxY < yWorldMin || minY > yWorldMax) continue;
+
+      const nx = this._wx(node.x);
+      ctx.moveTo(nx, this._wy(minY));
+      ctx.lineTo(nx, this._wy(maxY));
+    }
+    ctx.stroke();
+
+    // Draw tip circles and labels
+    ctx.fillStyle = this.tipColor;
+    ctx.strokeStyle = this.tipColor;
+    ctx.textBaseline = 'middle';
+    const r = this.tipRadius;
+    const showLabels = this.scaleY > 1; // only render labels when there's room
+
+    for (const node of this.nodes) {
+      if (!node.isTip) continue;
+      if (node.y < yWorldMin || node.y > yWorldMax) continue;
+
+      const sx = this._wx(node.x);
+      const sy = this._wy(node.y);
+
+      ctx.beginPath();
+      ctx.arc(sx, sy, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (showLabels && node.name) {
+        ctx.fillStyle = this.labelColor;
+        ctx.fillText(node.name, sx + r + 4, sy);
+        ctx.fillStyle = this.tipColor;
+      }
+    }
+  }
+
+  /** Returns the id of the node whose world-y is closest to the viewport centre. */
+  nodeIdAtViewportCenter() {
+    if (!this.nodes) return null;
+    const centreWorldY = this._worldYfromScreen(this.canvas.clientHeight / 2);
+    let bestId = null, bestDist = Infinity;
+    for (const n of this.nodes) {
+      const d = Math.abs(n.y - centreWorldY);
+      if (d < bestDist) { bestDist = d; bestId = n.id; }
+    }
+    return bestId;
+  }
+
+  /**
+   * Adjust _targetOffsetY so the appropriate edge aligns on a whole tip.
+   * scrolledDown=true  → tree moved up, revealing lower tips → snap top edge.
+   * scrolledDown=false → tree moved down, revealing upper tips → snap bottom edge.
+   */
+  _snapToTip(scrolledDown) {
+    const H  = this.canvas.clientHeight;
+    const sy = this._targetScaleY;
+    if (scrolledDown) {
+      // First fully-visible tip from the top
+      const topWorldY = (this.paddingTop - this._targetOffsetY) / sy;
+      const tipY = Math.max(1, Math.min(this.maxY, Math.ceil(topWorldY)));
+      this._targetOffsetY = this._clampedOffsetY(this.paddingTop - tipY * sy, sy);
+    } else {
+      // Last fully-visible tip from the bottom
+      const botWorldY = (H - this.paddingBottom - this._targetOffsetY) / sy;
+      const tipY = Math.max(1, Math.min(this.maxY, Math.floor(botWorldY)));
+      this._targetOffsetY = this._clampedOffsetY(
+        (H - this.paddingBottom) - tipY * sy, sy
+      );
+    }
+    this._animating = true;
+    this._dirty     = true;
+  }
+
+  // ── Input & interaction ────────────────────────────────────────────────────
+
+  _setupEvents() {
+    const canvas = this.canvas;
+
+    // ── Wheel: pinch (ctrlKey=true on Mac trackpad) → zoom;
+    //          scroll (ctrlKey=false) → pan vertically.
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const my   = e.clientY - rect.top;
+
+      if (e.ctrlKey) {
+        // Pinch-to-zoom: deltaY in this mode is a small dimensionless zoom delta.
+        // Positive deltaY = pinch in (zoom out), negative = spread (zoom in).
+        const factor = Math.pow(0.99, e.deltaY); // smooth continuous zoom
+        this._setTarget(
+          this._targetOffsetY,
+          this._targetScaleY * factor,
+          false,
+          my
+        );
+      } else {
+        // Two-finger scroll or mouse wheel: pan vertically.
+        // deltaMode 0 = pixels, 1 = lines, 2 = pages
+        let delta = e.deltaY;
+        if (e.deltaMode === 1) delta *= this.scaleY;       // lines → pixels
+        if (e.deltaMode === 2) delta *= this.canvas.clientHeight;
+        const scrolledDown = delta > 0;
+        this._setTarget(
+          this._targetOffsetY - delta,
+          this._targetScaleY,
+          false
+        );
+        // Debounce snap: fire after the gesture pauses
+        clearTimeout(this._snapTimer);
+        this._snapTimer = setTimeout(() => this._snapToTip(scrolledDown), 150);
+      }
+    }, { passive: false });
+
+    // ── Click-drag: immediate vertical pan – only when spacebar is held.
+    canvas.addEventListener('mousedown', e => {
+      if (!this._spaceDown) return;
+      this._dragging        = true;
+      this._lastY           = e.clientY;
+      this._dragStartOffsetY = this.offsetY;
+      // cancel any in-progress animation so the tree follows the pointer
+      this._targetOffsetY = this.offsetY;
+      this._targetScaleY  = this.scaleY;
+      this._animating     = false;
+      canvas.classList.remove('space');
+      canvas.classList.add('grabbing');
+    });
+
+    window.addEventListener('mousemove', e => {
+      if (this._dragging) {
+        const dy = e.clientY - this._lastY;
+        this._lastY  = e.clientY;
+        const newOY  = this._clampedOffsetY(this.offsetY + dy, this.scaleY);
+        this.offsetY        = newOY;
+        this._targetOffsetY = newOY;
+        this._dirty  = true;
+      }
+      this._updateStatus(e);
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (this._dragging) {
+        // Snap to the edge that was being revealed by the drag
+        const scrolledDown = this.offsetY < this._dragStartOffsetY;
+        this._targetOffsetY = this.offsetY;
+        this._targetScaleY  = this.scaleY;
+        this._snapToTip(scrolledDown);
+      }
+      this._dragging = false;
+      this.canvas.classList.remove('grabbing');
+      // restore grab cursor if spacebar is still held
+      if (this._spaceDown) this.canvas.classList.add('space');
+    });
+
+    // ── Spacebar: enable drag-scroll cursor / mode.
+    window.addEventListener('keydown', e => {
+      if (e.code === 'Space' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        // Don't fire repeatedly on key-repeat
+        if (!this._spaceDown) {
+          this._spaceDown = true;
+          this.canvas.classList.add('space');
+        }
+        // Prevent page scroll
+        e.preventDefault();
+        return;
+      }
+
+      if (!this.nodes) return;
+
+      const H        = canvas.clientHeight;
+      const tipPx    = this.scaleY;               // one tip-row in screen pixels
+      const pagePx   = H - tipPx;                 // one page minus one tip
+      const zoomStep = 1.5;
+      const centerY  = H / 2;
+
+      // Cmd/Ctrl + '=' or '+' → zoom in; Cmd/Ctrl + '-' → zoom out.
+      if ((e.metaKey || e.ctrlKey) && (e.key === '=' || e.key === '+')) {
+        e.preventDefault();
+        this._setTarget(this._targetOffsetY, this._targetScaleY * zoomStep, false, centerY);
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === '-') {
+        e.preventDefault();
+        this._setTarget(this._targetOffsetY, this._targetScaleY / zoomStep, false, centerY);
+        return;
+      }
+
+      // Arrow keys – no modifier → one tip; Cmd/Ctrl → one page.
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const scrolledDown = e.key === 'ArrowDown';
+        const dist   = (e.metaKey || e.ctrlKey) ? pagePx : tipPx;
+        const sign   = scrolledDown ? -1 : 1;
+        this._setTarget(this._targetOffsetY + sign * dist, this._targetScaleY, false);
+        this._snapToTip(scrolledDown);
+        return;
+      }
+    });
+
+    window.addEventListener('keyup', e => {
+      if (e.code === 'Space') {
+        this._spaceDown = false;
+        this._dragging  = false;
+        this.canvas.classList.remove('space', 'grabbing');
+      }
+    });
+
+    window.addEventListener('resize', () => this._resize());
+  }
+
+  _updateStatus(e) {
+    if (!this.nodes) return;
+    const rect = this.canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const wx = this._worldXfromScreen(mx);
+    const statusEl = document.getElementById('status');
+    statusEl.textContent = `divergence: ${wx.toFixed(5)}`;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main
+// ─────────────────────────────────────────────────────────────────────────────
+
+(async () => {
+  const canvas       = document.getElementById('tree-canvas');
+  const loadingEl    = document.getElementById('loading');
+  const loadingMsg   = document.getElementById('loading-msg');
+  const errorEl      = document.getElementById('error');
+  const fileInfoEl   = document.getElementById('file-info');
+  const fontSlider   = document.getElementById('font-size-slider');
+  const btnFit       = document.getElementById('btn-fit');
+
+  // Size canvas to container before creating renderer
+  const container = canvas.parentElement;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.style.width  = container.clientWidth  + 'px';
+  canvas.style.height = container.clientHeight + 'px';
+  canvas.width  = container.clientWidth  * dpr;
+  canvas.height = container.clientHeight * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const renderer = new TreeRenderer(canvas);
+
+  try {
+    loadingMsg.textContent = 'Fetching tree file…';
+    const resp = await fetch('data/ebov.tree');
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} – could not load data/ebov.tree`);
+
+    loadingMsg.textContent = 'Parsing NEXUS…';
+    const text = await resp.text();
+
+    const trees = parseNexus(text);
+    if (!trees.length) throw new Error('No trees found in the NEXUS file.');
+
+    loadingMsg.textContent = 'Computing layout…';
+    // Give the browser a frame to update the UI
+    await new Promise(r => setTimeout(r, 0));
+
+    const { root, tipNameMap } = trees[0];
+    const { nodes, nodeMap, maxX, maxY } = computeLayout(root);
+
+    const tipCount = nodes.filter(n => n.isTip).length;
+    fileInfoEl.textContent = `ebov.tree  ·  ${tipCount.toLocaleString()} taxa  ·  1 tree`;
+
+    renderer.setData(nodes, nodeMap, maxX, maxY);
+
+    loadingEl.style.display = 'none';
+
+    // ── Control bindings (need root in scope) ──────────────────────────────
+
+    const btnOrderAsc  = document.getElementById('btn-order-asc');
+    const btnOrderDesc = document.getElementById('btn-order-desc');
+
+    let currentOrder = null; // null | 'asc' | 'desc'
+
+    function applyOrder(ascending) {
+      const label = ascending ? 'asc' : 'desc';
+      if (currentOrder === label) return; // already in this order
+
+      // Snapshot zoom state before the reorder so we can restore it.
+      const isZoomed  = renderer._targetScaleY > renderer.minScaleY * 1.005;
+      const zoomRatio = renderer._targetScaleY / renderer.minScaleY;
+      const anchorId  = isZoomed ? renderer.nodeIdAtViewportCenter() : null;
+
+      reorderTree(root, ascending);
+      const layout = computeLayout(root);
+      renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+
+      // If the tree was zoomed, restore the same vertical zoom level and
+      // scroll so the previously-centred node sits at the viewport midpoint.
+      if (isZoomed && anchorId) {
+        const H          = renderer.canvas.clientHeight;
+        const newScaleY  = renderer.minScaleY * zoomRatio;
+        const anchorNode = layout.nodeMap.get(anchorId);
+        if (anchorNode) {
+          const rawOffsetY = H / 2 - anchorNode.y * newScaleY;
+          renderer._setTarget(rawOffsetY, newScaleY, /*immediate*/ false);
+        }
+      }
+
+      currentOrder = label;
+      btnOrderAsc.classList.toggle('active',  ascending);
+      btnOrderDesc.classList.toggle('active', !ascending);
+    }
+
+    btnOrderAsc.addEventListener('click',  () => applyOrder(false));
+    btnOrderDesc.addEventListener('click', () => applyOrder(true));
+
+    window.addEventListener('keydown', e => {
+      if (!e.metaKey && !e.ctrlKey) return;
+      if (e.key === 'u' || e.key === 'U') { e.preventDefault(); applyOrder(false); }
+      if (e.key === 'd' || e.key === 'D') { e.preventDefault(); applyOrder(true);  }
+    });
+
+  } catch (err) {
+    errorEl.style.display = 'flex';
+    errorEl.innerHTML = `<strong>Error loading tree</strong><br/>${err.message}<br/><br/>
+      Make sure you are serving this page from the repository root via a local HTTP server,<br/>
+      e.g. <code>npx serve .</code> or <code>python3 -m http.server</code>, so that <code>data/ebov.tree</code> can be fetched.`;
+    loadingEl.style.display = 'none';
+    return;
+  }
+
+  // ── Other control bindings ─────────────────────────────────────────────────
+
+  fontSlider.addEventListener('input', () => {
+    renderer.setFontSize(parseInt(fontSlider.value));
+  });
+
+  btnFit.addEventListener('click', () => renderer.fitToWindow());
+
+})();
+</script>
+</body>
+</html>
