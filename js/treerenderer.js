@@ -931,7 +931,12 @@ export class TreeRenderer {
       const rect = canvas.getBoundingClientRect();
       const node = this._findNodeAtScreen(e.clientX - rect.left, e.clientY - rect.top);
       if (!node || node.isTip) return;
-      this.navigateInto(node.id);
+      // Double-clicking the current root while inside a subtree navigates back.
+      if (!node.parentId && this._navStack.length > 0) {
+        this.navigateBack();
+      } else {
+        this.navigateInto(node.id);
+      }
     });
 
     // ── Click: plain click replaces selection; Cmd+click toggles.
