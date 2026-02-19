@@ -1,0 +1,154 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// NEXUS / Newick parser  (adapted from src/tree.js – no npm deps required)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Parse a Newick string into a lightweight nested node object.
+ * Returns the root node { name, length, label, annotations, children }
+ */
+export function parseNewick(newickString, tipNameMap = null) {
+  const tokens = newickString.split(/\s*('[^']+'|"[^"]+"|;|\(|\)|,|:|=|\[&|\]|\{|\})\s*/);
+  let level = 0;
+  let currentNode = null;
+  let nodeStack = [];
+  let labelNext = false;
+  let lengthNext = false;
+  let inAnnotation = false;
+  let annotationKeyNext = true;
+  let annotationKey = null;
+  let isAnnotationARange = false;
+
+  let idCounter = 0;
+  function newId() { return `n${idCounter++}`; }
+
+  for (const token of tokens.filter(t => t.length > 0)) {
+    if (inAnnotation) {
+      if (token === "=")          { annotationKeyNext = false; }
+      else if (token === ",")     { if (!isAnnotationARange) annotationKeyNext = true; }
+      else if (token === "{")     { isAnnotationARange = true; currentNode.annotations[annotationKey] = []; }
+      else if (token === "}")     { isAnnotationARange = false; }
+      else if (token === "]")     { inAnnotation = false; annotationKeyNext = true; }
+      else {
+        let t = token;
+        if (t.startsWith('"') || t.startsWith("'")) t = t.slice(1);
+        if (t.endsWith('"')   || t.endsWith("'"))   t = t.slice(0, -1);
+        if (annotationKeyNext) {
+          annotationKey = t.replace('.', '_');
+        } else {
+          if (isAnnotationARange) {
+            currentNode.annotations[annotationKey].push(t);
+          } else {
+            currentNode.annotations[annotationKey] = isNaN(t) ? t : parseFloat(t);
+          }
+        }
+      }
+    } else if (token === "(") {
+      const node = { id: newId(), level, parent: currentNode, children: [], annotations: {} };
+      level++;
+      if (currentNode) nodeStack.push(currentNode);
+      currentNode = node;
+    } else if (token === ",") {
+      labelNext = false;
+      const parent = nodeStack.pop();
+      parent.children.push(currentNode);
+      currentNode = parent;
+    } else if (token === ")") {
+      labelNext = false;
+      const parent = nodeStack.pop();
+      parent.children.push(currentNode);
+      level--;
+      currentNode = parent;
+      labelNext = true;
+    } else if (token === ":") {
+      labelNext = false;
+      lengthNext = true;
+    } else if (token === ";") {
+      if (level > 0) throw new Error("Unbalanced brackets in Newick string");
+      break;
+    } else if (token === "[&") {
+      inAnnotation = true;
+    } else {
+      if (lengthNext) {
+        currentNode.length = parseFloat(token);
+        lengthNext = false;
+      } else if (labelNext) {
+        currentNode.label = token;
+        if (!token.startsWith("#")) {
+          const v = parseFloat(token);
+          currentNode.annotations["label"] = isNaN(v) ? token : v;
+        } else {
+          currentNode.id = token.slice(1);
+        }
+        labelNext = false;
+      } else {
+        // external node
+        if (!currentNode.children) currentNode.children = [];
+        let name = tipNameMap ? (tipNameMap.get(token) || token) : token;
+        name = name.replace(/^['"]|['"]$/g, '').trim().replace(/'/g, '');
+        const externalNode = {
+          id: newId(),
+          name,
+          parent: currentNode,
+          annotations: {}
+        };
+        if (currentNode) nodeStack.push(currentNode);
+        currentNode = externalNode;
+      }
+    }
+  }
+
+  if (level > 0) throw new Error("Unbalanced brackets in Newick string");
+  return currentNode;
+}
+
+/**
+ * Parse a NEXUS string, return array of root-node objects.
+ */
+export function parseNexus(nexus) {
+  const trees = [];
+  // split on block delimiters
+  const nexusTokens = nexus.split(
+    /\s*(?:^|(?<=\s))begin(?=\s)|(?<=\s)end(?=\s*;)\s*;/gi
+  );
+  // Fallback simpler split for environments where lookbehind isn't supported:
+  const rawText = nexus;
+
+  // Robust block extraction using a simple state machine
+  const lines = rawText.split('\n');
+  let inTreesBlock = false;
+  const tipNameMap = new Map();
+  let inTranslate = false;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    const lower = line.toLowerCase();
+
+    if (lower === 'begin trees;' || lower.startsWith('begin trees;')) {
+      inTreesBlock = true; inTranslate = false; continue;
+    }
+    if (inTreesBlock) {
+      if (lower === 'end;' || lower === 'end') { inTreesBlock = false; continue; }
+      if (lower === 'translate') { inTranslate = true; continue; }
+      if (inTranslate) {
+        if (line === ';') { inTranslate = false; continue; }
+        // lines like: 1 TaxonName,
+        const clean = line.replace(/,$/, '').replace(/;$/, '');
+        const parts = clean.split(/\s+/);
+        if (parts.length >= 2) tipNameMap.set(parts[0], parts.slice(1).join(' '));
+        if (line.endsWith(';')) inTranslate = false;
+      } else {
+        // line like: tree TREE1 = [&R] (...)
+        const idx = line.indexOf('(');
+        if (idx !== -1) {
+          const newickStr = line.slice(idx);
+          const root = parseNewick(
+            newickStr,
+            tipNameMap.size > 0 ? tipNameMap : null
+          );
+          trees.push({ root, tipNameMap });
+        }
+      }
+    }
+  }
+  return trees;
+}
