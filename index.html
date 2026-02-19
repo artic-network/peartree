@@ -161,6 +161,7 @@
   <span id="file-info">Loading…</span>
   <div class="controls">
     <label>Label size <input type="range" id="font-size-slider" min="6" max="20" value="11" /></label>
+    <label>Tip size <input type="range" id="tip-size-slider" min="1" max="12" value="3" /></label>
     <button id="btn-order-asc" title="Order branches descending by tip count (⌘D)">Order ↑</button>
     <button id="btn-order-desc" title="Order branches ascending by tip count (⌘U)">Order ↓</button>
     <button id="btn-fit">Fit vertically</button>
@@ -440,10 +441,13 @@ class TreeRenderer {
 
     // rendering options
     this.fontSize = 11;
-    this.tipRadius = 3;
+    this.tipRadius      = 3;
+    this.tipOutlineColor = '#000000'; // drawn slightly larger, behind the fill
     this.branchColor = '#4a9eff';
     this.tipColor = '#e94560';
-    this.labelColor = '#c8d8e8';
+    this.internalColor    = '#4a9eff'; // same hue as branches – visible on hover only
+    this.selectedRingColor = '#ffe066'; // bright gold ring for selected tips
+    this.labelColor       = '#c8d8e8';
     this.bgColor = '#1a1a2e';
     this.paddingLeft = 60;
     this.paddingTop = 20;
@@ -467,6 +471,8 @@ class TreeRenderer {
     this._lastY           = 0;
     this._dragStartOffsetY = 0;
     this._snapTimer       = null;
+    this._hoveredNodeId   = null;
+    this._selectedTipIds  = new Set();
 
     // animation targets (lerp toward these each frame)
     this._targetOffsetY = 0;
@@ -501,6 +507,13 @@ class TreeRenderer {
     this._dirty = true;
   }
 
+  setTipRadius(r) {
+    this.tipRadius = r;
+    this._measureLabels(); // label offset depends on tip radius
+    this._updateScaleX();
+    this._dirty = true;
+  }
+
   /** Measure the widest tip label once so _updateScaleX can stay cheap. */
   _measureLabels() {
     if (!this.nodes) return;
@@ -513,7 +526,8 @@ class TreeRenderer {
         if (w > max) max = w;
       }
     }
-    this.labelRightPad = max + this.tipRadius + 8;
+    const outlineR = this.tipRadius + Math.max(1, Math.round(this.tipRadius * 0.45));
+    this.labelRightPad = max + outlineR + 5;
   }
 
   /** Recompute scaleX so the tree always fills the full viewport width. */
@@ -694,30 +708,165 @@ class TreeRenderer {
     }
     ctx.stroke();
 
-    // Draw tip circles and labels
-    ctx.fillStyle = this.tipColor;
-    ctx.strokeStyle = this.tipColor;
-    ctx.textBaseline = 'middle';
-    const r = this.tipRadius;
-    const showLabels = this.scaleY > 1; // only render labels when there's room
+    // Draw tip circles: first pass – black outline (slightly larger), second pass – coloured fill.
+    const r           = this.tipRadius;
+    const outlineR    = r + Math.max(1, Math.round(r * 0.45));
+    ctx.textBaseline  = 'middle';
+    const showLabels  = this.scaleY > 1;
 
+    // Pass 1 – black backing circles
+    ctx.fillStyle = this.tipOutlineColor;
+    ctx.beginPath();
     for (const node of this.nodes) {
       if (!node.isTip) continue;
       if (node.y < yWorldMin || node.y > yWorldMax) continue;
+      ctx.moveTo(this._wx(node.x) + outlineR, this._wy(node.y));
+      ctx.arc(this._wx(node.x), this._wy(node.y), outlineR, 0, Math.PI * 2);
+    }
+    ctx.fill();
 
-      const sx = this._wx(node.x);
-      const sy = this._wy(node.y);
+    // Pass 2 – coloured fill circles + labels
+    ctx.fillStyle = this.tipColor;
+    ctx.beginPath();
+    for (const node of this.nodes) {
+      if (!node.isTip) continue;
+      if (node.y < yWorldMin || node.y > yWorldMax) continue;
+      ctx.moveTo(this._wx(node.x) + r, this._wy(node.y));
+      ctx.arc(this._wx(node.x), this._wy(node.y), r, 0, Math.PI * 2);
+    }
+    ctx.fill();
 
+    // Pass 2.5 – selected tips: slightly enlarged, bright ring on top of normal circles
+    if (this._selectedTipIds.size > 0) {
+      const selR  = r * 1.3;
+      const selRingW = Math.max(1.5, r * 0.45);
+      const selBackR = selR + selRingW + 1;
+
+      // Black backing
+      ctx.fillStyle = this.tipOutlineColor;
       ctx.beginPath();
-      ctx.arc(sx, sy, r, 0, Math.PI * 2);
+      for (const node of this.nodes) {
+        if (!node.isTip || !this._selectedTipIds.has(node.id)) continue;
+        if (node.y < yWorldMin || node.y > yWorldMax) continue;
+        ctx.moveTo(this._wx(node.x) + selBackR, this._wy(node.y));
+        ctx.arc(this._wx(node.x), this._wy(node.y), selBackR, 0, Math.PI * 2);
+      }
       ctx.fill();
 
-      if (showLabels && node.name) {
-        ctx.fillStyle = this.labelColor;
-        ctx.fillText(node.name, sx + r + 4, sy);
-        ctx.fillStyle = this.tipColor;
+      // Bright ring
+      ctx.strokeStyle = this.selectedRingColor;
+      ctx.lineWidth   = selRingW;
+      ctx.beginPath();
+      for (const node of this.nodes) {
+        if (!node.isTip || !this._selectedTipIds.has(node.id)) continue;
+        if (node.y < yWorldMin || node.y > yWorldMax) continue;
+        ctx.moveTo(this._wx(node.x) + selR + selRingW * 0.5, this._wy(node.y));
+        ctx.arc(this._wx(node.x), this._wy(node.y), selR + selRingW * 0.5, 0, Math.PI * 2);
+      }
+      ctx.stroke();
+      ctx.lineWidth = 1;
+
+      // Tip-colour fill on top
+      ctx.fillStyle = this.tipColor;
+      ctx.beginPath();
+      for (const node of this.nodes) {
+        if (!node.isTip || !this._selectedTipIds.has(node.id)) continue;
+        if (node.y < yWorldMin || node.y > yWorldMax) continue;
+        ctx.moveTo(this._wx(node.x) + selR, this._wy(node.y));
+        ctx.arc(this._wx(node.x), this._wy(node.y), selR, 0, Math.PI * 2);
+      }
+      ctx.fill();
+    }
+
+    // Pass 3 – labels (separate loop so fill calls don't interleave)
+    if (showLabels) {
+      ctx.fillStyle = this.labelColor;
+      for (const node of this.nodes) {
+        if (!node.isTip) continue;
+        if (node.y < yWorldMin || node.y > yWorldMax) continue;
+        if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
       }
     }
+
+    // Pass 4 – hovered node drawn on top (enlarged + dark outline ring)
+    if (this._hoveredNodeId) {
+      const hn = this.nodeMap.get(this._hoveredNodeId);
+      if (hn) {
+        const hx        = this._wx(hn.x);
+        const hy        = this._wy(hn.y);
+        const baseColor = hn.isTip ? this.tipColor : this.internalColor;
+        const hr        = hn.isTip ? r * 1.7 : r * 1.4;
+        const darkColor = this._darkenColor(baseColor, 0.55);
+        const ringW     = Math.max(1.5, r * 0.5);
+        const ringR     = hr + ringW * 0.5;
+
+        // Black backing for the ring
+        ctx.beginPath();
+        ctx.arc(hx, hy, ringR + 1, 0, Math.PI * 2);
+        ctx.fillStyle = this.tipOutlineColor;
+        ctx.fill();
+
+        // Dark-colour ring
+        ctx.beginPath();
+        ctx.arc(hx, hy, ringR, 0, Math.PI * 2);
+        ctx.strokeStyle = darkColor;
+        ctx.lineWidth   = ringW;
+        ctx.stroke();
+
+        // Filled circle
+        ctx.beginPath();
+        ctx.arc(hx, hy, hr, 0, Math.PI * 2);
+        ctx.fillStyle = baseColor;
+        ctx.fill();
+
+        ctx.lineWidth = 1;
+      }
+    }
+  }
+
+  /** Collect all descendant tip ids of the node with the given id. */
+  _getDescendantTipIds(nodeId) {
+    const result = [];
+    const stack  = [nodeId];
+    while (stack.length) {
+      const id   = stack.pop();
+      const node = this.nodeMap.get(id);
+      if (!node) continue;
+      if (node.isTip) { result.push(id); }
+      else            { for (const cid of node.children) stack.push(cid); }
+    }
+    return result;
+  }
+
+  /** Darken a CSS hex colour by multiplying each channel by `factor` (0–1). */
+  _darkenColor(hex, factor) {
+    const h = hex.replace('#', '');
+    const r = Math.round(parseInt(h.slice(0, 2), 16) * factor);
+    const g = Math.round(parseInt(h.slice(2, 4), 16) * factor);
+    const b = Math.round(parseInt(h.slice(4, 6), 16) * factor);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  /**
+   * Returns the node (tip or internal) closest to screen point (mx, my),
+   * or null if none is within the hit threshold.
+   * Tips get a slightly larger hit area.
+   */
+  _findNodeAtScreen(mx, my) {
+    if (!this.nodes) return null;
+    const H  = this.canvas.clientHeight;
+    const yWorldMin = this._worldYfromScreen(-this.tipRadius * 4);
+    const yWorldMax = this._worldYfromScreen(H + this.tipRadius * 4);
+    const hitR = this.tipRadius * 3 + 6;
+    let best = null, bestDist2 = hitR * hitR;
+    for (const node of this.nodes) {
+      if (node.y < yWorldMin || node.y > yWorldMax) continue;
+      const dx = this._wx(node.x) - mx;
+      const dy = this._wy(node.y) - my;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < bestDist2) { bestDist2 = d2; best = node; }
+    }
+    return best;
   }
 
   /** Returns the id of the node whose world-y is closest to the viewport centre. */
@@ -761,6 +910,39 @@ class TreeRenderer {
 
   _setupEvents() {
     const canvas = this.canvas;
+
+    // ── Click: plain click replaces selection; Cmd+click toggles.
+    canvas.addEventListener('click', e => {
+      if (this._spaceDown) return;
+      const rect    = canvas.getBoundingClientRect();
+      const node    = this._findNodeAtScreen(e.clientX - rect.left, e.clientY - rect.top);
+      const additive = e.metaKey || e.ctrlKey;
+
+      if (!node) {
+        this._selectedTipIds.clear();
+      } else if (node.isTip) {
+        if (additive) {
+          // toggle this tip
+          if (this._selectedTipIds.has(node.id)) this._selectedTipIds.delete(node.id);
+          else                                   this._selectedTipIds.add(node.id);
+        } else {
+          this._selectedTipIds.clear();
+          this._selectedTipIds.add(node.id);
+        }
+      } else {
+        // Internal node – operate on all descendant tips
+        const descIds     = this._getDescendantTipIds(node.id);
+        const allSelected = descIds.length > 0 && descIds.every(id => this._selectedTipIds.has(id));
+        if (additive) {
+          if (allSelected) descIds.forEach(id => this._selectedTipIds.delete(id));
+          else             descIds.forEach(id => this._selectedTipIds.add(id));
+        } else {
+          this._selectedTipIds.clear();
+          descIds.forEach(id => this._selectedTipIds.add(id));
+        }
+      }
+      this._dirty = true;
+    });
 
     // ── Wheel: pinch (ctrlKey=true on Mac trackpad) → zoom;
     //          scroll (ctrlKey=false) → pan vertically.
@@ -820,7 +1002,31 @@ class TreeRenderer {
         this._targetOffsetY = newOY;
         this._dirty  = true;
       }
+
+      // Hover hit-test (always, not just when dragging)
+      if (!this._dragging) {
+        const rect   = this.canvas.getBoundingClientRect();
+        const mx     = e.clientX - rect.left;
+        const my     = e.clientY - rect.top;
+        const hovered = this._findNodeAtScreen(mx, my);
+        const newId   = hovered ? hovered.id : null;
+        if (newId !== this._hoveredNodeId) {
+          this._hoveredNodeId = newId;
+          this.canvas.style.cursor = newId
+            ? (this._spaceDown ? 'grab' : 'pointer')
+            : (this._spaceDown ? 'grab' : 'default');
+          this._dirty = true;
+        }
+      }
+
       this._updateStatus(e);
+    });
+
+    this.canvas.addEventListener('mouseleave', () => {
+      if (this._hoveredNodeId !== null) {
+        this._hoveredNodeId = null;
+        this._dirty = true;
+      }
     });
 
     window.addEventListener('mouseup', () => {
@@ -833,8 +1039,12 @@ class TreeRenderer {
       }
       this._dragging = false;
       this.canvas.classList.remove('grabbing');
-      // restore grab cursor if spacebar is still held
-      if (this._spaceDown) this.canvas.classList.add('space');
+      // restore cursor based on current state
+      if (this._spaceDown) {
+        this.canvas.style.cursor = 'grab';
+      } else {
+        this.canvas.style.cursor = this._hoveredNodeId ? 'pointer' : 'default';
+      }
     });
 
     // ── Spacebar: enable drag-scroll cursor / mode.
@@ -844,6 +1054,7 @@ class TreeRenderer {
         if (!this._spaceDown) {
           this._spaceDown = true;
           this.canvas.classList.add('space');
+          this.canvas.style.cursor = 'grab';
         }
         // Prevent page scroll
         e.preventDefault();
@@ -880,6 +1091,13 @@ class TreeRenderer {
         this._snapToTip(scrolledDown);
         return;
       }
+
+      // Escape – clear selection.
+      if (e.key === 'Escape') {
+        this._selectedTipIds.clear();
+        this._dirty = true;
+        return;
+      }
     });
 
     window.addEventListener('keyup', e => {
@@ -887,6 +1105,7 @@ class TreeRenderer {
         this._spaceDown = false;
         this._dragging  = false;
         this.canvas.classList.remove('space', 'grabbing');
+        this.canvas.style.cursor = this._hoveredNodeId ? 'pointer' : 'default';
       }
     });
 
@@ -915,6 +1134,7 @@ class TreeRenderer {
   const errorEl      = document.getElementById('error');
   const fileInfoEl   = document.getElementById('file-info');
   const fontSlider   = document.getElementById('font-size-slider');
+  const tipSlider    = document.getElementById('tip-size-slider');
   const btnFit       = document.getElementById('btn-fit');
 
   // Size canvas to container before creating renderer
@@ -1013,6 +1233,10 @@ class TreeRenderer {
 
   fontSlider.addEventListener('input', () => {
     renderer.setFontSize(parseInt(fontSlider.value));
+  });
+
+  tipSlider.addEventListener('input', () => {
+    renderer.setTipRadius(parseInt(tipSlider.value));
   });
 
   btnFit.addEventListener('click', () => renderer.fitToWindow());
