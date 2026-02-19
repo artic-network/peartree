@@ -42,23 +42,111 @@
     }
 
     /* ── Navbar overrides ── */
-    .navbar {
-      background: var(--pt-bg-dark) !important;
+    .pt-menubar {
+      background: var(--pt-bg-dark);
       border-bottom: 1px solid var(--pt-border);
-      min-height: 46px;
-      padding: 0 1rem;
+      min-height: 28px;
+      padding: 0 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-shrink: 0;
+      user-select: none;
     }
-    .navbar-brand {
-      font-size: 1rem;
-      font-weight: 600;
+    .pt-menubar .navbar-brand {
+      font-size: 0.85rem;
+      font-weight: 700;
       color: var(--pt-red) !important;
       letter-spacing: 0.4px;
-      padding: 0;
+      padding: 0 0.75rem 0 0;
+      margin: 0;
+      line-height: 28px;
+    }
+    /* Menu items (dropdown triggers) */
+    .pt-menu-item {
+      position: relative;
+    }
+    .pt-menu-item > .pt-menu-trigger {
+      background: none;
+      border: none;
+      color: var(--pt-off-white);
+      font-size: 0.78rem;
+      padding: 0 0.6rem;
+      line-height: 28px;
+      cursor: pointer;
+      border-radius: 3px;
+      opacity: 0.85;
+    }
+    .pt-menu-item > .pt-menu-trigger:hover,
+    .pt-menu-item > .pt-menu-trigger.open {
+      background: rgba(255,255,255,0.08);
+      opacity: 1;
+    }
+    /* Dropdown panel */
+    .pt-dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      min-width: 160px;
+      background: var(--pt-bg-dark);
+      border: 1px solid var(--pt-border);
+      border-radius: 4px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      z-index: 1000;
+      padding: 3px 0;
+    }
+    .pt-dropdown.open { display: block; }
+    .pt-dropdown-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      background: none;
+      border: none;
+      color: var(--pt-off-white);
+      font-size: 0.78rem;
+      padding: 4px 14px 4px 12px;
+      text-align: left;
+      cursor: pointer;
+      gap: 24px;
+    }
+    .pt-dropdown-item:hover { background: rgba(255,255,255,0.08); }
+    .pt-dropdown-item.active { color: var(--pt-teal); }
+    .pt-dropdown-item .shortcut {
+      font-size: 0.7rem;
+      opacity: 0.5;
+    }
+    .pt-dropdown-separator {
+      height: 1px;
+      background: var(--pt-border);
+      margin: 3px 0;
     }
     #file-info {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: var(--pt-gold);
-      opacity: 0.75;
+      opacity: 0.65;
+      margin-left: auto;
+      padding-right: 0.25rem;
+    }
+
+    /* ── Toolbar ── */
+    .pt-toolbar {
+      background: var(--pt-bg-dark);
+      border-bottom: 1px solid var(--pt-border);
+      min-height: 36px;
+      padding: 0 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .pt-toolbar-sep {
+      width: 1px;
+      height: 18px;
+      background: var(--pt-border);
+      margin: 0 2px;
     }
 
     /* ── Sliders ── */
@@ -154,27 +242,41 @@
 </head>
 <body>
 
-<nav class="navbar">
+<div class="pt-menubar">
   <span class="navbar-brand">PearTree</span>
-  <span id="file-info" class="me-3">Loading…</span>
 
-  <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
-    <label class="d-flex align-items-center gap-1">
-      <span class="form-label-sm">Label size</span>
-      <input type="range" class="form-range" id="font-size-slider" min="6" max="20" value="11" />
-    </label>
-    <label class="d-flex align-items-center gap-1">
-      <span class="form-label-sm">Tip size</span>
-      <input type="range" class="form-range" id="tip-size-slider" min="1" max="12" value="3" />
-    </label>
-    <button id="btn-back"       class="btn btn-pt" disabled title="Navigate back (⌘[)">&#8249;</button>
-    <button id="btn-forward"    class="btn btn-pt" disabled title="Navigate forward (⌘])">&#8250;</button>
-    <button id="btn-order-asc"  class="btn btn-pt" title="Order branches descending by tip count (⌘D)">Order ↑</button>
-    <button id="btn-order-desc" class="btn btn-pt" title="Order branches ascending by tip count (⌘U)">Order ↓</button>
-    <button id="btn-fit"        class="btn btn-pt" title="Fit all (⌘0)">Fit all</button>
-    <button id="btn-fit-labels" class="btn btn-pt" title="Fit labels (⌘⌥0)">Fit labels</button>
+  <!-- Node order menu -->
+  <div class="pt-menu-item" id="menu-node-order">
+    <button class="pt-menu-trigger" id="menu-node-order-trigger">Node order</button>
+    <div class="pt-dropdown" id="menu-node-order-panel">
+      <button class="pt-dropdown-item" id="btn-order-asc"  title="Order branches descending by tip count (⌘D)">
+        Up <span class="shortcut">⌘D</span>
+      </button>
+      <button class="pt-dropdown-item" id="btn-order-desc" title="Order branches ascending by tip count (⌘U)">
+        Down <span class="shortcut">⌘U</span>
+      </button>
+    </div>
   </div>
-</nav>
+
+  <span id="file-info">Loading…</span>
+</div>
+
+<div class="pt-toolbar">
+  <button id="btn-back"       class="btn btn-pt" disabled title="Navigate back (⌘[)">&#8249;</button>
+  <button id="btn-forward"    class="btn btn-pt" disabled title="Navigate forward (⌘])">&#8250;</button>
+  <div class="pt-toolbar-sep"></div>
+  <button id="btn-fit"        class="btn btn-pt" title="Fit all (⌘0)">Fit all</button>
+  <button id="btn-fit-labels" class="btn btn-pt" title="Fit labels (⌘⌥0)">Fit labels</button>
+  <div class="pt-toolbar-sep"></div>
+  <label class="d-flex align-items-center gap-1">
+    <span class="form-label-sm">Label size</span>
+    <input type="range" class="form-range" id="font-size-slider" min="6" max="20" value="11" />
+  </label>
+  <label class="d-flex align-items-center gap-1">
+    <span class="form-label-sm">Tip size</span>
+    <input type="range" class="form-range" id="tip-size-slider" min="1" max="12" value="3" />
+  </label>
+</div>
 
 <div id="canvas-container">
   <div id="loading"><div class="pt-spinner"></div><p id="loading-msg">Fetching tree file…</p></div>
@@ -187,6 +289,36 @@
   <canvas id="status-canvas"></canvas>
 </div>
 
+<script>
+  // Lightweight menu-bar dropdown toggle (no Bootstrap JS needed)
+  document.querySelectorAll('.pt-menu-item').forEach(item => {
+    const trigger = item.querySelector('.pt-menu-trigger');
+    const panel   = item.querySelector('.pt-dropdown');
+    trigger.addEventListener('click', e => {
+      e.stopPropagation();
+      const open = panel.classList.contains('open');
+      // Close all panels
+      document.querySelectorAll('.pt-dropdown').forEach(p => p.classList.remove('open'));
+      document.querySelectorAll('.pt-menu-trigger').forEach(t => t.classList.remove('open'));
+      if (!open) {
+        panel.classList.add('open');
+        trigger.classList.add('open');
+      }
+    });
+    // Close when a menu item is chosen
+    panel.querySelectorAll('.pt-dropdown-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        panel.classList.remove('open');
+        trigger.classList.remove('open');
+      });
+    });
+  });
+  // Click outside closes all menus
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.pt-dropdown').forEach(p => p.classList.remove('open'));
+    document.querySelectorAll('.pt-menu-trigger').forEach(t => t.classList.remove('open'));
+  });
+</script>
 <script type="module" src="js/peartree.js"></script>
 </body>
 </html>
