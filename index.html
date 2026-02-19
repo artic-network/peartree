@@ -399,6 +399,18 @@ function computeLayout(root) {
   return { nodes, nodeMap, maxX, maxY };
 }
 
+/**
+ * Like computeLayout but treats `rawNode` as the root even if it has a
+ * non-zero branch length (so the root always sits at x = 0 in layout space).
+ */
+function computeLayoutFrom(rawNode) {
+  const savedLen = rawNode.length;
+  rawNode.length = 0;
+  const result = computeLayout(rawNode);
+  rawNode.length = savedLen;
+  return result;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Branch ordering  – sorts children at every internal node by clade tip count
 // ─────────────────────────────────────────────────────────────────────────────
@@ -461,6 +473,8 @@ class TreeRenderer {
 
     // X scale: always fills the viewport width – recomputed on resize / font change.
     this.scaleX = 1;
+    this.offsetX = this.paddingLeft;      // animated x origin (normally = paddingLeft)
+    this._targetOffsetX = this.paddingLeft;
 
     // Y scale: user-adjustable vertical zoom.
     //   minScaleY = fit-to-window (never allowed to go below this).
@@ -489,6 +503,7 @@ class TreeRenderer {
     // animation targets (lerp toward these each frame)
     this._targetOffsetY = 0;
     this._targetScaleY  = 1;
+    this._targetScaleX  = 1;   // animated horizontal scale
     this._animating     = false;
 
     this._rafId = null;
@@ -538,15 +553,16 @@ class TreeRenderer {
     }
   }
 
-  /** Compute layout from rawNode, update all data, and animate viewport. */
+  /** Compute layout from rawNode, update all data, and animate viewport.
+   *  Always uses computeLayoutFrom so the subtree root sits at x = 0. */
   _applyLayout(rawNode, immediate = false) {
-    const { nodes, nodeMap, maxX, maxY } = computeLayout(rawNode);
+    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(rawNode);
     this.nodes   = nodes;
     this.nodeMap = nodeMap;
     this.maxX    = maxX;
     this.maxY    = maxY;
     this._measureLabels();
-    this._updateScaleX();
+    this._updateScaleX(immediate);   // animated unless immediate
     this._updateMinScaleY();
     // Keep current zoom if subtree is still bigger than viewport; else fit.
     const newScaleY  = Math.max(this.minScaleY, this._targetScaleY);
@@ -562,46 +578,107 @@ class TreeRenderer {
 
   /** Double-click on an internal layout node id → drill into its subtree. */
   navigateInto(layoutNodeId) {
-    const rawNode = this._rawNodeMap.get(layoutNodeId);
+    const rawNode    = this._rawNodeMap.get(layoutNodeId);
     if (!rawNode || !rawNode.children || rawNode.children.length === 0) return;
+
+    // Capture screen position of the clicked node BEFORE layout swap.
+    const fromNode = this.nodeMap.get(layoutNodeId);
+    const px_old   = fromNode ? this.offsetX + fromNode.x * this.scaleX : this.paddingLeft;
+    const py_old   = fromNode ? this.offsetY + fromNode.y * this.scaleY : this.canvas.clientHeight / 2;
+
     this._navStack.push(this._currentViewState());
-    this._fwdStack = [];
-    this._viewRawRoot = rawNode;
+    this._fwdStack      = [];
+    this._viewRawRoot   = rawNode;
     this._selectedTipIds.clear();
-    this._applyLayout(rawNode);
+
+    // Compute new layout (root at x=0).
+    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(rawNode);
+    this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
+    this._measureLabels();
+    this._updateScaleX(false);   // sets _targetScaleX/_targetOffsetX, keeps scaleX unchanged
+    this._updateMinScaleY();
+    const newScaleY  = Math.max(this.minScaleY, this._targetScaleY);
+    const newOffsetY = this.paddingTop + newScaleY * 0.5;
+    this._setTarget(newOffsetY, newScaleY, false);
+
+    // Seed the animation START so the new root appears at the old screen position.
+    const newRoot = this.nodes.find(n => !n.parentId);
+    if (newRoot) {
+      this.offsetX = px_old;                            // starts at old x, lerps to paddingLeft
+      this.offsetY = py_old - newRoot.y * this.scaleY; // old scaleY still in effect
+    }
+    this._animating = true;
+    this._dirty = true;
     if (this._onNavChange) this._onNavChange(true, false);
   }
 
   navigateBack() {
     if (!this._navStack.length) return;
+
+    // Remember where the current root appears on screen.
+    const curRootLayout = this.nodes ? this.nodes.find(n => !n.parentId) : null;
+    const px_cur = this.offsetX;   // current root is always at offsetX (world x = 0)
+    const py_cur = curRootLayout ? this.offsetY + curRootLayout.y * this.scaleY : this.canvas.clientHeight / 2;
+    const curRootId = curRootLayout ? curRootLayout.id : null;
+
     this._fwdStack.push(this._currentViewState());
-    const state   = this._navStack.pop();
-    this._viewRawRoot = state.rawNode;
+    const state         = this._navStack.pop();
+    this._viewRawRoot   = state.rawNode;
     this._selectedTipIds.clear();
+
     const rawNode = state.rawNode || this._rawRoot;
-    const { nodes, nodeMap, maxX, maxY } = computeLayout(rawNode);
+    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(rawNode);
     this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
     this._measureLabels();
-    this._updateScaleX();
+    this._updateScaleX(false);
     this._updateMinScaleY();
     this._setTarget(state.offsetY, state.scaleY, false);
+
+    // Seed animation so the restored node appears where the current root was.
+    if (curRootId) {
+      const restoredNode = nodeMap.get(curRootId);
+      if (restoredNode) {
+        this.offsetX = px_cur - restoredNode.x * this.scaleX;
+        this.offsetY = py_cur - restoredNode.y * this.scaleY;
+      }
+    }
+    this._animating = true;
     this._dirty = true;
     if (this._onNavChange) this._onNavChange(this._navStack.length > 0, true);
   }
 
   navigateForward() {
     if (!this._fwdStack.length) return;
+
+    const curRootLayout = this.nodes ? this.nodes.find(n => !n.parentId) : null;
+    const px_cur = this.offsetX;
+    const py_cur = curRootLayout ? this.offsetY + curRootLayout.y * this.scaleY : this.canvas.clientHeight / 2;
+    const curRootId = curRootLayout ? curRootLayout.id : null;
+
     this._navStack.push(this._currentViewState());
-    const state   = this._fwdStack.pop();
-    this._viewRawRoot = state.rawNode;
+    const state         = this._fwdStack.pop();
+    this._viewRawRoot   = state.rawNode;
     this._selectedTipIds.clear();
+
     const rawNode = state.rawNode || this._rawRoot;
-    const { nodes, nodeMap, maxX, maxY } = computeLayout(rawNode);
+    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(rawNode);
     this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
     this._measureLabels();
-    this._updateScaleX();
+    this._updateScaleX(false);
     this._updateMinScaleY();
     this._setTarget(state.offsetY, state.scaleY, false);
+
+    // Seed animation: for forward, the destination root (fwd state rawNode) is at world (0, y)
+    // in the new layout; make it start at the current root's screen position.
+    const newRoot = this.nodes.find(n => !n.parentId);
+    if (newRoot) {
+      // Find where that node sits in the current (pre-swap) layout.
+      const oldPosNode = curRootId ? this.nodeMap && nodeMap.get(curRootId) : null;
+      // Simplest: start new root at current root's screen position (px_cur, py_cur).
+      this.offsetX = px_cur - newRoot.x * this.scaleX;   // newRoot.x === 0 always
+      this.offsetY = py_cur - newRoot.y * this.scaleY;
+    }
+    this._animating = true;
     this._dirty = true;
     if (this._onNavChange) this._onNavChange(true, this._fwdStack.length > 0);
   }
@@ -622,11 +699,19 @@ class TreeRenderer {
     this.labelRightPad = max + outlineR + 5;
   }
 
-  /** Recompute scaleX so the tree always fills the full viewport width. */
-  _updateScaleX() {
+  /** Recompute scaleX so the tree always fills the full viewport width.
+   *  immediate=true (default) snaps instantly; false animates via _targetScaleX. */
+  _updateScaleX(immediate = true) {
     const W = this.canvas.clientWidth;
     const plotW = W - this.paddingLeft - this.labelRightPad;
-    this.scaleX = plotW / this.maxX;
+    this._targetScaleX  = plotW / this.maxX;
+    this._targetOffsetX = this.paddingLeft;   // X origin always returns to paddingLeft
+    if (immediate) {
+      this.scaleX  = this._targetScaleX;
+      this.offsetX = this._targetOffsetX;
+    } else {
+      this._animating = true;
+    }
   }
 
   /** Recompute the minimum scaleY (tree fits the viewport vertically). */
@@ -690,11 +775,11 @@ class TreeRenderer {
     this._dirty = true;
   }
 
-  // X is always anchored to paddingLeft – no horizontal offset variable.
-  _wx(worldX) { return this.paddingLeft + worldX * this.scaleX; }
-  _wy(worldY) { return this.offsetY    + worldY * this.scaleY; }
+  // X is anchored to offsetX (animated during navigation, otherwise == paddingLeft).
+  _wx(worldX) { return this.offsetX + worldX * this.scaleX; }
+  _wy(worldY) { return this.offsetY + worldY * this.scaleY; }
   _worldYfromScreen(sy) { return (sy - this.offsetY) / this.scaleY; }
-  _worldXfromScreen(sx) { return (sx - this.paddingLeft) / this.scaleX; }
+  _worldXfromScreen(sx) { return (sx - this.offsetX) / this.scaleX; }
 
   _resize() {
     const W = this.canvas.parentElement.clientWidth;
@@ -717,16 +802,22 @@ class TreeRenderer {
 
   _loop() {
     if (this._animating) {
-      const EASE = 0.16; // fraction to close per frame (~60 fps → ~200 ms settle)
-      const dY = this._targetOffsetY - this.offsetY;
-      const dS = this._targetScaleY  - this.scaleY;
-      if (Math.abs(dY) < 0.05 && Math.abs(dS) < 5e-5) {
+      const EASE = 0.16;
+      const dY  = this._targetOffsetY - this.offsetY;
+      const dSY = this._targetScaleY  - this.scaleY;
+      const dSX = this._targetScaleX  - this.scaleX;
+      const dOX = this._targetOffsetX - this.offsetX;
+      if (Math.abs(dY) < 0.05 && Math.abs(dSY) < 5e-5 && Math.abs(dSX) < 5e-5 && Math.abs(dOX) < 0.05) {
         this.offsetY = this._targetOffsetY;
         this.scaleY  = this._targetScaleY;
+        this.scaleX  = this._targetScaleX;
+        this.offsetX = this._targetOffsetX;
         this._animating = false;
       } else {
-        this.offsetY += dY * EASE;
-        this.scaleY  += dS * EASE;
+        this.offsetY += dY  * EASE;
+        this.scaleY  += dSY * EASE;
+        this.scaleX  += dSX * EASE;
+        this.offsetX += dOX * EASE;
       }
       this._dirty = true;
     }
@@ -1343,7 +1434,7 @@ class TreeRenderer {
 
       reorderTree(root, ascending);
       const viewRoot = renderer._viewRawRoot || root;
-      const layout = computeLayout(viewRoot);
+      const layout = computeLayoutFrom(viewRoot);
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
 
       // If the tree was zoomed, restore the same vertical zoom level and
