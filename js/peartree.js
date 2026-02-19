@@ -172,6 +172,8 @@ import { TreeRenderer } from './treerenderer.js';
       if (e.key === 'd' || e.key === 'D') { e.preventDefault(); applyOrder(true);  }
       if (e.key === '[' || e.key === '<') { e.preventDefault(); renderer.navigateBack(); }
       if (e.key === ']' || e.key === '>') { e.preventDefault(); renderer.navigateForward(); }
+      if (e.key === 'n' || e.key === 'N') { e.preventDefault(); applyMode('nodes'); }
+      if (e.key === 'b' || e.key === 'B') { e.preventDefault(); applyMode('branches'); }
     });
 
   } catch (err) {

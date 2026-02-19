@@ -245,19 +245,6 @@
 <div class="pt-menubar">
   <span class="navbar-brand">PearTree</span>
 
-  <!-- Mode menu -->
-  <div class="pt-menu-item" id="menu-mode">
-    <button class="pt-menu-trigger" id="menu-mode-trigger">Mode</button>
-    <div class="pt-dropdown" id="menu-mode-panel">
-      <button class="pt-dropdown-item active" id="btn-mode-nodes">
-        Nodes
-      </button>
-      <button class="pt-dropdown-item" id="btn-mode-branches">
-        Branches
-      </button>
-    </div>
-  </div>
-
   <!-- Node order menu -->
   <div class="pt-menu-item" id="menu-node-order">
     <button class="pt-menu-trigger" id="menu-node-order-trigger">Node order</button>
@@ -282,6 +269,12 @@
   <button id="btn-fit-labels" class="btn btn-pt" title="Fit labels (⌘⌥0)">Fit labels</button>
   <div class="pt-toolbar-sep"></div>
   <button id="btn-reroot" class="btn btn-pt" disabled title="Reroot tree at branch selection">Reroot</button>
+  <div class="pt-toolbar-sep"></div>
+  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Select:</span>
+  <div class="btn-group" role="group">
+    <button id="btn-mode-nodes"    class="btn btn-pt active" style="border-radius: 3px 0 0 3px; border-right-width: 0;" title="Select nodes mode (⌘N)">Nodes</button>
+    <button id="btn-mode-branches" class="btn btn-pt"        style="border-radius: 0 3px 3px 0;" title="Select branches mode (⌘B)">Branches</button>
+  </div>
   <div class="pt-toolbar-sep"></div>
   <label class="d-flex align-items-center gap-1">
     <span class="form-label-sm">Label</span>
