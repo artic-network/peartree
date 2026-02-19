@@ -991,7 +991,8 @@ export class TreeRenderer {
     });
 
     // ── Wheel: pinch (ctrlKey=true on Mac trackpad) → zoom;
-    //          scroll (ctrlKey=false) → pan vertically.
+    //          option+scroll (altKey=true) → vertical zoom centred on mouse Y;
+    //          scroll (ctrlKey=false, altKey=false) → pan vertically.
     canvas.addEventListener('wheel', e => {
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
@@ -1001,6 +1002,19 @@ export class TreeRenderer {
         // Pinch-to-zoom: deltaY in this mode is a small dimensionless zoom delta.
         // Positive deltaY = pinch in (zoom out), negative = spread (zoom in).
         const factor = Math.pow(0.99, e.deltaY); // smooth continuous zoom
+        this._fitLabelsMode = false;
+        this._setTarget(
+          this._targetOffsetY,
+          this._targetScaleY * factor,
+          false,
+          my
+        );
+      } else if (e.altKey) {
+        // Option + scroll: zoom vertically, anchored at the mouse Y position.
+        let delta = e.deltaY;
+        if (e.deltaMode === 1) delta *= 20;
+        if (e.deltaMode === 2) delta *= this.canvas.clientHeight;
+        const factor = Math.pow(0.998, delta); // positive delta = scroll down = zoom out
         this._fitLabelsMode = false;
         this._setTarget(
           this._targetOffsetY,
