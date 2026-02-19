@@ -17,6 +17,7 @@ export class Theme {
     tipColor         = '#BF4B43',
     internalColor    = '#19A699',
     selectedRingColor  = '#E06961',
+    mrcaRingColor      = '#19A699',
     labelColor         = '#F7EECA',
     dimLabelColor      = '#E6D595',
     selectedLabelColor = '#F2F1E6',
@@ -34,6 +35,7 @@ export class Theme {
     this.tipColor          = tipColor;
     this.internalColor     = internalColor;
     this.selectedRingColor = selectedRingColor;
+    this.mrcaRingColor     = mrcaRingColor;
     this.labelColor        = labelColor;
     this.dimLabelColor     = dimLabelColor;
     this.selectedLabelColor = selectedLabelColor;
@@ -90,6 +92,7 @@ export class TreeRenderer {
     this._snapTimer       = null;
     this._hoveredNodeId   = null;
     this._selectedTipIds  = new Set();
+    this._mrcaNodeId      = null;
 
     // Subtree navigation
     this._rawRoot     = null;   // full-tree raw node (set via setRawTree)
@@ -124,6 +127,7 @@ export class TreeRenderer {
     this.tipColor          = theme.tipColor;
     this.internalColor     = theme.internalColor;
     this.selectedRingColor = theme.selectedRingColor;
+    this.mrcaRingColor     = theme.mrcaRingColor;
     this.labelColor        = theme.labelColor;
     this.dimLabelColor     = theme.dimLabelColor;
     this.selectedLabelColor = theme.selectedLabelColor;
@@ -218,6 +222,7 @@ export class TreeRenderer {
     this._fwdStack      = [];
     this._viewRawRoot   = rawNode;
     this._selectedTipIds.clear();
+    this._mrcaNodeId = null;
 
     // Compute new layout (root at x=0).
     const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(rawNode);
@@ -253,6 +258,7 @@ export class TreeRenderer {
     const state         = this._navStack.pop();
     this._viewRawRoot   = state.rawNode;
     this._selectedTipIds.clear();
+    this._mrcaNodeId = null;
 
     const rawNode = state.rawNode || this._rawRoot;
     const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(rawNode);
@@ -278,33 +284,34 @@ export class TreeRenderer {
   navigateForward() {
     if (!this._fwdStack.length) return;
 
-    const curRootLayout = this.nodes ? this.nodes.find(n => !n.parentId) : null;
-    const px_cur = this.offsetX;
-    const py_cur = curRootLayout ? this.offsetY + curRootLayout.y * this.scaleY : this.canvas.clientHeight / 2;
-    const curRootId = curRootLayout ? curRootLayout.id : null;
+    // Peek at the forward state FIRST so we can find its root node in the
+    // current layout (it's an internal node here, just like in navigateInto).
+    const state      = this._fwdStack[this._fwdStack.length - 1];
+    const fwdRawNode = state.rawNode || this._rawRoot;
+
+    const fromNode = fwdRawNode && this.nodeMap ? this.nodeMap.get(fwdRawNode.id) : null;
+    const px_old   = fromNode ? this.offsetX + fromNode.x * this.scaleX : this.paddingLeft;
+    const py_old   = fromNode ? this.offsetY + fromNode.y * this.scaleY : this.canvas.clientHeight / 2;
 
     this._navStack.push(this._currentViewState());
-    const state         = this._fwdStack.pop();
-    this._viewRawRoot   = state.rawNode;
+    this._fwdStack.pop();
+    this._viewRawRoot = state.rawNode;
     this._selectedTipIds.clear();
+    this._mrcaNodeId = null;
 
-    const rawNode = state.rawNode || this._rawRoot;
-    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(rawNode);
+    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(fwdRawNode);
     this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
     this._measureLabels();
     this._updateScaleX(false);
     this._updateMinScaleY();
     this._setTarget(state.offsetY, state.scaleY, false);
 
-    // Seed animation: for forward, the destination root (fwd state rawNode) is at world (0, y)
-    // in the new layout; make it start at the current root's screen position.
+    // Mirror navigateInto: seed the animation so the new root starts at the
+    // old screen position of the node we're zooming into.
     const newRoot = this.nodes.find(n => !n.parentId);
     if (newRoot) {
-      // Find where that node sits in the current (pre-swap) layout.
-      const oldPosNode = curRootId ? this.nodeMap && nodeMap.get(curRootId) : null;
-      // Simplest: start new root at current root's screen position (px_cur, py_cur).
-      this.offsetX = px_cur - newRoot.x * this.scaleX;   // newRoot.x === 0 always
-      this.offsetY = py_cur - newRoot.y * this.scaleY;
+      this.offsetX = px_old;
+      this.offsetY = py_old - newRoot.y * this.scaleY;
     }
     this._animating = true;
     this._dirty = true;
@@ -645,6 +652,34 @@ export class TreeRenderer {
       ctx.fill();
     }
 
+    // Pass 2.6 – MRCA circle: shown when 2+ tips are selected
+    if (this._mrcaNodeId && this._selectedTipIds.size >= 2) {
+      const mn   = this.nodeMap.get(this._mrcaNodeId);
+      if (mn) {
+        const mnx   = this._wx(mn.x);
+        const mny   = this._wy(mn.y);
+        const mrcaR = r * 1.3;
+        const ringW = Math.max(1.5, r * 0.5);
+        // Dark backing
+        ctx.beginPath();
+        ctx.arc(mnx, mny, mrcaR + ringW + 1, 0, Math.PI * 2);
+        ctx.fillStyle = this.tipOutlineColor;
+        ctx.fill();
+        // Coloured ring
+        ctx.beginPath();
+        ctx.arc(mnx, mny, mrcaR + ringW * 0.5, 0, Math.PI * 2);
+        ctx.strokeStyle = this.mrcaRingColor;
+        ctx.lineWidth   = ringW;
+        ctx.stroke();
+        ctx.lineWidth   = 1;
+        // Internal-colour fill
+        ctx.beginPath();
+        ctx.arc(mnx, mny, mrcaR, 0, Math.PI * 2);
+        ctx.fillStyle = this.internalColor;
+        ctx.fill();
+      }
+    }
+
     // Pass 3 – labels (two sub-passes when selection active: dim then bright)
     if (showLabels) {
       const hasSelection = this._selectedTipIds.size > 0;
@@ -682,7 +717,7 @@ export class TreeRenderer {
         const hx        = this._wx(hn.x);
         const hy        = this._wy(hn.y);
         const baseColor = hn.isTip ? this.tipColor : this.internalColor;
-        const hr        = hn.isTip ? r * 1.7 : r * 1.4;
+        const hr        = hn.isTip ? r * 1.4 : r * 1.7;
         const darkColor = this._darkenColor(baseColor, 0.55);
         const ringW     = Math.max(1.5, r * 0.5);
         const ringR     = hr + ringW * 0.5;
@@ -709,6 +744,54 @@ export class TreeRenderer {
         ctx.lineWidth = 1;
       }
     }
+  }
+
+  /**
+   * Compute the MRCA (most recent common ancestor) of a set of tip IDs.
+   * Returns the node id of the MRCA, or null.
+   */
+  _computeMRCA(tipIds) {
+    if (!this.nodeMap || tipIds.size < 2) return null;
+    const ids = [...tipIds];
+
+    // Build the ancestor chain for a node (the node itself first, root last).
+    const getChain = (id) => {
+      const path = [];
+      let cur = this.nodeMap.get(id);
+      while (cur) {
+        path.push(cur.id);
+        cur = cur.parentId ? this.nodeMap.get(cur.parentId) : null;
+      }
+      return path;
+    };
+
+    // Start with the full ancestor chain of the first tip.
+    let chain    = getChain(ids[0]);
+    let chainSet = new Set(chain);
+
+    for (let i = 1; i < ids.length; i++) {
+      // Walk up from ids[i] until we reach a node already in the chain.
+      let cur = this.nodeMap.get(ids[i]);
+      while (cur && !chainSet.has(cur.id)) {
+        cur = cur.parentId ? this.nodeMap.get(cur.parentId) : null;
+      }
+      if (!cur) return null;
+      // Trim the chain so it starts at the hit node (discarding deeper ancestors
+      // of tip[0] which are no longer common to all tips seen so far).
+      const hitIdx = chain.indexOf(cur.id);
+      chain    = chain.slice(hitIdx);
+      chainSet = new Set(chain);
+    }
+
+    // chain[0] is the deepest common ancestor = MRCA.
+    return chain[0];
+  }
+
+  /** Recompute and cache the MRCA node id based on the current selection. */
+  _updateMRCA() {
+    this._mrcaNodeId = this._selectedTipIds.size >= 2
+      ? this._computeMRCA(this._selectedTipIds)
+      : null;
   }
 
   /** Collect all descendant tip ids of the node with the given id. */
@@ -856,6 +939,7 @@ export class TreeRenderer {
           descIds.forEach(id => this._selectedTipIds.add(id));
         }
       }
+      this._updateMRCA();
       this._dirty = true;
     });
 
@@ -1017,6 +1101,7 @@ export class TreeRenderer {
       // Escape – clear selection.
       if (e.key === 'Escape') {
         this._selectedTipIds.clear();
+        this._mrcaNodeId = null;
         this._dirty = true;
         return;
       }
