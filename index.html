@@ -778,13 +778,33 @@ class TreeRenderer {
       ctx.fill();
     }
 
-    // Pass 3 – labels (separate loop so fill calls don't interleave)
+    // Pass 3 – labels (two sub-passes when selection active: dim then bright)
     if (showLabels) {
-      ctx.fillStyle = this.labelColor;
-      for (const node of this.nodes) {
-        if (!node.isTip) continue;
-        if (node.y < yWorldMin || node.y > yWorldMax) continue;
-        if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
+      const hasSelection = this._selectedTipIds.size > 0;
+      const dimColor = '#6a7a8a'; // muted grey for unselected labels
+
+      if (hasSelection) {
+        // Sub-pass 3a: unselected labels in dim grey
+        ctx.fillStyle = dimColor;
+        for (const node of this.nodes) {
+          if (!node.isTip || this._selectedTipIds.has(node.id)) continue;
+          if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
+        }
+        // Sub-pass 3b: selected labels in white
+        ctx.fillStyle = '#ffffff';
+        for (const node of this.nodes) {
+          if (!node.isTip || !this._selectedTipIds.has(node.id)) continue;
+          if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
+        }
+      } else {
+        ctx.fillStyle = this.labelColor;
+        for (const node of this.nodes) {
+          if (!node.isTip) continue;
+          if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
+        }
       }
     }
 
