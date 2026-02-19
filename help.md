@@ -67,6 +67,10 @@ Reorders branches post-order by clade size:
 
 The **Reroot** button becomes active whenever a selection can define a new root:
 
+### Midpoint Root
+
+The **Midpoint Root** button (⌘M) is always available once a tree is loaded. It automatically finds the two tips with the greatest path length between them (the tree diameter) and places the new root at the exact midpoint of that path.
+
 - **Nodes mode — single tip selected**: roots at the midpoint of the branch above that tip
 - **Nodes mode — two or more tips selected**: roots at the midpoint of the branch above the MRCA of the selected tips
 - **Branches mode — branch marker placed**: roots at the exact clicked position on that branch
@@ -103,6 +107,7 @@ The **?** button opens this help panel.
 | **⌘O** | Open tree file dialog |
 | **⌘N** | Switch to Nodes selection mode |
 | **⌘B** | Switch to Branches selection mode |
+| **⌘M** | Midpoint root the tree |
 | **⌘=** / **⌘+** | Zoom in |
 | **⌘−** | Zoom out |
 | **⌘0** | Fit all |

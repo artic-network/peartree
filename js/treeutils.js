@@ -102,8 +102,127 @@ export function reorderTree(node, ascending) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Rerooting  – places a new root at a point on a branch
+// Midpoint rooting  – finds the branch bisecting the tree's diameter
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Find the midpoint of the tree: the point on a branch that lies exactly
+ * halfway along the longest tip-to-tip path (the diameter).
+ *
+ * @param {object} root  - raw root of the current tree
+ * @returns {{ childNodeId: string, distFromParent: number }}
+ *   Parameters suitable for passing directly to rerootTree().
+ */
+export function midpointRootTree(root) {
+  // Build lookup structures over the whole tree.
+  const rawNodeMap   = new Map();  // id → raw node
+  const parentMap    = new Map();  // id → parent raw node
+  const distFromRoot = new Map();  // id → cumulative branch-length from root
+
+  (function index(node, parent, d) {
+    rawNodeMap.set(node.id, node);
+    if (parent) parentMap.set(node.id, parent);
+    const nd = d + (node.length || 0);
+    distFromRoot.set(node.id, nd);
+    if (node.children) for (const c of node.children) index(c, node, nd);
+  })(root, null, 0);
+
+  const tips = [...rawNodeMap.values()].filter(n => !n.children || n.children.length === 0);
+  if (tips.length < 2) return { childNodeId: tips[0].id, distFromParent: (tips[0].length || 0) / 2 };
+
+  // Ancestors chain: walk from id up to root, returning array of ids.
+  function ancestors(id) {
+    const chain = [];
+    let cur = id;
+    while (cur !== undefined && cur !== null) {
+      chain.push(cur);
+      const p = parentMap.get(cur);
+      cur = p ? p.id : null;
+    }
+    return chain;
+  }
+
+  // LCA of two nodes.
+  function lca(idA, idB) {
+    const setA = new Set(ancestors(idA));
+    let cur = idB;
+    while (cur !== undefined && cur !== null) {
+      if (setA.has(cur)) return cur;
+      const p = parentMap.get(cur);
+      cur = p ? p.id : null;
+    }
+    return root.id;
+  }
+
+  // Tree-path length between two tips.
+  function pathLen(idA, idB) {
+    const l = lca(idA, idB);
+    return distFromRoot.get(idA) + distFromRoot.get(idB) - 2 * (distFromRoot.get(l) || 0);
+  }
+
+  // Step 1 – tip farthest from root (one end of diameter).
+  let tipA = tips.reduce((b, t) => (distFromRoot.get(t.id) > distFromRoot.get(b.id) ? t : b), tips[0]);
+
+  // Step 2 – tip farthest from tipA (other end of diameter).
+  let tipB = tips.reduce((b, t) => {
+    if (t.id === tipA.id) return b;
+    return pathLen(tipA.id, t.id) > pathLen(tipA.id, b.id) ? t : b;
+  }, tips.find(t => t.id !== tipA.id));
+
+  const diameter = pathLen(tipA.id, tipB.id);
+  const half     = diameter / 2;
+  const lcaId    = lca(tipA.id, tipB.id);
+
+  // Path from tipA up to LCA (as array of ids, child-first).
+  const pathAtoLCA = [];
+  let cur = tipA.id;
+  while (cur !== lcaId) {
+    pathAtoLCA.push(cur);
+    cur = parentMap.get(cur).id;
+  }
+  pathAtoLCA.push(lcaId);
+
+  // Distance from tipA to LCA.
+  const distAtoLCA = distFromRoot.get(tipA.id) - (distFromRoot.get(lcaId) || 0);
+
+  if (half <= distAtoLCA) {
+    // Midpoint lies on the tipA → LCA portion of the path.
+    let acc = 0;
+    for (let i = 0; i < pathAtoLCA.length - 1; i++) {
+      const childId  = pathAtoLCA[i];
+      const branchLen = rawNodeMap.get(childId).length || 0;
+      if (acc + branchLen >= half) {
+        return { childNodeId: childId, distFromParent: half - acc };
+      }
+      acc += branchLen;
+    }
+  } else {
+    // Midpoint lies on the LCA → tipB portion of the path.
+    const remaining = half - distAtoLCA;
+
+    // Path from tipB up to LCA (child-first), then reversed to walk down.
+    const pathBtoLCA = [];
+    let cur2 = tipB.id;
+    while (cur2 !== lcaId) {
+      pathBtoLCA.push(cur2);
+      cur2 = parentMap.get(cur2).id;
+    }
+    // Walk from LCA toward tipB: last element of pathBtoLCA is child-of-LCA.
+    let acc = 0;
+    for (let i = pathBtoLCA.length - 1; i >= 0; i--) {
+      const childId   = pathBtoLCA[i];
+      const branchLen = rawNodeMap.get(childId).length || 0;
+      if (acc + branchLen >= remaining) {
+        return { childNodeId: childId, distFromParent: remaining - acc };
+      }
+      acc += branchLen;
+    }
+  }
+
+  // Fallback (should not be reached).
+  return { childNodeId: tipA.id, distFromParent: (rawNodeMap.get(tipA.id).length || 0) / 2 };
+}
+
 
 let _rerootCounter = 0;
 

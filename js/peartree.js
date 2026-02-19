@@ -1,5 +1,5 @@
 import { parseNexus, parseNewick } from './treeio.js';
-import { computeLayout, computeLayoutFrom, reorderTree, rerootTree } from './treeutils.js';
+import { computeLayout, computeLayoutFrom, reorderTree, rerootTree, midpointRootTree } from './treeutils.js';
 import { TreeRenderer } from './treerenderer.js';
 
 (async () => {
@@ -156,9 +156,10 @@ import { TreeRenderer } from './treerenderer.js';
 
   // ── Tree loading ──────────────────────────────────────────────────────────
 
-  let root          = null;
-  let currentOrder  = null;  // null | 'asc' | 'desc'
-  let controlsBound = false;
+  let root             = null;
+  let currentOrder     = null;  // null | 'asc' | 'desc'
+  let controlsBound    = false;
+  let _cachedMidpoint  = null;  // cached result of midpointRootTree(); invalidated on every tree change
 
   async function loadTree(text, filename) {
     setModalLoading(true);
@@ -182,8 +183,9 @@ import { TreeRenderer } from './treerenderer.js';
         }
       }
 
-      root         = parsedRoot;
-      currentOrder = null;
+      root            = parsedRoot;
+      currentOrder    = null;
+      _cachedMidpoint = null;
 
       const layout = computeLayout(root);
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
@@ -228,7 +230,9 @@ import { TreeRenderer } from './treerenderer.js';
     const btnForward   = document.getElementById('btn-forward');
     const btnOrderAsc  = document.getElementById('btn-order-asc');
     const btnOrderDesc = document.getElementById('btn-order-desc');
-    const btnReroot    = document.getElementById('btn-reroot');
+    const btnReroot       = document.getElementById('btn-reroot');
+    const btnMidpointRoot  = document.getElementById('btn-midpoint-root');
+    btnMidpointRoot.disabled = false;
     document.getElementById('btn-zoom-in') .addEventListener('click', () => renderer.zoomIn());
     document.getElementById('btn-zoom-out').addEventListener('click', () => renderer.zoomOut());
 
@@ -289,42 +293,11 @@ import { TreeRenderer } from './treerenderer.js';
     btnModeNodes.addEventListener('click',    () => applyMode('nodes'));
     btnModeBranches.addEventListener('click', () => applyMode('branches'));
 
-    // Reroot
-    btnReroot.addEventListener('click', () => {
-      let targetNode, distFromParent;
-
-      if (renderer._mode === 'branches') {
-        const selNode = renderer._branchSelectNode;
-        const selX    = renderer._branchSelectX;
-        if (!selNode || selX === null) return;
-        const parentLayoutNode = renderer.nodeMap.get(selNode.parentId);
-        if (!parentLayoutNode) return;
-        targetNode      = selNode;
-        distFromParent  = selX - parentLayoutNode.x;
-      } else {
-        // Nodes mode: single tip → that node; ≥2 tips → their MRCA.
-        let nodeId;
-        if (renderer._selectedTipIds.size === 1) {
-          nodeId = [...renderer._selectedTipIds][0];
-        } else if (renderer._mrcaNodeId) {
-          nodeId = renderer._mrcaNodeId;
-        } else {
-          return;
-        }
-        const layoutNode = renderer.nodeMap.get(nodeId);
-        if (!layoutNode || !layoutNode.parentId) return;
-        const parentLayoutNode = renderer.nodeMap.get(layoutNode.parentId);
-        if (!parentLayoutNode) return;
-        targetNode     = layoutNode;
-        // Root at the midpoint of the branch above the selected node.
-        distFromParent = (layoutNode.x - parentLayoutNode.x) / 2;
-      }
-
-      const selNode = targetNode;
-      if (!selNode) return;
-
-      const newRoot = rerootTree(root, selNode.id, distFromParent);
-      root = newRoot;
+    // ── Shared rerooting logic (all three methods funnel through here) ────────
+    function applyReroot(childNodeId, distFromParent) {
+      const newRoot = rerootTree(root, childNodeId, distFromParent);
+      root            = newRoot;
+      _cachedMidpoint = null;
 
       if (currentOrder === 'asc')  reorderTree(root, true);
       if (currentOrder === 'desc') reorderTree(root, false);
@@ -344,10 +317,52 @@ import { TreeRenderer } from './treerenderer.js';
       renderer.setRawTree(root);
 
       const layout = computeLayout(root);
-      renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+      renderer.setDataCrossfade(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+    }
 
-      const tipCount2 = layout.nodes.filter(n => n.isTip).length;
+    // Reroot button: branch-click position or node/MRCA midpoint
+    btnReroot.addEventListener('click', () => {
+      let targetNode, distFromParent;
+
+      if (renderer._mode === 'branches') {
+        const selNode = renderer._branchSelectNode;
+        const selX    = renderer._branchSelectX;
+        if (!selNode || selX === null) return;
+        const parentLayoutNode = renderer.nodeMap.get(selNode.parentId);
+        if (!parentLayoutNode) return;
+        targetNode     = selNode;
+        distFromParent = selX - parentLayoutNode.x;
+      } else {
+        // Nodes mode: single tip → that node; ≥2 tips → their MRCA.
+        let nodeId;
+        if (renderer._selectedTipIds.size === 1) {
+          nodeId = [...renderer._selectedTipIds][0];
+        } else if (renderer._mrcaNodeId) {
+          nodeId = renderer._mrcaNodeId;
+        } else {
+          return;
+        }
+        const layoutNode = renderer.nodeMap.get(nodeId);
+        if (!layoutNode || !layoutNode.parentId) return;
+        const parentLayoutNode = renderer.nodeMap.get(layoutNode.parentId);
+        if (!parentLayoutNode) return;
+        targetNode     = layoutNode;
+        distFromParent = (layoutNode.x - parentLayoutNode.x) / 2;
+      }
+
+      if (!targetNode) return;
+      applyReroot(targetNode.id, distFromParent);
     });
+
+    function applyMidpointRoot() {
+      if (btnMidpointRoot.disabled) return;
+      if (!_cachedMidpoint) _cachedMidpoint = midpointRootTree(root);
+      const { childNodeId, distFromParent } = _cachedMidpoint;
+      _cachedMidpoint = null;  // tree is about to change — old result is no longer valid
+      applyReroot(childNodeId, distFromParent);
+    }
+
+    btnMidpointRoot.addEventListener('click', () => applyMidpointRoot());
 
     window.addEventListener('keydown', e => {
       if (!e.metaKey && !e.ctrlKey) return;
@@ -357,6 +372,7 @@ import { TreeRenderer } from './treerenderer.js';
       if (e.key === ']' || e.key === '>') { e.preventDefault(); renderer.navigateForward(); }
       if (e.key === 'n' || e.key === 'N') { e.preventDefault(); applyMode('nodes'); }
       if (e.key === 'b' || e.key === 'B') { e.preventDefault(); applyMode('branches'); }
+      if (e.key === 'm' || e.key === 'M') { e.preventDefault(); applyMidpointRoot(); }
     });
   }
 

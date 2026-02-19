@@ -94,7 +94,7 @@
     #status-bar {
       flex-shrink: 0;
       height: 24px;
-      background: var(--pt-bg);
+      background: var(--pt-bg-dark);
       border-top: 1px solid var(--pt-border);
     }
     #status-bar canvas { display: block; }
@@ -501,7 +501,9 @@
   <div class="pt-toolbar-sep"></div>
 
     <!-- Reroot -->
-  <button id="btn-reroot" class="btn btn-sm btn-outline-secondary" disabled title="Reroot tree at branch selection"><i class="bi bi-arrow-clockwise">Root</i></button>
+  <button id="btn-reroot" class="btn btn-sm btn-outline-secondary" disabled title="Reroot tree at selection"><i class="bi bi-arrow-clockwise"></i></button>
+  <!-- Midpoint root -->
+  <button id="btn-midpoint-root" class="btn btn-sm btn-outline-secondary" disabled title="Midpoint root (⌘M)"><i class="bi bi-symmetry-horizontal"></i></button>
 
   <div class="ms-auto"></div>
   <!-- Palette toggle -->

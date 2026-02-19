@@ -126,6 +126,10 @@ export class TreeRenderer {
     this._reorderToY    = null;   // Map<id, newY>
     this._reorderAlpha  = 1;      // 0→1; 1 = not animating
 
+    // Cross-fade animation (used on midpoint-root and similar wholesale tree changes)
+    this._crossfadeSnapshot = null;   // OffscreenCanvas capturing old frame
+    this._crossfadeAlpha    = 0;      // 1→0; 0 = not animating
+
     this._rafId = null;
     this._dirty = true;
 
@@ -209,6 +213,27 @@ export class TreeRenderer {
     this._reorderToY    = toY;
     this._reorderAlpha  = 0;
     this._dirty = true;
+  }
+
+  /**
+   * Replace layout data with a cross-fade from the current frame.
+   * The old frame is captured as a snapshot, the new data is installed
+   * immediately (including fitToWindow), then the old snapshot is faded
+   * out over the new tree over ~350 ms.
+   */
+  setDataCrossfade(nodes, nodeMap, maxX, maxY) {
+    // Snapshot the current rendered frame before installing new data.
+    const W = this.canvas.width;   // physical pixels
+    const H = this.canvas.height;
+    const snap = document.createElement('canvas');
+    snap.width  = W;
+    snap.height = H;
+    snap.getContext('2d').drawImage(this.canvas, 0, 0);
+    this._crossfadeSnapshot = snap;
+    this._crossfadeAlpha    = 1;
+
+    // Install the new layout (resets viewport via fitToWindow).
+    this.setData(nodes, nodeMap, maxX, maxY);
   }
 
   setFontSize(sz) {
@@ -557,6 +582,14 @@ export class TreeRenderer {
   }
 
   _loop() {
+    // ── Cross-fade overlay animation ──
+    if (this._crossfadeAlpha > 0) {
+      const EASE = 0.055;   // ~400 ms at 60 fps (1 / 0.055 ≈ 18 frames)
+      this._crossfadeAlpha = Math.max(0, this._crossfadeAlpha - EASE);
+      if (this._crossfadeAlpha === 0) this._crossfadeSnapshot = null;
+      this._dirty = true;
+    }
+
     // ── Per-node reorder animation (y positions) ──
     if (this._reorderAlpha < 1) {
       const EASE = 0.14;
@@ -929,6 +962,18 @@ export class TreeRenderer {
       if (this._branchSelectNode) {
         drawBranchMarker(this._branchSelectNode, this._branchSelectX, 1);
       }
+    }
+
+    // ── Cross-fade overlay: draw old snapshot fading out ──
+    if (this._crossfadeSnapshot && this._crossfadeAlpha > 0) {
+      const cW = this.canvas.clientWidth;
+      const cH = this.canvas.clientHeight;
+      // Ease-out: start fast, decelerate at end
+      const t = this._crossfadeAlpha;
+      const a = t * t;
+      ctx.globalAlpha = a;
+      ctx.drawImage(this._crossfadeSnapshot, 0, 0, cW, cH);
+      ctx.globalAlpha = 1;
     }
   }
 
@@ -1356,14 +1401,14 @@ export class TreeRenderer {
       }
 
       // Cmd/Ctrl + Alt + 0 → fit labels zoom.
-      if ((e.metaKey || e.ctrlKey) && e.altKey && e.key === '0') {
+      if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'Digit0') {
         e.preventDefault();
         this.fitLabels();
         return;
       }
 
       // Cmd/Ctrl + 0 → fit current subtree vertically.
-      if ((e.metaKey || e.ctrlKey) && e.key === '0') {
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && e.code === 'Digit0') {
         e.preventDefault();
         this.fitToWindow();
         return;
