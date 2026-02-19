@@ -226,6 +226,8 @@ import { TreeRenderer } from './treerenderer.js';
     const btnOrderAsc  = document.getElementById('btn-order-asc');
     const btnOrderDesc = document.getElementById('btn-order-desc');
     const btnReroot    = document.getElementById('btn-reroot');
+    document.getElementById('btn-zoom-in') .addEventListener('click', () => renderer.zoomIn());
+    document.getElementById('btn-zoom-out').addEventListener('click', () => renderer.zoomOut());
 
     renderer._onNavChange = (canBack, canFwd) => {
       btnBack.disabled    = !canBack;

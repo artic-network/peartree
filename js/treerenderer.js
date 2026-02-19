@@ -464,6 +464,20 @@ export class TreeRenderer {
     this._dirty = true;
   }
 
+  zoomIn() {
+    if (!this.nodes) return;
+    this._fitLabelsMode = false;
+    const centerY = this.canvas.clientHeight / 2;
+    this._setTarget(this._targetOffsetY, this._targetScaleY * 1.5, false, centerY);
+  }
+
+  zoomOut() {
+    if (!this.nodes) return;
+    this._fitLabelsMode = false;
+    const centerY = this.canvas.clientHeight / 2;
+    this._setTarget(this._targetOffsetY, this._targetScaleY / 1.5, false, centerY);
+  }
+
   /**
    * Compute the clamped offsetY for a given scaleY and desired raw offsetY.
    * Does NOT mutate state.
