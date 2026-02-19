@@ -55,10 +55,14 @@ export const DEFAULT_THEME = new Theme();
 // ─────────────────────────────────────────────────────────────────────────────
 
 export class TreeRenderer {
-  constructor(canvas, theme = DEFAULT_THEME) {
+  constructor(canvas, theme = DEFAULT_THEME, statusCanvas = null) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.dpr = window.devicePixelRatio || 1;
+
+    // Optional dedicated status-bar canvas
+    this._statusCanvas = statusCanvas || null;
+    this._statusCtx    = statusCanvas ? statusCanvas.getContext('2d') : null;
 
     // layout data
     this.nodes = null;
@@ -449,6 +453,15 @@ export class TreeRenderer {
     this.canvas.width  = W * this.dpr;
     this.canvas.height = H * this.dpr;
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    if (this._statusCanvas) {
+      const SW = this._statusCanvas.parentElement.clientWidth;
+      const SH = this._statusCanvas.parentElement.clientHeight;
+      this._statusCanvas.style.width  = SW + 'px';
+      this._statusCanvas.style.height = SH + 'px';
+      this._statusCanvas.width  = SW * this.dpr;
+      this._statusCanvas.height = SH * this.dpr;
+      this._statusCtx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    }
     if (this.nodes) {
       // X always re-fits; preserve the current vertical zoom ratio if already zoomed in.
       const zoomRatio = (this.minScaleY > 0) ? this._targetScaleY / this.minScaleY : 1;
@@ -1049,7 +1062,7 @@ export class TreeRenderer {
         }
       }
 
-      this._updateStatus(e);
+      if (e.target === this.canvas) this._updateStatus(e);
     });
 
     this.canvas.addEventListener('mouseleave', () => {
@@ -1163,9 +1176,20 @@ export class TreeRenderer {
     if (!this.nodes) return;
     const rect = this.canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
     const wx = this._worldXfromScreen(mx);
-    const statusEl = document.getElementById('status');
-    statusEl.textContent = `divergence: ${wx.toFixed(5)}`;
+    const text = `divergence: ${wx.toFixed(5)}`;
+    if (this._statusCanvas) {
+      const sctx = this._statusCtx;
+      const W    = this._statusCanvas.clientWidth;
+      const H    = this._statusCanvas.clientHeight;
+      sctx.clearRect(0, 0, W, H);
+      sctx.font         = '11px monospace';
+      sctx.fillStyle    = 'rgba(25, 166, 153, 0.7)';
+      sctx.textBaseline = 'middle';
+      sctx.fillText(text, 12, H / 2);
+    } else {
+      const statusEl = document.getElementById('status');
+      if (statusEl) statusEl.textContent = text;
+    }
   }
 }

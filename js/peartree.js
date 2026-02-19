@@ -22,7 +22,16 @@ import { TreeRenderer } from './treerenderer.js';
   const ctx = canvas.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  const renderer = new TreeRenderer(canvas);
+  // Size the status canvas
+  const statusCanvas = document.getElementById('status-canvas');
+  const statusBar    = statusCanvas.parentElement;
+  statusCanvas.style.width  = statusBar.clientWidth  + 'px';
+  statusCanvas.style.height = statusBar.clientHeight + 'px';
+  statusCanvas.width  = statusBar.clientWidth  * dpr;
+  statusCanvas.height = statusBar.clientHeight * dpr;
+  statusCanvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const renderer = new TreeRenderer(canvas, undefined, statusCanvas);
 
   try {
     loadingMsg.textContent = 'Fetching tree file…';

@@ -78,6 +78,15 @@
     .btn-pt:disabled { opacity: 0.35; }
     .btn-pt.active  { background: var(--pt-red); border-color: var(--pt-red); color: var(--pt-cream); }
 
+    /* ── Status bar ── */
+    #status-bar {
+      flex-shrink: 0;
+      height: 24px;
+      background: var(--pt-bg);
+      border-top: 1px solid var(--pt-border);
+    }
+    #status-bar canvas { display: block; }
+
     /* ── Canvas area ── */
     #canvas-container {
       flex: 1;
@@ -87,17 +96,6 @@
     canvas            { display: block; cursor: default; }
     canvas.space      { cursor: grab; }
     canvas.grabbing   { cursor: grabbing; }
-
-    /* ── Status bar ── */
-    #status {
-      position: absolute;
-      bottom: 8px;
-      left: 12px;
-      font-size: 0.7rem;
-      color: var(--pt-teal);
-      opacity: 0.6;
-      pointer-events: none;
-    }
 
     /* ── Loading overlay ── */
     #loading {
@@ -182,8 +180,11 @@
   <div id="loading"><div class="pt-spinner"></div><p id="loading-msg">Fetching tree file…</p></div>
   <div id="error"></div>
   <canvas id="tree-canvas"></canvas>
-  <div id="status"></div>
   <div id="tooltip"></div>
+</div>
+
+<div id="status-bar">
+  <canvas id="status-canvas"></canvas>
 </div>
 
 <script type="module" src="js/peartree.js"></script>
