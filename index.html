@@ -46,97 +46,6 @@
       font-size: 13px;
     }
 
-    /* ── Navbar overrides ── */
-    .pt-menubar {
-      background: var(--pt-bg-dark);
-      border-bottom: 1px solid var(--pt-border);
-      min-height: 28px;
-      padding: 0 0.75rem;
-      display: flex;
-      align-items: center;
-      gap: 0;
-      flex-shrink: 0;
-      user-select: none;
-    }
-    .pt-menubar .navbar-brand {
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--pt-red) !important;
-      letter-spacing: 0.4px;
-      padding: 0 0.75rem 0 0;
-      margin: 0;
-      line-height: 28px;
-    }
-    /* Menu items (dropdown triggers) */
-    .pt-menu-item {
-      position: relative;
-    }
-    .pt-menu-item > .pt-menu-trigger {
-      background: none;
-      border: none;
-      color: var(--pt-off-white);
-      font-family: inherit;
-      font-size: 0.7rem;
-      padding: 0 0.6rem;
-      line-height: 28px;
-      cursor: pointer;
-      border-radius: 3px;
-      opacity: 0.85;
-    }
-    .pt-menu-item > .pt-menu-trigger:hover,
-    .pt-menu-item > .pt-menu-trigger.open {
-      background: rgba(255,255,255,0.08);
-      opacity: 1;
-    }
-    /* Dropdown panel */
-    .pt-dropdown {
-      display: none;
-      position: absolute;
-      top: 100%;
-      left: 0;
-      min-width: 160px;
-      background: var(--pt-bg-dark);
-      border: 1px solid var(--pt-border);
-      border-radius: 4px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-      z-index: 1000;
-      padding: 3px 0;
-    }
-    .pt-dropdown.open { display: block; }
-    .pt-dropdown-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      background: none;
-      border: none;
-      color: var(--pt-off-white);
-      font-family: inherit;
-      font-size: 0.7rem;
-      padding: 4px 14px 4px 12px;
-      text-align: left;
-      cursor: pointer;
-      gap: 24px;
-    }
-    .pt-dropdown-item:hover { background: rgba(255,255,255,0.08); }
-    .pt-dropdown-item.active { color: var(--pt-teal); }
-    .pt-dropdown-item .shortcut {
-      font-size: 0.63rem;
-      opacity: 0.5;
-    }
-    .pt-dropdown-separator {
-      height: 1px;
-      background: var(--pt-border);
-      margin: 3px 0;
-    }
-    #file-info {
-      font-size: 0.63rem;
-      color: var(--pt-gold);
-      opacity: 0.65;
-      margin-left: auto;
-      padding-right: 0.25rem;
-    }
-
     /* ── Toolbar ── */
     .pt-toolbar {
       background: var(--pt-bg-dark);
@@ -283,29 +192,14 @@
     .help-md hr { border: none; border-top: 1px solid var(--pt-border); margin: 14px 0; }
     .help-md table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 0.67rem; }
     .help-md th { color: var(--pt-gold); font-weight: 600; text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--pt-border); }
-    .help-md td { padding: 3px 8px; border-bottom: 1px solid rgba(7,54,66,0.5); vertical-align: top; }
+    .help-md td { padding: 3px 8px; border-bottom: 1px solid rgba(5,73,79,0.5); vertical-align: top; }
     .help-md tr:last-child td { border-bottom: none; }
-    /* ? button in menubar */
-    #btn-help {
-      background: none;
-      border: 1px solid var(--pt-border);
-      color: var(--pt-off-white);
-      font-size: 0.67rem;
-      line-height: 1;
-      width: 20px;
-      height: 20px;
-      padding: 0;
-      border-radius: 50%;
-      cursor: pointer;
-      opacity: 0.7;
-      margin-left: 8px;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    /* ? button in toolbar */
+    #btn-help { flex-shrink: 0; }
+    #btn-help.active {
+      color: var(--bs-primary);
+      border-color: var(--bs-primary);
     }
-    #btn-help:hover { background: rgba(255,255,255,0.08); opacity: 1; }
-    #btn-help.active { background: var(--bs-primary); border-color: var(--bs-primary); opacity: 1; }
 
     /* ── Tooltip ── */
     #tooltip {
@@ -464,26 +358,6 @@
 </head>
 <body>
 
-<div class="pt-menubar">
-  <span class="navbar-brand">PearTree</span>
-
-  <!-- Node order menu -->
-  <div class="pt-menu-item" id="menu-node-order">
-    <button class="pt-menu-trigger" id="menu-node-order-trigger">Node order</button>
-    <div class="pt-dropdown" id="menu-node-order-panel">
-      <button class="pt-dropdown-item" id="btn-order-asc"  title="Order branches descending by tip count (⌘D)">
-        Up <span class="shortcut">⌘D</span>
-      </button>
-      <button class="pt-dropdown-item" id="btn-order-desc" title="Order branches ascending by tip count (⌘U)">
-        Down <span class="shortcut">⌘U</span>
-      </button>
-    </div>
-  </div>
-
-  <span id="file-info">Loading…</span>
-  <button id="btn-help" title="Help">?</button>
-</div>
-
 <div class="pt-toolbar">
   <button id="btn-open-tree" class="btn btn-sm btn-outline-primary" title="Open tree file (⌘O)"><i class="bi bi-folder2-open me-1"></i>Open…</button>
   <div class="pt-toolbar-sep"></div>
@@ -509,6 +383,14 @@
     <span class="form-label-sm">Node</span>
     <input type="range" class="form-range" id="tip-size-slider" min="1" max="12" value="3" />
   </label>
+  <div class="pt-toolbar-sep"></div>
+  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Order:</span>
+  <div class="btn-group" role="group">
+    <button id="btn-order-asc"  class="btn btn-sm btn-outline-secondary" title="Order branches ascending by clade size (⌘D)">Up</button>
+    <button id="btn-order-desc" class="btn btn-sm btn-outline-secondary" title="Order branches descending by clade size (⌘U)">Down</button>
+  </div>
+  <div class="ms-auto"></div>
+  <button id="btn-help" class="btn btn-sm btn-outline-secondary" title="Help (⌘?)"><i class="bi bi-question-circle"></i></button>
 </div>
 
 <div id="canvas-container">
@@ -588,35 +470,6 @@
 </div>
 
 <script>
-  // Lightweight menu-bar dropdown toggle (no Bootstrap JS needed)
-  document.querySelectorAll('.pt-menu-item').forEach(item => {
-    const trigger = item.querySelector('.pt-menu-trigger');
-    const panel   = item.querySelector('.pt-dropdown');
-    trigger.addEventListener('click', e => {
-      e.stopPropagation();
-      const open = panel.classList.contains('open');
-      // Close all panels
-      document.querySelectorAll('.pt-dropdown').forEach(p => p.classList.remove('open'));
-      document.querySelectorAll('.pt-menu-trigger').forEach(t => t.classList.remove('open'));
-      if (!open) {
-        panel.classList.add('open');
-        trigger.classList.add('open');
-      }
-    });
-    // Close when a menu item is chosen
-    panel.querySelectorAll('.pt-dropdown-item').forEach(btn => {
-      btn.addEventListener('click', () => {
-        panel.classList.remove('open');
-        trigger.classList.remove('open');
-      });
-    });
-  });
-  // Click outside closes all menus
-  document.addEventListener('click', () => {
-    document.querySelectorAll('.pt-dropdown').forEach(p => p.classList.remove('open'));
-    document.querySelectorAll('.pt-menu-trigger').forEach(t => t.classList.remove('open'));
-  });
-
   // Help panel
   const helpPanel   = document.getElementById('help-panel');
   const helpContent = document.getElementById('help-content');

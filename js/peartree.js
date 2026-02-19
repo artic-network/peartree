@@ -5,7 +5,6 @@ import { TreeRenderer } from './treerenderer.js';
 (async () => {
   const canvas       = document.getElementById('tree-canvas');
   const loadingEl    = document.getElementById('loading');
-  const fileInfoEl   = document.getElementById('file-info');
   const fontSlider   = document.getElementById('font-size-slider');
   const tipSlider    = document.getElementById('tip-size-slider');
   const btnFit       = document.getElementById('btn-fit');
@@ -186,11 +185,8 @@ import { TreeRenderer } from './treerenderer.js';
       root         = parsedRoot;
       currentOrder = null;
 
-      const { nodes, nodeMap, maxX, maxY } = computeLayout(root);
-      const tipCount = nodes.filter(n => n.isTip).length;
-      fileInfoEl.textContent = filename + '  \xb7  ' + tipCount.toLocaleString() + ' taxa  \xb7  1 tree';
-
-      renderer.setData(nodes, nodeMap, maxX, maxY);
+      const layout = computeLayout(root);
+      renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
       renderer.setRawTree(root);
 
       // Reset navigation and selection state for the new tree
@@ -315,8 +311,6 @@ import { TreeRenderer } from './treerenderer.js';
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
 
       const tipCount2 = layout.nodes.filter(n => n.isTip).length;
-      const fname = fileInfoEl.textContent.split('  \xb7  ')[0];
-      fileInfoEl.textContent = fname + '  \xb7  ' + tipCount2.toLocaleString() + ' taxa  \xb7  1 tree (rerooted)';
     });
 
     window.addEventListener('keydown', e => {
