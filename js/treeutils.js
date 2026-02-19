@@ -100,3 +100,77 @@ export function reorderTree(node, ascending) {
   );
   return total;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rerooting  – places a new root at a point on a branch
+// ─────────────────────────────────────────────────────────────────────────────
+
+let _rerootCounter = 0;
+
+/**
+ * Reroot the tree by placing a virtual new root at a point on the branch
+ * whose CHILD endpoint has id `childNodeId`.
+ *
+ * @param {object} oldRoot        - raw root of the current tree
+ * @param {string} childNodeId    - id of the child node that defines the branch
+ * @param {number} distFromParent - branch-length distance from the parent end
+ *                                  to the new root point (must be ≥ 0 and
+ *                                  ≤ the branch's full length)
+ * @returns {object} newRoot      - the new root raw node
+ */
+export function rerootTree(oldRoot, childNodeId, distFromParent) {
+  // Build id→node and id→parent maps for the whole tree.
+  const rawNodeMap = new Map();
+  const parentMap  = new Map(); // childId → parent raw node
+  (function index(node, parent) {
+    rawNodeMap.set(node.id, node);
+    if (parent) parentMap.set(node.id, parent);
+    if (node.children) for (const c of node.children) index(c, node);
+  })(oldRoot, null);
+
+  const childNode  = rawNodeMap.get(childNodeId);
+  const parentNode = parentMap.get(childNodeId);
+  if (!childNode || !parentNode) return oldRoot; // already the root edge – no-op
+
+  const originalLen = childNode.length || 0;
+  const distToChild = Math.max(0, originalLen - distFromParent);
+  distFromParent    = Math.max(0, Math.min(originalLen, distFromParent));
+
+  // Create the new root node.
+  const newRoot = {
+    id:          `__reroot_${++_rerootCounter}__`,
+    name:        null,
+    label:       null,
+    length:      0,
+    annotations: {},
+    children:    [childNode],
+  };
+  childNode.length = distToChild;
+
+  // Walk from parentNode up to oldRoot, reversing each edge in turn.
+  let prev    = newRoot;
+  let prevLen = distFromParent;
+  let cur     = parentNode;
+
+  while (cur) {
+    const par       = parentMap.get(cur.id) || null;
+    const downChild = (prev === newRoot) ? childNode : prev;
+
+    // Detach the downward child from cur's children list.
+    cur.children = cur.children.filter(c => c.id !== downChild.id);
+
+    // Save cur's original branch length, then overwrite it with the reversed
+    // length (distance from cur to the new root via the reversed path).
+    const savedLen = cur.length || 0;
+    cur.length     = prevLen;
+
+    // Attach cur as a child of prev (either newRoot or the previous node).
+    prev.children.push(cur);
+
+    prevLen = savedLen;
+    prev    = cur;
+    cur     = par;
+  }
+
+  return newRoot;
+}

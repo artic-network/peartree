@@ -1,5 +1,5 @@
 import { parseNexus } from './treeio.js';
-import { computeLayout, computeLayoutFrom, reorderTree } from './treeutils.js';
+import { computeLayout, computeLayoutFrom, reorderTree, rerootTree } from './treeutils.js';
 import { TreeRenderer } from './treerenderer.js';
 
 (async () => {
@@ -48,7 +48,8 @@ import { TreeRenderer } from './treerenderer.js';
     // Give the browser a frame to update the UI
     await new Promise(r => setTimeout(r, 0));
 
-    const { root, tipNameMap } = trees[0];
+    const { root: parsedRoot, tipNameMap } = trees[0];
+    let root = parsedRoot;   // mutable – updated on every reroot
     const { nodes, nodeMap, maxX, maxY } = computeLayout(root);
 
     const tipCount = nodes.filter(n => n.isTip).length;
@@ -65,10 +66,15 @@ import { TreeRenderer } from './treerenderer.js';
     const btnForward   = document.getElementById('btn-forward');
     const btnOrderAsc  = document.getElementById('btn-order-asc');
     const btnOrderDesc = document.getElementById('btn-order-desc');
+    const btnReroot    = document.getElementById('btn-reroot');
 
     renderer._onNavChange = (canBack, canFwd) => {
       btnBack.disabled    = !canBack;
       btnForward.disabled = !canFwd;
+    };
+
+    renderer._onBranchSelectChange = (hasSelection) => {
+      btnReroot.disabled = !hasSelection;
     };
 
     btnBack.addEventListener('click',    () => renderer.navigateBack());
@@ -120,6 +126,45 @@ import { TreeRenderer } from './treerenderer.js';
     };
     btnModeNodes.addEventListener('click',    () => applyMode('nodes'));
     btnModeBranches.addEventListener('click', () => applyMode('branches'));
+
+    // Reroot
+    btnReroot.addEventListener('click', () => {
+      const selNode = renderer._branchSelectNode;
+      const selX    = renderer._branchSelectX;
+      if (!selNode || selX === null) return;
+
+      // Compute distFromParent in raw branch-length units.
+      // Layout x values equal cumulative divergence from (sub)root, so the
+      // difference between two layout x values IS the raw branch length.
+      const parentLayoutNode = renderer.nodeMap.get(selNode.parentId);
+      if (!parentLayoutNode) return;
+      const distFromParent = selX - parentLayoutNode.x;
+
+      // Reroot the raw tree.
+      const newRoot = rerootTree(root, selNode.id, distFromParent);
+      root = newRoot;
+
+      // Re-apply any current ordering to the rerooted tree.
+      if (currentOrder === 'asc')  reorderTree(root, true);
+      if (currentOrder === 'desc') reorderTree(root, false);
+
+      // Reset navigation, then load new layout. Stay in branches mode.
+      renderer._navStack         = [];
+      renderer._fwdStack         = [];
+      renderer._viewRawRoot      = null;
+      renderer._branchSelectNode = null;
+      renderer._branchSelectX    = null;
+      renderer._branchHoverNode  = null;
+      renderer._branchHoverX     = null;
+      if (renderer._onBranchSelectChange) renderer._onBranchSelectChange(false);
+      renderer.setRawTree(root);
+
+      const layout = computeLayout(root);
+      renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+
+      const tipCount2 = layout.nodes.filter(n => n.isTip).length;
+      fileInfoEl.textContent = `ebov.tree  ·  ${tipCount2.toLocaleString()} taxa  ·  1 tree (rerooted)`;
+    });
 
     window.addEventListener('keydown', e => {
       if (!e.metaKey && !e.ctrlKey) return;
