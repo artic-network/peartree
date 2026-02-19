@@ -1183,7 +1183,7 @@ export class TreeRenderer {
    */
   _computeStats() {
     if (!this.nodes) return null;
-    const tipCount = this.maxY;
+    const tipCount = this._selectedTipIds.size > 0 ? this._selectedTipIds.size : this.maxY;
 
     // Determine the "reference" node for Distance and Height.
     // Priority: MRCA (2+ tips) > single selected tip > root (no selection).
