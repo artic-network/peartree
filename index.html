@@ -50,8 +50,7 @@
     .pt-toolbar {
       background: var(--pt-bg-dark);
       border-bottom: 1px solid var(--pt-border);
-      min-height: 36px;
-      padding: 0 0.75rem;
+      padding: 8px 0.75rem;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -61,13 +60,35 @@
     .pt-toolbar-sep {
       width: 1px;
       height: 18px;
-      background: var(--pt-border);
+      background: rgba(255,255,255,0.15);
       margin: 0 2px;
     }
+    /* Brand – mirrors Sealion's navbar-brand */
+    .pt-brand {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--pt-red);
+      white-space: nowrap;
+      margin-right: 4px;
+      letter-spacing: 0.01em;
+      line-height: 1;
+    }
+    .pt-brand i { opacity: 0.85; }
 
     /* ── Sliders ── */
     .form-label-sm { font-size: 0.67rem; color: var(--pt-gold); margin-bottom: 0; }
     .form-range { width: 90px; accent-color: var(--bs-primary); }
+    /* Force visible track on Solar dark theme (--bs-secondary-bg blends into toolbar) */
+    .form-range::-webkit-slider-runnable-track {
+      background: rgba(255,255,255,0.18);
+      border-radius: 4px;
+      height: 0.4rem;
+    }
+    .form-range::-moz-range-track {
+      background: rgba(255,255,255,0.18);
+      border-radius: 4px;
+      height: 0.4rem;
+    }
 
     /* ── Status bar ── */
     #status-bar {
@@ -358,40 +379,62 @@
 </head>
 <body>
 
-<div class="pt-toolbar">
-  <button id="btn-open-tree" class="btn btn-sm btn-outline-primary" title="Open tree file (⌘O)"><i class="bi bi-folder2-open me-1"></i>Open…</button>
+<nav class="pt-toolbar">
+  <!-- Brand -->
+  <span class="pt-brand"><i class="bi bi-tree me-1"></i>PearTree</span>
   <div class="pt-toolbar-sep"></div>
-  <button id="btn-back"       class="btn btn-sm btn-outline-secondary" disabled title="Navigate back (⌘[)">&#8249;</button>
-  <button id="btn-forward"    class="btn btn-sm btn-outline-secondary" disabled title="Navigate forward (⌘])">&#8250;</button>
+
+  <!-- Open file -->
+  <button id="btn-open-tree" class="btn btn-sm btn-outline-primary" title="Open tree file (⌘O)"><i class="bi bi-folder2-open"></i></button>
   <div class="pt-toolbar-sep"></div>
-  <button id="btn-fit"        class="btn btn-sm btn-outline-secondary" title="Fit all (⌘0)">Fit all</button>
-  <button id="btn-fit-labels" class="btn btn-sm btn-outline-secondary" title="Fit labels (⌘⌥0)">Fit labels</button>
-  <div class="pt-toolbar-sep"></div>
-  <button id="btn-reroot" class="btn btn-sm btn-outline-secondary" disabled title="Reroot tree at branch selection">Reroot</button>
-  <div class="pt-toolbar-sep"></div>
-  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Select:</span>
-  <div class="btn-group" role="group">
-    <button id="btn-mode-nodes"    class="btn btn-sm btn-outline-secondary active" title="Select nodes mode (⌘N)">Nodes</button>
-    <button id="btn-mode-branches" class="btn btn-sm btn-outline-secondary" title="Select branches mode (⌘B)">Branches</button>
+
+  <!-- Back / Forward -->
+  <div class="btn-group" role="group" aria-label="Navigate history">
+    <button id="btn-back"    class="btn btn-sm btn-outline-secondary" disabled title="Navigate back (⌘[)"><i class="bi bi-chevron-left"></i></button>
+    <button id="btn-forward" class="btn btn-sm btn-outline-secondary" disabled title="Navigate forward (⌘])"><i class="bi bi-chevron-right"></i></button>
   </div>
   <div class="pt-toolbar-sep"></div>
-  <label class="d-flex align-items-center gap-1">
-    <span class="form-label-sm">Label</span>
+
+  <!-- Fit -->
+  <div class="btn-group" role="group" aria-label="Fit view">
+    <button id="btn-fit"        class="btn btn-sm btn-outline-secondary" title="Fit all (⌘0)"><i class="bi bi-arrows-fullscreen"></i></button>
+    <button id="btn-fit-labels" class="btn btn-sm btn-outline-secondary" title="Fit labels (⌘⌥0)"><i class="bi bi-type"></i></button>
+  </div>
+  <div class="pt-toolbar-sep"></div>
+
+  <!-- Reroot -->
+  <button id="btn-reroot" class="btn btn-sm btn-outline-secondary" disabled title="Reroot tree at branch selection"><i class="bi bi-arrow-clockwise"></i></button>
+  <div class="pt-toolbar-sep"></div>
+
+  <!-- Select mode -->
+  <div class="btn-group" role="group" aria-label="Selection mode">
+    <button id="btn-mode-nodes"    class="btn btn-sm btn-outline-secondary active" title="Select nodes mode (⌘N)"><i class="bi bi-circle me-1"></i>Nodes</button>
+    <button id="btn-mode-branches" class="btn btn-sm btn-outline-secondary"        title="Select branches mode (⌘B)"><i class="bi bi-bezier me-1"></i>Branches</button>
+  </div>
+  <div class="pt-toolbar-sep"></div>
+
+  <!-- Sliders -->
+  <label class="d-flex align-items-center gap-1" title="Label font size">
+    <span class="form-label-sm"><i class="bi bi-fonts"></i></span>
     <input type="range" class="form-range" id="font-size-slider" min="6" max="20" value="11" />
   </label>
-  <label class="d-flex align-items-center gap-1">
-    <span class="form-label-sm">Node</span>
+  <label class="d-flex align-items-center gap-1" title="Node size">
+    <span class="form-label-sm"><i class="bi bi-record-circle"></i></span>
     <input type="range" class="form-range" id="tip-size-slider" min="1" max="12" value="3" />
   </label>
   <div class="pt-toolbar-sep"></div>
+
+  <!-- Order -->
   <span class="form-label-sm" style="padding: 0 2px 0 4px;">Order:</span>
-  <div class="btn-group" role="group">
-    <button id="btn-order-asc"  class="btn btn-sm btn-outline-secondary" title="Order branches ascending by clade size (⌘D)">Up</button>
-    <button id="btn-order-desc" class="btn btn-sm btn-outline-secondary" title="Order branches descending by clade size (⌘U)">Down</button>
+  <div class="btn-group" role="group" aria-label="Branch order">
+    <button id="btn-order-asc"  class="btn btn-sm btn-outline-secondary" title="Order branches ascending by clade size (⌘D)"><i class="bi bi-sort-up"></i></button>
+    <button id="btn-order-desc" class="btn btn-sm btn-outline-secondary" title="Order branches descending by clade size (⌘U)"><i class="bi bi-sort-down"></i></button>
   </div>
+
   <div class="ms-auto"></div>
+  <!-- Help -->
   <button id="btn-help" class="btn btn-sm btn-outline-secondary" title="Help (⌘?)"><i class="bi bi-question-circle"></i></button>
-</div>
+</nav>
 
 <div id="canvas-container">
   <div id="loading"><div class="pt-spinner"></div><p id="loading-msg">Fetching tree file…</p></div>
