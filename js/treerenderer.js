@@ -98,6 +98,8 @@ export class TreeRenderer {
     this._selectedTipIds  = new Set();
     this._mrcaNodeId      = null;
     this._fitLabelsMode   = false;
+    this._lastStatusMx    = null;  // cached mouse x for status bar redraws
+    this._lastStatusMy    = null;  // cached mouse y for status bar redraws
 
     // Subtree navigation
     this._rawRoot     = null;   // full-tree raw node (set via setRawTree)
@@ -157,6 +159,7 @@ export class TreeRenderer {
     this.maxY = maxY;
     this._measureLabels();
     this.fitToWindow();
+    this._drawStatusBar(null);
   }
 
   setFontSize(sz) {
@@ -983,6 +986,7 @@ export class TreeRenderer {
         }
       }
       this._updateMRCA();
+      this._drawStatusBar(this._lastStatusMx);
       this._dirty = true;
     });
 
@@ -1155,6 +1159,7 @@ export class TreeRenderer {
       if (e.key === 'Escape') {
         this._selectedTipIds.clear();
         this._mrcaNodeId = null;
+        this._drawStatusBar(this._lastStatusMx);
         this._dirty = true;
         return;
       }
@@ -1172,24 +1177,145 @@ export class TreeRenderer {
     window.addEventListener('resize', () => this._resize());
   }
 
+  /**
+   * Derive display statistics from the current selection and view.
+   * Returns { tipCount, distance, height, totalLength }
+   */
+  _computeStats() {
+    if (!this.nodes) return null;
+    const tipCount = this.maxY;
+
+    // Determine the "reference" node for Distance and Height.
+    // Priority: MRCA (2+ tips) > single selected tip > root (no selection).
+    let refNode = null;
+    if (this._mrcaNodeId) {
+      refNode = this.nodeMap.get(this._mrcaNodeId);
+    } else if (this._selectedTipIds.size === 1) {
+      refNode = this.nodeMap.get([...this._selectedTipIds][0]);
+    }
+
+    // Distance: x of refNode, or maxX when nothing is selected.
+    const distance = refNode ? refNode.x : this.maxX;
+
+    // Height: for internal refNode, distance down to the furthest selected tip.
+    // For a tip refNode, 0. For no selection, root height = maxX.
+    let height;
+    if (!refNode) {
+      height = this.maxX;
+    } else if (refNode.isTip) {
+      height = 0;
+    } else {
+      // max x of selected tips (or all descendant tips if no selection)
+      if (this._selectedTipIds.size >= 2) {
+        const selTipXs = [...this._selectedTipIds]
+          .map(id => this.nodeMap.get(id))
+          .filter(Boolean)
+          .map(n => n.x);
+        height = selTipXs.length ? Math.max(...selTipXs) - refNode.x : 0;
+      } else {
+        height = this.maxX - refNode.x;
+      }
+    }
+
+    // Total branch length: within subtree rooted at refNode, or whole tree.
+    const subRootId = refNode ? refNode.id : (this.nodes.find(n => !n.parentId) || {}).id;
+    let totalLength = 0;
+    if (subRootId != null) {
+      const stack = [subRootId];
+      while (stack.length) {
+        const id   = stack.pop();
+        const node = this.nodeMap.get(id);
+        if (!node) continue;
+        if (node.parentId) {
+          const parent = this.nodeMap.get(node.parentId);
+          if (parent) totalLength += node.x - parent.x;
+        }
+        if (!node.isTip) for (const cid of node.children) stack.push(cid);
+      }
+    }
+
+    return { tipCount, distance, height, totalLength };
+  }
+
+  /**
+   * Redraw the status canvas (or fallback div).
+   * mx = screen x of the mouse pointer, or null if unknown.
+   */
+  _drawStatusBar(mx = null) {
+    if (!this._statusCanvas) {
+      // Fallback: plain text in the DOM element
+      if (!this.nodes) return;
+      const el = document.getElementById('status');
+      if (!el) return;
+      const stats = this._computeStats();
+      const lines = [];
+      if (mx !== null) {
+        const wx = this._worldXfromScreen(mx);
+        const wy = this._worldYfromScreen(this._lastStatusMy || 0);
+        const tip = Math.min(this.maxY, Math.max(1, Math.round(wy)));
+        lines.push(`div: ${wx.toFixed(5)}`, `tip: ${tip}`);
+      }
+      if (stats) {
+        lines.push(
+          `Tips: ${stats.tipCount}`,
+          `Dist: ${stats.distance.toFixed(5)}`,
+          `Height: ${stats.height.toFixed(5)}`,
+          `Length: ${stats.totalLength.toFixed(5)}`,
+        );
+      }
+      el.textContent = lines.join('  |  ');
+      return;
+    }
+
+    const sctx = this._statusCtx;
+    const W    = this._statusCanvas.clientWidth;
+    const H    = this._statusCanvas.clientHeight;
+    sctx.clearRect(0, 0, W, H);
+    if (!this.nodes) return;
+
+    sctx.font         = '11px monospace';
+    sctx.textBaseline = 'middle';
+    const cy = H / 2;
+    // Fixed pixel positions (packed left)
+    const POS = { div: 12, tip: 140, tips: 240, dist: 350, height: 490, length: 640 };
+
+    // Dim teal for mouse-position fields, brighter for stats
+    const mouseColor = 'rgba(25,166,153,0.55)';
+    const statColor  = 'rgba(242,241,230,0.65)';
+    const labelColor = 'rgba(230,213,149,0.75)';
+
+    const draw = (x, label, value, lc, vc) => {
+      sctx.fillStyle = lc;
+      sctx.fillText(label, x, cy);
+      const lw = sctx.measureText(label).width;
+      sctx.fillStyle = vc;
+      sctx.fillText(value, x + lw, cy);
+    };
+
+    // Mouse-position fields (only when mouse is over the canvas)
+    if (mx !== null) {
+      const wx  = this._worldXfromScreen(mx);
+      const wy  = this._worldYfromScreen(this._lastStatusMy || 0);
+      const tip = Math.min(this.maxY, Math.max(1, Math.round(wy)));
+      draw(POS.div,  'div\u2009',  wx.toFixed(5),  mouseColor, mouseColor);
+      draw(POS.tip,  'tip\u2009',  String(tip),    mouseColor, mouseColor);
+    }
+
+    // Tree stats (always shown once data is loaded)
+    const stats = this._computeStats();
+    if (stats) {
+      draw(POS.tips,   'Tips\u2009',   String(stats.tipCount),        labelColor, statColor);
+      draw(POS.dist,   'Dist\u2009',   stats.distance.toFixed(5),     labelColor, statColor);
+      draw(POS.height, 'Height\u2009', stats.height.toFixed(5),       labelColor, statColor);
+      draw(POS.length, 'Length\u2009', stats.totalLength.toFixed(5),  labelColor, statColor);
+    }
+  }
+
   _updateStatus(e) {
     if (!this.nodes) return;
     const rect = this.canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const wx = this._worldXfromScreen(mx);
-    const text = `divergence: ${wx.toFixed(5)}`;
-    if (this._statusCanvas) {
-      const sctx = this._statusCtx;
-      const W    = this._statusCanvas.clientWidth;
-      const H    = this._statusCanvas.clientHeight;
-      sctx.clearRect(0, 0, W, H);
-      sctx.font         = '11px monospace';
-      sctx.fillStyle    = 'rgba(25, 166, 153, 0.7)';
-      sctx.textBaseline = 'middle';
-      sctx.fillText(text, 12, H / 2);
-    } else {
-      const statusEl = document.getElementById('status');
-      if (statusEl) statusEl.textContent = text;
-    }
+    this._lastStatusMx = e.clientX - rect.left;
+    this._lastStatusMy = e.clientY - rect.top;
+    this._drawStatusBar(this._lastStatusMx);
   }
 }
