@@ -870,6 +870,18 @@ class TreeRenderer {
     }
     ctx.stroke();
 
+    // Draw root stub: a short horizontal line to the left of the root node.
+    const rootNode = this.nodes.find(n => !n.parentId);
+    if (rootNode) {
+      const rx        = this._wx(rootNode.x);
+      const ry        = this._wy(rootNode.y);
+      const stubLen   = Math.max(10, Math.min(30, this.paddingLeft * 0.45));
+      ctx.beginPath();
+      ctx.moveTo(rx - stubLen, ry);
+      ctx.lineTo(rx, ry);
+      ctx.stroke();
+    }
+
     // Draw vertical elbow lines per internal node
     ctx.beginPath();
     for (const node of this.nodes) {
