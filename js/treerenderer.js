@@ -2,7 +2,7 @@
 // Canvas renderer
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { computeLayoutFrom } from './treeutils.js';
+import { computeLayoutFrom, reorderTree } from './treeutils.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Theme
@@ -101,6 +101,12 @@ export class TreeRenderer {
     this._lastStatusMx    = null;  // cached mouse x for status bar redraws
     this._lastStatusMy    = null;  // cached mouse y for status bar redraws
 
+    this._mode             = 'nodes';  // 'nodes' | 'branches'
+    this._branchHoverNode  = null;     // node whose horizontal branch is hovered
+    this._branchHoverX     = null;     // world-x of hover point
+    this._branchSelectNode = null;     // fixed branch-selection node
+    this._branchSelectX    = null;     // fixed branch-selection world-x
+
     // Subtree navigation
     this._rawRoot     = null;   // full-tree raw node (set via setRawTree)
     this._rawNodeMap  = new Map(); // id → raw node
@@ -114,6 +120,9 @@ export class TreeRenderer {
     this._targetScaleY  = 1;
     this._targetScaleX  = 1;   // animated horizontal scale
     this._animating     = false;
+    this._reorderFromY  = null;   // Map<id, oldY> during reorder animation
+    this._reorderToY    = null;   // Map<id, newY>
+    this._reorderAlpha  = 1;      // 0→1; 1 = not animating
 
     this._rafId = null;
     this._dirty = true;
@@ -153,6 +162,7 @@ export class TreeRenderer {
   }
 
   setData(nodes, nodeMap, maxX, maxY) {
+    this._reorderAlpha = 1;  // cancel any in-progress reorder animation
     this.nodes = nodes;
     this.nodeMap = nodeMap;
     this.maxX = maxX;
@@ -160,6 +170,43 @@ export class TreeRenderer {
     this._measureLabels();
     this.fitToWindow();
     this._drawStatusBar(null);
+  }
+
+  /**
+   * Replace the layout data (same as setData) but animate each node's y
+   * position from its old screen row to the new one.  Does NOT reset the
+   * viewport (scaleY / offsetY), so the caller can handle zoom-restoration
+   * itself with _setTarget as usual.
+   */
+  setDataAnimated(nodes, nodeMap, maxX, maxY) {
+    // Snapshot old y values by node id.
+    const fromY = new Map();
+    if (this.nodes) {
+      for (const n of this.nodes) fromY.set(n.id, n.y);
+    }
+    // Build target y map from new layout.
+    const toY = new Map();
+    for (const n of nodes) toY.set(n.id, n.y);
+
+    // Install new layout.
+    this.nodes   = nodes;
+    this.nodeMap = nodeMap;
+    this.maxX    = maxX;
+    this.maxY    = maxY;
+    this._measureLabels();
+    this._updateScaleX(false);
+    this._updateMinScaleY();
+
+    // Seed animation: set every node's y to its old position so the lerp
+    // starts from there.
+    for (const n of this.nodes) {
+      const fy = fromY.get(n.id);
+      if (fy !== undefined) n.y = fy;
+    }
+    this._reorderFromY  = fromY;
+    this._reorderToY    = toY;
+    this._reorderAlpha  = 0;
+    this._dirty = true;
   }
 
   setFontSize(sz) {
@@ -176,6 +223,21 @@ export class TreeRenderer {
       const newScaleY = Math.max(this.minScaleY, this._targetScaleY * (this.minScaleY / prevMin));
       this._setTarget(this._targetOffsetY, newScaleY, true);
     }
+    this._dirty = true;
+  }
+
+  /** Switch interaction mode ('nodes' or 'branches'); clears both modes' selections. */
+  setMode(mode) {
+    if (mode === this._mode) return;
+    this._selectedTipIds.clear();
+    this._mrcaNodeId      = null;
+    this._hoveredNodeId   = null;
+    this._branchHoverNode = null;
+    this._branchHoverX    = null;
+    this._branchSelectNode = null;
+    this._branchSelectX    = null;
+    this._mode = mode;
+    this._drawStatusBar(this._lastStatusMx);
     this._dirty = true;
   }
 
@@ -477,6 +539,32 @@ export class TreeRenderer {
   }
 
   _loop() {
+    // ── Per-node reorder animation (y positions) ──
+    if (this._reorderAlpha < 1) {
+      const EASE = 0.14;
+      this._reorderAlpha = Math.min(1, this._reorderAlpha + EASE);
+      // Ease-in-out curve
+      const t = this._reorderAlpha;
+      const a = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      for (const node of this.nodes) {
+        const fy = this._reorderFromY.get(node.id);
+        const ty = this._reorderToY.get(node.id);
+        if (fy !== undefined && ty !== undefined) {
+          node.y = fy + (ty - fy) * a;
+        }
+      }
+      if (this._reorderAlpha >= 1) {
+        // Snap to final positions
+        for (const node of this.nodes) {
+          const ty = this._reorderToY.get(node.id);
+          if (ty !== undefined) node.y = ty;
+        }
+        this._reorderFromY = null;
+        this._reorderToY   = null;
+      }
+      this._dirty = true;
+    }
+
     if (this._animating) {
       const EASE = 0.16;
       const dY  = this._targetOffsetY - this.offsetY;
@@ -751,8 +839,8 @@ export class TreeRenderer {
       }
     }
 
-    // Pass 4 – hovered node drawn on top (enlarged + dark outline ring)
-    if (this._hoveredNodeId) {
+    // Pass 4 – hovered node drawn on top (enlarged + dark outline ring) — nodes mode only
+    if (this._mode === 'nodes' && this._hoveredNodeId) {
       const hn = this.nodeMap.get(this._hoveredNodeId);
       if (hn) {
         const hx        = this._wx(hn.x);
@@ -783,6 +871,45 @@ export class TreeRenderer {
         ctx.fill();
 
         ctx.lineWidth = 1;
+      }
+    }
+
+    // Pass 5 – branches mode: draw hover and/or selection marker on branch
+    if (this._mode === 'branches') {
+      const br    = r * 1.3;                      // matches mrcaR
+      const ringW = Math.max(1.5, r * 0.5);       // matches MRCA ring width
+
+      const drawBranchMarker = (node, worldX, alpha) => {
+        const bx = this._wx(worldX);
+        const by = this._wy(node.y);
+        ctx.globalAlpha = alpha;
+        // Dark backing
+        ctx.beginPath();
+        ctx.arc(bx, by, br + ringW + 1, 0, Math.PI * 2);
+        ctx.fillStyle = this.tipOutlineColor;
+        ctx.fill();
+        // Coloured ring
+        ctx.beginPath();
+        ctx.arc(bx, by, br + ringW * 0.5, 0, Math.PI * 2);
+        ctx.strokeStyle = this.mrcaRingColor;
+        ctx.lineWidth   = ringW;
+        ctx.stroke();
+        ctx.lineWidth = 1;
+        // Inner fill
+        ctx.beginPath();
+        ctx.arc(bx, by, br, 0, Math.PI * 2);
+        ctx.fillStyle = this.internalColor;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      };
+
+      // Hover preview (semi-transparent)
+      if (this._branchHoverNode) {
+        drawBranchMarker(this._branchHoverNode, this._branchHoverX, 0.5);
+      }
+      // Fixed selection (opaque)
+      if (this._branchSelectNode) {
+        drawBranchMarker(this._branchSelectNode, this._branchSelectX, 1);
       }
     }
   }
@@ -899,6 +1026,38 @@ export class TreeRenderer {
     return null;
   }
 
+  /**
+   * In branches mode: find the horizontal branch segment under (mx, my).
+   * Returns { node, worldX } or null.
+   * The horizontal segment of a branch runs from parent.x to node.x at y = node.y.
+   */
+  _findBranchAtScreen(mx, my) {
+    if (!this.nodes) return null;
+    const H        = this.canvas.clientHeight;
+    const yMin     = this._worldYfromScreen(-20);
+    const yMax     = this._worldYfromScreen(H + 20);
+    const hitY     = 7;   // pixel tolerance perpendicular to branch
+    let   bestNode = null;
+    let   bestDY   = Infinity;
+    for (const node of this.nodes) {
+      if (!node.parentId) continue;
+      if (node.y < yMin || node.y > yMax) continue;
+      const parent = this.nodeMap.get(node.parentId);
+      if (!parent) continue;
+      const sy  = this._wy(node.y);
+      const dy  = Math.abs(my - sy);
+      if (dy > hitY) continue;
+      const lx  = this._wx(parent.x);
+      const rx  = this._wx(node.x);
+      if (mx < lx || mx > rx) continue;
+      if (dy < bestDY) { bestDY = dy; bestNode = node; }
+    }
+    if (!bestNode) return null;
+    const parent = this.nodeMap.get(bestNode.parentId);
+    const worldX = Math.max(parent.x, Math.min(bestNode.x, this._worldXfromScreen(mx)));
+    return { node: bestNode, worldX };
+  }
+
   /** Returns the id of the node whose world-y is closest to the viewport centre. */
   nodeIdAtViewportCenter() {
     if (!this.nodes) return null;
@@ -958,8 +1117,25 @@ export class TreeRenderer {
     // ── Click: plain click replaces selection; Cmd+click toggles.
     canvas.addEventListener('click', e => {
       if (this._spaceDown) return;
-      const rect    = canvas.getBoundingClientRect();
-      const node    = this._findNodeAtScreen(e.clientX - rect.left, e.clientY - rect.top);
+      const rect = canvas.getBoundingClientRect();
+      const mx   = e.clientX - rect.left;
+      const my   = e.clientY - rect.top;
+
+      // Branches mode: fix a branch selection point or clear it.
+      if (this._mode === 'branches') {
+        const hit = this._findBranchAtScreen(mx, my);
+        if (!hit) {
+          this._branchSelectNode = null;
+          this._branchSelectX    = null;
+        } else {
+          this._branchSelectNode = hit.node;
+          this._branchSelectX    = hit.worldX;
+        }
+        this._dirty = true;
+        return;
+      }
+
+      const node     = this._findNodeAtScreen(mx, my);
       const additive = e.metaKey || e.ctrlKey;
 
       if (!node) {
@@ -1066,17 +1242,32 @@ export class TreeRenderer {
 
       // Hover hit-test (always, not just when dragging)
       if (!this._dragging) {
-        const rect   = this.canvas.getBoundingClientRect();
-        const mx     = e.clientX - rect.left;
-        const my     = e.clientY - rect.top;
-        const hovered = this._findNodeAtScreen(mx, my);
-        const newId   = hovered ? hovered.id : null;
-        if (newId !== this._hoveredNodeId) {
-          this._hoveredNodeId = newId;
-          this.canvas.style.cursor = newId
-            ? (this._spaceDown ? 'grab' : 'pointer')
-            : (this._spaceDown ? 'grab' : 'default');
-          this._dirty = true;
+        const rect = this.canvas.getBoundingClientRect();
+        const mx   = e.clientX - rect.left;
+        const my   = e.clientY - rect.top;
+
+        if (this._mode === 'branches') {
+          const hit     = this._findBranchAtScreen(mx, my);
+          const newNode = hit ? hit.node : null;
+          const newX    = hit ? hit.worldX : null;
+          if (newNode !== this._branchHoverNode || newX !== this._branchHoverX) {
+            this._branchHoverNode = newNode;
+            this._branchHoverX    = newX;
+            this.canvas.style.cursor = newNode
+              ? (this._spaceDown ? 'grab' : 'crosshair')
+              : (this._spaceDown ? 'grab' : 'default');
+            this._dirty = true;
+          }
+        } else {
+          const hovered = this._findNodeAtScreen(mx, my);
+          const newId   = hovered ? hovered.id : null;
+          if (newId !== this._hoveredNodeId) {
+            this._hoveredNodeId = newId;
+            this.canvas.style.cursor = newId
+              ? (this._spaceDown ? 'grab' : 'pointer')
+              : (this._spaceDown ? 'grab' : 'default');
+            this._dirty = true;
+          }
         }
       }
 
@@ -1084,10 +1275,10 @@ export class TreeRenderer {
     });
 
     this.canvas.addEventListener('mouseleave', () => {
-      if (this._hoveredNodeId !== null) {
-        this._hoveredNodeId = null;
-        this._dirty = true;
-      }
+      let dirty = false;
+      if (this._hoveredNodeId !== null)  { this._hoveredNodeId = null;  dirty = true; }
+      if (this._branchHoverNode !== null) { this._branchHoverNode = null; this._branchHoverX = null; dirty = true; }
+      if (dirty) this._dirty = true;
     });
 
     window.addEventListener('mouseup', () => {

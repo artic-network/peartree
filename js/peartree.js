@@ -88,7 +88,7 @@ import { TreeRenderer } from './treerenderer.js';
       reorderTree(root, ascending);
       const viewRoot = renderer._viewRawRoot || root;
       const layout = computeLayoutFrom(viewRoot);
-      renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+      renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
 
       // If the tree was zoomed, restore the same vertical zoom level and
       // scroll so the previously-centred node sits at the viewport midpoint.
@@ -109,6 +109,17 @@ import { TreeRenderer } from './treerenderer.js';
 
     btnOrderAsc.addEventListener('click',  () => applyOrder(false));
     btnOrderDesc.addEventListener('click', () => applyOrder(true));
+
+    // Mode menu
+    const btnModeNodes    = document.getElementById('btn-mode-nodes');
+    const btnModeBranches = document.getElementById('btn-mode-branches');
+    const applyMode = (mode) => {
+      renderer.setMode(mode);
+      btnModeNodes.classList.toggle('active',    mode === 'nodes');
+      btnModeBranches.classList.toggle('active', mode === 'branches');
+    };
+    btnModeNodes.addEventListener('click',    () => applyMode('nodes'));
+    btnModeBranches.addEventListener('click', () => applyMode('branches'));
 
     window.addEventListener('keydown', e => {
       if (!e.metaKey && !e.ctrlKey) return;
