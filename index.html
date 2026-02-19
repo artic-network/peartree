@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PearTree — Phylogenetic Tree Viewer</title>
 
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" />
   <!-- Bootstrap 5 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
   <!-- Markdown renderer -->
@@ -41,6 +45,8 @@
       flex-direction: column;
       background: var(--pt-bg);
       color: var(--pt-off-white);
+      font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-size: 13px;
     }
 
     /* ── Navbar overrides ── */
@@ -56,7 +62,7 @@
       user-select: none;
     }
     .pt-menubar .navbar-brand {
-      font-size: 0.85rem;
+      font-size: 0.75rem;
       font-weight: 700;
       color: var(--pt-red) !important;
       letter-spacing: 0.4px;
@@ -72,7 +78,8 @@
       background: none;
       border: none;
       color: var(--pt-off-white);
-      font-size: 0.78rem;
+      font-family: inherit;
+      font-size: 0.7rem;
       padding: 0 0.6rem;
       line-height: 28px;
       cursor: pointer;
@@ -107,7 +114,8 @@
       background: none;
       border: none;
       color: var(--pt-off-white);
-      font-size: 0.78rem;
+      font-family: inherit;
+      font-size: 0.7rem;
       padding: 4px 14px 4px 12px;
       text-align: left;
       cursor: pointer;
@@ -116,7 +124,7 @@
     .pt-dropdown-item:hover { background: rgba(255,255,255,0.08); }
     .pt-dropdown-item.active { color: var(--pt-teal); }
     .pt-dropdown-item .shortcut {
-      font-size: 0.7rem;
+      font-size: 0.63rem;
       opacity: 0.5;
     }
     .pt-dropdown-separator {
@@ -125,7 +133,7 @@
       margin: 3px 0;
     }
     #file-info {
-      font-size: 0.72rem;
+      font-size: 0.63rem;
       color: var(--pt-gold);
       opacity: 0.65;
       margin-left: auto;
@@ -152,7 +160,7 @@
     }
 
     /* ── Sliders ── */
-    .form-label-sm { font-size: 0.75rem; color: var(--pt-gold); margin-bottom: 0; }
+    .form-label-sm { font-size: 0.67rem; color: var(--pt-gold); margin-bottom: 0; }
     .form-range { width: 90px; accent-color: var(--pt-red); }
 
     /* ── Buttons ── */
@@ -160,7 +168,8 @@
       background: var(--pt-btn-bg);
       color: var(--pt-off-white);
       border: 1px solid var(--pt-btn-bdr);
-      font-size: 0.75rem;
+      font-family: inherit;
+      font-size: 0.67rem;
       padding: 3px 10px;
       transition: background .15s;
     }
@@ -198,7 +207,7 @@
       background: var(--pt-bg);
       gap: 14px;
     }
-    #loading p { font-size: 0.875rem; color: var(--pt-gold); }
+    #loading p { font-size: 0.72rem; color: var(--pt-gold); }
     .pt-spinner {
       width: 36px; height: 36px;
       border: 3px solid #044D59;
@@ -251,7 +260,7 @@
       flex-shrink: 0;
     }
     #help-panel-header h2 {
-      font-size: 0.85rem;
+      font-size: 0.72rem;
       font-weight: 700;
       color: var(--pt-red);
       margin: 0;
@@ -273,23 +282,23 @@
       flex: 1;
       overflow-y: auto;
       padding: 16px 20px 24px;
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       line-height: 1.65;
       color: var(--pt-off-white);
     }
     /* Markdown content styles */
-    .help-md h1 { font-size: 1rem; font-weight: 700; color: var(--pt-cream); margin: 0 0 10px; }
-    .help-md h2 { font-size: 0.85rem; font-weight: 700; color: var(--pt-teal); margin: 18px 0 6px; text-transform: uppercase; letter-spacing: 0.4px; }
-    .help-md h3 { font-size: 0.8rem; font-weight: 600; color: var(--pt-gold); margin: 14px 0 4px; }
+    .help-md h1 { font-size: 0.82rem; font-weight: 700; color: var(--pt-cream); margin: 0 0 10px; }
+    .help-md h2 { font-size: 0.72rem; font-weight: 700; color: var(--pt-teal); margin: 18px 0 6px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .help-md h3 { font-size: 0.7rem; font-weight: 600; color: var(--pt-gold); margin: 14px 0 4px; }
     .help-md p  { margin: 0 0 8px; }
     .help-md ul, .help-md ol { margin: 0 0 8px; padding-left: 18px; }
     .help-md li { margin-bottom: 3px; }
-    .help-md code { background: rgba(255,255,255,0.07); border-radius: 3px; padding: 1px 4px; font-size: 0.76rem; color: var(--pt-cream); }
+    .help-md code { background: rgba(255,255,255,0.07); border-radius: 3px; padding: 1px 4px; font-size: 0.67rem; color: var(--pt-cream); }
     .help-md pre  { background: rgba(0,0,0,0.25); border-radius: 4px; padding: 8px 10px; overflow-x: auto; }
     .help-md pre code { background: none; padding: 0; }
     .help-md strong { color: var(--pt-cream); }
     .help-md hr { border: none; border-top: 1px solid var(--pt-border); margin: 14px 0; }
-    .help-md table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 0.76rem; }
+    .help-md table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 0.67rem; }
     .help-md th { color: var(--pt-gold); font-weight: 600; text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--pt-border); }
     .help-md td { padding: 3px 8px; border-bottom: 1px solid rgba(5,73,79,0.5); vertical-align: top; }
     .help-md tr:last-child td { border-bottom: none; }
@@ -298,7 +307,7 @@
       background: none;
       border: 1px solid var(--pt-btn-bdr);
       color: var(--pt-off-white);
-      font-size: 0.75rem;
+      font-size: 0.67rem;
       line-height: 1;
       width: 20px;
       height: 20px;
@@ -322,7 +331,7 @@
       border: 1px solid var(--pt-btn-bdr);
       border-radius: 4px;
       padding: 5px 10px;
-      font-size: 0.7rem;
+      font-size: 0.63rem;
       color: var(--pt-off-white);
       pointer-events: none;
       display: none;
