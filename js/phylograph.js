@@ -226,7 +226,10 @@ export function fromNestedRoot(nestedRoot) {
     if (cA.children) for (const c of cA.children) buildEdges(c, cA);
     if (cB.children) for (const c of cB.children) buildEdges(c, cB);
 
-    root = { nodeA: idxA, nodeB: idxB, lenA, lenB };
+    // Save the virtual root's annotations on graph.root — the virtual root
+    // node is dropped from nodes[], so this is the only place they are kept.
+    const rootAnnotations = nestedRoot.annotations || {};
+    root = { nodeA: idxA, nodeB: idxB, lenA, lenB, annotations: rootAnnotations };
 
   } else {
     // Trifurcating: include the root as a real node; build all its edges normally.
@@ -238,10 +241,18 @@ export function fromNestedRoot(nestedRoot) {
 
     // rootIdx.adjacents[0] = firstChildIdx naturally (first linkEdge call pushed it).
     // lenA = 0 tells computeLayoutFromGraph to treat nodeA as the real layout root.
-    root = { nodeA: rootIdx, nodeB: firstChildIdx, lenA: 0, lenB: firstChild.length || 0 };
+    // Mirror the root node's annotations onto graph.root for uniform access.
+    root = { nodeA: rootIdx, nodeB: firstChildIdx, lenA: 0, lenB: firstChild.length || 0,
+             annotations: nestedRoot.annotations || {} };
   }
 
-  return { nodes, root, origIdToIdx, annotationSchema: buildAnnotationSchema(nodes) };
+  // A tree is considered explicitly rooted (and therefore not re-rootable) when
+  // the root node carries annotations — this is characteristic of trees produced
+  // by Bayesian phylogenetic programs (BEAST, MrBayes, etc.) where the root
+  // represents a biologically meaningful reconstruction, not an arbitrary outgroup.
+  const rooted = Object.keys(root.annotations).length > 0;
+
+  return { nodes, root, origIdToIdx, annotationSchema: buildAnnotationSchema(nodes), rooted };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

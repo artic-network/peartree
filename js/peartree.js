@@ -168,6 +168,7 @@ import { TreeRenderer } from './treerenderer.js';
   let currentOrder     = null;  // null | 'asc' | 'desc'
   let controlsBound    = false;
   let _cachedMidpoint  = null;  // cached midpointRootGraph() result; cleared on every tree change
+  let isExplicitlyRooted = false; // true when root node carries annotations — rerooting disabled
 
   async function loadTree(text, filename) {
     setModalLoading(true);
@@ -195,6 +196,22 @@ import { TreeRenderer } from './treerenderer.js';
       graph           = fromNestedRoot(root);
       currentOrder    = null;
       _cachedMidpoint = null;
+      isExplicitlyRooted = graph.rooted;
+
+      // Disable reroot / midpoint-root for explicitly rooted trees.
+      // (bindControls may not have run yet on first load; the selector always works.)
+      const btnMPR = document.getElementById('btn-midpoint-root');
+      btnMPR.disabled = isExplicitlyRooted;
+      btnMPR.title    = isExplicitlyRooted
+        ? 'Tree is explicitly rooted (root has annotations) — rerooting disabled'
+        : 'Midpoint root (⌘M)';
+      const btnRR = document.getElementById('btn-reroot');
+      if (isExplicitlyRooted) {
+        btnRR.disabled = true;
+        btnRR.title    = 'Tree is explicitly rooted (root has annotations) — rerooting disabled';
+      } else {
+        btnRR.title = 'Reroot tree at selection';
+      }
 
       // Populate the "Colour by" dropdown from the annotation schema
       // (exclude list types since they can't be coloured directly).
@@ -273,7 +290,9 @@ import { TreeRenderer } from './treerenderer.js';
     const btnOrderDesc = document.getElementById('btn-order-desc');
     const btnReroot       = document.getElementById('btn-reroot');
     const btnMidpointRoot  = document.getElementById('btn-midpoint-root');
-    btnMidpointRoot.disabled = false;
+    // isExplicitlyRooted is read dynamically (closured from outer scope) so
+    // subsequent tree loads automatically pick up the new value.
+    btnMidpointRoot.disabled = isExplicitlyRooted;
     document.getElementById('btn-zoom-in') .addEventListener('click', () => renderer.zoomIn());
     document.getElementById('btn-zoom-out').addEventListener('click', () => renderer.zoomOut());
 
@@ -283,10 +302,10 @@ import { TreeRenderer } from './treerenderer.js';
     };
 
     renderer._onBranchSelectChange = (hasSelection) => {
-      if (renderer._mode === 'branches') btnReroot.disabled = !hasSelection;
+      if (renderer._mode === 'branches') btnReroot.disabled = isExplicitlyRooted || !hasSelection;
     };
     renderer._onNodeSelectChange = (hasSelection) => {
-      if (renderer._mode === 'nodes') btnReroot.disabled = !hasSelection;
+      if (renderer._mode === 'nodes') btnReroot.disabled = isExplicitlyRooted || !hasSelection;
     };
 
     btnBack.addEventListener('click',    () => renderer.navigateBack());
