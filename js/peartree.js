@@ -510,6 +510,7 @@ import { TreeRenderer } from './treerenderer.js';
     const btnOrderDesc = document.getElementById('btn-order-desc');
     const btnReroot       = document.getElementById('btn-reroot');
     const btnRotate       = document.getElementById('btn-rotate');
+    const btnRotateAll    = document.getElementById('btn-rotate-all');
     const btnMidpointRoot  = document.getElementById('btn-midpoint-root');
     // isExplicitlyRooted is read dynamically (closured from outer scope) so
     // subsequent tree loads automatically pick up the new value.
@@ -528,7 +529,9 @@ import { TreeRenderer } from './treerenderer.js';
     renderer._onNodeSelectChange = (hasSelection) => {
       if (renderer._mode === 'nodes') btnReroot.disabled = isExplicitlyRooted || !hasSelection;
       // Rotate requires an internal node (MRCA of ≥2 tips) in nodes mode.
-      btnRotate.disabled = !(renderer._mode === 'nodes' && renderer._mrcaNodeId);
+      const canRotate = renderer._mode === 'nodes' && !!renderer._mrcaNodeId;
+      btnRotate.disabled    = !canRotate;
+      btnRotateAll.disabled = !canRotate;
     };
 
     btnBack.addEventListener('click',    () => renderer.navigateBack());
@@ -538,21 +541,14 @@ import { TreeRenderer } from './treerenderer.js';
     btnOrderDesc.addEventListener('click', () => applyOrder(true));
 
     // ── Rotate node ──────────────────────────────────────────────────────────
-    // Click        → reverse children of the selected internal node only.
-    // Alt-click    → reverse children of the selected node AND all its
-    //               descendant internal nodes (deep / recursive rotation).
-    // In both cases the global auto-ordering is cleared so the new child
-    // order is preserved on subsequent rerootings.
-    btnRotate.addEventListener('click', (e) => {
+    // btn-rotate     → reverse direct children of the selected internal node.
+    // btn-rotate-all → reverse children at every level of the subtree.
+    // Both clear the global auto-ordering so the manual order is preserved.
+    function applyRotate(recursive) {
       const nodeId = renderer._mrcaNodeId;
       if (!nodeId) return;
 
-      const recursive = e.altKey;
-
-      // Mutate the graph (primary layout source).
       rotateNodeGraph(graph, nodeId, recursive);
-
-      // Keep the nested tree in sync (used by subtree navigation / applyOrder).
       rotateNodeTree(root, nodeId, recursive);
 
       // Disable global auto-ordering — the manual rotation must be preserved.
@@ -568,7 +564,10 @@ import { TreeRenderer } from './treerenderer.js';
       renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
 
       saveSettings();
-    });
+    }
+
+    btnRotate.addEventListener('click',    () => applyRotate(false));
+    btnRotateAll.addEventListener('click', () => applyRotate(true));
 
     // Mode menu
     const btnModeNodes    = document.getElementById('btn-mode-nodes');

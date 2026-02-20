@@ -559,7 +559,7 @@
 
 <nav class="pt-toolbar">
   <!-- Visual options palette (left panel) -->
-  <button id="btn-palette" class="btn btn-sm btn-outline-secondary" title="Visual options panel (Tab)"><i class="bi bi-layout-sidebar-inset"></i></button>
+  <button id="btn-palette" class="btn btn-sm btn-outline-secondary" title="Visual options panel (Tab)"><i class="bi bi-sliders"></i><i class="bi bi-caret-right"></i></button>
   <div class="pt-toolbar-sep"></div>
 
   <!-- Open file -->
@@ -598,8 +598,12 @@
   <div class="pt-toolbar-sep"></div>
     <!-- Rotate node -->
   <span class="form-label-sm" style="padding: 0 2px 0 4px;">Rotate:</span>
-  <button id="btn-rotate" class="btn btn-sm btn-outline-secondary" disabled
-    title="Rotate selected node (reverse children order). Alt-click to rotate all descendants."><i class="bi bi-arrow-down-up"></i></button>
+  <div class="btn-group" role="group" aria-label="Rotate node">
+    <button id="btn-rotate" class="btn btn-sm btn-outline-secondary" disabled
+      title="Rotate selected node (reverse direct children order)"><i class="bi bi-repeat" style="display:inline-block;transform:rotate(90deg)"></i></button>
+    <button id="btn-rotate-all" class="btn btn-sm btn-outline-secondary" disabled
+      title="Rotate all nodes in subtree (reverse children at every level)"><i class="bi bi-symmetry-horizontal" style="display:inline-block;transform:scaleX(-1)"></i></button>
+  </div>
   <div class="pt-toolbar-sep"></div>
 
 
@@ -607,19 +611,19 @@
   <span class="form-label-sm" style="padding: 0 2px 0 4px;">Select:</span>
   <div class="btn-group" role="group" aria-label="Selection mode">
     <button id="btn-mode-nodes"    class="btn btn-sm btn-outline-secondary active" title="Select nodes mode (⌘N)"><i class="bi bi-circle me-1"></i></button>
-    <button id="btn-mode-branches" class="btn btn-sm btn-outline-secondary"        title="Select branches mode (⌘B)"><i class="bi bi-bezier me-1"></i></button>
+    <button id="btn-mode-branches" class="btn btn-sm btn-outline-secondary"        title="Select branches mode (⌘B)"><i class="bi bi-share-fill me-1"></i></button>
   </div>
   <div class="pt-toolbar-sep"></div>
 
   <!-- Reroot -->
   <span class="form-label-sm" style="padding: 0 2px 0 4px;">Root:</span>
-  <button id="btn-reroot" class="btn btn-sm btn-outline-secondary" disabled title="Reroot tree at selection"><i class="bi bi-arrow-clockwise"></i></button>
+  <button id="btn-reroot" class="btn btn-sm btn-outline-secondary" disabled title="Reroot tree at selection"><i class="bi bi-reply-fill"></i></button>
   <!-- Midpoint root -->
-  <button id="btn-midpoint-root" class="btn btn-sm btn-outline-secondary" disabled title="Midpoint root (⌘M)"><i class="bi bi-symmetry-horizontal"></i></button>
+  <button id="btn-midpoint-root" class="btn btn-sm btn-outline-secondary" disabled title="Midpoint root (⌘M)"><i class="bi bi-vr" style="display:inline-block;transform:rotate(90deg)"></i></button>
 
   <div class="ms-auto"></div>
   <!-- Help -->
-  <button id="btn-help" class="btn btn-sm btn-outline-secondary" title="Help (⌘?)"><i class="bi bi-question-circle"></i></button>
+  <button id="btn-help" class="btn btn-sm btn-outline-secondary" title="Help (⌘?)"><i class="bi bi-caret-left"></i><i class="bi bi-question-circle"></i></button>
 </nav>
 
 <div id="canvas-container">
