@@ -2,6 +2,7 @@ import { parseNexus, parseNewick } from './treeio.js';
 import { computeLayoutFrom, computeLayoutFromGraph, reorderTree, rerootTree, rotateNodeTree } from './treeutils.js';
 import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointRootGraph } from './phylograph.js';
 import { TreeRenderer } from './treerenderer.js';
+import { AxisRenderer  } from './axisrenderer.js';
 
 (async () => {
   const canvas            = document.getElementById('tree-canvas');
@@ -23,6 +24,10 @@ import { TreeRenderer } from './treerenderer.js';
   const legendAnnotEl     = document.getElementById('legend-annotation');
   const legendLeftCanvas  = document.getElementById('legend-left-canvas');
   const legendRightCanvas = document.getElementById('legend-right-canvas');
+  const axisCanvas        = document.getElementById('axis-canvas');
+  const axisShowEl        = document.getElementById('axis-show');
+  const axisDateAnnotEl   = document.getElementById('axis-date-annotation');
+  const axisDateRow       = document.getElementById('axis-date-row');
   const btnFit            = document.getElementById('btn-fit');
   const btnResetSettings  = document.getElementById('btn-reset-settings');
 
@@ -43,6 +48,8 @@ import { TreeRenderer } from './treerenderer.js';
     nodeShapeColor:   '#888888',
     nodeShapeBgColor: '#02292e',
     legendShow:       'off',
+    axisShow:         'off',
+    axisDateAnnotation: '',
   };
 
   function loadSettings() {
@@ -67,6 +74,8 @@ import { TreeRenderer } from './treerenderer.js';
       nodeColourBy:     nodeColourBy.value,
       legendShow:       legendShowEl.value,
       legendAnnotation: legendAnnotEl.value,
+      axisShow:         axisShowEl.value,
+      axisDateAnnotation: axisDateAnnotEl.value,
       nodeOrder:        currentOrder,
       mode:             renderer ? renderer._mode : 'nodes',
     }));
@@ -95,6 +104,8 @@ import { TreeRenderer } from './treerenderer.js';
     nodeColourBy.value       = '';
     legendShowEl.value       = DEFAULTS.legendShow;
     legendAnnotEl.value      = '';
+    axisShowEl.value         = DEFAULTS.axisShow;
+    axisDateAnnotEl.value    = '';
 
     // Apply to renderer.
     if (renderer) {
@@ -113,6 +124,7 @@ import { TreeRenderer } from './treerenderer.js';
       renderer.setNodeColourBy(null);
       renderer.setMode('nodes');
       applyLegend();
+      applyAxis();
     }
 
     // Reset order + mode button states (if controls are already bound).
@@ -188,6 +200,20 @@ import { TreeRenderer } from './treerenderer.js';
   renderer.setNodeRadius(parseInt(nodeSlider.value));
   renderer.setNodeShapeColor(nodeShapeColorEl.value);
   renderer.setNodeShapeBgColor(nodeShapeBgEl.value);
+
+  // ── Axis renderer ─────────────────────────────────────────────────────────
+  const axisRenderer = new AxisRenderer(axisCanvas);
+
+  renderer._onViewChange = (scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr) => {
+    axisRenderer.update(scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr);
+  };
+
+  // Restore axis visibility from saved settings
+  if (_saved.axisShow === 'on') {
+    axisShowEl.value            = 'on';
+    axisCanvas.style.display    = 'block';
+    axisRenderer.setVisible(true);
+  }
 
   // Hide the initial loading overlay; the Open Tree modal replaces it on startup
   loadingEl.style.display = 'none';
@@ -426,6 +452,40 @@ import { TreeRenderer } from './treerenderer.js';
       const layout = computeLayoutFromGraph(graph);
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
       renderer.setRawTree(root);
+
+      // ── Axis renderer setup ───────────────────────────────────────────────
+      // Detect time-scaled tree: root AND all nodes must carry a 'height' annotation.
+      const _isTimedTree = ('height' in graph.root.annotations) &&
+                           graph.nodes.every(n => 'height' in n.annotations);
+      const _rootHeight  = _isTimedTree ? (parseFloat(graph.root.annotations.height) || 0) : 0;
+      axisRenderer.setTreeParams({ maxX: layout.maxX, isTimedTree: _isTimedTree, rootHeight: _rootHeight });
+
+      // Populate date annotation dropdown (categorical annotations that parse as dates).
+      while (axisDateAnnotEl.options.length > 1) axisDateAnnotEl.remove(1);
+      if (_isTimedTree) {
+        for (const [name, def] of schema) {
+          if (def.dataType === 'categorical' || def.dataType === 'integer') {
+            // Check if any value parses as a date year (four-digit year pattern)
+            const sample = def.values?.[0];
+            if (sample != null && AxisRenderer._parseDateToDecYear(String(sample)) != null) {
+              const opt = document.createElement('option');
+              opt.value = name;
+              opt.textContent = name;
+              axisDateAnnotEl.appendChild(opt);
+            }
+          }
+        }
+      }
+      axisDateRow.style.display   = _isTimedTree && axisDateAnnotEl.options.length > 1 ? 'flex' : 'none';
+      axisDateAnnotEl.disabled    = !_isTimedTree;
+
+      // Restore saved date annotation (only if this tree is timed and the key exists)
+      const _savedAxisDate = _saved.axisDateAnnotation || '';
+      const _canRestoreDate = _isTimedTree && _savedAxisDate &&
+                              [...axisDateAnnotEl.options].some(o => o.value === _savedAxisDate);
+      axisDateAnnotEl.value = _canRestoreDate ? _savedAxisDate : '';
+      if (_canRestoreDate) axisRenderer.setDateAnchor(_savedAxisDate, layout.nodeMap);
+      else                 axisRenderer.setDateAnchor(null, layout.nodeMap);
 
       // Reset navigation and selection state for the new tree
       renderer._navStack         = [];
@@ -762,6 +822,39 @@ import { TreeRenderer } from './treerenderer.js';
 
   legendShowEl .addEventListener('change', applyLegend);
   legendAnnotEl.addEventListener('change', applyLegend);
+
+  // ── Axis controls ─────────────────────────────────────────────────────────
+
+  function applyAxis() {
+    const on = axisShowEl.value === 'on';
+    axisCanvas.style.display = on ? 'block' : 'none';
+    axisRenderer.setVisible(on);
+    // Resize the tree canvas so it fills the remaining space above/below the axis.
+    renderer._resize();
+    if (on) {
+      // Draw immediately with current view state.
+      axisRenderer.update(
+        renderer.scaleX, renderer.offsetX, renderer.paddingLeft,
+        renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
+        window.devicePixelRatio || 1,
+      );
+    }
+    saveSettings();
+  }
+
+  axisShowEl.addEventListener('change', applyAxis);
+
+  axisDateAnnotEl.addEventListener('change', () => {
+    const key = axisDateAnnotEl.value || null;
+    axisRenderer.setDateAnchor(key, renderer.nodeMap || new Map());
+    // Force a redraw by resetting the hash
+    axisRenderer.update(
+      renderer.scaleX, renderer.offsetX, renderer.paddingLeft,
+      renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
+      window.devicePixelRatio || 1,
+    );
+    saveSettings();
+  });
 
   btnFit.addEventListener('click', () => renderer.fitToWindow());
   document.getElementById('btn-fit-labels').addEventListener('click', () => renderer.fitLabels());

@@ -128,6 +128,8 @@ export class TreeRenderer {
     this._onNavChange          = null;   // callback(canBack, canFwd) – wired by main code
     this._onBranchSelectChange = null;   // callback(hasSelection) – wired by main code
     this._onNodeSelectChange   = null;   // callback(hasSelection) – wired by main code
+    this._onViewChange         = null;   // callback(scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr)
+    this._lastViewHash         = '';
 
     // animation targets (lerp toward these each frame)
     this._targetOffsetY = 0;
@@ -773,6 +775,10 @@ export class TreeRenderer {
   _worldYfromScreen(sy) { return (sy - this.offsetY) / this.scaleY; }
   _worldXfromScreen(sx) { return (sx - this.offsetX) / this.scaleX; }
 
+  _viewHash() {
+    return `${this.scaleX.toFixed(4)}|${this.offsetX.toFixed(2)}|${this.paddingLeft}|${this.labelRightPad}|${this.bgColor}|${this.fontSize}|${this.canvas.clientWidth}|${this.canvas.clientHeight}`;
+  }
+
   _resize() {
     const W = this.canvas.parentElement.clientWidth;
     const H = this.canvas.parentElement.clientHeight;
@@ -954,6 +960,10 @@ export class TreeRenderer {
     if (this._dirty) {
       this._draw();
       this._dirty = false;
+    }
+    if (this._onViewChange && (this._animating || this._reorderAlpha < 1 || this._crossfadeAlpha > 0 || !this._lastViewHash || this._lastViewHash !== this._viewHash())) {
+      this._lastViewHash = this._viewHash();
+      this._onViewChange(this.scaleX, this.offsetX, this.paddingLeft, this.labelRightPad, this.bgColor, this.fontSize, window.devicePixelRatio || 1);
     }
     this._rafId = requestAnimationFrame(() => this._loop());
   }

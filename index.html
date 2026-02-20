@@ -140,11 +140,25 @@
       align-items: stretch;
       overflow: hidden;
     }
+    #canvas-and-axis-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
     #canvas-wrapper {
       flex: 1;
       position: relative;
       overflow: hidden;
       min-width: 0;
+    }
+    #axis-canvas {
+      flex-shrink: 0;
+      height: 36px;
+      display: none;
+      width: 100%;
+      pointer-events: none;
     }
     canvas            { display: block; cursor: default; }
     canvas.space      { cursor: grab; }
@@ -641,11 +655,14 @@
 
 <div id="canvas-container">
   <canvas id="legend-left-canvas"  class="pt-legend-canvas"></canvas>
-  <div id="canvas-wrapper">
-    <div id="loading"><div class="pt-spinner"></div><p id="loading-msg">Fetching tree file…</p></div>
-    <div id="error"></div>
-    <canvas id="tree-canvas"></canvas>
-    <div id="tooltip"></div>
+  <div id="canvas-and-axis-wrapper">
+    <div id="canvas-wrapper">
+      <div id="loading"><div class="pt-spinner"></div><p id="loading-msg">Fetching tree file…</p></div>
+      <div id="error"></div>
+      <canvas id="tree-canvas"></canvas>
+      <div id="tooltip"></div>
+    </div>
+    <canvas id="axis-canvas"></canvas>
   </div>
   <canvas id="legend-right-canvas" class="pt-legend-canvas right"></canvas>
 </div>
@@ -806,6 +823,23 @@
       <div class="pt-palette-row">
         <span class="pt-palette-label">Annotation</span>
         <select class="pt-palette-select" id="legend-annotation" disabled>
+          <option value="">(none)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="pt-palette-section">
+      <h3>Axis</h3>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Show</span>
+        <select class="pt-palette-select" id="axis-show">
+          <option value="off">Off</option>
+          <option value="on">On</option>
+        </select>
+      </div>
+      <div class="pt-palette-row" id="axis-date-row" style="display:none">
+        <span class="pt-palette-label">Date</span>
+        <select class="pt-palette-select" id="axis-date-annotation">
           <option value="">(none)</option>
         </select>
       </div>
