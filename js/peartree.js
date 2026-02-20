@@ -1,5 +1,6 @@
 import { parseNexus, parseNewick } from './treeio.js';
-import { computeLayout, computeLayoutFrom, reorderTree, rerootTree, midpointRootTree } from './treeutils.js';
+import { computeLayoutFrom, computeLayoutFromGraph, reorderTree, rerootTree } from './treeutils.js';
+import { fromNestedRoot, rerootOnGraph, reorderGraph, midpointRootGraph } from './phylograph.js';
 import { TreeRenderer } from './treerenderer.js';
 
 (async () => {
@@ -157,9 +158,10 @@ import { TreeRenderer } from './treerenderer.js';
   // ── Tree loading ──────────────────────────────────────────────────────────
 
   let root             = null;
+  let graph            = null;  // PhyloGraph (adjacency-list model) – kept in sync with root
   let currentOrder     = null;  // null | 'asc' | 'desc'
   let controlsBound    = false;
-  let _cachedMidpoint  = null;  // cached result of midpointRootTree(); invalidated on every tree change
+  let _cachedMidpoint  = null;  // cached midpointRootGraph() result; cleared on every tree change
 
   async function loadTree(text, filename) {
     setModalLoading(true);
@@ -184,10 +186,11 @@ import { TreeRenderer } from './treerenderer.js';
       }
 
       root            = parsedRoot;
+      graph           = fromNestedRoot(root);
       currentOrder    = null;
       _cachedMidpoint = null;
 
-      const layout = computeLayout(root);
+      const layout = computeLayoutFromGraph(graph);
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
       renderer.setRawTree(root);
 
@@ -259,9 +262,10 @@ import { TreeRenderer } from './treerenderer.js';
       const zoomRatio = renderer._targetScaleY / renderer.minScaleY;
       const anchorId  = isZoomed ? renderer.nodeIdAtViewportCenter() : null;
 
-      reorderTree(root, ascending);
-      const viewRoot = renderer._viewRawRoot || root;
-      const layout = computeLayoutFrom(viewRoot);
+      reorderGraph(graph, ascending);
+      reorderTree(root, ascending);   // keep nested in sync for subtree-zoom nav
+      const viewRoot = renderer._viewRawRoot;
+      const layout = viewRoot ? computeLayoutFrom(viewRoot) : computeLayoutFromGraph(graph);
       renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
 
       if (isZoomed && anchorId) {
@@ -295,12 +299,17 @@ import { TreeRenderer } from './treerenderer.js';
 
     // ── Shared rerooting logic (all three methods funnel through here) ────────
     function applyReroot(childNodeId, distFromParent) {
+      // Mutate graph in-place (O(depth) parent-pointer flips, no allocation).
+      rerootOnGraph(graph, childNodeId, distFromParent);
+
+      // Keep nested root in sync — still needed by applyOrder and subtree
+      // navigation (renderer._rawNodeMap) until Phases 4-6 migrate those paths.
       const newRoot = rerootTree(root, childNodeId, distFromParent);
       root            = newRoot;
       _cachedMidpoint = null;
 
-      if (currentOrder === 'asc')  reorderTree(root, true);
-      if (currentOrder === 'desc') reorderTree(root, false);
+      if (currentOrder === 'asc')  { reorderGraph(graph, true);  reorderTree(root, true);  }
+      if (currentOrder === 'desc') { reorderGraph(graph, false); reorderTree(root, false); }
 
       renderer._navStack         = [];
       renderer._fwdStack         = [];
@@ -316,7 +325,7 @@ import { TreeRenderer } from './treerenderer.js';
       btnReroot.disabled = true;
       renderer.setRawTree(root);
 
-      const layout = computeLayout(root);
+      const layout = computeLayoutFromGraph(graph);
       renderer.setDataCrossfade(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
     }
 
@@ -356,7 +365,7 @@ import { TreeRenderer } from './treerenderer.js';
 
     function applyMidpointRoot() {
       if (btnMidpointRoot.disabled) return;
-      if (!_cachedMidpoint) _cachedMidpoint = midpointRootTree(root);
+      if (!_cachedMidpoint) _cachedMidpoint = midpointRootGraph(graph);
       const { childNodeId, distFromParent } = _cachedMidpoint;
       _cachedMidpoint = null;  // tree is about to change — old result is no longer valid
       applyReroot(childNodeId, distFromParent);

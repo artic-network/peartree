@@ -10,6 +10,10 @@
  *
  * Each entry in `nodes`:
  *   { id, name, label, x, y, isTip, children: [id,…], parentId }
+ *
+ * @deprecated  Use computeLayoutFromGraph() for new code.
+ *              This function is kept for applyOrder / subtree-navigation paths
+ *              that still use the nested-root format (Phases 4–6 will migrate them).
  */
 export function computeLayout(root) {
   let tipCounter = 0;
@@ -64,6 +68,8 @@ export function computeLayout(root) {
 /**
  * Like computeLayout but treats `rawNode` as the root even if it has a
  * non-zero branch length (so the root always sits at x = 0 in layout space).
+ *
+ * @deprecated  Used by applyOrder / subtree navigation (nested-root format).
  */
 export function computeLayoutFrom(rawNode) {
   const savedLen = rawNode.length;
@@ -71,6 +77,107 @@ export function computeLayoutFrom(rawNode) {
   const result = computeLayout(rawNode);
   rawNode.length = savedLen;
   return result;
+}
+
+/**
+ * Compute the rectangular layout from a PhyloGraph (adjacency-list model).
+ *
+ * Output format is identical to computeLayout():
+ *   { nodes: LayoutNode[], nodeMap: Map<id,LayoutNode>, maxX, maxY }
+ *
+ * Each LayoutNode:
+ *   { id, name, label, annotations, x, y, isTip, children: [id,…], parentId }
+ *
+ * Bifurcating root:
+ *   A virtual root layout node is inserted at x = 0 with id '__graph_root__'.
+ *   The two root-adjacent nodes extend rightward at x = totalEdgeLen * proportion
+ *   and x = totalEdgeLen * (1 − proportion) respectively.
+ *
+ * Trifurcating root (rootEdge.proportion === 0, nodeA.parentIdx === -1):
+ *   nodeA is the real root; no virtual node is needed.
+ */
+export function computeLayoutFromGraph(graph) {
+  const { nodes: gnodes, root } = graph;
+  const { nodeA, nodeB, lenA, lenB } = root;
+
+  let tipCounter = 0;
+  const layoutNodes = [];
+  const nodeMap     = new Map();
+
+  /**
+   * DFS from `nodeIdx`, arriving from `fromNodeIdx`.
+   * fromNodeIdx = -1 means no direction is excluded (root-at-node case).
+   */
+  function traverse(nodeIdx, fromNodeIdx, xFromRoot, parentLayoutId) {
+    const gnode = gnodes[nodeIdx];
+    const entry = {
+      id:          gnode.origId,
+      name:        gnode.name,
+      label:       gnode.label,
+      annotations: gnode.annotations,
+      x:           xFromRoot,
+      y:           null,
+      isTip:       false,
+      children:    [],
+      parentId:    parentLayoutId,
+    };
+
+    layoutNodes.push(entry);
+    nodeMap.set(entry.id, entry);
+
+    const children = gnode.adjacents
+      .map((adjIdx, i) => ({ adjIdx, len: gnode.lengths[i] }))
+      .filter(({ adjIdx }) => adjIdx !== fromNodeIdx);
+
+    entry.isTip = children.length === 0;
+    if (entry.isTip) { tipCounter++; entry.y = tipCounter; }
+
+    for (const { adjIdx, len } of children) {
+      traverse(adjIdx, nodeIdx, xFromRoot + len, gnode.origId);
+      entry.children.push(gnodes[adjIdx].origId);
+    }
+
+    if (!entry.isTip) {
+      const childYs = entry.children.map(cid => nodeMap.get(cid).y);
+      entry.y = childYs.reduce((a, b) => a + b, 0) / childYs.length;
+    }
+  }
+
+  const gNodeA = gnodes[nodeA];
+  const gNodeB = gnodes[nodeB];
+
+  if (lenA === 0) {
+    // Trifurcating root: nodeA is the real root.
+    // fromNodeIdx = -1 means no direction is excluded.
+    traverse(nodeA, -1, 0, null);
+
+  } else {
+    // Virtual bifurcating root between nodeA and nodeB.
+    // lenA / lenB are direct distances from the root point to each side.
+    const ROOT_LAYOUT_ID = '__graph_root__';
+
+    traverse(nodeA, nodeB, lenA, ROOT_LAYOUT_ID);
+    traverse(nodeB, nodeA, lenB, ROOT_LAYOUT_ID);
+
+    const rootEntry = {
+      id:          ROOT_LAYOUT_ID,
+      name:        null,
+      label:       null,
+      annotations: {},
+      x:           0,
+      y:           (nodeMap.get(gNodeA.origId).y + nodeMap.get(gNodeB.origId).y) / 2,
+      isTip:       false,
+      children:    [gNodeA.origId, gNodeB.origId],
+      parentId:    null,
+    };
+    layoutNodes.unshift(rootEntry);
+    nodeMap.set(ROOT_LAYOUT_ID, rootEntry);
+  }
+
+  const maxX = layoutNodes.reduce((m, n) => Math.max(m, n.x), 0);
+  const maxY = tipCounter;
+
+  return { nodes: layoutNodes, nodeMap, maxX, maxY };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
