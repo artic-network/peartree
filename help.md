@@ -1,6 +1,4 @@
-# PearTree Help
-
-PearTree is a phylogenetic tree viewer that runs entirely in the browser. 
+PearTree is a phylogenetic tree viewer that runs entirely in the browser. No data is uploaded to any server.
 ---
 
 ## Interface Overview

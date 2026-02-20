@@ -24,6 +24,135 @@ import { TreeRenderer } from './treerenderer.js';
   const legendLeftCanvas  = document.getElementById('legend-left-canvas');
   const legendRightCanvas = document.getElementById('legend-right-canvas');
   const btnFit            = document.getElementById('btn-fit');
+  const btnResetSettings  = document.getElementById('btn-reset-settings');
+
+  // ── Settings persistence ──────────────────────────────────────────────────
+
+  const SETTINGS_KEY = 'peartree-settings';
+
+  const DEFAULTS = {
+    canvasBgColor:    '#02292e',
+    branchColor:      '#f2f1e6',
+    branchWidth:      '1',
+    fontSize:         '11',
+    labelColor:       '#f7eeca',
+    tipSize:          '3',
+    tipShapeColor:    '#888888',
+    tipShapeBgColor:  '#02292e',
+    nodeSize:         '0',
+    nodeShapeColor:   '#888888',
+    nodeShapeBgColor: '#02292e',
+    legendShow:       'off',
+  };
+
+  function loadSettings() {
+    try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); }
+    catch { return {}; }
+  }
+
+  function saveSettings() {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      canvasBgColor:    canvasBgColorEl.value,
+      branchColor:      branchColorEl.value,
+      branchWidth:      branchWidthSlider.value,
+      fontSize:         fontSlider.value,
+      labelColor:       labelColorEl.value,
+      tipSize:          tipSlider.value,
+      tipShapeColor:    tipShapeColorEl.value,
+      tipShapeBgColor:  tipShapeBgEl.value,
+      nodeSize:         nodeSlider.value,
+      nodeShapeColor:   nodeShapeColorEl.value,
+      nodeShapeBgColor: nodeShapeBgEl.value,
+      tipColourBy:      tipColourBy.value,
+      nodeColourBy:     nodeColourBy.value,
+      legendShow:       legendShowEl.value,
+      legendAnnotation: legendAnnotEl.value,
+      nodeOrder:        currentOrder,
+      mode:             renderer ? renderer._mode : 'nodes',
+    }));
+  }
+
+  function applyDefaults() {
+    if (!confirm('Reset all visual settings to their defaults?')) return;
+
+    // Hydrate DOM controls.
+    canvasBgColorEl.value    = DEFAULTS.canvasBgColor;
+    branchColorEl.value      = DEFAULTS.branchColor;
+    branchWidthSlider.value  = DEFAULTS.branchWidth;
+    document.getElementById('branch-width-value').textContent = DEFAULTS.branchWidth;
+    fontSlider.value         = DEFAULTS.fontSize;
+    document.getElementById('font-size-value').textContent    = DEFAULTS.fontSize;
+    labelColorEl.value       = DEFAULTS.labelColor;
+    tipSlider.value          = DEFAULTS.tipSize;
+    document.getElementById('tip-size-value').textContent     = DEFAULTS.tipSize;
+    tipShapeColorEl.value    = DEFAULTS.tipShapeColor;
+    tipShapeBgEl.value       = DEFAULTS.tipShapeBgColor;
+    nodeSlider.value         = DEFAULTS.nodeSize;
+    document.getElementById('node-size-value').textContent    = DEFAULTS.nodeSize;
+    nodeShapeColorEl.value   = DEFAULTS.nodeShapeColor;
+    nodeShapeBgEl.value      = DEFAULTS.nodeShapeBgColor;
+    tipColourBy.value        = '';
+    nodeColourBy.value       = '';
+    legendShowEl.value       = DEFAULTS.legendShow;
+    legendAnnotEl.value      = '';
+
+    // Apply to renderer.
+    if (renderer) {
+      renderer.setBgColor(DEFAULTS.canvasBgColor);
+      renderer.setBranchColor(DEFAULTS.branchColor);
+      renderer.setBranchWidth(parseFloat(DEFAULTS.branchWidth));
+      renderer.setFontSize(parseInt(DEFAULTS.fontSize));
+      renderer.setLabelColor(DEFAULTS.labelColor);
+      renderer.setTipRadius(parseInt(DEFAULTS.tipSize));
+      renderer.setTipShapeColor(DEFAULTS.tipShapeColor);
+      renderer.setTipShapeBgColor(DEFAULTS.tipShapeBgColor);
+      renderer.setNodeRadius(parseInt(DEFAULTS.nodeSize));
+      renderer.setNodeShapeColor(DEFAULTS.nodeShapeColor);
+      renderer.setNodeShapeBgColor(DEFAULTS.nodeShapeBgColor);
+      renderer.setTipColourBy(null);
+      renderer.setNodeColourBy(null);
+      renderer.setMode('nodes');
+      applyLegend();
+    }
+
+    // Reset order + mode button states (if controls are already bound).
+    currentOrder = null;
+    document.getElementById('btn-order-asc') ?.classList.remove('active');
+    document.getElementById('btn-order-desc')?.classList.remove('active');
+    document.getElementById('btn-mode-nodes')    ?.classList.toggle('active', true);
+    document.getElementById('btn-mode-branches') ?.classList.toggle('active', false);
+
+    saveSettings();
+  }
+
+  btnResetSettings.addEventListener('click', applyDefaults);
+
+  // Load stored settings and immediately hydrate the visual DOM controls.
+  const _saved = loadSettings();
+  if (_saved.canvasBgColor)        canvasBgColorEl.value    = _saved.canvasBgColor;
+  if (_saved.branchColor)          branchColorEl.value      = _saved.branchColor;
+  if (_saved.branchWidth    != null) {
+    branchWidthSlider.value = _saved.branchWidth;
+    document.getElementById('branch-width-value').textContent = _saved.branchWidth;
+  }
+  if (_saved.fontSize       != null) {
+    fontSlider.value = _saved.fontSize;
+    document.getElementById('font-size-value').textContent = _saved.fontSize;
+  }
+  if (_saved.labelColor)           labelColorEl.value       = _saved.labelColor;
+  if (_saved.tipSize        != null) {
+    tipSlider.value = _saved.tipSize;
+    document.getElementById('tip-size-value').textContent = _saved.tipSize;
+  }
+  if (_saved.tipShapeColor)        tipShapeColorEl.value    = _saved.tipShapeColor;
+  if (_saved.tipShapeBgColor)      tipShapeBgEl.value       = _saved.tipShapeBgColor;
+  if (_saved.nodeSize       != null) {
+    nodeSlider.value = _saved.nodeSize;
+    document.getElementById('node-size-value').textContent = _saved.nodeSize;
+  }
+  if (_saved.nodeShapeColor)       nodeShapeColorEl.value   = _saved.nodeShapeColor;
+  if (_saved.nodeShapeBgColor)     nodeShapeBgEl.value      = _saved.nodeShapeBgColor;
+  if (_saved.legendShow)           legendShowEl.value       = _saved.legendShow;
 
   // Size canvas to container before creating renderer
   const container = canvas.parentElement;
@@ -46,6 +175,19 @@ import { TreeRenderer } from './treerenderer.js';
 
   const renderer = new TreeRenderer(canvas, undefined, statusCanvas);
   renderer.setLegendCanvases(legendLeftCanvas, legendRightCanvas);
+
+  // Apply stored visual settings to the renderer immediately.
+  renderer.setBgColor(canvasBgColorEl.value);
+  renderer.setBranchColor(branchColorEl.value);
+  renderer.setBranchWidth(parseFloat(branchWidthSlider.value));
+  renderer.setFontSize(parseInt(fontSlider.value));
+  renderer.setLabelColor(labelColorEl.value);
+  renderer.setTipRadius(parseInt(tipSlider.value));
+  renderer.setTipShapeColor(tipShapeColorEl.value);
+  renderer.setTipShapeBgColor(tipShapeBgEl.value);
+  renderer.setNodeRadius(parseInt(nodeSlider.value));
+  renderer.setNodeShapeColor(nodeShapeColorEl.value);
+  renderer.setNodeShapeBgColor(nodeShapeBgEl.value);
 
   // Hide the initial loading overlay; the Open Tree modal replaces it on startup
   loadingEl.style.display = 'none';
@@ -263,10 +405,23 @@ import { TreeRenderer } from './treerenderer.js';
       legendAnnotEl.value    = '';
       legendAnnotEl.disabled = schema.size === 0;
 
+      // Restore annotation-dependent settings: only apply if the key still exists in this tree.
+      const _hasAnnot = (key) => key && schema.has(key) && schema.get(key).dataType !== 'list';
+      tipColourBy.value   = _hasAnnot(_saved.tipColourBy)      ? _saved.tipColourBy      : '';
+      nodeColourBy.value  = _hasAnnot(_saved.nodeColourBy)     ? _saved.nodeColourBy     : '';
+      legendAnnotEl.value = _hasAnnot(_saved.legendAnnotation) ? _saved.legendAnnotation : '';
+      // Restore saved node order.
+      if (_saved.nodeOrder === 'asc' || _saved.nodeOrder === 'desc') {
+        const asc = _saved.nodeOrder === 'asc';
+        reorderGraph(graph, asc);
+        reorderTree(root, asc);
+        currentOrder = _saved.nodeOrder;
+      }
+
       // Pass schema to the renderer so it can build colour scales.
       renderer.setAnnotationSchema(schema);
-      renderer.setTipColourBy(null);
-      renderer.setNodeColourBy(null);
+      renderer.setTipColourBy(tipColourBy.value || null);
+      renderer.setNodeColourBy(nodeColourBy.value || null);
       applyLegend();   // rebuild legend with new data (may clear it)
       const layout = computeLayoutFromGraph(graph);
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
@@ -291,10 +446,20 @@ import { TreeRenderer } from './treerenderer.js';
         btnModalClose.disabled = false;
       }
 
+      // Restore saved interaction mode before binding controls.
+      renderer.setMode(_saved.mode === 'branches' ? 'branches' : 'nodes');
+
       if (!controlsBound) {
         bindControls();
         controlsBound = true;
       }
+
+      // Sync button active states with restored settings.
+      document.getElementById('btn-order-asc') .classList.toggle('active', currentOrder === 'desc');
+      document.getElementById('btn-order-desc').classList.toggle('active', currentOrder === 'asc');
+      const _restoredMode = renderer._mode;
+      document.getElementById('btn-mode-nodes')   .classList.toggle('active', _restoredMode === 'nodes');
+      document.getElementById('btn-mode-branches').classList.toggle('active', _restoredMode === 'branches');
 
       closeModal();
     } catch (err) {
@@ -302,6 +467,38 @@ import { TreeRenderer } from './treerenderer.js';
     }
 
     setModalLoading(false);
+  }
+
+  // ── applyOrder: hoisted to outer scope so loadTree can restore saved order ─
+
+  function applyOrder(ascending) {
+    const label = ascending ? 'asc' : 'desc';
+    if (currentOrder === label) return;
+
+    const isZoomed  = renderer._targetScaleY > renderer.minScaleY * 1.005;
+    const zoomRatio = renderer._targetScaleY / renderer.minScaleY;
+    const anchorId  = isZoomed ? renderer.nodeIdAtViewportCenter() : null;
+
+    reorderGraph(graph, ascending);
+    reorderTree(root, ascending);
+    const viewRoot = renderer._viewRawRoot;
+    const layout = viewRoot ? computeLayoutFrom(viewRoot) : computeLayoutFromGraph(graph);
+    renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+
+    if (isZoomed && anchorId) {
+      const H          = renderer.canvas.clientHeight;
+      const newScaleY  = renderer.minScaleY * zoomRatio;
+      const anchorNode = layout.nodeMap.get(anchorId);
+      if (anchorNode) {
+        const rawOffsetY = H / 2 - anchorNode.y * newScaleY;
+        renderer._setTarget(rawOffsetY, newScaleY, /*immediate*/ false);
+      }
+    }
+
+    currentOrder = label;
+    document.getElementById('btn-order-asc') .classList.toggle('active', !ascending);
+    document.getElementById('btn-order-desc').classList.toggle('active', ascending);
+    saveSettings();
   }
 
   // ── Control bindings (set up once after the first tree loads) ─────────────
@@ -334,35 +531,6 @@ import { TreeRenderer } from './treerenderer.js';
     btnBack.addEventListener('click',    () => renderer.navigateBack());
     btnForward.addEventListener('click', () => renderer.navigateForward());
 
-    function applyOrder(ascending) {
-      const label = ascending ? 'asc' : 'desc';
-      if (currentOrder === label) return;
-
-      const isZoomed  = renderer._targetScaleY > renderer.minScaleY * 1.005;
-      const zoomRatio = renderer._targetScaleY / renderer.minScaleY;
-      const anchorId  = isZoomed ? renderer.nodeIdAtViewportCenter() : null;
-
-      reorderGraph(graph, ascending);
-      reorderTree(root, ascending);   // keep nested in sync for subtree-zoom nav
-      const viewRoot = renderer._viewRawRoot;
-      const layout = viewRoot ? computeLayoutFrom(viewRoot) : computeLayoutFromGraph(graph);
-      renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
-
-      if (isZoomed && anchorId) {
-        const H          = renderer.canvas.clientHeight;
-        const newScaleY  = renderer.minScaleY * zoomRatio;
-        const anchorNode = layout.nodeMap.get(anchorId);
-        if (anchorNode) {
-          const rawOffsetY = H / 2 - anchorNode.y * newScaleY;
-          renderer._setTarget(rawOffsetY, newScaleY, /*immediate*/ false);
-        }
-      }
-
-      currentOrder = label;
-      btnOrderAsc.classList.toggle('active',  !ascending);
-      btnOrderDesc.classList.toggle('active', ascending);
-    }
-
     btnOrderAsc.addEventListener('click',  () => applyOrder(false));
     btnOrderDesc.addEventListener('click', () => applyOrder(true));
 
@@ -373,6 +541,7 @@ import { TreeRenderer } from './treerenderer.js';
       renderer.setMode(mode);
       btnModeNodes.classList.toggle('active',    mode === 'nodes');
       btnModeBranches.classList.toggle('active', mode === 'branches');
+      saveSettings();
     };
     btnModeNodes.addEventListener('click',    () => applyMode('nodes'));
     btnModeBranches.addEventListener('click', () => applyMode('branches'));
@@ -469,55 +638,68 @@ import { TreeRenderer } from './treerenderer.js';
 
   canvasBgColorEl.addEventListener('input', () => {
     renderer.setBgColor(canvasBgColorEl.value);
+    saveSettings();
   });
 
   branchColorEl.addEventListener('input', () => {
     renderer.setBranchColor(branchColorEl.value);
+    saveSettings();
   });
 
   branchWidthSlider.addEventListener('input', () => {
     document.getElementById('branch-width-value').textContent = branchWidthSlider.value;
     renderer.setBranchWidth(parseFloat(branchWidthSlider.value));
+    saveSettings();
   });
 
   fontSlider.addEventListener('input', () => {
     renderer.setFontSize(parseInt(fontSlider.value));
+    saveSettings();
   });
 
   labelColorEl.addEventListener('input', () => {
     renderer.setLabelColor(labelColorEl.value);
+    saveSettings();
   });
 
   tipSlider.addEventListener('input', () => {
     renderer.setTipRadius(parseInt(tipSlider.value));
+    saveSettings();
   });
 
   nodeSlider.addEventListener('input', () => {
     renderer.setNodeRadius(parseInt(nodeSlider.value));
+    saveSettings();
   });
 
   tipShapeColorEl.addEventListener('input', () => {
     renderer.setTipShapeColor(tipShapeColorEl.value);
+    saveSettings();
   });
 
   tipShapeBgEl.addEventListener('input', () => {
     renderer.setTipShapeBgColor(tipShapeBgEl.value);
+    saveSettings();
   });
 
   nodeShapeColorEl.addEventListener('input', () => {
     renderer.setNodeShapeColor(nodeShapeColorEl.value);
+    saveSettings();
   });
 
   nodeShapeBgEl.addEventListener('input', () => {
     renderer.setNodeShapeBgColor(nodeShapeBgEl.value);
+    saveSettings();
   });
 
   nodeColourBy.addEventListener('change', () => {
     renderer.setNodeColourBy(nodeColourBy.value || null);
+    saveSettings();
   });
 
   tipColourBy.addEventListener('change', () => {
     renderer.setTipColourBy(tipColourBy.value || null);
+    saveSettings();
   });
 
   // ── Legend controls ───────────────────────────────────────────────────────
@@ -533,6 +715,7 @@ import { TreeRenderer } from './treerenderer.js';
     legendRightCanvas.style.width   = W + 'px';
 
     renderer.setLegend(pos === 'off' ? null : pos, key);
+    saveSettings();
   }
 
   legendShowEl .addEventListener('change', applyLegend);

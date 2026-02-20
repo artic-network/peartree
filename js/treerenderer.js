@@ -2002,8 +2002,16 @@ export class TreeRenderer {
     sctx.font         = '11px monospace';
     sctx.textBaseline = 'middle';
     const cy = H / 2;
-    // Fixed pixel positions (packed left)
-    const POS = { div: 12, tip: 140, tips: 240, dist: 350, height: 490, length: 640 };
+    // Leave the left 120 px for the brand element in the DOM.
+    const BRAND_W = 120;
+    const POS = {
+      div:    BRAND_W,
+      tip:    BRAND_W + 128,
+      tips:   BRAND_W + 228,
+      dist:   BRAND_W + 338,
+      height: BRAND_W + 478,
+      length: BRAND_W + 628,
+    };
 
     // Dim teal for mouse-position fields, brighter for stats
     const mouseColor = 'rgba(25,166,153,0.55)';
