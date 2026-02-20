@@ -113,9 +113,11 @@
       font-weight: 700;
       color: var(--pt-red);
       letter-spacing: 0.02em;
-      pointer-events: none;
       white-space: nowrap;
+      text-decoration: none;
+      cursor: pointer;
     }
+    #status-brand:hover { color: #e06961; }
 
     /* ── Canvas area ── */
     #canvas-container {
@@ -632,7 +634,7 @@
 </div>
 
 <div id="status-bar">
-  <span id="status-brand"><i class="bi bi-tree"></i>PearTree</span>
+  <a id="status-brand" href="https://github.com/artic-network/peartree" target="_blank" rel="noopener" title="PearTree on GitHub"><i class="bi bi-tree"></i>PearTree</a>
   <canvas id="status-canvas"></canvas>
 </div>
 
