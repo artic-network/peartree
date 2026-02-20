@@ -433,6 +433,7 @@ import { AxisRenderer  } from './axisrenderer.js';
 
       root            = parsedRoot;
       graph           = fromNestedRoot(root);
+      renderer.hiddenNodeIds = graph.hiddenNodeIds;  // keep renderer in sync (same Set reference)
       currentOrder    = null;
       _cachedMidpoint = null;
       isExplicitlyRooted = graph.rooted;
@@ -501,7 +502,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       if (_saved.nodeOrder === 'asc' || _saved.nodeOrder === 'desc') {
         const asc = _saved.nodeOrder === 'asc';
         reorderGraph(graph, asc);
-        reorderTree(root, asc);
+        reorderTree(root, asc, graph.hiddenNodeIds);
         currentOrder = _saved.nodeOrder;
       }
 
@@ -608,9 +609,9 @@ import { AxisRenderer  } from './axisrenderer.js';
     const anchorId  = isZoomed ? renderer.nodeIdAtViewportCenter() : null;
 
     reorderGraph(graph, ascending);
-    reorderTree(root, ascending);
+    reorderTree(root, ascending, graph.hiddenNodeIds);
     const viewRoot = renderer._viewRawRoot;
-    const layout = viewRoot ? computeLayoutFrom(viewRoot) : computeLayoutFromGraph(graph);
+    const layout = viewRoot ? computeLayoutFrom(viewRoot, graph.hiddenNodeIds) : computeLayoutFromGraph(graph);
     renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
 
     if (isZoomed && anchorId) {
@@ -644,20 +645,125 @@ import { AxisRenderer  } from './axisrenderer.js';
     const btnNodeInfo     = document.getElementById('btn-node-info');
 
     // ── Hide/Show helpers ─────────────────────────────────────────────────────
+    function _selectedNodeId() {
+      if (renderer._mrcaNodeId) return renderer._mrcaNodeId;
+      if (renderer._selectedTipIds.size === 1) return [...renderer._selectedTipIds][0];
+      return null;
+    }
+
+    // Graph DFS: count visible (non-hidden) tips in the subtree rooted at gStartIdx,
+    // treating extraHiddenId as additionally hidden (used to test a hypothetical hide).
+    function _graphVisibleTipCount(gStartIdx, gFromIdx, extraHiddenId) {
+      let count = 0;
+      const stack = [{ ni: gStartIdx, fi: gFromIdx }];
+      while (stack.length) {
+        const { ni, fi } = stack.pop();
+        const gnode = graph.nodes[ni];
+        if (graph.hiddenNodeIds.has(gnode.origId) || gnode.origId === extraHiddenId) continue;
+        const children = gnode.adjacents.filter(a => a !== fi);
+        if (children.length === 0) {
+          count++;
+        } else {
+          for (const c of children) stack.push({ ni: c, fi: ni });
+        }
+      }
+      return count;
+    }
+
     function canHide() {
-      if (renderer._viewRawRoot) return false;
-      let nodeId = renderer._mrcaNodeId;
-      if (!nodeId && renderer._selectedTipIds.size === 1)
-        nodeId = [...renderer._selectedTipIds][0];
+      if (!graph) return false;
+      const nodeId = _selectedNodeId();
       if (!nodeId || !renderer.nodeMap) return false;
       const node = renderer.nodeMap.get(nodeId);
-      // Only internal non-root non-collapsed nodes can be hidden.
-      return !!(node && !node.isTip && !node.isCollapsed && node.parentId);
+      if (!node || !node.parentId) return false; // root (or subtree root)
+      if (graph.hiddenNodeIds.has(nodeId)) return false; // already hidden
+      // Parent must keep at least 1 other visible child after hiding.
+      const parent = renderer.nodeMap.get(node.parentId);
+      if (!parent || parent.children.filter(cid => cid !== nodeId).length < 1) return false;
+      // Guard: each branch of the current view root must keep ≥1 visible tip.
+      const viewRoot = renderer._viewRawRoot;
+      if (viewRoot) {
+        // Subtree view: each child branch of the subtree root must keep ≥1 visible tip.
+        for (const child of (viewRoot.children || [])) {
+          if (_nestedVisibleTipCount(child, graph.hiddenNodeIds, nodeId) === 0) return false;
+        }
+        return true;
+      }
+      // Full tree: both sides of the global root must keep ≥1 visible tip.
+      const { nodeA, nodeB, lenA } = graph.root;
+      let countA, countB;
+      if (lenA === 0) {
+        // nodeA is the real root; side A = all subtrees of nodeA except nodeB's branch.
+        countA = 0;
+        for (const adj of graph.nodes[nodeA].adjacents) {
+          if (adj !== nodeB) countA += _graphVisibleTipCount(adj, nodeA, nodeId);
+        }
+        countB = _graphVisibleTipCount(nodeB, nodeA, nodeId);
+      } else {
+        // Virtual root between nodeA and nodeB.
+        countA = _graphVisibleTipCount(nodeA, nodeB, nodeId);
+        countB = _graphVisibleTipCount(nodeB, nodeA, nodeId);
+      }
+      if (countA === 0 || countB === 0) return false;
+      return true;
     }
+
+    // Graph DFS: does the subtree of graphNode (going away from fromIdx) contain
+    // any entry in hiddenNodeIds?
+    function _graphSubtreeHasHidden(gStartIdx, gFromIdx) {
+      const stack = [{ ni: gStartIdx, fi: gFromIdx }];
+      while (stack.length) {
+        const { ni, fi } = stack.pop();
+        for (const adjIdx of graph.nodes[ni].adjacents) {
+          if (adjIdx === fi) continue;
+          if (graph.hiddenNodeIds.has(graph.nodes[adjIdx].origId)) return true;
+          stack.push({ ni: adjIdx, fi: ni });
+        }
+      }
+      return false;
+    }
+
+    function _resolveGraphStart(nodeId) {
+      // Returns { gIdx, gFromIdx } for a layout node id, accounting for root.
+      const gIdx = graph.origIdToIdx.get(nodeId);
+      if (gIdx === undefined) return null; // virtual root
+      const { nodeA, lenA } = graph.root;
+      const isRoot = lenA === 0 && gIdx === nodeA;
+      const gFromIdx = isRoot ? -1 : graph.nodes[gIdx].adjacents[0];
+      return { gIdx, gFromIdx };
+    }
+
+    // Nested-tree helpers for subtree-view hide/show guards.
+    function _nestedVisibleTipCount(rawNode, hiddenSet, extraHiddenId) {
+      if (hiddenSet.has(rawNode.id) || rawNode.id === extraHiddenId) return 0;
+      if (!rawNode.children || rawNode.children.length === 0) return 1;
+      return rawNode.children.reduce((s, c) => s + _nestedVisibleTipCount(c, hiddenSet, extraHiddenId), 0);
+    }
+    function _nestedSubtreeHasHidden(rawNode, hiddenSet) {
+      if (!rawNode.children) return false;
+      return rawNode.children.some(c => hiddenSet.has(c.id) || _nestedSubtreeHasHidden(c, hiddenSet));
+    }
+    function _nestedRevealAll(rawNode, hiddenSet) {
+      hiddenSet.delete(rawNode.id);
+      if (rawNode.children) for (const c of rawNode.children) _nestedRevealAll(c, hiddenSet);
+    }
+
     function canShow() {
-      if (renderer._viewRawRoot) return false;
-      if (renderer._selectedTipIds.size !== 1) return false;
-      return !!renderer.nodeMap?.get([...renderer._selectedTipIds][0])?.isCollapsed;
+      if (!graph || !graph.hiddenNodeIds.size) return false;
+      const nodeId = _selectedNodeId();
+      const viewRoot = renderer._viewRawRoot;
+      if (viewRoot) {
+        // Subtree view: only care about hidden nodes within this subtree.
+        if (!nodeId) return _nestedSubtreeHasHidden(viewRoot, graph.hiddenNodeIds);
+        const rawNode = renderer._rawNodeMap?.get(nodeId);
+        if (!rawNode) return false;
+        return _nestedSubtreeHasHidden(rawNode, graph.hiddenNodeIds);
+      }
+      // Full tree view.
+      if (!nodeId) return true; // no selection — any hidden nodes count
+      const gs = _resolveGraphStart(nodeId);
+      if (!gs) return graph.hiddenNodeIds.size > 0; // virtual root — any hidden counts
+      return _graphSubtreeHasHidden(gs.gIdx, gs.gFromIdx);
     }
     const btnMidpointRoot  = document.getElementById('btn-midpoint-root');
     // isExplicitlyRooted is read dynamically (closured from outer scope) so
@@ -717,7 +823,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       // Recompute layout and animate.
       const viewRoot = renderer._viewRawRoot;
       const layout   = viewRoot
-        ? computeLayoutFrom(viewRoot)
+        ? computeLayoutFrom(viewRoot, graph.hiddenNodeIds)
         : computeLayoutFromGraph(graph);
       renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
 
@@ -730,47 +836,69 @@ import { AxisRenderer  } from './axisrenderer.js';
     // ── Hide / Show ───────────────────────────────────────────────────────────
     function applyHide() {
       if (!canHide()) return;
-      let nodeId = renderer._mrcaNodeId;
-      if (!nodeId && renderer._selectedTipIds.size === 1)
-        nodeId = [...renderer._selectedTipIds][0];
+      const nodeId = _selectedNodeId();
       if (!nodeId) return;
-
       graph.hiddenNodeIds.add(nodeId);
-
       renderer._selectedTipIds.clear();
       renderer._mrcaNodeId = null;
       if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(false);
-
-      const layout = computeLayoutFromGraph(graph);
+      // Forward history may reference nodes that are now hidden — invalidate it.
+      renderer._fwdStack = [];
+      if (renderer._onNavChange) renderer._onNavChange(renderer._navStack.length > 0, false);
+      // Hiding changes tip counts so any auto-ordering is no longer meaningful.
+      currentOrder = null;
+      btnOrderAsc .classList.remove('active');
+      btnOrderDesc.classList.remove('active');
+      const viewRoot = renderer._viewRawRoot;
+      const layout = viewRoot
+        ? computeLayoutFrom(viewRoot, graph.hiddenNodeIds)
+        : computeLayoutFromGraph(graph);
       renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+      renderer.fitToWindow();
     }
 
     function applyShow() {
       if (!canShow()) return;
-      const nodeId = [...renderer._selectedTipIds][0];
-      if (!nodeId) return;
+      const nodeId  = _selectedNodeId();
+      const viewRoot = renderer._viewRawRoot;
 
-      // Recursively remove this node and any hidden descendants from hiddenNodeIds.
-      function unhideSubtree(origId, fromOrigId) {
-        graph.hiddenNodeIds.delete(origId);
-        const idx = graph.origIdToIdx.get(origId);
-        if (idx === undefined) return;
-        const fromIdx = fromOrigId !== null ? (graph.origIdToIdx.get(fromOrigId) ?? -1) : -1;
-        for (const adjIdx of graph.nodes[idx].adjacents) {
-          if (adjIdx === fromIdx) continue;
-          const adjOrigId = graph.nodes[adjIdx].origId;
-          if (graph.hiddenNodeIds.has(adjOrigId)) unhideSubtree(adjOrigId, origId);
+      if (viewRoot) {
+        // Subtree view: reveal hidden nodes only within the subtree.
+        const rawNode = nodeId ? renderer._rawNodeMap?.get(nodeId) : viewRoot;
+        if (rawNode) _nestedRevealAll(rawNode, graph.hiddenNodeIds);
+      } else if (!nodeId) {
+        // Full tree, no selection: clear all hidden nodes.
+        graph.hiddenNodeIds.clear();
+      } else {
+        // Full tree, selection: reveal all hidden nodes in the selected subtree.
+        function revealAll(gnodeIdx, fromIdx) {
+          for (const adjIdx of graph.nodes[gnodeIdx].adjacents) {
+            if (adjIdx === fromIdx) continue;
+            graph.hiddenNodeIds.delete(graph.nodes[adjIdx].origId);
+            revealAll(adjIdx, gnodeIdx);
+          }
+        }
+        const gs = _resolveGraphStart(nodeId);
+        if (gs) {
+          revealAll(gs.gIdx, gs.gFromIdx);
+        } else {
+          revealAll(graph.root.nodeA, graph.root.nodeB);
+          revealAll(graph.root.nodeB, graph.root.nodeA);
         }
       }
-      const parentId = renderer.nodeMap.get(nodeId)?.parentId ?? null;
-      unhideSubtree(nodeId, parentId);
 
       renderer._selectedTipIds.clear();
       renderer._mrcaNodeId = null;
       if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(false);
-
-      const layout = computeLayoutFromGraph(graph);
+      // Showing nodes changes tip counts so any auto-ordering is no longer meaningful.
+      currentOrder = null;
+      btnOrderAsc .classList.remove('active');
+      btnOrderDesc.classList.remove('active');
+      const layout = viewRoot
+        ? computeLayoutFrom(viewRoot, graph.hiddenNodeIds)
+        : computeLayoutFromGraph(graph);
       renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+      renderer.fitToWindow();
     }
 
     btnHide.addEventListener('click', () => applyHide());
@@ -799,8 +927,8 @@ import { AxisRenderer  } from './axisrenderer.js';
       root            = newRoot;
       _cachedMidpoint = null;
 
-      if (currentOrder === 'asc')  { reorderGraph(graph, true);  reorderTree(root, true);  }
-      if (currentOrder === 'desc') { reorderGraph(graph, false); reorderTree(root, false); }
+      if (currentOrder === 'asc')  { reorderGraph(graph, true);  reorderTree(root, true,  graph.hiddenNodeIds); }
+      if (currentOrder === 'desc') { reorderGraph(graph, false); reorderTree(root, false, graph.hiddenNodeIds); }
 
       renderer._navStack         = [];
       renderer._fwdStack         = [];

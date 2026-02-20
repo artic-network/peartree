@@ -389,11 +389,14 @@ export function rotateNodeGraph(graph, origId, recursive = false) {
  */
 export function reorderGraph(graph, ascending) {
   const { nodes, root: { nodeA, nodeB, lenA } } = graph;
+  const hiddenNodeIds = graph.hiddenNodeIds || new Set();
 
-  // Post-order DFS.  Returns tip count of the subtree rooted at nodeIdx.
+  // Post-order DFS.  Returns VISIBLE tip count of the subtree rooted at nodeIdx.
+  // Hidden nodes and their entire subtrees contribute 0 to the count.
   // Sorts adjacents[1..] in-place at each internal node visited.
   function sortSubtree(nodeIdx) {
     const n = nodes[nodeIdx];
+    if (hiddenNodeIds.has(n.origId)) return 0;  // entire subtree is hidden
     if (n.adjacents.length === 1) return 1;  // tip (only parent at [0])
 
     const pairs = [];

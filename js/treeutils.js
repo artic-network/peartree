@@ -15,54 +15,92 @@
  *              This function is kept for applyOrder / subtree-navigation paths
  *              that still use the nested-root format (Phases 4–6 will migrate them).
  */
-export function computeLayout(root) {
+export function computeLayout(root, hiddenNodeIds = new Set()) {
   let tipCounter = 0;
   const nodes = [];
   const nodeMap = new Map();
 
   function traverse(node, parentDivergence, parentId) {
-    const divergence = parentDivergence + (node.length || 0);
+    const divergence     = parentDivergence + (node.length || 0);
+    const allChildren    = node.children || [];
+    const visibleChildren = hiddenNodeIds.size
+      ? allChildren.filter(c => !hiddenNodeIds.has(c.id))
+      : allChildren;
+    const isLeaf = allChildren.length === 0;
     const entry = {
-      id: node.id,
-      name: node.name || null,
-      label: node.label || null,
-      annotations: node.annotations || {},
-      x: divergence,
-      y: null,
-      isTip: !node.children || node.children.length === 0,
-      children: node.children ? node.children.map(c => c.id) : [],
+      id:                node.id,
+      name:              node.name || null,
+      label:             node.label || null,
+      annotations:       node.annotations || {},
+      x:                 divergence,
+      y:                 null,
+      isTip:             isLeaf,
+      hasHiddenChildren: allChildren.length !== visibleChildren.length,
+      children:          visibleChildren.map(c => c.id),
       parentId,
     };
 
-    if (entry.isTip) {
-      tipCounter++;
-      entry.y = tipCounter;
-    }
+    if (isLeaf) { tipCounter++; entry.y = tipCounter; }
 
     nodes.push(entry);
     nodeMap.set(entry.id, entry);
 
-    if (node.children) {
-      for (const child of node.children) {
-        traverse(child, divergence, node.id);
-      }
+    for (const child of visibleChildren) {
+      traverse(child, divergence, node.id);
     }
 
-    // place internal node at centre of its children (post-order)
-    if (!entry.isTip) {
-      const childYs = node.children.map(c => nodeMap.get(c.id).y).filter(y => y !== null);
-      entry.y = childYs.reduce((a, b) => a + b, 0) / childYs.length;
+    // place internal node at centre of its visible children (post-order)
+    if (!isLeaf && visibleChildren.length > 0) {
+      const childYs = visibleChildren.map(c => nodeMap.get(c.id)?.y).filter(y => y != null);
+      if (childYs.length) entry.y = childYs.reduce((a, b) => a + b, 0) / childYs.length;
     }
-
-    return entry.y;
   }
 
   traverse(root, 0, null);
 
-  const maxX = nodes.reduce((m, n) => Math.max(m, n.x), 0);
-  const maxY = tipCounter;
+  // ── Post-pass: suppress zero-child and single-child non-root internal nodes ─
+  if (hiddenNodeIds.size) {
+    const toRemove = new Set();
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      const node = nodes[i];
+      if (node.parentId === null) continue;
+      if (node.isTip) continue;
+      if (node.children.length === 0) {
+        const parentNode = nodeMap.get(node.parentId);
+        if (parentNode) {
+          parentNode.hasHiddenChildren = true;
+          const idx = parentNode.children.indexOf(node.id);
+          if (idx !== -1) parentNode.children.splice(idx, 1);
+        }
+        toRemove.add(node.id);
+        nodeMap.delete(node.id);
+        continue;
+      }
+      if (node.children.length !== 1) continue;
+      const parentNode = nodeMap.get(node.parentId);
+      const childNode  = nodeMap.get(node.children[0]);
+      if (!parentNode || !childNode) continue;
+      const idx = parentNode.children.indexOf(node.id);
+      if (idx !== -1) parentNode.children[idx] = childNode.id;
+      childNode.parentId = parentNode.id;
+      if (node.hasHiddenChildren) childNode.hasHiddenChildren = true;
+      toRemove.add(node.id);
+      nodeMap.delete(node.id);
+    }
+    if (toRemove.size) {
+      const finalNodes = nodes.filter(n => !toRemove.has(n.id));
+      for (let i = finalNodes.length - 1; i >= 0; i--) {
+        const n = finalNodes[i];
+        if (n.isTip) continue;
+        const ys = n.children.map(cid => nodeMap.get(cid)?.y).filter(y => y != null);
+        if (ys.length) n.y = ys.reduce((a, b) => a + b, 0) / ys.length;
+      }
+      return { nodes: finalNodes, nodeMap, maxX: finalNodes.reduce((m, n) => Math.max(m, n.x), 0), maxY: tipCounter };
+    }
+  }
 
-  return { nodes, nodeMap, maxX, maxY };
+  const maxX = nodes.reduce((m, n) => Math.max(m, n.x), 0);
+  return { nodes, nodeMap, maxX, maxY: tipCounter };
 }
 
 /**
@@ -71,10 +109,10 @@ export function computeLayout(root) {
  *
  * @deprecated  Used by applyOrder / subtree navigation (nested-root format).
  */
-export function computeLayoutFrom(rawNode) {
+export function computeLayoutFrom(rawNode, hiddenNodeIds = new Set()) {
   const savedLen = rawNode.length;
   rawNode.length = 0;
-  const result = computeLayout(rawNode);
+  const result = computeLayout(rawNode, hiddenNodeIds);
   rawNode.length = savedLen;
   return result;
 }
@@ -106,35 +144,23 @@ export function computeLayoutFromGraph(graph) {
   const nodeMap     = new Map();
 
   /**
-   * Count tip leaves in the PhyloGraph subtree rooted at nodeIdx
-   * (traversing away from fromIdx).  Used to label collapsed stubs.
-   */
-  function countGraphTips(nodeIdx, fromIdx) {
-    const gnode = gnodes[nodeIdx];
-    const kids  = gnode.adjacents.filter(a => a !== fromIdx);
-    if (kids.length === 0) return 1;
-    return kids.reduce((s, a) => s + countGraphTips(a, nodeIdx), 0);
-  }
-
-  /**
-   * DFS from `nodeIdx`, arriving from `fromNodeIdx`.
-   * fromNodeIdx = -1 means no direction is excluded (root-at-node case).
-   * Children whose origId is in hiddenNodeIds are rendered as collapsed stubs
-   * (isTip: true, isCollapsed: true) rather than being recursed into.
+   * DFS from `nodeIdx`, arriving from `fromNodeIdx` (-1 = no exclusion).
+   * Children whose origId is in hiddenNodeIds are skipped entirely.
+   * The parent is marked hasHiddenChildren = true instead.
    */
   function traverse(nodeIdx, fromNodeIdx, xFromRoot, parentLayoutId) {
     const gnode = gnodes[nodeIdx];
     const entry = {
-      id:          gnode.origId,
-      name:        gnode.name,
-      label:       gnode.label,
-      annotations: gnode.annotations,
-      x:           xFromRoot,
-      y:           null,
-      isTip:       false,
-      isCollapsed: false,
-      children:    [],
-      parentId:    parentLayoutId,
+      id:                gnode.origId,
+      name:              gnode.name,
+      label:             gnode.label,
+      annotations:       gnode.annotations,
+      x:                 xFromRoot,
+      y:                 null,
+      isTip:             false,
+      hasHiddenChildren: false,
+      children:          [],
+      parentId:          parentLayoutId,
     };
 
     layoutNodes.push(entry);
@@ -144,33 +170,13 @@ export function computeLayoutFromGraph(graph) {
       .map((adjIdx, i) => ({ adjIdx, len: gnode.lengths[i] }))
       .filter(({ adjIdx }) => adjIdx !== fromNodeIdx);
 
-    // Real tip: no children in graph direction.
     entry.isTip = allChildren.length === 0;
     if (entry.isTip) { tipCounter++; entry.y = tipCounter; }
 
     for (const { adjIdx, len } of allChildren) {
       const childOrigId = gnodes[adjIdx].origId;
       if (hiddenNodeIds.has(childOrigId)) {
-        // Collapsed stub: visible as a leaf but not recursed into.
-        const hgnode = gnodes[adjIdx];
-        const stub = {
-          id:             hgnode.origId,
-          name:           hgnode.name,
-          label:          hgnode.label,
-          annotations:    hgnode.annotations,
-          x:              xFromRoot + len,
-          y:              null,
-          isTip:          true,
-          isCollapsed:    true,
-          hiddenTipCount: countGraphTips(adjIdx, nodeIdx),
-          children:       [],
-          parentId:       gnode.origId,
-        };
-        tipCounter++;
-        stub.y = tipCounter;
-        layoutNodes.push(stub);
-        nodeMap.set(stub.id, stub);
-        entry.children.push(childOrigId);
+        entry.hasHiddenChildren = true; // skip this child entirely
       } else {
         traverse(adjIdx, nodeIdx, xFromRoot + len, gnode.origId);
         entry.children.push(childOrigId);
@@ -178,8 +184,14 @@ export function computeLayoutFromGraph(graph) {
     }
 
     if (!entry.isTip) {
-      const childYs = entry.children.map(cid => nodeMap.get(cid).y);
-      entry.y = childYs.reduce((a, b) => a + b, 0) / childYs.length;
+      if (entry.children.length > 0) {
+        const childYs = entry.children.map(cid => nodeMap.get(cid).y).filter(y => y != null);
+        if (childYs.length > 0)
+          entry.y = childYs.reduce((a, b) => a + b, 0) / childYs.length;
+      }
+      // If children.length === 0 here, all children were hidden.
+      // Leave isTip=false so the suppression post-pass can remove this node
+      // and propagate hasHiddenChildren to the parent.
     }
   }
 
@@ -194,56 +206,81 @@ export function computeLayoutFromGraph(graph) {
     // Virtual bifurcating root between nodeA and nodeB.
     const ROOT_LAYOUT_ID = '__graph_root__';
 
-    // nodeA side
-    if (hiddenNodeIds.has(gNodeA.origId)) {
-      const stub = {
-        id: gNodeA.origId, name: gNodeA.name, label: gNodeA.label,
-        annotations: gNodeA.annotations, x: lenA, y: null,
-        isTip: true, isCollapsed: true,
-        hiddenTipCount: countGraphTips(nodeA, nodeB),
-        children: [], parentId: ROOT_LAYOUT_ID,
-      };
-      tipCounter++; stub.y = tipCounter;
-      layoutNodes.push(stub); nodeMap.set(stub.id, stub);
-    } else {
-      traverse(nodeA, nodeB, lenA, ROOT_LAYOUT_ID);
-    }
+    if (!hiddenNodeIds.has(gNodeA.origId)) traverse(nodeA, nodeB, lenA, ROOT_LAYOUT_ID);
+    if (!hiddenNodeIds.has(gNodeB.origId)) traverse(nodeB, nodeA, lenB, ROOT_LAYOUT_ID);
 
-    // nodeB side
-    if (hiddenNodeIds.has(gNodeB.origId)) {
-      const stub = {
-        id: gNodeB.origId, name: gNodeB.name, label: gNodeB.label,
-        annotations: gNodeB.annotations, x: lenB, y: null,
-        isTip: true, isCollapsed: true,
-        hiddenTipCount: countGraphTips(nodeB, nodeA),
-        children: [], parentId: ROOT_LAYOUT_ID,
-      };
-      tipCounter++; stub.y = tipCounter;
-      layoutNodes.push(stub); nodeMap.set(stub.id, stub);
-    } else {
-      traverse(nodeB, nodeA, lenB, ROOT_LAYOUT_ID);
-    }
+    const aEntry = nodeMap.get(gNodeA.origId);
+    const bEntry = nodeMap.get(gNodeB.origId);
+    const rootChildren = [];
+    if (aEntry) rootChildren.push(gNodeA.origId);
+    if (bEntry) rootChildren.push(gNodeB.origId);
+    const rootY = aEntry && bEntry ? (aEntry.y + bEntry.y) / 2
+                : aEntry ? aEntry.y : bEntry ? bEntry.y : 1;
 
     const rootEntry = {
-      id:          ROOT_LAYOUT_ID,
-      name:        null,
-      label:       null,
-      annotations: root.annotations || {},
-      x:           0,
-      y:           (nodeMap.get(gNodeA.origId).y + nodeMap.get(gNodeB.origId).y) / 2,
-      isTip:       false,
-      isCollapsed: false,
-      children:    [gNodeA.origId, gNodeB.origId],
-      parentId:    null,
+      id:                ROOT_LAYOUT_ID,
+      name:              null,
+      label:             null,
+      annotations:       root.annotations || {},
+      x:                 0,
+      y:                 rootY,
+      isTip:             rootChildren.length === 0,
+      hasHiddenChildren: hiddenNodeIds.has(gNodeA.origId) || hiddenNodeIds.has(gNodeB.origId),
+      children:          rootChildren,
+      parentId:          null,
     };
+    if (rootEntry.isTip) { tipCounter++; rootEntry.y = tipCounter; }
     layoutNodes.unshift(rootEntry);
     nodeMap.set(ROOT_LAYOUT_ID, rootEntry);
   }
 
-  const maxX = layoutNodes.reduce((m, n) => Math.max(m, n.x), 0);
+  // ── Post-pass: suppress single-child non-root internal nodes ─────────────
+  // layoutNodes is pre-order (parents before children); reverse → post-order.
+  const toRemove = new Set();
+  for (let i = layoutNodes.length - 1; i >= 0; i--) {
+    const node = layoutNodes[i];
+    if (node.parentId === null) continue; // never suppress root
+    if (node.isTip) continue;
+    // Suppress internal nodes with no visible children (all hidden or already suppressed).
+    if (node.children.length === 0) {
+      const parentNode = nodeMap.get(node.parentId);
+      if (parentNode) {
+        parentNode.hasHiddenChildren = true;
+        const idx = parentNode.children.indexOf(node.id);
+        if (idx !== -1) parentNode.children.splice(idx, 1);
+      }
+      toRemove.add(node.id);
+      nodeMap.delete(node.id);
+      continue;
+    }
+    if (node.children.length !== 1) continue;
+    // Suppress: wire grandparent directly to surviving child.
+    const parentNode = nodeMap.get(node.parentId);
+    const childNode  = nodeMap.get(node.children[0]);
+    if (!parentNode || !childNode) continue;
+    const idx = parentNode.children.indexOf(node.id);
+    if (idx !== -1) parentNode.children[idx] = childNode.id;
+    childNode.parentId = parentNode.id;
+    if (node.hasHiddenChildren) childNode.hasHiddenChildren = true;
+    toRemove.add(node.id);
+    nodeMap.delete(node.id);
+  }
+
+  const finalNodes = layoutNodes.filter(n => !toRemove.has(n.id));
+
+  // Recompute y positions bottom-up now that suppression may have changed children.
+  for (let i = finalNodes.length - 1; i >= 0; i--) {
+    const node = finalNodes[i];
+    if (node.isTip) continue;
+    const childYs = node.children.map(cid => nodeMap.get(cid)?.y).filter(y => y != null);
+    if (childYs.length > 0)
+      node.y = childYs.reduce((a, b) => a + b, 0) / childYs.length;
+  }
+
+  const maxX = finalNodes.reduce((m, n) => Math.max(m, n.x), 0);
   const maxY = tipCounter;
 
-  return { nodes: layoutNodes, nodeMap, maxX, maxY };
+  return { nodes: finalNodes, nodeMap, maxX, maxY };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -258,20 +295,20 @@ export function computeLayoutFromGraph(graph) {
  * Works directly on the raw parsed node objects (mutates children arrays).
  * Returns the tip count of the subtree rooted at `node`.
  */
-export function reorderTree(node, ascending) {
+export function reorderTree(node, ascending, hiddenNodeIds = new Set()) {
   if (!node.children || node.children.length === 0) {
-    node._tipCount = 1;
-    return 1;
+    node._tipCount = hiddenNodeIds.has(node.id) ? 0 : 1;
+    return node._tipCount;
   }
   let total = 0;
   for (const child of node.children) {
-    total += reorderTree(child, ascending);
+    total += reorderTree(child, ascending, hiddenNodeIds);
   }
-  node._tipCount = total;
+  node._tipCount = hiddenNodeIds.has(node.id) ? 0 : total;
   node.children.sort((a, b) =>
     ascending ? a._tipCount - b._tipCount : b._tipCount - a._tipCount
   );
-  return total;
+  return node._tipCount;
 }
 
 /**

@@ -125,6 +125,7 @@ export class TreeRenderer {
     this._viewRawRoot = null;   // null = showing full tree
     this._navStack    = [];     // [{rawNode, scaleY, offsetY}, …] – back history
     this._fwdStack    = [];     // forward history
+    this.hiddenNodeIds         = new Set(); // kept in sync with graph.hiddenNodeIds by peartree.js
     this._onNavChange          = null;   // callback(canBack, canFwd) – wired by main code
     this._onBranchSelectChange = null;   // callback(hasSelection) – wired by main code
     this._onNodeSelectChange   = null;   // callback(hasSelection) – wired by main code
@@ -517,7 +518,7 @@ export class TreeRenderer {
   /** Compute layout from rawNode, update all data, and animate viewport.
    *  Always uses computeLayoutFrom so the subtree root sits at x = 0. */
   _applyLayout(rawNode, immediate = false) {
-    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(rawNode);
+    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(rawNode, this.hiddenNodeIds);
     this.nodes   = nodes;
     this.nodeMap = nodeMap;
     this.maxX    = maxX;
@@ -554,7 +555,7 @@ export class TreeRenderer {
     this._mrcaNodeId = null;
 
     // Compute new layout (root at x=0).
-    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(rawNode);
+    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(rawNode, this.hiddenNodeIds);
     this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
     this._measureLabels();
     this._updateScaleX(false);   // sets _targetScaleX/_targetOffsetX, keeps scaleX unchanged
@@ -591,7 +592,7 @@ export class TreeRenderer {
     this._mrcaNodeId = null;
 
     const rawNode = state.rawNode || this._rawRoot;
-    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(rawNode);
+    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(rawNode, this.hiddenNodeIds);
     this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
     this._measureLabels();
     this._updateScaleX(false);
@@ -630,7 +631,7 @@ export class TreeRenderer {
     this._selectedTipIds.clear();
     this._mrcaNodeId = null;
 
-    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(fwdRawNode);
+    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(fwdRawNode, this.hiddenNodeIds);
     this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
     this._measureLabels();
     this._updateScaleX(false);
