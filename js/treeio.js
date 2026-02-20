@@ -7,7 +7,7 @@
  * Returns the root node { name, length, label, annotations, children }
  */
 export function parseNewick(newickString, tipNameMap = null) {
-  const tokens = newickString.split(/\s*('[^']+'|"[^"]+"|;|\(|\)|,|:|=|\[&|\]|\{|\})\s*/);
+  const tokens = newickString.split(/\s*('[^']*'|"[^"]*"|;|\(|\)|,|:|=|\[&|\]|\{|\})\s*/);
   let level = 0;
   let currentNode = null;
   let nodeStack = [];
@@ -38,7 +38,8 @@ export function parseNewick(newickString, tipNameMap = null) {
           if (isAnnotationARange) {
             currentNode.annotations[annotationKey].push(t);
           } else {
-            currentNode.annotations[annotationKey] = isNaN(t) ? t : parseFloat(t);
+            const num = t !== '' ? parseFloat(t) : NaN;
+            currentNode.annotations[annotationKey] = !isNaN(num) ? num : t;
           }
         }
       }
