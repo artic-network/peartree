@@ -63,6 +63,19 @@
       background: rgba(255,255,255,0.15);
       margin: 0 2px;
     }
+    /* Toolbar buttons: subtle fill so enabled buttons read as interactive */
+    .pt-toolbar .btn {
+      background: rgba(255,255,255,0.05);
+    }
+    .pt-toolbar .btn:hover:not(:disabled) {
+      background: rgba(255,255,255,0.12);
+    }
+    /* Disabled toolbar buttons: strongly faded so the contrast with enabled is clear */
+    .pt-toolbar .btn:disabled,
+    .pt-toolbar .btn[disabled] {
+      opacity: 0.2;
+      pointer-events: none;
+    }
     /* Brand – mirrors Sealion's navbar-brand */
     .pt-brand {
       font-size: 1rem;

@@ -528,8 +528,8 @@ import { TreeRenderer } from './treerenderer.js';
     };
     renderer._onNodeSelectChange = (hasSelection) => {
       if (renderer._mode === 'nodes') btnReroot.disabled = isExplicitlyRooted || !hasSelection;
-      // Rotate requires an internal node (MRCA of ≥2 tips) in nodes mode.
-      const canRotate = renderer._mode === 'nodes' && !!renderer._mrcaNodeId;
+      // Rotate is enabled whenever there is any selection in nodes mode.
+      const canRotate = renderer._mode === 'nodes' && hasSelection;
       btnRotate.disabled    = !canRotate;
       btnRotateAll.disabled = !canRotate;
     };
@@ -545,7 +545,14 @@ import { TreeRenderer } from './treerenderer.js';
     // btn-rotate-all → reverse children at every level of the subtree.
     // Both clear the global auto-ordering so the manual order is preserved.
     function applyRotate(recursive) {
-      const nodeId = renderer._mrcaNodeId;
+      // Prefer the MRCA (≥2 tips selected or internal node clicked directly).
+      // Fall back to the parent of a single selected tip.
+      let nodeId = renderer._mrcaNodeId;
+      if (!nodeId && renderer._selectedTipIds.size === 1) {
+        const tipId   = [...renderer._selectedTipIds][0];
+        const tipNode = renderer.nodeMap.get(tipId);
+        nodeId = tipNode?.parentId ?? null;
+      }
       if (!nodeId) return;
 
       rotateNodeGraph(graph, nodeId, recursive);
