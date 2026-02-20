@@ -877,6 +877,12 @@
   });
   btnHelpClose.addEventListener('click', closeHelp);
 
+  // Clicking the tree canvas closes any open panel immediately.
+  document.getElementById('tree-canvas').addEventListener('pointerdown', () => {
+    closePalette();
+    closeHelp();
+  });
+
   // Tab key toggles palette (unless focus is in a form element)
   document.addEventListener('keydown', e => {
     if (e.key === 'Tab' && !e.metaKey && !e.ctrlKey && !e.altKey) {
