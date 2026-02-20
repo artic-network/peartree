@@ -565,6 +565,7 @@
   <div class="pt-toolbar-sep"></div>
 
   <!-- Back / Forward -->
+  <span class="form-label-sm" style="padding: 0 2px 0 4px;">History:</span>
   <div class="btn-group" role="group" aria-label="Navigate history">
     <button id="btn-back"    class="btn btn-sm btn-outline-secondary" disabled title="Navigate back (⌘[)"><i class="bi bi-chevron-left"></i></button>
     <button id="btn-forward" class="btn btn-sm btn-outline-secondary" disabled title="Navigate forward (⌘])"><i class="bi bi-chevron-right"></i></button>
@@ -572,6 +573,7 @@
   <div class="pt-toolbar-sep"></div>
 
    <!-- Zoom -->
+  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Zoom:</span>
   <div class="btn-group" role="group" aria-label="Zoom">
     <button id="btn-zoom-in"  class="btn btn-sm btn-outline-secondary" title="Zoom in (⌘+)"><i class="bi bi-zoom-in"></i></button>
     <button id="btn-zoom-out" class="btn btn-sm btn-outline-secondary" title="Zoom out (⌘−)"><i class="bi bi-zoom-out"></i></button>
@@ -592,6 +594,12 @@
   </div>
 
   <div class="pt-toolbar-sep"></div>
+    <!-- Rotate node -->
+  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Rotate:</span>
+  <button id="btn-rotate" class="btn btn-sm btn-outline-secondary" disabled
+    title="Rotate selected node (reverse children order). Alt-click to rotate all descendants."><i class="bi bi-arrow-down-up"></i></button>
+  <div class="pt-toolbar-sep"></div>
+
 
   <!-- Select mode -->
   <span class="form-label-sm" style="padding: 0 2px 0 4px;">Select:</span>
@@ -601,10 +609,8 @@
   </div>
   <div class="pt-toolbar-sep"></div>
 
-    <!-- Rotate node -->
-  <button id="btn-rotate" class="btn btn-sm btn-outline-secondary" disabled
-    title="Rotate selected node (reverse children order). Alt-click to rotate all descendants."><i class="bi bi-arrow-down-up"></i></button>
   <!-- Reroot -->
+  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Root:</span>
   <button id="btn-reroot" class="btn btn-sm btn-outline-secondary" disabled title="Reroot tree at selection"><i class="bi bi-arrow-clockwise"></i></button>
   <!-- Midpoint root -->
   <button id="btn-midpoint-root" class="btn btn-sm btn-outline-secondary" disabled title="Midpoint root (⌘M)"><i class="bi bi-symmetry-horizontal"></i></button>
