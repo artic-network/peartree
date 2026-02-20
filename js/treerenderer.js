@@ -17,6 +17,7 @@ export class Theme {
     nodeShapeColor   = '#888888',
     tipOutlineColor  = '#033940',
     branchColor      = '#F2F1E6',
+    branchWidth      = 1,
     tipColor         = '#BF4B43',
     internalColor    = '#19A699',
     selectedRingColor  = '#E06961',
@@ -42,6 +43,7 @@ export class Theme {
     this.nodeShapeBgColor  = nodeShapeBgColor;
     this.tipOutlineColor   = tipOutlineColor;
     this.branchColor       = branchColor;
+    this.branchWidth       = branchWidth;
     this.tipColor          = tipColor;
     this.internalColor     = internalColor;
     this.selectedRingColor = selectedRingColor;
@@ -174,6 +176,7 @@ export class TreeRenderer {
     this.nodeShapeBgColor  = theme.nodeShapeBgColor;
     this.tipOutlineColor   = theme.tipOutlineColor;
     this.branchColor       = theme.branchColor;
+    this.branchWidth       = theme.branchWidth;
     this.tipColor          = theme.tipColor;
     this.internalColor     = theme.internalColor;
     this.selectedRingColor = theme.selectedRingColor;
@@ -328,6 +331,70 @@ export class TreeRenderer {
   setNodeShapeBgColor(c) {
     this.nodeShapeBgColor = c;
     this._dirty = true;
+  }
+
+  setBgColor(c) {
+    this.bgColor = c;
+    this._drawLegend();
+    this._dirty = true;
+  }
+
+  setBranchColor(c) {
+    this.branchColor = c;
+    this._dirty = true;
+  }
+
+  setBranchWidth(w) {
+    this.branchWidth = w;
+    this._dirty = true;
+  }
+
+  /**
+   * Set the base tip-label colour and automatically derive related dim and
+   * selected colours from it using HSL lightness/saturation adjustments.
+   * dim    → darker + more desaturated (unselected labels when a selection exists)
+   * selected → brighter + less saturated (selected labels, approaching white)
+   */
+  setLabelColor(hex) {
+    const { h, s, l } = TreeRenderer._hexToHsl(hex);
+    this.labelColor        = hex;
+    this.dimLabelColor     = TreeRenderer._hslToHex(h, s * 0.70, l * 0.83);
+    this.selectedLabelColor = TreeRenderer._hslToHex(h, s * 0.50, Math.min(97, l * 1.08));
+    this._dirty = true;
+  }
+
+  /** Convert a CSS hex colour (#rrggbb) to {h: 0‑360, s: 0‑100, l: 0‑100}. */
+  static _hexToHsl(hex) {
+    let r = parseInt(hex.slice(1, 3), 16) / 255;
+    let g = parseInt(hex.slice(3, 5), 16) / 255;
+    let b = parseInt(hex.slice(5, 7), 16) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0;
+    const l = (max + min) / 2;
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+    return { h: h * 360, s: s * 100, l: l * 100 };
+  }
+
+  /** Convert HSL (h: 0‑360, s: 0‑100, l: 0‑100) to a CSS hex colour. */
+  static _hslToHex(h, s, l) {
+    h = ((h % 360) + 360) % 360;
+    s = Math.max(0, Math.min(100, s)) / 100;
+    l = Math.max(0, Math.min(100, l)) / 100;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => {
+      const k = (n + h / 30) % 12;
+      const col = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+      return Math.round(255 * col).toString(16).padStart(2, '0');
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
   }
 
   /**
@@ -773,8 +840,8 @@ export class TreeRenderer {
     const ctx = activeCanvas.getContext('2d');
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 
-    // Background.
-    ctx.fillStyle = '#073642';   // --pt-bg-dark
+    // Background — match the tree canvas.
+    ctx.fillStyle = this.bgColor;
     ctx.fillRect(0, 0, W, H);
 
     const PAD   = 12;
@@ -907,7 +974,7 @@ export class TreeRenderer {
     const yWorldMax = this._worldYfromScreen(H + this.fontSize * 2);
 
     ctx.font = `${this.fontSize}px monospace`;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = this.branchWidth;
     ctx.strokeStyle = this.branchColor;
 
     const nodeMap = this.nodeMap;
