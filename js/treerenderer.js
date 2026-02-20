@@ -143,6 +143,8 @@ export class TreeRenderer {
     this._annotationSchema = null;   // Map<name, AnnotationDef> from buildAnnotationSchema
     this._tipColourBy      = null;   // annotation key or null
     this._tipColourScale   = null;   // Map<value, CSS colour> | null
+    this._nodeColourBy     = null;   // annotation key for internal nodes, or null
+    this._nodeColourScale  = null;   // Map<value, CSS colour> | null
     this._crossfadeAlpha    = 0;      // 1→0; 0 = not animating
 
     // Legend
@@ -335,7 +337,8 @@ export class TreeRenderer {
    */
   setAnnotationSchema(schema) {
     this._annotationSchema = schema;
-    if (this._tipColourBy) this._buildColourScale(this._tipColourBy);
+    if (this._tipColourBy)  this._tipColourScale  = this._buildColourScale(this._tipColourBy);
+    if (this._nodeColourBy) this._nodeColourScale = this._buildColourScale(this._nodeColourBy);
     this._drawLegend();
     this._dirty = true;
   }
@@ -347,17 +350,22 @@ export class TreeRenderer {
    */
   setTipColourBy(key) {
     this._tipColourBy    = key || null;
-    this._tipColourScale = null;
-    if (this._tipColourBy) this._buildColourScale(this._tipColourBy);
+    this._tipColourScale = this._tipColourBy ? this._buildColourScale(this._tipColourBy) : null;
     this._dirty = true;
   }
 
-  /** Build _tipColourScale: Map<annotationValue, CSS colour string>. */
+  setNodeColourBy(key) {
+    this._nodeColourBy    = key || null;
+    this._nodeColourScale = this._nodeColourBy ? this._buildColourScale(this._nodeColourBy) : null;
+    this._dirty = true;
+  }
+
+  /** Build a colour scale Map for the given annotation key. Returns the Map or null. */
   _buildColourScale(key) {
     const schema = this._annotationSchema;
-    if (!schema) { this._tipColourScale = null; return; }
+    if (!schema) return null;
     const def = schema.get(key);
-    if (!def) { this._tipColourScale = null; return; }
+    if (!def) return null;
 
     const scale = new Map();
     if (def.dataType === 'categorical' || def.dataType === 'ordinal') {
@@ -369,23 +377,22 @@ export class TreeRenderer {
         scale.set(v, palette[i % palette.length]);
       });
     } else if (def.dataType === 'real' || def.dataType === 'integer') {
-      // Store the numeric range so _tipColourForValue can interpolate at draw time.
+      // Store the numeric range so _colourFromScale can interpolate at draw time.
       scale.set('__min__', def.min ?? 0);
       scale.set('__max__', def.max ?? 1);
     }
-    this._tipColourScale = scale;
+    return scale;
   }
 
-  /** Return a CSS colour string for a given annotation value, or null. */
-  _tipColourForValue(value) {
-    const scale = this._tipColourScale;
+  /** Return a CSS colour string for a value looked up in the given scale, or null. */
+  _colourFromScale(value, scale) {
     if (!scale || value === null || value === undefined) return null;
     if (scale.has(value)) return scale.get(value);
     // Numeric interpolation
     if (scale.has('__min__')) {
       const min = scale.get('__min__');
       const max = scale.get('__max__');
-      const t = max > min ? (value - min) / (max - min) : 0.5;
+      const t  = max > min ? (value - min) / (max - min) : 0.5;
       const tc = Math.max(0, Math.min(1, t));
       // Interpolate #2aa198 → #dc322f  (teal → red)
       const r = Math.round(0x2a + tc * (0xdc - 0x2a));
@@ -395,6 +402,9 @@ export class TreeRenderer {
     }
     return null;
   }
+
+  _tipColourForValue(value)  { return this._colourFromScale(value, this._tipColourScale);  }
+  _nodeColourForValue(value) { return this._colourFromScale(value, this._nodeColourScale); }
 
   /**
    * Register the left and right legend canvases with the renderer.
@@ -1070,15 +1080,28 @@ export class TreeRenderer {
 
     // Pass 2b – fill circles for internal node shapes
     if (nodeR > 0) {
-      ctx.fillStyle = this.nodeShapeColor;
-      ctx.beginPath();
-      for (const node of this.nodes) {
-        if (node.isTip) continue;
-        if (node.y < yWorldMin || node.y > yWorldMax) continue;
-        ctx.moveTo(this._wx(node.x) + nodeR, this._wy(node.y));
-        ctx.arc(this._wx(node.x), this._wy(node.y), nodeR, 0, Math.PI * 2);
+      if (this._nodeColourBy && this._nodeColourScale) {
+        const key = this._nodeColourBy;
+        for (const node of this.nodes) {
+          if (node.isTip) continue;
+          if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          const val = node.annotations ? node.annotations[key] : undefined;
+          ctx.fillStyle = this._nodeColourForValue(val) ?? this.nodeShapeColor;
+          ctx.beginPath();
+          ctx.arc(this._wx(node.x), this._wy(node.y), nodeR, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        ctx.fillStyle = this.nodeShapeColor;
+        ctx.beginPath();
+        for (const node of this.nodes) {
+          if (node.isTip) continue;
+          if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          ctx.moveTo(this._wx(node.x) + nodeR, this._wy(node.y));
+          ctx.arc(this._wx(node.x), this._wy(node.y), nodeR, 0, Math.PI * 2);
+        }
+        ctx.fill();
       }
-      ctx.fill();
     }
 
     // Pass 2.5 – selected tips

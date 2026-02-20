@@ -296,6 +296,10 @@
     .pt-palette-section {
       margin-bottom: 18px;
     }
+    .pt-palette-section + .pt-palette-section {
+      border-top: 1px solid rgba(255,255,255,0.07);
+      padding-top: 14px;
+    }
     .pt-palette-section h3 {
       font-size: 0.65rem;
       font-weight: 700;
@@ -661,18 +665,18 @@
         <span class="pt-val" id="tip-size-value">3</span>
       </div>
       <div class="pt-palette-row">
-        <span class="pt-palette-label">Colour by</span>
-        <select class="pt-palette-select" id="tip-colour-by" disabled>
-          <option value="">(none)</option>
-        </select>
-      </div>
-      <div class="pt-palette-row">
         <span class="pt-palette-label">Fill</span>
         <input type="color" class="pt-palette-color" id="tip-shape-color" value="#888888" />
       </div>
       <div class="pt-palette-row">
         <span class="pt-palette-label">Background</span>
         <input type="color" class="pt-palette-color" id="tip-shape-bg-color" value="#02292e" />
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Colour by</span>
+        <select class="pt-palette-select" id="tip-colour-by" disabled>
+          <option value="">(none)</option>
+        </select>
       </div>
     </div>
 
@@ -690,6 +694,12 @@
       <div class="pt-palette-row">
         <span class="pt-palette-label">Background</span>
         <input type="color" class="pt-palette-color" id="node-shape-bg-color" value="#02292e" />
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Colour by</span>
+        <select class="pt-palette-select" id="node-colour-by" disabled>
+          <option value="">(none)</option>
+        </select>
       </div>
     </div>
 

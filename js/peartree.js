@@ -14,6 +14,7 @@ import { TreeRenderer } from './treerenderer.js';
   const nodeShapeColorEl  = document.getElementById('node-shape-color');
   const nodeShapeBgEl     = document.getElementById('node-shape-bg-color');
   const tipColourBy       = document.getElementById('tip-colour-by');
+  const nodeColourBy      = document.getElementById('node-colour-by');
   const legendShowEl      = document.getElementById('legend-show');
   const legendAnnotEl     = document.getElementById('legend-annotation');
   const legendLeftCanvas  = document.getElementById('legend-left-canvas');
@@ -233,6 +234,18 @@ import { TreeRenderer } from './treerenderer.js';
       tipColourBy.value    = '';
       tipColourBy.disabled = schema.size === 0;
 
+      while (nodeColourBy.options.length > 1) nodeColourBy.remove(1);
+      for (const [name, def] of schema) {
+        if (def.dataType !== 'list') {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          nodeColourBy.appendChild(opt);
+        }
+      }
+      nodeColourBy.value    = '';
+      nodeColourBy.disabled = schema.size === 0;
+
       // Populate the legend annotation dropdown with the same set of annotations.
       while (legendAnnotEl.options.length > 1) legendAnnotEl.remove(1);
       for (const [name, def] of schema) {
@@ -249,6 +262,7 @@ import { TreeRenderer } from './treerenderer.js';
       // Pass schema to the renderer so it can build colour scales.
       renderer.setAnnotationSchema(schema);
       renderer.setTipColourBy(null);
+      renderer.setNodeColourBy(null);
       applyLegend();   // rebuild legend with new data (may clear it)
       const layout = computeLayoutFromGraph(graph);
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
@@ -475,6 +489,10 @@ import { TreeRenderer } from './treerenderer.js';
 
   nodeShapeBgEl.addEventListener('input', () => {
     renderer.setNodeShapeBgColor(nodeShapeBgEl.value);
+  });
+
+  nodeColourBy.addEventListener('change', () => {
+    renderer.setNodeColourBy(nodeColourBy.value || null);
   });
 
   tipColourBy.addEventListener('change', () => {
