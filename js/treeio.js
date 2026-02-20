@@ -36,10 +36,10 @@ export function parseNewick(newickString, tipNameMap = null) {
           annotationKey = t.replace('.', '_');
         } else {
           if (isAnnotationARange) {
-            const arrNum = t !== '' ? parseFloat(t) : NaN;
+            const arrNum = t !== '' ? Number(t) : NaN;
             currentNode.annotations[annotationKey].push(!isNaN(arrNum) ? arrNum : t);
           } else {
-            const num = t !== '' ? parseFloat(t) : NaN;
+            const num = t !== '' ? Number(t) : NaN;
             currentNode.annotations[annotationKey] = !isNaN(num) ? num : t;
           }
         }

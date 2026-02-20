@@ -151,15 +151,22 @@ export function rerootOnGraph(graph, childOrigId, distFromParent) {
   swapToFront(nodes[newAIdx], newBIdx);
   // newB.adjacents[0] already = newAIdx — unchanged.
 
-  graph.root = { nodeA: newAIdx, nodeB: newBIdx, lenA: newLenA, lenB: newLenB };
+  // A rerooted tree places the root point between two real nodes, so the
+  // virtual root carries no biological annotations — use empty object so
+  // callers can safely use `'key' in graph.root.annotations`.
+  graph.root = { nodeA: newAIdx, nodeB: newBIdx, lenA: newLenA, lenB: newLenB, annotations: {} };
 }
 
 export function fromNestedRoot(nestedRoot) {
   const nodes       = [];
   const origIdToIdx = new Map();
 
-  const rootChildren  = nestedRoot.children || [];
-  const isBifurcating = rootChildren.length === 2;
+  const rootChildren    = nestedRoot.children || [];
+  const hasRootAnnotations = Object.keys(nestedRoot.annotations || {}).length > 0;
+  // Treat a bifurcating root as "virtual" only when it carries no annotations.
+  // An annotated root (e.g. BEAST output) is a real biological node and must be
+  // included in nodes[] so its annotations are visible and the tree is non-rerooted.
+  const isBifurcating = rootChildren.length === 2 && !hasRootAnnotations;
 
   // ── Pass 1: allocate one PhyloNode per biological node ──────────────────
   // For a bifurcating virtual root we skip nestedRoot itself.
@@ -400,16 +407,18 @@ export function reorderGraph(graph, ascending) {
   }
 
   if (lenA === 0) {
-    // Trifurcating root: nodeA is the real layout root; ALL its adjacents are
-    // children in the rendered tree.  Sort all of them together, then restore
-    // adjacents[0] = nodeB to maintain the invariant.
+    // Real root node: ALL its adjacents are children in the rendered tree.
+    // Sort all of them together.  No swapToFront here — adjacents[0] is a
+    // child, not a parent, so we must not restore it after sorting.
+    // Keep graph.root.nodeB in sync with whatever lands at adjacents[0].
     const n = nodes[nodeA];
     const pairs = n.adjacents.map((adj, i) => ({
       adj, len: n.lengths[i], ct: sortSubtree(adj),
     }));
     pairs.sort((a, b) => ascending ? a.ct - b.ct : b.ct - a.ct);
     pairs.forEach(({ adj, len }, i) => { n.adjacents[i] = adj; n.lengths[i] = len; });
-    swapToFront(n, nodeB);  // restore invariant
+    // Update nodeB so the invariant (nodeB === adjacents[0] of nodeA) is kept.
+    graph.root = { ...graph.root, nodeB: n.adjacents[0] };
 
   } else {
     // Bifurcating root: sort each side of the root edge independently.

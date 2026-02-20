@@ -516,7 +516,7 @@ import { AxisRenderer  } from './axisrenderer.js';
 
       // ── Axis renderer setup ───────────────────────────────────────────────
       // Detect time-scaled tree: root AND all nodes must carry a 'height' annotation.
-      const _isTimedTree = ('height' in graph.root.annotations) &&
+      const _isTimedTree = (graph.root.annotations && 'height' in graph.root.annotations) &&
                            graph.nodes.every(n => 'height' in n.annotations);
       // For timed trees, root height = layout.maxX (root sits at x=0, most divergent tip at x=maxX).
       const _rootHeight  = _isTimedTree ? layout.maxX : 0;
