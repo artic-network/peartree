@@ -100,6 +100,25 @@ export function parseNewick(newickString, tipNameMap = null) {
   }
 
   if (level > 0) throw new Error("Unbalanced brackets in Newick string");
+
+  // ── Post-process: parse pipe-delimited tip names for date annotations ────
+  // If any tip name contains '|', treat it as a field delimiter.  If the last
+  // field looks like a date (yyyy / yyyy-mm / yyyy-mm-dd) and the node does
+  // not already have a 'date' annotation, add one.
+  const DATE_RE = /^\d{4}(?:-\d{2}(?:-\d{2})?)?$/;
+  function annotateDates(node) {
+    const isTip = !node.children || node.children.length === 0;
+    if (isTip && node.name && node.name.includes('|')) {
+      const parts = node.name.split('|');
+      const last  = parts[parts.length - 1].trim();
+      if (DATE_RE.test(last) && !('date' in node.annotations)) {
+        node.annotations['date'] = last;
+      }
+    }
+    if (node.children) for (const c of node.children) annotateDates(c);
+  }
+  if (currentNode) annotateDates(currentNode);
+
   return currentNode;
 }
 
