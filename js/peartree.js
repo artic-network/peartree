@@ -8,6 +8,11 @@ import { TreeRenderer } from './treerenderer.js';
   const loadingEl         = document.getElementById('loading');
   const fontSlider        = document.getElementById('font-size-slider');
   const tipSlider         = document.getElementById('tip-size-slider');
+  const nodeSlider        = document.getElementById('node-size-slider');
+  const tipShapeColorEl   = document.getElementById('tip-shape-color');
+  const tipShapeBgEl      = document.getElementById('tip-shape-bg-color');
+  const nodeShapeColorEl  = document.getElementById('node-shape-color');
+  const nodeShapeBgEl     = document.getElementById('node-shape-bg-color');
   const tipColourBy       = document.getElementById('tip-colour-by');
   const legendShowEl      = document.getElementById('legend-show');
   const legendAnnotEl     = document.getElementById('legend-annotation');
@@ -450,6 +455,26 @@ import { TreeRenderer } from './treerenderer.js';
 
   tipSlider.addEventListener('input', () => {
     renderer.setTipRadius(parseInt(tipSlider.value));
+  });
+
+  nodeSlider.addEventListener('input', () => {
+    renderer.setNodeRadius(parseInt(nodeSlider.value));
+  });
+
+  tipShapeColorEl.addEventListener('input', () => {
+    renderer.setTipShapeColor(tipShapeColorEl.value);
+  });
+
+  tipShapeBgEl.addEventListener('input', () => {
+    renderer.setTipShapeBgColor(tipShapeBgEl.value);
+  });
+
+  nodeShapeColorEl.addEventListener('input', () => {
+    renderer.setNodeShapeColor(nodeShapeColorEl.value);
+  });
+
+  nodeShapeBgEl.addEventListener('input', () => {
+    renderer.setNodeShapeBgColor(nodeShapeBgEl.value);
   });
 
   tipColourBy.addEventListener('change', () => {

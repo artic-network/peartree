@@ -342,6 +342,16 @@
       opacity: 0.35;
       cursor: not-allowed;
     }
+    .pt-palette-color {
+      width: 36px;
+      height: 22px;
+      padding: 1px 2px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 3px;
+      cursor: pointer;
+      background: none;
+      flex-shrink: 0;
+    }
     /* palette button active state */
     #btn-palette.active {
       color: var(--bs-primary);
@@ -647,7 +657,7 @@
       <h3>Tip Shapes</h3>
       <div class="pt-palette-row">
         <i class="bi bi-record-circle form-label-sm"></i>
-        <input type="range" class="form-range" id="tip-size-slider" min="1" max="12" value="3" />
+        <input type="range" class="form-range" id="tip-size-slider" min="0" max="12" value="3" />
         <span class="pt-val" id="tip-size-value">3</span>
       </div>
       <div class="pt-palette-row">
@@ -655,6 +665,31 @@
         <select class="pt-palette-select" id="tip-colour-by" disabled>
           <option value="">(none)</option>
         </select>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Fill</span>
+        <input type="color" class="pt-palette-color" id="tip-shape-color" value="#888888" />
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Background</span>
+        <input type="color" class="pt-palette-color" id="tip-shape-bg-color" value="#02292e" />
+      </div>
+    </div>
+
+    <div class="pt-palette-section">
+      <h3>Node Shapes</h3>
+      <div class="pt-palette-row">
+        <i class="bi bi-record-circle form-label-sm"></i>
+        <input type="range" class="form-range" id="node-size-slider" min="0" max="12" value="0" />
+        <span class="pt-val" id="node-size-value">0</span>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Fill</span>
+        <input type="color" class="pt-palette-color" id="node-shape-color" value="#888888" />
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Background</span>
+        <input type="color" class="pt-palette-color" id="node-shape-bg-color" value="#02292e" />
       </div>
     </div>
 
@@ -714,10 +749,13 @@
   // Slider live value readouts
   const fontSliderEl = document.getElementById('font-size-slider');
   const tipSliderEl  = document.getElementById('tip-size-slider');
+  const nodeSliderEl = document.getElementById('node-size-slider');
   const fontValEl    = document.getElementById('font-size-value');
   const tipValEl     = document.getElementById('tip-size-value');
-  fontSliderEl.addEventListener('input', () => { fontValEl.textContent = fontSliderEl.value; });
-  tipSliderEl.addEventListener('input',  () => { tipValEl.textContent  = tipSliderEl.value; });
+  const nodeValEl    = document.getElementById('node-size-value');
+  fontSliderEl.addEventListener('input', () => { fontValEl.textContent  = fontSliderEl.value; });
+  tipSliderEl.addEventListener('input',  () => { tipValEl.textContent   = tipSliderEl.value; });
+  nodeSliderEl.addEventListener('input', () => { nodeValEl.textContent  = nodeSliderEl.value; });
 
   // Help panel
   const helpPanel   = document.getElementById('help-panel');
