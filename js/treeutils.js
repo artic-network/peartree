@@ -208,6 +208,34 @@ export function reorderTree(node, ascending) {
   return total;
 }
 
+/**
+ * Rotate a node in the nested tree: reverse the order of its direct children.
+ * If `recursive` is true, also rotate every internal descendant in the subtree.
+ * Mutates the tree in place.
+ *
+ * @param {object}  treeRoot  – root of the nested tree
+ * @param {string}  nodeId    – id of the target internal node
+ * @param {boolean} [recursive=false]
+ */
+export function rotateNodeTree(treeRoot, nodeId, recursive = false) {
+  function rotateAll(n) {
+    if (!n.children || n.children.length === 0) return;
+    n.children.reverse();
+    for (const child of n.children) rotateAll(child);
+  }
+
+  function walk(n) {
+    if (!n.children || n.children.length === 0) return;
+    if (n.id === nodeId) {
+      if (recursive) rotateAll(n);
+      else           n.children.reverse();
+      return;  // found – stop walking
+    }
+    for (const child of n.children) walk(child);
+  }
+  walk(treeRoot);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Midpoint rooting  – finds the branch bisecting the tree's diameter
 // ─────────────────────────────────────────────────────────────────────────────

@@ -329,6 +329,47 @@ export function buildAnnotationSchema(nodes) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Rotate a node: reverse the order of its direct children (adjacents[1..]).
+ * If `recursive` is true, also rotate every internal descendant in the subtree.
+ * adjacents[0] (the parent direction) is never touched.
+ * Mutates the graph in place.  O(k) for a single node, O(n) when recursive.
+ *
+ * @param {PhyloGraph} graph
+ * @param {string}     origId     – origId of the target internal node
+ * @param {boolean}    [recursive=false] – if true, rotate all internals in the subtree
+ */
+export function rotateNodeGraph(graph, origId, recursive = false) {
+  const { nodes, origIdToIdx } = graph;
+  const startIdx = origIdToIdx.get(origId);
+  if (startIdx === undefined) return;
+
+  function reverseChildren(nodeIdx) {
+    const n = nodes[nodeIdx];
+    const nCh = n.adjacents.length - 1;   // number of children (skip [0] = parent)
+    if (nCh < 2) return;                  // tip or single child – nothing to swap
+    const adjs = n.adjacents.slice(1).reverse();
+    const lens = n.lengths.slice(1).reverse();
+    for (let i = 0; i < nCh; i++) {
+      n.adjacents[i + 1] = adjs[i];
+      n.lengths[i + 1]   = lens[i];
+    }
+  }
+
+  if (!recursive) {
+    reverseChildren(startIdx);
+  } else {
+    // DFS downward from startIdx.  adjacents[0] is always the parent direction,
+    // so we only recurse into adjacents[1..] — avoiding the cycle back up.
+    function dfs(nodeIdx) {
+      reverseChildren(nodeIdx);
+      const n = nodes[nodeIdx];
+      for (let i = 1; i < n.adjacents.length; i++) dfs(n.adjacents[i]);
+    }
+    dfs(startIdx);
+  }
+}
+
+/**
  * Sort children (adjacents[1..]) of every internal node by subtree tip count,
  * mutating the graph in place.  adjacents[0] (the parent direction) is never
  * touched.  O(n log n) in the number of nodes.

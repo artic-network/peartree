@@ -1,6 +1,6 @@
 import { parseNexus, parseNewick } from './treeio.js';
-import { computeLayoutFrom, computeLayoutFromGraph, reorderTree, rerootTree } from './treeutils.js';
-import { fromNestedRoot, rerootOnGraph, reorderGraph, midpointRootGraph } from './phylograph.js';
+import { computeLayoutFrom, computeLayoutFromGraph, reorderTree, rerootTree, rotateNodeTree } from './treeutils.js';
+import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointRootGraph } from './phylograph.js';
 import { TreeRenderer } from './treerenderer.js';
 
 (async () => {
@@ -509,6 +509,7 @@ import { TreeRenderer } from './treerenderer.js';
     const btnOrderAsc  = document.getElementById('btn-order-asc');
     const btnOrderDesc = document.getElementById('btn-order-desc');
     const btnReroot       = document.getElementById('btn-reroot');
+    const btnRotate       = document.getElementById('btn-rotate');
     const btnMidpointRoot  = document.getElementById('btn-midpoint-root');
     // isExplicitlyRooted is read dynamically (closured from outer scope) so
     // subsequent tree loads automatically pick up the new value.
@@ -526,6 +527,8 @@ import { TreeRenderer } from './treerenderer.js';
     };
     renderer._onNodeSelectChange = (hasSelection) => {
       if (renderer._mode === 'nodes') btnReroot.disabled = isExplicitlyRooted || !hasSelection;
+      // Rotate requires an internal node (MRCA of ≥2 tips) in nodes mode.
+      btnRotate.disabled = !(renderer._mode === 'nodes' && renderer._mrcaNodeId);
     };
 
     btnBack.addEventListener('click',    () => renderer.navigateBack());
@@ -533,6 +536,39 @@ import { TreeRenderer } from './treerenderer.js';
 
     btnOrderAsc.addEventListener('click',  () => applyOrder(false));
     btnOrderDesc.addEventListener('click', () => applyOrder(true));
+
+    // ── Rotate node ──────────────────────────────────────────────────────────
+    // Click        → reverse children of the selected internal node only.
+    // Alt-click    → reverse children of the selected node AND all its
+    //               descendant internal nodes (deep / recursive rotation).
+    // In both cases the global auto-ordering is cleared so the new child
+    // order is preserved on subsequent rerootings.
+    btnRotate.addEventListener('click', (e) => {
+      const nodeId = renderer._mrcaNodeId;
+      if (!nodeId) return;
+
+      const recursive = e.altKey;
+
+      // Mutate the graph (primary layout source).
+      rotateNodeGraph(graph, nodeId, recursive);
+
+      // Keep the nested tree in sync (used by subtree navigation / applyOrder).
+      rotateNodeTree(root, nodeId, recursive);
+
+      // Disable global auto-ordering — the manual rotation must be preserved.
+      currentOrder = null;
+      btnOrderAsc .classList.remove('active');
+      btnOrderDesc.classList.remove('active');
+
+      // Recompute layout and animate.
+      const viewRoot = renderer._viewRawRoot;
+      const layout   = viewRoot
+        ? computeLayoutFrom(viewRoot)
+        : computeLayoutFromGraph(graph);
+      renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+
+      saveSettings();
+    });
 
     // Mode menu
     const btnModeNodes    = document.getElementById('btn-mode-nodes');
