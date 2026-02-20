@@ -1,35 +1,39 @@
 /**
  * AxisRenderer — draws an x-axis below the tree canvas.
  *
- * Three modes (set automatically via setTreeParams):
- *   1. divergence — labels show raw branch-length distance from root
- *   2. height     — labels show "height before present" (rootHeight → 0 left→right)
- *   3. date       — labels show calendar year / date derived from a date annotation
+ * Three modes:
+ *   1. divergence — raw branch-length units from root  (auto-selected)
+ *   2. height     — "height before present" (auto-selected for time trees)
+ *   3. date       — absolute calendar time  (requires setDateAnchor)
  *
- * Usage:
- *   const ar = new AxisRenderer(canvasEl);
- *   ar.setTreeParams({ maxX, isTimedTree, rootHeight });
- *   ar.setDateAnchor('date', nodeMap);   // optional — switches to date mode
- *   // Called every frame by renderer._onViewChange:
- *   ar.update(scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, devicePixelRatio);
+ * Tick / label settings (date mode only, via setTickOptions):
+ *   majorInterval    'auto'|'decades'|'years'|'quarters'|'months'|'weeks'|'days'
+ *   minorInterval    'off'|'auto'|'decades'|'years'|'quarters'|'months'|'weeks'|'days'
+ *   majorLabelFormat 'auto'|'off'|'component'|'yyyy'|'yyyy-MM'|'yyyy-MMM'|'yyyy-mm-dd'|'yyyy-MMM-dd'|'dd MMM yyyy'
+ *   minorLabelFormat 'off'|'component'|'yyyy'|'yyyy-MM'|'yyyy-MMM'|'yyyy-mm-dd'|'yyyy-MMM-dd'|'dd MMM yyyy'
  */
 export class AxisRenderer {
   constructor(canvas) {
-    this._canvas = canvas;
-    this._ctx    = canvas.getContext('2d');
+    this._canvas  = canvas;
+    this._ctx     = canvas.getContext('2d');
     this._visible = false;
 
     // Tree geometry
     this._maxX       = 1;
-    this._timed      = false; // true if height annotation present on all nodes
-    this._rootHeight = 0;     // height at root (in years for time trees)
+    this._timed      = false;
+    this._rootHeight = 0;
     this._fontSize   = 9;
 
     // Date mode
-    this._dateMode      = false;
-    this._rootDecYear   = null; // decimal year at root
+    this._dateMode    = false;
+    this._rootDecYear = null;
 
-    // Last view state (to avoid redundant redraws)
+    // Tick / label options (effective only in date mode)
+    this._majorInterval    = 'auto';
+    this._minorInterval    = 'off';
+    this._majorLabelFormat = 'auto';
+    this._minorLabelFormat = 'off';
+
     this._lastHash = '';
   }
 
@@ -92,6 +96,14 @@ export class AxisRenderer {
     this._lastHash = '';
   }
 
+  setTickOptions({ majorInterval, minorInterval, majorLabelFormat, minorLabelFormat }) {
+    this._majorInterval    = majorInterval    || 'auto';
+    this._minorInterval    = minorInterval    || 'off';
+    this._majorLabelFormat = majorLabelFormat || 'auto';
+    this._minorLabelFormat = minorLabelFormat || 'off';
+    this._lastHash = '';
+  }
+
   /**
    * Called every animation frame (from renderer._onViewChange).
    * Redraws if view state has changed.
@@ -113,7 +125,7 @@ export class AxisRenderer {
       this._ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${paddingLeft}|${labelRightPad}|${bgColor}|${fontSize}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._rootDecYear}`;
+    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${paddingLeft}|${labelRightPad}|${bgColor}|${fontSize}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._rootDecYear}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}`;
     if (hash === this._lastHash) return;
     this._lastHash = hash;
 
@@ -145,86 +157,135 @@ export class AxisRenderer {
   // ── Drawing ──────────────────────────────────────────────────────────────
 
   _draw() {
-    const ctx   = this._ctx;
-    const W     = this._W;
-    const H     = this._H;
-    const bg    = this._bgColor;
-    const fs    = this._fontSize;
+    const ctx = this._ctx;
+    const W = this._W, H = this._H;
+    const fs = this._fontSize;
 
     ctx.clearRect(0, 0, W, H);
-
-    // Background
-    ctx.fillStyle = bg;
+    ctx.fillStyle = this._bgColor;
     ctx.fillRect(0, 0, W, H);
-
-    // Top divider line
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    ctx.lineWidth   = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, 0.5);
-    ctx.lineTo(W, 0.5);
-    ctx.stroke();
 
     if (!this._scaleX || this._maxX === 0) return;
 
-    const plotLeft  = this._offsetX;                           // screenX of worldX=0
-    const plotRight = this._offsetX + this._maxX * this._scaleX; // screenX of worldX=maxX
-
+    const plotLeft  = this._offsetX;
+    const plotRight = this._offsetX + this._maxX * this._scaleX;
     if (plotRight <= plotLeft) return;
 
-    // Compute the value domain for the full world-x range
     const { leftVal, rightVal } = this._valueDomain();
+    const minVal = Math.min(leftVal, rightVal);
+    const maxVal = Math.max(leftVal, rightVal);
+    const targetMajor = Math.max(2, Math.round((plotRight - plotLeft) / 90));
 
-    // Generate nice ticks
-    const targetTicks = Math.max(2, Math.round((plotRight - plotLeft) / 90));
-    const ticks = this._dateMode
-      ? AxisRenderer._niceCalendarTicks(leftVal, rightVal, targetTicks)
-      : AxisRenderer._niceTicks(leftVal, rightVal, targetTicks);
+    // ── Build tick arrays ──────────────────────────────────────────────────
+    let majorTicks, minorTicks;
+    if (this._dateMode) {
+      const majorInt = this._majorInterval;
+      const minorInt = this._minorInterval;
+      majorTicks = (majorInt === 'auto')
+        ? AxisRenderer._niceCalendarTicks(minVal, maxVal, targetMajor)
+        : AxisRenderer._calendarTicksForInterval(minVal, maxVal, majorInt);
+      if (minorInt === 'off') {
+        minorTicks = [];
+      } else if (minorInt === 'auto') {
+        const minorAll = AxisRenderer._niceCalendarTicks(minVal, maxVal, targetMajor * 5);
+        const majorSet = new Set(majorTicks.map(t => t.toFixed(8)));
+        minorTicks = minorAll.filter(t => !majorSet.has(t.toFixed(8)));
+      } else {
+        const minorAll = AxisRenderer._calendarTicksForInterval(minVal, maxVal, minorInt);
+        const majorSet = new Set(majorTicks.map(t => t.toFixed(8)));
+        minorTicks = minorAll.filter(t => !majorSet.has(t.toFixed(8)));
+      }
+    } else {
+      majorTicks = AxisRenderer._niceTicks(leftVal, rightVal, targetMajor);
+      const minorAll = majorTicks.length > 1
+        ? AxisRenderer._niceTicks(leftVal, rightVal, targetMajor * 5) : [];
+      const majorSet = new Set(majorTicks.map(t => t.toPrecision(10)));
+      minorTicks = minorAll.filter(t => !majorSet.has(t.toPrecision(10)));
+    }
 
-    if (ticks.length === 0) return;
+    // ── Layout constants ──────────────────────────────────────────────────
+    const Y_BASE      = 3;
+    const MAJOR_H     = 9;
+    const MINOR_H     = 5;
+    const TICK_COLOR  = 'rgba(255,255,255,0.45)';
+    const MINOR_COLOR = 'rgba(255,255,255,0.25)';
+    const TEXT_COLOR  = 'rgba(242,241,230,0.80)';
+    const TEXT_DIM    = 'rgba(242,241,230,0.45)';
+    const fsMinor     = Math.max(6, fs - 2);
 
-    // Axis baseline
-    const Y_LINE  = 7;
-    const Y_TICK  = Y_LINE + 5;
-    const Y_LABEL = Y_TICK + fs + 2;
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    // Baseline
+    ctx.strokeStyle = TICK_COLOR;
     ctx.lineWidth   = 1;
     ctx.beginPath();
-    ctx.moveTo(plotLeft, Y_LINE);
-    ctx.lineTo(plotRight, Y_LINE);
+    ctx.moveTo(plotLeft,  Y_BASE + 0.5);
+    ctx.lineTo(plotRight, Y_BASE + 0.5);
     ctx.stroke();
 
-    const textColor = this._lightenHex(bg);
-    ctx.fillStyle   = textColor;
-    ctx.font        = `${fs}px monospace`;
-    ctx.textAlign   = 'center';
+    // ── Minor ticks ───────────────────────────────────────────────────────
+    const minorLabelFmt  = this._dateMode ? this._minorLabelFormat : 'off';
+    const showMinorLabel = minorLabelFmt !== 'off';
+    let minorLabelRight  = -Infinity;
+
+    ctx.font         = `${fsMinor}px monospace`;
+    ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
 
-    for (const val of ticks) {
-      const worldX = this._valToWorldX(val);
-      const sx     = this._offsetX + worldX * this._scaleX;
+    for (const val of minorTicks) {
+      const sx = this._valToScreenX(val);
       if (sx < plotLeft - 1 || sx > plotRight + 1) continue;
-
-      // Tick mark
-      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.strokeStyle = MINOR_COLOR;
       ctx.lineWidth   = 1;
       ctx.beginPath();
-      ctx.moveTo(sx, Y_LINE);
-      ctx.lineTo(sx, Y_TICK);
+      ctx.moveTo(sx + 0.5, Y_BASE + 1);
+      ctx.lineTo(sx + 0.5, Y_BASE + 1 + MINOR_H);
       ctx.stroke();
+      if (showMinorLabel) {
+        const label = this._formatDateVal(val, minorLabelFmt, this._minorInterval);
+        const tw    = ctx.measureText(label).width;
+        const lx    = Math.max(plotLeft + tw / 2 + 1, Math.min(plotRight - tw / 2 - 1, sx));
+        if (lx - tw / 2 > minorLabelRight + 2) {
+          ctx.fillStyle = TEXT_DIM;
+          ctx.fillText(label, lx, Y_BASE + 1 + MINOR_H + 2);
+          minorLabelRight = lx + tw / 2;
+        }
+      }
+    }
 
-      // Label
-      const label = this._dateMode
-        ? AxisRenderer._formatDecYear(val, ticks)
-        : AxisRenderer._formatValue(val);
+    // ── Major ticks ───────────────────────────────────────────────────────
+    const majorLabelFmt  = this._dateMode ? this._majorLabelFormat : 'auto';
+    const showMajorLabel = majorLabelFmt !== 'off';
+    let majorLabelRight  = -Infinity;
 
-      // Clip label to plotLeft..plotRight
-      const tw = ctx.measureText(label).width;
-      const lx = Math.max(plotLeft + tw / 2 + 2, Math.min(plotRight - tw / 2 - 2, sx));
+    ctx.font         = `${fs}px monospace`;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
 
-      ctx.fillStyle = textColor;
-      ctx.fillText(label, lx, Y_TICK + 1);
+    for (const val of majorTicks) {
+      const sx = this._valToScreenX(val);
+      if (sx < plotLeft - 1 || sx > plotRight + 1) continue;
+      ctx.strokeStyle = TICK_COLOR;
+      ctx.lineWidth   = 1;
+      ctx.beginPath();
+      ctx.moveTo(sx + 0.5, Y_BASE + 1);
+      ctx.lineTo(sx + 0.5, Y_BASE + 1 + MAJOR_H);
+      ctx.stroke();
+      if (showMajorLabel) {
+        let label;
+        if (this._dateMode) {
+          label = (majorLabelFmt === 'auto')
+            ? AxisRenderer._formatDecYear(val, majorTicks)
+            : this._formatDateVal(val, majorLabelFmt, this._majorInterval);
+        } else {
+          label = AxisRenderer._formatValue(val);
+        }
+        const tw = ctx.measureText(label).width;
+        const lx = Math.max(plotLeft + tw / 2 + 1, Math.min(plotRight - tw / 2 - 1, sx));
+        if (lx - tw / 2 > majorLabelRight + 2) {
+          ctx.fillStyle = TEXT_COLOR;
+          ctx.fillText(label, lx, Y_BASE + 1 + MAJOR_H + 2);
+          majorLabelRight = lx + tw / 2;
+        }
+      }
     }
   }
 
@@ -243,22 +304,44 @@ export class AxisRenderer {
     return { leftVal: 0, rightVal: this._maxX };
   }
 
-  /** Convert axis value back to worldX */
   _valToWorldX(val) {
-    if (this._dateMode) {
-      return val - this._rootDecYear;
-    }
-    if (this._timed) {
-      // height = rootHeight - worldX  →  worldX = rootHeight - height
-      return this._rootHeight - val;
-    }
+    if (this._dateMode) return val - this._rootDecYear;
+    if (this._timed)    return this._rootHeight - val;
     return val;
   }
 
-  /** Derive a readable foreground colour from the background hex */
-  _lightenHex(hex) {
-    // Just use a fixed light off-white to match the rest of the UI
-    return 'rgba(242,241,230,0.75)';
+  _valToScreenX(val) {
+    return this._offsetX + this._valToWorldX(val) * this._scaleX;
+  }
+
+  static _MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  /** Format a decimal year using a specific named format or 'component' (interval-specific label). */
+  _formatDateVal(decYear, format, interval) {
+    const { year, month, day } = AxisRenderer._decYearToDate(decYear);
+    if (format === 'component') {
+      switch (interval) {
+        case 'decades':  return String(year);
+        case 'years':    return String(year);
+        case 'quarters': return `Q${Math.ceil(month / 3)}`;
+        case 'months':   return AxisRenderer._MONTHS[month - 1];
+        case 'weeks':
+        case 'days':     return String(day);
+        default:         return AxisRenderer._formatDecYear(decYear, []);
+      }
+    }
+    const mm  = String(month).padStart(2, '0');
+    const dd  = String(day).padStart(2, '0');
+    const mmm = AxisRenderer._MONTHS[month - 1];
+    switch (format) {
+      case 'yyyy':        return String(year);
+      case 'yyyy-MM':     return `${year}-${mm}`;
+      case 'yyyy-MMM':    return `${year}-${mmm}`;
+      case 'yyyy-mm-dd':  return `${year}-${mm}-${dd}`;
+      case 'yyyy-MMM-dd': return `${year}-${mmm}-${dd}`;
+      case 'dd MMM yyyy': return `${dd} ${mmm} ${year}`;
+      default:            return AxisRenderer._formatDecYear(decYear, []);
+    }
   }
 
   // ── Static helpers ────────────────────────────────────────────────────────
@@ -295,7 +378,7 @@ export class AxisRenderer {
 
   /**
    * Generate calendar ticks within decimal-year range [minDY, maxDY].
-   * Picks an appropriate interval: decade, year, quarter, month.
+   * Auto-picks appropriate interval (decade → year → quarter → month → …).
    */
   static _niceCalendarTicks(minDY, maxDY, targetCount = 5) {
     const range = maxDY - minDY;
@@ -336,6 +419,88 @@ export class AxisRenderer {
         ticks.push(dy);
         m += monthsPerStep;
         while (m > 12) { m -= 12; yr++; }
+      }
+    }
+    return ticks;
+  }
+
+  /**
+   * Generate ticks for a fixed named calendar interval within [minDY, maxDY].
+   */
+  static _calendarTicksForInterval(minDY, maxDY, interval) {
+    const ticks = [];
+    const sd = AxisRenderer._decYearToDate(minDY);
+
+    if (interval === 'decades') {
+      const start = Math.ceil(minDY / 10 - 1e-9) * 10;
+      for (let y = start; y <= maxDY + 1e-6; y += 10)
+        ticks.push(AxisRenderer._dateToDecYear(y, 1, 1));
+
+    } else if (interval === 'years') {
+      let yr = sd.year;
+      if (AxisRenderer._dateToDecYear(yr, 1, 1) < minDY - 1e-9) yr++;
+      for (; AxisRenderer._dateToDecYear(yr, 1, 1) <= maxDY + 1e-6; yr++)
+        ticks.push(AxisRenderer._dateToDecYear(yr, 1, 1));
+
+    } else if (interval === 'quarters') {
+      let yr = sd.year, m = sd.month;
+      // snap to next quarter start (1, 4, 7, 10)
+      m = Math.ceil(m / 3) * 3 - 2;
+      if (m < 1) m = 1;
+      if (AxisRenderer._dateToDecYear(yr, m, 1) < minDY - 1e-9) {
+        m += 3; while (m > 12) { m -= 12; yr++; }
+      }
+      for (let i = 0; i < 500; i++) {
+        const dy = AxisRenderer._dateToDecYear(yr, m, 1);
+        if (dy > maxDY + 1e-6) break;
+        ticks.push(dy);
+        m += 3; while (m > 12) { m -= 12; yr++; }
+      }
+
+    } else if (interval === 'months') {
+      let yr = sd.year, m = sd.month;
+      if (AxisRenderer._dateToDecYear(yr, m, 1) < minDY - 1e-9) {
+        m++; if (m > 12) { m = 1; yr++; }
+      }
+      for (let i = 0; i < 5000; i++) {
+        const dy = AxisRenderer._dateToDecYear(yr, m, 1);
+        if (dy > maxDY + 1e-6) break;
+        ticks.push(dy);
+        m++; if (m > 12) { m = 1; yr++; }
+      }
+
+    } else if (interval === 'weeks') {
+      // Anchor to Jan 1 of start year; step by 7 calendar days
+      const anchor = AxisRenderer._dateToDecYear(sd.year, 1, 1);
+      const WEEK_DY = 7 / 365.25;
+      const n = Math.ceil((minDY - anchor) / WEEK_DY - 1e-9);
+      let { year, month, day } = AxisRenderer._decYearToDate(anchor + n * WEEK_DY);
+      for (let i = 0; i < 5000; i++) {
+        const dy = AxisRenderer._dateToDecYear(year, month, day);
+        if (dy > maxDY + 1e-4) break;
+        if (dy >= minDY - 1e-9) ticks.push(dy);
+        day += 7;
+        const lp = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+        const dim = [0,31,lp?29:28,31,30,31,30,31,31,30,31,30,31];
+        while (day > dim[month]) { day -= dim[month]; month++; if (month > 12) { month = 1; year++; } }
+      }
+
+    } else if (interval === 'days') {
+      let { year, month, day } = AxisRenderer._decYearToDate(minDY);
+      if (AxisRenderer._dateToDecYear(year, month, day) < minDY - 1e-9) {
+        day++;
+        const lp = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+        const dim = [0,31,lp?29:28,31,30,31,30,31,31,30,31,30,31];
+        if (day > dim[month]) { day = 1; month++; if (month > 12) { month = 1; year++; } }
+      }
+      for (let i = 0; i < 100000; i++) {
+        const dy = AxisRenderer._dateToDecYear(year, month, day);
+        if (dy > maxDY + 1e-6) break;
+        ticks.push(dy);
+        day++;
+        const lp = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+        const dim = [0,31,lp?29:28,31,30,31,30,31,31,30,31,30,31];
+        if (day > dim[month]) { day = 1; month++; if (month > 12) { month = 1; year++; } }
       }
     }
     return ticks;

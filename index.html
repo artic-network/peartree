@@ -144,6 +144,7 @@
       flex: 1;
       display: flex;
       flex-direction: column;
+      gap: 0;
       overflow: hidden;
       min-width: 0;
     }
@@ -152,12 +153,16 @@
       position: relative;
       overflow: hidden;
       min-width: 0;
+      margin: 0;
+      padding: 0;
     }
     #axis-canvas {
       flex-shrink: 0;
       height: 36px;
       display: none;
       width: 100%;
+      margin: 0;
+      padding: 0;
       pointer-events: none;
     }
     canvas            { display: block; cursor: default; }
@@ -838,9 +843,54 @@
         </select>
       </div>
       <div class="pt-palette-row" id="axis-date-row" style="display:none">
-        <span class="pt-palette-label">Date</span>
+        <span class="pt-palette-label">Date ann.</span>
         <select class="pt-palette-select" id="axis-date-annotation">
           <option value="">(none)</option>
+        </select>
+      </div>
+      <div class="pt-palette-row" id="axis-major-interval-row" style="display:none">
+        <span class="pt-palette-label">Major ticks</span>
+        <select class="pt-palette-select" id="axis-major-interval">
+          <option value="auto">Auto</option>
+          <option value="decades">Decades</option>
+          <option value="years">Years</option>
+          <option value="quarters">Quarters</option>
+          <option value="months">Months</option>
+          <option value="weeks">Weeks</option>
+          <option value="days">Days</option>
+        </select>
+      </div>
+      <div class="pt-palette-row" id="axis-minor-interval-row" style="display:none">
+        <span class="pt-palette-label">Minor ticks</span>
+        <select class="pt-palette-select" id="axis-minor-interval">
+          <option value="off">Off</option>
+        </select>
+      </div>
+      <div class="pt-palette-row" id="axis-major-label-row" style="display:none">
+        <span class="pt-palette-label">Major labels</span>
+        <select class="pt-palette-select" id="axis-major-label">
+          <option value="auto">Auto</option>
+          <option value="off">Off</option>
+          <option value="component">Component</option>
+          <option value="yyyy">yyyy</option>
+          <option value="yyyy-MM">yyyy-MM</option>
+          <option value="yyyy-MMM">yyyy-MMM</option>
+          <option value="yyyy-mm-dd">yyyy-mm-dd</option>
+          <option value="yyyy-MMM-dd">yyyy-MMM-dd</option>
+          <option value="dd MMM yyyy">dd MMM yyyy</option>
+        </select>
+      </div>
+      <div class="pt-palette-row" id="axis-minor-label-row" style="display:none">
+        <span class="pt-palette-label">Minor labels</span>
+        <select class="pt-palette-select" id="axis-minor-label">
+          <option value="off">Off</option>
+          <option value="component">Component</option>
+          <option value="yyyy">yyyy</option>
+          <option value="yyyy-MM">yyyy-MM</option>
+          <option value="yyyy-MMM">yyyy-MMM</option>
+          <option value="yyyy-mm-dd">yyyy-mm-dd</option>
+          <option value="yyyy-MMM-dd">yyyy-MMM-dd</option>
+          <option value="dd MMM yyyy">dd MMM yyyy</option>
         </select>
       </div>
     </div>

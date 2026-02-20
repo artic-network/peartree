@@ -24,11 +24,19 @@ import { AxisRenderer  } from './axisrenderer.js';
   const legendAnnotEl     = document.getElementById('legend-annotation');
   const legendLeftCanvas  = document.getElementById('legend-left-canvas');
   const legendRightCanvas = document.getElementById('legend-right-canvas');
-  const axisCanvas        = document.getElementById('axis-canvas');
-  const axisShowEl        = document.getElementById('axis-show');
-  const axisDateAnnotEl   = document.getElementById('axis-date-annotation');
-  const axisDateRow       = document.getElementById('axis-date-row');
-  const btnFit            = document.getElementById('btn-fit');
+  const axisCanvas             = document.getElementById('axis-canvas');
+  const axisShowEl             = document.getElementById('axis-show');
+  const axisDateAnnotEl        = document.getElementById('axis-date-annotation');
+  const axisDateRow            = document.getElementById('axis-date-row');
+  const axisMajorIntervalEl    = document.getElementById('axis-major-interval');
+  const axisMinorIntervalEl    = document.getElementById('axis-minor-interval');
+  const axisMajorLabelEl       = document.getElementById('axis-major-label');
+  const axisMinorLabelEl       = document.getElementById('axis-minor-label');
+  const axisMajorIntervalRow   = document.getElementById('axis-major-interval-row');
+  const axisMinorIntervalRow   = document.getElementById('axis-minor-interval-row');
+  const axisMajorLabelRow      = document.getElementById('axis-major-label-row');
+  const axisMinorLabelRow      = document.getElementById('axis-minor-label-row');
+  const btnFit                 = document.getElementById('btn-fit');
   const btnResetSettings  = document.getElementById('btn-reset-settings');
 
   // ── Settings persistence ──────────────────────────────────────────────────
@@ -47,9 +55,13 @@ import { AxisRenderer  } from './axisrenderer.js';
     nodeSize:         '0',
     nodeShapeColor:   '#888888',
     nodeShapeBgColor: '#02292e',
-    legendShow:       'off',
-    axisShow:         'off',
+    legendShow:         'off',
+    axisShow:           'off',
     axisDateAnnotation: '',
+    axisMajorInterval:    'auto',
+    axisMinorInterval:    'off',
+    axisMajorLabelFormat: 'auto',
+    axisMinorLabelFormat: 'off',
   };
 
   function loadSettings() {
@@ -74,8 +86,12 @@ import { AxisRenderer  } from './axisrenderer.js';
       nodeColourBy:     nodeColourBy.value,
       legendShow:       legendShowEl.value,
       legendAnnotation: legendAnnotEl.value,
-      axisShow:         axisShowEl.value,
+      axisShow:           axisShowEl.value,
       axisDateAnnotation: axisDateAnnotEl.value,
+      axisMajorInterval:    axisMajorIntervalEl.value,
+      axisMinorInterval:    axisMinorIntervalEl.value,
+      axisMajorLabelFormat: axisMajorLabelEl.value,
+      axisMinorLabelFormat: axisMinorLabelEl.value,
       nodeOrder:        currentOrder,
       mode:             renderer ? renderer._mode : 'nodes',
     }));
@@ -106,6 +122,11 @@ import { AxisRenderer  } from './axisrenderer.js';
     legendAnnotEl.value      = '';
     axisShowEl.value         = DEFAULTS.axisShow;
     axisDateAnnotEl.value    = '';
+    axisMajorIntervalEl.value    = DEFAULTS.axisMajorInterval;
+    axisMinorIntervalEl.value    = DEFAULTS.axisMinorInterval;
+    axisMajorLabelEl.value       = DEFAULTS.axisMajorLabelFormat;
+    axisMinorLabelEl.value       = DEFAULTS.axisMinorLabelFormat;
+    _updateMinorOptions(DEFAULTS.axisMajorInterval, DEFAULTS.axisMinorInterval);
 
     // Apply to renderer.
     if (renderer) {
@@ -125,6 +146,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       renderer.setMode('nodes');
       applyLegend();
       applyAxis();
+      applyTickOptions();
     }
 
     // Reset order + mode button states (if controls are already bound).
@@ -214,6 +236,11 @@ import { AxisRenderer  } from './axisrenderer.js';
     axisCanvas.style.display    = 'block';
     axisRenderer.setVisible(true);
   }
+  // Restore tick options
+  if (_saved.axisMajorInterval)    axisMajorIntervalEl.value    = _saved.axisMajorInterval;
+  _updateMinorOptions(axisMajorIntervalEl.value, _saved.axisMinorInterval || 'off');
+  if (_saved.axisMajorLabelFormat) axisMajorLabelEl.value       = _saved.axisMajorLabelFormat;
+  if (_saved.axisMinorLabelFormat) axisMinorLabelEl.value       = _saved.axisMinorLabelFormat;
 
   // Hide the initial loading overlay; the Open Tree modal replaces it on startup
   loadingEl.style.display = 'none';
@@ -460,24 +487,22 @@ import { AxisRenderer  } from './axisrenderer.js';
       const _rootHeight  = _isTimedTree ? (parseFloat(graph.root.annotations.height) || 0) : 0;
       axisRenderer.setTreeParams({ maxX: layout.maxX, isTimedTree: _isTimedTree, rootHeight: _rootHeight });
 
-      // Populate date annotation dropdown (categorical annotations that parse as dates).
+      // Populate date annotation dropdown with all categorical/integer annotations
+      // so the user can pick whichever annotation holds their date values.
       while (axisDateAnnotEl.options.length > 1) axisDateAnnotEl.remove(1);
       if (_isTimedTree) {
         for (const [name, def] of schema) {
-          if (def.dataType === 'categorical' || def.dataType === 'integer') {
-            // Check if any value parses as a date year (four-digit year pattern)
-            const sample = def.values?.[0];
-            if (sample != null && AxisRenderer._parseDateToDecYear(String(sample)) != null) {
-              const opt = document.createElement('option');
-              opt.value = name;
-              opt.textContent = name;
-              axisDateAnnotEl.appendChild(opt);
-            }
+          if (def.dataType === 'categorical' || def.dataType === 'integer' || def.dataType === 'real') {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            axisDateAnnotEl.appendChild(opt);
           }
         }
       }
-      axisDateRow.style.display   = _isTimedTree && axisDateAnnotEl.options.length > 1 ? 'flex' : 'none';
-      axisDateAnnotEl.disabled    = !_isTimedTree;
+      // Show the date row whenever the tree is timed; disable it if no tree loaded.
+      axisDateRow.style.display = _isTimedTree ? 'flex' : 'none';
+      axisDateAnnotEl.disabled  = !_isTimedTree;
 
       // Restore saved date annotation (only if this tree is timed and the key exists)
       const _savedAxisDate = _saved.axisDateAnnotation || '';
@@ -486,6 +511,11 @@ import { AxisRenderer  } from './axisrenderer.js';
       axisDateAnnotEl.value = _canRestoreDate ? _savedAxisDate : '';
       if (_canRestoreDate) axisRenderer.setDateAnchor(_savedAxisDate, layout.nodeMap);
       else                 axisRenderer.setDateAnchor(null, layout.nodeMap);
+
+      // Show tick-option rows only when a date annotation is actively selected.
+      _showDateTickRows(!!axisDateAnnotEl.value);
+      // Apply stored (or default) tick options to the renderer.
+      applyTickOptions();
 
       // Reset navigation and selection state for the new tree
       renderer._navStack         = [];
@@ -844,10 +874,64 @@ import { AxisRenderer  } from './axisrenderer.js';
 
   axisShowEl.addEventListener('change', applyAxis);
 
+  // ── Minor-interval options (depend on major) ──────────────────────────────
+
+  function _updateMinorOptions(majorVal, keepVal) {
+    const opts = {
+      auto:     [['off','Off'],['auto','Auto']],
+      decades:  [['off','Off'],['auto','Auto'],['years','Years'],['quarters','Quarters'],['months','Months']],
+      years:    [['off','Off'],['auto','Auto'],['quarters','Quarters'],['months','Months']],
+      quarters: [['off','Off'],['auto','Auto'],['months','Months'],['weeks','Weeks']],
+      months:   [['off','Off'],['auto','Auto'],['weeks','Weeks'],['days','Days']],
+      weeks:    [['off','Off'],['auto','Auto'],['days','Days']],
+      days:     [['off','Off']],
+    };
+    const list = opts[majorVal] || [['off','Off'],['auto','Auto']];
+    axisMinorIntervalEl.innerHTML = '';
+    for (const [val, label] of list) {
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = label;
+      axisMinorIntervalEl.appendChild(opt);
+    }
+    axisMinorIntervalEl.value = list.some(o => o[0] === keepVal) ? keepVal : 'off';
+  }
+
+  function applyTickOptions() {
+    axisRenderer.setTickOptions({
+      majorInterval:    axisMajorIntervalEl.value,
+      minorInterval:    axisMinorIntervalEl.value,
+      majorLabelFormat: axisMajorLabelEl.value,
+      minorLabelFormat: axisMinorLabelEl.value,
+    });
+    axisRenderer.update(
+      renderer.scaleX, renderer.offsetX, renderer.paddingLeft,
+      renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
+      window.devicePixelRatio || 1,
+    );
+    saveSettings();
+  }
+
+  function _showDateTickRows(visible) {
+    const d = visible ? 'flex' : 'none';
+    axisMajorIntervalRow.style.display  = d;
+    axisMinorIntervalRow.style.display  = d;
+    axisMajorLabelRow.style.display     = d;
+    axisMinorLabelRow.style.display     = d;
+  }
+
+  axisMajorIntervalEl.addEventListener('change', () => {
+    _updateMinorOptions(axisMajorIntervalEl.value, axisMinorIntervalEl.value);
+    applyTickOptions();
+  });
+  axisMinorIntervalEl.addEventListener('change', applyTickOptions);
+  axisMajorLabelEl   .addEventListener('change', applyTickOptions);
+  axisMinorLabelEl   .addEventListener('change', applyTickOptions);
+
   axisDateAnnotEl.addEventListener('change', () => {
     const key = axisDateAnnotEl.value || null;
     axisRenderer.setDateAnchor(key, renderer.nodeMap || new Map());
-    // Force a redraw by resetting the hash
+    _showDateTickRows(!!key);
     axisRenderer.update(
       renderer.scaleX, renderer.offsetX, renderer.paddingLeft,
       renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
