@@ -230,6 +230,31 @@ import { AxisRenderer  } from './axisrenderer.js';
     axisRenderer.update(scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr);
   };
 
+  // Update axis time span whenever navigation drills into or out of a subtree.
+  renderer._onLayoutChange = (maxX, viewRawRoot) => {
+    if (!_axisIsTimedTree) return;
+    if (!viewRawRoot) {
+      // Navigated back to the full tree — restore original params.
+      axisRenderer.setSubtreeParams({
+        maxX:        _axisFullTreeMaxX,
+        rootHeight:  _axisFullRootHeight,
+        rootDecYear: _axisFullRootDecYear,
+      });
+    } else {
+      // Navigated into a subtree — look up the subtree root's stored height.
+      const subtreeRootHeight  = _axisNodeHeightMap.get(viewRawRoot.id) ?? _axisFullRootHeight;
+      const subrootFullX       = _axisFullRootHeight - subtreeRootHeight;
+      const subtreeRootDecYear = _axisFullRootDecYear != null
+        ? _axisFullRootDecYear + subrootFullX
+        : null;
+      axisRenderer.setSubtreeParams({
+        maxX:        maxX,
+        rootHeight:  subtreeRootHeight,
+        rootDecYear: subtreeRootDecYear,
+      });
+    }
+  };
+
   // Restore axis visibility from saved settings
   if (_saved.axisShow === 'on') {
     axisShowEl.value            = 'on';
@@ -375,6 +400,13 @@ import { AxisRenderer  } from './axisrenderer.js';
   let _cachedMidpoint  = null;  // cached midpointRootGraph() result; cleared on every tree change
   let isExplicitlyRooted = false; // true when root node carries annotations — rerooting disabled
 
+  // ── Axis subtree-tracking state ───────────────────────────────────────────
+  let _axisIsTimedTree     = false;
+  let _axisFullTreeMaxX    = 1;
+  let _axisFullRootHeight  = 0;
+  let _axisFullRootDecYear = null;
+  let _axisNodeHeightMap   = new Map();
+
   async function loadTree(text, filename) {
     setModalLoading(true);
     setModalError(null);
@@ -511,6 +543,21 @@ import { AxisRenderer  } from './axisrenderer.js';
       axisDateAnnotEl.value = _canRestoreDate ? _savedAxisDate : '';
       if (_canRestoreDate) axisRenderer.setDateAnchor(_savedAxisDate, layout.nodeMap);
       else                 axisRenderer.setDateAnchor(null, layout.nodeMap);
+
+      // Capture full-tree axis params for subtree-tracking.
+      _axisIsTimedTree     = _isTimedTree;
+      _axisFullTreeMaxX    = layout.maxX;
+      _axisFullRootHeight  = _rootHeight;
+      _axisFullRootDecYear = axisRenderer._rootDecYear;  // null unless date anchor was applied
+      // Build height map from raw node annotations so subtree root heights are always
+      // available regardless of layout changes (e.g. after rerooting).
+      _axisNodeHeightMap = new Map();
+      if (_isTimedTree) {
+        for (const node of graph.nodes) {
+          const h = parseFloat(node.annotations?.height);
+          if (!isNaN(h)) _axisNodeHeightMap.set(node.id, h);
+        }
+      }
 
       // Show tick-option rows only when a date annotation is actively selected.
       _showDateTickRows(!!axisDateAnnotEl.value);
@@ -931,6 +978,12 @@ import { AxisRenderer  } from './axisrenderer.js';
   axisDateAnnotEl.addEventListener('change', () => {
     const key = axisDateAnnotEl.value || null;
     axisRenderer.setDateAnchor(key, renderer.nodeMap || new Map());
+    // Keep full-tree root date in sync so subtree params stay accurate.
+    _axisFullRootDecYear = axisRenderer._rootDecYear;
+    // If currently viewing a subtree, recompute its date params with the new anchor.
+    if (renderer._viewRawRoot && renderer._onLayoutChange) {
+      renderer._onLayoutChange(renderer.maxX, renderer._viewRawRoot);
+    }
     _showDateTickRows(!!key);
     axisRenderer.update(
       renderer.scaleX, renderer.offsetX, renderer.paddingLeft,

@@ -96,6 +96,21 @@ export class AxisRenderer {
     this._lastHash = '';
   }
 
+  /**
+   * Update axis params for a subtree view without re-running setTreeParams / setDateAnchor.
+   * Call whenever the renderer navigates into or out of a subtree.
+   *
+   * @param {number}      maxX        – branch span of the new view (root → most distant tip)
+   * @param {number}      rootHeight  – height (time before present) at the new view root
+   * @param {number|null} rootDecYear – decimal-year at the new view root; ignored when not in date mode
+   */
+  setSubtreeParams({ maxX, rootHeight, rootDecYear }) {
+    this._maxX       = maxX;
+    this._rootHeight = rootHeight;
+    if (this._dateMode && rootDecYear != null) this._rootDecYear = rootDecYear;
+    this._lastHash   = '';
+  }
+
   setTickOptions({ majorInterval, minorInterval, majorLabelFormat, minorLabelFormat }) {
     this._majorInterval    = majorInterval    || 'auto';
     this._minorInterval    = minorInterval    || 'off';

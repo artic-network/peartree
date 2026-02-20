@@ -129,6 +129,8 @@ export class TreeRenderer {
     this._onBranchSelectChange = null;   // callback(hasSelection) – wired by main code
     this._onNodeSelectChange   = null;   // callback(hasSelection) – wired by main code
     this._onViewChange         = null;   // callback(scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr)
+    this._onLayoutChange       = null;   // callback(maxX, viewRawRoot) – fired on navigate into/out of subtree
+    this._globalHeightMap      = new Map(); // id → (fullMaxX - node.x) from most recent full-tree layout
     this._lastViewHash         = '';
 
     // animation targets (lerp toward these each frame)
@@ -206,6 +208,7 @@ export class TreeRenderer {
     this.nodeMap = nodeMap;
     this.maxX = maxX;
     this.maxY = maxY;
+    this._buildGlobalHeightMap(nodes, maxX);
     this._measureLabels();
     this.fitToWindow();
     this._drawStatusBar(null);
@@ -232,6 +235,7 @@ export class TreeRenderer {
     this.nodeMap = nodeMap;
     this.maxX    = maxX;
     this.maxY    = maxY;
+    this._buildGlobalHeightMap(nodes, maxX);
     this._measureLabels();
     this._updateScaleX(false);
     this._updateMinScaleY();
@@ -567,6 +571,7 @@ export class TreeRenderer {
     }
     this._animating = true;
     this._dirty = true;
+    if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewRawRoot);
     if (this._onNavChange) this._onNavChange(true, false);
   }
 
@@ -603,6 +608,7 @@ export class TreeRenderer {
     }
     this._animating = true;
     this._dirty = true;
+    if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewRawRoot);
     if (this._onNavChange) this._onNavChange(this._navStack.length > 0, true);
   }
 
@@ -640,6 +646,7 @@ export class TreeRenderer {
     }
     this._animating = true;
     this._dirty = true;
+    if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewRawRoot);
     if (this._onNavChange) this._onNavChange(true, this._fwdStack.length > 0);
   }
 
@@ -1914,10 +1921,17 @@ export class TreeRenderer {
   }
 
   /**
-   * Derive display statistics from the current selection and view.
-   * Returns { tipCount, distance, height, totalLength }
+   * Build (or rebuild) _globalHeightMap from a full-tree layout.
+   * height[id] = maxX - node.x  (distance from node down to most divergent tip).
+   * Only called from setData / setDataAnimated so subtree navigation never overwrites it.
    */
+  _buildGlobalHeightMap(nodes, maxX) {
+    this._globalHeightMap = new Map();
+    for (const n of nodes) this._globalHeightMap.set(n.id, maxX - n.x);
+  }
+
   _computeStats() {
+    // Returns { tipCount, distance, height, totalLength } for the status bar.
     if (!this.nodes) return null;
     const tipCount = this._selectedTipIds.size > 0 ? this._selectedTipIds.size : this.maxY;
 
@@ -1933,24 +1947,28 @@ export class TreeRenderer {
     // Distance: x of refNode, or maxX when nothing is selected.
     const distance = refNode ? refNode.x : this.maxX;
 
-    // Height: for internal refNode, distance down to the furthest selected tip.
-    // For a tip refNode, 0. For no selection, root height = maxX.
+    // Helper: look up global height (full-tree) for a node, fall back to
+    // view-relative height when the map doesn't have the id (shouldn't happen).
+    const globalH = (n) => {
+      const gh = this._globalHeightMap.get(n.id);
+      return gh != null ? gh : (this.maxX - n.x);
+    };
+
+    // Height above the most divergent tip *in the current view*.
+    // = globalHeight(refNode) − min(globalHeight of tips in current view)
+    // This gives the correct value whether viewing the full tree or a subtree.
+    const viewTips = this.nodes.filter(n => n.isTip);
+    const minTipGH = viewTips.length ? Math.min(...viewTips.map(globalH)) : 0;
+
     let height;
     if (!refNode) {
-      height = this.maxX;
+      // No selection: show height of the view root.
+      const viewRoot = this.nodes.find(n => !n.parentId);
+      height = viewRoot ? globalH(viewRoot) - minTipGH : this.maxX;
     } else if (refNode.isTip) {
       height = 0;
     } else {
-      // max x of selected tips (or all descendant tips if no selection)
-      if (this._selectedTipIds.size >= 2) {
-        const selTipXs = [...this._selectedTipIds]
-          .map(id => this.nodeMap.get(id))
-          .filter(Boolean)
-          .map(n => n.x);
-        height = selTipXs.length ? Math.max(...selTipXs) - refNode.x : 0;
-      } else {
-        height = this.maxX - refNode.x;
-      }
+      height = globalH(refNode) - minTipGH;
     }
 
     // Total branch length: within subtree rooted at refNode, or whole tree.
