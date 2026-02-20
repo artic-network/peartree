@@ -231,28 +231,30 @@ import { AxisRenderer  } from './axisrenderer.js';
   };
 
   // Update axis time span whenever navigation drills into or out of a subtree.
+  // Reads renderer._globalHeightMap directly so the values are always current,
+  // even after rerooting (which rebuilds the map via _buildGlobalHeightMap).
   renderer._onLayoutChange = (maxX, viewRawRoot) => {
     if (!_axisIsTimedTree) return;
-    if (!viewRawRoot) {
-      // Navigated back to the full tree — restore original params.
-      axisRenderer.setSubtreeParams({
-        maxX:        _axisFullTreeMaxX,
-        rootHeight:  _axisFullRootHeight,
-        rootDecYear: _axisFullRootDecYear,
-      });
-    } else {
-      // Navigated into a subtree — look up the subtree root's stored height.
-      const subtreeRootHeight  = _axisNodeHeightMap.get(viewRawRoot.id) ?? _axisFullRootHeight;
-      const subrootFullX       = _axisFullRootHeight - subtreeRootHeight;
-      const subtreeRootDecYear = _axisFullRootDecYear != null
-        ? _axisFullRootDecYear + subrootFullX
-        : null;
-      axisRenderer.setSubtreeParams({
-        maxX:        maxX,
-        rootHeight:  subtreeRootHeight,
-        rootDecYear: subtreeRootDecYear,
-      });
+    const hMap = renderer._globalHeightMap;
+    const viewNodes = renderer.nodes || [];
+    // The current layout root (x=0) always has height = maxX of the full-tree layout.
+    const rootLayoutNode = viewNodes.find(n => !n.parentId);
+    const rootH = rootLayoutNode ? (hMap.get(rootLayoutNode.id) ?? 0) : 0;
+    // For subtree navigation, get the global height of the subtree root node.
+    const viewRootH = viewRawRoot ? (hMap.get(viewRawRoot.id) ?? rootH) : rootH;
+    // Minimum computed height among visible tips — defines the right axis boundary.
+    let minTipH = Infinity;
+    for (const n of viewNodes) {
+      if (!n.isTip) continue;
+      const h = hMap.get(n.id);
+      if (h != null && h < minTipH) minTipH = h;
     }
+    if (!isFinite(minTipH)) minTipH = 0;
+    axisRenderer.setSubtreeParams({
+      maxX:       viewRootH - minTipH,
+      rootHeight: viewRootH,
+      minTipH:    minTipH,
+    });
   };
 
   // Restore axis visibility from saved settings
@@ -315,6 +317,10 @@ import { AxisRenderer  } from './axisrenderer.js';
   // Escape key also closes when a tree is loaded
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && treeLoaded && modal.classList.contains('open')) closeModal();
+    if (e.key === 'Escape') {
+      const overlay = document.getElementById('node-info-overlay');
+      if (overlay && overlay.style.display !== 'none') { overlay.style.display = 'none'; }
+    }
   });
 
   // ── File tab ──────────────────────────────────────────────────────────────
@@ -401,11 +407,7 @@ import { AxisRenderer  } from './axisrenderer.js';
   let isExplicitlyRooted = false; // true when root node carries annotations — rerooting disabled
 
   // ── Axis subtree-tracking state ───────────────────────────────────────────
-  let _axisIsTimedTree     = false;
-  let _axisFullTreeMaxX    = 1;
-  let _axisFullRootHeight  = 0;
-  let _axisFullRootDecYear = null;
-  let _axisNodeHeightMap   = new Map();
+  let _axisIsTimedTree = false;
 
   async function loadTree(text, filename) {
     setModalLoading(true);
@@ -516,7 +518,8 @@ import { AxisRenderer  } from './axisrenderer.js';
       // Detect time-scaled tree: root AND all nodes must carry a 'height' annotation.
       const _isTimedTree = ('height' in graph.root.annotations) &&
                            graph.nodes.every(n => 'height' in n.annotations);
-      const _rootHeight  = _isTimedTree ? (parseFloat(graph.root.annotations.height) || 0) : 0;
+      // For timed trees, root height = layout.maxX (root sits at x=0, most divergent tip at x=maxX).
+      const _rootHeight  = _isTimedTree ? layout.maxX : 0;
       axisRenderer.setTreeParams({ maxX: layout.maxX, isTimedTree: _isTimedTree, rootHeight: _rootHeight });
 
       // Populate date annotation dropdown with all categorical/integer annotations
@@ -541,23 +544,11 @@ import { AxisRenderer  } from './axisrenderer.js';
       const _canRestoreDate = _isTimedTree && _savedAxisDate &&
                               [...axisDateAnnotEl.options].some(o => o.value === _savedAxisDate);
       axisDateAnnotEl.value = _canRestoreDate ? _savedAxisDate : '';
-      if (_canRestoreDate) axisRenderer.setDateAnchor(_savedAxisDate, layout.nodeMap);
-      else                 axisRenderer.setDateAnchor(null, layout.nodeMap);
+      if (_canRestoreDate) axisRenderer.setDateAnchor(_savedAxisDate, layout.nodeMap, layout.maxX);
+      else                 axisRenderer.setDateAnchor(null, layout.nodeMap, layout.maxX);
 
       // Capture full-tree axis params for subtree-tracking.
-      _axisIsTimedTree     = _isTimedTree;
-      _axisFullTreeMaxX    = layout.maxX;
-      _axisFullRootHeight  = _rootHeight;
-      _axisFullRootDecYear = axisRenderer._rootDecYear;  // null unless date anchor was applied
-      // Build height map from raw node annotations so subtree root heights are always
-      // available regardless of layout changes (e.g. after rerooting).
-      _axisNodeHeightMap = new Map();
-      if (_isTimedTree) {
-        for (const node of graph.nodes) {
-          const h = parseFloat(node.annotations?.height);
-          if (!isNaN(h)) _axisNodeHeightMap.set(node.id, h);
-        }
-      }
+      _axisIsTimedTree = _isTimedTree;
 
       // Show tick-option rows only when a date annotation is actively selected.
       _showDateTickRows(!!axisDateAnnotEl.value);
@@ -648,6 +639,7 @@ import { AxisRenderer  } from './axisrenderer.js';
     const btnReroot       = document.getElementById('btn-reroot');
     const btnRotate       = document.getElementById('btn-rotate');
     const btnRotateAll    = document.getElementById('btn-rotate-all');
+    const btnNodeInfo     = document.getElementById('btn-node-info');
     const btnMidpointRoot  = document.getElementById('btn-midpoint-root');
     // isExplicitlyRooted is read dynamically (closured from outer scope) so
     // subsequent tree loads automatically pick up the new value.
@@ -669,6 +661,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       const canRotate = renderer._mode === 'nodes' && hasSelection;
       btnRotate.disabled    = !canRotate;
       btnRotateAll.disabled = !canRotate;
+      btnNodeInfo.disabled  = !hasSelection;
     };
 
     btnBack.addEventListener('click',    () => renderer.navigateBack());
@@ -801,6 +794,106 @@ import { AxisRenderer  } from './axisrenderer.js';
 
     btnMidpointRoot.addEventListener('click', () => applyMidpointRoot());
 
+    // ── Node Info (Cmd+I) ──────────────────────────────────────────────────
+
+    function showNodeInfo() {
+      // Determine which node is selected
+      let nodeId = renderer._mrcaNodeId;
+      if (!nodeId && renderer._selectedTipIds && renderer._selectedTipIds.size === 1) {
+        nodeId = [...renderer._selectedTipIds][0];
+      }
+      if (!nodeId || !renderer.nodeMap) return;
+      const node = renderer.nodeMap.get(nodeId);
+      if (!node) return;
+
+      const parent    = node.parentId ? renderer.nodeMap.get(node.parentId) : null;
+      const branchLen = parent != null ? node.x - parent.x : node.x;
+      const height    = renderer._globalHeightMap
+        ? (renderer._globalHeightMap.get(node.id) ?? (renderer.maxX - node.x))
+        : (renderer.maxX - node.x);
+
+      const rows = [];
+      if (node.isTip && node.name)  rows.push(['Name',         node.name]);
+      if (!node.isTip && node.name) rows.push(['Name',         node.name]);
+      if (node.label)               rows.push(['Label',        String(node.label)]);
+      rows.push(['Divergence',   node.x.toFixed(6)]);
+      rows.push(['Height',       height.toFixed(6)]);
+      rows.push(['Branch length', branchLen.toFixed(6)]);
+      if (!node.isTip) {
+        const tipCount = renderer._getDescendantTipIds
+          ? renderer._getDescendantTipIds(node.id).length
+          : '—';
+        rows.push(['Tips below', tipCount]);
+      }
+      const annots = node.annotations || {};
+      const annotEntries = Object.entries(annots);
+      if (annotEntries.length > 0) {
+        rows.push([null, null]); // divider
+        for (const [k, v] of annotEntries) {
+          let display;
+          if (Array.isArray(v)) {
+            display = `{${v.map(x => (typeof x === 'number' ? x.toFixed(6) : String(x))).join(', ')}}`;
+          } else if (typeof v === 'number') {
+            display = v.toFixed(6);
+          } else {
+            display = String(v);
+          }
+          rows.push([k, display]);
+        }
+      }
+
+      // Title
+      const tipCount2 = (!node.isTip && renderer._getDescendantTipIds)
+        ? renderer._getDescendantTipIds(node.id).length
+        : null;
+      const titleEl = document.getElementById('node-info-title');
+      titleEl.textContent = node.isTip
+        ? (node.name || 'Tip node')
+        : `Internal node (${tipCount2 != null ? tipCount2 + ' tips' : 'internal'})`;
+
+      // Build table
+      const body = document.getElementById('node-info-body');
+      const tbl  = document.createElement('table');
+      tbl.style.cssText = 'width:100%;border-collapse:collapse;';
+      for (const [label, value] of rows) {
+        const tr = tbl.insertRow();
+        if (label === null) {
+          // Annotations divider
+          const td = tr.insertCell();
+          td.colSpan = 2;
+          td.style.cssText = 'padding:6px 0 2px;';
+          const div = document.createElement('div');
+          div.style.cssText = 'display:flex;align-items:center;gap:6px;color:rgba(230,213,149,0.5);font-size:0.72rem;letter-spacing:0.05em;text-transform:uppercase;';
+          div.innerHTML = '<span style="flex:0 0 auto">Annotations</span><span style="flex:1;border-top:1px solid rgba(230,213,149,0.2);display:inline-block"></span>';
+          td.appendChild(div);
+        } else {
+          const td1 = tr.insertCell();
+          const td2 = tr.insertCell();
+          td1.style.cssText = 'color:rgba(230,213,149,0.7);padding:2px 14px 2px 0;white-space:nowrap;vertical-align:top;';
+          td2.style.cssText = 'color:rgba(242,241,230,0.88);padding:2px 0;word-break:break-all;';
+          td1.textContent = label;
+          td2.textContent = value;
+        }
+      }
+      body.innerHTML = '';
+      body.appendChild(tbl);
+
+      const overlay = document.getElementById('node-info-overlay');
+      overlay.style.display = 'flex';
+    }
+
+    btnNodeInfo.addEventListener('click', () => showNodeInfo());
+
+    document.getElementById('node-info-close').addEventListener('click', () => {
+      document.getElementById('node-info-overlay').style.display = 'none';
+    });
+
+    document.getElementById('node-info-overlay').addEventListener('click', e => {
+      if (e.target === document.getElementById('node-info-overlay')) {
+        document.getElementById('node-info-overlay').style.display = 'none';
+      }
+    });
+
     window.addEventListener('keydown', e => {
       if (!e.metaKey && !e.ctrlKey) return;
       if (e.key === 'u' || e.key === 'U') { e.preventDefault(); applyOrder(false); }
@@ -810,6 +903,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       if (e.key === 'n' || e.key === 'N') { if (!e.altKey) return; e.preventDefault(); applyMode('nodes'); }
       if (e.key === 'b' || e.key === 'B') { if (!e.altKey) return; e.preventDefault(); applyMode('branches'); }
       if (e.key === 'm' || e.key === 'M') { e.preventDefault(); applyMidpointRoot(); }
+      if (e.key === 'i' || e.key === 'I') { e.preventDefault(); showNodeInfo(); }
     });
   }
 
@@ -977,10 +1071,8 @@ import { AxisRenderer  } from './axisrenderer.js';
 
   axisDateAnnotEl.addEventListener('change', () => {
     const key = axisDateAnnotEl.value || null;
-    axisRenderer.setDateAnchor(key, renderer.nodeMap || new Map());
-    // Keep full-tree root date in sync so subtree params stay accurate.
-    _axisFullRootDecYear = axisRenderer._rootDecYear;
-    // If currently viewing a subtree, recompute its date params with the new anchor.
+    axisRenderer.setDateAnchor(key, renderer.nodeMap || new Map(), renderer.maxX);
+    // If currently viewing a subtree, recompute its params using the new anchor.
     if (renderer._viewRawRoot && renderer._onLayoutChange) {
       renderer._onLayoutChange(renderer.maxX, renderer._viewRawRoot);
     }

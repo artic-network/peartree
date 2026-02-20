@@ -163,7 +163,7 @@ export function computeLayoutFromGraph(graph) {
       id:          ROOT_LAYOUT_ID,
       name:        null,
       label:       null,
-      annotations: {},
+      annotations: root.annotations || {},
       x:           0,
       y:           (nodeMap.get(gNodeA.origId).y + nodeMap.get(gNodeB.origId).y) / 2,
       isTip:       false,

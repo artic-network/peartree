@@ -24,9 +24,13 @@ export class AxisRenderer {
     this._rootHeight = 0;
     this._fontSize   = 9;
 
-    // Date mode
-    this._dateMode    = false;
-    this._rootDecYear = null;
+    // Date mode — anchor stores one tip's (date, height) pair so any node's date
+    // can be derived as: nodeDate = _anchorDecYear + (_anchorH - nodeH)
+    // Heights are computed from the layout as (maxX - node.x), not from annotations.
+    this._dateMode      = false;
+    this._anchorDecYear = null;  // decimal year of the anchor tip
+    this._anchorH       = null;  // computed height of the anchor tip (maxX - tip.x)
+    this._minTipH       = 0;     // minimum computed height among tips in current view
 
     // Tick / label options (effective only in date mode)
     this._majorInterval    = 'auto';
@@ -49,9 +53,11 @@ export class AxisRenderer {
     this._maxX       = maxX;
     this._timed      = isTimedTree;
     this._rootHeight = isTimedTree ? (rootHeight || 0) : 0;
-    this._dateMode   = false;
-    this._rootDecYear = null;
-    this._lastHash   = '';
+    this._dateMode      = false;
+    this._anchorDecYear = null;
+    this._anchorH       = null;
+    this._minTipH       = 0;
+    this._lastHash      = '';
   }
 
   /**
@@ -60,38 +66,52 @@ export class AxisRenderer {
    * then compute the decimal-year of the root.
    *
    * @param {string|null} annotKey  – null clears date mode (falls back to height mode)
-   * @param {Map}         nodeMap   – renderer's nodeMap (id → node with .annotations)
+   * @param {Map}         nodeMap   – renderer's nodeMap (id → layout node with .x)
+   * @param {number}      maxX      – full-tree branch span; used to compute height = maxX - node.x
    */
-  setDateAnchor(annotKey, nodeMap) {
+  setDateAnchor(annotKey, nodeMap, maxX) {
     if (!annotKey || !this._timed) {
-      this._dateMode    = false;
-      this._rootDecYear = null;
-      this._lastHash    = '';
+      this._dateMode      = false;
+      this._anchorDecYear = null;
+      this._anchorH       = null;
+      this._minTipH       = 0;
+      this._lastHash      = '';
       return;
     }
 
-    // Find first tip with both the annotation and height
+    // Scan ALL tips to:
+    //   a) find the anchor (first tip that carries the date annotation)
+    //   b) find the minimum computed height across all tips
+    // Heights are computed as (maxX - node.x) — no dependence on height annotations.
     let anchorDecYear = null;
-    let anchorHeight  = null;
+    let anchorH       = null;
+    let minTipH       = Infinity;
+
     for (const node of nodeMap.values()) {
       if (!node.isTip) continue;
-      const raw  = node.annotations?.[annotKey];
-      const h    = parseFloat(node.annotations?.height);
-      if (raw == null || isNaN(h)) continue;
-      const dec = AxisRenderer._parseDateToDecYear(String(raw));
-      if (dec != null) { anchorDecYear = dec; anchorHeight = h; break; }
+      const h = maxX - node.x;
+      if (isNaN(h)) continue;
+      if (h < minTipH) minTipH = h;
+      if (anchorDecYear == null) {
+        const raw = node.annotations?.[annotKey];
+        if (raw == null) continue;
+        const dec = AxisRenderer._parseDateToDecYear(String(raw));
+        if (dec != null) { anchorDecYear = dec; anchorH = h; }
+      }
     }
 
     if (anchorDecYear == null) {
-      this._dateMode    = false;
-      this._rootDecYear = null;
+      this._dateMode      = false;
+      this._anchorDecYear = null;
+      this._anchorH       = null;
+      this._minTipH       = 0;
     } else {
-      // worldX(node) = rootHeight - nodeHeight  (rectangular layout)
-      // date(worldX) = anchorDecYear + (worldX - anchorWorldX)
-      //              = anchorDecYear + (worldX - (rootHeight - anchorHeight))
-      // rootDecYear  = anchorDecYear - (rootHeight - anchorHeight)
-      this._rootDecYear = anchorDecYear - (this._rootHeight - anchorHeight);
-      this._dateMode    = true;
+      // date(nodeH) = anchorDecYear + (anchorH - nodeH)
+      // root at nodeH = _rootHeight, most-recent tips at nodeH = minTipH
+      this._anchorDecYear = anchorDecYear;
+      this._anchorH       = anchorH;
+      this._minTipH       = isFinite(minTipH) ? minTipH : 0;
+      this._dateMode      = true;
     }
     this._lastHash = '';
   }
@@ -100,14 +120,14 @@ export class AxisRenderer {
    * Update axis params for a subtree view without re-running setTreeParams / setDateAnchor.
    * Call whenever the renderer navigates into or out of a subtree.
    *
-   * @param {number}      maxX        – branch span of the new view (root → most distant tip)
-   * @param {number}      rootHeight  – height (time before present) at the new view root
-   * @param {number|null} rootDecYear – decimal-year at the new view root; ignored when not in date mode
+   * @param {number}  maxX       – branch span of the new view (root → most distant tip)
+   * @param {number}  rootHeight – computed height at the new view root (maxX_full - root.x)
+   * @param {number}  minTipH    – minimum computed height among tips in the new view
    */
-  setSubtreeParams({ maxX, rootHeight, rootDecYear }) {
+  setSubtreeParams({ maxX, rootHeight, minTipH }) {
     this._maxX       = maxX;
     this._rootHeight = rootHeight;
-    if (this._dateMode && rootDecYear != null) this._rootDecYear = rootDecYear;
+    if (this._dateMode && minTipH != null) this._minTipH = minTipH;
     this._lastHash   = '';
   }
 
@@ -140,7 +160,7 @@ export class AxisRenderer {
       this._ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${paddingLeft}|${labelRightPad}|${bgColor}|${fontSize}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._rootDecYear}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}`;
+    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${paddingLeft}|${labelRightPad}|${bgColor}|${fontSize}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._anchorDecYear}|${this._anchorH}|${this._minTipH}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}`;
     if (hash === this._lastHash) return;
     this._lastHash = hash;
 
@@ -307,8 +327,10 @@ export class AxisRenderer {
   /** Returns {leftVal, rightVal} = the axis values at worldX=0 and worldX=maxX */
   _valueDomain() {
     if (this._dateMode) {
-      const leftVal  = this._rootDecYear;
-      const rightVal = this._rootDecYear + this._maxX;
+      // date(nodeH) = _anchorDecYear + (_anchorH - nodeH)
+      // root at nodeH=_rootHeight, most-recent tips at nodeH=_minTipH
+      const leftVal  = this._anchorDecYear + this._anchorH - this._rootHeight;
+      const rightVal = this._anchorDecYear + this._anchorH - this._minTipH;
       return { leftVal, rightVal };
     }
     if (this._timed) {
@@ -320,7 +342,10 @@ export class AxisRenderer {
   }
 
   _valToWorldX(val) {
-    if (this._dateMode) return val - this._rootDecYear;
+    if (this._dateMode) {
+      // rootDecYear = anchorDecYear + anchorH - rootHeight
+      return val - (this._anchorDecYear + this._anchorH - this._rootHeight);
+    }
     if (this._timed)    return this._rootHeight - val;
     return val;
   }
