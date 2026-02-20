@@ -99,14 +99,28 @@ export function computeLayoutFrom(rawNode) {
 export function computeLayoutFromGraph(graph) {
   const { nodes: gnodes, root } = graph;
   const { nodeA, nodeB, lenA, lenB } = root;
+  const hiddenNodeIds = graph.hiddenNodeIds || new Set();
 
   let tipCounter = 0;
   const layoutNodes = [];
   const nodeMap     = new Map();
 
   /**
+   * Count tip leaves in the PhyloGraph subtree rooted at nodeIdx
+   * (traversing away from fromIdx).  Used to label collapsed stubs.
+   */
+  function countGraphTips(nodeIdx, fromIdx) {
+    const gnode = gnodes[nodeIdx];
+    const kids  = gnode.adjacents.filter(a => a !== fromIdx);
+    if (kids.length === 0) return 1;
+    return kids.reduce((s, a) => s + countGraphTips(a, nodeIdx), 0);
+  }
+
+  /**
    * DFS from `nodeIdx`, arriving from `fromNodeIdx`.
    * fromNodeIdx = -1 means no direction is excluded (root-at-node case).
+   * Children whose origId is in hiddenNodeIds are rendered as collapsed stubs
+   * (isTip: true, isCollapsed: true) rather than being recursed into.
    */
   function traverse(nodeIdx, fromNodeIdx, xFromRoot, parentLayoutId) {
     const gnode = gnodes[nodeIdx];
@@ -118,6 +132,7 @@ export function computeLayoutFromGraph(graph) {
       x:           xFromRoot,
       y:           null,
       isTip:       false,
+      isCollapsed: false,
       children:    [],
       parentId:    parentLayoutId,
     };
@@ -125,16 +140,41 @@ export function computeLayoutFromGraph(graph) {
     layoutNodes.push(entry);
     nodeMap.set(entry.id, entry);
 
-    const children = gnode.adjacents
+    const allChildren = gnode.adjacents
       .map((adjIdx, i) => ({ adjIdx, len: gnode.lengths[i] }))
       .filter(({ adjIdx }) => adjIdx !== fromNodeIdx);
 
-    entry.isTip = children.length === 0;
+    // Real tip: no children in graph direction.
+    entry.isTip = allChildren.length === 0;
     if (entry.isTip) { tipCounter++; entry.y = tipCounter; }
 
-    for (const { adjIdx, len } of children) {
-      traverse(adjIdx, nodeIdx, xFromRoot + len, gnode.origId);
-      entry.children.push(gnodes[adjIdx].origId);
+    for (const { adjIdx, len } of allChildren) {
+      const childOrigId = gnodes[adjIdx].origId;
+      if (hiddenNodeIds.has(childOrigId)) {
+        // Collapsed stub: visible as a leaf but not recursed into.
+        const hgnode = gnodes[adjIdx];
+        const stub = {
+          id:             hgnode.origId,
+          name:           hgnode.name,
+          label:          hgnode.label,
+          annotations:    hgnode.annotations,
+          x:              xFromRoot + len,
+          y:              null,
+          isTip:          true,
+          isCollapsed:    true,
+          hiddenTipCount: countGraphTips(adjIdx, nodeIdx),
+          children:       [],
+          parentId:       gnode.origId,
+        };
+        tipCounter++;
+        stub.y = tipCounter;
+        layoutNodes.push(stub);
+        nodeMap.set(stub.id, stub);
+        entry.children.push(childOrigId);
+      } else {
+        traverse(adjIdx, nodeIdx, xFromRoot + len, gnode.origId);
+        entry.children.push(childOrigId);
+      }
     }
 
     if (!entry.isTip) {
@@ -147,17 +187,42 @@ export function computeLayoutFromGraph(graph) {
   const gNodeB = gnodes[nodeB];
 
   if (lenA === 0) {
-    // Trifurcating root: nodeA is the real root.
-    // fromNodeIdx = -1 means no direction is excluded.
+    // Real root: nodeA is the layout root.
     traverse(nodeA, -1, 0, null);
 
   } else {
     // Virtual bifurcating root between nodeA and nodeB.
-    // lenA / lenB are direct distances from the root point to each side.
     const ROOT_LAYOUT_ID = '__graph_root__';
 
-    traverse(nodeA, nodeB, lenA, ROOT_LAYOUT_ID);
-    traverse(nodeB, nodeA, lenB, ROOT_LAYOUT_ID);
+    // nodeA side
+    if (hiddenNodeIds.has(gNodeA.origId)) {
+      const stub = {
+        id: gNodeA.origId, name: gNodeA.name, label: gNodeA.label,
+        annotations: gNodeA.annotations, x: lenA, y: null,
+        isTip: true, isCollapsed: true,
+        hiddenTipCount: countGraphTips(nodeA, nodeB),
+        children: [], parentId: ROOT_LAYOUT_ID,
+      };
+      tipCounter++; stub.y = tipCounter;
+      layoutNodes.push(stub); nodeMap.set(stub.id, stub);
+    } else {
+      traverse(nodeA, nodeB, lenA, ROOT_LAYOUT_ID);
+    }
+
+    // nodeB side
+    if (hiddenNodeIds.has(gNodeB.origId)) {
+      const stub = {
+        id: gNodeB.origId, name: gNodeB.name, label: gNodeB.label,
+        annotations: gNodeB.annotations, x: lenB, y: null,
+        isTip: true, isCollapsed: true,
+        hiddenTipCount: countGraphTips(nodeB, nodeA),
+        children: [], parentId: ROOT_LAYOUT_ID,
+      };
+      tipCounter++; stub.y = tipCounter;
+      layoutNodes.push(stub); nodeMap.set(stub.id, stub);
+    } else {
+      traverse(nodeB, nodeA, lenB, ROOT_LAYOUT_ID);
+    }
 
     const rootEntry = {
       id:          ROOT_LAYOUT_ID,
@@ -167,6 +232,7 @@ export function computeLayoutFromGraph(graph) {
       x:           0,
       y:           (nodeMap.get(gNodeA.origId).y + nodeMap.get(gNodeB.origId).y) / 2,
       isTip:       false,
+      isCollapsed: false,
       children:    [gNodeA.origId, gNodeB.origId],
       parentId:    null,
     };

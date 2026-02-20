@@ -639,7 +639,26 @@ import { AxisRenderer  } from './axisrenderer.js';
     const btnReroot       = document.getElementById('btn-reroot');
     const btnRotate       = document.getElementById('btn-rotate');
     const btnRotateAll    = document.getElementById('btn-rotate-all');
+    const btnHide         = document.getElementById('btn-hide');
+    const btnShow         = document.getElementById('btn-show');
     const btnNodeInfo     = document.getElementById('btn-node-info');
+
+    // ── Hide/Show helpers ─────────────────────────────────────────────────────
+    function canHide() {
+      if (renderer._viewRawRoot) return false;
+      let nodeId = renderer._mrcaNodeId;
+      if (!nodeId && renderer._selectedTipIds.size === 1)
+        nodeId = [...renderer._selectedTipIds][0];
+      if (!nodeId || !renderer.nodeMap) return false;
+      const node = renderer.nodeMap.get(nodeId);
+      // Only internal non-root non-collapsed nodes can be hidden.
+      return !!(node && !node.isTip && !node.isCollapsed && node.parentId);
+    }
+    function canShow() {
+      if (renderer._viewRawRoot) return false;
+      if (renderer._selectedTipIds.size !== 1) return false;
+      return !!renderer.nodeMap?.get([...renderer._selectedTipIds][0])?.isCollapsed;
+    }
     const btnMidpointRoot  = document.getElementById('btn-midpoint-root');
     // isExplicitlyRooted is read dynamically (closured from outer scope) so
     // subsequent tree loads automatically pick up the new value.
@@ -661,6 +680,8 @@ import { AxisRenderer  } from './axisrenderer.js';
       const canRotate = renderer._mode === 'nodes' && hasSelection;
       btnRotate.disabled    = !canRotate;
       btnRotateAll.disabled = !canRotate;
+      btnHide.disabled      = !canHide();
+      btnShow.disabled      = !canShow();
       btnNodeInfo.disabled  = !hasSelection;
     };
 
@@ -705,6 +726,55 @@ import { AxisRenderer  } from './axisrenderer.js';
 
     btnRotate.addEventListener('click',    () => applyRotate(false));
     btnRotateAll.addEventListener('click', () => applyRotate(true));
+
+    // ── Hide / Show ───────────────────────────────────────────────────────────
+    function applyHide() {
+      if (!canHide()) return;
+      let nodeId = renderer._mrcaNodeId;
+      if (!nodeId && renderer._selectedTipIds.size === 1)
+        nodeId = [...renderer._selectedTipIds][0];
+      if (!nodeId) return;
+
+      graph.hiddenNodeIds.add(nodeId);
+
+      renderer._selectedTipIds.clear();
+      renderer._mrcaNodeId = null;
+      if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(false);
+
+      const layout = computeLayoutFromGraph(graph);
+      renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+    }
+
+    function applyShow() {
+      if (!canShow()) return;
+      const nodeId = [...renderer._selectedTipIds][0];
+      if (!nodeId) return;
+
+      // Recursively remove this node and any hidden descendants from hiddenNodeIds.
+      function unhideSubtree(origId, fromOrigId) {
+        graph.hiddenNodeIds.delete(origId);
+        const idx = graph.origIdToIdx.get(origId);
+        if (idx === undefined) return;
+        const fromIdx = fromOrigId !== null ? (graph.origIdToIdx.get(fromOrigId) ?? -1) : -1;
+        for (const adjIdx of graph.nodes[idx].adjacents) {
+          if (adjIdx === fromIdx) continue;
+          const adjOrigId = graph.nodes[adjIdx].origId;
+          if (graph.hiddenNodeIds.has(adjOrigId)) unhideSubtree(adjOrigId, origId);
+        }
+      }
+      const parentId = renderer.nodeMap.get(nodeId)?.parentId ?? null;
+      unhideSubtree(nodeId, parentId);
+
+      renderer._selectedTipIds.clear();
+      renderer._mrcaNodeId = null;
+      if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(false);
+
+      const layout = computeLayoutFromGraph(graph);
+      renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+    }
+
+    btnHide.addEventListener('click', () => applyHide());
+    btnShow.addEventListener('click', () => applyShow());
 
     // Mode menu
     const btnModeNodes    = document.getElementById('btn-mode-nodes');

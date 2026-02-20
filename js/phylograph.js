@@ -259,7 +259,7 @@ export function fromNestedRoot(nestedRoot) {
   // represents a biologically meaningful reconstruction, not an arbitrary outgroup.
   const rooted = Object.keys(root.annotations).length > 0;
 
-  return { nodes, root, origIdToIdx, annotationSchema: buildAnnotationSchema(nodes), rooted };
+  return { nodes, root, origIdToIdx, annotationSchema: buildAnnotationSchema(nodes), rooted, hiddenNodeIds: new Set() };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
