@@ -128,7 +128,18 @@ export class TreeRenderer {
 
     // Cross-fade animation (used on midpoint-root and similar wholesale tree changes)
     this._crossfadeSnapshot = null;   // OffscreenCanvas capturing old frame
+
+    // Annotation colouring
+    this._annotationSchema = null;   // Map<name, AnnotationDef> from buildAnnotationSchema
+    this._tipColourBy      = null;   // annotation key or null
+    this._tipColourScale   = null;   // Map<value, CSS colour> | null
     this._crossfadeAlpha    = 0;      // 1→0; 0 = not animating
+
+    // Legend
+    this._legendLeftCanvas  = null;  // <canvas> for the left legend panel
+    this._legendRightCanvas = null;  // <canvas> for the right legend panel
+    this._legendPosition    = null;  // 'left' | 'right' | null
+    this._legendAnnotation  = null;  // annotation key currently shown in legend
 
     this._rafId = null;
     this._dirty = true;
@@ -275,6 +286,97 @@ export class TreeRenderer {
     this._measureLabels(); // label offset depends on tip radius
     this._updateScaleX();
     this._dirty = true;
+  }
+
+  /**
+   * Store the annotation schema so the renderer can build colour scales.
+   * Called by peartree.js immediately after graph = fromNestedRoot(root).
+   * @param {Map<string, AnnotationDef>} schema
+   */
+  setAnnotationSchema(schema) {
+    this._annotationSchema = schema;
+    if (this._tipColourBy) this._buildColourScale(this._tipColourBy);
+    this._drawLegend();
+    this._dirty = true;
+  }
+
+  /**
+   * Set the annotation key used to colour tip circles.
+   * Pass null (or empty string) to revert to the default tip colour.
+   * @param {string|null} key
+   */
+  setTipColourBy(key) {
+    this._tipColourBy    = key || null;
+    this._tipColourScale = null;
+    if (this._tipColourBy) this._buildColourScale(this._tipColourBy);
+    this._dirty = true;
+  }
+
+  /** Build _tipColourScale: Map<annotationValue, CSS colour string>. */
+  _buildColourScale(key) {
+    const schema = this._annotationSchema;
+    if (!schema) { this._tipColourScale = null; return; }
+    const def = schema.get(key);
+    if (!def) { this._tipColourScale = null; return; }
+
+    const scale = new Map();
+    if (def.dataType === 'categorical' || def.dataType === 'ordinal') {
+      const palette = [
+        '#2aa198', '#cb4b16', '#268bd2', '#d33682',
+        '#6c71c4', '#b58900', '#859900', '#dc322f',
+      ];
+      (def.values || []).forEach((v, i) => {
+        scale.set(v, palette[i % palette.length]);
+      });
+    } else if (def.dataType === 'real' || def.dataType === 'integer') {
+      // Store the numeric range so _tipColourForValue can interpolate at draw time.
+      scale.set('__min__', def.min ?? 0);
+      scale.set('__max__', def.max ?? 1);
+    }
+    this._tipColourScale = scale;
+  }
+
+  /** Return a CSS colour string for a given annotation value, or null. */
+  _tipColourForValue(value) {
+    const scale = this._tipColourScale;
+    if (!scale || value === null || value === undefined) return null;
+    if (scale.has(value)) return scale.get(value);
+    // Numeric interpolation
+    if (scale.has('__min__')) {
+      const min = scale.get('__min__');
+      const max = scale.get('__max__');
+      const t = max > min ? (value - min) / (max - min) : 0.5;
+      const tc = Math.max(0, Math.min(1, t));
+      // Interpolate #2aa198 → #dc322f  (teal → red)
+      const r = Math.round(0x2a + tc * (0xdc - 0x2a));
+      const g = Math.round(0xa1 + tc * (0x32 - 0xa1));
+      const b = Math.round(0x98 + tc * (0x2f - 0x98));
+      return `rgb(${r},${g},${b})`;
+    }
+    return null;
+  }
+
+  /**
+   * Register the left and right legend canvases with the renderer.
+   * Called once by peartree.js during initialisation.
+   * @param {HTMLCanvasElement} left
+   * @param {HTMLCanvasElement} right
+   */
+  setLegendCanvases(left, right) {
+    this._legendLeftCanvas  = left;
+    this._legendRightCanvas = right;
+  }
+
+  /**
+   * Set the legend position and annotation key, then redraw the legend.
+   * @param {'left'|'right'|null} position
+   * @param {string|null}         annotationKey
+   */
+  setLegend(position, annotationKey) {
+    this._legendPosition   = position || null;
+    this._legendAnnotation = annotationKey || null;
+    this._resize();      // recalculates tree canvas width after legend canvases shown/hidden
+    this._drawLegend();  // paints the legend onto the visible legend canvas
   }
 
   /** Store the parsed raw tree so subtree navigation can re-run computeLayout. */
@@ -578,7 +680,102 @@ export class TreeRenderer {
       const newScaleY = Math.max(this.minScaleY, this.minScaleY * zoomRatio);
       this._setTarget(this._targetOffsetY, newScaleY, true);
     }
+    // Resize whichever legend canvas is visible.
+    for (const lc of [this._legendLeftCanvas, this._legendRightCanvas]) {
+      if (!lc || lc.style.display === 'none') continue;
+      const LW = lc.clientWidth;
+      const LH = lc.clientHeight || this.canvas.parentElement.clientHeight;
+      lc.style.height = LH + 'px';
+      lc.width  = LW * this.dpr;
+      lc.height = LH * this.dpr;
+      lc.getContext('2d').setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    }
+    this._drawLegend();
     this._dirty = true;
+  }
+
+  /**
+   * Paint the colour legend onto the active legend canvas.
+   * Called after any change that affects the legend (resize, annotation change, etc.).
+   */
+  _drawLegend() {
+    const pos  = this._legendPosition;
+    const key  = this._legendAnnotation;
+    const lcL  = this._legendLeftCanvas;
+    const lcR  = this._legendRightCanvas;
+
+    // Clear the inactive legend canvas.
+    for (const lc of [lcL, lcR]) {
+      if (!lc || lc.style.display === 'none') continue;
+      const ic = lc.getContext('2d');
+      ic.clearRect(0, 0, lc.width, lc.height);
+    }
+
+    const activeCanvas = pos === 'left' ? lcL : pos === 'right' ? lcR : null;
+    if (!activeCanvas || activeCanvas.style.display === 'none') return;
+    if (!key || !this._annotationSchema) return;
+    const def = this._annotationSchema.get(key);
+    if (!def) return;
+
+    const W   = activeCanvas.width  / this.dpr;
+    const H   = activeCanvas.height / this.dpr;
+    const ctx = activeCanvas.getContext('2d');
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+
+    // Background.
+    ctx.fillStyle = '#073642';   // --pt-bg-dark
+    ctx.fillRect(0, 0, W, H);
+
+    const PAD   = 12;
+    const FONT  = 'monospace';
+    let   y     = PAD;
+
+    // Title — the annotation name.
+    ctx.font         = `700 ${this.fontSize}px ${FONT}`;
+    ctx.fillStyle    = '#b58900';   // --pt-gold
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(key, PAD, y, W - PAD * 2);
+    y += this.fontSize + 10;
+
+    if (def.dataType === 'categorical' || def.dataType === 'ordinal') {
+      const PALETTE = [
+        '#2aa198', '#cb4b16', '#268bd2', '#d33682',
+        '#6c71c4', '#b58900', '#859900', '#dc322f',
+      ];
+      const SWATCH = 12;
+      const ROW_H  = Math.max(SWATCH + 4, this.fontSize + 4);
+      ctx.font         = `${this.fontSize}px ${FONT}`;
+      ctx.textBaseline = 'middle';
+      (def.values || []).forEach((val, i) => {
+        if (y + SWATCH > H - PAD) return;   // no space left
+        const colour = PALETTE[i % PALETTE.length];
+        ctx.fillStyle = colour;
+        ctx.fillRect(PAD, y, SWATCH, SWATCH);
+        ctx.fillStyle = '#F7EECA';   // --pt-cream
+        ctx.textAlign = 'left';
+        ctx.fillText(String(val), PAD + SWATCH + 6, y + SWATCH / 2, W - PAD * 2 - SWATCH - 6);
+        y += ROW_H;
+      });
+    } else if (def.dataType === 'real' || def.dataType === 'integer') {
+      const BAR_W  = W - PAD * 2;
+      const BAR_H  = 14;
+      const grad   = ctx.createLinearGradient(PAD, 0, PAD + BAR_W, 0);
+      grad.addColorStop(0, '#2aa198');   // teal (min)
+      grad.addColorStop(1, '#dc322f');   // red  (max)
+      ctx.fillStyle = grad;
+      ctx.fillRect(PAD, y, BAR_W, BAR_H);
+      y += BAR_H + 4;
+      const min = def.min ?? 0;
+      const max = def.max ?? 1;
+      ctx.fillStyle    = '#F7EECA';
+      ctx.font         = `${this.fontSize}px ${FONT}`;
+      ctx.textBaseline = 'top';
+      ctx.textAlign    = 'left';
+      ctx.fillText(String(min), PAD, y, BAR_W / 2);
+      ctx.textAlign    = 'right';
+      ctx.fillText(String(max), PAD + BAR_W, y, BAR_W / 2);
+    }
   }
 
   _loop() {
@@ -780,15 +977,30 @@ export class TreeRenderer {
     ctx.fill();
 
     // Pass 2 – coloured fill circles + labels
-    ctx.fillStyle = this.tipColor;
-    ctx.beginPath();
-    for (const node of this.nodes) {
-      if (!node.isTip) continue;
-      if (node.y < yWorldMin || node.y > yWorldMax) continue;
-      ctx.moveTo(this._wx(node.x) + r, this._wy(node.y));
-      ctx.arc(this._wx(node.x), this._wy(node.y), r, 0, Math.PI * 2);
+    if (this._tipColourBy && this._tipColourScale) {
+      // Per-tip colour: draw each circle individually.
+      const key = this._tipColourBy;
+      for (const node of this.nodes) {
+        if (!node.isTip) continue;
+        if (node.y < yWorldMin || node.y > yWorldMax) continue;
+        const val   = node.annotations ? node.annotations[key] : undefined;
+        const col   = this._tipColourForValue(val) ?? this.tipColor;
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.arc(this._wx(node.x), this._wy(node.y), r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      ctx.fillStyle = this.tipColor;
+      ctx.beginPath();
+      for (const node of this.nodes) {
+        if (!node.isTip) continue;
+        if (node.y < yWorldMin || node.y > yWorldMax) continue;
+        ctx.moveTo(this._wx(node.x) + r, this._wy(node.y));
+        ctx.arc(this._wx(node.x), this._wy(node.y), r, 0, Math.PI * 2);
+      }
+      ctx.fill();
     }
-    ctx.fill();
 
     // Pass 2.5 – selected tips: slightly enlarged, bright ring on top of normal circles
     if (this._selectedTipIds.size > 0) {
@@ -821,15 +1033,28 @@ export class TreeRenderer {
       ctx.lineWidth = 1;
 
       // Tip-colour fill on top
-      ctx.fillStyle = this.tipColor;
-      ctx.beginPath();
-      for (const node of this.nodes) {
-        if (!node.isTip || !this._selectedTipIds.has(node.id)) continue;
-        if (node.y < yWorldMin || node.y > yWorldMax) continue;
-        ctx.moveTo(this._wx(node.x) + selR, this._wy(node.y));
-        ctx.arc(this._wx(node.x), this._wy(node.y), selR, 0, Math.PI * 2);
+      if (this._tipColourBy && this._tipColourScale) {
+        const key = this._tipColourBy;
+        for (const node of this.nodes) {
+          if (!node.isTip || !this._selectedTipIds.has(node.id)) continue;
+          if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          const val = node.annotations ? node.annotations[key] : undefined;
+          ctx.fillStyle = this._tipColourForValue(val) ?? this.tipColor;
+          ctx.beginPath();
+          ctx.arc(this._wx(node.x), this._wy(node.y), selR, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        ctx.fillStyle = this.tipColor;
+        ctx.beginPath();
+        for (const node of this.nodes) {
+          if (!node.isTip || !this._selectedTipIds.has(node.id)) continue;
+          if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          ctx.moveTo(this._wx(node.x) + selR, this._wy(node.y));
+          ctx.arc(this._wx(node.x), this._wy(node.y), selR, 0, Math.PI * 2);
+        }
+        ctx.fill();
       }
-      ctx.fill();
     }
 
     // Pass 2.6 – MRCA circle: shown when 2+ tips are selected

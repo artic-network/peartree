@@ -4,11 +4,16 @@ import { fromNestedRoot, rerootOnGraph, reorderGraph, midpointRootGraph } from '
 import { TreeRenderer } from './treerenderer.js';
 
 (async () => {
-  const canvas       = document.getElementById('tree-canvas');
-  const loadingEl    = document.getElementById('loading');
-  const fontSlider   = document.getElementById('font-size-slider');
-  const tipSlider    = document.getElementById('tip-size-slider');
-  const btnFit       = document.getElementById('btn-fit');
+  const canvas            = document.getElementById('tree-canvas');
+  const loadingEl         = document.getElementById('loading');
+  const fontSlider        = document.getElementById('font-size-slider');
+  const tipSlider         = document.getElementById('tip-size-slider');
+  const tipColourBy       = document.getElementById('tip-colour-by');
+  const legendShowEl      = document.getElementById('legend-show');
+  const legendAnnotEl     = document.getElementById('legend-annotation');
+  const legendLeftCanvas  = document.getElementById('legend-left-canvas');
+  const legendRightCanvas = document.getElementById('legend-right-canvas');
+  const btnFit            = document.getElementById('btn-fit');
 
   // Size canvas to container before creating renderer
   const container = canvas.parentElement;
@@ -30,6 +35,7 @@ import { TreeRenderer } from './treerenderer.js';
   statusCanvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
 
   const renderer = new TreeRenderer(canvas, undefined, statusCanvas);
+  renderer.setLegendCanvases(legendLeftCanvas, legendRightCanvas);
 
   // Hide the initial loading overlay; the Open Tree modal replaces it on startup
   loadingEl.style.display = 'none';
@@ -190,6 +196,38 @@ import { TreeRenderer } from './treerenderer.js';
       currentOrder    = null;
       _cachedMidpoint = null;
 
+      // Populate the "Colour by" dropdown from the annotation schema
+      // (exclude list types since they can't be coloured directly).
+      const schema = graph.annotationSchema;
+      while (tipColourBy.options.length > 1) tipColourBy.remove(1);
+      for (const [name, def] of schema) {
+        if (def.dataType !== 'list') {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          tipColourBy.appendChild(opt);
+        }
+      }
+      tipColourBy.value    = '';
+      tipColourBy.disabled = schema.size === 0;
+
+      // Populate the legend annotation dropdown with the same set of annotations.
+      while (legendAnnotEl.options.length > 1) legendAnnotEl.remove(1);
+      for (const [name, def] of schema) {
+        if (def.dataType !== 'list') {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          legendAnnotEl.appendChild(opt);
+        }
+      }
+      legendAnnotEl.value    = '';
+      legendAnnotEl.disabled = schema.size === 0;
+
+      // Pass schema to the renderer so it can build colour scales.
+      renderer.setAnnotationSchema(schema);
+      renderer.setTipColourBy(null);
+      applyLegend();   // rebuild legend with new data (may clear it)
       const layout = computeLayoutFromGraph(graph);
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
       renderer.setRawTree(root);
@@ -394,6 +432,28 @@ import { TreeRenderer } from './treerenderer.js';
   tipSlider.addEventListener('input', () => {
     renderer.setTipRadius(parseInt(tipSlider.value));
   });
+
+  tipColourBy.addEventListener('change', () => {
+    renderer.setTipColourBy(tipColourBy.value || null);
+  });
+
+  // ── Legend controls ───────────────────────────────────────────────────────
+
+  function applyLegend() {
+    const pos = legendShowEl.value;   // 'off' | 'left' | 'right'
+    const key = legendAnnotEl.value || null;
+    const W   = 180;   // legend canvas width in CSS pixels
+
+    legendLeftCanvas.style.display  = pos === 'left'  ? 'block' : 'none';
+    legendLeftCanvas.style.width    = W + 'px';
+    legendRightCanvas.style.display = pos === 'right' ? 'block' : 'none';
+    legendRightCanvas.style.width   = W + 'px';
+
+    renderer.setLegend(pos === 'off' ? null : pos, key);
+  }
+
+  legendShowEl .addEventListener('change', applyLegend);
+  legendAnnotEl.addEventListener('change', applyLegend);
 
   btnFit.addEventListener('click', () => renderer.fitToWindow());
   document.getElementById('btn-fit-labels').addEventListener('click', () => renderer.fitLabels());

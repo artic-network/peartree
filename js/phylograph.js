@@ -23,13 +23,24 @@
 // }
 //
 // PhyloGraph {
-//   nodes:       PhyloNode[]
-//   root:        { nodeA: number, nodeB: number, lenA: number, lenB: number }
-//                Indices into nodes[].
-//                lenA = distance from root point to nodeA
-//                lenB = distance from root point to nodeB  (lenA + lenB = total edge)
-//                lenA === 0 means root coincides with nodeA (trifurcating case).
-//   origIdToIdx: Map<string, number>   – parser string id → integer index
+//   nodes:            PhyloNode[]
+//   root:             { nodeA: number, nodeB: number, lenA: number, lenB: number }
+//                     Indices into nodes[].
+//                     lenA = distance from root point to nodeA
+//                     lenB = distance from root point to nodeB  (lenA + lenB = total edge)
+//                     lenA === 0 means root coincides with nodeA (trifurcating case).
+//   origIdToIdx:      Map<string, number>   – parser string id → integer index
+//   annotationSchema: Map<string, AnnotationDef>  – one entry per annotation key
+// }
+//
+// AnnotationDef {
+//   name:        string
+//   dataType:    'real' | 'integer' | 'ordinal' | 'categorical' | 'list'
+//   min?:        number      – real / integer: observed minimum value
+//   max?:        number      – real / integer: observed maximum value
+//   values?:     string[]    – categorical / ordinal: observed distinct values
+//                              (for ordinal the array is the meaningful order)
+//   elementType?: AnnotationDef  – list: recursive type description of list elements
 // }
 //
 // ─────────────────────────────────────────────────────────────────────────────
@@ -230,7 +241,76 @@ export function fromNestedRoot(nestedRoot) {
     root = { nodeA: rootIdx, nodeB: firstChildIdx, lenA: 0, lenB: firstChild.length || 0 };
   }
 
-  return { nodes, root, origIdToIdx };
+  return { nodes, root, origIdToIdx, annotationSchema: buildAnnotationSchema(nodes) };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Annotation schema  – auto-detected type definitions for node annotation keys
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Infer an AnnotationDef (without `name`) from a flat array of observed values.
+ * Called recursively for list element types.
+ *
+ * @param  {any[]} values  – all observed non-null values for one annotation key
+ * @returns {Omit<AnnotationDef, 'name'>}
+ */
+function inferAnnotationType(values) {
+  // ── List type: at least one value is an array ────────────────────────────
+  if (values.some(v => Array.isArray(v))) {
+    const elements = values.flatMap(v => Array.isArray(v) ? v : [v]);
+    return { dataType: 'list', elementType: inferAnnotationType(elements) };
+  }
+
+  // ── Numeric types ────────────────────────────────────────────────────────
+  const numericValues = values.filter(v => typeof v === 'number' && !Number.isNaN(v));
+  if (numericValues.length === values.length) {
+    const min = Math.min(...numericValues);
+    const max = Math.max(...numericValues);
+    const allInteger = numericValues.every(v => Number.isInteger(v));
+    return { dataType: allInteger ? 'integer' : 'real', min, max };
+  }
+
+  // ── Categorical (default for string / mixed) ─────────────────────────────
+  const distinct = [...new Set(values.map(v => String(v)))].sort();
+  return { dataType: 'categorical', values: distinct };
+}
+
+/**
+ * Build an AnnotationSchema by scanning all nodes in the graph.
+ * The schema is a Map<name, AnnotationDef> keyed by annotation name.
+ *
+ * Data types are inferred automatically:
+ *   real        – all values are non-integer numbers
+ *   integer     – all values are integers
+ *   categorical – values are strings (or a mix); distinct values listed
+ *   ordinal     – not auto-detected; upgrade manually when order is known
+ *   list        – values are arrays; elementType is inferred recursively
+ *
+ * @param  {PhyloNode[]} nodes
+ * @returns {Map<string, AnnotationDef>}
+ */
+export function buildAnnotationSchema(nodes) {
+  // Collect all annotation keys across all nodes.
+  const allKeys = new Set();
+  for (const node of nodes) {
+    for (const k of Object.keys(node.annotations)) allKeys.add(k);
+  }
+
+  const schema = new Map();
+  for (const name of allKeys) {
+    const values = [];
+    for (const node of nodes) {
+      if (Object.prototype.hasOwnProperty.call(node.annotations, name)) {
+        const v = node.annotations[name];
+        if (v !== null && v !== undefined) values.push(v);
+      }
+    }
+    if (values.length > 0) {
+      schema.set(name, { name, ...inferAnnotationType(values) });
+    }
+  }
+  return schema;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

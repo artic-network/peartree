@@ -102,12 +102,33 @@
     /* ── Canvas area ── */
     #canvas-container {
       flex: 1;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      overflow: hidden;
+    }
+    #canvas-wrapper {
+      flex: 1;
       position: relative;
       overflow: hidden;
+      min-width: 0;
     }
     canvas            { display: block; cursor: default; }
     canvas.space      { cursor: grab; }
     canvas.grabbing   { cursor: grabbing; }
+
+    /* ── Legend canvases (left / right of tree) ── */
+    .pt-legend-canvas {
+      flex-shrink: 0;
+      display: none;
+      cursor: default !important;
+      background: var(--pt-bg-dark);
+      border-right: 1px solid var(--pt-border);
+    }
+    .pt-legend-canvas.right {
+      border-right: none;
+      border-left: 1px solid var(--pt-border);
+    }
 
     /* ── Loading overlay ── */
     #loading {
@@ -296,6 +317,30 @@
       width: 18px;
       text-align: right;
       flex-shrink: 0;
+    }
+    .pt-palette-label {
+      font-size: 0.65rem;
+      color: var(--pt-cream);
+      flex-shrink: 0;
+    }
+    .pt-palette-select {
+      flex: 1;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 3px;
+      color: var(--pt-off-white);
+      font-size: 0.65rem;
+      font-family: inherit;
+      padding: 2px 4px;
+      outline: none;
+      min-width: 0;
+    }
+    .pt-palette-select:focus {
+      border-color: var(--pt-gold);
+    }
+    .pt-palette-select:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
     }
     /* palette button active state */
     #btn-palette.active {
@@ -513,10 +558,14 @@
 </nav>
 
 <div id="canvas-container">
-  <div id="loading"><div class="pt-spinner"></div><p id="loading-msg">Fetching tree file…</p></div>
-  <div id="error"></div>
-  <canvas id="tree-canvas"></canvas>
-  <div id="tooltip"></div>
+  <canvas id="legend-left-canvas"  class="pt-legend-canvas"></canvas>
+  <div id="canvas-wrapper">
+    <div id="loading"><div class="pt-spinner"></div><p id="loading-msg">Fetching tree file…</p></div>
+    <div id="error"></div>
+    <canvas id="tree-canvas"></canvas>
+    <div id="tooltip"></div>
+  </div>
+  <canvas id="legend-right-canvas" class="pt-legend-canvas right"></canvas>
 </div>
 
 <div id="status-bar">
@@ -586,7 +635,7 @@
   <div id="palette-panel-body">
 
     <div class="pt-palette-section">
-      <h3>Label Size</h3>
+      <h3>Tip Labels</h3>
       <div class="pt-palette-row">
         <i class="bi bi-fonts form-label-sm"></i>
         <input type="range" class="form-range" id="font-size-slider" min="6" max="20" value="11" />
@@ -595,11 +644,35 @@
     </div>
 
     <div class="pt-palette-section">
-      <h3>Node Size</h3>
+      <h3>Tip Shapes</h3>
       <div class="pt-palette-row">
         <i class="bi bi-record-circle form-label-sm"></i>
         <input type="range" class="form-range" id="tip-size-slider" min="1" max="12" value="3" />
         <span class="pt-val" id="tip-size-value">3</span>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Colour by</span>
+        <select class="pt-palette-select" id="tip-colour-by" disabled>
+          <option value="">(none)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="pt-palette-section">
+      <h3>Legend</h3>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Show</span>
+        <select class="pt-palette-select" id="legend-show">
+          <option value="off">Off</option>
+          <option value="left">Left</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Annotation</span>
+        <select class="pt-palette-select" id="legend-annotation" disabled>
+          <option value="">(none)</option>
+        </select>
       </div>
     </div>
 
