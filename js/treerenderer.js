@@ -754,7 +754,7 @@ export class TreeRenderer {
    * @param {number} targetW   CSS-pixel width  of the canvas
    * @param {number} targetH   CSS-pixel height of the canvas
    */
-  renderFull(offscreenCanvas, targetW, targetH) {
+  renderFull(offscreenCanvas, targetW, targetH, skipBg = false) {
     if (!this.nodes) return;
     const plotW = targetW - this.paddingLeft - this.labelRightPad;
     const plotH = targetH - this.paddingTop  - this.paddingBottom;
@@ -773,13 +773,32 @@ export class TreeRenderer {
     this.canvas = { clientWidth: targetW, clientHeight: targetH };
     this.scaleX = sx;  this.offsetX = ox;
     this.scaleY = sy;  this.offsetY = oy;
+    this._skipBg = skipBg;
 
     this._draw();
 
+    this._skipBg = false;
     // Restore.
     this.ctx    = s_ctx;  this.canvas = s_canvas;
     this.scaleX = s_sx;   this.offsetX = s_ox;
     this.scaleY = s_sy;   this.offsetY = s_oy;
+  }
+
+  /**
+   * Render the current viewport to an OffscreenCanvas without switching
+   * scale/offset (used for transparent PNG export).
+   */
+  renderViewToOffscreen(oc, skipBg = false) {
+    if (!this.nodes) return;
+    const s_ctx = this.ctx, s_canvas = this.canvas;
+    const W = s_canvas.clientWidth, H = s_canvas.clientHeight;
+    this.ctx    = oc.getContext('2d');
+    this.canvas = { clientWidth: W, clientHeight: H };
+    this._skipBg = skipBg;
+    this._draw();
+    this._skipBg = false;
+    this.ctx    = s_ctx;
+    this.canvas = s_canvas;
   }
 
   /**
@@ -902,8 +921,10 @@ export class TreeRenderer {
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 
     // Background — match the tree canvas.
-    ctx.fillStyle = this.bgColor;
-    ctx.fillRect(0, 0, W, H);
+    if (!this._skipBg) {
+      ctx.fillStyle = this.bgColor;
+      ctx.fillRect(0, 0, W, H);
+    }
 
     const PAD   = 12;
     const FONT  = 'monospace';
@@ -1029,8 +1050,10 @@ export class TreeRenderer {
     const H = this.canvas.clientHeight;
 
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = this.bgColor;
-    ctx.fillRect(0, 0, W, H);
+    if (!this._skipBg) {
+      ctx.fillStyle = this.bgColor;
+      ctx.fillRect(0, 0, W, H);
+    }
 
     if (!this.nodes) return;
 

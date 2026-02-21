@@ -1410,6 +1410,12 @@ import { AxisRenderer  } from './axisrenderer.js';
           <label class="expg-radio"><input type="radio" name="expg-view" value="full">&nbsp;Full tree</label>
         </div>
       </div>
+      <div class="expg-row">
+        <span class="expg-label">Background</span>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="expg-bg" checked>&nbsp;Include background colour
+        </label>
+      </div>
       <div id="expg-png-opts" style="display:none">
         <p class="expg-hint">Output size: ${defPx} × ${defH} px (2× current viewport)</p>
       </div>`;
@@ -1442,9 +1448,10 @@ import { AxisRenderer  } from './axisrenderer.js';
   }
 
   function _doGraphicsExport() {
-    const fmt      = document.querySelector('input[name="expg-fmt"]:checked')?.value || 'svg';
-    const filename = (document.getElementById('expg-filename')?.value.trim() || 'tree');
-    const fullTree = document.querySelector('input[name="expg-view"]:checked')?.value === 'full';
+    const fmt        = document.querySelector('input[name="expg-fmt"]:checked')?.value || 'svg';
+    const filename   = (document.getElementById('expg-filename')?.value.trim() || 'tree');
+    const fullTree   = document.querySelector('input[name="expg-view"]:checked')?.value === 'full';
+    const transparent = !(document.getElementById('expg-bg')?.checked ?? true);
 
     if (fmt === 'png') {
       const { totalW, totalH, axH, axVisible } = _viewportDims();
@@ -1454,14 +1461,14 @@ import { AxisRenderer  } from './axisrenderer.js';
             (renderer.maxY + 1) * renderer.scaleY + (axVisible ? axH : 0)) * 2)
         : Math.round(totalH * 2);
 
-      _compositeViewPng(targetW, targetH, fullTree).convertToBlob({ type: 'image/png' }).then(blob => {
+      _compositeViewPng(targetW, targetH, fullTree, transparent).convertToBlob({ type: 'image/png' }).then(blob => {
         const url = URL.createObjectURL(blob);
         const a   = Object.assign(document.createElement('a'), { href: url, download: `${filename}.png` });
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         URL.revokeObjectURL(url);
       });
     } else {
-      const svgStr = _buildGraphicSVG(fullTree);
+      const svgStr = _buildGraphicSVG(fullTree, transparent);
       if (!svgStr) return;
       const blob = new Blob([svgStr], { type: 'image/svg+xml' });
       const url  = URL.createObjectURL(blob);
@@ -1473,7 +1480,7 @@ import { AxisRenderer  } from './axisrenderer.js';
   }
 
   /** Composite all visible canvases onto an OffscreenCanvas at target pixel size. */
-  function _compositeViewPng(targetW, targetH, fullTree = false) {
+  function _compositeViewPng(targetW, targetH, fullTree = false, transparent = false) {
     const { totalW, totalH, llW, lrW, ttW, ttH, axH, llVisible, lrVisible, axVisible } = _viewportDims();
     // Full tree: panel height is determined by current scaleY over all tips.
     const ttH_eff    = fullTree
@@ -1485,20 +1492,41 @@ import { AxisRenderer  } from './axisrenderer.js';
     const oc  = new OffscreenCanvas(targetW, targetH);
     const ctx = oc.getContext('2d');
 
-    ctx.fillStyle = renderer.bgColor;
-    ctx.fillRect(0, 0, targetW, targetH);
+    if (!transparent) {
+      ctx.fillStyle = renderer.bgColor;
+      ctx.fillRect(0, 0, targetW, targetH);
+    }
 
     if (llVisible) {
+      if (transparent) {
+        // Re-render legend without background fill.
+        renderer._skipBg = true;
+        renderer._drawLegend();
+        renderer._skipBg = false;
+      }
       ctx.drawImage(legendLeftCanvas, 0, 0,
         Math.round(llW * sx), Math.round(ttH_eff * sy));
+      if (transparent) {
+        // Restore legend with background for the live view.
+        renderer._drawLegend();
+      }
     }
     if (fullTree) {
       // Re-render tree panel at current scaleY with full unclipped height.
       const treeW = Math.round(ttW * sx);
       const treeH = Math.round(ttH_eff * sy);
       const toc = new OffscreenCanvas(treeW, treeH);
-      renderer.renderFull(toc, treeW, treeH);
+      renderer.renderFull(toc, treeW, treeH, transparent);
       ctx.drawImage(toc, Math.round(llW * sx), 0);
+    } else if (transparent) {
+      // Re-render current viewport at screen dimensions without background,
+      // then let drawImage scale it to the export target (same as the normal
+      // path does with the live canvas, but without the pre-painted background).
+      const toc = new OffscreenCanvas(Math.round(ttW), Math.round(ttH_eff));
+      renderer.renderViewToOffscreen(toc, true);
+      ctx.drawImage(toc,
+        Math.round(llW * sx), 0,
+        Math.round(ttW * sx), Math.round(ttH_eff * sy));
     } else {
       ctx.drawImage(canvas,
         Math.round(llW * sx), 0,
@@ -1510,9 +1538,17 @@ import { AxisRenderer  } from './axisrenderer.js';
         Math.round(ttW * sx), Math.round(axH * sy));
     }
     if (lrVisible) {
+      if (transparent) {
+        renderer._skipBg = true;
+        renderer._drawLegend();
+        renderer._skipBg = false;
+      }
       ctx.drawImage(legendRightCanvas,
         Math.round((llW + ttW) * sx), 0,
         Math.round(lrW * sx), Math.round(ttH_eff * sy));
+      if (transparent) {
+        renderer._drawLegend();
+      }
     }
     return oc;
   }
@@ -1529,7 +1565,7 @@ import { AxisRenderer  } from './axisrenderer.js';
    *
    * No raster embeds — axis ticks and legend entries are SVG elements.
    */
-  function _buildGraphicSVG(fullTree = false) {
+  function _buildGraphicSVG(fullTree = false, transparent = false) {
     const nm = renderer.nodeMap;
     if (!nm || !nm.size) return null;
 
@@ -1564,7 +1600,9 @@ import { AxisRenderer  } from './axisrenderer.js';
 
     // ── Background panels ─────────────────────────────────────────────────
     const bgParts = [];
-    bgParts.push(`<rect width="${totalW}" height="${totalH_eff}" fill="${_esc(bg)}"/>`);
+    if (!transparent) {
+      bgParts.push(`<rect width="${totalW}" height="${totalH_eff}" fill="${_esc(bg)}"/>`);
+    }
 
     // ── Legend panels (vector) ────────────────────────────────────────────
     const legendParts = [];
