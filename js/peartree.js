@@ -343,12 +343,39 @@ import { AxisRenderer  } from './axisrenderer.js';
   // Close button (only works after a tree has been loaded)
   btnModalClose.addEventListener('click', () => { if (treeLoaded) closeModal(); });
 
-  // Escape key also closes when a tree is loaded
+  // ── Unified keyboard handler for all modal overlays ──────────────────────
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && treeLoaded && modal.classList.contains('open')) closeModal();
+    const inTextField = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName) &&
+      !['checkbox', 'radio'].includes(document.activeElement?.type);
+
     if (e.key === 'Escape') {
-      const overlay = document.getElementById('node-info-overlay');
-      if (overlay && overlay.style.display !== 'none') { overlay.style.display = 'none'; }
+      // Close innermost open overlay first.
+      if (exportGraphicOverlay.classList.contains('open')) { _closeGraphicsDialog(); return; }
+      if (exportOverlay.classList.contains('open'))        { _closeExportDialog();   return; }
+      if (importOverlay.classList.contains('open'))        { _closeAnnotDialog();    return; }
+      const nodeInfoOv = document.getElementById('node-info-overlay');
+      if (nodeInfoOv && nodeInfoOv.style.display !== 'none') { nodeInfoOv.style.display = 'none'; return; }
+      if (treeLoaded && modal.classList.contains('open'))  { closeModal();           return; }
+    }
+
+    if (e.key === 'Enter' && !e.shiftKey && !inTextField) {
+      if (exportGraphicOverlay.classList.contains('open')) {
+        document.getElementById('expg-download-btn')?.click(); return;
+      }
+      if (exportOverlay.classList.contains('open')) {
+        document.getElementById('exp-download-btn')?.click(); return;
+      }
+      if (importOverlay.classList.contains('open')) {
+        const apply = document.getElementById('imp-apply-btn');
+        if (apply) { apply.click(); return; }
+        (document.getElementById('imp-close-btn') ||
+         document.getElementById('imp-close-err-btn') ||
+         document.getElementById('imp-picker-cancel-btn'))?.click();
+        return;
+      }
+      const nodeInfoOv = document.getElementById('node-info-overlay');
+      if (nodeInfoOv && nodeInfoOv.style.display !== 'none') { nodeInfoOv.style.display = 'none'; return; }
+      if (treeLoaded && modal.classList.contains('open'))  { closeModal(); return; }
     }
   });
 
@@ -451,7 +478,8 @@ import { AxisRenderer  } from './axisrenderer.js';
   /** Phase 1: render the File/URL picker UI into the dialog body. */
   function _showAnnotPicker(errorMsg) {
     importTitleEl.innerHTML = '<i class="bi bi-file-earmark-plus me-2"></i>Import Annotations';
-    importFooter.innerHTML  = '';
+    importFooter.innerHTML  = `<button id="imp-picker-cancel-btn" class="btn btn-sm btn-secondary">Cancel</button>`;
+    document.getElementById('imp-picker-cancel-btn').addEventListener('click', _closeAnnotDialog);
     importBody.innerHTML = `
       <div class="pt-tabs">
         <button class="pt-tab-btn active" data-imp-tab="file"><i class="bi bi-folder2-open me-1"></i>File</button>
