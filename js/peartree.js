@@ -341,9 +341,9 @@ import { AxisRenderer  } from './axisrenderer.js';
     applyTheme('Artic');
 
     // Reset colour-by dropdowns, legend, and axis controls.
-    tipColourBy.value        = '';
-    nodeColourBy.value       = '';
-    labelColourBy.value      = '';
+    tipColourBy.value        = 'user_colour';
+    nodeColourBy.value       = 'user_colour';
+    labelColourBy.value      = 'user_colour';
     legendShowEl.value       = DEFAULTS.legendShow;
     legendAnnotEl.value      = '';
     axisShowEl.value         = DEFAULTS.axisShow;
@@ -355,9 +355,9 @@ import { AxisRenderer  } from './axisrenderer.js';
     _updateMinorOptions(DEFAULTS.axisMajorInterval, DEFAULTS.axisMinorInterval);
 
     if (renderer) {
-      renderer.setTipColourBy(null);
-      renderer.setNodeColourBy(null);
-      renderer.setLabelColourBy(null);
+      renderer.setTipColourBy('user_colour');
+      renderer.setNodeColourBy('user_colour');
+      renderer.setLabelColourBy('user_colour');
       renderer.setMode('nodes');
       applyLegend();
       applyAxis();
@@ -1799,34 +1799,29 @@ import { AxisRenderer  } from './axisrenderer.js';
 
   /** Repopulate annotation dropdowns (tipColourBy, nodeColourBy, legendAnnotEl) after schema change. */
   function _refreshAnnotationUIs(schema) {
-    const hasUserColour = schema.has('user_colour');
-    function repopulate(sel, excludeUserColour = false) {
+    function repopulate(sel, isLegend = false) {
       const prev = sel.value;
+      // Remove everything after the first static option (user colour / (none)).
       while (sel.options.length > 1) sel.remove(1);
-      // For colour-by selects, insert "user colour" as the second option when available.
-      if (!excludeUserColour && hasUserColour) {
-        const opt = document.createElement('option');
-        opt.value = 'user_colour'; opt.textContent = 'user colour';
-        sel.appendChild(opt);
-      }
       for (const [name, def] of schema) {
-        if (name === 'user_colour') continue; // already handled above or excluded
+        if (name === 'user_colour') continue; // static first option already in HTML
         if (def.dataType !== 'list') {
           const opt = document.createElement('option');
           opt.value = name; opt.textContent = name;
           sel.appendChild(opt);
         }
       }
-      const availableOpts = sel.options.length - 1; // minus the blank "(none)" option
-      sel.disabled = availableOpts === 0;
-      sel.value = [...sel.options].some(o => o.value === prev) ? prev : '';
+      sel.disabled = false;
+      // Restore previous selection if still available; legend falls back to '' (none), colour-by to user_colour.
+      sel.value = [...sel.options].some(o => o.value === prev) ? prev
+                  : (isLegend ? '' : 'user_colour');
     }
     repopulate(tipColourBy);
     repopulate(nodeColourBy);
     repopulate(labelColourBy);
-    repopulate(legendAnnotEl, /*excludeUserColour*/ true);
+    repopulate(legendAnnotEl, /*isLegend*/ true);
     // Sync clear-user-colour button: enabled only when at least one node has been coloured.
-    if (btnClearUserColour) btnClearUserColour.disabled = !hasUserColour;
+    if (btnClearUserColour) btnClearUserColour.disabled = !schema.has('user_colour');
   }
 
   // ── Tree loading ──────────────────────────────────────────────────────────
@@ -1889,65 +1884,49 @@ import { AxisRenderer  } from './axisrenderer.js';
         btnRR.title = 'Reroot tree at selection';
       }
 
-      // Populate the "Colour by" dropdown from the annotation schema
-      // (exclude list types since they can't be coloured directly).
+      // Populate the "Colour by" dropdowns. user_colour is always the first option.
       const schema = graph.annotationSchema;
-      while (tipColourBy.options.length > 1) tipColourBy.remove(1);
-      for (const [name, def] of schema) {
-        if (def.dataType !== 'list') {
-          const opt = document.createElement('option');
-          opt.value = name;
-          opt.textContent = name;
-          tipColourBy.appendChild(opt);
+      function _populateColourBy(sel) {
+        while (sel.options.length > 0) sel.remove(0);
+        const uc = document.createElement('option');
+        uc.value = 'user_colour'; uc.textContent = 'user colour';
+        sel.appendChild(uc);
+        for (const [name, def] of schema) {
+          if (name === 'user_colour') continue;
+          if (def.dataType !== 'list') {
+            const opt = document.createElement('option');
+            opt.value = name; opt.textContent = name;
+            sel.appendChild(opt);
+          }
         }
+        sel.disabled = false;
+        sel.value = 'user_colour';
       }
-      tipColourBy.value    = '';
-      tipColourBy.disabled = schema.size === 0;
+      _populateColourBy(tipColourBy);
+      _populateColourBy(nodeColourBy);
+      _populateColourBy(labelColourBy);
 
-      while (labelColourBy.options.length > 1) labelColourBy.remove(1);
-      for (const [name, def] of schema) {
-        if (def.dataType !== 'list') {
-          const opt = document.createElement('option');
-          opt.value = name;
-          opt.textContent = name;
-          labelColourBy.appendChild(opt);
-        }
-      }
-      labelColourBy.value    = '';
-      labelColourBy.disabled = schema.size === 0;
-
-      while (nodeColourBy.options.length > 1) nodeColourBy.remove(1);
-      for (const [name, def] of schema) {
-        if (def.dataType !== 'list') {
-          const opt = document.createElement('option');
-          opt.value = name;
-          opt.textContent = name;
-          nodeColourBy.appendChild(opt);
-        }
-      }
-      nodeColourBy.value    = '';
-      nodeColourBy.disabled = schema.size === 0;
-
-      // Populate the legend annotation dropdown with the same set of annotations.
+      // Legend select: blank "(none)" first, then annotations (no user_colour).
       while (legendAnnotEl.options.length > 1) legendAnnotEl.remove(1);
       for (const [name, def] of schema) {
+        if (name === 'user_colour') continue;
         if (def.dataType !== 'list') {
           const opt = document.createElement('option');
-          opt.value = name;
-          opt.textContent = name;
+          opt.value = name; opt.textContent = name;
           legendAnnotEl.appendChild(opt);
         }
       }
       legendAnnotEl.value    = '';
       legendAnnotEl.disabled = schema.size === 0;
+      if (btnClearUserColour) btnClearUserColour.disabled = !schema.has('user_colour');
 
       // Annotation-dependent settings:  file-embedded settings take priority over saved prefs.
       const _eff = _fileSettings || _saved;
-      const _hasAnnot = (key) => key && schema.has(key) && schema.get(key).dataType !== 'list';
-      tipColourBy.value   = _hasAnnot(_eff.tipColourBy)      ? _eff.tipColourBy      : '';
-      nodeColourBy.value  = _hasAnnot(_eff.nodeColourBy)     ? _eff.nodeColourBy     : '';
-      labelColourBy.value = _hasAnnot(_eff.labelColourBy)    ? _eff.labelColourBy    : '';
-      legendAnnotEl.value = _hasAnnot(_eff.legendAnnotation) ? _eff.legendAnnotation : '';
+      const _hasOpt = (sel, key) => key && [...sel.options].some(o => o.value === key);
+      tipColourBy.value   = _hasOpt(tipColourBy,   _eff.tipColourBy)      ? _eff.tipColourBy      : 'user_colour';
+      nodeColourBy.value  = _hasOpt(nodeColourBy,  _eff.nodeColourBy)     ? _eff.nodeColourBy     : 'user_colour';
+      labelColourBy.value = _hasOpt(labelColourBy, _eff.labelColourBy)    ? _eff.labelColourBy    : 'user_colour';
+      legendAnnotEl.value = _hasOpt(legendAnnotEl, _eff.legendAnnotation) ? _eff.legendAnnotation : '';
       // Restore node order.
       if (_eff.nodeOrder === 'asc' || _eff.nodeOrder === 'desc') {
         const asc = _eff.nodeOrder === 'asc';
@@ -2603,10 +2582,6 @@ import { AxisRenderer  } from './axisrenderer.js';
     btnClearUserColour.addEventListener('click', () => {
       if (!graph) return;
       for (const node of graph.nodes) delete node.annotations['user_colour'];
-      // If any colour-by selector was showing user_colour, reset it.
-      if (tipColourBy.value   === 'user_colour') { tipColourBy.value   = ''; renderer.setTipColourBy(null);   }
-      if (nodeColourBy.value  === 'user_colour') { nodeColourBy.value  = ''; renderer.setNodeColourBy(null);  }
-      if (labelColourBy.value === 'user_colour') { labelColourBy.value = ''; renderer.setLabelColourBy(null); }
       graph.annotationSchema = buildAnnotationSchema(graph.nodes);
       _refreshAnnotationUIs(graph.annotationSchema);
       renderer.setAnnotationSchema(graph.annotationSchema);
