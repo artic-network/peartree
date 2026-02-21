@@ -1150,22 +1150,7 @@ export class TreeRenderer {
     ctx.textBaseline = 'middle';
     const showLabels = this.scaleY > 1;
 
-    // Pass 1 – halo strokes for tip shapes (stroke centered on radius → extends haloSize outward)
-    if (r > 0 && tipHalo > 0) {
-      ctx.strokeStyle = this.tipShapeBgColor;
-      ctx.lineWidth   = tipHalo * 2;
-      ctx.beginPath();
-      for (const node of this.nodes) {
-        if (!node.isTip) continue;
-        if (node.y < yWorldMin || node.y > yWorldMax) continue;
-        ctx.moveTo(this._wx(node.x) + r, this._wy(node.y));
-        ctx.arc(this._wx(node.x), this._wy(node.y), r, 0, Math.PI * 2);
-      }
-      ctx.stroke();
-      ctx.lineWidth = 1;
-    }
-
-    // Pass 1b – halo strokes for internal node shapes
+    // Pass 1 – halo strokes for internal node shapes
     if (nodeR > 0 && nodeHalo > 0) {
       ctx.strokeStyle = this.nodeShapeBgColor;
       ctx.lineWidth   = nodeHalo * 2;
@@ -1180,7 +1165,48 @@ export class TreeRenderer {
       ctx.lineWidth = 1;
     }
 
-    // Pass 2 – fill circles for tip shapes
+    // Pass 1b – halo strokes for tip shapes (stroke centered on radius → extends haloSize outward)
+    if (r > 0 && tipHalo > 0) {
+      ctx.strokeStyle = this.tipShapeBgColor;
+      ctx.lineWidth   = tipHalo * 2;
+      ctx.beginPath();
+      for (const node of this.nodes) {
+        if (!node.isTip) continue;
+        if (node.y < yWorldMin || node.y > yWorldMax) continue;
+        ctx.moveTo(this._wx(node.x) + r, this._wy(node.y));
+        ctx.arc(this._wx(node.x), this._wy(node.y), r, 0, Math.PI * 2);
+      }
+      ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+
+    // Pass 2 – fill circles for internal node shapes
+    if (nodeR > 0) {
+      if (this._nodeColourBy && this._nodeColourScale) {
+        const key = this._nodeColourBy;
+        for (const node of this.nodes) {
+          if (node.isTip) continue;
+          if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          const val = node.annotations ? node.annotations[key] : undefined;
+          ctx.fillStyle = this._nodeColourForValue(val) ?? this.nodeShapeColor;
+          ctx.beginPath();
+          ctx.arc(this._wx(node.x), this._wy(node.y), nodeR, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        ctx.fillStyle = this.nodeShapeColor;
+        ctx.beginPath();
+        for (const node of this.nodes) {
+          if (node.isTip) continue;
+          if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          ctx.moveTo(this._wx(node.x) + nodeR, this._wy(node.y));
+          ctx.arc(this._wx(node.x), this._wy(node.y), nodeR, 0, Math.PI * 2);
+        }
+        ctx.fill();
+      }
+    }
+
+    // Pass 2b – fill circles for tip shapes
     if (r > 0) {
       if (this._tipColourBy && this._tipColourScale) {
         // Per-tip colour: draw each circle individually.
@@ -1208,33 +1234,47 @@ export class TreeRenderer {
       }
     }
 
-    // Pass 2b – fill circles for internal node shapes
-    if (nodeR > 0) {
-      if (this._nodeColourBy && this._nodeColourScale) {
-        const key = this._nodeColourBy;
+    // Pass 3 – labels (two sub-passes when selection active: dim then bright)
+    if (showLabels) {
+      const hasSelection = this._selectedTipIds.size > 0;
+      const dimColor = this.dimLabelColor;
+
+      if (hasSelection) {
+        // Sub-pass 3a: unselected labels in dim grey
+        ctx.fillStyle = dimColor;
         for (const node of this.nodes) {
-          if (node.isTip) continue;
+          if (!node.isTip || this._selectedTipIds.has(node.id)) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
+        }
+        // Sub-pass 3b: selected labels in selected colour
+        ctx.fillStyle = this.selectedLabelColor;
+        for (const node of this.nodes) {
+          if (!node.isTip || !this._selectedTipIds.has(node.id)) continue;
+          if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
+        }
+      } else if (this._labelColourBy && this._labelColourScale) {
+        const key = this._labelColourBy;
+        for (const node of this.nodes) {
+          if (!node.isTip) continue;
+          if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          if (!node.name) continue;
           const val = node.annotations ? node.annotations[key] : undefined;
-          ctx.fillStyle = this._nodeColourForValue(val) ?? this.nodeShapeColor;
-          ctx.beginPath();
-          ctx.arc(this._wx(node.x), this._wy(node.y), nodeR, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.fillStyle = this._labelColourForValue(val) ?? this.labelColor;
+          ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
         }
       } else {
-        ctx.fillStyle = this.nodeShapeColor;
-        ctx.beginPath();
+        ctx.fillStyle = this.labelColor;
         for (const node of this.nodes) {
-          if (node.isTip) continue;
+          if (!node.isTip) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
-          ctx.moveTo(this._wx(node.x) + nodeR, this._wy(node.y));
-          ctx.arc(this._wx(node.x), this._wy(node.y), nodeR, 0, Math.PI * 2);
+          if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
         }
-        ctx.fill();
       }
     }
 
-    // Pass 2.5 – selected tips
+    // Pass 3.5 – selected tips (drawn above labels)
     if (this._selectedTipIds.size > 0) {
       const selRingW = Math.max(1.5, Math.max(r, 5) * 0.45);
       if (r > 0) {
@@ -1330,7 +1370,7 @@ export class TreeRenderer {
       }
     }
 
-    // Pass 2.6 – MRCA circle: shown when 2+ tips are selected
+    // Pass 3.6 – MRCA circle: shown when 2+ tips are selected (drawn above labels)
     if (this._mrcaNodeId && this._selectedTipIds.size >= 2) {
       const mn = this.nodeMap.get(this._mrcaNodeId);
       if (mn) {
@@ -1372,46 +1412,6 @@ export class TreeRenderer {
           ctx.arc(mnx, mny, mrcaR, 0, Math.PI * 2);
           ctx.fillStyle = this.internalColor;
           ctx.fill();
-        }
-      }
-    }
-
-    // Pass 3 – labels (two sub-passes when selection active: dim then bright)
-    if (showLabels) {
-      const hasSelection = this._selectedTipIds.size > 0;
-      const dimColor = this.dimLabelColor;
-
-      if (hasSelection) {
-        // Sub-pass 3a: unselected labels in dim grey
-        ctx.fillStyle = dimColor;
-        for (const node of this.nodes) {
-          if (!node.isTip || this._selectedTipIds.has(node.id)) continue;
-          if (node.y < yWorldMin || node.y > yWorldMax) continue;
-          if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
-        }
-        // Sub-pass 3b: selected labels in selected colour
-        ctx.fillStyle = this.selectedLabelColor;
-        for (const node of this.nodes) {
-          if (!node.isTip || !this._selectedTipIds.has(node.id)) continue;
-          if (node.y < yWorldMin || node.y > yWorldMax) continue;
-          if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
-        }
-      } else if (this._labelColourBy && this._labelColourScale) {
-        const key = this._labelColourBy;
-        for (const node of this.nodes) {
-          if (!node.isTip) continue;
-          if (node.y < yWorldMin || node.y > yWorldMax) continue;
-          if (!node.name) continue;
-          const val = node.annotations ? node.annotations[key] : undefined;
-          ctx.fillStyle = this._labelColourForValue(val) ?? this.labelColor;
-          ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
-        }
-      } else {
-        ctx.fillStyle = this.labelColor;
-        for (const node of this.nodes) {
-          if (!node.isTip) continue;
-          if (node.y < yWorldMin || node.y > yWorldMax) continue;
-          if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
         }
       }
     }

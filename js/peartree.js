@@ -1255,8 +1255,10 @@ import { AxisRenderer  } from './axisrenderer.js';
 
     // ── Tree branches ─────────────────────────────────────────────────────
     const branchParts = [];
-    const bgTipParts  = [];  // background halo circles for tips
-    const fgCircleParts = []; // foreground tip + node fill circles
+    const bgNodeParts = [];  // background halo circles for node shapes
+    const bgTipParts  = [];  // background halo circles for tip shapes
+    const fgNodeParts = [];  // foreground fill circles for node shapes
+    const fgTipParts  = [];  // foreground fill circles for tip shapes
     const labelParts  = [];
     // Stroke width for the bg halo: uses renderer.tipHaloSize directly
     const tipHaloSW  = renderer.tipHaloSize * 2;
@@ -1295,12 +1297,12 @@ import { AxisRenderer  } from './axisrenderer.js';
           const fill = renderer._tipColourScale?.get(node.annotations?.[renderer._tipColourBy]) || renderer.tipShapeColor;
           if (tipHaloSW > 0)
             bgTipParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${_esc(tipBgColor)}" stroke="${_esc(tipBgColor)}" stroke-width="${tipHaloSW}"/>`);
-          fgCircleParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${_esc(fill)}"/>`);
+          fgTipParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${_esc(fill)}"/>`);
         } else if (!node.isTip && nr > 0) {
           const fill = renderer._nodeColourScale?.get(node.annotations?.[renderer._nodeColourBy]) || renderer.nodeShapeColor;
           if (nodeHaloSW > 0)
-            bgTipParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${_esc(nodeBgColor)}" stroke="${_esc(nodeBgColor)}" stroke-width="${nodeHaloSW}"/>`);
-          fgCircleParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${_esc(fill)}"/>`);
+            bgNodeParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${_esc(nodeBgColor)}" stroke="${_esc(nodeBgColor)}" stroke-width="${nodeHaloSW}"/>`);
+          fgNodeParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${_esc(fill)}"/>`);
         }
         if (node.isTip && node.name) {
           const lx2 = nx + (tr > 0 ? tr + 4 : 4);
@@ -1423,10 +1425,16 @@ import { AxisRenderer  } from './axisrenderer.js';
     ${branchParts.join('\n    ')}
   </g>
   <g clip-path="url(#tc)">
+    ${bgNodeParts.join('\n    ')}
+  </g>
+  <g clip-path="url(#tc)">
     ${bgTipParts.join('\n    ')}
   </g>
   <g clip-path="url(#tc)">
-    ${fgCircleParts.join('\n    ')}
+    ${fgNodeParts.join('\n    ')}
+  </g>
+  <g clip-path="url(#tc)">
+    ${fgTipParts.join('\n    ')}
   </g>
   <g clip-path="url(#tc)">
     ${labelParts.join('\n    ')}
