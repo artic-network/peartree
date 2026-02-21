@@ -12,7 +12,9 @@ import { AxisRenderer  } from './axisrenderer.js';
   const branchWidthSlider = document.getElementById('branch-width-slider');
   const fontSlider        = document.getElementById('font-size-slider');
   const tipSlider         = document.getElementById('tip-size-slider');
+  const tipHaloSlider      = document.getElementById('tip-halo-slider');
   const nodeSlider        = document.getElementById('node-size-slider');
+  const nodeHaloSlider     = document.getElementById('node-halo-slider');
   const tipShapeColorEl   = document.getElementById('tip-shape-color');
   const tipShapeBgEl      = document.getElementById('tip-shape-bg-color');
   const labelColorEl      = document.getElementById('label-color');
@@ -20,6 +22,7 @@ import { AxisRenderer  } from './axisrenderer.js';
   const nodeShapeBgEl     = document.getElementById('node-shape-bg-color');
   const tipColourBy       = document.getElementById('tip-colour-by');
   const nodeColourBy      = document.getElementById('node-colour-by');
+  const labelColourBy     = document.getElementById('label-colour-by');
   const legendShowEl      = document.getElementById('legend-show');
   const legendAnnotEl     = document.getElementById('legend-annotation');
   const legendLeftCanvas  = document.getElementById('legend-left-canvas');
@@ -52,11 +55,14 @@ import { AxisRenderer  } from './axisrenderer.js';
     fontSize:         '11',
     labelColor:       '#f7eeca',
     tipSize:          '3',
+    tipHaloSize:      '2',
     tipShapeColor:    '#888888',
     tipShapeBgColor:  '#02292e',
     nodeSize:         '0',
+    nodeHaloSize:     '2',
     nodeShapeColor:   '#888888',
     nodeShapeBgColor: '#02292e',
+    labelColourBy:      '',
     legendShow:         'off',
     axisShow:           'off',
     axisDateAnnotation: '',
@@ -79,13 +85,16 @@ import { AxisRenderer  } from './axisrenderer.js';
       fontSize:         fontSlider.value,
       labelColor:       labelColorEl.value,
       tipSize:          tipSlider.value,
+      tipHaloSize:      tipHaloSlider.value,
       tipShapeColor:    tipShapeColorEl.value,
       tipShapeBgColor:  tipShapeBgEl.value,
       nodeSize:         nodeSlider.value,
+      nodeHaloSize:     nodeHaloSlider.value,
       nodeShapeColor:   nodeShapeColorEl.value,
       nodeShapeBgColor: nodeShapeBgEl.value,
       tipColourBy:      tipColourBy.value,
       nodeColourBy:     nodeColourBy.value,
+      labelColourBy:    labelColourBy.value,
       legendShow:       legendShowEl.value,
       legendAnnotation: legendAnnotEl.value,
       axisShow:           axisShowEl.value,
@@ -112,14 +121,19 @@ import { AxisRenderer  } from './axisrenderer.js';
     labelColorEl.value       = DEFAULTS.labelColor;
     tipSlider.value          = DEFAULTS.tipSize;
     document.getElementById('tip-size-value').textContent     = DEFAULTS.tipSize;
+    tipHaloSlider.value      = DEFAULTS.tipHaloSize;
+    document.getElementById('tip-halo-value').textContent     = DEFAULTS.tipHaloSize;
     tipShapeColorEl.value    = DEFAULTS.tipShapeColor;
     tipShapeBgEl.value       = DEFAULTS.tipShapeBgColor;
     nodeSlider.value         = DEFAULTS.nodeSize;
     document.getElementById('node-size-value').textContent    = DEFAULTS.nodeSize;
+    nodeHaloSlider.value     = DEFAULTS.nodeHaloSize;
+    document.getElementById('node-halo-value').textContent    = DEFAULTS.nodeHaloSize;
     nodeShapeColorEl.value   = DEFAULTS.nodeShapeColor;
     nodeShapeBgEl.value      = DEFAULTS.nodeShapeBgColor;
     tipColourBy.value        = '';
     nodeColourBy.value       = '';
+    labelColourBy.value      = '';
     legendShowEl.value       = DEFAULTS.legendShow;
     legendAnnotEl.value      = '';
     axisShowEl.value         = DEFAULTS.axisShow;
@@ -138,13 +152,16 @@ import { AxisRenderer  } from './axisrenderer.js';
       renderer.setFontSize(parseInt(DEFAULTS.fontSize));
       renderer.setLabelColor(DEFAULTS.labelColor);
       renderer.setTipRadius(parseInt(DEFAULTS.tipSize));
+      renderer.setTipHaloSize(parseInt(DEFAULTS.tipHaloSize));
       renderer.setTipShapeColor(DEFAULTS.tipShapeColor);
       renderer.setTipShapeBgColor(DEFAULTS.tipShapeBgColor);
       renderer.setNodeRadius(parseInt(DEFAULTS.nodeSize));
+      renderer.setNodeHaloSize(parseInt(DEFAULTS.nodeHaloSize));
       renderer.setNodeShapeColor(DEFAULTS.nodeShapeColor);
       renderer.setNodeShapeBgColor(DEFAULTS.nodeShapeBgColor);
       renderer.setTipColourBy(null);
       renderer.setNodeColourBy(null);
+      renderer.setLabelColourBy(null);
       renderer.setMode('nodes');
       applyLegend();
       applyAxis();
@@ -180,11 +197,19 @@ import { AxisRenderer  } from './axisrenderer.js';
     tipSlider.value = _saved.tipSize;
     document.getElementById('tip-size-value').textContent = _saved.tipSize;
   }
+  if (_saved.tipHaloSize    != null) {
+    tipHaloSlider.value = _saved.tipHaloSize;
+    document.getElementById('tip-halo-value').textContent = _saved.tipHaloSize;
+  }
   if (_saved.tipShapeColor)        tipShapeColorEl.value    = _saved.tipShapeColor;
   if (_saved.tipShapeBgColor)      tipShapeBgEl.value       = _saved.tipShapeBgColor;
   if (_saved.nodeSize       != null) {
     nodeSlider.value = _saved.nodeSize;
     document.getElementById('node-size-value').textContent = _saved.nodeSize;
+  }
+  if (_saved.nodeHaloSize   != null) {
+    nodeHaloSlider.value = _saved.nodeHaloSize;
+    document.getElementById('node-halo-value').textContent = _saved.nodeHaloSize;
   }
   if (_saved.nodeShapeColor)       nodeShapeColorEl.value   = _saved.nodeShapeColor;
   if (_saved.nodeShapeBgColor)     nodeShapeBgEl.value      = _saved.nodeShapeBgColor;
@@ -219,9 +244,11 @@ import { AxisRenderer  } from './axisrenderer.js';
   renderer.setFontSize(parseInt(fontSlider.value));
   renderer.setLabelColor(labelColorEl.value);
   renderer.setTipRadius(parseInt(tipSlider.value));
+  renderer.setTipHaloSize(parseInt(tipHaloSlider.value));
   renderer.setTipShapeColor(tipShapeColorEl.value);
   renderer.setTipShapeBgColor(tipShapeBgEl.value);
   renderer.setNodeRadius(parseInt(nodeSlider.value));
+  renderer.setNodeHaloSize(parseInt(nodeHaloSlider.value));
   renderer.setNodeShapeColor(nodeShapeColorEl.value);
   renderer.setNodeShapeBgColor(nodeShapeBgEl.value);
 
@@ -716,8 +743,9 @@ import { AxisRenderer  } from './axisrenderer.js';
     graph.annotationSchema = buildAnnotationSchema(graph.nodes);
     _refreshAnnotationUIs(graph.annotationSchema);
     renderer.setAnnotationSchema(graph.annotationSchema);
-    renderer.setTipColourBy(tipColourBy.value  || null);
-    renderer.setNodeColourBy(nodeColourBy.value || null);
+    renderer.setTipColourBy(tipColourBy.value      || null);
+    renderer.setNodeColourBy(nodeColourBy.value    || null);
+    renderer.setLabelColourBy(labelColourBy.value  || null);
     applyLegend();
     renderer._dirty = true;
 
@@ -1227,8 +1255,14 @@ import { AxisRenderer  } from './axisrenderer.js';
 
     // ── Tree branches ─────────────────────────────────────────────────────
     const branchParts = [];
-    const circleParts = [];
+    const bgTipParts  = [];  // background halo circles for tips
+    const fgCircleParts = []; // foreground tip + node fill circles
     const labelParts  = [];
+    // Stroke width for the bg halo: uses renderer.tipHaloSize directly
+    const tipHaloSW  = renderer.tipHaloSize * 2;
+    const nodeHaloSW = renderer.nodeHaloSize * 2;
+    const tipBgColor  = renderer.tipShapeBgColor || bg;
+    const nodeBgColor = renderer.nodeShapeBgColor || bg;
 
     const rootNode = [...nm.values()].find(n => n.parentId === null);
     if (rootNode) {
@@ -1258,17 +1292,22 @@ import { AxisRenderer  } from './axisrenderer.js';
 
       if (ny > -MARGIN && ny < ttH + MARGIN) {
         if (node.isTip && tr > 0) {
-          const fill   = renderer._tipColourScale?.get(node.annotations?.[renderer._tipColourBy]) || renderer.tipShapeColor;
-          const stroke = renderer.tipShapeBgColor || bg;
-          circleParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${_esc(fill)}" stroke="${_esc(stroke)}" stroke-width="1"/>`);
+          const fill = renderer._tipColourScale?.get(node.annotations?.[renderer._tipColourBy]) || renderer.tipShapeColor;
+          if (tipHaloSW > 0)
+            bgTipParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${_esc(tipBgColor)}" stroke="${_esc(tipBgColor)}" stroke-width="${tipHaloSW}"/>`);
+          fgCircleParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${_esc(fill)}"/>`);
         } else if (!node.isTip && nr > 0) {
           const fill = renderer._nodeColourScale?.get(node.annotations?.[renderer._nodeColourBy]) || renderer.nodeShapeColor;
-          circleParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${_esc(fill)}"/>`);
+          if (nodeHaloSW > 0)
+            bgTipParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${_esc(nodeBgColor)}" stroke="${_esc(nodeBgColor)}" stroke-width="${nodeHaloSW}"/>`);
+          fgCircleParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${_esc(fill)}"/>`);
         }
         if (node.isTip && node.name) {
-          const lx2   = nx + (tr > 0 ? tr + 4 : 4);
-          const colour = renderer._tipColourScale?.get(node.annotations?.[renderer._tipColourBy]) || lc;
-          labelParts.push(`<text x="${f(lx2)}" y="${f(ny)}" dominant-baseline="central" font-family="monospace" font-size="${fs}px" fill="${_esc(colour)}">${_svgTextEsc(node.name)}</text>`);
+          const lx2 = nx + (tr > 0 ? tr + 4 : 4);
+          const labelFill = (renderer._labelColourBy && renderer._labelColourScale)
+            ? (renderer._labelColourForValue(node.annotations?.[renderer._labelColourBy]) ?? lc)
+            : lc;
+          labelParts.push(`<text x="${f(lx2)}" y="${f(ny)}" dominant-baseline="central" font-family="monospace" font-size="${fs}px" fill="${_esc(labelFill)}">${_svgTextEsc(node.name)}</text>`);
         } else if (!node.isTip && node.label) {
           labelParts.push(`<text x="${f(nx + 3)}" y="${f(ny - 3)}" font-family="monospace" font-size="${Math.round(fs * 0.85)}px" fill="${_esc(lc)}" opacity="0.7">${_svgTextEsc(node.label)}</text>`);
         }
@@ -1384,7 +1423,10 @@ import { AxisRenderer  } from './axisrenderer.js';
     ${branchParts.join('\n    ')}
   </g>
   <g clip-path="url(#tc)">
-    ${circleParts.join('\n    ')}
+    ${bgTipParts.join('\n    ')}
+  </g>
+  <g clip-path="url(#tc)">
+    ${fgCircleParts.join('\n    ')}
   </g>
   <g clip-path="url(#tc)">
     ${labelParts.join('\n    ')}
@@ -1410,6 +1452,7 @@ import { AxisRenderer  } from './axisrenderer.js';
     }
     repopulate(tipColourBy);
     repopulate(nodeColourBy);
+    repopulate(labelColourBy);
     repopulate(legendAnnotEl);
   }
 
@@ -1483,6 +1526,18 @@ import { AxisRenderer  } from './axisrenderer.js';
       tipColourBy.value    = '';
       tipColourBy.disabled = schema.size === 0;
 
+      while (labelColourBy.options.length > 1) labelColourBy.remove(1);
+      for (const [name, def] of schema) {
+        if (def.dataType !== 'list') {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          labelColourBy.appendChild(opt);
+        }
+      }
+      labelColourBy.value    = '';
+      labelColourBy.disabled = schema.size === 0;
+
       while (nodeColourBy.options.length > 1) nodeColourBy.remove(1);
       for (const [name, def] of schema) {
         if (def.dataType !== 'list') {
@@ -1512,6 +1567,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       const _hasAnnot = (key) => key && schema.has(key) && schema.get(key).dataType !== 'list';
       tipColourBy.value   = _hasAnnot(_saved.tipColourBy)      ? _saved.tipColourBy      : '';
       nodeColourBy.value  = _hasAnnot(_saved.nodeColourBy)     ? _saved.nodeColourBy     : '';
+      labelColourBy.value = _hasAnnot(_saved.labelColourBy)    ? _saved.labelColourBy    : '';
       legendAnnotEl.value = _hasAnnot(_saved.legendAnnotation) ? _saved.legendAnnotation : '';
       // Restore saved node order.
       if (_saved.nodeOrder === 'asc' || _saved.nodeOrder === 'desc') {
@@ -1522,8 +1578,9 @@ import { AxisRenderer  } from './axisrenderer.js';
 
       // Pass schema to the renderer so it can build colour scales.
       renderer.setAnnotationSchema(schema);
-      renderer.setTipColourBy(tipColourBy.value || null);
-      renderer.setNodeColourBy(nodeColourBy.value || null);
+      renderer.setTipColourBy(tipColourBy.value     || null);
+      renderer.setNodeColourBy(nodeColourBy.value   || null);
+      renderer.setLabelColourBy(labelColourBy.value || null);
       applyLegend();   // rebuild legend with new data (may clear it)
       const layout = computeLayoutFromGraph(graph);
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
@@ -2139,8 +2196,20 @@ import { AxisRenderer  } from './axisrenderer.js';
     saveSettings();
   });
 
+  tipHaloSlider.addEventListener('input', () => {
+    document.getElementById('tip-halo-value').textContent = tipHaloSlider.value;
+    renderer.setTipHaloSize(parseInt(tipHaloSlider.value));
+    saveSettings();
+  });
+
   nodeSlider.addEventListener('input', () => {
     renderer.setNodeRadius(parseInt(nodeSlider.value));
+    saveSettings();
+  });
+
+  nodeHaloSlider.addEventListener('input', () => {
+    document.getElementById('node-halo-value').textContent = nodeHaloSlider.value;
+    renderer.setNodeHaloSize(parseInt(nodeHaloSlider.value));
     saveSettings();
   });
 
@@ -2171,6 +2240,11 @@ import { AxisRenderer  } from './axisrenderer.js';
 
   tipColourBy.addEventListener('change', () => {
     renderer.setTipColourBy(tipColourBy.value || null);
+    saveSettings();
+  });
+
+  labelColourBy.addEventListener('change', () => {
+    renderer.setLabelColourBy(labelColourBy.value || null);
     saveSettings();
   });
 

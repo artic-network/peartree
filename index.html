@@ -946,6 +946,12 @@
         <span class="pt-palette-label">Colour</span>
         <input type="color" class="pt-palette-color" id="label-color" value="#f7eeca" />
       </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Colour by</span>
+        <select class="pt-palette-select" id="label-colour-by" disabled>
+          <option value="">(none)</option>
+        </select>
+      </div>
     </div>
 
     <div class="pt-palette-section">
@@ -956,12 +962,17 @@
         <span class="pt-val" id="tip-size-value">3</span>
       </div>
       <div class="pt-palette-row">
-        <span class="pt-palette-label">Fill</span>
+        <span class="pt-palette-label">Colour</span>
         <input type="color" class="pt-palette-color" id="tip-shape-color" value="#888888" />
       </div>
       <div class="pt-palette-row">
         <span class="pt-palette-label">Background</span>
         <input type="color" class="pt-palette-color" id="tip-shape-bg-color" value="#02292e" />
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Bg size</span>
+        <input type="range" class="form-range" id="tip-halo-slider" min="0" max="8" value="2" />
+        <span class="pt-val" id="tip-halo-value">2</span>
       </div>
       <div class="pt-palette-row">
         <span class="pt-palette-label">Colour by</span>
@@ -979,12 +990,17 @@
         <span class="pt-val" id="node-size-value">0</span>
       </div>
       <div class="pt-palette-row">
-        <span class="pt-palette-label">Fill</span>
+        <span class="pt-palette-label">Colour</span>
         <input type="color" class="pt-palette-color" id="node-shape-color" value="#888888" />
       </div>
       <div class="pt-palette-row">
         <span class="pt-palette-label">Background</span>
         <input type="color" class="pt-palette-color" id="node-shape-bg-color" value="#02292e" />
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Bg size</span>
+        <input type="range" class="form-range" id="node-halo-slider" min="0" max="8" value="2" />
+        <span class="pt-val" id="node-halo-value">2</span>
       </div>
       <div class="pt-palette-row">
         <span class="pt-palette-label">Colour by</span>

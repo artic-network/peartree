@@ -28,6 +28,8 @@ export class Theme {
     bgColor          = '#02292E',
     tipShapeBgColor  = bgColor,
     nodeShapeBgColor = bgColor,
+    tipHaloSize      = 2,
+    nodeHaloSize     = 2,
     paddingLeft      = 60,
     paddingTop       = 20,
     paddingBottom    = 20,
@@ -41,6 +43,8 @@ export class Theme {
     this.nodeShapeColor    = nodeShapeColor;
     this.tipShapeBgColor   = tipShapeBgColor;
     this.nodeShapeBgColor  = nodeShapeBgColor;
+    this.tipHaloSize       = tipHaloSize;
+    this.nodeHaloSize      = nodeHaloSize;
     this.tipOutlineColor   = tipOutlineColor;
     this.branchColor       = branchColor;
     this.branchWidth       = branchWidth;
@@ -151,6 +155,8 @@ export class TreeRenderer {
     this._tipColourScale   = null;   // Map<value, CSS colour> | null
     this._nodeColourBy     = null;   // annotation key for internal nodes, or null
     this._nodeColourScale  = null;   // Map<value, CSS colour> | null
+    this._labelColourBy    = null;   // annotation key for tip labels, or null
+    this._labelColourScale = null;   // Map<value, CSS colour> | null
     this._crossfadeAlpha    = 0;      // 1→0; 0 = not animating
 
     // Legend
@@ -178,6 +184,8 @@ export class TreeRenderer {
     this.nodeShapeColor    = theme.nodeShapeColor;
     this.tipShapeBgColor   = theme.tipShapeBgColor;
     this.nodeShapeBgColor  = theme.nodeShapeBgColor;
+    this.tipHaloSize       = theme.tipHaloSize  ?? 2;
+    this.nodeHaloSize      = theme.nodeHaloSize ?? 2;
     this.tipOutlineColor   = theme.tipOutlineColor;
     this.branchColor       = theme.branchColor;
     this.branchWidth       = theme.branchWidth;
@@ -339,6 +347,18 @@ export class TreeRenderer {
     this._dirty = true;
   }
 
+  setTipHaloSize(n) {
+    this.tipHaloSize = n;
+    this._measureLabels();
+    this._updateScaleX();
+    this._dirty = true;
+  }
+
+  setNodeHaloSize(n) {
+    this.nodeHaloSize = n;
+    this._dirty = true;
+  }
+
   setBgColor(c) {
     this.bgColor = c;
     this._drawLegend();
@@ -410,8 +430,9 @@ export class TreeRenderer {
    */
   setAnnotationSchema(schema) {
     this._annotationSchema = schema;
-    if (this._tipColourBy)  this._tipColourScale  = this._buildColourScale(this._tipColourBy);
-    if (this._nodeColourBy) this._nodeColourScale = this._buildColourScale(this._nodeColourBy);
+    if (this._tipColourBy)    this._tipColourScale    = this._buildColourScale(this._tipColourBy);
+    if (this._nodeColourBy)   this._nodeColourScale   = this._buildColourScale(this._nodeColourBy);
+    if (this._labelColourBy)  this._labelColourScale  = this._buildColourScale(this._labelColourBy);
     this._drawLegend();
     this._dirty = true;
   }
@@ -430,6 +451,12 @@ export class TreeRenderer {
   setNodeColourBy(key) {
     this._nodeColourBy    = key || null;
     this._nodeColourScale = this._nodeColourBy ? this._buildColourScale(this._nodeColourBy) : null;
+    this._dirty = true;
+  }
+
+  setLabelColourBy(key) {
+    this._labelColourBy    = key || null;
+    this._labelColourScale = this._labelColourBy ? this._buildColourScale(this._labelColourBy) : null;
     this._dirty = true;
   }
 
@@ -476,8 +503,9 @@ export class TreeRenderer {
     return null;
   }
 
-  _tipColourForValue(value)  { return this._colourFromScale(value, this._tipColourScale);  }
-  _nodeColourForValue(value) { return this._colourFromScale(value, this._nodeColourScale); }
+  _tipColourForValue(value)   { return this._colourFromScale(value, this._tipColourScale);   }
+  _nodeColourForValue(value)  { return this._colourFromScale(value, this._nodeColourScale);  }
+  _labelColourForValue(value) { return this._colourFromScale(value, this._labelColourScale); }
 
   /**
    * Register the left and right legend canvases with the renderer.
@@ -639,8 +667,8 @@ export class TreeRenderer {
       }
     }
     const r = this.tipRadius;
-    const tipBgR = r > 0 ? r + Math.max(1, Math.round(r * 0.45)) : 0;
-    this.labelRightPad = max + Math.max(tipBgR, 5) + 5;
+    const tipOuterR = r > 0 ? r + this.tipHaloSize : 0;
+    this.labelRightPad = max + Math.max(tipOuterR, 5) + 5;
   }
 
   /** Recompute scaleX so the tree always fills the full viewport width.
@@ -1112,40 +1140,44 @@ export class TreeRenderer {
     const r     = this.tipRadius;       // tip shape radius  (0 = invisible)
     const nodeR = this.nodeRadius;      // internal node shape radius (0 = invisible)
 
-    // Backing radius = shape radius + a sliver for the bg colour ring
-    const tipBgR  = r     > 0 ? r     + Math.max(1, Math.round(r     * 0.45)) : 0;
-    const nodeBgR = nodeR > 0 ? nodeR + Math.max(1, Math.round(nodeR * 0.45)) : 0;
+    // Halo stroke extends tipHaloSize px outward from the shape edge.
+    const tipHalo  = this.tipHaloSize;
+    const nodeHalo = this.nodeHaloSize;
 
     // Label x-offset: leave at least 5 px even when tip shapes are hidden.
-    const outlineR = Math.max(tipBgR, 5);
+    const outlineR = Math.max(r + tipHalo, 5);
 
     ctx.textBaseline = 'middle';
     const showLabels = this.scaleY > 1;
 
-    // Pass 1 – background circles for tip shapes (only when visible)
-    if (r > 0) {
-      ctx.fillStyle = this.tipShapeBgColor;
+    // Pass 1 – halo strokes for tip shapes (stroke centered on radius → extends haloSize outward)
+    if (r > 0 && tipHalo > 0) {
+      ctx.strokeStyle = this.tipShapeBgColor;
+      ctx.lineWidth   = tipHalo * 2;
       ctx.beginPath();
       for (const node of this.nodes) {
         if (!node.isTip) continue;
         if (node.y < yWorldMin || node.y > yWorldMax) continue;
-        ctx.moveTo(this._wx(node.x) + tipBgR, this._wy(node.y));
-        ctx.arc(this._wx(node.x), this._wy(node.y), tipBgR, 0, Math.PI * 2);
+        ctx.moveTo(this._wx(node.x) + r, this._wy(node.y));
+        ctx.arc(this._wx(node.x), this._wy(node.y), r, 0, Math.PI * 2);
       }
-      ctx.fill();
+      ctx.stroke();
+      ctx.lineWidth = 1;
     }
 
-    // Pass 1b – background circles for internal node shapes (only when visible)
-    if (nodeR > 0) {
-      ctx.fillStyle = this.nodeShapeBgColor;
+    // Pass 1b – halo strokes for internal node shapes
+    if (nodeR > 0 && nodeHalo > 0) {
+      ctx.strokeStyle = this.nodeShapeBgColor;
+      ctx.lineWidth   = nodeHalo * 2;
       ctx.beginPath();
       for (const node of this.nodes) {
         if (node.isTip) continue;
         if (node.y < yWorldMin || node.y > yWorldMax) continue;
-        ctx.moveTo(this._wx(node.x) + nodeBgR, this._wy(node.y));
-        ctx.arc(this._wx(node.x), this._wy(node.y), nodeBgR, 0, Math.PI * 2);
+        ctx.moveTo(this._wx(node.x) + nodeR, this._wy(node.y));
+        ctx.arc(this._wx(node.x), this._wy(node.y), nodeR, 0, Math.PI * 2);
       }
-      ctx.fill();
+      ctx.stroke();
+      ctx.lineWidth = 1;
     }
 
     // Pass 2 – fill circles for tip shapes
@@ -1363,6 +1395,16 @@ export class TreeRenderer {
           if (!node.isTip || !this._selectedTipIds.has(node.id)) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
+        }
+      } else if (this._labelColourBy && this._labelColourScale) {
+        const key = this._labelColourBy;
+        for (const node of this.nodes) {
+          if (!node.isTip) continue;
+          if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          if (!node.name) continue;
+          const val = node.annotations ? node.annotations[key] : undefined;
+          ctx.fillStyle = this._labelColourForValue(val) ?? this.labelColor;
+          ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
         }
       } else {
         ctx.fillStyle = this.labelColor;
