@@ -660,10 +660,14 @@ import { AxisRenderer  } from './axisrenderer.js';
   }
 
   // ── Axis renderer ─────────────────────────────────────────────────────────
-  const axisRenderer = new AxisRenderer(axisCanvas);
+  const axisRenderer          = new AxisRenderer(axisCanvas);
+  const canvasAndAxisWrapper  = document.getElementById('canvas-and-axis-wrapper');
 
   renderer._onViewChange = (scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr) => {
     axisRenderer.update(scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr);
+    // Fill any subpixel gap between the tree canvas and axis canvas with the
+    // canvas background colour rather than the page background.
+    canvasAndAxisWrapper.style.backgroundColor = bgColor;
   };
 
   // Update axis time span whenever navigation drills into or out of a subtree.
@@ -2005,7 +2009,10 @@ import { AxisRenderer  } from './axisrenderer.js';
     repopulate(labelColourBy);
     repopulate(legendAnnotEl, /*isLegend*/ true);
     // Sync clear-user-colour button: enabled only when at least one node has been coloured.
-    if (btnClearUserColour) btnClearUserColour.disabled = !schema.has('user_colour');
+    if (btnClearUserColour) {
+      btnClearUserColour.disabled = !schema.has('user_colour');
+      _setMenuEnabled('tree-clear-colours', schema.has('user_colour'));
+    }
   }
 
   // ── Tree loading ──────────────────────────────────────────────────────────
@@ -2014,6 +2021,7 @@ import { AxisRenderer  } from './axisrenderer.js';
   let controlsBound    = false;
   let _cachedMidpoint  = null;  // cached midpointRootGraph() result; cleared on every tree change
   let isExplicitlyRooted = false; // true when root node carries annotations — rerooting disabled
+  let _loadedFilename  = null;  // filename of the most recently loaded tree
 
   // ── Axis subtree-tracking state ───────────────────────────────────────────
   let _axisIsTimedTree = false;
@@ -2021,6 +2029,7 @@ import { AxisRenderer  } from './axisrenderer.js';
   async function loadTree(text, filename) {
     setModalLoading(true);
     setModalError(null);
+    _loadedFilename = filename || null;
     // Yield to the browser so the spinner renders before heavy parsing
     await new Promise(r => setTimeout(r, 0));
 
@@ -2102,7 +2111,10 @@ import { AxisRenderer  } from './axisrenderer.js';
       }
       legendAnnotEl.value    = '';
       legendAnnotEl.disabled = schema.size === 0;
-      if (btnClearUserColour) btnClearUserColour.disabled = !schema.has('user_colour');
+      if (btnClearUserColour) {
+        btnClearUserColour.disabled = !schema.has('user_colour');
+        _setMenuEnabled('tree-clear-colours', schema.has('user_colour'));
+      }
 
       // Annotation-dependent settings:  file-embedded settings take priority over saved prefs.
       const _eff = _fileSettings || _saved;
@@ -2194,6 +2206,9 @@ import { AxisRenderer  } from './axisrenderer.js';
         btnExportGraphic.disabled   = false;
         tipFilterEl.disabled        = false;
         tipColourPickerEl.disabled   = false;
+        _setMenuEnabled('import-annot', true);
+        _setMenuEnabled('export-tree',  true);
+        _setMenuEnabled('export-image', true);
       }
 
       // Restore interaction mode (file settings take priority).
@@ -2435,6 +2450,7 @@ import { AxisRenderer  } from './axisrenderer.js';
     // isExplicitlyRooted is read dynamically (closured from outer scope) so
     // subsequent tree loads automatically pick up the new value.
     btnMidpointRoot.disabled = isExplicitlyRooted;
+    _setMenuEnabled('tree-midpoint', !isExplicitlyRooted);
     document.getElementById('btn-zoom-in') .addEventListener('click', () => renderer.zoomIn());
     document.getElementById('btn-zoom-out').addEventListener('click', () => renderer.zoomOut());
 
@@ -2442,21 +2458,35 @@ import { AxisRenderer  } from './axisrenderer.js';
       btnBack.disabled    = !canBack;
       btnForward.disabled = !canFwd;
       btnHome.disabled    = !renderer._viewSubtreeRootId;
+      _setMenuEnabled('view-back',    canBack);
+      _setMenuEnabled('view-forward', canFwd);
+      _setMenuEnabled('view-home',    !!renderer._viewSubtreeRootId);
     };
 
     renderer._onBranchSelectChange = (hasSelection) => {
-      if (renderer._mode === 'branches') btnReroot.disabled = isExplicitlyRooted || !hasSelection;
+      if (renderer._mode === 'branches') {
+        btnReroot.disabled = isExplicitlyRooted || !hasSelection;
+        _setMenuEnabled('tree-reroot', !btnReroot.disabled);
+      }
     };
     renderer._onNodeSelectChange = (hasSelection) => {
-      if (renderer._mode === 'nodes') btnReroot.disabled = isExplicitlyRooted || !hasSelection;
+      if (renderer._mode === 'nodes') {
+        btnReroot.disabled = isExplicitlyRooted || !hasSelection;
+        _setMenuEnabled('tree-reroot', !btnReroot.disabled);
+      }
       // Rotate is enabled whenever there is any selection in nodes mode.
       const canRotate = renderer._mode === 'nodes' && hasSelection;
       btnRotate.disabled    = !canRotate;
       btnRotateAll.disabled = !canRotate;
       btnHide.disabled      = !canHide();
       btnShow.disabled      = !canShow();
-      btnNodeInfo.disabled        = !hasSelection;
+      btnNodeInfo.disabled        = !graph;  // enabled whenever a tree is loaded
       btnApplyUserColour.disabled = !hasSelection;
+      _setMenuEnabled('tree-rotate',      canRotate);
+      _setMenuEnabled('tree-rotate-all',  canRotate);
+      _setMenuEnabled('tree-hide',        !btnHide.disabled);
+      _setMenuEnabled('tree-show',        !btnShow.disabled);
+      _setMenuEnabled('tree-paint',       hasSelection);
     };
 
     btnBack.addEventListener('click',    () => renderer.navigateBack());
@@ -2665,7 +2695,70 @@ import { AxisRenderer  } from './axisrenderer.js';
       if (!nodeId && renderer._selectedTipIds && renderer._selectedTipIds.size === 1) {
         nodeId = [...renderer._selectedTipIds][0];
       }
-      if (!nodeId || !renderer.nodeMap) return;
+      if (!renderer.nodeMap) return;
+
+      // ── No node selected → show tree-level summary ──────────────────────
+      if (!nodeId) {
+        const totalNodes = graph ? graph.nodes.length : 0;
+        const totalTips  = graph ? graph.nodes.filter(n => n.adjacents.length === 1).length : 0;
+        const totalInner = totalNodes - totalTips;
+        const hiddenCount = (graph && graph.hiddenNodeIds) ? graph.hiddenNodeIds.size : 0;
+
+        const visibleNodes = renderer.nodes || [];
+        const visibleTips  = visibleNodes.filter(n => n.isTip).length;
+
+        const schema = graph ? graph.annotationSchema : null;
+        const annotKeys = schema
+          ? [...schema.keys()].filter(k => k !== 'user_colour')
+          : [];
+
+        const rows = [];
+        if (_loadedFilename)  rows.push(['File',            _loadedFilename]);
+        rows.push(['Tips',             totalTips]);
+        rows.push(['Internal nodes',   totalInner]);
+        if (hiddenCount > 0) rows.push(['Hidden nodes', hiddenCount]);
+        if (visibleTips !== totalTips) rows.push(['Visible tips', visibleTips]);
+        rows.push(['Root-to-tip span', renderer.maxX.toFixed(6)]);
+        rows.push(['Rooted',           isExplicitlyRooted ? 'Yes' : 'No']);
+        if (_axisIsTimedTree) rows.push(['Time-scaled', 'Yes']);
+        if (annotKeys.length > 0) {
+          rows.push(['Annotations', annotKeys.join(', ')]);
+        }
+
+        const titleEl = document.getElementById('node-info-title');
+        titleEl.textContent = 'Tree';
+
+        const body = document.getElementById('node-info-body');
+        const tbl  = document.createElement('table');
+        tbl.style.cssText = 'width:100%;border-collapse:collapse;';
+        for (const [label, value] of rows) {
+          const tr = tbl.insertRow();
+          if (label === null) {
+            const td = tr.insertCell();
+            td.colSpan = 2;
+            td.style.cssText = 'padding:6px 0 2px;';
+            const div = document.createElement('div');
+            div.style.cssText = 'display:flex;align-items:center;gap:6px;color:rgba(230,213,149,0.5);font-size:0.72rem;letter-spacing:0.05em;text-transform:uppercase;';
+            div.innerHTML = '<span style="flex:0 0 auto">Annotations</span><span style="flex:1;border-top:1px solid rgba(230,213,149,0.2);display:inline-block"></span>';
+            td.appendChild(div);
+          } else {
+            const td1 = tr.insertCell();
+            const td2 = tr.insertCell();
+            td1.style.cssText = 'color:rgba(230,213,149,0.7);padding:2px 14px 2px 0;white-space:nowrap;vertical-align:top;';
+            td2.style.cssText = 'color:rgba(242,241,230,0.88);padding:2px 0;word-break:break-all;';
+            td1.textContent = label;
+            td2.textContent = value;
+          }
+        }
+        body.innerHTML = '';
+        body.appendChild(tbl);
+
+        const overlay = document.getElementById('node-info-overlay');
+        overlay.style.display = 'flex';
+        return;
+      }
+
+      // ── Node selected → show per-node info ──────────────────────────────
       const node = renderer.nodeMap.get(nodeId);
       if (!node) return;
 
@@ -2808,7 +2901,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       }
       if (e.key === 'b' || e.key === 'B') { e.preventDefault(); applyMode(renderer._mode === 'branches' ? 'nodes' : 'branches'); }
       if (e.key === 'm' || e.key === 'M') { e.preventDefault(); applyMidpointRoot(); }
-      if ((e.key === 'i' || e.key === 'I') && e.shiftKey) { e.preventDefault(); showNodeInfo(); }
+      if (e.key === 'i' || e.key === 'I') { e.preventDefault(); showNodeInfo(); }
     });
   }
 
@@ -3031,30 +3124,50 @@ import { AxisRenderer  } from './axisrenderer.js';
   document.getElementById('btn-open-tree').addEventListener('click', () => openModal());
   window.addEventListener('keydown', e => {
     if (!e.metaKey && !e.ctrlKey) return;
-    if (e.shiftKey || e.altKey) return;   // leave modified combos free for other handlers
+    if (e.altKey) return;   // leave alt-modified combos free for other handlers
     const k = e.key.toLowerCase();
-    if (k === 'o') {
-      e.preventDefault();
-      openModal();
-    } else if (k === 'i') {
-      if (!treeLoaded) return;
-      e.preventDefault();
-      btnImportAnnot.click();
-    } else if (k === 's') {
-      if (!treeLoaded) return;
-      e.preventDefault();
-      btnExportTree.click();
-    } else if (k === 'e') {
-      if (!treeLoaded) return;
-      e.preventDefault();
-      btnExportGraphic.click();
+    if (!e.shiftKey) {
+      // Plain Cmd/Ctrl shortcuts
+      if (k === 'o') {
+        e.preventDefault();
+        openModal();
+      } else if (k === 's') {
+        if (!treeLoaded) return;
+        e.preventDefault();
+        btnExportTree.click();
+      } else if (k === 'e') {
+        if (!treeLoaded) return;
+        e.preventDefault();
+        btnExportGraphic.click();
+      }
+    } else {
+      // Cmd/Ctrl + Shift shortcuts
+      if (k === 'o') {
+        if (!treeLoaded) return;
+        e.preventDefault();
+        btnImportAnnot.click();
+      }
     }
   });
 
   // ── Native menu bridge (Tauri only) ─────────────────────────────────────
   // window.__TAURI__ is available when withGlobalTauri:true is set in tauri.conf.json.
   // The guard means this code is silently skipped when running in a plain browser.
+
+  // Sync native menu item enabled state with toolbar button state.
+  // Initialised to a no-op so bindControls() can call it unconditionally;
+  // replaced below with the real invoke-based helper when running under Tauri.
+  let _setMenuEnabled = () => {};
+
   if (window.__TAURI__?.event) {
+    // Use a Tauri command to enable/disable native menu items.
+    // invoke() is always available under withGlobalTauri and needs no extra capabilities.
+    if (window.__TAURI__?.core?.invoke) {
+      _setMenuEnabled = (id, enabled) => {
+        window.__TAURI__.core.invoke('set_menu_item_enabled', { id, enabled }).catch(() => {});
+      };
+    }
+
     window.__TAURI__.event.listen('menu-event', ({ payload: id }) => {
       switch (id) {
         // ── File menu ────────────────────────────────────────────────────────

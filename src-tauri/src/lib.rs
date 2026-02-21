@@ -3,9 +3,22 @@ use tauri::{
     Emitter,
 };
 
+/// Called from JS to enable/disable a menu item by its string id.
+#[tauri::command]
+fn set_menu_item_enabled(app: tauri::AppHandle, id: &str, enabled: bool) {
+    if let Some(menu) = app.menu() {
+        if let Some(item) = menu.get(id) {
+            if let Some(mi) = item.as_menuitem() {
+                let _ = mi.set_enabled(enabled);
+            }
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![set_menu_item_enabled])
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             // ── PearTree (app menu) ───────────────────────────────────────────
@@ -28,7 +41,7 @@ pub fn run() {
 
             // ── File ──────────────────────────────────────────────────────────
             let open_tree    = MenuItem::with_id(app, "open-tree",    "Open Tree\u{2026}",           true, Some("CmdOrCtrl+O"))?;
-            let import_annot = MenuItem::with_id(app, "import-annot", "Import Annotations\u{2026}",  true, Some("CmdOrCtrl+I"))?;
+            let import_annot = MenuItem::with_id(app, "import-annot", "Import Annotations\u{2026}",  true, Some("CmdOrCtrl+Shift+O"))?;
             let export_tree  = MenuItem::with_id(app, "export-tree",  "Export Tree\u{2026}",          true, Some("CmdOrCtrl+E"))?;
             let export_image = MenuItem::with_id(app, "export-image", "Export Image\u{2026}",         true, Some("CmdOrCtrl+Shift+E"))?;
 
@@ -62,7 +75,7 @@ pub fn run() {
             let view_zoom_in    = MenuItem::with_id(app, "view-zoom-in",    "Zoom In",    true, Some("CmdOrCtrl+="))?;
             let view_zoom_out   = MenuItem::with_id(app, "view-zoom-out",   "Zoom Out",   true, Some("CmdOrCtrl+-"))?;
             let view_fit        = MenuItem::with_id(app, "view-fit",        "Fit All",    true, Some("CmdOrCtrl+0"))?;
-            let view_fit_labels = MenuItem::with_id(app, "view-fit-labels", "Fit Labels", true, Some("CmdOrCtrl+Alt+0"))?;
+            let view_fit_labels = MenuItem::with_id(app, "view-fit-labels", "Fit Labels", true, Some("CmdOrCtrl+Shift+0"))?;
 
             let view_menu = Submenu::with_items(app, "View", true, &[
                 &view_back,
@@ -130,6 +143,24 @@ pub fn run() {
             ])?;
             app.set_menu(menu)?;
 
+            // ── Initial disabled states (no tree loaded yet) ──────────────────
+            // File: need a tree before these make sense.
+            for item in &[&import_annot, &export_tree, &export_image] {
+                item.set_enabled(false)?;
+            }
+            // View: no navigation history on startup.
+            for item in &[&view_back, &view_forward, &view_home] {
+                item.set_enabled(false)?;
+            }
+            // Tree: require a loaded tree and/or a selection.
+            for item in &[
+                &tree_rotate, &tree_rotate_all,
+                &tree_reroot, &tree_midpoint,
+                &tree_hide, &tree_show,
+                &tree_paint, &tree_clear_colours,
+            ] {
+                item.set_enabled(false)?;
+            }
             // Forward every menu event to the frontend as a "menu-event" with the item id as payload
             app.on_menu_event(|app, event| {
                 app.emit("menu-event", event.id().as_ref()).ok();

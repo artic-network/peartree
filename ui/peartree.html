@@ -231,7 +231,6 @@
       flex-shrink: 0;
       display: none;
       cursor: default !important;
-      background: var(--pt-bg-dark);
     }
 
     /* ── Loading overlay ── */
@@ -847,7 +846,7 @@
 
   <!-- Open file / Import annotations -->
   <button id="btn-open-tree" class="btn btn-sm btn-outline-primary" title="Open tree file (⌘O)"><i class="bi bi-folder2-open"></i></button>
-  <button id="btn-import-annot" class="btn btn-sm btn-outline-success" disabled title="Import annotations from CSV/TSV"><i class="bi bi-table"></i></button>
+  <button id="btn-import-annot" class="btn btn-sm btn-outline-success" disabled title="Import annotations from CSV/TSV (⌘⇧O)"><i class="bi bi-table"></i></button>
   <button id="btn-export-tree"    class="btn btn-sm btn-outline-info" disabled title="Export tree (Newick or NEXUS)"><i class="bi bi-file-earmark-arrow-down"></i></button>
   <button id="btn-export-graphic" class="btn btn-sm btn-outline-warning" disabled title="Download graphic (SVG or PNG)"><i class="bi bi-image"></i></button>
   <div class="pt-toolbar-sep"></div>
@@ -871,7 +870,7 @@
   <!-- Fit -->
   <div class="btn-group" role="group" aria-label="Fit view">
     <button id="btn-fit"        class="btn btn-sm btn-outline-secondary" title="Fit all (⌘0)"><i class="bi bi-arrows-fullscreen"></i></button>
-    <button id="btn-fit-labels" class="btn btn-sm btn-outline-secondary" title="Fit labels (⌘⌥0)"><i class="bi bi-type"></i></button>
+    <button id="btn-fit-labels" class="btn btn-sm btn-outline-secondary" title="Fit labels (⌘⇧0)"><i class="bi bi-type"></i></button>
   </div>
   <div class="pt-toolbar-sep"></div>
 

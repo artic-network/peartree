@@ -367,6 +367,11 @@ export class TreeRenderer {
 
   setBgColor(c) {
     this.bgColor = c;
+    // Keep the CSS background of legend canvases in sync so no bleed-through
+    // is visible before or around the drawn content.
+    for (const lc of [this._legendLeftCanvas, this._legendRightCanvas]) {
+      if (lc) lc.style.backgroundColor = c;
+    }
     this._drawLegend();
     this._dirty = true;
   }
@@ -2106,15 +2111,15 @@ export class TreeRenderer {
         return;
       }
 
-      // Cmd/Ctrl + Alt + 0 → fit labels zoom.
-      if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'Digit0') {
+      // Cmd/Ctrl + Shift + 0 → fit labels zoom.
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.code === 'Digit0') {
         e.preventDefault();
         this.fitLabels();
         return;
       }
 
       // Cmd/Ctrl + 0 → fit current subtree vertically.
-      if ((e.metaKey || e.ctrlKey) && !e.altKey && e.code === 'Digit0') {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.code === 'Digit0') {
         e.preventDefault();
         this.fitToWindow();
         return;

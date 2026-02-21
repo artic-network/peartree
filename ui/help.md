@@ -38,7 +38,7 @@ Press **Escape** or click × to close the dialog without loading (once a tree is
 | Button | Shortcut | Description |
 |---|---|---|
 | **folder** | ⌘O | Open the *Open Tree File* dialog |
-| **+ file** | ⌘I | Import an annotation CSV/TSV file (enabled once a tree is loaded) |
+| **+ file** | ⌘⇧O | Import an annotation CSV/TSV file (enabled once a tree is loaded) |
 | **↓ file** | ⌘S | Export the tree as NEXUS or Newick (enabled once a tree is loaded) |
 | **image** | ⌘E | Download a graphic (SVG or PNG) of the tree (enabled once a tree is loaded) |
 
@@ -56,7 +56,7 @@ Press **Escape** or click × to close the dialog without loading (once a tree is
 | **⊕** zoom in | ⌘= | Zoom in vertically (1.5× step) |
 | **⊖** zoom out | ⌘− | Zoom out vertically (1.5× step) |
 | **⛶** fit all | ⌘0 | Fit the entire tree to the window |
-| **T** fit labels | ⌘⌥0 | Zoom so that tip labels no longer overlap |
+| **T** fit labels | ⌘⇧0 | Zoom so that tip labels no longer overlap |
 
 ### Branch Order
 
@@ -97,7 +97,7 @@ Press **Escape** or click × to close the dialog without loading (once a tree is
 
 | Button | Shortcut | Description |
 |---|---|---|
-| **ⓘ** Node Info | ⌘⇧I | Open a dialog showing all annotations on the selected node |
+| **ⓘ** Node Info | ⌘I | Open a dialog showing all annotations on the selected node |
 
 ### User Colour
 
@@ -140,7 +140,7 @@ The user colour is stored as a `user_colour` annotation in `#RRGGBB` format on i
 | Shortcut | Action |
 |---|---|
 | **⌘O** | Open tree file |
-| **⌘I** | Import annotation file |
+| **⌘⇧O** | Import annotation file |
 | **⌘S** | Export tree file |
 | **⌘E** | Export graphic |
 | **Tab** | Toggle Visual Options palette |
@@ -153,7 +153,7 @@ The user colour is stored as a `user_colour` annotation in `#RRGGBB` format on i
 | **⌘A** | Select all tips in the current view |
 | **⌘B** | Toggle between Nodes and Branches mode |
 | **⌘M** | Midpoint root |
-| **⌘⇧I** | Node info dialog |
+| **⌘I** | Node info dialog |
 | **⌘D** | Order branches ascending (larger clades down) |
 | **⌘U** | Order branches descending (larger clades up) |
 | **⌘[** | Navigate back |
@@ -166,7 +166,7 @@ The user colour is stored as a `user_colour` annotation in `#RRGGBB` format on i
 | **⌘=** / **⌘+** | Zoom in |
 | **⌘−** | Zoom out |
 | **⌘0** | Fit all |
-| **⌘⌥0** | Fit labels |
+| **⌘⇧0** | Fit labels |
 
 ### Dialogs
 
@@ -243,15 +243,15 @@ PearTree finds the two tips with the greatest path length and places the root at
 
 ---
 
-## Node Info (⌘⇧I)
+## Node Info (⌘I)
 
-With a node selected, click the **ⓘ Node Info** button (or press **⌘⇧I**) to open a dialog listing all annotation keys and values for that node. For tips this includes the taxon name; for internal nodes it shows all posterior/support and annotation fields present in the tree file.
+With a node selected, click the **ⓘ Node Info** button (or press **⌘I**) to open a dialog listing all annotation keys and values for that node. For tips this includes the taxon name; for internal nodes it shows all posterior/support and annotation fields present in the tree file.
 
 ---
 
-## Importing Annotations (⌘I)
+## Importing Annotations (⌘⇧O)
 
-Click the **+ file** button (or press **⌘I**) to add extra per-tip data from a CSV or TSV file.
+Click the **+ file** button (or press **⌘⇧O**) to add extra per-tip data from a CSV or TSV file.
 
 **Phase 1 — Choose file:** Drag-and-drop or browse for a `.csv` or `.tsv` file.
 
