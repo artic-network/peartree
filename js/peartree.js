@@ -1183,10 +1183,6 @@ import { AxisRenderer  } from './axisrenderer.js';
     // ── Background panels ─────────────────────────────────────────────────
     const bgParts = [];
     bgParts.push(`<rect width="${totalW}" height="${totalH_eff}" fill="${_esc(bg)}"/>`);
-    // Panel separators (CSS border-right / border-left equivalents)
-    if (llVisible) bgParts.push(`<line x1="${llW}" y1="0" x2="${llW}" y2="${ttH_eff}" stroke="#002b36" stroke-width="1"/>`);
-    if (lrVisible) bgParts.push(`<line x1="${llW + ttW}" y1="0" x2="${llW + ttW}" y2="${ttH_eff}" stroke="#002b36" stroke-width="1"/>`);
-    if (axVisible) bgParts.push(`<line x1="0" y1="${ttH_eff}" x2="${totalW}" y2="${ttH_eff}" stroke="#002b36" stroke-width="1"/>`);
 
     // ── Legend panels (vector) ────────────────────────────────────────────
     const legendParts = [];
