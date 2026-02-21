@@ -45,6 +45,8 @@ import { AxisRenderer  } from './axisrenderer.js';
   const btnResetSettings       = document.getElementById('btn-reset-settings');
   const btnImportAnnot         = document.getElementById('btn-import-annot');
   const btnExportTree          = document.getElementById('btn-export-tree');
+  const tipFilterEl            = document.getElementById('tip-filter');
+  const tipFilterCnt           = document.getElementById('tip-filter-count');
 
   // ── Settings persistence ──────────────────────────────────────────────────
 
@@ -2003,12 +2005,17 @@ import { AxisRenderer  } from './axisrenderer.js';
       if (renderer._onBranchSelectChange) renderer._onBranchSelectChange(false);
       if (renderer._onNodeSelectChange)   renderer._onNodeSelectChange(false);
 
+      // Reset tip filter for each tree load
+      tipFilterEl.value   = '';
+      tipFilterCnt.hidden = true;
+
       if (!treeLoaded) {
         treeLoaded = true;
         btnModalClose.disabled      = false;
         btnImportAnnot.disabled     = false;
         btnExportTree.disabled      = false;
         btnExportGraphic.disabled   = false;
+        tipFilterEl.disabled        = false;
       }
 
       // Restore interaction mode (file settings take priority).
@@ -2080,6 +2087,58 @@ import { AxisRenderer  } from './axisrenderer.js';
     const btnHide         = document.getElementById('btn-hide');
     const btnShow         = document.getElementById('btn-show');
     const btnNodeInfo     = document.getElementById('btn-node-info');
+
+    // ── Tip filter ────────────────────────────────────────────────────────────
+    let _filterTimer = null;
+
+    function _applyTipFilter() {
+      clearTimeout(_filterTimer);
+      _filterTimer = null;
+      const q = tipFilterEl.value.trim().toLowerCase();
+
+      if (!q) {
+        renderer._selectedTipIds.clear();
+        renderer._mrcaNodeId = null;
+        if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(false);
+        tipFilterCnt.hidden = true;
+        renderer._dirty = true;
+        return;
+      }
+
+      const matches = [];
+      if (renderer.nodeMap) {
+        for (const [id, n] of renderer.nodeMap) {
+          if (n.isTip && n.name && n.name.toLowerCase().includes(q)) {
+            matches.push(n);
+          }
+        }
+      }
+
+      renderer._selectedTipIds = new Set(matches.map(n => n.id));
+      renderer._mrcaNodeId = null;
+      if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(matches.length > 0);
+      tipFilterCnt.textContent = `${matches.length}`;
+      tipFilterCnt.hidden = false;
+      renderer._dirty = true;
+
+      // Scroll topmost matching tip into view when tree is zoomed
+      if (matches.length > 0 && renderer._targetScaleY > renderer.minScaleY * 1.01) {
+        const top = matches.reduce((a, b) => a.y < b.y ? a : b);
+        const newOffsetY = renderer.paddingTop + 10 - top.y * renderer._targetScaleY;
+        renderer._setTarget(newOffsetY, renderer._targetScaleY, false);
+      }
+    }
+
+    tipFilterEl.addEventListener('input', () => {
+      clearTimeout(_filterTimer);
+      _filterTimer = setTimeout(_applyTipFilter, 300);
+    });
+    tipFilterEl.addEventListener('blur', () => {
+      clearTimeout(_filterTimer);
+      _applyTipFilter();
+    });
+    // Native clear button in <input type="search"> fires 'search' event
+    tipFilterEl.addEventListener('search', _applyTipFilter);
 
     // ── Hide/Show helpers ─────────────────────────────────────────────────────
     function _selectedNodeId() {
