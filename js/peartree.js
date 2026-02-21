@@ -1021,69 +1021,65 @@ import { AxisRenderer  } from './axisrenderer.js';
           <label class="expg-radio"><input type="radio" name="expg-fmt" value="png">&nbsp;PNG (raster)</label>
         </div>
       </div>
+      <div class="expg-row">
+        <span class="expg-label">View</span>
+        <div class="expg-radios">
+          <label class="expg-radio"><input type="radio" name="expg-view" value="current" checked>&nbsp;Current view</label>
+          <label class="expg-radio"><input type="radio" name="expg-view" value="full">&nbsp;Full tree</label>
+        </div>
+      </div>
       <div id="expg-png-opts" style="display:none">
-        <div class="expg-row">
-          <span class="expg-label">By</span>
-          <div class="expg-radios">
-            <label class="expg-radio"><input type="radio" name="expg-dim" value="w" checked>&nbsp;Width</label>
-            <label class="expg-radio"><input type="radio" name="expg-dim" value="h">&nbsp;Height</label>
-          </div>
-        </div>
-        <div class="expg-row">
-          <span class="expg-label">Size</span>
-          <div class="expg-dim-row">
-            <input type="number" id="expg-px" class="expg-dim-px" value="${defPx}" min="100" max="20000" step="1">
-            <span style="font-size:0.82rem;color:var(--bs-secondary-color)">px</span>
-            <span id="expg-other-dim" style="font-size:0.82rem;color:var(--bs-secondary-color)">→ height: ${defH} px</span>
-          </div>
-        </div>
-        <p class="expg-hint">Current viewport: ${totalW} × ${totalH} px &nbsp;·&nbsp; aspect ratio is fixed</p>
+        <p class="expg-hint">Output size: ${defPx} × ${defH} px (2× current viewport)</p>
       </div>`;
 
     exportGraphicFooter.innerHTML = `
       <button id="expg-cancel-btn"   class="btn btn-sm btn-secondary">Cancel</button>
       <button id="expg-download-btn" class="btn btn-sm btn-primary"><i class="bi bi-download me-1"></i>Download</button>`;
 
+    const _updateExpgHint = () => {
+      const { totalW, totalH, axH, axVisible } = _viewportDims();
+      const isFull = document.querySelector('input[name="expg-view"]:checked')?.value === 'full';
+      const ph = isFull
+        ? Math.round((renderer.paddingTop + renderer.paddingBottom +
+            (renderer.maxY + 1) * renderer.scaleY + (axVisible ? axH : 0)) * 2)
+        : Math.round(totalH * 2);
+      const pw = Math.round(totalW * 2);
+      const p = document.querySelector('#expg-png-opts p');
+      if (p) p.textContent =
+        `Output size: ${pw} × ${ph} px (2× ${isFull ? 'full tree height' : 'current viewport'})`;
+    };
     document.querySelectorAll('input[name="expg-fmt"]').forEach(r => r.addEventListener('change', () => {
       const isPng = document.querySelector('input[name="expg-fmt"]:checked')?.value === 'png';
       document.getElementById('expg-png-opts').style.display = isPng ? 'block' : 'none';
       document.getElementById('expg-ext-hint').textContent = isPng ? '.png' : '.svg';
+      if (isPng) _updateExpgHint();
     }));
-    document.getElementById('expg-px').addEventListener('input', _updateExpgOtherDim);
-    document.querySelectorAll('input[name="expg-dim"]').forEach(r => r.addEventListener('change', _updateExpgOtherDim));
+    document.querySelectorAll('input[name="expg-view"]').forEach(r => r.addEventListener('change', _updateExpgHint));
     document.getElementById('expg-cancel-btn').addEventListener('click',   _closeGraphicsDialog);
     document.getElementById('expg-download-btn').addEventListener('click', _doGraphicsExport);
-  }
-
-  function _updateExpgOtherDim() {
-    const { totalW, totalH } = _viewportDims();
-    const by  = document.querySelector('input[name="expg-dim"]:checked')?.value || 'w';
-    const px  = parseInt(document.getElementById('expg-px').value, 10) || 1000;
-    const el  = document.getElementById('expg-other-dim');
-    if (!el) return;
-    if (by === 'w') el.textContent = `→ height: ${Math.round(px * totalH / totalW)} px`;
-    else            el.textContent = `→ width: ${Math.round(px * totalW / totalH)} px`;
   }
 
   function _doGraphicsExport() {
     const fmt      = document.querySelector('input[name="expg-fmt"]:checked')?.value || 'svg';
     const filename = (document.getElementById('expg-filename')?.value.trim() || 'tree');
+    const fullTree = document.querySelector('input[name="expg-view"]:checked')?.value === 'full';
 
     if (fmt === 'png') {
-      const { totalW, totalH } = _viewportDims();
-      const by = document.querySelector('input[name="expg-dim"]:checked')?.value || 'w';
-      const px = parseInt(document.getElementById('expg-px').value, 10) || Math.round(totalW * 2);
-      const targetW = by === 'w' ? px : Math.round(px * totalW / totalH);
-      const targetH = by === 'h' ? px : Math.round(px * totalH / totalW);
+      const { totalW, totalH, axH, axVisible } = _viewportDims();
+      const targetW = Math.round(totalW * 2);
+      const targetH = fullTree
+        ? Math.round((renderer.paddingTop + renderer.paddingBottom +
+            (renderer.maxY + 1) * renderer.scaleY + (axVisible ? axH : 0)) * 2)
+        : Math.round(totalH * 2);
 
-      _compositeViewPng(targetW, targetH).convertToBlob({ type: 'image/png' }).then(blob => {
+      _compositeViewPng(targetW, targetH, fullTree).convertToBlob({ type: 'image/png' }).then(blob => {
         const url = URL.createObjectURL(blob);
         const a   = Object.assign(document.createElement('a'), { href: url, download: `${filename}.png` });
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         URL.revokeObjectURL(url);
       });
     } else {
-      const svgStr = _buildGraphicSVG();
+      const svgStr = _buildGraphicSVG(fullTree);
       if (!svgStr) return;
       const blob = new Blob([svgStr], { type: 'image/svg+xml' });
       const url  = URL.createObjectURL(blob);
@@ -1095,10 +1091,15 @@ import { AxisRenderer  } from './axisrenderer.js';
   }
 
   /** Composite all visible canvases onto an OffscreenCanvas at target pixel size. */
-  function _compositeViewPng(targetW, targetH) {
+  function _compositeViewPng(targetW, targetH, fullTree = false) {
     const { totalW, totalH, llW, lrW, ttW, ttH, axH, llVisible, lrVisible, axVisible } = _viewportDims();
+    // Full tree: panel height is determined by current scaleY over all tips.
+    const ttH_eff    = fullTree
+      ? (renderer.paddingTop + renderer.paddingBottom + (renderer.maxY + 1) * renderer.scaleY)
+      : ttH;
+    const totalH_eff = ttH_eff + (axVisible ? axH : 0);
     const sx = targetW / totalW;
-    const sy = targetH / totalH;
+    const sy = targetH / totalH_eff;
     const oc  = new OffscreenCanvas(targetW, targetH);
     const ctx = oc.getContext('2d');
 
@@ -1107,20 +1108,29 @@ import { AxisRenderer  } from './axisrenderer.js';
 
     if (llVisible) {
       ctx.drawImage(legendLeftCanvas, 0, 0,
-        Math.round(llW * sx), Math.round(ttH * sy));
+        Math.round(llW * sx), Math.round(ttH_eff * sy));
     }
-    ctx.drawImage(canvas,
-      Math.round(llW * sx), 0,
-      Math.round(ttW * sx), Math.round(ttH * sy));
+    if (fullTree) {
+      // Re-render tree panel at current scaleY with full unclipped height.
+      const treeW = Math.round(ttW * sx);
+      const treeH = Math.round(ttH_eff * sy);
+      const toc = new OffscreenCanvas(treeW, treeH);
+      renderer.renderFull(toc, treeW, treeH);
+      ctx.drawImage(toc, Math.round(llW * sx), 0);
+    } else {
+      ctx.drawImage(canvas,
+        Math.round(llW * sx), 0,
+        Math.round(ttW * sx), Math.round(ttH_eff * sy));
+    }
     if (axVisible) {
       ctx.drawImage(axisCanvas,
-        Math.round(llW * sx), Math.round(ttH * sy),
+        Math.round(llW * sx), Math.round(ttH_eff * sy),
         Math.round(ttW * sx), Math.round(axH * sy));
     }
     if (lrVisible) {
       ctx.drawImage(legendRightCanvas,
         Math.round((llW + ttW) * sx), 0,
-        Math.round(lrW * sx), Math.round(ttH * sy));
+        Math.round(lrW * sx), Math.round(ttH_eff * sy));
     }
     return oc;
   }
@@ -1137,13 +1147,20 @@ import { AxisRenderer  } from './axisrenderer.js';
    *
    * No raster embeds — axis ticks and legend entries are SVG elements.
    */
-  function _buildGraphicSVG() {
+  function _buildGraphicSVG(fullTree = false) {
     const nm = renderer.nodeMap;
     if (!nm || !nm.size) return null;
 
     const { totalW, totalH, llW, lrW, ttW, ttH, axH, llVisible, lrVisible, axVisible } = _viewportDims();
     const sx  = renderer.scaleX,  ox = renderer.offsetX;
-    const sy  = renderer.scaleY,  oy = renderer.offsetY;
+    // Full tree: keep current scaleY so zoom level is preserved; shift oy so root sits at top.
+    const sy  = renderer.scaleY;
+    const oy  = fullTree ? renderer.paddingTop + renderer.scaleY * 0.5 : renderer.offsetY;
+    // Effective tree-panel height and total SVG height.
+    const ttH_eff    = fullTree
+      ? Math.round(renderer.paddingTop + renderer.paddingBottom + (renderer.maxY + 1) * renderer.scaleY)
+      : ttH;
+    const totalH_eff = ttH_eff + (axVisible ? axH : 0);
     const bg  = renderer.bgColor;
     const bc  = renderer.branchColor;
     const bw  = Math.max(0.5, renderer.branchWidth);
@@ -1155,20 +1172,21 @@ import { AxisRenderer  } from './axisrenderer.js';
     const toSX = wx => wx * sx + ox + llW;
     const toSY = wy => wy * sy + oy;
     const f    = n  => n.toFixed(2);
-    const MARGIN = 20;   // px outside viewport to still clip-include
+    // When drawing full tree all nodes are in range; use Infinity to skip y-culling.
+    const MARGIN = fullTree ? Infinity : 20;
 
     // ── defs: clip paths, gradients ──────────────────────────────────────
     const defs = [];
     // Clip for the main tree area (excludes legend panels)
-    defs.push(`<clipPath id="tc"><rect x="${llW}" y="0" width="${ttW}" height="${ttH}"/></clipPath>`);
+    defs.push(`<clipPath id="tc"><rect x="${llW}" y="0" width="${ttW}" height="${ttH_eff}"/></clipPath>`);
 
     // ── Background panels ─────────────────────────────────────────────────
     const bgParts = [];
-    bgParts.push(`<rect width="${totalW}" height="${totalH}" fill="${_esc(bg)}"/>`);
+    bgParts.push(`<rect width="${totalW}" height="${totalH_eff}" fill="${_esc(bg)}"/>`);
     // Panel separators (CSS border-right / border-left equivalents)
-    if (llVisible) bgParts.push(`<line x1="${llW}" y1="0" x2="${llW}" y2="${ttH}" stroke="#002b36" stroke-width="1"/>`);
-    if (lrVisible) bgParts.push(`<line x1="${llW + ttW}" y1="0" x2="${llW + ttW}" y2="${ttH}" stroke="#002b36" stroke-width="1"/>`);
-    if (axVisible) bgParts.push(`<line x1="0" y1="${ttH}" x2="${totalW}" y2="${ttH}" stroke="#002b36" stroke-width="1"/>`);
+    if (llVisible) bgParts.push(`<line x1="${llW}" y1="0" x2="${llW}" y2="${ttH_eff}" stroke="#002b36" stroke-width="1"/>`);
+    if (lrVisible) bgParts.push(`<line x1="${llW + ttW}" y1="0" x2="${llW + ttW}" y2="${ttH_eff}" stroke="#002b36" stroke-width="1"/>`);
+    if (axVisible) bgParts.push(`<line x1="0" y1="${ttH_eff}" x2="${totalW}" y2="${ttH_eff}" stroke="#002b36" stroke-width="1"/>`);
 
     // ── Legend panels (vector) ────────────────────────────────────────────
     const legendParts = [];
@@ -1191,7 +1209,7 @@ import { AxisRenderer  } from './axisrenderer.js';
           const SWATCH  = 12;
           const ROW_H   = Math.max(SWATCH + 4, fs + 4);
           (def.values || []).forEach((val, i) => {
-            if (ly + SWATCH > ttH - PAD) return;
+            if (ly + SWATCH > ttH_eff - PAD) return;
             const colour = PALETTE[i % PALETTE.length];
             legendParts.push(`<rect x="${lx + PAD}" y="${ly}" width="${SWATCH}" height="${SWATCH}" fill="${_esc(colour)}"/>`);
             legendParts.push(`<text x="${lx + PAD + SWATCH + 6}" y="${ly + SWATCH / 2}" dominant-baseline="central" font-family="monospace" font-size="${fs}px" fill="#F7EECA">${_svgTextEsc(String(val))}</text>`);
@@ -1268,7 +1286,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       const plotLeft  = ar._offsetX;
       const plotRight = ar._offsetX + ar._maxX * ar._scaleX;
       const AX        = llW;          // SVG x-offset for the axis canvas origin
-      const AY        = ttH;          // SVG y-offset for the axis canvas origin
+      const AY        = ttH_eff;      // SVG y-offset for the axis canvas origin
       const Y_BASE    = 3;
       const MAJOR_H   = 9;
       const MINOR_H   = 5;
@@ -1360,7 +1378,7 @@ import { AxisRenderer  } from './axisrenderer.js';
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg"
-     width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}">
+     width="${totalW}" height="${totalH_eff}" viewBox="0 0 ${totalW} ${totalH_eff}">
   <defs>
     ${defs.join('\n    ')}
   </defs>

@@ -711,6 +711,43 @@ export class TreeRenderer {
   }
 
   /**
+   * Render the full tree (fit-to-window) into an OffscreenCanvas at the given
+   * CSS pixel dimensions.  The entire tree is drawn unclipped.
+   * Does NOT mutate any persistent rendering state.
+   *
+   * @param {OffscreenCanvas} offscreenCanvas  target canvas (width × height in physical px)
+   * @param {number} targetW   CSS-pixel width  of the canvas
+   * @param {number} targetH   CSS-pixel height of the canvas
+   */
+  renderFull(offscreenCanvas, targetW, targetH) {
+    if (!this.nodes) return;
+    const plotW = targetW - this.paddingLeft - this.labelRightPad;
+    const plotH = targetH - this.paddingTop  - this.paddingBottom;
+    const sx = plotW / (this.maxX || 1);
+    const sy = plotH / ((this.maxY || 1) + 1);
+    const ox = this.paddingLeft;
+    const oy = this.paddingTop + sy * 0.5;
+
+    // Stash current rendering state.
+    const s_ctx = this.ctx, s_canvas = this.canvas;
+    const s_sx = this.scaleX, s_ox = this.offsetX;
+    const s_sy = this.scaleY, s_oy = this.offsetY;
+
+    // Install temporary state pointing at the offscreen canvas.
+    this.ctx    = offscreenCanvas.getContext('2d');
+    this.canvas = { clientWidth: targetW, clientHeight: targetH };
+    this.scaleX = sx;  this.offsetX = ox;
+    this.scaleY = sy;  this.offsetY = oy;
+
+    this._draw();
+
+    // Restore.
+    this.ctx    = s_ctx;  this.canvas = s_canvas;
+    this.scaleX = s_sx;   this.offsetX = s_ox;
+    this.scaleY = s_sy;   this.offsetY = s_oy;
+  }
+
+  /**
    * Compute the clamped offsetY for a given scaleY and desired raw offsetY.
    * Does NOT mutate state.
    */
