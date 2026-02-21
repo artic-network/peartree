@@ -122,7 +122,7 @@ export class TreeRenderer {
     this._fitLabelsMode   = false;
     this._shiftHeld       = false;   // true while Shift key is held
     this._hypFocusScreenY = null;    // screen-Y focus for hyperbolic-stretch mode (persistent)
-    this._hypMagMult      = 0;       // flat-zone half-width in rows (0 = pure hyperbolic)
+    this._hypMagMult      = 10;       // flat-zone half-width in rows (0 = pure hyperbolic)
     this._lastStatusMx    = null;  // cached mouse x for status bar redraws
     this._lastStatusMy    = null;  // cached mouse y for status bar redraws
 

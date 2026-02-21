@@ -948,7 +948,25 @@ import { AxisRenderer  } from './axisrenderer.js';
 
   // ── Empty-state overlay (shown until first tree load) ──────────────────
   const emptyStateEl = document.getElementById('empty-state');
+
+  function hideEmptyState() { emptyStateEl.classList.add('hidden'); }
+  function showEmptyState() { if (!treeLoaded) emptyStateEl.classList.remove('hidden'); }
+
   document.getElementById('empty-state-open-btn').addEventListener('click', () => pickTreeFile());
+  document.getElementById('empty-state-example-btn').addEventListener('click', async () => {
+    hideEmptyState();
+    try {
+      const resp = await fetch('data/ebov.tree');
+      if (!resp.ok) throw new Error('HTTP ' + resp.status + ' – could not fetch data/ebov.tree');
+      const text = await resp.text();
+      await loadTree(text, 'ebov.tree');
+    } catch (err) {
+      showEmptyState();
+      // Surface the error via the modal so the user can see it
+      openModal();
+      setModalError(err.message);
+    }
+  });
   emptyStateEl.addEventListener('dragover', e => {
     e.preventDefault();
     emptyStateEl.classList.add('drag-over');
