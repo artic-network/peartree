@@ -515,6 +515,9 @@
       letter-spacing: 0.5px;
       color: var(--pt-teal);
       margin: 0 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
     .pt-palette-row {
       display: flex;
@@ -1076,7 +1079,7 @@
   <div id="palette-panel-body">
 
     <div class="pt-palette-section">
-      <h3>Theme</h3>
+      <h3><i class="bi bi-palette2"></i> Theme</h3>
       <div class="pt-palette-row">
         <select class="pt-palette-select" id="theme-select" style="flex:1"></select>
         <button id="btn-store-theme" title="Save current settings as a named theme" disabled>Store</button>
@@ -1084,7 +1087,7 @@
     </div>
 
     <div class="pt-palette-section">
-      <h3>Tree</h3>
+      <h3><i class="bi bi-diagram-3"></i> Tree</h3>
       <div class="pt-palette-row">
         <span class="pt-palette-label">Background</span>
         <input type="color" class="pt-palette-color" id="canvas-bg-color" value="#02292e" />
@@ -1101,7 +1104,7 @@
     </div>
 
     <div class="pt-palette-section">
-      <h3>Tip Labels</h3>
+      <h3><i class="bi bi-tag"></i> Tip Labels</h3>
       <div class="pt-palette-row">
         <i class="bi bi-fonts form-label-sm"></i>
         <input type="range" class="form-range" id="font-size-slider" min="6" max="20" value="11" />
@@ -1120,7 +1123,7 @@
     </div>
 
     <div class="pt-palette-section">
-      <h3>Tip Shapes</h3>
+      <h3><i class="bi bi-circle"></i> Tip Shapes</h3>
       <div class="pt-palette-row">
         <i class="bi bi-record-circle form-label-sm"></i>
         <input type="range" class="form-range" id="tip-size-slider" min="0" max="12" value="3" />
@@ -1148,7 +1151,7 @@
     </div>
 
     <div class="pt-palette-section">
-      <h3>Node Shapes</h3>
+      <h3><i class="bi bi-record-circle"></i> Node Shapes</h3>
       <div class="pt-palette-row">
         <i class="bi bi-record-circle form-label-sm"></i>
         <input type="range" class="form-range" id="node-size-slider" min="0" max="12" value="0" />
@@ -1176,7 +1179,7 @@
     </div>
 
     <div class="pt-palette-section">
-      <h3>Legend</h3>
+      <h3><i class="bi bi-card-list"></i> Legend</h3>
       <div class="pt-palette-row">
         <span class="pt-palette-label">Show</span>
         <select class="pt-palette-select" id="legend-show">
@@ -1194,7 +1197,7 @@
     </div>
 
     <div class="pt-palette-section">
-      <h3>Axis</h3>
+      <h3><i class="bi bi-rulers"></i> Axis</h3>
       <div class="pt-palette-row">
         <span class="pt-palette-label">Show</span>
         <select class="pt-palette-select" id="axis-show">
