@@ -1132,16 +1132,18 @@ import { AxisRenderer  } from './axisrenderer.js';
   }
 
   /**
-   * Build a composite SVG string: tree is drawn as vector elements;
-   * legend/axis canvases are embedded as rasterised <image> elements.
+   * Build a fully-vector composite SVG: three panels arranged as on screen —
+   *   legend (left) | tree | legend (right)   [with axis below the tree panel]
+   *
+   * No raster embeds — axis ticks and legend entries are SVG elements.
    */
   function _buildGraphicSVG() {
     const nm = renderer.nodeMap;
     if (!nm || !nm.size) return null;
 
     const { totalW, totalH, llW, lrW, ttW, ttH, axH, llVisible, lrVisible, axVisible } = _viewportDims();
-    const sx = renderer.scaleX,  ox = renderer.offsetX;
-    const sy = renderer.scaleY,  oy = renderer.offsetY;
+    const sx  = renderer.scaleX,  ox = renderer.offsetX;
+    const sy  = renderer.scaleY,  oy = renderer.offsetY;
     const bg  = renderer.bgColor;
     const bc  = renderer.branchColor;
     const bw  = Math.max(0.5, renderer.branchWidth);
@@ -1150,36 +1152,70 @@ import { AxisRenderer  } from './axisrenderer.js';
     const tr  = renderer.tipRadius;
     const nr  = renderer.nodeRadius;
 
-    // SVG x origin = legend-left width so tree coordinates are offset correctly.
     const toSX = wx => wx * sx + ox + llW;
     const toSY = wy => wy * sy + oy;
     const f    = n  => n.toFixed(2);
-    const MARGIN = 20;   // px outside viewport to still include
+    const MARGIN = 20;   // px outside viewport to still clip-include
 
-    let headerItems = [];  // background + embedded raster images
+    // ── defs: clip paths, gradients ──────────────────────────────────────
+    const defs = [];
+    // Clip for the main tree area (excludes legend panels)
+    defs.push(`<clipPath id="tc"><rect x="${llW}" y="0" width="${ttW}" height="${ttH}"/></clipPath>`);
 
-    // Background
-    headerItems.push(`<rect width="${totalW}" height="${totalH}" fill="${_esc(bg)}"/>`);
+    // ── Background panels ─────────────────────────────────────────────────
+    const bgParts = [];
+    bgParts.push(`<rect width="${totalW}" height="${totalH}" fill="${_esc(bg)}"/>`);
+    // Panel separators (CSS border-right / border-left equivalents)
+    if (llVisible) bgParts.push(`<line x1="${llW}" y1="0" x2="${llW}" y2="${ttH}" stroke="#002b36" stroke-width="1"/>`);
+    if (lrVisible) bgParts.push(`<line x1="${llW + ttW}" y1="0" x2="${llW + ttW}" y2="${ttH}" stroke="#002b36" stroke-width="1"/>`);
+    if (axVisible) bgParts.push(`<line x1="0" y1="${ttH}" x2="${totalW}" y2="${ttH}" stroke="#002b36" stroke-width="1"/>`);
 
-    // Legend left (raster)
-    if (llVisible) {
-      headerItems.push(`<image x="0" y="0" width="${llW}" height="${ttH}" href="${legendLeftCanvas.toDataURL('image/png')}"/>`);
+    // ── Legend panels (vector) ────────────────────────────────────────────
+    const legendParts = [];
+    const legendPos = renderer._legendPosition;
+    const legendKey = renderer._legendAnnotation;
+    if (legendPos && legendKey && renderer._annotationSchema) {
+      const def = renderer._annotationSchema.get(legendKey);
+      if (def) {
+        const lx = legendPos === 'left' ? 0 : llW + ttW;
+        const lw = legendPos === 'left' ? llW : lrW;
+        const PAD = 12;
+        let   ly  = PAD;
+
+        // Title
+        legendParts.push(`<text x="${lx + PAD}" y="${ly}" dominant-baseline="hanging" font-family="monospace" font-size="${fs}px" font-weight="700" fill="#b58900">${_svgTextEsc(legendKey)}</text>`);
+        ly += fs + 10;
+
+        if (def.dataType === 'categorical' || def.dataType === 'ordinal') {
+          const PALETTE = ['#2aa198','#cb4b16','#268bd2','#d33682','#6c71c4','#b58900','#859900','#dc322f'];
+          const SWATCH  = 12;
+          const ROW_H   = Math.max(SWATCH + 4, fs + 4);
+          (def.values || []).forEach((val, i) => {
+            if (ly + SWATCH > ttH - PAD) return;
+            const colour = PALETTE[i % PALETTE.length];
+            legendParts.push(`<rect x="${lx + PAD}" y="${ly}" width="${SWATCH}" height="${SWATCH}" fill="${_esc(colour)}"/>`);
+            legendParts.push(`<text x="${lx + PAD + SWATCH + 6}" y="${ly + SWATCH / 2}" dominant-baseline="central" font-family="monospace" font-size="${fs}px" fill="#F7EECA">${_svgTextEsc(String(val))}</text>`);
+            ly += ROW_H;
+          });
+        } else if (def.dataType === 'real' || def.dataType === 'integer') {
+          const BAR_W = lw - PAD * 2;
+          const BAR_H = 14;
+          const gid   = 'lgrd';
+          defs.push(`<linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#2aa198"/><stop offset="100%" stop-color="#dc322f"/></linearGradient>`);
+          legendParts.push(`<rect x="${lx + PAD}" y="${ly}" width="${BAR_W}" height="${BAR_H}" fill="url(#${gid})"/>`);
+          ly += BAR_H + 4;
+          const min = def.min ?? 0, max = def.max ?? 1;
+          legendParts.push(`<text x="${lx + PAD}" y="${ly}" dominant-baseline="hanging" font-family="monospace" font-size="${fs}px" fill="#F7EECA">${_svgTextEsc(String(min))}</text>`);
+          legendParts.push(`<text x="${lx + PAD + BAR_W}" y="${ly}" text-anchor="end" dominant-baseline="hanging" font-family="monospace" font-size="${fs}px" fill="#F7EECA">${_svgTextEsc(String(max))}</text>`);
+        }
+      }
     }
-    // Legend right (raster)
-    if (lrVisible) {
-      headerItems.push(`<image x="${llW + ttW}" y="0" width="${lrW}" height="${ttH}" href="${legendRightCanvas.toDataURL('image/png')}"/>`);
-    }
-    // Axis (raster)
-    if (axVisible) {
-      headerItems.push(`<image x="${llW}" y="${ttH}" width="${ttW}" height="${axH}" href="${axisCanvas.toDataURL('image/png')}"/>`);
-    }
 
-    // -- Vector tree content --
-    let branchParts = [];
-    let circleParts = [];
-    let labelParts  = [];
+    // ── Tree branches ─────────────────────────────────────────────────────
+    const branchParts = [];
+    const circleParts = [];
+    const labelParts  = [];
 
-    // Root stub
     const rootNode = [...nm.values()].find(n => n.parentId === null);
     if (rootNode) {
       const rx = toSX(rootNode.x), ry = toSY(rootNode.y);
@@ -1187,33 +1223,25 @@ import { AxisRenderer  } from './axisrenderer.js';
       branchParts.push(`<line x1="${f(rx - stub)}" y1="${f(ry)}" x2="${f(rx)}" y2="${f(ry)}"/>`);
     }
 
-    // Per-node: horizontal branches + vertical connectors at internal nodes
     for (const [, node] of nm) {
       const nx = toSX(node.x), ny = toSY(node.y);
 
-      // Horizontal branch from parent to this node
       if (node.parentId !== null) {
         const parent = nm.get(node.parentId);
         if (parent && ny > -MARGIN && ny < ttH + MARGIN) {
-          const px = toSX(parent.x);
-          branchParts.push(`<line x1="${f(px)}" y1="${f(ny)}" x2="${f(nx)}" y2="${f(ny)}"/>`);
+          branchParts.push(`<line x1="${f(toSX(parent.x))}" y1="${f(ny)}" x2="${f(nx)}" y2="${f(ny)}"/>`);
         }
       }
 
-      // Vertical connector spanning this node's children
       if (!node.isTip && node.children.length >= 2) {
-        const childYs = node.children.map(cid => {
-          const c = nm.get(cid); return c ? toSY(c.y) : null;
-        }).filter(y => y !== null);
+        const childYs = node.children.map(cid => { const c = nm.get(cid); return c ? toSY(c.y) : null; }).filter(y => y !== null);
         if (childYs.length >= 2) {
           const minY = Math.min(...childYs), maxY = Math.max(...childYs);
-          if (maxY > -MARGIN && minY < ttH + MARGIN) {
+          if (maxY > -MARGIN && minY < ttH + MARGIN)
             branchParts.push(`<line x1="${f(nx)}" y1="${f(minY)}" x2="${f(nx)}" y2="${f(maxY)}"/>`);
-          }
         }
       }
 
-      // Shapes (tip circles / internal node shapes)
       if (ny > -MARGIN && ny < ttH + MARGIN) {
         if (node.isTip && tr > 0) {
           const fill   = renderer._tipColourScale?.get(node.annotations?.[renderer._tipColourBy]) || renderer.tipShapeColor;
@@ -1223,39 +1251,131 @@ import { AxisRenderer  } from './axisrenderer.js';
           const fill = renderer._nodeColourScale?.get(node.annotations?.[renderer._nodeColourBy]) || renderer.nodeShapeColor;
           circleParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${_esc(fill)}"/>`);
         }
-      }
-
-      // Labels
-      if (ny > -MARGIN && ny < ttH + MARGIN) {
         if (node.isTip && node.name) {
-          const labelX  = nx + (tr > 0 ? tr + 4 : 4);
-          const colour  = renderer._tipColourScale?.get(node.annotations?.[renderer._tipColourBy]) || lc;
-          labelParts.push(`<text x="${f(labelX)}" y="${f(ny)}" dominant-baseline="central" fill="${_esc(colour)}" font-family="monospace" font-size="${fs}px">${_svgTextEsc(node.name)}</text>`);
+          const lx2   = nx + (tr > 0 ? tr + 4 : 4);
+          const colour = renderer._tipColourScale?.get(node.annotations?.[renderer._tipColourBy]) || lc;
+          labelParts.push(`<text x="${f(lx2)}" y="${f(ny)}" dominant-baseline="central" font-family="monospace" font-size="${fs}px" fill="${_esc(colour)}">${_svgTextEsc(node.name)}</text>`);
         } else if (!node.isTip && node.label) {
-          const colour = lc;
-          labelParts.push(`<text x="${f(nx + 3)}" y="${f(ny - 3)}" fill="${_esc(colour)}" font-family="monospace" font-size="${Math.round(fs * 0.85)}px" opacity="0.7">${_svgTextEsc(node.label)}</text>`);
+          labelParts.push(`<text x="${f(nx + 3)}" y="${f(ny - 3)}" font-family="monospace" font-size="${Math.round(fs * 0.85)}px" fill="${_esc(lc)}" opacity="0.7">${_svgTextEsc(node.label)}</text>`);
         }
       }
     }
 
-    // Clip path covers the tree canvas viewport only (not legend areas)
-    const clipId = 'tc';
+    // ── Axis (vector) ────────────────────────────────────────────────────
+    const axisParts = [];
+    if (axVisible && axisRenderer._visible && axisRenderer._scaleX && axisRenderer._maxX !== 0) {
+      const ar        = axisRenderer;
+      const plotLeft  = ar._offsetX;
+      const plotRight = ar._offsetX + ar._maxX * ar._scaleX;
+      const AX        = llW;          // SVG x-offset for the axis canvas origin
+      const AY        = ttH;          // SVG y-offset for the axis canvas origin
+      const Y_BASE    = 3;
+      const MAJOR_H   = 9;
+      const MINOR_H   = 5;
+      const TICK_C    = 'rgba(255,255,255,0.45)';
+      const MINOR_C   = 'rgba(255,255,255,0.25)';
+      const TEXT_C    = 'rgba(242,241,230,0.80)';
+      const TEXT_DIM  = 'rgba(242,241,230,0.45)';
+      const afs       = ar._fontSize;
+      const afsMinor  = Math.max(6, afs - 2);
+      // Approximate monospace character width for overlap guard
+      const approxW   = (label, fsize) => label.length * fsize * 0.57;
+
+      const { leftVal, rightVal } = ar._valueDomain();
+      const minVal = Math.min(leftVal, rightVal);
+      const maxVal = Math.max(leftVal, rightVal);
+      const targetMajor = Math.max(2, Math.round((plotRight - plotLeft) / 90));
+
+      let majorTicks, minorTicks;
+      if (ar._dateMode) {
+        const majI = ar._majorInterval, minI = ar._minorInterval;
+        majorTicks = majI === 'auto'
+          ? AxisRenderer._niceCalendarTicks(minVal, maxVal, targetMajor)
+          : AxisRenderer._calendarTicksForInterval(minVal, maxVal, majI);
+        if (minI === 'off') {
+          minorTicks = [];
+        } else {
+          const all = minI === 'auto'
+            ? AxisRenderer._niceCalendarTicks(minVal, maxVal, targetMajor * 5)
+            : AxisRenderer._calendarTicksForInterval(minVal, maxVal, minI);
+          const ms = new Set(majorTicks.map(t => t.toFixed(8)));
+          minorTicks = all.filter(t => !ms.has(t.toFixed(8)));
+        }
+      } else {
+        majorTicks = AxisRenderer._niceTicks(leftVal, rightVal, targetMajor);
+        const minorAll = majorTicks.length > 1
+          ? AxisRenderer._niceTicks(leftVal, rightVal, targetMajor * 5) : [];
+        const ms = new Set(majorTicks.map(t => t.toPrecision(10)));
+        minorTicks = minorAll.filter(t => !ms.has(t.toPrecision(10)));
+      }
+
+      // Baseline
+      axisParts.push(`<line x1="${f(plotLeft + AX)}" y1="${f(AY + Y_BASE + 0.5)}" x2="${f(plotRight + AX)}" y2="${f(AY + Y_BASE + 0.5)}" stroke="${TICK_C}" stroke-width="1"/>`);
+
+      const minorLabelFmt  = ar._dateMode ? ar._minorLabelFormat : 'off';
+      const showMinorLabel = minorLabelFmt !== 'off';
+      let minorLabelRight  = -Infinity;
+
+      for (const val of minorTicks) {
+        const sx = ar._valToScreenX(val) + AX;
+        if (sx < plotLeft + AX - 1 || sx > plotRight + AX + 1) continue;
+        axisParts.push(`<line x1="${f(sx)}" y1="${f(AY + Y_BASE + 1)}" x2="${f(sx)}" y2="${f(AY + Y_BASE + 1 + MINOR_H)}" stroke="${MINOR_C}" stroke-width="1"/>`);
+        if (showMinorLabel) {
+          const label = ar._formatDateVal(val, minorLabelFmt, ar._minorInterval);
+          const tw    = approxW(label, afsMinor);
+          const lx2   = Math.max(plotLeft + AX + tw / 2 + 1, Math.min(plotRight + AX - tw / 2 - 1, sx));
+          if (lx2 - tw / 2 > minorLabelRight + 2) {
+            axisParts.push(`<text x="${f(lx2)}" y="${f(AY + Y_BASE + 1 + MINOR_H + 2)}" dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="${afsMinor}px" fill="${TEXT_DIM}">${_svgTextEsc(label)}</text>`);
+            minorLabelRight = lx2 + tw / 2;
+          }
+        }
+      }
+
+      const majorLabelFmt  = ar._dateMode ? ar._majorLabelFormat : 'auto';
+      const showMajorLabel = majorLabelFmt !== 'off';
+      let majorLabelRight  = -Infinity;
+
+      for (const val of majorTicks) {
+        const sx = ar._valToScreenX(val) + AX;
+        if (sx < plotLeft + AX - 1 || sx > plotRight + AX + 1) continue;
+        axisParts.push(`<line x1="${f(sx)}" y1="${f(AY + Y_BASE + 1)}" x2="${f(sx)}" y2="${f(AY + Y_BASE + 1 + MAJOR_H)}" stroke="${TICK_C}" stroke-width="1"/>`);
+        if (showMajorLabel) {
+          let label;
+          if (ar._dateMode) {
+            label = majorLabelFmt === 'auto'
+              ? AxisRenderer._formatDecYear(val, majorTicks)
+              : ar._formatDateVal(val, majorLabelFmt, ar._majorInterval);
+          } else {
+            label = AxisRenderer._formatValue(val);
+          }
+          const tw  = approxW(label, afs);
+          const lx2 = Math.max(plotLeft + AX + tw / 2 + 1, Math.min(plotRight + AX - tw / 2 - 1, sx));
+          if (lx2 - tw / 2 > majorLabelRight + 2) {
+            axisParts.push(`<text x="${f(lx2)}" y="${f(AY + Y_BASE + 1 + MAJOR_H + 2)}" dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="${afs}px" fill="${TEXT_C}">${_svgTextEsc(label)}</text>`);
+            majorLabelRight = lx2 + tw / 2;
+          }
+        }
+      }
+    }
+
     return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+<svg xmlns="http://www.w3.org/2000/svg"
      width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}">
   <defs>
-    <clipPath id="${clipId}"><rect x="${llW}" y="0" width="${ttW}" height="${ttH}"/></clipPath>
+    ${defs.join('\n    ')}
   </defs>
-  ${headerItems.join('\n  ')}
-  <g clip-path="url(#${clipId})" stroke="${_esc(bc)}" stroke-width="${bw}" fill="none" stroke-linecap="round">
+  ${bgParts.join('\n  ')}
+  ${legendParts.join('\n  ')}
+  <g clip-path="url(#tc)" stroke="${_esc(bc)}" stroke-width="${bw}" fill="none" stroke-linecap="round">
     ${branchParts.join('\n    ')}
   </g>
-  <g clip-path="url(#${clipId})">
+  <g clip-path="url(#tc)">
     ${circleParts.join('\n    ')}
   </g>
-  <g clip-path="url(#${clipId})">
+  <g clip-path="url(#tc)">
     ${labelParts.join('\n    ')}
   </g>
+  ${axisParts.join('\n  ')}
 </svg>`;
   }
 
