@@ -2,7 +2,7 @@
 // Canvas renderer
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { computeLayoutFrom, reorderTree } from './treeutils.js';
+import { computeLayoutFromGraph } from './treeutils.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Theme
@@ -120,17 +120,16 @@ export class TreeRenderer {
     this._branchSelectX    = null;     // fixed branch-selection world-x
 
     // Subtree navigation
-    this._rawRoot     = null;   // full-tree raw node (set via setRawTree)
-    this._rawNodeMap  = new Map(); // id → raw node
-    this._viewRawRoot = null;   // null = showing full tree
-    this._navStack    = [];     // [{rawNode, scaleY, offsetY}, …] – back history
+    this.graph            = null;   // PhyloGraph reference (set by peartree.js after load)
+    this._viewSubtreeRootId = null; // null = showing full tree; otherwise origId of subtree root
+    this._navStack    = [];     // [{subtreeRootId, scaleY, offsetY, selectedTipIds, mrcaNodeId}, …] – back history
     this._fwdStack    = [];     // forward history
     this.hiddenNodeIds         = new Set(); // kept in sync with graph.hiddenNodeIds by peartree.js
-    this._onNavChange          = null;   // callback(canBack, canFwd) – wired by main code
-    this._onBranchSelectChange = null;   // callback(hasSelection) – wired by main code
-    this._onNodeSelectChange   = null;   // callback(hasSelection) – wired by main code
+    this._onNavChange          = null;   // callback(canBack, canFwd)
+    this._onBranchSelectChange = null;   // callback(hasSelection)
+    this._onNodeSelectChange   = null;   // callback(hasSelection)
     this._onViewChange         = null;   // callback(scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr)
-    this._onLayoutChange       = null;   // callback(maxX, viewRawRoot) – fired on navigate into/out of subtree
+    this._onLayoutChange       = null;   // callback(maxX, viewSubtreeRootId) – fired on navigate into/out of subtree
     this._globalHeightMap      = new Map(); // id → (fullMaxX - node.x) from most recent full-tree layout
     this._lastViewHash         = '';
 
@@ -503,40 +502,10 @@ export class TreeRenderer {
     this._drawLegend();  // paints the legend onto the visible legend canvas
   }
 
-  /** Store the parsed raw tree so subtree navigation can re-run computeLayout. */
-  setRawTree(rawRoot) {
-    this._rawRoot    = rawRoot;
-    this._rawNodeMap = new Map();
-    const stack = [rawRoot];
-    while (stack.length) {
-      const n = stack.pop();
-      this._rawNodeMap.set(n.id, n);
-      if (n.children) for (const c of n.children) stack.push(c);
-    }
-  }
-
-  /** Compute layout from rawNode, update all data, and animate viewport.
-   *  Always uses computeLayoutFrom so the subtree root sits at x = 0. */
-  _applyLayout(rawNode, immediate = false) {
-    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(rawNode, this.hiddenNodeIds);
-    this.nodes   = nodes;
-    this.nodeMap = nodeMap;
-    this.maxX    = maxX;
-    this.maxY    = maxY;
-    this._measureLabels();
-    this._updateScaleX(immediate);   // animated unless immediate
-    this._updateMinScaleY();
-    // Keep current zoom if subtree is still bigger than viewport; else fit.
-    const newScaleY  = Math.max(this.minScaleY, this._targetScaleY);
-    const newOffsetY = this.paddingTop + newScaleY * 0.5;
-    this._setTarget(newOffsetY, newScaleY, immediate);
-    this._dirty = true;
-  }
-
   /** Snapshot the current view state for the nav stacks. */
   _currentViewState() {
     return {
-      rawNode:         this._viewRawRoot,
+      subtreeRootId:   this._viewSubtreeRootId,
       scaleY:          this._targetScaleY,
       offsetY:         this._targetOffsetY,
       selectedTipIds:  new Set(this._selectedTipIds),
@@ -546,25 +515,24 @@ export class TreeRenderer {
 
   /** Double-click on an internal layout node id → drill into its subtree. */
   navigateInto(layoutNodeId) {
-    const rawNode    = this._rawNodeMap.get(layoutNodeId);
-    if (!rawNode || !rawNode.children || rawNode.children.length === 0) return;
+    const layoutNode = this.nodeMap?.get(layoutNodeId);
+    if (!layoutNode || layoutNode.isTip || !layoutNode.parentId) return;
 
     // Capture screen position of the clicked node BEFORE layout swap.
-    const fromNode = this.nodeMap.get(layoutNodeId);
-    const px_old   = fromNode ? this.offsetX + fromNode.x * this.scaleX : this.paddingLeft;
-    const py_old   = fromNode ? this.offsetY + fromNode.y * this.scaleY : this.canvas.clientHeight / 2;
+    const px_old = this.offsetX + layoutNode.x * this.scaleX;
+    const py_old = this.offsetY + layoutNode.y * this.scaleY;
 
     this._navStack.push(this._currentViewState());
-    this._fwdStack      = [];
-    this._viewRawRoot   = rawNode;
+    this._fwdStack         = [];
+    this._viewSubtreeRootId = layoutNodeId;
     this._selectedTipIds.clear();
     this._mrcaNodeId = null;
 
-    // Compute new layout (root at x=0).
-    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(rawNode, this.hiddenNodeIds);
+    // Compute new layout rooted at this node (x = 0).
+    const { nodes, nodeMap, maxX, maxY } = computeLayoutFromGraph(this.graph, layoutNodeId);
     this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
     this._measureLabels();
-    this._updateScaleX(false);   // sets _targetScaleX/_targetOffsetX, keeps scaleX unchanged
+    this._updateScaleX(false);
     this._updateMinScaleY();
     const newScaleY  = Math.max(this.minScaleY, this._targetScaleY);
     const newOffsetY = this.paddingTop + newScaleY * 0.5;
@@ -578,7 +546,7 @@ export class TreeRenderer {
     }
     this._animating = true;
     this._dirty = true;
-    if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewRawRoot);
+    if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
     if (this._onNavChange) this._onNavChange(true, false);
   }
 
@@ -592,13 +560,12 @@ export class TreeRenderer {
     const curRootId = curRootLayout ? curRootLayout.id : null;
 
     this._fwdStack.push(this._currentViewState());
-    const state         = this._navStack.pop();
-    this._viewRawRoot   = state.rawNode;
-    this._selectedTipIds = new Set(state.selectedTipIds || []);
-    this._mrcaNodeId     = state.mrcaNodeId || null;
+    const state              = this._navStack.pop();
+    this._viewSubtreeRootId  = state.subtreeRootId;
+    this._selectedTipIds     = new Set(state.selectedTipIds || []);
+    this._mrcaNodeId         = state.mrcaNodeId || null;
 
-    const rawNode = state.rawNode || this._rawRoot;
-    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(rawNode, this.hiddenNodeIds);
+    const { nodes, nodeMap, maxX, maxY } = computeLayoutFromGraph(this.graph, state.subtreeRootId);
     this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
     this._measureLabels();
     this._updateScaleX(false);
@@ -615,7 +582,7 @@ export class TreeRenderer {
     }
     this._animating = true;
     this._dirty = true;
-    if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewRawRoot);
+    if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
     if (this._onNavChange) this._onNavChange(this._navStack.length > 0, true);
     if (this._onNodeSelectChange) this._onNodeSelectChange(this._selectedTipIds.size > 0 || !!this._mrcaNodeId);
   }
@@ -625,20 +592,20 @@ export class TreeRenderer {
 
     // Peek at the forward state FIRST so we can find its root node in the
     // current layout (it's an internal node here, just like in navigateInto).
-    const state      = this._fwdStack[this._fwdStack.length - 1];
-    const fwdRawNode = state.rawNode || this._rawRoot;
+    const state           = this._fwdStack[this._fwdStack.length - 1];
+    const fwdSubtreeRootId = state.subtreeRootId;
 
-    const fromNode = fwdRawNode && this.nodeMap ? this.nodeMap.get(fwdRawNode.id) : null;
+    const fromNode = fwdSubtreeRootId && this.nodeMap ? this.nodeMap.get(fwdSubtreeRootId) : null;
     const px_old   = fromNode ? this.offsetX + fromNode.x * this.scaleX : this.paddingLeft;
     const py_old   = fromNode ? this.offsetY + fromNode.y * this.scaleY : this.canvas.clientHeight / 2;
 
     this._navStack.push(this._currentViewState());
     this._fwdStack.pop();
-    this._viewRawRoot = state.rawNode;
-    this._selectedTipIds = new Set(state.selectedTipIds || []);
-    this._mrcaNodeId     = state.mrcaNodeId || null;
+    this._viewSubtreeRootId  = state.subtreeRootId;
+    this._selectedTipIds     = new Set(state.selectedTipIds || []);
+    this._mrcaNodeId         = state.mrcaNodeId || null;
 
-    const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(fwdRawNode, this.hiddenNodeIds);
+    const { nodes, nodeMap, maxX, maxY } = computeLayoutFromGraph(this.graph, fwdSubtreeRootId);
     this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
     this._measureLabels();
     this._updateScaleX(false);
@@ -654,7 +621,7 @@ export class TreeRenderer {
     }
     this._animating = true;
     this._dirty = true;
-    if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewRawRoot);
+    if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
     if (this._onNavChange) this._onNavChange(true, this._fwdStack.length > 0);
     if (this._onNodeSelectChange) this._onNodeSelectChange(this._selectedTipIds.size > 0 || !!this._mrcaNodeId);
   }
@@ -1647,7 +1614,7 @@ export class TreeRenderer {
 
     // ── Double-click on internal node: drill into subtree.
     canvas.addEventListener('dblclick', e => {
-      if (this._spaceDown || !this._rawRoot) return;
+      if (this._spaceDown || !this.graph) return;
       const rect = canvas.getBoundingClientRect();
       const node = this._findNodeAtScreen(e.clientX - rect.left, e.clientY - rect.top);
       if (!node || node.isTip) return;

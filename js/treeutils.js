@@ -3,19 +3,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Walks the tree once, computing:
- *   node.divergence  – sum of branch lengths from root
- *   node.y           – vertical position (tips evenly spaced 1 apart)
- * Returns { nodes: [], maxDivergence, tipCount }
- *
- * Each entry in `nodes`:
- *   { id, name, label, x, y, isTip, children: [id,…], parentId }
- *
- * @deprecated  Use computeLayoutFromGraph() for new code.
- *              This function is kept for applyOrder / subtree-navigation paths
- *              that still use the nested-root format (Phases 4–6 will migrate them).
+ * @deprecated  Internal helper used by computeLayoutFrom below.
+ * @private
  */
-export function computeLayout(root, hiddenNodeIds = new Set()) {
+function computeLayout(root, hiddenNodeIds = new Set()) {
   let tipCounter = 0;
   const nodes = [];
   const nodeMap = new Map();
@@ -104,20 +95,6 @@ export function computeLayout(root, hiddenNodeIds = new Set()) {
 }
 
 /**
- * Like computeLayout but treats `rawNode` as the root even if it has a
- * non-zero branch length (so the root always sits at x = 0 in layout space).
- *
- * @deprecated  Used by applyOrder / subtree navigation (nested-root format).
- */
-export function computeLayoutFrom(rawNode, hiddenNodeIds = new Set()) {
-  const savedLen = rawNode.length;
-  rawNode.length = 0;
-  const result = computeLayout(rawNode, hiddenNodeIds);
-  rawNode.length = savedLen;
-  return result;
-}
-
-/**
  * Compute the rectangular layout from a PhyloGraph (adjacency-list model).
  *
  * Output format is identical to computeLayout():
@@ -134,7 +111,7 @@ export function computeLayoutFrom(rawNode, hiddenNodeIds = new Set()) {
  * Trifurcating root (rootEdge.proportion === 0, nodeA.parentIdx === -1):
  *   nodeA is the real root; no virtual node is needed.
  */
-export function computeLayoutFromGraph(graph) {
+export function computeLayoutFromGraph(graph, subtreeRootId = null) {
   const { nodes: gnodes, root } = graph;
   const { nodeA, nodeB, lenA, lenB } = root;
   const hiddenNodeIds = graph.hiddenNodeIds || new Set();
@@ -195,16 +172,21 @@ export function computeLayoutFromGraph(graph) {
     }
   }
 
-  const gNodeA = gnodes[nodeA];
-  const gNodeB = gnodes[nodeB];
-
-  if (lenA === 0) {
+  if (subtreeRootId !== null) {
+    // Subtree view: root layout at the given node, parent direction excluded.
+    const nodeIdx = graph.origIdToIdx.get(subtreeRootId);
+    if (nodeIdx !== undefined) {
+      traverse(nodeIdx, gnodes[nodeIdx].adjacents[0], 0, null);
+    }
+  } else if (lenA === 0) {
     // Real root: nodeA is the layout root.
     traverse(nodeA, -1, 0, null);
 
   } else {
     // Virtual bifurcating root between nodeA and nodeB.
     const ROOT_LAYOUT_ID = '__graph_root__';
+    const gNodeA = gnodes[nodeA];
+    const gNodeB = gnodes[nodeB];
 
     if (!hiddenNodeIds.has(gNodeA.origId)) traverse(nodeA, nodeB, lenA, ROOT_LAYOUT_ID);
     if (!hiddenNodeIds.has(gNodeB.origId)) traverse(nodeB, nodeA, lenB, ROOT_LAYOUT_ID);
@@ -283,251 +265,14 @@ export function computeLayoutFromGraph(graph) {
   return { nodes: finalNodes, nodeMap, maxX, maxY };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Branch ordering  – sorts children at every internal node by clade tip count
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Post-order traversal: counts tips in each clade, then sorts children so that
- * the clade with fewer tips comes first (ascending=true) or last (ascending=false).
- * Ascending  → smaller clades on top  ("ladder up"   / comb toward root)
- * Descending → larger  clades on top  ("ladder down" / comb toward tips)
- * Works directly on the raw parsed node objects (mutates children arrays).
- * Returns the tip count of the subtree rooted at `node`.
- */
-export function reorderTree(node, ascending, hiddenNodeIds = new Set()) {
-  if (!node.children || node.children.length === 0) {
-    node._tipCount = hiddenNodeIds.has(node.id) ? 0 : 1;
-    return node._tipCount;
-  }
-  let total = 0;
-  for (const child of node.children) {
-    total += reorderTree(child, ascending, hiddenNodeIds);
-  }
-  node._tipCount = hiddenNodeIds.has(node.id) ? 0 : total;
-  node.children.sort((a, b) =>
-    ascending ? a._tipCount - b._tipCount : b._tipCount - a._tipCount
-  );
-  return node._tipCount;
-}
-
-/**
- * Rotate a node in the nested tree: reverse the order of its direct children.
- * If `recursive` is true, also rotate every internal descendant in the subtree.
- * Mutates the tree in place.
- *
- * @param {object}  treeRoot  – root of the nested tree
- * @param {string}  nodeId    – id of the target internal node
- * @param {boolean} [recursive=false]
- */
-export function rotateNodeTree(treeRoot, nodeId, recursive = false) {
-  function rotateAll(n) {
-    if (!n.children || n.children.length === 0) return;
-    n.children.reverse();
-    for (const child of n.children) rotateAll(child);
-  }
-
-  function walk(n) {
-    if (!n.children || n.children.length === 0) return;
-    if (n.id === nodeId) {
-      if (recursive) rotateAll(n);
-      else           n.children.reverse();
-      return;  // found – stop walking
-    }
-    for (const child of n.children) walk(child);
-  }
-  walk(treeRoot);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Midpoint rooting  – finds the branch bisecting the tree's diameter
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Find the midpoint of the tree: the point on a branch that lies exactly
- * halfway along the longest tip-to-tip path (the diameter).
- *
- * @param {object} root  - raw root of the current tree
- * @returns {{ childNodeId: string, distFromParent: number }}
- *   Parameters suitable for passing directly to rerootTree().
- */
-export function midpointRootTree(root) {
-  // Build lookup structures over the whole tree.
-  const rawNodeMap   = new Map();  // id → raw node
-  const parentMap    = new Map();  // id → parent raw node
-  const distFromRoot = new Map();  // id → cumulative branch-length from root
-
-  (function index(node, parent, d) {
-    rawNodeMap.set(node.id, node);
-    if (parent) parentMap.set(node.id, parent);
-    const nd = d + (node.length || 0);
-    distFromRoot.set(node.id, nd);
-    if (node.children) for (const c of node.children) index(c, node, nd);
-  })(root, null, 0);
-
-  const tips = [...rawNodeMap.values()].filter(n => !n.children || n.children.length === 0);
-  if (tips.length < 2) return { childNodeId: tips[0].id, distFromParent: (tips[0].length || 0) / 2 };
-
-  // Ancestors chain: walk from id up to root, returning array of ids.
-  function ancestors(id) {
-    const chain = [];
-    let cur = id;
-    while (cur !== undefined && cur !== null) {
-      chain.push(cur);
-      const p = parentMap.get(cur);
-      cur = p ? p.id : null;
-    }
-    return chain;
-  }
-
-  // LCA of two nodes.
-  function lca(idA, idB) {
-    const setA = new Set(ancestors(idA));
-    let cur = idB;
-    while (cur !== undefined && cur !== null) {
-      if (setA.has(cur)) return cur;
-      const p = parentMap.get(cur);
-      cur = p ? p.id : null;
-    }
-    return root.id;
-  }
-
-  // Tree-path length between two tips.
-  function pathLen(idA, idB) {
-    const l = lca(idA, idB);
-    return distFromRoot.get(idA) + distFromRoot.get(idB) - 2 * (distFromRoot.get(l) || 0);
-  }
-
-  // Step 1 – tip farthest from root (one end of diameter).
-  let tipA = tips.reduce((b, t) => (distFromRoot.get(t.id) > distFromRoot.get(b.id) ? t : b), tips[0]);
-
-  // Step 2 – tip farthest from tipA (other end of diameter).
-  let tipB = tips.reduce((b, t) => {
-    if (t.id === tipA.id) return b;
-    return pathLen(tipA.id, t.id) > pathLen(tipA.id, b.id) ? t : b;
-  }, tips.find(t => t.id !== tipA.id));
-
-  const diameter = pathLen(tipA.id, tipB.id);
-  const half     = diameter / 2;
-  const lcaId    = lca(tipA.id, tipB.id);
-
-  // Path from tipA up to LCA (as array of ids, child-first).
-  const pathAtoLCA = [];
-  let cur = tipA.id;
-  while (cur !== lcaId) {
-    pathAtoLCA.push(cur);
-    cur = parentMap.get(cur).id;
-  }
-  pathAtoLCA.push(lcaId);
-
-  // Distance from tipA to LCA.
-  const distAtoLCA = distFromRoot.get(tipA.id) - (distFromRoot.get(lcaId) || 0);
-
-  if (half <= distAtoLCA) {
-    // Midpoint lies on the tipA → LCA portion of the path.
-    let acc = 0;
-    for (let i = 0; i < pathAtoLCA.length - 1; i++) {
-      const childId  = pathAtoLCA[i];
-      const branchLen = rawNodeMap.get(childId).length || 0;
-      if (acc + branchLen >= half) {
-        return { childNodeId: childId, distFromParent: half - acc };
-      }
-      acc += branchLen;
-    }
-  } else {
-    // Midpoint lies on the LCA → tipB portion of the path.
-    const remaining = half - distAtoLCA;
-
-    // Path from tipB up to LCA (child-first), then reversed to walk down.
-    const pathBtoLCA = [];
-    let cur2 = tipB.id;
-    while (cur2 !== lcaId) {
-      pathBtoLCA.push(cur2);
-      cur2 = parentMap.get(cur2).id;
-    }
-    // Walk from LCA toward tipB: last element of pathBtoLCA is child-of-LCA.
-    let acc = 0;
-    for (let i = pathBtoLCA.length - 1; i >= 0; i--) {
-      const childId   = pathBtoLCA[i];
-      const branchLen = rawNodeMap.get(childId).length || 0;
-      if (acc + branchLen >= remaining) {
-        return { childNodeId: childId, distFromParent: remaining - acc };
-      }
-      acc += branchLen;
-    }
-  }
-
-  // Fallback (should not be reached).
-  return { childNodeId: tipA.id, distFromParent: (rawNodeMap.get(tipA.id).length || 0) / 2 };
-}
+/** @deprecated – no longer used; kept for any external callers. */
+export function reorderTree() {}
+/** @deprecated – use rotateNodeGraph() from phylograph.js instead. */
+export function rotateNodeTree() {}
+/** @deprecated – use midpointRootGraph() from phylograph.js instead. */
+export function midpointRootTree() {}
+/** @deprecated – use rerootOnGraph() from phylograph.js instead. */
+export function rerootTree() {}
 
 
-let _rerootCounter = 0;
 
-/**
- * Reroot the tree by placing a virtual new root at a point on the branch
- * whose CHILD endpoint has id `childNodeId`.
- *
- * @param {object} oldRoot        - raw root of the current tree
- * @param {string} childNodeId    - id of the child node that defines the branch
- * @param {number} distFromParent - branch-length distance from the parent end
- *                                  to the new root point (must be ≥ 0 and
- *                                  ≤ the branch's full length)
- * @returns {object} newRoot      - the new root raw node
- */
-export function rerootTree(oldRoot, childNodeId, distFromParent) {
-  // Build id→node and id→parent maps for the whole tree.
-  const rawNodeMap = new Map();
-  const parentMap  = new Map(); // childId → parent raw node
-  (function index(node, parent) {
-    rawNodeMap.set(node.id, node);
-    if (parent) parentMap.set(node.id, parent);
-    if (node.children) for (const c of node.children) index(c, node);
-  })(oldRoot, null);
-
-  const childNode  = rawNodeMap.get(childNodeId);
-  const parentNode = parentMap.get(childNodeId);
-  if (!childNode || !parentNode) return oldRoot; // already the root edge – no-op
-
-  const originalLen = childNode.length || 0;
-  const distToChild = Math.max(0, originalLen - distFromParent);
-  distFromParent    = Math.max(0, Math.min(originalLen, distFromParent));
-
-  // Create the new root node.
-  const newRoot = {
-    id:          `__reroot_${++_rerootCounter}__`,
-    name:        null,
-    label:       null,
-    length:      0,
-    annotations: {},
-    children:    [childNode],
-  };
-  childNode.length = distToChild;
-
-  // Walk from parentNode up to oldRoot, reversing each edge in turn.
-  let prev    = newRoot;
-  let prevLen = distFromParent;
-  let cur     = parentNode;
-
-  while (cur) {
-    const par       = parentMap.get(cur.id) || null;
-    const downChild = (prev === newRoot) ? childNode : prev;
-
-    // Detach the downward child from cur's children list.
-    cur.children = cur.children.filter(c => c.id !== downChild.id);
-
-    // Save cur's original branch length, then overwrite it with the reversed
-    // length (distance from cur to the new root via the reversed path).
-    const savedLen = cur.length || 0;
-    cur.length     = prevLen;
-
-    // Attach cur as a child of prev (either newRoot or the previous node).
-    prev.children.push(cur);
-
-    prevLen = savedLen;
-    prev    = cur;
-    cur     = par;
-  }
-
-  return newRoot;
-}

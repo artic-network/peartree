@@ -1,5 +1,5 @@
 import { parseNexus, parseNewick } from './treeio.js';
-import { computeLayoutFrom, computeLayoutFromGraph, reorderTree, rerootTree, rotateNodeTree } from './treeutils.js';
+import { computeLayoutFromGraph } from './treeutils.js';
 import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointRootGraph } from './phylograph.js';
 import { TreeRenderer } from './treerenderer.js';
 import { AxisRenderer  } from './axisrenderer.js';
@@ -233,7 +233,7 @@ import { AxisRenderer  } from './axisrenderer.js';
   // Update axis time span whenever navigation drills into or out of a subtree.
   // Reads renderer._globalHeightMap directly so the values are always current,
   // even after rerooting (which rebuilds the map via _buildGlobalHeightMap).
-  renderer._onLayoutChange = (maxX, viewRawRoot) => {
+  renderer._onLayoutChange = (maxX, viewSubtreeRootId) => {
     if (!_axisIsTimedTree) return;
     const hMap = renderer._globalHeightMap;
     const viewNodes = renderer.nodes || [];
@@ -241,7 +241,7 @@ import { AxisRenderer  } from './axisrenderer.js';
     const rootLayoutNode = viewNodes.find(n => !n.parentId);
     const rootH = rootLayoutNode ? (hMap.get(rootLayoutNode.id) ?? 0) : 0;
     // For subtree navigation, get the global height of the subtree root node.
-    const viewRootH = viewRawRoot ? (hMap.get(viewRawRoot.id) ?? rootH) : rootH;
+    const viewRootH = viewSubtreeRootId ? (hMap.get(viewSubtreeRootId) ?? rootH) : rootH;
     // Minimum computed height among visible tips — defines the right axis boundary.
     let minTipH = Infinity;
     for (const n of viewNodes) {
@@ -399,8 +399,7 @@ import { AxisRenderer  } from './axisrenderer.js';
 
   // ── Tree loading ──────────────────────────────────────────────────────────
 
-  let root             = null;
-  let graph            = null;  // PhyloGraph (adjacency-list model) – kept in sync with root
+  let graph            = null;  // PhyloGraph (adjacency-list model)
   let currentOrder     = null;  // null | 'asc' | 'desc'
   let controlsBound    = false;
   let _cachedMidpoint  = null;  // cached midpointRootGraph() result; cleared on every tree change
@@ -431,9 +430,9 @@ import { AxisRenderer  } from './axisrenderer.js';
         }
       }
 
-      root            = parsedRoot;
-      graph           = fromNestedRoot(root);
+      graph           = fromNestedRoot(parsedRoot);
       renderer.hiddenNodeIds = graph.hiddenNodeIds;  // keep renderer in sync (same Set reference)
+      renderer.graph  = graph;
       currentOrder    = null;
       _cachedMidpoint = null;
       isExplicitlyRooted = graph.rooted;
@@ -502,7 +501,6 @@ import { AxisRenderer  } from './axisrenderer.js';
       if (_saved.nodeOrder === 'asc' || _saved.nodeOrder === 'desc') {
         const asc = _saved.nodeOrder === 'asc';
         reorderGraph(graph, asc);
-        reorderTree(root, asc, graph.hiddenNodeIds);
         currentOrder = _saved.nodeOrder;
       }
 
@@ -513,7 +511,6 @@ import { AxisRenderer  } from './axisrenderer.js';
       applyLegend();   // rebuild legend with new data (may clear it)
       const layout = computeLayoutFromGraph(graph);
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
-      renderer.setRawTree(root);
 
       // ── Axis renderer setup ───────────────────────────────────────────────
       // Detect time-scaled tree: root AND all nodes must carry a 'height' annotation.
@@ -557,10 +554,10 @@ import { AxisRenderer  } from './axisrenderer.js';
       applyTickOptions();
 
       // Reset navigation and selection state for the new tree
-      renderer._navStack         = [];
-      renderer._fwdStack         = [];
-      renderer._viewRawRoot      = null;
-      renderer._branchSelectNode = null;
+      renderer._navStack            = [];
+      renderer._fwdStack            = [];
+      renderer._viewSubtreeRootId   = null;
+      renderer._branchSelectNode    = null;
       renderer._branchSelectX    = null;
       renderer._branchHoverNode  = null;
       renderer._branchHoverX     = null;
@@ -609,9 +606,7 @@ import { AxisRenderer  } from './axisrenderer.js';
     const anchorId  = isZoomed ? renderer.nodeIdAtViewportCenter() : null;
 
     reorderGraph(graph, ascending);
-    reorderTree(root, ascending, graph.hiddenNodeIds);
-    const viewRoot = renderer._viewRawRoot;
-    const layout = viewRoot ? computeLayoutFrom(viewRoot, graph.hiddenNodeIds) : computeLayoutFromGraph(graph);
+    const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId);
     renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
 
     if (isZoomed && anchorId) {
@@ -681,11 +676,14 @@ import { AxisRenderer  } from './axisrenderer.js';
       const parent = renderer.nodeMap.get(node.parentId);
       if (!parent || parent.children.filter(cid => cid !== nodeId).length < 1) return false;
       // Guard: each branch of the current view root must keep ≥1 visible tip.
-      const viewRoot = renderer._viewRawRoot;
-      if (viewRoot) {
+      const viewSubtreeRootId = renderer._viewSubtreeRootId;
+      if (viewSubtreeRootId) {
         // Subtree view: each child branch of the subtree root must keep ≥1 visible tip.
-        for (const child of (viewRoot.children || [])) {
-          if (_nestedVisibleTipCount(child, graph.hiddenNodeIds, nodeId) === 0) return false;
+        const subtreeIdx = graph.origIdToIdx.get(viewSubtreeRootId);
+        if (subtreeIdx !== undefined) {
+          for (const adjIdx of graph.nodes[subtreeIdx].adjacents.slice(1)) {
+            if (_graphVisibleTipCount(adjIdx, subtreeIdx, nodeId) === 0) return false;
+          }
         }
         return true;
       }
@@ -733,31 +731,19 @@ import { AxisRenderer  } from './axisrenderer.js';
       return { gIdx, gFromIdx };
     }
 
-    // Nested-tree helpers for subtree-view hide/show guards.
-    function _nestedVisibleTipCount(rawNode, hiddenSet, extraHiddenId) {
-      if (hiddenSet.has(rawNode.id) || rawNode.id === extraHiddenId) return 0;
-      if (!rawNode.children || rawNode.children.length === 0) return 1;
-      return rawNode.children.reduce((s, c) => s + _nestedVisibleTipCount(c, hiddenSet, extraHiddenId), 0);
-    }
-    function _nestedSubtreeHasHidden(rawNode, hiddenSet) {
-      if (!rawNode.children) return false;
-      return rawNode.children.some(c => hiddenSet.has(c.id) || _nestedSubtreeHasHidden(c, hiddenSet));
-    }
-    function _nestedRevealAll(rawNode, hiddenSet) {
-      hiddenSet.delete(rawNode.id);
-      if (rawNode.children) for (const c of rawNode.children) _nestedRevealAll(c, hiddenSet);
-    }
-
     function canShow() {
       if (!graph || !graph.hiddenNodeIds.size) return false;
       const nodeId = _selectedNodeId();
-      const viewRoot = renderer._viewRawRoot;
-      if (viewRoot) {
+      const viewSubtreeRootId = renderer._viewSubtreeRootId;
+      if (viewSubtreeRootId) {
         // Subtree view: only care about hidden nodes within this subtree.
-        if (!nodeId) return _nestedSubtreeHasHidden(viewRoot, graph.hiddenNodeIds);
-        const rawNode = renderer._rawNodeMap?.get(nodeId);
-        if (!rawNode) return false;
-        return _nestedSubtreeHasHidden(rawNode, graph.hiddenNodeIds);
+        const subtreeIdx = graph.origIdToIdx.get(viewSubtreeRootId);
+        if (subtreeIdx === undefined) return false;
+        const fromIdx = graph.nodes[subtreeIdx].adjacents[0] ?? -1;
+        if (!nodeId) return _graphSubtreeHasHidden(subtreeIdx, fromIdx);
+        const gs = _resolveGraphStart(nodeId);
+        if (!gs) return false;
+        return _graphSubtreeHasHidden(gs.gIdx, gs.gFromIdx);
       }
       // Full tree view.
       if (!nodeId) return true; // no selection — any hidden nodes count
@@ -813,7 +799,6 @@ import { AxisRenderer  } from './axisrenderer.js';
       if (!nodeId) return;
 
       rotateNodeGraph(graph, nodeId, recursive);
-      rotateNodeTree(root, nodeId, recursive);
 
       // Disable global auto-ordering — the manual rotation must be preserved.
       currentOrder = null;
@@ -821,10 +806,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       btnOrderDesc.classList.remove('active');
 
       // Recompute layout and animate.
-      const viewRoot = renderer._viewRawRoot;
-      const layout   = viewRoot
-        ? computeLayoutFrom(viewRoot, graph.hiddenNodeIds)
-        : computeLayoutFromGraph(graph);
+      const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId);
       renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
 
       saveSettings();
@@ -849,10 +831,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       currentOrder = null;
       btnOrderAsc .classList.remove('active');
       btnOrderDesc.classList.remove('active');
-      const viewRoot = renderer._viewRawRoot;
-      const layout = viewRoot
-        ? computeLayoutFrom(viewRoot, graph.hiddenNodeIds)
-        : computeLayoutFromGraph(graph);
+      const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId);
       renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
       renderer.fitToWindow();
     }
@@ -860,12 +839,22 @@ import { AxisRenderer  } from './axisrenderer.js';
     function applyShow() {
       if (!canShow()) return;
       const nodeId  = _selectedNodeId();
-      const viewRoot = renderer._viewRawRoot;
+      const viewSubtreeRootId = renderer._viewSubtreeRootId;
 
-      if (viewRoot) {
-        // Subtree view: reveal hidden nodes only within the subtree.
-        const rawNode = nodeId ? renderer._rawNodeMap?.get(nodeId) : viewRoot;
-        if (rawNode) _nestedRevealAll(rawNode, graph.hiddenNodeIds);
+      if (viewSubtreeRootId) {
+        // Subtree view: reveal hidden nodes only within this subtree.
+        const startId = nodeId ?? viewSubtreeRootId;
+        const startIdx = graph.origIdToIdx.get(startId);
+        if (startIdx !== undefined) {
+          const fromIdx = graph.nodes[startIdx].adjacents[0] ?? -1;
+          function revealSubtree(ni, fi) {
+            graph.hiddenNodeIds.delete(graph.nodes[ni].origId);
+            for (const adj of graph.nodes[ni].adjacents) {
+              if (adj !== fi) revealSubtree(adj, ni);
+            }
+          }
+          revealSubtree(startIdx, fromIdx);
+        }
       } else if (!nodeId) {
         // Full tree, no selection: clear all hidden nodes.
         graph.hiddenNodeIds.clear();
@@ -894,9 +883,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       currentOrder = null;
       btnOrderAsc .classList.remove('active');
       btnOrderDesc.classList.remove('active');
-      const layout = viewRoot
-        ? computeLayoutFrom(viewRoot, graph.hiddenNodeIds)
-        : computeLayoutFromGraph(graph);
+      const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId);
       renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
       renderer.fitToWindow();
     }
@@ -921,28 +908,23 @@ import { AxisRenderer  } from './axisrenderer.js';
       // Mutate graph in-place (O(depth) parent-pointer flips, no allocation).
       rerootOnGraph(graph, childNodeId, distFromParent);
 
-      // Keep nested root in sync — still needed by applyOrder and subtree
-      // navigation (renderer._rawNodeMap) until Phases 4-6 migrate those paths.
-      const newRoot = rerootTree(root, childNodeId, distFromParent);
-      root            = newRoot;
       _cachedMidpoint = null;
 
-      if (currentOrder === 'asc')  { reorderGraph(graph, true);  reorderTree(root, true,  graph.hiddenNodeIds); }
-      if (currentOrder === 'desc') { reorderGraph(graph, false); reorderTree(root, false, graph.hiddenNodeIds); }
+      if (currentOrder === 'asc')  reorderGraph(graph, true);
+      if (currentOrder === 'desc') reorderGraph(graph, false);
 
-      renderer._navStack         = [];
-      renderer._fwdStack         = [];
-      renderer._viewRawRoot      = null;
-      renderer._branchSelectNode = null;
-      renderer._branchSelectX    = null;
-      renderer._branchHoverNode  = null;
-      renderer._branchHoverX     = null;
+      renderer._navStack            = [];
+      renderer._fwdStack            = [];
+      renderer._viewSubtreeRootId   = null;
+      renderer._branchSelectNode    = null;
+      renderer._branchSelectX       = null;
+      renderer._branchHoverNode     = null;
+      renderer._branchHoverX        = null;
       renderer._selectedTipIds.clear();
-      renderer._mrcaNodeId       = null;
+      renderer._mrcaNodeId          = null;
       if (renderer._onBranchSelectChange) renderer._onBranchSelectChange(false);
       if (renderer._onNodeSelectChange)   renderer._onNodeSelectChange(false);
       btnReroot.disabled = true;
-      renderer.setRawTree(root);
 
       const layout = computeLayoutFromGraph(graph);
       renderer.setDataCrossfade(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
@@ -1271,8 +1253,8 @@ import { AxisRenderer  } from './axisrenderer.js';
     const key = axisDateAnnotEl.value || null;
     axisRenderer.setDateAnchor(key, renderer.nodeMap || new Map(), renderer.maxX);
     // If currently viewing a subtree, recompute its params using the new anchor.
-    if (renderer._viewRawRoot && renderer._onLayoutChange) {
-      renderer._onLayoutChange(renderer.maxX, renderer._viewRawRoot);
+    if (renderer._viewSubtreeRootId && renderer._onLayoutChange) {
+      renderer._onLayoutChange(renderer.maxX, renderer._viewSubtreeRootId);
     }
     _showDateTickRows(!!key);
     axisRenderer.update(
