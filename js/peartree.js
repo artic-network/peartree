@@ -2030,6 +2030,7 @@ import { AxisRenderer  } from './axisrenderer.js';
         btnExportTree.disabled      = false;
         btnExportGraphic.disabled   = false;
         tipFilterEl.disabled        = false;
+        tipColourPickerEl.disabled   = false;
       }
 
       // Restore interaction mode (file settings take priority).
@@ -2290,7 +2291,6 @@ import { AxisRenderer  } from './axisrenderer.js';
       btnHide.disabled      = !canHide();
       btnShow.disabled      = !canShow();
       btnNodeInfo.disabled        = !hasSelection;
-      tipColourPickerEl.disabled  = !hasSelection;
       btnApplyUserColour.disabled = !hasSelection;
     };
 
@@ -2591,13 +2591,12 @@ import { AxisRenderer  } from './axisrenderer.js';
       graph.annotationSchema = buildAnnotationSchema(graph.nodes);
       _refreshAnnotationUIs(graph.annotationSchema);
       renderer.setAnnotationSchema(graph.annotationSchema);
+      // Auto-switch tip shape colour-by to user_colour.
+      tipColourBy.value = 'user_colour';
+      renderer.setTipColourBy('user_colour');
       renderer._dirty = true;
       saveSettings();
     }
-
-    tipColourPickerEl.addEventListener('input', () => {
-      if (!tipColourPickerEl.disabled) _applyUserColour(tipColourPickerEl.value);
-    });
 
     btnApplyUserColour.addEventListener('click', () => _applyUserColour(tipColourPickerEl.value));
 
