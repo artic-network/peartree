@@ -3047,5 +3047,34 @@ import { AxisRenderer  } from './axisrenderer.js';
     }
   });
 
+  // ── Native menu bridge (Tauri only) ─────────────────────────────────────
+  // window.__TAURI__ is available when withGlobalTauri:true is set in tauri.conf.json.
+  // The guard means this code is silently skipped when running in a plain browser.
+  if (window.__TAURI__?.event) {
+    window.__TAURI__.event.listen('menu-event', ({ payload: id }) => {
+      switch (id) {
+        case 'open-tree':    document.getElementById('btn-open-tree').click();      break;
+        case 'import-annot': document.getElementById('btn-import-annot').click();   break;
+        case 'export-tree':  document.getElementById('btn-export-tree').click();    break;
+        case 'export-image': document.getElementById('btn-export-graphic').click(); break;
+        case 'show-help':    document.getElementById('btn-help').click();           break;
+        case 'select-all': {
+          // If focus is inside a text input let the OS handle it natively
+          const tag = document.activeElement?.tagName;
+          if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) {
+            document.execCommand('selectAll');
+          } else if (renderer.nodes) {
+            const allTipIds = new Set(renderer.nodes.filter(n => n.isTip).map(n => n.id));
+            renderer._selectedTipIds = allTipIds;
+            renderer._mrcaNodeId = null;
+            if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(allTipIds.size > 0);
+            renderer._dirty = true;
+          }
+          break;
+        }
+      }
+    });
+  }
+
 })();
 
