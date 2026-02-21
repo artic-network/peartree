@@ -2525,7 +2525,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       if (e.key === 'n' || e.key === 'N') { if (!e.altKey) return; e.preventDefault(); applyMode('nodes'); }
       if (e.key === 'b' || e.key === 'B') { if (!e.altKey) return; e.preventDefault(); applyMode('branches'); }
       if (e.key === 'm' || e.key === 'M') { e.preventDefault(); applyMidpointRoot(); }
-      if (e.key === 'i' || e.key === 'I') { e.preventDefault(); showNodeInfo(); }
+      if ((e.key === 'i' || e.key === 'I') && e.shiftKey) { e.preventDefault(); showNodeInfo(); }
     });
   }
 
@@ -2744,12 +2744,27 @@ import { AxisRenderer  } from './axisrenderer.js';
   btnFit.addEventListener('click', () => renderer.fitToWindow());
   document.getElementById('btn-fit-labels').addEventListener('click', () => renderer.fitLabels());
 
-  // Open button and Cmd/Ctrl-O keyboard shortcut reopen the modal
+  // Open button and file-level keyboard shortcuts
   document.getElementById('btn-open-tree').addEventListener('click', () => openModal());
   window.addEventListener('keydown', e => {
-    if ((e.metaKey || e.ctrlKey) && (e.key === 'o' || e.key === 'O')) {
+    if (!e.metaKey && !e.ctrlKey) return;
+    if (e.shiftKey || e.altKey) return;   // leave modified combos free for other handlers
+    const k = e.key.toLowerCase();
+    if (k === 'o') {
       e.preventDefault();
       openModal();
+    } else if (k === 'i') {
+      if (!treeLoaded) return;
+      e.preventDefault();
+      btnImportAnnot.click();
+    } else if (k === 's') {
+      if (!treeLoaded) return;
+      e.preventDefault();
+      btnExportTree.click();
+    } else if (k === 'e') {
+      if (!treeLoaded) return;
+      e.preventDefault();
+      btnExportGraphic.click();
     }
   });
 
