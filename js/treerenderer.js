@@ -1012,7 +1012,8 @@ export class TreeRenderer {
         const py  = this._wy(parent.y);
         if (Math.abs(ny - py) < 0.5) continue; // only child – no corner needed
 
-        const cer = Math.min(er, Math.abs(ny - py) * 0.4, (nx - px) * 0.4);
+        const cer = Math.max(0, Math.min(er, Math.abs(ny - py) * 0.4, (nx - px) * 0.4));
+        if (cer === 0) continue; // zero-length branch — no corner to draw
         // Approach the corner from the vertical; leave toward horizontal.
         const fromY = ny + (ny < py ? cer : -cer);
         ctx.moveTo(px, fromY);
