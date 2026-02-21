@@ -120,6 +120,9 @@ export class TreeRenderer {
     this._selectedTipIds  = new Set();
     this._mrcaNodeId      = null;
     this._fitLabelsMode   = false;
+    this._shiftHeld       = false;   // true while Shift key is held
+    this._hypFocusScreenY = null;    // screen-Y focus for hyperbolic-stretch mode (persistent)
+    this._hypMagMult      = 0;       // flat-zone half-width in rows (0 = pure hyperbolic)
     this._lastStatusMx    = null;  // cached mouse x for status bar redraws
     this._lastStatusMy    = null;  // cached mouse y for status bar redraws
 
@@ -797,6 +800,18 @@ export class TreeRenderer {
     this._setTarget(this._targetOffsetY, this._targetScaleY / 1.5, false, centerY);
   }
 
+  /** Expand the flat centre zone of the hyperbolic lens by one row. */
+  hypMagUp() {
+    this._hypMagMult = Math.min(20, this._hypMagMult + 1);
+    this._dirty = true;
+  }
+
+  /** Contract the flat centre zone of the hyperbolic lens by one row. */
+  hypMagDown() {
+    this._hypMagMult = Math.max(0, this._hypMagMult - 1);
+    this._dirty = true;
+  }
+
   /**
    * Render the full tree (fit-to-window) into an OffscreenCanvas at the given
    * CSS pixel dimensions.  The entire tree is drawn unclipped.
@@ -819,6 +834,8 @@ export class TreeRenderer {
     const s_ctx = this.ctx, s_canvas = this.canvas;
     const s_sx = this.scaleX, s_ox = this.offsetX;
     const s_sy = this.scaleY, s_oy = this.offsetY;
+    const s_hyp = this._hypFocusScreenY;
+    this._hypFocusScreenY = null;  // no fisheye distortion in exports
 
     // Install temporary state pointing at the offscreen canvas.
     this.ctx    = offscreenCanvas.getContext('2d');
@@ -834,6 +851,7 @@ export class TreeRenderer {
     this.ctx    = s_ctx;  this.canvas = s_canvas;
     this.scaleX = s_sx;   this.offsetX = s_ox;
     this.scaleY = s_sy;   this.offsetY = s_oy;
+    this._hypFocusScreenY = s_hyp;
   }
 
   /**
@@ -843,6 +861,8 @@ export class TreeRenderer {
   renderViewToOffscreen(oc, skipBg = false) {
     if (!this.nodes) return;
     const s_ctx = this.ctx, s_canvas = this.canvas;
+    const s_hyp = this._hypFocusScreenY;
+    this._hypFocusScreenY = null;  // no fisheye in viewport exports
     const W = s_canvas.clientWidth, H = s_canvas.clientHeight;
     this.ctx    = oc.getContext('2d');
     this.canvas = { clientWidth: W, clientHeight: H };
@@ -851,6 +871,7 @@ export class TreeRenderer {
     this._skipBg = false;
     this.ctx    = s_ctx;
     this.canvas = s_canvas;
+    this._hypFocusScreenY = s_hyp;
   }
 
   /**
@@ -897,9 +918,89 @@ export class TreeRenderer {
 
   // X is anchored to offsetX (animated during navigation, otherwise == paddingLeft).
   _wx(worldX) { return this.offsetX + worldX * this.scaleX; }
-  _wy(worldY) { return this.offsetY + worldY * this.scaleY; }
+
+  /** World Y → screen Y, with optional hyperbolic fisheye when Shift is held. */
+  _wy(worldY) {
+    const sy = this.offsetY + worldY * this.scaleY;
+    return this._hypFocusScreenY !== null ? this._fisheyeScreenY(sy) : sy;
+  }
+
   _worldYfromScreen(sy) { return (sy - this.offsetY) / this.scaleY; }
   _worldXfromScreen(sx) { return (sx - this.offsetX) / this.scaleX; }
+
+  /**
+   * Apply hyperbolic fisheye distortion to a linear screen-Y value.
+   *
+   * The lens has three zones:
+   *   • Flat centre  (|d| ≤ W): uniform expansion at peak magFactor.
+   *   • Outer zones  (|d| > W): Möbius-form falloff that smoothly
+   *     continues from the flat zone and clamps the tree to its bounds.
+   *
+   * magFactor is capped at the "fit labels" level so the peak spacing never
+   * exceeds what Fit Labels would produce.  _hypMagMult controls how many
+   * rows wide the flat centre zone is (0 = pure hyperbolic, no flat section).
+   */
+  _fisheyeScreenY(sy) {
+    const cy        = this._hypFocusScreenY;
+    // Peak magnification = fit-labels level (capped)
+    const magFactor = Math.max(1, (this.fontSize + 2) / this.scaleY);
+    if (magFactor <= 1) return sy;  // already at or above fit-labels zoom
+
+    const W      = this._hypMagMult * this.scaleY;  // flat-zone half-width (px)
+    const d      = sy - cy;
+    const sy_top = this.offsetY + 0.5 * this.scaleY;
+    const sy_bot = this.offsetY + (this.maxY + 0.5) * this.scaleY;
+
+    // ── Flat centre zone ──
+    if (Math.abs(d) <= W) return cy + d * magFactor;
+
+    // ── Outer hyperbolic zone ──
+    // Maps x = |d|-W ∈ [0,D] → y ∈ [0,D_out] via y = b·m·x/(b+x)
+    // where b is chosen so y(0)=0, y'(0)=magFactor, y(D)=D_out.
+    const sign  = d > 0 ? 1 : -1;
+    const x     = Math.abs(d) - W;
+    const D     = (d > 0 ? sy_bot - cy : cy - sy_top) - W;
+    const D_out = D - W * (magFactor - 1);  // remaining output span
+    if (D_out <= 0) return d > 0 ? sy_bot : sy_top;  // flat zone fills window
+
+    // b = D·D_out / ((m-1)·(D+W))  (derived from the three constraints)
+    const b = D * D_out / ((magFactor - 1) * (D + W));
+    const y = b * magFactor * x / (b + x);
+    return cy + sign * (W * magFactor + y);
+  }
+
+  /**
+   * Whether a tip label at the given world-Y should be rendered.
+   * In normal mode this is a global threshold; in hyperbolic-stretch mode
+   * it checks the local inter-tip spacing using the derivative of the
+   * piecewise fisheye function.
+   */
+  _showLabelAt(worldY) {
+    const minScale  = this.fontSize * 0.5;
+    if (this._hypFocusScreenY === null) return this.scaleY >= minScale;
+    const magFactor = Math.max(1, (this.fontSize + 2) / this.scaleY);
+    if (magFactor <= 1) return this.scaleY >= minScale;
+
+    const sy_lin = this.offsetY + worldY * this.scaleY;
+    const cy     = this._hypFocusScreenY;
+    const W      = this._hypMagMult * this.scaleY;
+    const d      = sy_lin - cy;
+
+    // Inside flat zone: local scale = scaleY * magFactor ≥ (fontSize+2) — always shown
+    if (Math.abs(d) <= W) return true;
+
+    // Outside flat zone: derivative of Möbius section = b²·m/(b+x)²
+    const sy_top = this.offsetY + 0.5 * this.scaleY;
+    const sy_bot = this.offsetY + (this.maxY + 0.5) * this.scaleY;
+    const x      = Math.abs(d) - W;
+    const D      = (d > 0 ? sy_bot - cy : cy - sy_top) - W;
+    const D_out  = D - W * (magFactor - 1);
+    if (D_out <= 0) return false;
+
+    const b    = D * D_out / ((magFactor - 1) * (D + W));
+    const dydx = b * b * magFactor / ((b + x) * (b + x));
+    return this.scaleY * dydx >= minScale;
+  }
 
   _viewHash() {
     return `${this.scaleX.toFixed(4)}|${this.offsetX.toFixed(2)}|${this.paddingLeft}|${this.labelRightPad}|${this.bgColor}|${this.fontSize}|${this.canvas.clientWidth}|${this.canvas.clientHeight}`;
@@ -1230,10 +1331,9 @@ export class TreeRenderer {
     const outlineR = Math.max(r + tipHalo, 5);
 
     ctx.textBaseline = 'middle';
-    // Show labels only when tips are spaced at least half a label-height apart
-    // (≤50% overlap). At scaleY == fontSize labels exactly clear each other;
-    // at scaleY == fontSize*0.5 they overlap by exactly 50%.
-    const showLabels = this.scaleY >= this.fontSize * 0.5;
+    // Show labels only when tips are spaced at least half a label-height apart.
+    // In hyperbolic-stretch mode labels are assessed per-node (see _showLabelAt).
+    const showLabels = this.scaleY >= this.fontSize * 0.5 || this._hypFocusScreenY !== null;
 
     // Pass 1 – halo strokes for internal node shapes
     if (nodeR > 0 && nodeHalo > 0) {
@@ -1330,6 +1430,7 @@ export class TreeRenderer {
         for (const node of this.nodes) {
           if (!node.isTip || this._selectedTipIds.has(node.id)) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          if (!this._showLabelAt(node.y)) continue;
           if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
         }
         // Sub-pass 3b: selected labels in selected colour
@@ -1337,6 +1438,7 @@ export class TreeRenderer {
         for (const node of this.nodes) {
           if (!node.isTip || !this._selectedTipIds.has(node.id)) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          if (!this._showLabelAt(node.y)) continue;
           if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
         }
       } else if (this._labelColourBy && this._labelColourScale) {
@@ -1344,6 +1446,7 @@ export class TreeRenderer {
         for (const node of this.nodes) {
           if (!node.isTip) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          if (!this._showLabelAt(node.y)) continue;
           if (!node.name) continue;
           const val = node.annotations ? node.annotations[key] : undefined;
           ctx.fillStyle = this._labelColourForValue(val) ?? this.labelColor;
@@ -1354,6 +1457,7 @@ export class TreeRenderer {
         for (const node of this.nodes) {
           if (!node.isTip) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          if (!this._showLabelAt(node.y)) continue;
           if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
         }
       }
@@ -1999,12 +2103,34 @@ export class TreeRenderer {
       }
 
       if (e.target === this.canvas) this._updateStatus(e);
+
+      // ── Hyperbolic stretch: update focus while Shift is held; persists on release ──
+      if (this._shiftHeld && !this._dragging && !this._dragSelActive) {
+        const rect_h = this.canvas.getBoundingClientRect();
+        const hx = e.clientX - rect_h.left;
+        const hy = e.clientY - rect_h.top;
+        const inCanvas = hx >= 0 && hx <= this.canvas.clientWidth &&
+                         hy >= 0 && hy <= this.canvas.clientHeight;
+        if (inCanvas) {
+          // Clamp focus to the screen range spanned by the tree's tips.
+          const sy_top     = this.offsetY + 0.5 * this.scaleY;
+          const sy_bot     = this.offsetY + (this.maxY + 0.5) * this.scaleY;
+          const clampedHy  = Math.min(sy_bot, Math.max(sy_top, hy));
+          if (clampedHy !== this._hypFocusScreenY) {
+            this._hypFocusScreenY = clampedHy;
+            this._dirty = true;
+          }
+          this.canvas.style.cursor = 'ns-resize';
+        }
+      }
+      // Focus is NOT cleared here — it persists until Escape or explicit reset.
     });
 
     this.canvas.addEventListener('mouseleave', () => {
       let dirty = false;
       if (this._hoveredNodeId !== null)  { this._hoveredNodeId = null;  dirty = true; }
       if (this._branchHoverNode !== null) { this._branchHoverNode = null; this._branchHoverX = null; dirty = true; }
+      // Note: _hypFocusScreenY is NOT cleared here — the lens persists when the pointer leaves.
       if (dirty) this._dirty = true;
     });
 
@@ -2089,6 +2215,11 @@ export class TreeRenderer {
         return;
       }
 
+      // Track Shift for hyperbolic stretch (no return — allow Shift combos to fall through)
+      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+        this._shiftHeld = true;
+      }
+
       if (!this.nodes) return;
 
       const H        = canvas.clientHeight;
@@ -2098,13 +2229,14 @@ export class TreeRenderer {
       const centerY  = H / 2;
 
       // Cmd/Ctrl + '=' or '+' → zoom in; Cmd/Ctrl + '-' → zoom out.
-      if ((e.metaKey || e.ctrlKey) && (e.key === '=' || e.key === '+')) {
+      // Guard against Shift so Cmd+Shift+= / Cmd+Shift+- reach the lens handlers below.
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === '=' || e.key === '+')) {
         e.preventDefault();
         this._fitLabelsMode = false;
         this._setTarget(this._targetOffsetY, this._targetScaleY * zoomStep, false, centerY);
         return;
       }
-      if ((e.metaKey || e.ctrlKey) && e.key === '-') {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === '-') {
         e.preventDefault();
         this._fitLabelsMode = false;
         this._setTarget(this._targetOffsetY, this._targetScaleY / zoomStep, false, centerY);
@@ -2115,6 +2247,18 @@ export class TreeRenderer {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.code === 'Digit0') {
         e.preventDefault();
         this.fitLabels();
+        return;
+      }
+
+      // Cmd/Ctrl + Shift + = → widen lens; Cmd/Ctrl + Shift + - → narrow lens.
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.code === 'Equal') {
+        e.preventDefault();
+        this.hypMagUp();
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.code === 'Minus') {
+        e.preventDefault();
+        this.hypMagDown();
         return;
       }
 
@@ -2136,10 +2280,14 @@ export class TreeRenderer {
         return;
       }
 
-      // Escape – clear selection.
+      // Escape – clear selection; also dismiss the hyperbolic lens if active.
       if (e.key === 'Escape') {
         this._selectedTipIds.clear();
         this._mrcaNodeId = null;
+        if (this._hypFocusScreenY !== null) {
+          this._hypFocusScreenY = null;
+          this._dirty = true;
+        }
         this._drawStatusBar(this._lastStatusMx);
         this._dirty = true;
         return;
@@ -2152,6 +2300,13 @@ export class TreeRenderer {
         this._dragging  = false;
         this.canvas.classList.remove('space', 'grabbing');
         this.canvas.style.cursor = this._hoveredNodeId ? 'pointer' : 'default';
+      }
+      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+        this._shiftHeld = false;
+        // Focus persists — just restore the normal cursor hint.
+        if (!this._spaceDown) {
+          this.canvas.style.cursor = this._hoveredNodeId ? 'pointer' : 'default';
+        }
       }
     });
 

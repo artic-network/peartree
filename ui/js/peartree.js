@@ -2309,6 +2309,8 @@ import { AxisRenderer  } from './axisrenderer.js';
         document.getElementById('btn-zoom-out').disabled      = false;
         document.getElementById('btn-fit').disabled           = false;
         document.getElementById('btn-fit-labels').disabled    = false;
+        document.getElementById('btn-hyp-up').disabled        = false;
+        document.getElementById('btn-hyp-down').disabled      = false;
         document.getElementById('btn-order-asc').disabled     = false;
         document.getElementById('btn-order-desc').disabled    = false;
         document.getElementById('btn-mode-nodes').disabled    = false;
@@ -2562,6 +2564,8 @@ import { AxisRenderer  } from './axisrenderer.js';
     _setMenuEnabled('tree-midpoint', !isExplicitlyRooted);
     document.getElementById('btn-zoom-in') .addEventListener('click', () => renderer.zoomIn());
     document.getElementById('btn-zoom-out').addEventListener('click', () => renderer.zoomOut());
+    document.getElementById('btn-hyp-up')  .addEventListener('click', () => renderer.hypMagUp());
+    document.getElementById('btn-hyp-down').addEventListener('click', () => renderer.hypMagDown());
 
     renderer._onNavChange = (canBack, canFwd) => {
       btnBack.disabled    = !canBack;
