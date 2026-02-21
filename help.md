@@ -99,6 +99,15 @@ Press **Escape** or click × to close the dialog without loading (once a tree is
 |---|---|---|
 | **ⓘ** Node Info | ⌘⇧I | Open a dialog showing all annotations on the selected node |
 
+### User Colour
+
+| Button | Description |
+|---|---|
+| **colour swatch** | With tips selected, pick a colour to apply to those tips (stored as `user_colour` annotation) |
+| **eraser** Clear | Remove all user-assigned colours from the tree |
+
+The user colour is stored as a `user_colour` annotation in `#RRGGBB` format on individual nodes. It round-trips through NEXUS export/import. Once at least one node has been coloured, **user colour** appears as the second option (after "none") in all three **Colour by** selectors (tip shape, node shape, label). It is intentionally excluded from the Legend selector.
+
 ### Panels
 
 | Button | Shortcut | Description |
@@ -141,6 +150,7 @@ Press **Escape** or click × to close the dialog without loading (once a tree is
 
 | Shortcut | Action |
 |---|---|
+| **⌘A** | Select all tips in the current view |
 | **⌘B** | Toggle between Nodes and Branches mode |
 | **⌘M** | Midpoint root |
 | **⌘⇧I** | Node info dialog |

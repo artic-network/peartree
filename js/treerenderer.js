@@ -467,6 +467,13 @@ export class TreeRenderer {
     const def = schema.get(key);
     if (!def) return null;
 
+    // user_colour: values ARE CSS colours – identity scale (value → value).
+    if (key === 'user_colour') {
+      const identity = new Map();
+      (def.values || []).forEach(v => identity.set(v, v));
+      return identity;
+    }
+
     const scale = new Map();
     if (def.dataType === 'categorical' || def.dataType === 'ordinal') {
       const palette = [

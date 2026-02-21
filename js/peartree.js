@@ -45,6 +45,9 @@ import { AxisRenderer  } from './axisrenderer.js';
   const btnResetSettings       = document.getElementById('btn-reset-settings');
   const btnImportAnnot         = document.getElementById('btn-import-annot');
   const btnExportTree          = document.getElementById('btn-export-tree');
+  const tipColourPickerEl            = document.getElementById('btn-node-colour');
+  const btnApplyUserColour           = document.getElementById('btn-apply-user-colour');
+  const btnClearUserColour           = document.getElementById('btn-clear-user-colour');
   const tipFilterEl            = document.getElementById('tip-filter');
   const tipFilterCnt           = document.getElementById('tip-filter-count');
 
@@ -1796,23 +1799,34 @@ import { AxisRenderer  } from './axisrenderer.js';
 
   /** Repopulate annotation dropdowns (tipColourBy, nodeColourBy, legendAnnotEl) after schema change. */
   function _refreshAnnotationUIs(schema) {
-    function repopulate(sel) {
+    const hasUserColour = schema.has('user_colour');
+    function repopulate(sel, excludeUserColour = false) {
       const prev = sel.value;
       while (sel.options.length > 1) sel.remove(1);
+      // For colour-by selects, insert "user colour" as the second option when available.
+      if (!excludeUserColour && hasUserColour) {
+        const opt = document.createElement('option');
+        opt.value = 'user_colour'; opt.textContent = 'user colour';
+        sel.appendChild(opt);
+      }
       for (const [name, def] of schema) {
+        if (name === 'user_colour') continue; // already handled above or excluded
         if (def.dataType !== 'list') {
           const opt = document.createElement('option');
           opt.value = name; opt.textContent = name;
           sel.appendChild(opt);
         }
       }
-      sel.disabled = schema.size === 0;
+      const availableOpts = sel.options.length - 1; // minus the blank "(none)" option
+      sel.disabled = availableOpts === 0;
       sel.value = [...sel.options].some(o => o.value === prev) ? prev : '';
     }
     repopulate(tipColourBy);
     repopulate(nodeColourBy);
     repopulate(labelColourBy);
-    repopulate(legendAnnotEl);
+    repopulate(legendAnnotEl, /*excludeUserColour*/ true);
+    // Sync clear-user-colour button: enabled only when at least one node has been coloured.
+    if (btnClearUserColour) btnClearUserColour.disabled = !hasUserColour;
   }
 
   // ── Tree loading ──────────────────────────────────────────────────────────
@@ -2275,7 +2289,9 @@ import { AxisRenderer  } from './axisrenderer.js';
       btnRotateAll.disabled = !canRotate;
       btnHide.disabled      = !canHide();
       btnShow.disabled      = !canShow();
-      btnNodeInfo.disabled  = !hasSelection;
+      btnNodeInfo.disabled        = !hasSelection;
+      tipColourPickerEl.disabled  = !hasSelection;
+      btnApplyUserColour.disabled = !hasSelection;
     };
 
     btnBack.addEventListener('click',    () => renderer.navigateBack());
@@ -2565,6 +2581,40 @@ import { AxisRenderer  } from './axisrenderer.js';
 
     btnNodeInfo.addEventListener('click', () => showNodeInfo());
 
+    // ── User colour ───────────────────────────────────────────────────────────
+    function _applyUserColour(colour) {
+      if (!graph || renderer._selectedTipIds.size === 0) return;
+      for (const id of renderer._selectedTipIds) {
+        const idx = graph.origIdToIdx.get(id);
+        if (idx !== undefined) graph.nodes[idx].annotations['user_colour'] = colour;
+      }
+      graph.annotationSchema = buildAnnotationSchema(graph.nodes);
+      _refreshAnnotationUIs(graph.annotationSchema);
+      renderer.setAnnotationSchema(graph.annotationSchema);
+      renderer._dirty = true;
+      saveSettings();
+    }
+
+    tipColourPickerEl.addEventListener('input', () => {
+      if (!tipColourPickerEl.disabled) _applyUserColour(tipColourPickerEl.value);
+    });
+
+    btnApplyUserColour.addEventListener('click', () => _applyUserColour(tipColourPickerEl.value));
+
+    btnClearUserColour.addEventListener('click', () => {
+      if (!graph) return;
+      for (const node of graph.nodes) delete node.annotations['user_colour'];
+      // If any colour-by selector was showing user_colour, reset it.
+      if (tipColourBy.value   === 'user_colour') { tipColourBy.value   = ''; renderer.setTipColourBy(null);   }
+      if (nodeColourBy.value  === 'user_colour') { nodeColourBy.value  = ''; renderer.setNodeColourBy(null);  }
+      if (labelColourBy.value === 'user_colour') { labelColourBy.value = ''; renderer.setLabelColourBy(null); }
+      graph.annotationSchema = buildAnnotationSchema(graph.nodes);
+      _refreshAnnotationUIs(graph.annotationSchema);
+      renderer.setAnnotationSchema(graph.annotationSchema);
+      renderer._dirty = true;
+      saveSettings();
+    });
+
     document.getElementById('node-info-close').addEventListener('click', () => {
       document.getElementById('node-info-overlay').style.display = 'none';
     });
@@ -2581,6 +2631,19 @@ import { AxisRenderer  } from './axisrenderer.js';
       if (e.key === 'd' || e.key === 'D') { e.preventDefault(); applyOrder(true);  }
       if (e.key === '[' || e.key === '<') { e.preventDefault(); renderer.navigateBack(); }
       if (e.key === ']' || e.key === '>') { e.preventDefault(); renderer.navigateForward(); }
+      if (e.key === 'a' || e.key === 'A') {
+        const inField = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable);
+        if (!inField) {
+          e.preventDefault();
+          if (renderer.nodes) {
+            const allTipIds = new Set(renderer.nodes.filter(n => n.isTip).map(n => n.id));
+            renderer._selectedTipIds = allTipIds;
+            renderer._mrcaNodeId = null;
+            if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(allTipIds.size > 0);
+            renderer._dirty = true;
+          }
+        }
+      }
       if (e.key === 'b' || e.key === 'B') { e.preventDefault(); applyMode(renderer._mode === 'branches' ? 'nodes' : 'branches'); }
       if (e.key === 'm' || e.key === 'M') { e.preventDefault(); applyMidpointRoot(); }
       if ((e.key === 'i' || e.key === 'I') && e.shiftKey) { e.preventDefault(); showNodeInfo(); }

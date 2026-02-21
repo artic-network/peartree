@@ -95,6 +95,28 @@
       min-width: 28px;
       text-align: right;
     }
+    /* User-colour picker */
+    .pt-colour-pick-wrap {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .pt-colour-picker {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 29px;
+      height: 29px;
+      padding: 2px;
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 4px;
+      background: rgba(255,255,255,0.07);
+      cursor: pointer;
+      flex-shrink: 0;
+      box-sizing: border-box;
+    }
+    .pt-colour-picker::-webkit-color-swatch-wrapper { padding: 2px; }
+    .pt-colour-picker::-webkit-color-swatch { border: none; border-radius: 2px; }
+    .pt-colour-picker:disabled { opacity: 0.2; pointer-events: none; cursor: default; }
     /* Toolbar buttons: subtle fill so enabled buttons read as interactive */
     .pt-toolbar .btn {
       background: rgba(255,255,255,0.05);
@@ -890,6 +912,17 @@
   <!-- Node Info -->
   <div class="pt-toolbar-sep"></div>
   <button id="btn-node-info" class="btn btn-sm btn-outline-secondary" disabled title="Node info (⌘I)"><i class="bi bi-info-circle"></i></button>
+
+  <!-- User colour -->
+  <div class="pt-toolbar-sep"></div>
+  <div class="pt-colour-pick-wrap">
+    <input type="color" id="btn-node-colour" class="pt-colour-picker" disabled
+      title="Pick colour for selected nodes" value="#ff8800">
+    <button id="btn-apply-user-colour" class="btn btn-sm btn-outline-secondary" disabled
+      title="Apply colour to selected nodes"><i class="bi bi-brush"></i></button>
+    <button id="btn-clear-user-colour" class="btn btn-sm btn-outline-secondary" disabled
+      title="Clear all user colours"><i class="bi bi-eraser"></i></button>
+  </div>
 
   <!-- Tip filter -->
   <div class="pt-toolbar-sep"></div>
