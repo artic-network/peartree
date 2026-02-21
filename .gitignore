@@ -1,0 +1,13 @@
+# Node
+node_modules/
+
+# Tauri / Rust build artefacts
+src-tauri/target/
+src-tauri/gen/
+
+# macOS metadata
+**/.DS_Store
+
+# Editor directories
+.idea/
+.vscode/

@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PearTree — Phylogenetic Tree Viewer</title>
+
+  <!-- Bootstrap 5 / Solar Bootswatch (same theme as Sealion) -->
+  <link rel="stylesheet" href="https://artic-network.github.io/sealion/bootstrap.min-artic.css" />
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+  <!-- Markdown renderer -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+
+  <style>
+    /*
+     * Palette aligned with Sealion / Solar Bootswatch:
+     *   Solar body bg:  #005B68  (dark teal)
+     *   Solar dark bg:  #073642  (darker teal – used for dropdowns, modal)
+     *   Solar primary:  #b58900  (amber)
+     *   Solar success:  #2aa198  (teal accent)
+     *   Solar light:    #F7EECA  (cream – body text)
+     *
+     *   PearTree keeps its coral-red brand only for the logo text.
+     */
+    :root {
+      --pt-bg:       #005B68;   /* Solar body bg */
+      --pt-bg-dark:  #073642;   /* Solar secondary-bg, toolbar / modal */
+      --pt-border:   #073642;   /* Solar dark border */
+      --pt-primary:  #b58900;   /* Solar amber (matches --bs-primary) */
+      --pt-teal:     #2aa198;   /* Solar success teal */
+      --pt-cream:    #F7EECA;   /* Solar light / body color */
+      --pt-gold:     #b58900;   /* Solar primary */
+      --pt-off-white:#F7EECA;
+      --pt-red:      #BF4B43;   /* PearTree brand – logo only */
+    }
+
+    /* ── Layout ── */
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      display: flex;
+      flex-direction: column;
+      background: var(--pt-bg);
+      color: var(--pt-off-white);
+      font-family: var(--bs-body-font-family);
+      font-size: 14px;
+    }
+
+    /* ── Toolbar ── */
+    .pt-toolbar {
+      background: var(--pt-bg-dark);
+      border-bottom: 1px solid var(--pt-border);
+      padding: 5px 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .pt-toolbar-sep {
+      width: 1px;
+      height: 18px;
+      background: rgba(255,255,255,0.15);
+      margin: 0 2px;
+    }
+    /* Tip filter */
+    .pt-filter-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .pt-filter-input {
+      width: 150px;
+      height: 24px;
+      padding: 1px 6px;
+      font-size: 0.75rem;
+      color: var(--bs-body-color);
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 4px;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .pt-filter-input::placeholder { color: rgba(255,255,255,0.35); }
+    .pt-filter-input:focus {
+      border-color: rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.12);
+    }
+    .pt-filter-input:disabled { opacity: 0.2; pointer-events: none; }
+    .pt-filter-input::-webkit-search-cancel-button { cursor: pointer; filter: invert(0.7); }
+    .pt-filter-count {
+      font-size: 0.75rem;
+      color: var(--pt-gold);
+      white-space: nowrap;
+      min-width: 28px;
+      text-align: right;
+    }
+    /* User-colour picker */
+    .pt-colour-pick-wrap {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .pt-colour-picker {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      padding: 1px;
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 4px;
+      background: rgba(255,255,255,0.07);
+      cursor: pointer;
+      flex-shrink: 0;
+      box-sizing: border-box;
+    }
+    .pt-colour-picker::-webkit-color-swatch-wrapper { padding: 2px; }
+    .pt-colour-picker::-webkit-color-swatch { border: none; border-radius: 2px; }
+    .pt-colour-picker:disabled { opacity: 0.2; pointer-events: none; cursor: default; }
+    /* Toolbar buttons: subtle fill so enabled buttons read as interactive */
+    .pt-toolbar .btn {
+      background: rgba(255,255,255,0.05);
+      padding: 0.12rem 0.3rem;
+      font-size: .90rem;
+      line-height: 1.4;
+    }
+    .pt-toolbar .btn:hover:not(:disabled) {
+      background: rgba(255,255,255,0.12);
+    }
+    /* Disabled toolbar buttons: strongly faded so the contrast with enabled is clear */
+    .pt-toolbar .btn:disabled,
+    .pt-toolbar .btn[disabled] {
+      opacity: 0.2;
+      pointer-events: none;
+    }
+    /* Brand – mirrors Sealion's navbar-brand */
+    .pt-brand {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--pt-red);
+      white-space: nowrap;
+      margin-right: 4px;
+      letter-spacing: 0.01em;
+      line-height: 1;
+    }
+    .pt-brand i { opacity: 0.85; }
+
+    /* ── Sliders ── */
+    .form-label-sm { font-size: 0.75rem; color: var(--pt-gold); margin-bottom: 0; }
+    .form-range { width: 90px; accent-color: var(--bs-primary); }
+    /* Force visible track on Solar dark theme (--bs-secondary-bg blends into toolbar) */
+    .form-range::-webkit-slider-runnable-track {
+      background: rgba(255,255,255,0.18);
+      border-radius: 4px;
+      height: 0.4rem;
+    }
+    .form-range::-moz-range-track {
+      background: rgba(255,255,255,0.18);
+      border-radius: 4px;
+      height: 0.4rem;
+    }
+
+    /* ── Status bar ── */
+    #status-bar {
+      flex-shrink: 0;
+      height: 28px;
+      background: var(--pt-bg-dark);
+      border-top: 1px solid var(--pt-border);
+      position: relative;
+    }
+    #status-bar canvas { display: block; }
+    #status-brand {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 116px;
+      display: flex;
+      align-items: center;
+      padding-left: 12px;
+      gap: 5px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--pt-red);
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    #status-brand:hover { color: #e06961; }
+
+    /* ── Canvas area ── */
+    #canvas-container {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      overflow: hidden;
+    }
+    #canvas-and-axis-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      overflow: hidden;
+      min-width: 0;
+    }
+    #canvas-wrapper {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+    }
+    #axis-canvas {
+      flex-shrink: 0;
+      height: 36px;
+      display: none;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      pointer-events: none;
+    }
+    canvas            { display: block; cursor: default; }
+    canvas.space      { cursor: grab; }
+    canvas.grabbing   { cursor: grabbing; }
+
+    /* ── Legend canvases (left / right of tree) ── */
+    .pt-legend-canvas {
+      flex-shrink: 0;
+      display: none;
+      cursor: default !important;
+      background: var(--pt-bg-dark);
+    }
+
+    /* ── Loading overlay ── */
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--pt-bg);
+      gap: 14px;
+    }
+    #loading p { font-size: 0.72rem; color: var(--pt-gold); }
+    .pt-spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--pt-bg-dark);
+      border-top-color: var(--bs-primary);
+      border-radius: 50%;
+      animation: pt-spin 0.8s linear infinite;
+    }
+    @keyframes pt-spin { to { transform: rotate(360deg); } }
+
+    /* ── Error overlay ── */
+    #error {
+      display: none;
+      position: absolute;
+      inset: 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--pt-bg);
+      gap: 10px;
+      color: var(--pt-red);
+      font-size: 0.875rem;
+      padding: 40px;
+      text-align: center;
+    }
+
+    /* ── Help panel ── */
+    #help-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 380px;
+      background: var(--pt-bg-dark);
+      border-left: 1px solid var(--pt-border);
+      box-shadow: -4px 0 24px rgba(0,0,0,0.55);
+      z-index: 600;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.22s cubic-bezier(.4,0,.2,1);
+      overflow: hidden;
+    }
+    #help-panel.open { transform: translateX(0); }
+    #help-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px 8px 16px;
+      border-bottom: 1px solid var(--pt-border);
+      flex-shrink: 0;
+    }
+    #help-panel-header h2 {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--pt-red);
+      margin: 0;
+      letter-spacing: 0.3px;
+    }
+    #btn-help-close {
+      background: none;
+      border: none;
+      color: var(--pt-off-white);
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 3px;
+      opacity: 0.6;
+      cursor: pointer;
+    }
+    #btn-help-close:hover { background: rgba(255,255,255,0.08); opacity: 1; }
+    #help-panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px 24px;
+      font-size: 0.72rem;
+      line-height: 1.65;
+      color: var(--pt-off-white);
+    }
+    /* Markdown content styles */
+    .help-md h1 { font-size: 0.82rem; font-weight: 700; color: var(--pt-cream); margin: 0 0 10px; }
+    .help-md h2 { font-size: 0.72rem; font-weight: 700; color: var(--pt-teal); margin: 18px 0 6px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .help-md h3 { font-size: 0.7rem; font-weight: 600; color: var(--pt-gold); margin: 14px 0 4px; }
+    .help-md p  { margin: 0 0 8px; }
+    .help-md ul, .help-md ol { margin: 0 0 8px; padding-left: 18px; }
+    .help-md li { margin-bottom: 3px; }
+    .help-md code { background: rgba(255,255,255,0.07); border-radius: 3px; padding: 1px 4px; font-size: 0.67rem; color: var(--pt-cream); }
+    .help-md pre  { background: rgba(0,0,0,0.25); border-radius: 4px; padding: 8px 10px; overflow-x: auto; }
+    .help-md pre code { background: none; padding: 0; }
+    .help-md strong { color: var(--pt-cream); }
+    .help-md hr { border: none; border-top: 1px solid var(--pt-border); margin: 14px 0; }
+    .help-md table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 0.67rem; }
+    .help-md th { color: var(--pt-gold); font-weight: 600; text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--pt-border); }
+    .help-md td { padding: 3px 8px; border-bottom: 1px solid rgba(5,73,79,0.5); vertical-align: top; }
+    .help-md tr:last-child td { border-bottom: none; }
+    /* ? button in toolbar */
+    #btn-help { flex-shrink: 0; }
+    #btn-help.active {
+      color: var(--bs-primary);
+      border-color: var(--bs-primary);
+    }
+    /* About panel – mirrors help panel, slides from right after it */
+    #about-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 380px;
+      background: var(--pt-bg-dark);
+      border-left: 1px solid var(--pt-border);
+      box-shadow: -4px 0 24px rgba(0,0,0,0.55);
+      z-index: 599;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.22s cubic-bezier(.4,0,.2,1);
+      overflow: hidden;
+    }
+    #about-panel.open { transform: translateX(0); }
+    #about-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px 8px 16px;
+      border-bottom: 1px solid var(--pt-border);
+      flex-shrink: 0;
+    }
+    #about-panel-header h2 {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--pt-gold);
+      margin: 0;
+      letter-spacing: 0.3px;
+    }
+    #btn-about-close {
+      background: none;
+      border: none;
+      color: var(--pt-off-white);
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 3px;
+      opacity: 0.6;
+      cursor: pointer;
+    }
+    #btn-about-close:hover { background: rgba(255,255,255,0.08); opacity: 1; }
+    #about-panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px 24px;
+      font-size: 0.72rem;
+      line-height: 1.65;
+      color: var(--pt-off-white);
+    }
+    #btn-about { flex-shrink: 0; }
+    #btn-about.active {
+      color: var(--pt-gold);
+      border-color: var(--pt-gold);
+    }
+
+    /* ── Tool palette (slides in from left) ── */
+    #palette-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 240px;
+      background: var(--pt-bg-dark);
+      border-right: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 4px 0 24px rgba(0,0,0,0.55);
+      z-index: 600;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform 0.22s cubic-bezier(.4,0,.2,1);
+      overflow: hidden;
+    }
+    #palette-panel.open { transform: translateX(0); }
+    #palette-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px 8px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      flex-shrink: 0;
+    }
+    #palette-panel-header h2 {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--pt-red);
+      margin: 0;
+      letter-spacing: 0.3px;
+    }
+    #btn-palette-close {
+      background: none;
+      border: none;
+      color: var(--pt-off-white);
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 3px;
+      opacity: 0.6;
+      cursor: pointer;
+    }
+    #btn-palette-close:hover { background: rgba(255,255,255,0.08); opacity: 1; }
+    #palette-panel-body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 14px 16px 10px;
+    }
+    #palette-panel-footer {
+      flex-shrink: 0;
+      padding: 10px 16px 14px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    #btn-reset-settings {
+      width: 100%;
+      background: none;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--pt-off-white);
+      font-size: 0.75rem;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      opacity: 0.6;
+      transition: background 0.15s, opacity 0.15s, border-color 0.15s;
+    }
+    #btn-reset-settings:hover {
+      background: rgba(220,80,60,0.12);
+      border-color: rgba(220,80,60,0.45);
+      color: #e06961;
+      opacity: 1;
+    }
+    #btn-store-theme {
+      flex-shrink: 0;
+      background: none;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--pt-off-white);
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      opacity: 0.6;
+      transition: background 0.15s, opacity 0.15s, border-color 0.15s;
+    }
+    #btn-store-theme:not(:disabled):hover {
+      background: rgba(60,180,100,0.14);
+      border-color: rgba(60,180,100,0.5);
+      color: #6ddb96;
+      opacity: 1;
+    }
+    #btn-store-theme:disabled {
+      opacity: 0.25;
+      cursor: default;
+    }
+    .pt-palette-section {
+      margin-bottom: 18px;
+    }
+    .pt-palette-section + .pt-palette-section {
+      border-top: 1px solid rgba(255,255,255,0.07);
+      padding-top: 14px;
+    }
+    .pt-palette-section h3 {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--pt-teal);
+      margin: 0 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .pt-palette-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .pt-palette-row .form-range { width: 140px; flex: 1; }
+    .pt-palette-row .pt-val {
+      font-size: 0.75rem;
+      color: var(--pt-gold);
+      width: 18px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .pt-palette-label {
+      font-size: 0.75rem;
+      color: var(--pt-cream);
+      flex-shrink: 0;
+    }
+    .pt-palette-select {
+      flex: 1;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 3px;
+      color: var(--pt-off-white);
+      font-size: 0.75rem;
+      font-family: inherit;
+      padding: 2px 4px;
+      outline: none;
+      min-width: 0;
+    }
+    .pt-palette-select:focus {
+      border-color: var(--pt-gold);
+    }
+    .pt-palette-select:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .pt-palette-color {
+      width: 36px;
+      height: 22px;
+      padding: 1px 2px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 3px;
+      cursor: pointer;
+      background: none;
+      flex-shrink: 0;
+    }
+    /* palette button active state */
+    #btn-palette.active {
+      color: var(--bs-primary);
+      border-color: var(--bs-primary);
+    }
+
+    /* ── Tooltip ── */
+    #tooltip {
+      position: absolute;
+      background: var(--pt-bg-dark);
+      border: 1px solid var(--pt-border);
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-size: 0.63rem;
+      color: var(--pt-off-white);
+      pointer-events: none;
+      display: none;
+      max-width: 320px;
+      word-break: break-all;
+      z-index: 10;
+      line-height: 1.6;
+    }
+
+    /* ── Open Tree Modal ── */
+    .pt-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 800;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .pt-modal-overlay.open { display: flex; }
+    .pt-modal {
+      background: var(--bs-modal-bg, #033940);
+      border: 1px solid var(--bs-modal-border-color, #002b36);
+      border-radius: var(--bs-modal-border-radius, 0.5rem);
+      box-shadow: var(--bs-box-shadow, 0 0.5rem 1rem rgba(0,0,0,0.15));
+      width: 480px;
+      max-width: calc(100vw - 40px);
+    }
+    .pt-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      border-bottom: 1px solid var(--bs-modal-header-border-color, #002b36);
+    }
+    .pt-modal-close-btn {
+      background: none;
+      border: none;
+      color: var(--bs-body-color);
+      font-size: 1.25rem;
+      line-height: 1;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--bs-border-radius-sm);
+      opacity: 0.5;
+      cursor: pointer;
+    }
+    .pt-modal-close-btn:hover:not(:disabled) { opacity: 0.75; background: rgba(255,255,255,0.08); }
+    .pt-modal-close-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+    .pt-modal-body { padding: 1rem; }
+    /* Tabs */
+    .pt-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--bs-nav-tabs-border-color, #073642);
+      margin-bottom: 1rem;
+      gap: 0;
+    }
+    .pt-tab-btn {
+      background: none;
+      border: 1px solid transparent;
+      border-bottom: none;
+      color: var(--bs-nav-link-color, var(--bs-link-color));
+      font-family: inherit;
+      font-size: 0.875rem;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      margin-bottom: -1px;
+      border-radius: var(--bs-border-radius) var(--bs-border-radius) 0 0;
+    }
+    .pt-tab-btn:hover { color: var(--bs-nav-link-hover-color); border-color: var(--bs-nav-tabs-link-hover-border-color, #073642); }
+    .pt-tab-btn.active {
+      color: var(--bs-nav-tabs-link-active-color, rgba(255,255,255,0.75));
+      background-color: var(--bs-nav-tabs-link-active-bg, #002b36);
+      border-color: var(--bs-nav-tabs-link-active-border-color, #073642);
+    }
+    .pt-tab-panel { display: none; }
+    .pt-tab-panel.active { display: block; }
+    /* Drop zone – matching Sealion's .file-drop-zone */
+    .pt-drop-zone {
+      border: 2px dashed #404040;
+      border-radius: var(--bs-border-radius);
+      padding: 28px 16px 22px;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+    .pt-drop-zone:hover {
+      background-color: rgba(13, 110, 253, 0.05);
+    }
+    .pt-drop-zone.drag-over {
+      background-color: rgba(13, 110, 253, 0.1);
+      border-color: #0d6efd;
+    }
+    .pt-drop-zone p { margin: 0 0 4px; font-size: 0.875rem; }
+    .pt-drop-icon { font-size: 2rem; color: var(--bs-primary); margin-bottom: 10px; line-height: 1; }
+    /* URL input */
+    .pt-modal-url-input {
+      width: 100%;
+      background: var(--bs-secondary-bg, var(--pt-bg-dark));
+      border: 1px solid var(--bs-border-color, #073642);
+      border-radius: var(--bs-border-radius-sm);
+      color: var(--bs-body-color);
+      font-family: inherit;
+      font-size: 0.875rem;
+      padding: 0.375rem 0.75rem;
+      margin-bottom: 1rem;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .pt-modal-url-input:focus { border-color: var(--bs-primary); box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb),0.25); }
+    .pt-modal-url-input::placeholder { opacity: 0.35; }
+    /* Modal loading */
+    .pt-modal-loading {
+      text-align: center;
+      padding: 14px 0 4px;
+      font-size: 0.875rem;
+      color: var(--bs-secondary-color);
+    }
+    .pt-modal-loading .pt-spinner { margin: 0 auto 8px; }
+    /* Modal error */
+    .pt-modal-error {
+      background: var(--bs-danger-bg-subtle);
+      border: 1px solid var(--bs-danger-border-subtle);
+      border-radius: var(--bs-border-radius-sm);
+      color: var(--bs-danger-text-emphasis);
+      font-size: 0.875rem;
+      padding: 0.75rem 1rem;
+      margin-top: 1rem;
+    }
+    /* Example panel */
+    .pt-example-center {
+      text-align: center;
+      padding: 1.25rem 0 0.5rem;
+    }
+    .pt-example-center p {
+      font-size: 0.875rem;
+      color: var(--bs-secondary-color);
+      margin: 0 0 1rem;
+      line-height: 1.55;
+    }
+    /* ── Import Annotations dialog ── */
+    .imp-section { margin-bottom: 0.85rem; }
+    .imp-section > label.imp-section-label {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--bs-secondary-color);
+      margin-bottom: 0.3rem;
+    }
+    .imp-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.25rem;
+    }
+    .imp-select {
+      flex: 1;
+      min-width: 0;
+      background: #02292e;
+      color: var(--bs-body-color);
+      border: 1px solid #235b62;
+      border-radius: 0.25rem;
+      padding: 0.2rem 0.4rem;
+      font-size: 0.82rem;
+    }
+    .imp-col-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.2rem 0.75rem;
+    }
+    .imp-col-grid label {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.82rem;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .imp-result-row {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      padding: 0.25rem 0;
+    }
+    .imp-result-icon { font-size: 1rem; }
+    .imp-ok  { color: #859900; }
+    .imp-warn{ color: #b58900; }
+    .imp-err { color: #dc322f; }
+    /* ── Export Tree dialog ── */
+    .exp-section { margin-bottom: 0.85rem; }
+    .exp-section-label {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--bs-secondary-color);
+      margin-bottom: 0.35rem;
+    }
+    .exp-radio-group { display: flex; flex-direction: column; gap: 0.3rem; }
+    .exp-radio-opt {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.86rem;
+      cursor: pointer;
+    }
+    .exp-radio-opt.exp-disabled { opacity: 0.38; cursor: not-allowed; }
+    /* ── Export Graphic dialog ── */
+    .expg-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.5rem;
+    }
+    .expg-label {
+      font-size: 0.82rem;
+      color: var(--bs-secondary-color);
+      min-width: 5rem;
+      flex-shrink: 0;
+    }
+    .expg-input {
+      flex: 1;
+      background: #02292e;
+      color: var(--bs-body-color);
+      border: 1px solid #235b62;
+      border-radius: 0.25rem;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.86rem;
+      font-family: inherit;
+    }
+    .expg-input:focus { outline: none; border-color: var(--bs-primary); }
+    .expg-radios { display: flex; gap: 1rem; align-items: center; }
+    .expg-radio { display: flex; align-items: center; gap: 0.35rem; font-size: 0.86rem; cursor: pointer; }
+    .expg-dim-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .expg-dim-px {
+      width: 90px;
+      background: #02292e;
+      color: var(--bs-body-color);
+      border: 1px solid #235b62;
+      border-radius: 0.25rem;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.86rem;
+      font-family: monospace;
+    }
+    .expg-dim-px:focus { outline: none; border-color: var(--bs-primary); }
+    #expg-png-opts { border-top: 1px solid #235b62; padding-top: 0.75rem; margin-top: 0.3rem; }
+    .expg-hint { font-size: 0.76rem; color: var(--bs-secondary-color); margin-top: 0.3rem; }
+  </style>
+</head>
+<body>
+
+<nav class="pt-toolbar">
+  <!-- Visual options palette (left panel) -->
+  <button id="btn-palette" class="btn btn-sm btn-outline-secondary" title="Visual options panel (Tab)"><i class="bi bi-sliders"></i><i class="bi bi-caret-right"></i></button>
+  <div class="pt-toolbar-sep"></div>
+
+  <!-- Open file / Import annotations -->
+  <button id="btn-open-tree" class="btn btn-sm btn-outline-primary" title="Open tree file (⌘O)"><i class="bi bi-folder2-open"></i></button>
+  <button id="btn-import-annot" class="btn btn-sm btn-outline-success" disabled title="Import annotations from CSV/TSV"><i class="bi bi-table"></i></button>
+  <button id="btn-export-tree"    class="btn btn-sm btn-outline-info" disabled title="Export tree (Newick or NEXUS)"><i class="bi bi-file-earmark-arrow-down"></i></button>
+  <button id="btn-export-graphic" class="btn btn-sm btn-outline-warning" disabled title="Download graphic (SVG or PNG)"><i class="bi bi-image"></i></button>
+  <div class="pt-toolbar-sep"></div>
+
+  <!-- Back / Forward -->
+  <span class="form-label-sm" style="padding: 0 2px 0 4px;">History:</span>
+  <div class="btn-group" role="group" aria-label="Navigate history">
+    <button id="btn-back"    class="btn btn-sm btn-outline-secondary" disabled title="Navigate back (⌘[)"><i class="bi bi-chevron-left"></i></button>
+    <button id="btn-forward" class="btn btn-sm btn-outline-secondary" disabled title="Navigate forward (⌘])"><i class="bi bi-chevron-right"></i></button>
+  </div>
+  <div class="pt-toolbar-sep"></div>
+
+   <!-- Zoom -->
+  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Zoom:</span>
+  <div class="btn-group" role="group" aria-label="Zoom">
+    <button id="btn-zoom-in"  class="btn btn-sm btn-outline-secondary" title="Zoom in (⌘+)"><i class="bi bi-zoom-in"></i></button>
+    <button id="btn-zoom-out" class="btn btn-sm btn-outline-secondary" title="Zoom out (⌘−)"><i class="bi bi-zoom-out"></i></button>
+  </div>
+
+  <!-- Fit -->
+  <div class="btn-group" role="group" aria-label="Fit view">
+    <button id="btn-fit"        class="btn btn-sm btn-outline-secondary" title="Fit all (⌘0)"><i class="bi bi-arrows-fullscreen"></i></button>
+    <button id="btn-fit-labels" class="btn btn-sm btn-outline-secondary" title="Fit labels (⌘⌥0)"><i class="bi bi-type"></i></button>
+  </div>
+  <div class="pt-toolbar-sep"></div>
+
+  <!-- Order -->
+  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Order:</span>
+  <div class="btn-group" role="group" aria-label="Branch order">
+    <button id="btn-order-asc"  class="btn btn-sm btn-outline-secondary" title="Order branches ascending by clade size (⌘D)"><i class="bi bi-sort-up"></i></button>
+    <button id="btn-order-desc" class="btn btn-sm btn-outline-secondary" title="Order branches descending by clade size (⌘U)"><i class="bi bi-sort-down"></i></button>
+  </div>
+
+  <div class="pt-toolbar-sep"></div>
+    <!-- Rotate node -->
+  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Rotate:</span>
+  <div class="btn-group" role="group" aria-label="Rotate node">
+    <button id="btn-rotate" class="btn btn-sm btn-outline-secondary" disabled
+      title="Rotate selected node (reverse direct children order)"><i class="bi bi-repeat" style="display:inline-block;transform:rotate(90deg)"></i></button>
+    <button id="btn-rotate-all" class="btn btn-sm btn-outline-secondary" disabled
+      title="Rotate all nodes in subtree (reverse children at every level)"><i class="bi bi-symmetry-horizontal" style="display:inline-block;transform:scaleX(-1)"></i></button>
+  </div>
+  <div class="pt-toolbar-sep"></div>
+
+
+  <!-- Select mode -->
+  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Select:</span>
+  <div class="btn-group" role="group" aria-label="Selection mode">
+    <button id="btn-mode-nodes"    class="btn btn-sm btn-outline-secondary active" title="Select nodes mode"><i class="bi bi-circle" style="display:inline-block;transform:rotate(-90deg)"></i></button>
+    <button id="btn-mode-branches" class="btn btn-sm btn-outline-secondary"        title="Toggle branches/nodes mode (⌘B)"><i class="bi bi-dash-lg"></i></button>
+  </div>
+  <div class="pt-toolbar-sep"></div>
+
+  <!-- Reroot -->
+  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Root:</span>
+  <button id="btn-reroot" class="btn btn-sm btn-outline-secondary" disabled title="Reroot tree at selection"><i class="bi bi-reply-fill"></i></button>
+  <!-- Midpoint root -->
+  <button id="btn-midpoint-root" class="btn btn-sm btn-outline-secondary" disabled title="Midpoint root (⌘M)"><i class="bi bi-vr" style="display:inline-block;transform:rotate(90deg)"></i></button>
+
+  <!-- Hide / Show collapsed subtree -->
+  <div class="pt-toolbar-sep"></div>
+  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Hide:</span>
+  <div class="btn-group" role="group" aria-label="Hide/show subtree">
+    <button id="btn-hide" class="btn btn-sm btn-outline-secondary" disabled title="Collapse selected subtree"><i class="bi bi-eye-slash"></i></button>
+    <button id="btn-show" class="btn btn-sm btn-outline-secondary" disabled title="Expand selected collapsed subtree"><i class="bi bi-eye"></i></button>
+  </div>
+
+  <!-- Node Info -->
+  <div class="pt-toolbar-sep"></div>
+  <button id="btn-node-info" class="btn btn-sm btn-outline-secondary" disabled title="Node info (⌘I)"><i class="bi bi-info-circle"></i></button>
+
+  <!-- User colour -->
+  <div class="pt-toolbar-sep"></div>
+  <div class="pt-colour-pick-wrap">
+    <input type="color" id="btn-node-colour" class="pt-colour-picker" disabled
+      title="Pick colour for selected nodes" value="#ff8800">
+    <button id="btn-apply-user-colour" class="btn btn-sm btn-outline-secondary" disabled
+      title="Apply colour to selected nodes"><i class="bi bi-brush"></i></button>
+    <button id="btn-clear-user-colour" class="btn btn-sm btn-outline-secondary" disabled
+      title="Clear all user colours"><i class="bi bi-eraser"></i></button>
+  </div>
+
+  <!-- Tip filter -->
+  <div class="ms-auto"></div>
+  <div class="pt-filter-wrap">
+    <input type="search" id="tip-filter" class="pt-filter-input" placeholder="Filter tips…" disabled autocomplete="off" spellcheck="false">
+    <span id="tip-filter-count" class="pt-filter-count" hidden></span>
+  </div>
+  <div class="ms-auto"></div>
+
+  <!-- About -->
+  <button id="btn-about" class="btn btn-sm btn-outline-secondary" title="About PearTree"><i class="bi bi-caret-left"></i><i class="bi bi-info-circle"></i></button>
+  <!-- Help -->
+  <button id="btn-help" class="btn btn-sm btn-outline-secondary" title="Help (⌘?)"><i class="bi bi-caret-left"></i><i class="bi bi-question-circle"></i></button>
+</nav>
+
+<div id="canvas-container">
+  <canvas id="legend-left-canvas"  class="pt-legend-canvas"></canvas>
+  <div id="canvas-and-axis-wrapper">
+    <div id="canvas-wrapper">
+      <div id="loading"><div class="pt-spinner"></div><p id="loading-msg">Fetching tree file…</p></div>
+      <div id="error"></div>
+      <canvas id="tree-canvas"></canvas>
+      <div id="tooltip"></div>
+    </div>
+    <canvas id="axis-canvas"></canvas>
+  </div>
+  <canvas id="legend-right-canvas" class="pt-legend-canvas right"></canvas>
+</div>
+
+<div id="status-bar">
+  <a id="status-brand" href="https://github.com/artic-network/peartree" target="_blank" rel="noopener" title="PearTree on GitHub"><i class="bi bi-tree"></i>PearTree</a>
+  <canvas id="status-canvas"></canvas>
+</div>
+
+<!-- Open Tree Modal -->
+<div id="open-tree-modal" class="pt-modal-overlay">
+  <div class="pt-modal">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-folder2-open me-2"></i>Open Tree File</h5>
+      <button class="pt-modal-close-btn" id="btn-modal-close" title="Close" disabled>&times;</button>
+    </div>
+    <div class="pt-modal-body">
+      <div class="pt-tabs">
+        <button class="pt-tab-btn active" data-tab="file"><i class="bi bi-folder2-open me-1"></i>File</button>
+        <button class="pt-tab-btn" data-tab="url"><i class="bi bi-link-45deg me-1"></i>URL</button>
+        <button class="pt-tab-btn" data-tab="example"><i class="bi bi-tree me-1"></i>Example</button>
+      </div>
+
+      <!-- File panel -->
+      <div class="pt-tab-panel active" id="tab-panel-file">
+        <div id="tree-drop-zone" class="pt-drop-zone">
+          <div class="pt-drop-icon"><i class="bi bi-file-earmark-arrow-down"></i></div>
+          <p>Drag and drop your tree file here</p>
+          <p class="text-secondary" style="font-size:0.8rem; margin-bottom:1rem">NEXUS (.nex, .nexus, .tre, .tree) &nbsp;or&nbsp; Newick (.nwk, .newick)</p>
+          <input type="file" id="tree-file-input" accept=".nex,.nexus,.tre,.tree,.nwk,.newick,.txt" style="display:none">
+          <button class="btn btn-sm btn-outline-primary" id="btn-file-choose"><i class="bi bi-folder2-open me-1"></i>Choose File</button>
+        </div>
+      </div>
+
+      <!-- URL panel -->
+      <div class="pt-tab-panel" id="tab-panel-url">
+        <label class="form-label">Tree file URL</label>
+        <input type="url" class="pt-modal-url-input" id="tree-url-input" placeholder="https://example.com/tree.nexus" />
+        <div style="text-align:center">
+          <button class="btn btn-sm btn-outline-primary" id="btn-load-url"><i class="bi bi-cloud-download me-1"></i>Load from URL</button>
+        </div>
+      </div>
+
+      <!-- Example panel -->
+      <div class="pt-tab-panel" id="tab-panel-example">
+        <div class="pt-example-center">
+          <p>Load the example <strong>Ebola virus (EBOV)</strong> phylogenetic tree<br/>from the 2014–2016 West Africa epidemic.</p>
+          <button class="btn btn-sm btn-outline-success" id="btn-load-example"><i class="bi bi-tree me-1"></i>Load Example Data</button>
+        </div>
+      </div>
+
+      <!-- Loading indicator -->
+      <div class="pt-modal-loading" id="modal-loading" style="display:none">
+        <div class="pt-spinner"></div>
+        Loading&hellip;
+      </div>
+
+      <!-- Error display -->
+      <div class="pt-modal-error" id="modal-error" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Import Annotations Dialog -->
+<div id="import-annot-overlay" class="pt-modal-overlay">
+  <div class="pt-modal">
+    <div class="pt-modal-header">
+      <h5 class="modal-title" id="import-annot-title"><i class="bi bi-file-earmark-plus me-2"></i>Import Annotations</h5>
+      <button class="pt-modal-close-btn" id="import-annot-close" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body" id="import-annot-body">
+      <!-- Populated by JS: phase 1 = picker, phase 2 = config, phase 3 = results -->
+    </div>
+    <div id="import-annot-footer" style="padding:0.5rem 1rem;border-top:1px solid var(--bs-modal-header-border-color,#002b36);display:flex;justify-content:flex-end;gap:0.5rem;"></div>
+  </div>
+</div>
+
+<!-- Export Tree Dialog -->
+<div id="export-tree-overlay" class="pt-modal-overlay">
+  <div class="pt-modal">
+    <div class="pt-modal-header">
+      <h5 class="modal-title" id="export-tree-title"><i class="bi bi-file-earmark-arrow-down me-2"></i>Export Tree</h5>
+      <button class="pt-modal-close-btn" id="export-tree-close" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body" id="export-tree-body">
+      <!-- Populated by JS -->
+    </div>
+    <div id="export-tree-footer" style="padding:0.5rem 1rem;border-top:1px solid var(--bs-modal-header-border-color,#002b36);display:flex;justify-content:flex-end;gap:0.5rem;"></div>
+  </div>
+</div>
+
+<!-- Export Graphic Dialog -->
+<div id="export-graphic-overlay" class="pt-modal-overlay">
+  <div class="pt-modal">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-image me-2"></i>Download Graphic</h5>
+      <button class="pt-modal-close-btn" id="export-graphic-close" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body" id="export-graphic-body">
+      <!-- Populated by JS -->
+    </div>
+    <div id="export-graphic-footer" style="padding:0.5rem 1rem;border-top:1px solid var(--bs-modal-header-border-color,#002b36);display:flex;justify-content:flex-end;gap:0.5rem;"></div>
+  </div>
+</div>
+
+<!-- Node Info Dialog (Cmd+I) -->
+<div id="node-info-overlay" style="display:none;position:fixed;inset:0;z-index:900;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);">
+  <div style="background:#033940;border:1px solid #002b36;border-radius:0.5rem;box-shadow:0 0.5rem 1.5rem rgba(0,0,0,0.4);min-width:340px;max-width:500px;max-height:78vh;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.55rem 1rem;border-bottom:1px solid #002b36;">
+      <span id="node-info-title" style="font-weight:600;color:var(--pt-accent,#e6d595);font-size:0.85rem;"></span>
+      <button id="node-info-close" class="pt-modal-close-btn" title="Close">&times;</button>
+    </div>
+    <div id="node-info-body" style="overflow-y:auto;padding:0.65rem 1rem;font-size:0.78rem;font-family:monospace;"></div>
+  </div>
+</div>
+
+<!-- Tool palette panel -->
+<div id="palette-panel">
+  <div id="palette-panel-header">
+    <h2><i class="bi bi-sliders me-1"></i>Visual Options</h2>
+    <button id="btn-palette-close" title="Close">&times;</button>
+  </div>
+  <div id="palette-panel-body">
+
+    <div class="pt-palette-section">
+      <h3><i class="bi bi-palette2"></i> Theme</h3>
+      <div class="pt-palette-row">
+        <select class="pt-palette-select" id="theme-select" style="flex:1"></select>
+        <button id="btn-store-theme" title="Save current settings as a named theme" disabled>Store</button>
+      </div>
+    </div>
+
+    <div class="pt-palette-section">
+      <h3><i class="bi bi-diagram-3"></i> Tree</h3>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Background</span>
+        <input type="color" class="pt-palette-color" id="canvas-bg-color" value="#02292e" />
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Branches</span>
+        <input type="color" class="pt-palette-color" id="branch-color" value="#f2f1e6" />
+      </div>
+      <div class="pt-palette-row">
+        <i class="bi bi-distribute-horizontal form-label-sm"></i>
+        <input type="range" class="form-range" id="branch-width-slider" min="0.5" max="8" step="0.5" value="1" />
+        <span class="pt-val" id="branch-width-value">1</span>
+      </div>
+    </div>
+
+    <div class="pt-palette-section">
+      <h3><i class="bi bi-tag"></i> Tip Labels</h3>
+      <div class="pt-palette-row">
+        <i class="bi bi-fonts form-label-sm"></i>
+        <input type="range" class="form-range" id="font-size-slider" min="6" max="20" value="11" />
+        <span class="pt-val" id="font-size-value">11</span>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Colour</span>
+        <input type="color" class="pt-palette-color" id="label-color" value="#f7eeca" />
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Colour by</span>
+        <select class="pt-palette-select" id="label-colour-by" disabled>
+          <option value="user_colour">user colour</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="pt-palette-section">
+      <h3><i class="bi bi-circle"></i> Tip Shapes</h3>
+      <div class="pt-palette-row">
+        <i class="bi bi-record-circle form-label-sm"></i>
+        <input type="range" class="form-range" id="tip-size-slider" min="0" max="12" value="3" />
+        <span class="pt-val" id="tip-size-value">3</span>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Colour</span>
+        <input type="color" class="pt-palette-color" id="tip-shape-color" value="#888888" />
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Background</span>
+        <input type="color" class="pt-palette-color" id="tip-shape-bg-color" value="#02292e" />
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Bg size</span>
+        <input type="range" class="form-range" id="tip-halo-slider" min="0" max="8" value="2" />
+        <span class="pt-val" id="tip-halo-value">2</span>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Colour by</span>
+        <select class="pt-palette-select" id="tip-colour-by" disabled>
+          <option value="user_colour">user colour</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="pt-palette-section">
+      <h3><i class="bi bi-record-circle"></i> Node Shapes</h3>
+      <div class="pt-palette-row">
+        <i class="bi bi-record-circle form-label-sm"></i>
+        <input type="range" class="form-range" id="node-size-slider" min="0" max="12" value="0" />
+        <span class="pt-val" id="node-size-value">0</span>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Colour</span>
+        <input type="color" class="pt-palette-color" id="node-shape-color" value="#888888" />
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Background</span>
+        <input type="color" class="pt-palette-color" id="node-shape-bg-color" value="#02292e" />
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Bg size</span>
+        <input type="range" class="form-range" id="node-halo-slider" min="0" max="8" value="2" />
+        <span class="pt-val" id="node-halo-value">2</span>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Colour by</span>
+        <select class="pt-palette-select" id="node-colour-by" disabled>
+          <option value="user_colour">user colour</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="pt-palette-section">
+      <h3><i class="bi bi-card-list"></i> Legend</h3>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Show</span>
+        <select class="pt-palette-select" id="legend-show">
+          <option value="off">Off</option>
+          <option value="left">Left</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Annotation</span>
+        <select class="pt-palette-select" id="legend-annotation" disabled>
+          <option value="">(none)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="pt-palette-section">
+      <h3><i class="bi bi-rulers"></i> Axis</h3>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Show</span>
+        <select class="pt-palette-select" id="axis-show">
+          <option value="off">Off</option>
+          <option value="on">On</option>
+        </select>
+      </div>
+      <div class="pt-palette-row" id="axis-date-row" style="display:none">
+        <span class="pt-palette-label">Date ann.</span>
+        <select class="pt-palette-select" id="axis-date-annotation">
+          <option value="">(none)</option>
+        </select>
+      </div>
+      <div class="pt-palette-row" id="axis-major-interval-row" style="display:none">
+        <span class="pt-palette-label">Major ticks</span>
+        <select class="pt-palette-select" id="axis-major-interval">
+          <option value="auto">Auto</option>
+          <option value="decades">Decades</option>
+          <option value="years">Years</option>
+          <option value="quarters">Quarters</option>
+          <option value="months">Months</option>
+          <option value="weeks">Weeks</option>
+          <option value="days">Days</option>
+        </select>
+      </div>
+      <div class="pt-palette-row" id="axis-minor-interval-row" style="display:none">
+        <span class="pt-palette-label">Minor ticks</span>
+        <select class="pt-palette-select" id="axis-minor-interval">
+          <option value="off">Off</option>
+        </select>
+      </div>
+      <div class="pt-palette-row" id="axis-major-label-row" style="display:none">
+        <span class="pt-palette-label">Major labels</span>
+        <select class="pt-palette-select" id="axis-major-label">
+          <option value="auto">Auto</option>
+          <option value="off">Off</option>
+          <option value="component">Component</option>
+          <option value="yyyy">yyyy</option>
+          <option value="yyyy-MM">yyyy-MM</option>
+          <option value="yyyy-MMM">yyyy-MMM</option>
+          <option value="yyyy-mm-dd">yyyy-mm-dd</option>
+          <option value="yyyy-MMM-dd">yyyy-MMM-dd</option>
+          <option value="dd MMM yyyy">dd MMM yyyy</option>
+        </select>
+      </div>
+      <div class="pt-palette-row" id="axis-minor-label-row" style="display:none">
+        <span class="pt-palette-label">Minor labels</span>
+        <select class="pt-palette-select" id="axis-minor-label">
+          <option value="off">Off</option>
+          <option value="component">Component</option>
+          <option value="yyyy">yyyy</option>
+          <option value="yyyy-MM">yyyy-MM</option>
+          <option value="yyyy-MMM">yyyy-MMM</option>
+          <option value="yyyy-mm-dd">yyyy-mm-dd</option>
+          <option value="yyyy-MMM-dd">yyyy-MMM-dd</option>
+          <option value="dd MMM yyyy">dd MMM yyyy</option>
+        </select>
+      </div>
+    </div>
+
+  </div>
+  <div id="palette-panel-footer">
+    <button id="btn-reset-settings" title="Reset all visual settings to their defaults">
+      <i class="bi bi-arrow-counterclockwise me-1"></i>Reset to defaults
+    </button>
+  </div>
+</div>
+
+<!-- Help panel -->
+<div id="help-panel">
+  <div id="help-panel-header">
+    <h2>PearTree Help</h2>
+    <button id="btn-help-close" title="Close help">&times;</button>
+  </div>
+  <div id="help-panel-body">
+    <div class="help-md" id="help-content"><p style="opacity:0.5">Loading…</p></div>
+  </div>
+</div>
+
+<div id="about-panel">
+  <div id="about-panel-header">
+    <h2><i class="bi bi-tree me-2"></i>About PearTree</h2>
+    <button id="btn-about-close" title="Close">&times;</button>
+  </div>
+  <div id="about-panel-body">
+    <div class="help-md" id="about-content"><p style="opacity:0.5">Loading…</p></div>
+  </div>
+</div>
+
+<script>
+  // ── Tool palette panel ────────────────────────────────────────────────────
+  const palettePanel     = document.getElementById('palette-panel');
+  const btnPalette       = document.getElementById('btn-palette');
+  const btnPaletteClose  = document.getElementById('btn-palette-close');
+
+  function openPalette() {
+    palettePanel.classList.add('open');
+    btnPalette.classList.add('active');
+  }
+  function closePalette() {
+    palettePanel.classList.remove('open');
+    btnPalette.classList.remove('active');
+  }
+
+  btnPalette.addEventListener('click', e => {
+    e.stopPropagation();
+    palettePanel.classList.contains('open') ? closePalette() : openPalette();
+  });
+  btnPaletteClose.addEventListener('click', closePalette);
+
+  // Slider live value readouts
+  const fontSliderEl = document.getElementById('font-size-slider');
+  const tipSliderEl  = document.getElementById('tip-size-slider');
+  const nodeSliderEl = document.getElementById('node-size-slider');
+  const fontValEl    = document.getElementById('font-size-value');
+  const tipValEl     = document.getElementById('tip-size-value');
+  const nodeValEl    = document.getElementById('node-size-value');
+  fontSliderEl.addEventListener('input',  () => { fontValEl.textContent  = fontSliderEl.value; });
+  tipSliderEl.addEventListener('input',   () => { tipValEl.textContent   = tipSliderEl.value; });
+  nodeSliderEl.addEventListener('input',  () => { nodeValEl.textContent  = nodeSliderEl.value; });
+
+  // Help panel
+  const helpPanel   = document.getElementById('help-panel');
+  const helpContent = document.getElementById('help-content');
+  const btnHelp      = document.getElementById('btn-help');
+  const btnHelpClose = document.getElementById('btn-help-close');
+  let helpLoaded = false;
+
+  async function openHelp() {
+    if (!helpLoaded) {
+      try {
+        const r = await fetch('help.md');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const md = await r.text();
+        helpContent.innerHTML = marked.parse(md);
+        helpLoaded = true;
+      } catch (err) {
+        helpContent.innerHTML = `<p style="color:var(--pt-red)">Could not load help.md: ${err.message}</p>`;
+      }
+    }
+    closeAbout();
+    helpPanel.classList.add('open');
+    btnHelp.classList.add('active');
+  }
+
+  function closeHelp() {
+    helpPanel.classList.remove('open');
+    btnHelp.classList.remove('active');
+  }
+
+  btnHelp.addEventListener('click', e => {
+    e.stopPropagation();
+    helpPanel.classList.contains('open') ? closeHelp() : openHelp();
+  });
+  btnHelpClose.addEventListener('click', closeHelp);
+
+  // About panel
+  const aboutPanel    = document.getElementById('about-panel');
+  const aboutContent  = document.getElementById('about-content');
+  const btnAbout      = document.getElementById('btn-about');
+  const btnAboutClose = document.getElementById('btn-about-close');
+  let aboutLoaded = false;
+
+  async function openAbout() {
+    if (!aboutLoaded) {
+      try {
+        const r = await fetch('about.md');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const md = await r.text();
+        aboutContent.innerHTML = marked.parse(md);
+        aboutLoaded = true;
+      } catch (err) {
+        aboutContent.innerHTML = `<p style="color:var(--pt-red)">Could not load about.md: ${err.message}</p>`;
+      }
+    }
+    closeHelp();
+    aboutPanel.classList.add('open');
+    btnAbout.classList.add('active');
+  }
+
+  function closeAbout() {
+    aboutPanel.classList.remove('open');
+    btnAbout.classList.remove('active');
+  }
+
+  btnAbout.addEventListener('click', e => {
+    e.stopPropagation();
+    aboutPanel.classList.contains('open') ? closeAbout() : openAbout();
+  });
+  btnAboutClose.addEventListener('click', closeAbout);
+
+  // Clicking the tree canvas closes any open panel immediately.
+  document.getElementById('tree-canvas').addEventListener('pointerdown', () => {
+    closePalette();
+    closeHelp();
+    closeAbout();
+  });
+
+  // Tab key toggles palette (unless focus is in a form element)
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Tab' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      const tag = document.activeElement && document.activeElement.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      e.preventDefault();
+      palettePanel.classList.contains('open') ? closePalette() : openPalette();
+    }
+  });
+
+  // Close help on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeHelp(); closePalette(); closeAbout(); }
+  });
+</script>
+<script type="module" src="js/peartree.js"></script>
+</body>
+</html>
