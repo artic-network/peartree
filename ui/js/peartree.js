@@ -39,6 +39,9 @@ import { AxisRenderer  } from './axisrenderer.js';
   const axisMinorIntervalRow   = document.getElementById('axis-minor-interval-row');
   const axisMajorLabelRow      = document.getElementById('axis-major-label-row');
   const axisMinorLabelRow      = document.getElementById('axis-minor-label-row');
+  const axisColorEl           = document.getElementById('axis-color');
+  const axisFontSizeSlider    = document.getElementById('axis-font-size-slider');
+  const axisLineWidthSlider   = document.getElementById('axis-line-width-slider');
   const themeSelect            = document.getElementById('theme-select');
   const btnStoreTheme          = document.getElementById('btn-store-theme');
   const btnFit                 = document.getElementById('btn-fit');
@@ -72,6 +75,7 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeHaloSize:     '2',
             nodeShapeColor:   '#888888',
             nodeShapeBgColor: '#02292e',
+            axisColor:        '#f2f1e6',
         },
         "Minimal": {
             canvasBgColor:    '#fff',
@@ -87,6 +91,7 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeHaloSize:     '2',
             nodeShapeColor:   '#636363',
             nodeShapeBgColor: '#000',
+            axisColor:        '#444444',
         },
         // Warm pastels: Grand Budapest Hotel / Moonrise Kingdom palette
         "Wes": {
@@ -103,6 +108,7 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeHaloSize:     '2',
             nodeShapeColor:   '#b8962e',
             nodeShapeBgColor: '#f5edd6',
+            axisColor:        '#4a2040',
         },
         // Deep jewel tones: The Life Aquatic / Isle of Dogs palette
         "Wes Dark": {
@@ -119,6 +125,7 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeHaloSize:     '2',
             nodeShapeColor:   '#7dbfcc',
             nodeShapeBgColor: '#1e2d3a',
+            axisColor:        '#edd59c',
         },
         // Royal Tenenbaums: aged plaster, forest green, burgundy, tennis-ball gold
         "Tenenbaums": {
@@ -135,6 +142,7 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeHaloSize:     '2',
             nodeShapeColor:   '#c8a020',
             nodeShapeBgColor: '#f0e8d8',
+            axisColor:        '#2b4a2a',
         },
         // Fantastic Mr Fox: night earth, fox orange, rust, harvest green
         "Mr Fox": {
@@ -143,14 +151,15 @@ import { AxisRenderer  } from './axisrenderer.js';
             branchWidth:      '1',
             fontSize:         '11',
             labelColor:       '#f0c060',
-            tipSize:          '4',
-            tipHaloSize:      '2',
+            tipSize:          '3',
+            tipHaloSize:      '1',
             tipShapeColor:    '#c84a18',
             tipShapeBgColor:  '#1a0d00',
-            nodeSize:         '0',
-            nodeHaloSize:     '2',
+            nodeSize:         '3',
+            nodeHaloSize:     '1',
             nodeShapeColor:   '#508a28',
             nodeShapeBgColor: '#1a0d00',
+            axisColor:        '#f0c060',
         },
         // The Darjeeling Limited: warm cream, saffron, cerulean, rust
         "Darjeeling": {
@@ -167,6 +176,7 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeHaloSize:     '2',
             nodeShapeColor:   '#c04428',
             nodeShapeBgColor: '#faf0d8',
+            axisColor:        '#3a2010',
         },
         // Mid Century Modern – Birch: warm white, teak, avocado, harvest gold
         "MCM Birch": {
@@ -183,6 +193,7 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeHaloSize:     '2',
             nodeShapeColor:   '#c88c24',
             nodeShapeBgColor: '#f2ede0',
+            axisColor:        '#2a1c10',
         },
         // Mid Century Modern – Walnut: warm sand, burnt sienna, mustard, teal
         "MCM Walnut": {
@@ -199,6 +210,7 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeHaloSize:     '2',
             nodeShapeColor:   '#2a6870',
             nodeShapeBgColor: '#e8dcc8',
+            axisColor:        '#3a1c0a',
         },
         // Mid Century Modern – Eames: dark walnut, warm amber, turquoise, coral
         "MCM Eames": {
@@ -215,6 +227,7 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeHaloSize:     '2',
             nodeShapeColor:   '#c44030',
             nodeShapeBgColor: '#1a1208',
+            axisColor:        '#f0d890',
         },
         // Áine O'Toole's publication style: white bg, near-black branches,
         // bold coral tip circles with white halo, clean dark labels — as seen
@@ -233,6 +246,7 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeHaloSize:     '2',
             nodeShapeColor:   '#2a7a8a',
             nodeShapeBgColor: '#ffffff',
+            axisColor:        '#222222',
         },
   };
 
@@ -293,6 +307,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       nodeHaloSize:     nodeHaloSlider.value,
       nodeShapeColor:   nodeShapeColorEl.value,
       nodeShapeBgColor: nodeShapeBgEl.value,
+      axisColor:        axisColorEl.value,
     };
   }
 
@@ -331,6 +346,9 @@ import { AxisRenderer  } from './axisrenderer.js';
     nodeHaloSize:     '2',
     nodeShapeColor:   '#636363',
     nodeShapeBgColor: '#000',
+    axisColor:        '#f2f1e6',
+    axisFontSize:     '9',
+    axisLineWidth:    '1',
     legendShow:         'off',
     axisShow:           'off',
     axisDateAnnotation: '',
@@ -372,6 +390,9 @@ import { AxisRenderer  } from './axisrenderer.js';
       axisMinorInterval:    axisMinorIntervalEl.value,
       axisMajorLabelFormat: axisMajorLabelEl.value,
       axisMinorLabelFormat: axisMinorLabelEl.value,
+      axisColor:          axisColorEl.value,
+      axisFontSize:       axisFontSizeSlider.value,
+      axisLineWidth:      axisLineWidthSlider.value,
       nodeOrder:        currentOrder,
       mode:             renderer ? renderer._mode : 'nodes',
     }));
@@ -408,6 +429,9 @@ import { AxisRenderer  } from './axisrenderer.js';
       axisMinorInterval:    axisMinorIntervalEl.value,
       axisMajorLabelFormat: axisMajorLabelEl.value,
       axisMinorLabelFormat: axisMinorLabelEl.value,
+      axisColor:          axisColorEl.value,
+      axisFontSize:       axisFontSizeSlider.value,
+      axisLineWidth:      axisLineWidthSlider.value,
       nodeOrder:        currentOrder,
       mode:             renderer ? renderer._mode : 'nodes',
     };
@@ -458,6 +482,7 @@ import { AxisRenderer  } from './axisrenderer.js';
     if (s.axisMinorInterval)     axisMinorIntervalEl.value = s.axisMinorInterval;
     if (s.axisMajorLabelFormat)  axisMajorLabelEl.value   = s.axisMajorLabelFormat;
     if (s.axisMinorLabelFormat)  axisMinorLabelEl.value   = s.axisMinorLabelFormat;
+    if (s.axisColor)             axisColorEl.value        = s.axisColor;
     if (s.legendShow)            legendShowEl.value       = s.legendShow;
     // Set themeSelect to the stored theme name (or 'custom' if not known).
     const themeName = s.theme && themeRegistry.has(s.theme) ? s.theme : (s.theme === 'custom' ? 'custom' : 'custom');
@@ -477,6 +502,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       if (s.nodeHaloSize   != null) renderer.setNodeHaloSize(parseInt(s.nodeHaloSize));
       if (s.nodeShapeColor)        renderer.setNodeShapeColor(s.nodeShapeColor);
       if (s.nodeShapeBgColor)      renderer.setNodeShapeBgColor(s.nodeShapeBgColor);
+      if (s.axisColor)             axisRenderer.setColor(s.axisColor);
     }
   }
 
@@ -499,6 +525,10 @@ import { AxisRenderer  } from './axisrenderer.js';
     axisMajorLabelEl.value       = DEFAULTS.axisMajorLabelFormat;
     axisMinorLabelEl.value       = DEFAULTS.axisMinorLabelFormat;
     _updateMinorOptions(DEFAULTS.axisMajorInterval, DEFAULTS.axisMinorInterval);
+    axisFontSizeSlider.value = DEFAULTS.axisFontSize;
+    document.getElementById('axis-font-size-value').textContent = DEFAULTS.axisFontSize;
+    axisLineWidthSlider.value = DEFAULTS.axisLineWidth;
+    document.getElementById('axis-line-width-value').textContent = DEFAULTS.axisLineWidth;
 
     if (renderer) {
       renderer.setTipColourBy('user_colour');
@@ -508,6 +538,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       applyLegend();
       applyAxis();
       applyTickOptions();
+      applyAxisStyle();
     }
 
     // Reset order + mode button states (if controls are already bound).
@@ -543,6 +574,9 @@ import { AxisRenderer  } from './axisrenderer.js';
     document.getElementById('node-halo-value').textContent    = t.nodeHaloSize;
     nodeShapeColorEl.value  = t.nodeShapeColor;
     nodeShapeBgEl.value     = t.nodeShapeBgColor;
+    if (t.axisColor) {
+      axisColorEl.value = t.axisColor;
+    }
     if (renderer) {
       renderer.setBgColor(t.canvasBgColor);
       renderer.setBranchColor(t.branchColor);
@@ -557,6 +591,9 @@ import { AxisRenderer  } from './axisrenderer.js';
       renderer.setNodeHaloSize(parseInt(t.nodeHaloSize));
       renderer.setNodeShapeColor(t.nodeShapeColor);
       renderer.setNodeShapeBgColor(t.nodeShapeBgColor);
+      if (t.axisColor) axisRenderer.setColor(t.axisColor);
+      // Invalidate axis hash so next update redraws
+      axisRenderer._lastHash = '';
     }
     themeSelect.value = name;
     btnStoreTheme.disabled = true;
@@ -613,6 +650,15 @@ import { AxisRenderer  } from './axisrenderer.js';
   }
   if (_saved.nodeShapeColor)       nodeShapeColorEl.value   = _saved.nodeShapeColor;
   if (_saved.nodeShapeBgColor)     nodeShapeBgEl.value      = _saved.nodeShapeBgColor;
+  if (_saved.axisColor)            axisColorEl.value        = _saved.axisColor;
+  if (_saved.axisFontSize != null) {
+    axisFontSizeSlider.value = _saved.axisFontSize;
+    document.getElementById('axis-font-size-value').textContent = _saved.axisFontSize;
+  }
+  if (_saved.axisLineWidth != null) {
+    axisLineWidthSlider.value = _saved.axisLineWidth;
+    document.getElementById('axis-line-width-value').textContent = _saved.axisLineWidth;
+  }
   if (_saved.legendShow)           legendShowEl.value       = _saved.legendShow;
   // Restore saved theme name (or default to Artic if no saved settings)
   themeSelect.value = _saved.theme || 'Artic';
@@ -661,6 +707,10 @@ import { AxisRenderer  } from './axisrenderer.js';
 
   // ── Axis renderer ─────────────────────────────────────────────────────────
   const axisRenderer          = new AxisRenderer(axisCanvas);
+  // Apply saved (or default) axis style immediately
+  axisRenderer.setColor(axisColorEl.value);
+  axisRenderer.setFontSize(parseInt(axisFontSizeSlider.value));
+  axisRenderer.setLineWidth(parseFloat(axisLineWidthSlider.value));
   const canvasAndAxisWrapper  = document.getElementById('canvas-and-axis-wrapper');
 
   renderer._onViewChange = (scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr) => {
@@ -3085,6 +3135,28 @@ import { AxisRenderer  } from './axisrenderer.js';
     );
     saveSettings();
   }
+
+  function applyAxisStyle() {
+    axisRenderer.setColor(axisColorEl.value);
+    axisRenderer.setLineWidth(parseFloat(axisLineWidthSlider.value));
+    axisRenderer.setFontSize(parseInt(axisFontSizeSlider.value));
+    axisRenderer.update(
+      renderer.scaleX, renderer.offsetX, renderer.paddingLeft,
+      renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
+      window.devicePixelRatio || 1,
+    );
+    saveSettings();
+  }
+
+  axisColorEl.addEventListener('input', () => { _markCustomTheme(); applyAxisStyle(); });
+  axisFontSizeSlider.addEventListener('input', () => {
+    document.getElementById('axis-font-size-value').textContent = axisFontSizeSlider.value;
+    applyAxisStyle();
+  });
+  axisLineWidthSlider.addEventListener('input', () => {
+    document.getElementById('axis-line-width-value').textContent = axisLineWidthSlider.value;
+    applyAxisStyle();
+  });
 
   function _showDateTickRows(visible) {
     const d = visible ? 'flex' : 'none';

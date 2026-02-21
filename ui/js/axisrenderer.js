@@ -39,6 +39,11 @@ export class AxisRenderer {
     this._minorLabelFormat = 'off';
 
     this._lastHash = '';
+
+    // ── Style overrides ───────────────────────────────────────────────────
+    this._axisColor          = null;   // hex string; null → use built-in default colours
+    this._axisLineWidth      = 1;      // stroke width for ticks and baseline
+    this._axisFontSizeManual = false;  // true once setFontSize() has been called
   }
 
   // ── Public API ──────────────────────────────────────────────────────────
@@ -160,7 +165,10 @@ export class AxisRenderer {
       this._ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${paddingLeft}|${labelRightPad}|${bgColor}|${fontSize}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._anchorDecYear}|${this._anchorH}|${this._minTipH}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}`;
+    // Only auto-sync font size from tree if the user hasn't explicitly set one
+    if (!this._axisFontSizeManual) this._fontSize = Math.max(7, fontSize - 1);
+
+    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${paddingLeft}|${labelRightPad}|${bgColor}|${this._fontSize}|${this._axisColor ?? ''}|${this._axisLineWidth}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._anchorDecYear}|${this._anchorH}|${this._minTipH}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}`;
     if (hash === this._lastHash) return;
     this._lastHash = hash;
 
@@ -169,7 +177,6 @@ export class AxisRenderer {
     this._paddingLeft  = paddingLeft;
     this._labelRightPad = labelRightPad;
     this._bgColor      = bgColor;
-    this._fontSize     = Math.max(7, fontSize - 1);
     this._W            = W;
     this._H            = H;
     this._draw();
@@ -185,8 +192,21 @@ export class AxisRenderer {
   }
 
   setFontSize(px) {
-    this._fontSize = Math.max(7, px - 1);
-    this._lastHash = '';
+    this._fontSize          = Math.max(6, px);
+    this._axisFontSizeManual = true;
+    this._lastHash          = '';
+  }
+
+  /** Set the base colour used for ticks, baseline and labels (hex, e.g. '#f2f1e6'). */
+  setColor(hex) {
+    this._axisColor = hex || null;
+    this._lastHash  = '';
+  }
+
+  /** Set the stroke width for ticks and the baseline (default 1). */
+  setLineWidth(w) {
+    this._axisLineWidth = Math.max(0.5, w);
+    this._lastHash      = '';
   }
 
   // ── Drawing ──────────────────────────────────────────────────────────────
@@ -242,15 +262,17 @@ export class AxisRenderer {
     const Y_BASE      = 3;
     const MAJOR_H     = 9;
     const MINOR_H     = 5;
-    const TICK_COLOR  = 'rgba(255,255,255,0.45)';
-    const MINOR_COLOR = 'rgba(255,255,255,0.25)';
-    const TEXT_COLOR  = 'rgba(242,241,230,0.80)';
-    const TEXT_DIM    = 'rgba(242,241,230,0.45)';
+    const axC = this._axisColor;
+    const TICK_COLOR  = axC ? AxisRenderer._hexToRgba(axC, 0.55) : 'rgba(255,255,255,0.45)';
+    const MINOR_COLOR = axC ? AxisRenderer._hexToRgba(axC, 0.30) : 'rgba(255,255,255,0.25)';
+    const TEXT_COLOR  = axC ? AxisRenderer._hexToRgba(axC, 0.90) : 'rgba(242,241,230,0.80)';
+    const TEXT_DIM    = axC ? AxisRenderer._hexToRgba(axC, 0.50) : 'rgba(242,241,230,0.45)';
+    const lw          = this._axisLineWidth;
     const fsMinor     = Math.max(6, fs - 2);
 
     // Baseline
     ctx.strokeStyle = TICK_COLOR;
-    ctx.lineWidth   = 1;
+    ctx.lineWidth   = lw;
     ctx.beginPath();
     ctx.moveTo(plotLeft,  Y_BASE + 0.5);
     ctx.lineTo(plotRight, Y_BASE + 0.5);
@@ -269,7 +291,7 @@ export class AxisRenderer {
       const sx = this._valToScreenX(val);
       if (sx < plotLeft - 1 || sx > plotRight + 1) continue;
       ctx.strokeStyle = MINOR_COLOR;
-      ctx.lineWidth   = 1;
+      ctx.lineWidth   = lw;
       ctx.beginPath();
       ctx.moveTo(sx + 0.5, Y_BASE + 1);
       ctx.lineTo(sx + 0.5, Y_BASE + 1 + MINOR_H);
@@ -299,7 +321,7 @@ export class AxisRenderer {
       const sx = this._valToScreenX(val);
       if (sx < plotLeft - 1 || sx > plotRight + 1) continue;
       ctx.strokeStyle = TICK_COLOR;
-      ctx.lineWidth   = 1;
+      ctx.lineWidth   = lw;
       ctx.beginPath();
       ctx.moveTo(sx + 0.5, Y_BASE + 1);
       ctx.lineTo(sx + 0.5, Y_BASE + 1 + MAJOR_H);
@@ -385,6 +407,19 @@ export class AxisRenderer {
   }
 
   // ── Static helpers ────────────────────────────────────────────────────────
+
+  /**
+   * Convert a hex colour and alpha value to a CSS rgba() string.
+   * @param {string} hex   – '#rrggbb'
+   * @param {number} alpha – 0–1
+   */
+  static _hexToRgba(hex, alpha) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
 
   /**
    * Generate nicely-spaced ticks within [min, max].
