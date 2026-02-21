@@ -1178,7 +1178,10 @@ export class TreeRenderer {
     const outlineR = Math.max(r + tipHalo, 5);
 
     ctx.textBaseline = 'middle';
-    const showLabels = this.scaleY > 1;
+    // Show labels only when tips are spaced at least half a label-height apart
+    // (≤50% overlap). At scaleY == fontSize labels exactly clear each other;
+    // at scaleY == fontSize*0.5 they overlap by exactly 50%.
+    const showLabels = this.scaleY >= this.fontSize * 0.5;
 
     // Pass 1 – halo strokes for internal node shapes
     if (nodeR > 0 && nodeHalo > 0) {
