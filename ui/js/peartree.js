@@ -2481,6 +2481,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       btnHide.disabled      = !canHide();
       btnShow.disabled      = !canShow();
       btnNodeInfo.disabled        = !graph;  // enabled whenever a tree is loaded
+      _setMenuEnabled('view-info', !!graph);
       btnApplyUserColour.disabled = !hasSelection;
       _setMenuEnabled('tree-rotate',      canRotate);
       _setMenuEnabled('tree-rotate-all',  canRotate);
@@ -3184,6 +3185,7 @@ import { AxisRenderer  } from './axisrenderer.js';
         case 'view-zoom-out':   document.getElementById('btn-zoom-out').click();    break;
         case 'view-fit':        document.getElementById('btn-fit').click();         break;
         case 'view-fit-labels': document.getElementById('btn-fit-labels').click();  break;
+        case 'view-info':       document.getElementById('btn-node-info').click();   break;
         // ── Tree menu ────────────────────────────────────────────────────────
         case 'tree-rotate':        document.getElementById('btn-rotate').click();            break;
         case 'tree-rotate-all':    document.getElementById('btn-rotate-all').click();        break;

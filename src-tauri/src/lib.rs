@@ -76,6 +76,7 @@ pub fn run() {
             let view_zoom_out   = MenuItem::with_id(app, "view-zoom-out",   "Zoom Out",   true, Some("CmdOrCtrl+-"))?;
             let view_fit        = MenuItem::with_id(app, "view-fit",        "Fit All",    true, Some("CmdOrCtrl+0"))?;
             let view_fit_labels = MenuItem::with_id(app, "view-fit-labels", "Fit Labels", true, Some("CmdOrCtrl+Shift+0"))?;
+            let view_info       = MenuItem::with_id(app, "view-info",       "Get Info...", true, Some("CmdOrCtrl+I"))?;
 
             let view_menu = Submenu::with_items(app, "View", true, &[
                 &view_back,
@@ -87,6 +88,8 @@ pub fn run() {
                 &PredefinedMenuItem::separator(app)?,
                 &view_fit,
                 &view_fit_labels,
+                &PredefinedMenuItem::separator(app)?,
+                &view_info,
             ])?;
 
             // ── Tree ─────────────────────────────────────────────────────────
@@ -148,8 +151,8 @@ pub fn run() {
             for item in &[&import_annot, &export_tree, &export_image] {
                 item.set_enabled(false)?;
             }
-            // View: no navigation history on startup.
-            for item in &[&view_back, &view_forward, &view_home] {
+            // View: no navigation history on startup; no tree for Get Info.
+            for item in &[&view_back, &view_forward, &view_home, &view_info] {
                 item.set_enabled(false)?;
             }
             // Tree: require a loaded tree and/or a selection.
