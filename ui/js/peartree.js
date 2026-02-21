@@ -2257,6 +2257,7 @@ import { AxisRenderer  } from './axisrenderer.js';
   function bindControls() {
     const btnBack      = document.getElementById('btn-back');
     const btnForward   = document.getElementById('btn-forward');
+    const btnHome      = document.getElementById('btn-home');
     const btnOrderAsc  = document.getElementById('btn-order-asc');
     const btnOrderDesc = document.getElementById('btn-order-desc');
     const btnReroot       = document.getElementById('btn-reroot');
@@ -2440,6 +2441,7 @@ import { AxisRenderer  } from './axisrenderer.js';
     renderer._onNavChange = (canBack, canFwd) => {
       btnBack.disabled    = !canBack;
       btnForward.disabled = !canFwd;
+      btnHome.disabled    = !renderer._viewSubtreeRootId;
     };
 
     renderer._onBranchSelectChange = (hasSelection) => {
@@ -2459,6 +2461,7 @@ import { AxisRenderer  } from './axisrenderer.js';
 
     btnBack.addEventListener('click',    () => renderer.navigateBack());
     btnForward.addEventListener('click', () => renderer.navigateForward());
+    btnHome.addEventListener('click',    () => renderer.navigateHome());
 
     btnOrderAsc.addEventListener('click',  () => applyOrder(false));
     btnOrderDesc.addEventListener('click', () => applyOrder(true));
@@ -2789,6 +2792,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       if (e.key === 'd' || e.key === 'D') { e.preventDefault(); applyOrder(true);  }
       if (e.key === '[' || e.key === '<') { e.preventDefault(); renderer.navigateBack(); }
       if (e.key === ']' || e.key === '>') { e.preventDefault(); renderer.navigateForward(); }
+      if (e.key === '\\')                 { e.preventDefault(); renderer.navigateHome(); }
       if (e.key === 'a' || e.key === 'A') {
         const inField = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable);
         if (!inField) {
@@ -3053,11 +3057,32 @@ import { AxisRenderer  } from './axisrenderer.js';
   if (window.__TAURI__?.event) {
     window.__TAURI__.event.listen('menu-event', ({ payload: id }) => {
       switch (id) {
+        // ── File menu ────────────────────────────────────────────────────────
         case 'open-tree':    document.getElementById('btn-open-tree').click();      break;
         case 'import-annot': document.getElementById('btn-import-annot').click();   break;
         case 'export-tree':  document.getElementById('btn-export-tree').click();    break;
         case 'export-image': document.getElementById('btn-export-graphic').click(); break;
         case 'show-help':    document.getElementById('btn-help').click();           break;
+        // ── View menu ────────────────────────────────────────────────────────
+        case 'view-back':       document.getElementById('btn-back').click();        break;
+        case 'view-forward':    document.getElementById('btn-forward').click();     break;
+        case 'view-home':       document.getElementById('btn-home').click();        break;
+        case 'view-zoom-in':    document.getElementById('btn-zoom-in').click();     break;
+        case 'view-zoom-out':   document.getElementById('btn-zoom-out').click();    break;
+        case 'view-fit':        document.getElementById('btn-fit').click();         break;
+        case 'view-fit-labels': document.getElementById('btn-fit-labels').click();  break;
+        // ── Tree menu ────────────────────────────────────────────────────────
+        case 'tree-rotate':        document.getElementById('btn-rotate').click();            break;
+        case 'tree-rotate-all':    document.getElementById('btn-rotate-all').click();        break;
+        case 'tree-order-up':      document.getElementById('btn-order-asc').click();         break;
+        case 'tree-order-down':    document.getElementById('btn-order-desc').click();        break;
+        case 'tree-reroot':        document.getElementById('btn-reroot').click();            break;
+        case 'tree-midpoint':      document.getElementById('btn-midpoint-root').click();     break;
+        case 'tree-hide':          document.getElementById('btn-hide').click();              break;
+        case 'tree-show':          document.getElementById('btn-show').click();              break;
+        case 'tree-paint':         document.getElementById('btn-apply-user-colour').click(); break;
+        case 'tree-clear-colours': document.getElementById('btn-clear-user-colour').click(); break;
+        // ── Edit menu ────────────────────────────────────────────────────────
         case 'select-all': {
           // If focus is inside a text input let the OS handle it natively
           const tag = document.activeElement?.tagName;

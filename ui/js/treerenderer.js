@@ -667,6 +667,47 @@ export class TreeRenderer {
     if (this._onNodeSelectChange) this._onNodeSelectChange(this._selectedTipIds.size > 0 || !!this._mrcaNodeId);
   }
 
+  /** Jump directly to the global root, pushing the current view onto the back stack. */
+  navigateHome() {
+    if (!this._viewSubtreeRootId) return; // already showing the full tree
+
+    // Capture screen position of the current subtree root (world x = 0).
+    const curRootLayout = this.nodes ? this.nodes.find(n => !n.parentId) : null;
+    const px_cur  = this.offsetX;
+    const py_cur  = curRootLayout ? this.offsetY + curRootLayout.y * this.scaleY : this.canvas.clientHeight / 2;
+    const curRootId = curRootLayout ? curRootLayout.id : null;
+
+    this._navStack.push(this._currentViewState());
+    this._fwdStack          = [];
+    this._viewSubtreeRootId = null;
+    this._selectedTipIds.clear();
+    this._mrcaNodeId = null;
+
+    const { nodes, nodeMap, maxX, maxY } = computeLayoutFromGraph(this.graph, null);
+    this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
+    this._measureLabels();
+    this._updateScaleX(false);
+    this._updateMinScaleY();
+    // Fit the whole tree into view.
+    const newOffsetY = this.paddingTop + this.minScaleY * 0.5;
+    this._setTarget(newOffsetY, this.minScaleY, false);
+
+    // Seed animation: the node we were rooted at slides from its current screen
+    // position to wherever it lives in the full-tree layout.
+    if (curRootId) {
+      const restoredNode = nodeMap.get(curRootId);
+      if (restoredNode) {
+        this.offsetX = px_cur - restoredNode.x * this.scaleX;
+        this.offsetY = py_cur - restoredNode.y * this.scaleY;
+      }
+    }
+    this._animating = true;
+    this._dirty = true;
+    if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
+    if (this._onNavChange) this._onNavChange(this._navStack.length > 0, false);
+    if (this._onNodeSelectChange) this._onNodeSelectChange(false);
+  }
+
   /** Measure the widest tip label once so _updateScaleX can stay cheap. */
   _measureLabels() {
     if (!this.nodes) return;
