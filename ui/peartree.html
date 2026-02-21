@@ -233,6 +233,29 @@
       cursor: default !important;
     }
 
+    /* ── Empty state (no tree loaded) ── */
+    #empty-state {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+      cursor: default;
+      user-select: none;
+      transition: background 0.15s;
+    }
+    #empty-state.drag-over {
+      background: rgba(255,255,255,0.04);
+      outline: 2px dashed rgba(255,255,255,0.25);
+      outline-offset: -12px;
+    }
+    #empty-state.hidden { display: none; }
+    .pt-empty-icon  { font-size: 3.5rem; opacity: 0.18; display: block; margin-bottom: 1.2rem; }
+    .pt-empty-title { font-size: 1rem; font-weight: 500; opacity: 0.55; margin-bottom: 0.35rem; }
+    .pt-empty-hint  { font-size: 0.8rem; opacity: 0.35; margin-bottom: 1.6rem; }
+
     /* ── Loading overlay ── */
     #loading {
       position: absolute;
@@ -863,22 +886,22 @@
    <!-- Zoom -->
   <span class="form-label-sm" style="padding: 0 2px 0 4px;">Zoom:</span>
   <div class="btn-group" role="group" aria-label="Zoom">
-    <button id="btn-zoom-in"  class="btn btn-sm btn-outline-secondary" title="Zoom in (⌘+)"><i class="bi bi-zoom-in"></i></button>
-    <button id="btn-zoom-out" class="btn btn-sm btn-outline-secondary" title="Zoom out (⌘−)"><i class="bi bi-zoom-out"></i></button>
+    <button id="btn-zoom-in"  class="btn btn-sm btn-outline-secondary" disabled title="Zoom in (⌘+)"><i class="bi bi-zoom-in"></i></button>
+    <button id="btn-zoom-out" class="btn btn-sm btn-outline-secondary" disabled title="Zoom out (⌘−)"><i class="bi bi-zoom-out"></i></button>
   </div>
 
   <!-- Fit -->
   <div class="btn-group" role="group" aria-label="Fit view">
-    <button id="btn-fit"        class="btn btn-sm btn-outline-secondary" title="Fit all (⌘0)"><i class="bi bi-arrows-fullscreen"></i></button>
-    <button id="btn-fit-labels" class="btn btn-sm btn-outline-secondary" title="Fit labels (⌘⇧0)"><i class="bi bi-type"></i></button>
+    <button id="btn-fit"        class="btn btn-sm btn-outline-secondary" disabled title="Fit all (⌘0)"><i class="bi bi-arrows-fullscreen"></i></button>
+    <button id="btn-fit-labels" class="btn btn-sm btn-outline-secondary" disabled title="Fit labels (⌘⇧0)"><i class="bi bi-type"></i></button>
   </div>
   <div class="pt-toolbar-sep"></div>
 
   <!-- Order -->
   <span class="form-label-sm" style="padding: 0 2px 0 4px;">Order:</span>
   <div class="btn-group" role="group" aria-label="Branch order">
-    <button id="btn-order-asc"  class="btn btn-sm btn-outline-secondary" title="Order branches ascending by clade size (⌘D)"><i class="bi bi-sort-up"></i></button>
-    <button id="btn-order-desc" class="btn btn-sm btn-outline-secondary" title="Order branches descending by clade size (⌘U)"><i class="bi bi-sort-down"></i></button>
+    <button id="btn-order-asc"  class="btn btn-sm btn-outline-secondary" disabled title="Order branches ascending by clade size (⌘D)"><i class="bi bi-sort-up"></i></button>
+    <button id="btn-order-desc" class="btn btn-sm btn-outline-secondary" disabled title="Order branches descending by clade size (⌘U)"><i class="bi bi-sort-down"></i></button>
   </div>
 
   <div class="pt-toolbar-sep"></div>
@@ -896,8 +919,8 @@
   <!-- Select mode -->
   <span class="form-label-sm" style="padding: 0 2px 0 4px;">Select:</span>
   <div class="btn-group" role="group" aria-label="Selection mode">
-    <button id="btn-mode-nodes"    class="btn btn-sm btn-outline-secondary active" title="Select nodes mode"><i class="bi bi-circle" style="display:inline-block;transform:rotate(-90deg)"></i></button>
-    <button id="btn-mode-branches" class="btn btn-sm btn-outline-secondary"        title="Toggle branches/nodes mode (⌘B)"><i class="bi bi-dash-lg"></i></button>
+    <button id="btn-mode-nodes"    class="btn btn-sm btn-outline-secondary active" disabled title="Select nodes mode"><i class="bi bi-circle" style="display:inline-block;transform:rotate(-90deg)"></i></button>
+    <button id="btn-mode-branches" class="btn btn-sm btn-outline-secondary" disabled title="Toggle branches/nodes mode (⌘B)"><i class="bi bi-dash-lg"></i></button>
   </div>
   <div class="pt-toolbar-sep"></div>
 
@@ -948,6 +971,14 @@
   <canvas id="legend-left-canvas"  class="pt-legend-canvas"></canvas>
   <div id="canvas-and-axis-wrapper">
     <div id="canvas-wrapper">
+      <div id="empty-state">
+        <div style="text-align:center">
+          <i class="bi bi-tree pt-empty-icon"></i>
+          <p class="pt-empty-title">No tree loaded</p>
+          <p class="pt-empty-hint">Drag a NEXUS or Newick file here</p>
+          <button class="btn btn-sm btn-outline-primary" id="empty-state-open-btn"><i class="bi bi-folder2-open me-1"></i>Open…</button>
+        </div>
+      </div>
       <div id="loading"><div class="pt-spinner"></div><p id="loading-msg">Fetching tree file…</p></div>
       <div id="error"></div>
       <canvas id="tree-canvas"></canvas>
@@ -968,7 +999,7 @@
   <div class="pt-modal">
     <div class="pt-modal-header">
       <h5 class="modal-title"><i class="bi bi-folder2-open me-2"></i>Open Tree File</h5>
-      <button class="pt-modal-close-btn" id="btn-modal-close" title="Close" disabled>&times;</button>
+      <button class="pt-modal-close-btn" id="btn-modal-close" title="Close">&times;</button>
     </div>
     <div class="pt-modal-body">
       <div class="pt-tabs">
@@ -983,7 +1014,7 @@
           <div class="pt-drop-icon"><i class="bi bi-file-earmark-arrow-down"></i></div>
           <p>Drag and drop your tree file here</p>
           <p class="text-secondary" style="font-size:0.8rem; margin-bottom:1rem">NEXUS (.nex, .nexus, .tre, .tree) &nbsp;or&nbsp; Newick (.nwk, .newick)</p>
-          <input type="file" id="tree-file-input" accept=".nex,.nexus,.tre,.tree,.nwk,.newick,.txt" style="display:none">
+          <input type="file" id="tree-file-input" accept=".nex,.nexus,.tre,.tree,.nwk,.newick,.txt" style="position:absolute;width:0;height:0;overflow:hidden;opacity:0;pointer-events:none">
           <button class="btn btn-sm btn-outline-primary" id="btn-file-choose"><i class="bi bi-folder2-open me-1"></i>Choose File</button>
         </div>
       </div>

@@ -68,11 +68,11 @@ import { AxisRenderer  } from './axisrenderer.js';
             fontSize:         '11',
             labelColor:       '#f7eeca',
             tipSize:          '3',
-            tipHaloSize:      '2',
+            tipHaloSize:      '1',
             tipShapeColor:    '#888888',
             tipShapeBgColor:  '#02292e',
             nodeSize:         '0',
-            nodeHaloSize:     '2',
+            nodeHaloSize:     '1',
             nodeShapeColor:   '#888888',
             nodeShapeBgColor: '#02292e',
             axisColor:        '#f2f1e6',
@@ -84,12 +84,12 @@ import { AxisRenderer  } from './axisrenderer.js';
             fontSize:         '11',
             labelColor:       '#000',
             tipSize:          '3',
-            tipHaloSize:      '2',
-            tipShapeColor:    '#464646',
+            tipHaloSize:      '1',
+            tipShapeColor:    '#fff',
             tipShapeBgColor:  '#000',
-            nodeSize:         '0',
-            nodeHaloSize:     '2',
-            nodeShapeColor:   '#636363',
+            nodeSize:         '2',
+            nodeHaloSize:     '1',
+            nodeShapeColor:   '#000',
             nodeShapeBgColor: '#000',
             axisColor:        '#444444',
         },
@@ -776,6 +776,11 @@ import { AxisRenderer  } from './axisrenderer.js';
 
   function closeModal() {
     modal.classList.remove('open');
+    // If no tree has been loaded yet, restore the empty-state overlay
+    if (!treeLoaded) {
+      const es = document.getElementById('empty-state');
+      if (es) es.classList.remove('hidden');
+    }
   }
 
   function setModalError(msg) {
@@ -801,8 +806,8 @@ import { AxisRenderer  } from './axisrenderer.js';
     });
   });
 
-  // Close button (only works after a tree has been loaded)
-  btnModalClose.addEventListener('click', () => { if (treeLoaded) closeModal(); });
+  // Close button — always enabled; returns to empty-state if no tree loaded yet
+  btnModalClose.addEventListener('click', () => closeModal());
 
   // ── Unified keyboard handler for all modal overlays ──────────────────────
   document.addEventListener('keydown', e => {
@@ -816,7 +821,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       if (importOverlay.classList.contains('open'))        { _closeAnnotDialog();    return; }
       const nodeInfoOv = document.getElementById('node-info-overlay');
       if (nodeInfoOv && nodeInfoOv.style.display !== 'none') { nodeInfoOv.style.display = 'none'; return; }
-      if (treeLoaded && modal.classList.contains('open'))  { closeModal();           return; }
+      if (modal.classList.contains('open'))  { closeModal();           return; }
     }
 
     if (e.key === 'Enter' && !e.shiftKey && !inTextField) {
@@ -836,7 +841,20 @@ import { AxisRenderer  } from './axisrenderer.js';
       }
       const nodeInfoOv = document.getElementById('node-info-overlay');
       if (nodeInfoOv && nodeInfoOv.style.display !== 'none') { nodeInfoOv.style.display = 'none'; return; }
-      if (treeLoaded && modal.classList.contains('open'))  { closeModal(); return; }
+      if (modal.classList.contains('open'))  { closeModal(); return; }
+    }
+
+    // ── File-open shortcuts (web-app context; Tauri handles these via native menu) ──
+    const cmdOrCtrl = e.metaKey || e.ctrlKey;
+    if (cmdOrCtrl && !e.shiftKey && e.key === 'o') {
+      e.preventDefault();
+      pickTreeFile();      // Cmd/Ctrl+O → direct native file picker
+      return;
+    }
+    if (cmdOrCtrl && e.shiftKey && e.key === 'O') {
+      e.preventDefault();
+      openModal();         // Cmd/Ctrl+Shift+O → Open Tree modal
+      return;
     }
   });
 
@@ -877,6 +895,23 @@ import { AxisRenderer  } from './axisrenderer.js';
     }
   }
 
+  /** Opens a tree file using the OS-native dialog.
+   *  In Tauri, WKWebView blocks file-input clicks from async callbacks
+   *  (menu events, keyboard shortcuts), so we use a Rust command instead.
+   *  In the web app we fall back to the hidden file input. */
+  async function pickTreeFile() {
+    if (window.__TAURI__?.core?.invoke) {
+      try {
+        const result = await window.__TAURI__.core.invoke('pick_tree_file');
+        if (result) await loadTree(result.content, result.name);
+      } catch (err) {
+        console.error('pick_tree_file failed:', err);
+      }
+    } else {
+      fileInput.click();
+    }
+  }
+
   // ── URL tab ───────────────────────────────────────────────────────────────
 
   document.getElementById('btn-load-url').addEventListener('click', async () => {
@@ -911,8 +946,22 @@ import { AxisRenderer  } from './axisrenderer.js';
     }
   });
 
-  // Show the modal on startup
-  openModal();
+  // ── Empty-state overlay (shown until first tree load) ──────────────────
+  const emptyStateEl = document.getElementById('empty-state');
+  document.getElementById('empty-state-open-btn').addEventListener('click', () => pickTreeFile());
+  emptyStateEl.addEventListener('dragover', e => {
+    e.preventDefault();
+    emptyStateEl.classList.add('drag-over');
+  });
+  emptyStateEl.addEventListener('dragleave', e => {
+    if (!emptyStateEl.contains(e.relatedTarget)) emptyStateEl.classList.remove('drag-over');
+  });
+  emptyStateEl.addEventListener('drop', e => {
+    e.preventDefault();
+    emptyStateEl.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) { openModal(); handleFile(file); }
+  });
 
   // ── Import Annotations ──────────────────────────────────────────────────
 
@@ -951,7 +1000,7 @@ import { AxisRenderer  } from './axisrenderer.js';
           <div class="pt-drop-icon"><i class="bi bi-file-earmark-arrow-down"></i></div>
           <p>Drag and drop your annotation file here</p>
           <p class="text-secondary" style="font-size:0.8rem;margin-bottom:1rem">CSV (.csv) &nbsp;or&nbsp; Tab-separated (.tsv)</p>
-          <input type="file" id="annot-file-input" accept=".csv,.tsv,.txt" style="display:none">
+          <input type="file" id="annot-file-input" accept=".csv,.tsv,.txt" style="position:absolute;width:0;height:0;overflow:hidden;opacity:0;pointer-events:none">
           <button class="btn btn-sm btn-outline-primary" id="btn-annot-file-choose"><i class="bi bi-folder2-open me-1"></i>Choose File</button>
         </div>
       </div>
@@ -2250,12 +2299,22 @@ import { AxisRenderer  } from './axisrenderer.js';
 
       if (!treeLoaded) {
         treeLoaded = true;
-        btnModalClose.disabled      = false;
-        btnImportAnnot.disabled     = false;
-        btnExportTree.disabled      = false;
-        btnExportGraphic.disabled   = false;
-        tipFilterEl.disabled        = false;
-        tipColourPickerEl.disabled   = false;
+        btnImportAnnot.disabled         = false;
+        btnExportTree.disabled          = false;
+        btnExportGraphic.disabled       = false;
+        tipFilterEl.disabled            = false;
+        tipColourPickerEl.disabled      = false;
+        // Enable tree-interaction toolbar buttons
+        document.getElementById('btn-zoom-in').disabled       = false;
+        document.getElementById('btn-zoom-out').disabled      = false;
+        document.getElementById('btn-fit').disabled           = false;
+        document.getElementById('btn-fit-labels').disabled    = false;
+        document.getElementById('btn-order-asc').disabled     = false;
+        document.getElementById('btn-order-desc').disabled    = false;
+        document.getElementById('btn-mode-nodes').disabled    = false;
+        document.getElementById('btn-mode-branches').disabled = false;
+        // Hide the empty-state overlay
+        emptyStateEl.classList.add('hidden');
         _setMenuEnabled('import-annot', true);
         _setMenuEnabled('export-tree',  true);
         _setMenuEnabled('export-image', true);
@@ -3244,7 +3303,8 @@ import { AxisRenderer  } from './axisrenderer.js';
     window.__TAURI__.event.listen('menu-event', ({ payload: id }) => {
       switch (id) {
         // ── File menu ────────────────────────────────────────────────────────
-        case 'open-tree':    document.getElementById('btn-open-tree').click();      break;
+        case 'open-file':  pickTreeFile();                                        break;
+        case 'open-tree':  document.getElementById('btn-open-tree').click();       break;
         case 'import-annot': document.getElementById('btn-import-annot').click();   break;
         case 'export-tree':  document.getElementById('btn-export-tree').click();    break;
         case 'export-image': document.getElementById('btn-export-graphic').click(); break;

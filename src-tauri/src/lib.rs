@@ -2,6 +2,7 @@ use tauri::{
     menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu},
     Emitter,
 };
+use tauri_plugin_dialog::DialogExt;
 
 /// Called from JS to enable/disable a menu item by its string id.
 #[tauri::command]
@@ -15,11 +16,41 @@ fn set_menu_item_enabled(app: tauri::AppHandle, id: &str, enabled: bool) {
     }
 }
 
+/// Opens a native OS file picker filtered to tree file types, reads the
+/// selected file, and returns `{"name": "...", "content": "..."}` to JS.
+/// Returns `null` if the user cancels.
+#[tauri::command]
+fn pick_tree_file(app: tauri::AppHandle) -> Result<Option<serde_json::Value>, String> {
+    let result = app
+        .dialog()
+        .file()
+        .add_filter(
+            "Tree files",
+            &["nex", "nexus", "tre", "tree", "nwk", "newick", "txt"],
+        )
+        .blocking_pick_file();
+
+    match result {
+        None => Ok(None),
+        Some(file_path) => {
+            let path = file_path.into_path().map_err(|e| e.to_string())?;
+            let name = path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("tree")
+                .to_string();
+            let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+            Ok(Some(serde_json::json!({ "name": name, "content": content })))
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![set_menu_item_enabled])
+        .invoke_handler(tauri::generate_handler![set_menu_item_enabled, pick_tree_file])
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             // ── PearTree (app menu) ───────────────────────────────────────────
             let app_menu = Submenu::with_items(app, "PearTree", true, &[
@@ -40,12 +71,14 @@ pub fn run() {
             ])?;
 
             // ── File ──────────────────────────────────────────────────────────
-            let open_tree    = MenuItem::with_id(app, "open-tree",    "Open Tree\u{2026}",           true, Some("CmdOrCtrl+O"))?;
-            let import_annot = MenuItem::with_id(app, "import-annot", "Import Annotations\u{2026}",  true, Some("CmdOrCtrl+Shift+O"))?;
+            let open_file    = MenuItem::with_id(app, "open-file",    "Open\u{2026}",                true, Some("CmdOrCtrl+O"))?;
+            let open_tree    = MenuItem::with_id(app, "open-tree",    "Open Tree\u{2026}",           true, Some("CmdOrCtrl+Shift+O"))?;
+            let import_annot = MenuItem::with_id(app, "import-annot", "Import Annotations\u{2026}",  true, Some("CmdOrCtrl+Shift+A"))?;
             let export_tree  = MenuItem::with_id(app, "export-tree",  "Export Tree\u{2026}",          true, Some("CmdOrCtrl+E"))?;
             let export_image = MenuItem::with_id(app, "export-image", "Export Image\u{2026}",         true, Some("CmdOrCtrl+Shift+E"))?;
 
             let file_menu = Submenu::with_items(app, "File", true, &[
+                &open_file,
                 &open_tree,
                 &import_annot,
                 &PredefinedMenuItem::separator(app)?,
