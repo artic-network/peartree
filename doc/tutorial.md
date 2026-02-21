@@ -131,6 +131,8 @@ The peak magnification is always capped at the *Fit Labels* spacing level, so la
 
 ## 7. Rerooting the Tree
 
+Re-rooting of trees is not possible for trees that are explicitly rooted (generally determined by whether they have annotations for the root node). This will be the case for time calibrated trees from BEAST, for example.
+
 ### Midpoint Root (⌘M)
 
 Press **⌘M** (or click **Midpoint** in the toolbar) to automatically root the tree at the midpoint of its longest path. This is a common starting point for exploratory analysis.
@@ -182,12 +184,27 @@ Select an internal node, then use the **Rotate** buttons:
 
 ## 10. Hiding and Showing Subtrees
 
-1. Select an internal node.
-2. Click **Hide** (eye-slash icon) — the subtree collapses into a filled triangle labelled with the tip count.
+Hiding removes a node and all of its descendants from the tree layout entirely — they simply disappear from the canvas and the remaining tree reflows to fill the space. This is useful for focusing on a subset of the tree without changing the underlying data.
 
-> **📸 SCREENSHOT PLACEHOLDER** — A collapsed subtree shown as a filled triangle with tip count annotation.
+### Hiding a Subtree
 
-To restore it: select the collapsed node, then click **Show** (eye icon).
+1. Select an internal node (its descendant tips will be highlighted).
+2. Click the **Hide** button (eye-slash icon) in the toolbar.
+
+The selected node and all its descendants are removed from the view. The tree animates to close the gap, and the branch leading to the hidden node is no longer drawn. The tip count shown elsewhere (e.g. in Node Info) reflects only the still-visible tips.
+
+> **📸 SCREENSHOT PLACEHOLDER** — EBOV tree before and after hiding a clade; the remaining branches have reflowed to fill the canvas.
+
+### Showing Hidden Nodes
+
+To restore hidden nodes:
+
+- **With a node selected** — select the parent node (the branch stub where the hidden subtree was attached) and click **Show** (eye icon). The hidden descendants of that node are restored.
+- **With nothing selected** — click **Show** with no selection to reveal *all* hidden nodes in the current view at once.
+
+> **📸 SCREENSHOT PLACEHOLDER** — The same clade restored after clicking Show; tree animates back to the full layout.
+
+> **Note:** Hiding changes the visible tip count, so any active branch ordering (ascending/descending) is automatically cleared when you hide or show nodes.
 
 ---
 
