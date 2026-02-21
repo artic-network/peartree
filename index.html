@@ -585,6 +585,58 @@
       margin: 0 0 1rem;
       line-height: 1.55;
     }
+    /* ── Import Annotations dialog ── */
+    .imp-section { margin-bottom: 0.85rem; }
+    .imp-section > label.imp-section-label {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--bs-secondary-color);
+      margin-bottom: 0.3rem;
+    }
+    .imp-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.25rem;
+    }
+    .imp-select {
+      flex: 1;
+      min-width: 0;
+      background: #02292e;
+      color: var(--bs-body-color);
+      border: 1px solid #235b62;
+      border-radius: 0.25rem;
+      padding: 0.2rem 0.4rem;
+      font-size: 0.82rem;
+    }
+    .imp-col-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.2rem 0.75rem;
+    }
+    .imp-col-grid label {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.82rem;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .imp-result-row {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      padding: 0.25rem 0;
+    }
+    .imp-result-icon { font-size: 1rem; }
+    .imp-ok  { color: #859900; }
+    .imp-warn{ color: #b58900; }
+    .imp-err { color: #dc322f; }
   </style>
 </head>
 <body>
@@ -594,8 +646,9 @@
   <button id="btn-palette" class="btn btn-sm btn-outline-secondary" title="Visual options panel (Tab)"><i class="bi bi-sliders"></i><i class="bi bi-caret-right"></i></button>
   <div class="pt-toolbar-sep"></div>
 
-  <!-- Open file -->
+  <!-- Open file / Import annotations -->
   <button id="btn-open-tree" class="btn btn-sm btn-outline-primary" title="Open tree file (⌘O)"><i class="bi bi-folder2-open"></i></button>
+  <button id="btn-import-annot" class="btn btn-sm btn-outline-success" disabled title="Import annotations from CSV/TSV"><i class="bi bi-file-earmark-plus"></i></button>
   <div class="pt-toolbar-sep"></div>
 
   <!-- Back / Forward -->
@@ -740,6 +793,20 @@
       <!-- Error display -->
       <div class="pt-modal-error" id="modal-error" style="display:none"></div>
     </div>
+  </div>
+</div>
+
+<!-- Import Annotations Dialog -->
+<div id="import-annot-overlay" class="pt-modal-overlay">
+  <div class="pt-modal">
+    <div class="pt-modal-header">
+      <h5 class="modal-title" id="import-annot-title"><i class="bi bi-file-earmark-plus me-2"></i>Import Annotations</h5>
+      <button class="pt-modal-close-btn" id="import-annot-close" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body" id="import-annot-body">
+      <!-- Populated by JS: phase 1 = picker, phase 2 = config, phase 3 = results -->
+    </div>
+    <div id="import-annot-footer" style="padding:0.5rem 1rem;border-top:1px solid var(--bs-modal-header-border-color,#002b36);display:flex;justify-content:flex-end;gap:0.5rem;"></div>
   </div>
 </div>
 
