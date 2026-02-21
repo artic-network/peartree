@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PearTree",
+  "version": "0.1.0",
+  "identifier": "org.articnetwork.peartree",
+  "build": {
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "PearTree — Phylogenetic Tree Viewer",
+        "url": "peartree.html",
+        "width": 1400,
+        "height": 900,
+        "resizable": true,
+        "fullscreen": false,
+        "minWidth": 900,
+        "minHeight": 600
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' asset: https://asset.localhost; script-src 'self' 'unsafe-inline' asset: https://asset.localhost https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://artic-network.github.io; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https: http: asset: https://asset.localhost; img-src 'self' data: blob: asset: https://asset.localhost; worker-src 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Education",
+    "shortDescription": "Phylogenetic Tree Viewer",
+    "longDescription": "PearTree is a fast, interactive phylogenetic tree viewer for genomic epidemiology."
+  }
+}

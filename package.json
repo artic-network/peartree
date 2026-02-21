@@ -1,0 +1,15 @@
+{
+  "name": "peartree",
+  "version": "0.1.0",
+  "description": "PearTree — Phylogenetic Tree Viewer (Tauri desktop app)",
+  "private": true,
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "icon": "tauri icon"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}

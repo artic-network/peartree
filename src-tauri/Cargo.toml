@@ -1,0 +1,31 @@
+[package]
+name = "peartree"
+version = "0.1.0"
+description = "PearTree — Phylogenetic Tree Viewer"
+authors = ["ARTIC Network"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "peartree_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.dev]
+incremental = true
+
+[profile.release]
+panic = "abort"       # Strip expensive panic clean-up logic
+codegen-units = 1     # Compile crates one at a time for better optimization
+lto = true            # Enable link-time optimizations
+opt-level = "s"       # Optimize for binary size
+strip = true          # Remove debug symbols
