@@ -656,6 +656,51 @@
       cursor: pointer;
     }
     .exp-radio-opt.exp-disabled { opacity: 0.38; cursor: not-allowed; }
+    /* ── Export Graphic dialog ── */
+    .expg-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.5rem;
+    }
+    .expg-label {
+      font-size: 0.82rem;
+      color: var(--bs-secondary-color);
+      min-width: 5rem;
+      flex-shrink: 0;
+    }
+    .expg-input {
+      flex: 1;
+      background: #02292e;
+      color: var(--bs-body-color);
+      border: 1px solid #235b62;
+      border-radius: 0.25rem;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.86rem;
+      font-family: inherit;
+    }
+    .expg-input:focus { outline: none; border-color: var(--bs-primary); }
+    .expg-radios { display: flex; gap: 1rem; align-items: center; }
+    .expg-radio { display: flex; align-items: center; gap: 0.35rem; font-size: 0.86rem; cursor: pointer; }
+    .expg-dim-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .expg-dim-px {
+      width: 90px;
+      background: #02292e;
+      color: var(--bs-body-color);
+      border: 1px solid #235b62;
+      border-radius: 0.25rem;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.86rem;
+      font-family: monospace;
+    }
+    .expg-dim-px:focus { outline: none; border-color: var(--bs-primary); }
+    #expg-png-opts { border-top: 1px solid #235b62; padding-top: 0.75rem; margin-top: 0.3rem; }
+    .expg-hint { font-size: 0.76rem; color: var(--bs-secondary-color); margin-top: 0.3rem; }
   </style>
 </head>
 <body>
@@ -668,7 +713,8 @@
   <!-- Open file / Import annotations -->
   <button id="btn-open-tree" class="btn btn-sm btn-outline-primary" title="Open tree file (⌘O)"><i class="bi bi-folder2-open"></i></button>
   <button id="btn-import-annot" class="btn btn-sm btn-outline-success" disabled title="Import annotations from CSV/TSV"><i class="bi bi-file-earmark-plus"></i></button>
-  <button id="btn-export-tree" class="btn btn-sm btn-outline-info" disabled title="Export tree (Newick or NEXUS)"><i class="bi bi-file-earmark-arrow-down"></i></button>
+  <button id="btn-export-tree"    class="btn btn-sm btn-outline-info" disabled title="Export tree (Newick or NEXUS)"><i class="bi bi-file-earmark-arrow-down"></i></button>
+  <button id="btn-export-graphic" class="btn btn-sm btn-outline-warning" disabled title="Download graphic (SVG or PNG)"><i class="bi bi-image"></i></button>
   <div class="pt-toolbar-sep"></div>
 
   <!-- Back / Forward -->
@@ -841,6 +887,20 @@
       <!-- Populated by JS -->
     </div>
     <div id="export-tree-footer" style="padding:0.5rem 1rem;border-top:1px solid var(--bs-modal-header-border-color,#002b36);display:flex;justify-content:flex-end;gap:0.5rem;"></div>
+  </div>
+</div>
+
+<!-- Export Graphic Dialog -->
+<div id="export-graphic-overlay" class="pt-modal-overlay">
+  <div class="pt-modal">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-image me-2"></i>Download Graphic</h5>
+      <button class="pt-modal-close-btn" id="export-graphic-close" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body" id="export-graphic-body">
+      <!-- Populated by JS -->
+    </div>
+    <div id="export-graphic-footer" style="padding:0.5rem 1rem;border-top:1px solid var(--bs-modal-header-border-color,#002b36);display:flex;justify-content:flex-end;gap:0.5rem;"></div>
   </div>
 </div>
 

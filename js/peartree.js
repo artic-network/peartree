@@ -969,6 +969,296 @@ import { AxisRenderer  } from './axisrenderer.js';
     _closeExportDialog();
   }
 
+  // ── Export Graphic ─────────────────────────────────────────────────────────
+
+  const btnExportGraphic   = document.getElementById('btn-export-graphic');
+  const exportGraphicOverlay = document.getElementById('export-graphic-overlay');
+  const exportGraphicBody    = document.getElementById('export-graphic-body');
+  const exportGraphicFooter  = document.getElementById('export-graphic-footer');
+
+  document.getElementById('export-graphic-close').addEventListener('click', _closeGraphicsDialog);
+  btnExportGraphic.addEventListener('click', _openGraphicsDialog);
+
+  function _openGraphicsDialog() {
+    if (!graph) return;
+    exportGraphicOverlay.classList.add('open');
+    _buildGraphicsDialog();
+  }
+
+  function _closeGraphicsDialog() {
+    exportGraphicOverlay.classList.remove('open');
+  }
+
+  /** Return CSS-pixel dimensions of the full composite viewport. */
+  function _viewportDims() {
+    const llVisible = legendLeftCanvas.style.display !== 'none';
+    const lrVisible = legendRightCanvas.style.display !== 'none';
+    const axVisible = axisCanvas.style.display        !== 'none';
+    const llW = llVisible ? legendLeftCanvas.clientWidth  : 0;
+    const lrW = lrVisible ? legendRightCanvas.clientWidth : 0;
+    const ttW = canvas.clientWidth;
+    const ttH = canvas.clientHeight;
+    const axH = axVisible ? axisCanvas.clientHeight : 0;
+    return { totalW: llW + ttW + lrW, totalH: ttH + axH,
+             llW, lrW, ttW, ttH, axH, llVisible, lrVisible, axVisible };
+  }
+
+  function _buildGraphicsDialog() {
+    const { totalW, totalH } = _viewportDims();
+    const defPx = Math.round(totalW * 2);
+    const defH  = Math.round(totalH * 2);
+
+    exportGraphicBody.innerHTML = `
+      <div class="expg-row">
+        <span class="expg-label">Filename</span>
+        <input type="text" id="expg-filename" class="expg-input" value="tree" autocomplete="off" spellcheck="false">
+        <span id="expg-ext-hint" style="font-size:0.82rem;color:var(--bs-secondary-color);flex-shrink:0">.svg</span>
+      </div>
+      <div class="expg-row">
+        <span class="expg-label">Format</span>
+        <div class="expg-radios">
+          <label class="expg-radio"><input type="radio" name="expg-fmt" value="svg" checked>&nbsp;SVG (vector)</label>
+          <label class="expg-radio"><input type="radio" name="expg-fmt" value="png">&nbsp;PNG (raster)</label>
+        </div>
+      </div>
+      <div id="expg-png-opts" style="display:none">
+        <div class="expg-row">
+          <span class="expg-label">By</span>
+          <div class="expg-radios">
+            <label class="expg-radio"><input type="radio" name="expg-dim" value="w" checked>&nbsp;Width</label>
+            <label class="expg-radio"><input type="radio" name="expg-dim" value="h">&nbsp;Height</label>
+          </div>
+        </div>
+        <div class="expg-row">
+          <span class="expg-label">Size</span>
+          <div class="expg-dim-row">
+            <input type="number" id="expg-px" class="expg-dim-px" value="${defPx}" min="100" max="20000" step="1">
+            <span style="font-size:0.82rem;color:var(--bs-secondary-color)">px</span>
+            <span id="expg-other-dim" style="font-size:0.82rem;color:var(--bs-secondary-color)">→ height: ${defH} px</span>
+          </div>
+        </div>
+        <p class="expg-hint">Current viewport: ${totalW} × ${totalH} px &nbsp;·&nbsp; aspect ratio is fixed</p>
+      </div>`;
+
+    exportGraphicFooter.innerHTML = `
+      <button id="expg-cancel-btn"   class="btn btn-sm btn-secondary">Cancel</button>
+      <button id="expg-download-btn" class="btn btn-sm btn-primary"><i class="bi bi-download me-1"></i>Download</button>`;
+
+    document.querySelectorAll('input[name="expg-fmt"]').forEach(r => r.addEventListener('change', () => {
+      const isPng = document.querySelector('input[name="expg-fmt"]:checked')?.value === 'png';
+      document.getElementById('expg-png-opts').style.display = isPng ? 'block' : 'none';
+      document.getElementById('expg-ext-hint').textContent = isPng ? '.png' : '.svg';
+    }));
+    document.getElementById('expg-px').addEventListener('input', _updateExpgOtherDim);
+    document.querySelectorAll('input[name="expg-dim"]').forEach(r => r.addEventListener('change', _updateExpgOtherDim));
+    document.getElementById('expg-cancel-btn').addEventListener('click',   _closeGraphicsDialog);
+    document.getElementById('expg-download-btn').addEventListener('click', _doGraphicsExport);
+  }
+
+  function _updateExpgOtherDim() {
+    const { totalW, totalH } = _viewportDims();
+    const by  = document.querySelector('input[name="expg-dim"]:checked')?.value || 'w';
+    const px  = parseInt(document.getElementById('expg-px').value, 10) || 1000;
+    const el  = document.getElementById('expg-other-dim');
+    if (!el) return;
+    if (by === 'w') el.textContent = `→ height: ${Math.round(px * totalH / totalW)} px`;
+    else            el.textContent = `→ width: ${Math.round(px * totalW / totalH)} px`;
+  }
+
+  function _doGraphicsExport() {
+    const fmt      = document.querySelector('input[name="expg-fmt"]:checked')?.value || 'svg';
+    const filename = (document.getElementById('expg-filename')?.value.trim() || 'tree');
+
+    if (fmt === 'png') {
+      const { totalW, totalH } = _viewportDims();
+      const by = document.querySelector('input[name="expg-dim"]:checked')?.value || 'w';
+      const px = parseInt(document.getElementById('expg-px').value, 10) || Math.round(totalW * 2);
+      const targetW = by === 'w' ? px : Math.round(px * totalW / totalH);
+      const targetH = by === 'h' ? px : Math.round(px * totalH / totalW);
+
+      _compositeViewPng(targetW, targetH).convertToBlob({ type: 'image/png' }).then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a   = Object.assign(document.createElement('a'), { href: url, download: `${filename}.png` });
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+    } else {
+      const svgStr = _buildGraphicSVG();
+      if (!svgStr) return;
+      const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+      const url  = URL.createObjectURL(blob);
+      const a    = Object.assign(document.createElement('a'), { href: url, download: `${filename}.svg` });
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    _closeGraphicsDialog();
+  }
+
+  /** Composite all visible canvases onto an OffscreenCanvas at target pixel size. */
+  function _compositeViewPng(targetW, targetH) {
+    const { totalW, totalH, llW, lrW, ttW, ttH, axH, llVisible, lrVisible, axVisible } = _viewportDims();
+    const sx = targetW / totalW;
+    const sy = targetH / totalH;
+    const oc  = new OffscreenCanvas(targetW, targetH);
+    const ctx = oc.getContext('2d');
+
+    ctx.fillStyle = renderer.bgColor;
+    ctx.fillRect(0, 0, targetW, targetH);
+
+    if (llVisible) {
+      ctx.drawImage(legendLeftCanvas, 0, 0,
+        Math.round(llW * sx), Math.round(ttH * sy));
+    }
+    ctx.drawImage(canvas,
+      Math.round(llW * sx), 0,
+      Math.round(ttW * sx), Math.round(ttH * sy));
+    if (axVisible) {
+      ctx.drawImage(axisCanvas,
+        Math.round(llW * sx), Math.round(ttH * sy),
+        Math.round(ttW * sx), Math.round(axH * sy));
+    }
+    if (lrVisible) {
+      ctx.drawImage(legendRightCanvas,
+        Math.round((llW + ttW) * sx), 0,
+        Math.round(lrW * sx), Math.round(ttH * sy));
+    }
+    return oc;
+  }
+
+  /** Escape a string for SVG text content. */
+  function _svgTextEsc(s) {
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  /**
+   * Build a composite SVG string: tree is drawn as vector elements;
+   * legend/axis canvases are embedded as rasterised <image> elements.
+   */
+  function _buildGraphicSVG() {
+    const nm = renderer.nodeMap;
+    if (!nm || !nm.size) return null;
+
+    const { totalW, totalH, llW, lrW, ttW, ttH, axH, llVisible, lrVisible, axVisible } = _viewportDims();
+    const sx = renderer.scaleX,  ox = renderer.offsetX;
+    const sy = renderer.scaleY,  oy = renderer.offsetY;
+    const bg  = renderer.bgColor;
+    const bc  = renderer.branchColor;
+    const bw  = Math.max(0.5, renderer.branchWidth);
+    const lc  = renderer.labelColor;
+    const fs  = renderer.fontSize;
+    const tr  = renderer.tipRadius;
+    const nr  = renderer.nodeRadius;
+
+    // SVG x origin = legend-left width so tree coordinates are offset correctly.
+    const toSX = wx => wx * sx + ox + llW;
+    const toSY = wy => wy * sy + oy;
+    const f    = n  => n.toFixed(2);
+    const MARGIN = 20;   // px outside viewport to still include
+
+    let headerItems = [];  // background + embedded raster images
+
+    // Background
+    headerItems.push(`<rect width="${totalW}" height="${totalH}" fill="${_esc(bg)}"/>`);
+
+    // Legend left (raster)
+    if (llVisible) {
+      headerItems.push(`<image x="0" y="0" width="${llW}" height="${ttH}" href="${legendLeftCanvas.toDataURL('image/png')}"/>`);
+    }
+    // Legend right (raster)
+    if (lrVisible) {
+      headerItems.push(`<image x="${llW + ttW}" y="0" width="${lrW}" height="${ttH}" href="${legendRightCanvas.toDataURL('image/png')}"/>`);
+    }
+    // Axis (raster)
+    if (axVisible) {
+      headerItems.push(`<image x="${llW}" y="${ttH}" width="${ttW}" height="${axH}" href="${axisCanvas.toDataURL('image/png')}"/>`);
+    }
+
+    // -- Vector tree content --
+    let branchParts = [];
+    let circleParts = [];
+    let labelParts  = [];
+
+    // Root stub
+    const rootNode = [...nm.values()].find(n => n.parentId === null);
+    if (rootNode) {
+      const rx = toSX(rootNode.x), ry = toSY(rootNode.y);
+      const stub = renderer.rootStubLength ?? 20;
+      branchParts.push(`<line x1="${f(rx - stub)}" y1="${f(ry)}" x2="${f(rx)}" y2="${f(ry)}"/>`);
+    }
+
+    // Per-node: horizontal branches + vertical connectors at internal nodes
+    for (const [, node] of nm) {
+      const nx = toSX(node.x), ny = toSY(node.y);
+
+      // Horizontal branch from parent to this node
+      if (node.parentId !== null) {
+        const parent = nm.get(node.parentId);
+        if (parent && ny > -MARGIN && ny < ttH + MARGIN) {
+          const px = toSX(parent.x);
+          branchParts.push(`<line x1="${f(px)}" y1="${f(ny)}" x2="${f(nx)}" y2="${f(ny)}"/>`);
+        }
+      }
+
+      // Vertical connector spanning this node's children
+      if (!node.isTip && node.children.length >= 2) {
+        const childYs = node.children.map(cid => {
+          const c = nm.get(cid); return c ? toSY(c.y) : null;
+        }).filter(y => y !== null);
+        if (childYs.length >= 2) {
+          const minY = Math.min(...childYs), maxY = Math.max(...childYs);
+          if (maxY > -MARGIN && minY < ttH + MARGIN) {
+            branchParts.push(`<line x1="${f(nx)}" y1="${f(minY)}" x2="${f(nx)}" y2="${f(maxY)}"/>`);
+          }
+        }
+      }
+
+      // Shapes (tip circles / internal node shapes)
+      if (ny > -MARGIN && ny < ttH + MARGIN) {
+        if (node.isTip && tr > 0) {
+          const fill   = renderer._tipColourScale?.get(node.annotations?.[renderer._tipColourBy]) || renderer.tipShapeColor;
+          const stroke = renderer.tipShapeBgColor || bg;
+          circleParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${_esc(fill)}" stroke="${_esc(stroke)}" stroke-width="1"/>`);
+        } else if (!node.isTip && nr > 0) {
+          const fill = renderer._nodeColourScale?.get(node.annotations?.[renderer._nodeColourBy]) || renderer.nodeShapeColor;
+          circleParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${_esc(fill)}"/>`);
+        }
+      }
+
+      // Labels
+      if (ny > -MARGIN && ny < ttH + MARGIN) {
+        if (node.isTip && node.name) {
+          const labelX  = nx + (tr > 0 ? tr + 4 : 4);
+          const colour  = renderer._tipColourScale?.get(node.annotations?.[renderer._tipColourBy]) || lc;
+          labelParts.push(`<text x="${f(labelX)}" y="${f(ny)}" dominant-baseline="central" fill="${_esc(colour)}" font-family="monospace" font-size="${fs}px">${_svgTextEsc(node.name)}</text>`);
+        } else if (!node.isTip && node.label) {
+          const colour = lc;
+          labelParts.push(`<text x="${f(nx + 3)}" y="${f(ny - 3)}" fill="${_esc(colour)}" font-family="monospace" font-size="${Math.round(fs * 0.85)}px" opacity="0.7">${_svgTextEsc(node.label)}</text>`);
+        }
+      }
+    }
+
+    // Clip path covers the tree canvas viewport only (not legend areas)
+    const clipId = 'tc';
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}">
+  <defs>
+    <clipPath id="${clipId}"><rect x="${llW}" y="0" width="${ttW}" height="${ttH}"/></clipPath>
+  </defs>
+  ${headerItems.join('\n  ')}
+  <g clip-path="url(#${clipId})" stroke="${_esc(bc)}" stroke-width="${bw}" fill="none" stroke-linecap="round">
+    ${branchParts.join('\n    ')}
+  </g>
+  <g clip-path="url(#${clipId})">
+    ${circleParts.join('\n    ')}
+  </g>
+  <g clip-path="url(#${clipId})">
+    ${labelParts.join('\n    ')}
+  </g>
+</svg>`;
+  }
+
   /** Repopulate annotation dropdowns (tipColourBy, nodeColourBy, legendAnnotEl) after schema change. */
   function _refreshAnnotationUIs(schema) {
     function repopulate(sel) {
@@ -1161,9 +1451,10 @@ import { AxisRenderer  } from './axisrenderer.js';
 
       if (!treeLoaded) {
         treeLoaded = true;
-        btnModalClose.disabled    = false;
-        btnImportAnnot.disabled   = false;
-        btnExportTree.disabled    = false;
+        btnModalClose.disabled      = false;
+        btnImportAnnot.disabled     = false;
+        btnExportTree.disabled      = false;
+        btnExportGraphic.disabled   = false;
       }
 
       // Restore saved interaction mode before binding controls.
