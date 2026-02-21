@@ -962,10 +962,51 @@ import { AxisRenderer  } from './axisrenderer.js';
     document.getElementById('exp-cancel-btn').addEventListener('click', _closeExportDialog);
     document.getElementById('exp-download-btn').addEventListener('click', _doExport);
     if (annotKeys.length > 0) {
-      document.getElementById('exp-all-btn').addEventListener('click', () =>
-        document.querySelectorAll('#exp-annot-grid .exp-annot-cb').forEach(cb => { cb.checked = true; }));
-      document.getElementById('exp-none-btn').addEventListener('click', () =>
-        document.querySelectorAll('#exp-annot-grid .exp-annot-cb').forEach(cb => { cb.checked = false; }));
+      const annotGrid    = document.getElementById('exp-annot-grid');
+      const allCbs       = () => annotGrid.querySelectorAll('.exp-annot-cb');
+      const isNewick     = () => document.querySelector('input[name="exp-format"]:checked')?.value === 'newick';
+
+      const _newickWarning = `
+        <div id="exp-newick-warn" style="margin-top:0.5rem;padding:0.4rem 0.6rem;border-radius:4px;background:rgba(203,75,22,0.15);border:1px solid rgba(203,75,22,0.45);font-size:0.8rem;color:#e07040;display:flex;align-items:flex-start;gap:0.4rem">
+          <i class="bi bi-exclamation-triangle-fill" style="flex-shrink:0;margin-top:1px"></i>
+          <span>Annotations are not part of the Newick format and may be incompatible with some software.</span>
+        </div>`;
+
+      const _syncAnnotSection = () => {
+        const nwk = isNewick();
+        if (nwk) {
+          // Uncheck all annotation checkboxes but leave them enabled.
+          allCbs().forEach(cb => { cb.checked = false; });
+          document.getElementById('exp-newick-warn')?.remove();
+        } else {
+          // Switching back to NEXUS: re-check all and remove warning.
+          allCbs().forEach(cb => { cb.checked = true; });
+          document.getElementById('exp-newick-warn')?.remove();
+        }
+      };
+
+      // Format radio change → sync annotations.
+      document.querySelectorAll('input[name="exp-format"]').forEach(radio =>
+        radio.addEventListener('change', _syncAnnotSection));
+
+      // Individual checkbox re-checked while Newick is active → show warning.
+      annotGrid.addEventListener('change', e => {
+        if (!isNewick() || !e.target.matches('.exp-annot-cb')) return;
+        if (!document.getElementById('exp-newick-warn')) {
+          annotGrid.insertAdjacentHTML('afterend', _newickWarning);
+        }
+      });
+
+      document.getElementById('exp-all-btn').addEventListener('click', () => {
+        allCbs().forEach(cb => { cb.checked = true; });
+        if (isNewick() && !document.getElementById('exp-newick-warn')) {
+          annotGrid.insertAdjacentHTML('afterend', _newickWarning);
+        }
+      });
+      document.getElementById('exp-none-btn').addEventListener('click', () => {
+        allCbs().forEach(cb => { cb.checked = false; });
+        document.getElementById('exp-newick-warn')?.remove();
+      });
     }
   }
 
