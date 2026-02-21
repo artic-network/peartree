@@ -289,6 +289,64 @@
       color: var(--bs-primary);
       border-color: var(--bs-primary);
     }
+    /* About panel – mirrors help panel, slides from right after it */
+    #about-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 380px;
+      background: var(--pt-bg-dark);
+      border-left: 1px solid var(--pt-border);
+      box-shadow: -4px 0 24px rgba(0,0,0,0.55);
+      z-index: 599;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.22s cubic-bezier(.4,0,.2,1);
+      overflow: hidden;
+    }
+    #about-panel.open { transform: translateX(0); }
+    #about-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px 8px 16px;
+      border-bottom: 1px solid var(--pt-border);
+      flex-shrink: 0;
+    }
+    #about-panel-header h2 {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--pt-gold);
+      margin: 0;
+      letter-spacing: 0.3px;
+    }
+    #btn-about-close {
+      background: none;
+      border: none;
+      color: var(--pt-off-white);
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 3px;
+      opacity: 0.6;
+      cursor: pointer;
+    }
+    #btn-about-close:hover { background: rgba(255,255,255,0.08); opacity: 1; }
+    #about-panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px 24px;
+      font-size: 0.72rem;
+      line-height: 1.65;
+      color: var(--pt-off-white);
+    }
+    #btn-about { flex-shrink: 0; }
+    #btn-about.active {
+      color: var(--pt-gold);
+      border-color: var(--pt-gold);
+    }
 
     /* ── Tool palette (slides in from left) ── */
     #palette-panel {
@@ -802,6 +860,8 @@
   <button id="btn-node-info" class="btn btn-sm btn-outline-secondary" disabled title="Node info (⌘I)"><i class="bi bi-info-circle"></i></button>
 
   <div class="ms-auto"></div>
+  <!-- About -->
+  <button id="btn-about" class="btn btn-sm btn-outline-secondary" title="About PearTree"><i class="bi bi-info-circle"></i></button>
   <!-- Help -->
   <button id="btn-help" class="btn btn-sm btn-outline-secondary" title="Help (⌘?)"><i class="bi bi-caret-left"></i><i class="bi bi-question-circle"></i></button>
 </nav>
@@ -1139,6 +1199,16 @@
   </div>
 </div>
 
+<div id="about-panel">
+  <div id="about-panel-header">
+    <h2><i class="bi bi-tree me-2"></i>About PearTree</h2>
+    <button id="btn-about-close" title="Close">&times;</button>
+  </div>
+  <div id="about-panel-body">
+    <div class="help-md" id="about-content"><p style="opacity:0.5">Loading…</p></div>
+  </div>
+</div>
+
 <script>
   // ── Tool palette panel ────────────────────────────────────────────────────
   const palettePanel     = document.getElementById('palette-panel');
@@ -1190,6 +1260,7 @@
         helpContent.innerHTML = `<p style="color:var(--pt-red)">Could not load help.md: ${err.message}</p>`;
       }
     }
+    closeAbout();
     helpPanel.classList.add('open');
     btnHelp.classList.add('active');
   }
@@ -1205,10 +1276,46 @@
   });
   btnHelpClose.addEventListener('click', closeHelp);
 
+  // About panel
+  const aboutPanel    = document.getElementById('about-panel');
+  const aboutContent  = document.getElementById('about-content');
+  const btnAbout      = document.getElementById('btn-about');
+  const btnAboutClose = document.getElementById('btn-about-close');
+  let aboutLoaded = false;
+
+  async function openAbout() {
+    if (!aboutLoaded) {
+      try {
+        const r = await fetch('about.md');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const md = await r.text();
+        aboutContent.innerHTML = marked.parse(md);
+        aboutLoaded = true;
+      } catch (err) {
+        aboutContent.innerHTML = `<p style="color:var(--pt-red)">Could not load about.md: ${err.message}</p>`;
+      }
+    }
+    closeHelp();
+    aboutPanel.classList.add('open');
+    btnAbout.classList.add('active');
+  }
+
+  function closeAbout() {
+    aboutPanel.classList.remove('open');
+    btnAbout.classList.remove('active');
+  }
+
+  btnAbout.addEventListener('click', e => {
+    e.stopPropagation();
+    aboutPanel.classList.contains('open') ? closeAbout() : openAbout();
+  });
+  btnAboutClose.addEventListener('click', closeAbout);
+
   // Clicking the tree canvas closes any open panel immediately.
   document.getElementById('tree-canvas').addEventListener('pointerdown', () => {
     closePalette();
     closeHelp();
+    closeAbout();
   });
 
   // Tab key toggles palette (unless focus is in a form element)
@@ -1223,7 +1330,7 @@
 
   // Close help on Escape
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeHelp(); closePalette(); }
+    if (e.key === 'Escape') { closeHelp(); closePalette(); closeAbout(); }
   });
 </script>
 <script type="module" src="js/peartree.js"></script>
