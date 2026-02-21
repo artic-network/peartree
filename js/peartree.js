@@ -1251,6 +1251,16 @@ import { AxisRenderer  } from './axisrenderer.js';
 
     document.getElementById('exp-cancel-btn').addEventListener('click', _closeExportDialog);
     document.getElementById('exp-download-btn').addEventListener('click', _doExport);
+
+    // Always wire up the format radios to toggle the Store-settings row,
+    // regardless of whether annotations are present.
+    document.querySelectorAll('input[name="exp-format"]').forEach(radio =>
+      radio.addEventListener('change', () => {
+        const settingsRow = document.getElementById('exp-settings-row');
+        if (settingsRow) settingsRow.style.display =
+          document.querySelector('input[name="exp-format"]:checked')?.value === 'newick' ? 'none' : '';
+      }));
+
     if (annotKeys.length > 0) {
       const annotGrid    = document.getElementById('exp-annot-grid');
       const allCbs       = () => annotGrid.querySelectorAll('.exp-annot-cb');
