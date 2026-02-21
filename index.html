@@ -364,6 +364,28 @@
       color: #e06961;
       opacity: 1;
     }
+    #btn-store-theme {
+      flex-shrink: 0;
+      background: none;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--pt-off-white);
+      font-size: 0.68rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      opacity: 0.6;
+      transition: background 0.15s, opacity 0.15s, border-color 0.15s;
+    }
+    #btn-store-theme:not(:disabled):hover {
+      background: rgba(60,180,100,0.14);
+      border-color: rgba(60,180,100,0.5);
+      color: #6ddb96;
+      opacity: 1;
+    }
+    #btn-store-theme:disabled {
+      opacity: 0.25;
+      cursor: default;
+    }
     .pt-palette-section {
       margin-bottom: 18px;
     }
@@ -917,6 +939,14 @@
     <button id="btn-palette-close" title="Close">&times;</button>
   </div>
   <div id="palette-panel-body">
+
+    <div class="pt-palette-section">
+      <h3>Theme</h3>
+      <div class="pt-palette-row">
+        <select class="pt-palette-select" id="theme-select" style="flex:1"></select>
+        <button id="btn-store-theme" title="Save current settings as a named theme" disabled>Store</button>
+      </div>
+    </div>
 
     <div class="pt-palette-section">
       <h3>Canvas</h3>

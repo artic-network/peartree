@@ -39,6 +39,8 @@ import { AxisRenderer  } from './axisrenderer.js';
   const axisMinorIntervalRow   = document.getElementById('axis-minor-interval-row');
   const axisMajorLabelRow      = document.getElementById('axis-major-label-row');
   const axisMinorLabelRow      = document.getElementById('axis-minor-label-row');
+  const themeSelect            = document.getElementById('theme-select');
+  const btnStoreTheme          = document.getElementById('btn-store-theme');
   const btnFit                 = document.getElementById('btn-fit');
   const btnResetSettings       = document.getElementById('btn-reset-settings');
   const btnImportAnnot         = document.getElementById('btn-import-annot');
@@ -46,23 +48,138 @@ import { AxisRenderer  } from './axisrenderer.js';
 
   // ── Settings persistence ──────────────────────────────────────────────────
 
-  const SETTINGS_KEY = 'peartree-settings';
+  const SETTINGS_KEY    = 'peartree-settings';
+  const USER_THEMES_KEY = 'peartree-user-themes';
+  let currentOrder = null;  // null | 'asc' | 'desc' — declared early so saveSettings() is safe to call during init
+
+    const THEMES = {
+        "Artic": {
+            canvasBgColor:    '#02292e',
+            branchColor:      '#f2f1e6',
+            branchWidth:      '1',
+            fontSize:         '11',
+            labelColor:       '#f7eeca',
+            tipSize:          '3',
+            tipHaloSize:      '2',
+            tipShapeColor:    '#888888',
+            tipShapeBgColor:  '#02292e',
+            nodeSize:         '0',
+            nodeHaloSize:     '2',
+            nodeShapeColor:   '#888888',
+            nodeShapeBgColor: '#02292e',
+        },
+        "Minimal": {
+            canvasBgColor:    '#fff',
+            branchColor:      '#000',
+            branchWidth:      '1',
+            fontSize:         '11',
+            labelColor:       '#000',
+            tipSize:          '3',
+            tipHaloSize:      '2',
+            tipShapeColor:    '#464646',
+            tipShapeBgColor:  '#000',
+            nodeSize:         '0',
+            nodeHaloSize:     '2',
+            nodeShapeColor:   '#636363',
+            nodeShapeBgColor: '#000',
+        },
+  };
+
+  // Live theme registry: built-ins first, then any user-saved themes added on top.
+  const themeRegistry = new Map(Object.entries(THEMES));
+
+  /** Persist only user-defined (non-built-in) themes to localStorage. */
+  function saveUserThemes() {
+    const userObj = {};
+    for (const [name, theme] of themeRegistry) {
+      if (!THEMES[name]) userObj[name] = theme;
+    }
+    localStorage.setItem(USER_THEMES_KEY, JSON.stringify(userObj));
+  }
+
+  /** Load user themes from localStorage into themeRegistry. */
+  function loadUserThemes() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(USER_THEMES_KEY) || '{}');
+      for (const [name, theme] of Object.entries(stored)) {
+        themeRegistry.set(name, theme);
+      }
+    } catch { /* ignore */ }
+  }
+
+  /** Rebuild the theme <select> options from themeRegistry plus the fixed "Custom" entry. */
+  function _populateThemeSelect() {
+    const current = themeSelect.value;
+    themeSelect.innerHTML = '';
+    for (const name of themeRegistry.keys()) {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      themeSelect.appendChild(opt);
+    }
+    const customOpt = document.createElement('option');
+    customOpt.value = 'custom';
+    customOpt.textContent = 'Custom';
+    customOpt.style.fontStyle = 'italic';
+    themeSelect.appendChild(customOpt);
+    // Restore selection if still valid, otherwise fall back to first option.
+    themeSelect.value = (themeSelect.querySelector(`option[value="${CSS.escape(current)}"]`) ? current : themeRegistry.keys().next().value);
+  }
+
+  /** Snapshot all 13 visual controls into a plain theme object. */
+  function _snapshotTheme() {
+    return {
+      canvasBgColor:    canvasBgColorEl.value,
+      branchColor:      branchColorEl.value,
+      branchWidth:      branchWidthSlider.value,
+      fontSize:         fontSlider.value,
+      labelColor:       labelColorEl.value,
+      tipSize:          tipSlider.value,
+      tipHaloSize:      tipHaloSlider.value,
+      tipShapeColor:    tipShapeColorEl.value,
+      tipShapeBgColor:  tipShapeBgEl.value,
+      nodeSize:         nodeSlider.value,
+      nodeHaloSize:     nodeHaloSlider.value,
+      nodeShapeColor:   nodeShapeColorEl.value,
+      nodeShapeBgColor: nodeShapeBgEl.value,
+    };
+  }
+
+  /** Prompt for a name and store the current visual settings as a new (or updated) user theme. */
+  function storeTheme() {
+    const name = prompt('Enter a name for this theme:')?.trim();
+    if (!name) return;
+    if (name.toLowerCase() === 'custom') {
+      alert('"Custom" is a reserved name — please choose a different name.');
+      return;
+    }
+    if (THEMES[name]) {
+      alert(`"${name}" is a built-in theme and cannot be overwritten.`);
+      return;
+    }
+    themeRegistry.set(name, _snapshotTheme());
+    saveUserThemes();
+    _populateThemeSelect();
+    themeSelect.value = name;
+    btnStoreTheme.disabled = true;
+    saveSettings();
+  }
 
   const DEFAULTS = {
-    canvasBgColor:    '#02292e',
-    branchColor:      '#f2f1e6',
+    theme:            'Artic',
+    canvasBgColor:    '#fff',
+    branchColor:      '#000',
     branchWidth:      '1',
     fontSize:         '11',
-    labelColor:       '#f7eeca',
+    labelColor:       '#000',
     tipSize:          '3',
     tipHaloSize:      '2',
-    tipShapeColor:    '#888888',
-    tipShapeBgColor:  '#02292e',
+    tipShapeColor:    '#464646',
+    tipShapeBgColor:  '#000',
     nodeSize:         '0',
     nodeHaloSize:     '2',
-    nodeShapeColor:   '#888888',
-    nodeShapeBgColor: '#02292e',
-    labelColourBy:      '',
+    nodeShapeColor:   '#636363',
+    nodeShapeBgColor: '#000',
     legendShow:         'off',
     axisShow:           'off',
     axisDateAnnotation: '',
@@ -79,6 +196,7 @@ import { AxisRenderer  } from './axisrenderer.js';
 
   function saveSettings() {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      theme:            themeSelect.value,
       canvasBgColor:    canvasBgColorEl.value,
       branchColor:      branchColorEl.value,
       branchWidth:      branchWidthSlider.value,
@@ -111,26 +229,10 @@ import { AxisRenderer  } from './axisrenderer.js';
   function applyDefaults() {
     if (!confirm('Reset all visual settings to their defaults?')) return;
 
-    // Hydrate DOM controls.
-    canvasBgColorEl.value    = DEFAULTS.canvasBgColor;
-    branchColorEl.value      = DEFAULTS.branchColor;
-    branchWidthSlider.value  = DEFAULTS.branchWidth;
-    document.getElementById('branch-width-value').textContent = DEFAULTS.branchWidth;
-    fontSlider.value         = DEFAULTS.fontSize;
-    document.getElementById('font-size-value').textContent    = DEFAULTS.fontSize;
-    labelColorEl.value       = DEFAULTS.labelColor;
-    tipSlider.value          = DEFAULTS.tipSize;
-    document.getElementById('tip-size-value').textContent     = DEFAULTS.tipSize;
-    tipHaloSlider.value      = DEFAULTS.tipHaloSize;
-    document.getElementById('tip-halo-value').textContent     = DEFAULTS.tipHaloSize;
-    tipShapeColorEl.value    = DEFAULTS.tipShapeColor;
-    tipShapeBgEl.value       = DEFAULTS.tipShapeBgColor;
-    nodeSlider.value         = DEFAULTS.nodeSize;
-    document.getElementById('node-size-value').textContent    = DEFAULTS.nodeSize;
-    nodeHaloSlider.value     = DEFAULTS.nodeHaloSize;
-    document.getElementById('node-halo-value').textContent    = DEFAULTS.nodeHaloSize;
-    nodeShapeColorEl.value   = DEFAULTS.nodeShapeColor;
-    nodeShapeBgEl.value      = DEFAULTS.nodeShapeBgColor;
+    // Apply the default theme (hydrates all visual DOM controls + renderer).
+    applyTheme('Artic');
+
+    // Reset colour-by dropdowns, legend, and axis controls.
     tipColourBy.value        = '';
     nodeColourBy.value       = '';
     labelColourBy.value      = '';
@@ -144,21 +246,7 @@ import { AxisRenderer  } from './axisrenderer.js';
     axisMinorLabelEl.value       = DEFAULTS.axisMinorLabelFormat;
     _updateMinorOptions(DEFAULTS.axisMajorInterval, DEFAULTS.axisMinorInterval);
 
-    // Apply to renderer.
     if (renderer) {
-      renderer.setBgColor(DEFAULTS.canvasBgColor);
-      renderer.setBranchColor(DEFAULTS.branchColor);
-      renderer.setBranchWidth(parseFloat(DEFAULTS.branchWidth));
-      renderer.setFontSize(parseInt(DEFAULTS.fontSize));
-      renderer.setLabelColor(DEFAULTS.labelColor);
-      renderer.setTipRadius(parseInt(DEFAULTS.tipSize));
-      renderer.setTipHaloSize(parseInt(DEFAULTS.tipHaloSize));
-      renderer.setTipShapeColor(DEFAULTS.tipShapeColor);
-      renderer.setTipShapeBgColor(DEFAULTS.tipShapeBgColor);
-      renderer.setNodeRadius(parseInt(DEFAULTS.nodeSize));
-      renderer.setNodeHaloSize(parseInt(DEFAULTS.nodeHaloSize));
-      renderer.setNodeShapeColor(DEFAULTS.nodeShapeColor);
-      renderer.setNodeShapeBgColor(DEFAULTS.nodeShapeBgColor);
       renderer.setTipColourBy(null);
       renderer.setNodeColourBy(null);
       renderer.setLabelColourBy(null);
@@ -178,7 +266,65 @@ import { AxisRenderer  } from './axisrenderer.js';
     saveSettings();
   }
 
+  /** Apply a named theme: hydrate all visual DOM controls and push to renderer. */
+  function applyTheme(name) {
+    const t = themeRegistry.get(name);
+    if (!t) return;
+    canvasBgColorEl.value   = t.canvasBgColor;
+    branchColorEl.value     = t.branchColor;
+    branchWidthSlider.value = t.branchWidth;
+    document.getElementById('branch-width-value').textContent = t.branchWidth;
+    fontSlider.value        = t.fontSize;
+    document.getElementById('font-size-value').textContent    = t.fontSize;
+    labelColorEl.value      = t.labelColor;
+    tipSlider.value         = t.tipSize;
+    document.getElementById('tip-size-value').textContent     = t.tipSize;
+    tipHaloSlider.value     = t.tipHaloSize;
+    document.getElementById('tip-halo-value').textContent     = t.tipHaloSize;
+    tipShapeColorEl.value   = t.tipShapeColor;
+    tipShapeBgEl.value      = t.tipShapeBgColor;
+    nodeSlider.value        = t.nodeSize;
+    document.getElementById('node-size-value').textContent    = t.nodeSize;
+    nodeHaloSlider.value    = t.nodeHaloSize;
+    document.getElementById('node-halo-value').textContent    = t.nodeHaloSize;
+    nodeShapeColorEl.value  = t.nodeShapeColor;
+    nodeShapeBgEl.value     = t.nodeShapeBgColor;
+    if (renderer) {
+      renderer.setBgColor(t.canvasBgColor);
+      renderer.setBranchColor(t.branchColor);
+      renderer.setBranchWidth(parseFloat(t.branchWidth));
+      renderer.setFontSize(parseInt(t.fontSize));
+      renderer.setLabelColor(t.labelColor);
+      renderer.setTipRadius(parseInt(t.tipSize));
+      renderer.setTipHaloSize(parseInt(t.tipHaloSize));
+      renderer.setTipShapeColor(t.tipShapeColor);
+      renderer.setTipShapeBgColor(t.tipShapeBgColor);
+      renderer.setNodeRadius(parseInt(t.nodeSize));
+      renderer.setNodeHaloSize(parseInt(t.nodeHaloSize));
+      renderer.setNodeShapeColor(t.nodeShapeColor);
+      renderer.setNodeShapeBgColor(t.nodeShapeBgColor);
+    }
+    themeSelect.value = name;
+    btnStoreTheme.disabled = true;
+    saveSettings();
+  }
+
+  /** Mark the theme selector as Custom when the user manually edits any visual control. */
+  function _markCustomTheme() {
+    if (themeSelect.value !== 'custom') {
+      themeSelect.value = 'custom';
+      saveSettings();
+    }
+    btnStoreTheme.disabled = false;
+  }
+
   btnResetSettings.addEventListener('click', applyDefaults);
+  btnStoreTheme.addEventListener('click', storeTheme);
+
+  // Bootstrap theme registry and select options before restoring saved state.
+  loadUserThemes();
+  _populateThemeSelect();
+  btnStoreTheme.disabled = true;
 
   // Load stored settings and immediately hydrate the visual DOM controls.
   const _saved = loadSettings();
@@ -214,6 +360,8 @@ import { AxisRenderer  } from './axisrenderer.js';
   if (_saved.nodeShapeColor)       nodeShapeColorEl.value   = _saved.nodeShapeColor;
   if (_saved.nodeShapeBgColor)     nodeShapeBgEl.value      = _saved.nodeShapeBgColor;
   if (_saved.legendShow)           legendShowEl.value       = _saved.legendShow;
+  // Restore saved theme name (or default to Artic if no saved settings)
+  themeSelect.value = _saved.theme || 'Artic';
 
   // Size canvas to container before creating renderer
   const container = canvas.parentElement;
@@ -238,19 +386,24 @@ import { AxisRenderer  } from './axisrenderer.js';
   renderer.setLegendCanvases(legendLeftCanvas, legendRightCanvas);
 
   // Apply stored visual settings to the renderer immediately.
-  renderer.setBgColor(canvasBgColorEl.value);
-  renderer.setBranchColor(branchColorEl.value);
-  renderer.setBranchWidth(parseFloat(branchWidthSlider.value));
-  renderer.setFontSize(parseInt(fontSlider.value));
-  renderer.setLabelColor(labelColorEl.value);
-  renderer.setTipRadius(parseInt(tipSlider.value));
-  renderer.setTipHaloSize(parseInt(tipHaloSlider.value));
-  renderer.setTipShapeColor(tipShapeColorEl.value);
-  renderer.setTipShapeBgColor(tipShapeBgEl.value);
-  renderer.setNodeRadius(parseInt(nodeSlider.value));
-  renderer.setNodeHaloSize(parseInt(nodeHaloSlider.value));
-  renderer.setNodeShapeColor(nodeShapeColorEl.value);
-  renderer.setNodeShapeBgColor(nodeShapeBgEl.value);
+  // If no saved theme exists yet, apply the default 'Artic' theme.
+  if (!_saved.theme) {
+    applyTheme('Artic');
+  } else {
+    renderer.setBgColor(canvasBgColorEl.value);
+    renderer.setBranchColor(branchColorEl.value);
+    renderer.setBranchWidth(parseFloat(branchWidthSlider.value));
+    renderer.setFontSize(parseInt(fontSlider.value));
+    renderer.setLabelColor(labelColorEl.value);
+    renderer.setTipRadius(parseInt(tipSlider.value));
+    renderer.setTipHaloSize(parseInt(tipHaloSlider.value));
+    renderer.setTipShapeColor(tipShapeColorEl.value);
+    renderer.setTipShapeBgColor(tipShapeBgEl.value);
+    renderer.setNodeRadius(parseInt(nodeSlider.value));
+    renderer.setNodeHaloSize(parseInt(nodeHaloSlider.value));
+    renderer.setNodeShapeColor(nodeShapeColorEl.value);
+    renderer.setNodeShapeBgColor(nodeShapeBgEl.value);
+  }
 
   // ── Axis renderer ─────────────────────────────────────────────────────────
   const axisRenderer = new AxisRenderer(axisCanvas);
@@ -1536,7 +1689,6 @@ import { AxisRenderer  } from './axisrenderer.js';
   // ── Tree loading ──────────────────────────────────────────────────────────
 
   let graph            = null;  // PhyloGraph (adjacency-list model)
-  let currentOrder     = null;  // null | 'asc' | 'desc'
   let controlsBound    = false;
   let _cachedMidpoint  = null;  // cached midpointRootGraph() result; cleared on every tree change
   let isExplicitlyRooted = false; // true when root node carries annotations — rerooting disabled
@@ -2242,70 +2394,87 @@ import { AxisRenderer  } from './axisrenderer.js';
 
   // ── Always-active bindings ────────────────────────────────────────────────
 
+  themeSelect.addEventListener('change', () => {
+    if (themeSelect.value !== 'custom') applyTheme(themeSelect.value);
+  });
+
   canvasBgColorEl.addEventListener('input', () => {
+    _markCustomTheme();
     renderer.setBgColor(canvasBgColorEl.value);
     saveSettings();
   });
 
   branchColorEl.addEventListener('input', () => {
+    _markCustomTheme();
     renderer.setBranchColor(branchColorEl.value);
     saveSettings();
   });
 
   branchWidthSlider.addEventListener('input', () => {
+    _markCustomTheme();
     document.getElementById('branch-width-value').textContent = branchWidthSlider.value;
     renderer.setBranchWidth(parseFloat(branchWidthSlider.value));
     saveSettings();
   });
 
   fontSlider.addEventListener('input', () => {
+    _markCustomTheme();
     renderer.setFontSize(parseInt(fontSlider.value));
     saveSettings();
   });
 
   labelColorEl.addEventListener('input', () => {
+    _markCustomTheme();
     renderer.setLabelColor(labelColorEl.value);
     saveSettings();
   });
 
   tipSlider.addEventListener('input', () => {
+    _markCustomTheme();
     renderer.setTipRadius(parseInt(tipSlider.value));
     saveSettings();
   });
 
   tipHaloSlider.addEventListener('input', () => {
+    _markCustomTheme();
     document.getElementById('tip-halo-value').textContent = tipHaloSlider.value;
     renderer.setTipHaloSize(parseInt(tipHaloSlider.value));
     saveSettings();
   });
 
   nodeSlider.addEventListener('input', () => {
+    _markCustomTheme();
     renderer.setNodeRadius(parseInt(nodeSlider.value));
     saveSettings();
   });
 
   nodeHaloSlider.addEventListener('input', () => {
+    _markCustomTheme();
     document.getElementById('node-halo-value').textContent = nodeHaloSlider.value;
     renderer.setNodeHaloSize(parseInt(nodeHaloSlider.value));
     saveSettings();
   });
 
   tipShapeColorEl.addEventListener('input', () => {
+    _markCustomTheme();
     renderer.setTipShapeColor(tipShapeColorEl.value);
     saveSettings();
   });
 
   tipShapeBgEl.addEventListener('input', () => {
+    _markCustomTheme();
     renderer.setTipShapeBgColor(tipShapeBgEl.value);
     saveSettings();
   });
 
   nodeShapeColorEl.addEventListener('input', () => {
+    _markCustomTheme();
     renderer.setNodeShapeColor(nodeShapeColorEl.value);
     saveSettings();
   });
 
   nodeShapeBgEl.addEventListener('input', () => {
+    _markCustomTheme();
     renderer.setNodeShapeBgColor(nodeShapeBgEl.value);
     saveSettings();
   });
