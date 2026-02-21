@@ -637,6 +637,25 @@
     .imp-ok  { color: #859900; }
     .imp-warn{ color: #b58900; }
     .imp-err { color: #dc322f; }
+    /* ── Export Tree dialog ── */
+    .exp-section { margin-bottom: 0.85rem; }
+    .exp-section-label {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--bs-secondary-color);
+      margin-bottom: 0.35rem;
+    }
+    .exp-radio-group { display: flex; flex-direction: column; gap: 0.3rem; }
+    .exp-radio-opt {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.86rem;
+      cursor: pointer;
+    }
+    .exp-radio-opt.exp-disabled { opacity: 0.38; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -649,6 +668,7 @@
   <!-- Open file / Import annotations -->
   <button id="btn-open-tree" class="btn btn-sm btn-outline-primary" title="Open tree file (⌘O)"><i class="bi bi-folder2-open"></i></button>
   <button id="btn-import-annot" class="btn btn-sm btn-outline-success" disabled title="Import annotations from CSV/TSV"><i class="bi bi-file-earmark-plus"></i></button>
+  <button id="btn-export-tree" class="btn btn-sm btn-outline-info" disabled title="Export tree (Newick or NEXUS)"><i class="bi bi-file-earmark-arrow-down"></i></button>
   <div class="pt-toolbar-sep"></div>
 
   <!-- Back / Forward -->
@@ -807,6 +827,20 @@
       <!-- Populated by JS: phase 1 = picker, phase 2 = config, phase 3 = results -->
     </div>
     <div id="import-annot-footer" style="padding:0.5rem 1rem;border-top:1px solid var(--bs-modal-header-border-color,#002b36);display:flex;justify-content:flex-end;gap:0.5rem;"></div>
+  </div>
+</div>
+
+<!-- Export Tree Dialog -->
+<div id="export-tree-overlay" class="pt-modal-overlay">
+  <div class="pt-modal">
+    <div class="pt-modal-header">
+      <h5 class="modal-title" id="export-tree-title"><i class="bi bi-file-earmark-arrow-down me-2"></i>Export Tree</h5>
+      <button class="pt-modal-close-btn" id="export-tree-close" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body" id="export-tree-body">
+      <!-- Populated by JS -->
+    </div>
+    <div id="export-tree-footer" style="padding:0.5rem 1rem;border-top:1px solid var(--bs-modal-header-border-color,#002b36);display:flex;justify-content:flex-end;gap:0.5rem;"></div>
   </div>
 </div>
 

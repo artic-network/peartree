@@ -39,6 +39,7 @@ import { AxisRenderer  } from './axisrenderer.js';
   const btnFit                 = document.getElementById('btn-fit');
   const btnResetSettings       = document.getElementById('btn-reset-settings');
   const btnImportAnnot         = document.getElementById('btn-import-annot');
+  const btnExportTree          = document.getElementById('btn-export-tree');
 
   // ── Settings persistence ──────────────────────────────────────────────────
 
@@ -417,6 +418,9 @@ import { AxisRenderer  } from './axisrenderer.js';
   document.getElementById('import-annot-close').addEventListener('click', _closeAnnotDialog);
   btnImportAnnot.addEventListener('click', _openAnnotDialog);
 
+  document.getElementById('export-tree-close').addEventListener('click', _closeExportDialog);
+  btnExportTree.addEventListener('click', _openExportDialog);
+
   /** Phase 1: render the File/URL picker UI into the dialog body. */
   function _showAnnotPicker(errorMsg) {
     importTitleEl.innerHTML = '<i class="bi bi-file-earmark-plus me-2"></i>Import Annotations';
@@ -770,6 +774,201 @@ import { AxisRenderer  } from './axisrenderer.js';
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  // ── Export Tree ────────────────────────────────────────────────────────────────
+
+  /** Escape a Newick/NEXUS taxon name with single quotes when needed. */
+  function _newickEsc(name) {
+    if (!name) return '';
+    if (/[(),;:\[\]\s]/.test(name)) return `'${name.replace(/'/g, "''")}'`;
+    return name;
+  }
+
+  /** Format a branch length compactly (no scientific notation for typical values). */
+  function _fmtLen(n) {
+    if (n == null || isNaN(n)) return null;
+    if (n === 0) return '0';
+    return parseFloat(n.toPrecision(12)).toString();
+  }
+
+  /** Build a BEAST/FigTree-style [&key=val,...] annotation block. */
+  function _fmtAnnot(annotations, annotKeys) {
+    if (!annotations || annotKeys.length === 0) return '';
+    const parts = [];
+    for (const key of annotKeys) {
+      const val = annotations[key];
+      if (val === undefined || val === null) continue;
+      if (Array.isArray(val)) {
+        const elems = val.map(v => typeof v === 'string' ? `"${v.replace(/\\/g,'\\\\').replace(/"/g,'\\"')}"` : v);
+        parts.push(`${key}={${elems.join(',')}}`);
+      } else if (typeof val === 'string') {
+        parts.push(`${key}="${val.replace(/\\/g,'\\\\').replace(/"/g,'\\"')}"`);
+      } else {
+        parts.push(`${key}=${val}`);
+      }
+    }
+    return parts.length > 0 ? `[&${parts.join(',')}]` : '';
+  }
+
+  /**
+   * Return the branch length from child index `ci` toward parent direction `pi`.
+   * Handles the special case where root-adjacent nodes store total edge length.
+   */
+  function _branchLen(ci, pi, g) {
+    if (pi < 0) return null;
+    const { nodeA, nodeB, lenA, lenB } = g.root;
+    if (ci === nodeA && pi === nodeB) return lenA;
+    if (ci === nodeB && pi === nodeA) return lenB;
+    return g.nodes[ci].lengths[0];
+  }
+
+  /**
+   * Recursively serialize the subtree rooted at `nodeIdx` (coming from direction
+   * `parentIdx`, which is excluded from children) into a Newick string fragment.
+   */
+  function _newickNode(nodeIdx, parentIdx, g, annotKeys) {
+    const node      = g.nodes[nodeIdx];
+    const annotStr  = _fmtAnnot(node.annotations, annotKeys);
+    const safeName  = _newickEsc(node.name || node.label || '');
+    const childIdxs = node.adjacents.filter(i => i !== parentIdx);
+    if (childIdxs.length === 0) {
+      return `${safeName}${annotStr}`;
+    }
+    const parts = childIdxs.map(ci => {
+      const cStr   = _newickNode(ci, nodeIdx, g, annotKeys);
+      const len    = _branchLen(ci, nodeIdx, g);
+      const lenStr = len != null ? `:${_fmtLen(len)}` : '';
+      return `${cStr}${lenStr}`;
+    });
+    return `(${parts.join(',')})${safeName}${annotStr}`;
+  }
+
+  /**
+   * Serialize the PhyloGraph `g` (or a subtree rooted at `subtreeRootId`) to
+   * a Newick string ended with ';'.
+   */
+  function _graphToNewick(g, subtreeRootId, annotKeys) {
+    const { nodeA, nodeB, lenA } = g.root;
+    let body;
+    if (subtreeRootId) {
+      const idx = g.origIdToIdx.get(subtreeRootId);
+      if (idx === undefined) return null;
+      const node = g.nodes[idx];
+      const parentIdx = node.adjacents.length > 0 ? node.adjacents[0] : -1;
+      body = _newickNode(idx, parentIdx, g, annotKeys);
+    } else if (lenA === 0) {
+      // nodeA is the actual root (trifurcating or annotated)
+      body = _newickNode(nodeA, -1, g, annotKeys);
+    } else {
+      // Virtual root between nodeA and nodeB
+      const aStr = _newickNode(nodeA, nodeB, g, annotKeys);
+      const bStr = _newickNode(nodeB, nodeA, g, annotKeys);
+      const aLen = lenA != null   ? `:${_fmtLen(lenA)}`        : '';
+      const bLen = g.root.lenB != null ? `:${_fmtLen(g.root.lenB)}` : '';
+      body = `(${aStr}${aLen},${bStr}${bLen})`;
+    }
+    return body + ';';
+  }
+
+  // Export dialog DOM refs
+  const exportOverlay  = document.getElementById('export-tree-overlay');
+  const exportBody     = document.getElementById('export-tree-body');
+  const exportFooter   = document.getElementById('export-tree-footer');
+  const exportTitleEl  = document.getElementById('export-tree-title');
+
+  function _openExportDialog() {
+    if (!graph) return;
+    exportOverlay.classList.add('open');
+    _buildExportDialog();
+  }
+
+  function _closeExportDialog() {
+    exportOverlay.classList.remove('open');
+  }
+
+  function _buildExportDialog() {
+    const hasSubtree = !!renderer._viewSubtreeRootId;
+    const schema     = graph ? graph.annotationSchema : new Map();
+    const annotKeys  = schema ? [...schema.keys()] : [];
+
+    exportTitleEl.innerHTML = '<i class="bi bi-file-earmark-arrow-down me-2"></i>Export Tree';
+
+    exportBody.innerHTML = `
+      <div class="exp-section">
+        <span class="exp-section-label">Format</span>
+        <div class="exp-radio-group">
+          <label class="exp-radio-opt"><input type="radio" name="exp-format" value="nexus" checked>&nbsp;NEXUS <span style="color:var(--bs-secondary-color);font-size:0.78rem">(.nexus)</span></label>
+          <label class="exp-radio-opt"><input type="radio" name="exp-format" value="newick">&nbsp;Newick <span style="color:var(--bs-secondary-color);font-size:0.78rem">(.nwk)</span></label>
+        </div>
+      </div>
+      <div class="exp-section">
+        <span class="exp-section-label">Scope</span>
+        <div class="exp-radio-group">
+          <label class="exp-radio-opt"><input type="radio" name="exp-scope" value="full" checked>&nbsp;Entire tree</label>
+          <label class="exp-radio-opt${!hasSubtree ? ' exp-disabled' : ''}">
+            <input type="radio" name="exp-scope" value="subtree"${!hasSubtree ? ' disabled' : ''}>&nbsp;Current subtree view
+          </label>
+        </div>
+      </div>
+      ${annotKeys.length > 0 ? `
+      <div class="exp-section">
+        <span class="exp-section-label" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Annotations to include</span>
+          <span style="display:flex;gap:0.3rem">
+            <button id="exp-all-btn"  class="btn btn-sm btn-outline-secondary" style="font-size:0.7rem;padding:1px 8px;line-height:1.4">All</button>
+            <button id="exp-none-btn" class="btn btn-sm btn-outline-secondary" style="font-size:0.7rem;padding:1px 8px;line-height:1.4">None</button>
+          </span>
+        </span>
+        <div class="imp-col-grid" id="exp-annot-grid" style="margin-top:0.35rem">
+          ${annotKeys.map(k => `
+            <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.82rem;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              <input type="checkbox" class="exp-annot-cb" value="${_esc(k)}" checked>
+              <code style="font-size:0.78rem;background:#02292e;padding:0 3px;border-radius:3px">${_esc(k)}</code>
+            </label>`).join('')}
+        </div>
+      </div>` : ''}`;
+
+    exportFooter.innerHTML = `
+      <button id="exp-cancel-btn"   class="btn btn-sm btn-secondary">Cancel</button>
+      <button id="exp-download-btn" class="btn btn-sm btn-primary"><i class="bi bi-download me-1"></i>Download</button>`;
+
+    document.getElementById('exp-cancel-btn').addEventListener('click', _closeExportDialog);
+    document.getElementById('exp-download-btn').addEventListener('click', _doExport);
+    if (annotKeys.length > 0) {
+      document.getElementById('exp-all-btn').addEventListener('click', () =>
+        document.querySelectorAll('#exp-annot-grid .exp-annot-cb').forEach(cb => { cb.checked = true; }));
+      document.getElementById('exp-none-btn').addEventListener('click', () =>
+        document.querySelectorAll('#exp-annot-grid .exp-annot-cb').forEach(cb => { cb.checked = false; }));
+    }
+  }
+
+  function _doExport() {
+    const format      = document.querySelector('input[name="exp-format"]:checked')?.value || 'nexus';
+    const scope       = document.querySelector('input[name="exp-scope"]:checked')?.value  || 'full';
+    const annotKeys   = [...document.querySelectorAll('#exp-annot-grid .exp-annot-cb:checked')].map(cb => cb.value);
+    const subtreeId   = scope === 'subtree' ? renderer._viewSubtreeRootId : null;
+    const newick      = _graphToNewick(graph, subtreeId, annotKeys);
+    if (!newick) return;
+
+    let content, ext;
+    if (format === 'nexus') {
+      const rootedTag = annotKeys.length > 0 ? '[&R] ' : '';
+      content = `#NEXUS\nBEGIN TREES;\n\ttree TREE1 = ${rootedTag}${newick}\nEND;\n`;
+      ext     = 'nexus';
+    } else {
+      content = newick + '\n';
+      ext     = 'nwk';
+    }
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url  = URL.createObjectURL(blob);
+    const a    = Object.assign(document.createElement('a'), { href: url, download: `tree.${ext}` });
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    _closeExportDialog();
+  }
+
   /** Repopulate annotation dropdowns (tipColourBy, nodeColourBy, legendAnnotEl) after schema change. */
   function _refreshAnnotationUIs(schema) {
     function repopulate(sel) {
@@ -964,6 +1163,7 @@ import { AxisRenderer  } from './axisrenderer.js';
         treeLoaded = true;
         btnModalClose.disabled    = false;
         btnImportAnnot.disabled   = false;
+        btnExportTree.disabled    = false;
       }
 
       // Restore saved interaction mode before binding controls.
