@@ -139,6 +139,7 @@ export function parseNexus(nexus) {
   let inTreesBlock = false;
   const tipNameMap = new Map();
   let inTranslate = false;
+  let peartreeSettings = null;
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
@@ -149,6 +150,14 @@ export function parseNexus(nexus) {
     }
     if (inTreesBlock) {
       if (lower === 'end;' || lower === 'end') { inTreesBlock = false; continue; }
+
+      // Detect embedded PearTree settings comment: [peartree={...}]
+      const ptMatch = line.match(/^\[peartree=(\{.*\})\]$/i);
+      if (ptMatch) {
+        try { peartreeSettings = JSON.parse(ptMatch[1]); } catch { /* ignore malformed */ }
+        continue;
+      }
+
       if (lower === 'translate') { inTranslate = true; continue; }
       if (inTranslate) {
         if (line === ';') { inTranslate = false; continue; }
@@ -166,10 +175,19 @@ export function parseNexus(nexus) {
             newickStr,
             tipNameMap.size > 0 ? tipNameMap : null
           );
-          trees.push({ root, tipNameMap });
+          trees.push({ root, tipNameMap, peartreeSettings });
         }
       }
     }
   }
+
+  // If we found peartree settings but the tree line came before the comment,
+  // back-fill any entries that didn't yet have it.
+  if (peartreeSettings) {
+    for (const t of trees) {
+      if (!t.peartreeSettings) t.peartreeSettings = peartreeSettings;
+    }
+  }
+
   return trees;
 }

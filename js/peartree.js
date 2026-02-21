@@ -226,6 +226,109 @@ import { AxisRenderer  } from './axisrenderer.js';
     }));
   }
 
+  /**
+   * Snapshot the full current UI state as a plain object suitable for
+   * embedding in an exported NEXUS file or for comparison.
+   */
+  function _captureCurrentSettings() {
+    return {
+      theme:            themeSelect.value,
+      canvasBgColor:    canvasBgColorEl.value,
+      branchColor:      branchColorEl.value,
+      branchWidth:      branchWidthSlider.value,
+      fontSize:         fontSlider.value,
+      labelColor:       labelColorEl.value,
+      tipSize:          tipSlider.value,
+      tipHaloSize:      tipHaloSlider.value,
+      tipShapeColor:    tipShapeColorEl.value,
+      tipShapeBgColor:  tipShapeBgEl.value,
+      nodeSize:         nodeSlider.value,
+      nodeHaloSize:     nodeHaloSlider.value,
+      nodeShapeColor:   nodeShapeColorEl.value,
+      nodeShapeBgColor: nodeShapeBgEl.value,
+      tipColourBy:      tipColourBy.value,
+      nodeColourBy:     nodeColourBy.value,
+      labelColourBy:    labelColourBy.value,
+      legendShow:       legendShowEl.value,
+      legendAnnotation: legendAnnotEl.value,
+      axisShow:           axisShowEl.value,
+      axisDateAnnotation: axisDateAnnotEl.value,
+      axisMajorInterval:    axisMajorIntervalEl.value,
+      axisMinorInterval:    axisMinorIntervalEl.value,
+      axisMajorLabelFormat: axisMajorLabelEl.value,
+      axisMinorLabelFormat: axisMinorLabelEl.value,
+      nodeOrder:        currentOrder,
+      mode:             renderer ? renderer._mode : 'nodes',
+    };
+  }
+
+  /**
+   * Apply the 13 visual (non-annotation) settings from a plain object directly
+   * to DOM controls and the renderer.  Does NOT call saveSettings().
+   * Annotation-dependent fields (colourBy, legend, axis date) are handled
+   * separately in loadTree after dropdowns are populated.
+   */
+  function _applyVisualSettingsFromFile(s) {
+    if (!s) return;
+    if (s.canvasBgColor)        canvasBgColorEl.value    = s.canvasBgColor;
+    if (s.branchColor)          branchColorEl.value      = s.branchColor;
+    if (s.branchWidth    != null) {
+      branchWidthSlider.value = s.branchWidth;
+      document.getElementById('branch-width-value').textContent = s.branchWidth;
+    }
+    if (s.fontSize       != null) {
+      fontSlider.value = s.fontSize;
+      document.getElementById('font-size-value').textContent = s.fontSize;
+    }
+    if (s.labelColor)            labelColorEl.value       = s.labelColor;
+    if (s.tipSize        != null) {
+      tipSlider.value = s.tipSize;
+      document.getElementById('tip-size-value').textContent = s.tipSize;
+    }
+    if (s.tipHaloSize    != null) {
+      tipHaloSlider.value = s.tipHaloSize;
+      document.getElementById('tip-halo-value').textContent = s.tipHaloSize;
+    }
+    if (s.tipShapeColor)         tipShapeColorEl.value    = s.tipShapeColor;
+    if (s.tipShapeBgColor)       tipShapeBgEl.value       = s.tipShapeBgColor;
+    if (s.nodeSize       != null) {
+      nodeSlider.value = s.nodeSize;
+      document.getElementById('node-size-value').textContent = s.nodeSize;
+    }
+    if (s.nodeHaloSize   != null) {
+      nodeHaloSlider.value = s.nodeHaloSize;
+      document.getElementById('node-halo-value').textContent = s.nodeHaloSize;
+    }
+    if (s.nodeShapeColor)        nodeShapeColorEl.value   = s.nodeShapeColor;
+    if (s.nodeShapeBgColor)      nodeShapeBgEl.value      = s.nodeShapeBgColor;
+    // Axis non-annotation settings
+    if (s.axisShow)              axisShowEl.value         = s.axisShow;
+    if (s.axisMajorInterval)     axisMajorIntervalEl.value = s.axisMajorInterval;
+    if (s.axisMinorInterval)     axisMinorIntervalEl.value = s.axisMinorInterval;
+    if (s.axisMajorLabelFormat)  axisMajorLabelEl.value   = s.axisMajorLabelFormat;
+    if (s.axisMinorLabelFormat)  axisMinorLabelEl.value   = s.axisMinorLabelFormat;
+    if (s.legendShow)            legendShowEl.value       = s.legendShow;
+    // Set themeSelect to the stored theme name (or 'custom' if not known).
+    const themeName = s.theme && themeRegistry.has(s.theme) ? s.theme : (s.theme === 'custom' ? 'custom' : 'custom');
+    themeSelect.value = themeName;
+    btnStoreTheme.disabled = (themeName !== 'custom');
+    if (renderer) {
+      if (s.canvasBgColor)        renderer.setBgColor(s.canvasBgColor);
+      if (s.branchColor)          renderer.setBranchColor(s.branchColor);
+      if (s.branchWidth    != null) renderer.setBranchWidth(parseFloat(s.branchWidth));
+      if (s.fontSize       != null) renderer.setFontSize(parseInt(s.fontSize));
+      if (s.labelColor)            renderer.setLabelColor(s.labelColor);
+      if (s.tipSize        != null) renderer.setTipRadius(parseInt(s.tipSize));
+      if (s.tipHaloSize    != null) renderer.setTipHaloSize(parseInt(s.tipHaloSize));
+      if (s.tipShapeColor)         renderer.setTipShapeColor(s.tipShapeColor);
+      if (s.tipShapeBgColor)       renderer.setTipShapeBgColor(s.tipShapeBgColor);
+      if (s.nodeSize       != null) renderer.setNodeRadius(parseInt(s.nodeSize));
+      if (s.nodeHaloSize   != null) renderer.setNodeHaloSize(parseInt(s.nodeHaloSize));
+      if (s.nodeShapeColor)        renderer.setNodeShapeColor(s.nodeShapeColor);
+      if (s.nodeShapeBgColor)      renderer.setNodeShapeBgColor(s.nodeShapeBgColor);
+    }
+  }
+
   function applyDefaults() {
     if (!confirm('Reset all visual settings to their defaults?')) return;
 
@@ -1109,6 +1212,12 @@ import { AxisRenderer  } from './axisrenderer.js';
           <label class="exp-radio-opt"><input type="radio" name="exp-format" value="newick">&nbsp;Newick <span style="color:var(--bs-secondary-color);font-size:0.78rem">(.nwk)</span></label>
         </div>
       </div>
+      <div class="exp-section" id="exp-settings-row">
+        <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;cursor:pointer">
+          <input type="checkbox" id="exp-store-settings" checked>
+          <span>Embed current visual settings in file</span>
+        </label>
+      </div>
       <div class="exp-section">
         <span class="exp-section-label">Scope</span>
         <div class="exp-radio-group">
@@ -1155,14 +1264,18 @@ import { AxisRenderer  } from './axisrenderer.js';
 
       const _syncAnnotSection = () => {
         const nwk = isNewick();
+        const settingsRow = document.getElementById('exp-settings-row');
         if (nwk) {
           // Uncheck all annotation checkboxes but leave them enabled.
           allCbs().forEach(cb => { cb.checked = false; });
           document.getElementById('exp-newick-warn')?.remove();
+          // Hide "store settings" — not applicable to Newick.
+          if (settingsRow) settingsRow.style.display = 'none';
         } else {
           // Switching back to NEXUS: re-check all and remove warning.
           allCbs().forEach(cb => { cb.checked = true; });
           document.getElementById('exp-newick-warn')?.remove();
+          if (settingsRow) settingsRow.style.display = '';
         }
       };
 
@@ -1195,14 +1308,18 @@ import { AxisRenderer  } from './axisrenderer.js';
     const format      = document.querySelector('input[name="exp-format"]:checked')?.value || 'nexus';
     const scope       = document.querySelector('input[name="exp-scope"]:checked')?.value  || 'full';
     const annotKeys   = [...document.querySelectorAll('#exp-annot-grid .exp-annot-cb:checked')].map(cb => cb.value);
+    const storeSettings = format === 'nexus' && document.getElementById('exp-store-settings')?.checked;
     const subtreeId   = scope === 'subtree' ? renderer._viewSubtreeRootId : null;
     const newick      = _graphToNewick(graph, subtreeId, annotKeys);
     if (!newick) return;
 
     let content, ext;
     if (format === 'nexus') {
-      const rootedTag = annotKeys.length > 0 ? '[&R] ' : '';
-      content = `#NEXUS\nBEGIN TREES;\n\ttree TREE1 = ${rootedTag}${newick}\nEND;\n`;
+      const rootedTag    = annotKeys.length > 0 ? '[&R] ' : '';
+      const settingsLine = storeSettings
+        ? `\t[peartree=${JSON.stringify(_captureCurrentSettings())}]\n`
+        : '';
+      content = `#NEXUS\nBEGIN TREES;\n\ttree TREE1 = ${rootedTag}${newick}\n${settingsLine}END;\n`;
       ext     = 'nexus';
     } else {
       content = newick + '\n';
@@ -1707,6 +1824,7 @@ import { AxisRenderer  } from './axisrenderer.js';
 
       // Try NEXUS first; fall back to bare Newick
       const nexusTrees = parseNexus(text);
+      const _fileSettings = nexusTrees.length > 0 ? (nexusTrees[0].peartreeSettings || null) : null;
       if (nexusTrees.length > 0) {
         parsedRoot = nexusTrees[0].root;
       } else {
@@ -1722,6 +1840,11 @@ import { AxisRenderer  } from './axisrenderer.js';
       renderer.hiddenNodeIds = graph.hiddenNodeIds;  // keep renderer in sync (same Set reference)
       renderer.graph  = graph;
       currentOrder    = null;
+
+      // Apply any visual settings embedded in the file immediately, before
+      // annotation dropdowns are populated (annotation-dependent settings
+      // are handled below after the dropdowns exist).
+      if (_fileSettings) _applyVisualSettingsFromFile(_fileSettings);
       _cachedMidpoint = null;
       isExplicitlyRooted = graph.rooted;
 
@@ -1792,17 +1915,18 @@ import { AxisRenderer  } from './axisrenderer.js';
       legendAnnotEl.value    = '';
       legendAnnotEl.disabled = schema.size === 0;
 
-      // Restore annotation-dependent settings: only apply if the key still exists in this tree.
+      // Annotation-dependent settings:  file-embedded settings take priority over saved prefs.
+      const _eff = _fileSettings || _saved;
       const _hasAnnot = (key) => key && schema.has(key) && schema.get(key).dataType !== 'list';
-      tipColourBy.value   = _hasAnnot(_saved.tipColourBy)      ? _saved.tipColourBy      : '';
-      nodeColourBy.value  = _hasAnnot(_saved.nodeColourBy)     ? _saved.nodeColourBy     : '';
-      labelColourBy.value = _hasAnnot(_saved.labelColourBy)    ? _saved.labelColourBy    : '';
-      legendAnnotEl.value = _hasAnnot(_saved.legendAnnotation) ? _saved.legendAnnotation : '';
-      // Restore saved node order.
-      if (_saved.nodeOrder === 'asc' || _saved.nodeOrder === 'desc') {
-        const asc = _saved.nodeOrder === 'asc';
+      tipColourBy.value   = _hasAnnot(_eff.tipColourBy)      ? _eff.tipColourBy      : '';
+      nodeColourBy.value  = _hasAnnot(_eff.nodeColourBy)     ? _eff.nodeColourBy     : '';
+      labelColourBy.value = _hasAnnot(_eff.labelColourBy)    ? _eff.labelColourBy    : '';
+      legendAnnotEl.value = _hasAnnot(_eff.legendAnnotation) ? _eff.legendAnnotation : '';
+      // Restore node order.
+      if (_eff.nodeOrder === 'asc' || _eff.nodeOrder === 'desc') {
+        const asc = _eff.nodeOrder === 'asc';
         reorderGraph(graph, asc);
-        currentOrder = _saved.nodeOrder;
+        currentOrder = _eff.nodeOrder;
       }
 
       // Pass schema to the renderer so it can build colour scales.
@@ -1839,8 +1963,8 @@ import { AxisRenderer  } from './axisrenderer.js';
       axisDateRow.style.display = _isTimedTree ? 'flex' : 'none';
       axisDateAnnotEl.disabled  = !_isTimedTree;
 
-      // Restore saved date annotation (only if this tree is timed and the key exists)
-      const _savedAxisDate = _saved.axisDateAnnotation || '';
+      // Restore date annotation (file settings take priority over saved prefs)
+      const _savedAxisDate = _eff.axisDateAnnotation || '';
       const _canRestoreDate = _isTimedTree && _savedAxisDate &&
                               [...axisDateAnnotEl.options].some(o => o.value === _savedAxisDate);
       axisDateAnnotEl.value = _canRestoreDate ? _savedAxisDate : '';
@@ -1877,8 +2001,11 @@ import { AxisRenderer  } from './axisrenderer.js';
         btnExportGraphic.disabled   = false;
       }
 
-      // Restore saved interaction mode before binding controls.
-      renderer.setMode(_saved.mode === 'branches' ? 'branches' : 'nodes');
+      // Restore interaction mode (file settings take priority).
+      renderer.setMode(_eff.mode === 'branches' ? 'branches' : 'nodes');
+
+      // Persist file-embedded settings to localStorage so they survive a reload.
+      if (_fileSettings) saveSettings();
 
       if (!controlsBound) {
         bindControls();
