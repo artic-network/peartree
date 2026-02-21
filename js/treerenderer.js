@@ -110,6 +110,12 @@ export class TreeRenderer {
     this._lastY           = 0;
     this._dragStartOffsetY = 0;
     this._snapTimer       = null;
+    // drag-select state
+    this._dragSel         = null;    // {x0,y0,x1,y1,additive} or null while active
+    this._dragSelActive   = false;   // true once pointer has moved > threshold
+    this._dragSelStartX   = null;
+    this._dragSelStartY   = null;
+    this._suppressNextClick = false;
     this._hoveredNodeId   = null;
     this._selectedTipIds  = new Set();
     this._mrcaNodeId      = null;
@@ -1526,6 +1532,22 @@ export class TreeRenderer {
       }
     }
 
+    // Pass 6 – drag-select rectangle overlay
+    if (this._dragSel && this._dragSelActive) {
+      const { x0, y0, x1, y1 } = this._dragSel;
+      const rx = Math.min(x0, x1), ry = Math.min(y0, y1);
+      const rw = Math.abs(x1 - x0), rh = Math.abs(y1 - y0);
+      ctx.save();
+      ctx.fillStyle   = 'rgba(100,160,255,0.15)';
+      ctx.strokeStyle = 'rgba(100,160,255,0.8)';
+      ctx.lineWidth   = 1;
+      ctx.setLineDash([4, 3]);
+      ctx.fillRect(rx, ry, rw, rh);
+      ctx.strokeRect(rx, ry, rw, rh);
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
     // ── Cross-fade overlay: draw old snapshot fading out ──
     if (this._crossfadeSnapshot && this._crossfadeAlpha > 0) {
       const cW = this.canvas.clientWidth;
@@ -1741,6 +1763,11 @@ export class TreeRenderer {
 
     // ── Click: plain click replaces selection; Cmd+click toggles.
     canvas.addEventListener('click', e => {
+      // Suppress the click that inevitably fires at the end of a drag-select.
+      if (this._suppressNextClick) {
+        this._suppressNextClick = false;
+        return;
+      }
       if (this._spaceDown) return;
       const rect = canvas.getBoundingClientRect();
       const mx   = e.clientX - rect.left;
@@ -1843,18 +1870,26 @@ export class TreeRenderer {
       }
     }, { passive: false });
 
-    // ── Click-drag: immediate vertical pan – only when spacebar is held.
+    // ── mousedown: space held = pan; otherwise = begin drag-select in nodes-mode.
     canvas.addEventListener('mousedown', e => {
-      if (!this._spaceDown) return;
-      this._dragging        = true;
-      this._lastY           = e.clientY;
-      this._dragStartOffsetY = this.offsetY;
-      // cancel any in-progress animation so the tree follows the pointer
-      this._targetOffsetY = this.offsetY;
-      this._targetScaleY  = this.scaleY;
-      this._animating     = false;
-      canvas.classList.remove('space');
-      canvas.classList.add('grabbing');
+      if (e.button !== 0) return;
+      if (this._spaceDown) {
+        this._dragging        = true;
+        this._lastY           = e.clientY;
+        this._dragStartOffsetY = this.offsetY;
+        // cancel any in-progress animation so the tree follows the pointer
+        this._targetOffsetY = this.offsetY;
+        this._targetScaleY  = this.scaleY;
+        this._animating     = false;
+        canvas.classList.remove('space');
+        canvas.classList.add('grabbing');
+      } else if (this._mode === 'nodes') {
+        const rect = canvas.getBoundingClientRect();
+        this._dragSelStartX = e.clientX - rect.left;
+        this._dragSelStartY = e.clientY - rect.top;
+        this._dragSelActive = false;
+        this._dragSel       = null;
+      }
     });
 
     window.addEventListener('mousemove', e => {
@@ -1865,10 +1900,29 @@ export class TreeRenderer {
         this.offsetY        = newOY;
         this._targetOffsetY = newOY;
         this._dirty  = true;
+      } else if (this._mode === 'nodes' && (e.buttons & 1) && this._dragSelStartX !== null) {
+        // Drag-select: grow the rubber-band rect.
+        const rect = canvas.getBoundingClientRect();
+        const mx   = e.clientX - rect.left;
+        const my   = e.clientY - rect.top;
+        const dx   = mx - this._dragSelStartX;
+        const dy   = my - this._dragSelStartY;
+        if (!this._dragSelActive && Math.hypot(dx, dy) > 5) {
+          this._dragSelActive = true;
+          canvas.style.cursor = 'crosshair';
+        }
+        if (this._dragSelActive) {
+          this._dragSel = {
+            x0: this._dragSelStartX, y0: this._dragSelStartY,
+            x1: mx,                  y1: my,
+            additive: e.metaKey || e.ctrlKey,
+          };
+          this._dirty = true;
+        }
       }
 
-      // Hover hit-test (always, not just when dragging)
-      if (!this._dragging) {
+      // Hover hit-test (suppressed during any drag)
+      if (!this._dragging && !this._dragSelActive) {
         const rect = this.canvas.getBoundingClientRect();
         const mx   = e.clientX - rect.left;
         const my   = e.clientY - rect.top;
@@ -1908,7 +1962,7 @@ export class TreeRenderer {
       if (dirty) this._dirty = true;
     });
 
-    window.addEventListener('mouseup', () => {
+    window.addEventListener('mouseup', e => {
       if (this._dragging) {
         // Snap to the edge that was being revealed by the drag
         const scrolledDown = this.offsetY < this._dragStartOffsetY;
@@ -1918,6 +1972,55 @@ export class TreeRenderer {
       }
       this._dragging = false;
       this.canvas.classList.remove('grabbing');
+
+      // Finalise drag-select: collect tips inside the rect then fire selection.
+      if (this._dragSelActive && this._dragSel) {
+        const { x0, y0, x1, y1, additive } = this._dragSel;
+        const rxMin = Math.min(x0, x1), rxMax = Math.max(x0, x1);
+        const ryMin = Math.min(y0, y1), ryMax = Math.max(y0, y1);
+        const hits = [];
+        if (this.nodes) {
+          // Pre-compute label geometry (same as _findNodeAtScreen / _draw).
+          const r        = this.tipRadius;
+          const outlineR = Math.max(r + this.tipHaloSize, 5);
+          const labelX0  = outlineR + 3;           // label starts this many px right of circle centre
+          const halfH    = this.fontSize / 2 + 2;  // half-height of a label row
+          const showLbls = this.scaleY >= this.fontSize * 0.5;
+          this.ctx.font  = `${this.fontSize}px monospace`;
+          for (const node of this.nodes) {
+            if (!node.isTip) continue;
+            const sx = this._wx(node.x);
+            const sy = this._wy(node.y);
+            // Vertical overlap: rect must intersect [sy - halfH, sy + halfH]
+            if (ryMax < sy - halfH || ryMin > sy + halfH) continue;
+            // Horizontal: hit either the circle or the label text.
+            // Circle bounding box: [sx - r, sx + r]
+            const circleHit = rxMax >= sx - r && rxMin <= sx + r;
+            // Label bounding box: [sx + labelX0, sx + labelX0 + textWidth]
+            let labelHit = false;
+            if (showLbls && node.name) {
+              const lx0 = sx + labelX0;
+              const lx1 = lx0 + this.ctx.measureText(node.name).width;
+              labelHit   = rxMax >= lx0 && rxMin <= lx1;
+            }
+            if (circleHit || labelHit) hits.push(node.id);
+          }
+        }
+        if (additive) {
+          hits.forEach(id => this._selectedTipIds.add(id));
+        } else {
+          this._selectedTipIds.clear();
+          hits.forEach(id => this._selectedTipIds.add(id));
+        }
+        this._updateMRCA();
+        if (this._onNodeSelectChange) this._onNodeSelectChange(this._selectedTipIds.size > 0);
+        this._suppressNextClick = true;
+        this._dirty = true;
+      }
+      this._dragSel       = null;
+      this._dragSelActive = false;
+      this._dragSelStartX = null;
+
       // restore cursor based on current state
       if (this._spaceDown) {
         this.canvas.style.cursor = 'grab';
