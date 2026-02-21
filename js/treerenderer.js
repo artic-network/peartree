@@ -535,7 +535,13 @@ export class TreeRenderer {
 
   /** Snapshot the current view state for the nav stacks. */
   _currentViewState() {
-    return { rawNode: this._viewRawRoot, scaleY: this._targetScaleY, offsetY: this._targetOffsetY };
+    return {
+      rawNode:         this._viewRawRoot,
+      scaleY:          this._targetScaleY,
+      offsetY:         this._targetOffsetY,
+      selectedTipIds:  new Set(this._selectedTipIds),
+      mrcaNodeId:      this._mrcaNodeId,
+    };
   }
 
   /** Double-click on an internal layout node id → drill into its subtree. */
@@ -588,8 +594,8 @@ export class TreeRenderer {
     this._fwdStack.push(this._currentViewState());
     const state         = this._navStack.pop();
     this._viewRawRoot   = state.rawNode;
-    this._selectedTipIds.clear();
-    this._mrcaNodeId = null;
+    this._selectedTipIds = new Set(state.selectedTipIds || []);
+    this._mrcaNodeId     = state.mrcaNodeId || null;
 
     const rawNode = state.rawNode || this._rawRoot;
     const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(rawNode, this.hiddenNodeIds);
@@ -611,6 +617,7 @@ export class TreeRenderer {
     this._dirty = true;
     if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewRawRoot);
     if (this._onNavChange) this._onNavChange(this._navStack.length > 0, true);
+    if (this._onNodeSelectChange) this._onNodeSelectChange(this._selectedTipIds.size > 0 || !!this._mrcaNodeId);
   }
 
   navigateForward() {
@@ -628,8 +635,8 @@ export class TreeRenderer {
     this._navStack.push(this._currentViewState());
     this._fwdStack.pop();
     this._viewRawRoot = state.rawNode;
-    this._selectedTipIds.clear();
-    this._mrcaNodeId = null;
+    this._selectedTipIds = new Set(state.selectedTipIds || []);
+    this._mrcaNodeId     = state.mrcaNodeId || null;
 
     const { nodes, nodeMap, maxX, maxY } = computeLayoutFrom(fwdRawNode, this.hiddenNodeIds);
     this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
@@ -649,6 +656,7 @@ export class TreeRenderer {
     this._dirty = true;
     if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewRawRoot);
     if (this._onNavChange) this._onNavChange(true, this._fwdStack.length > 0);
+    if (this._onNodeSelectChange) this._onNodeSelectChange(this._selectedTipIds.size > 0 || !!this._mrcaNodeId);
   }
 
   /** Measure the widest tip label once so _updateScaleX can stay cheap. */
