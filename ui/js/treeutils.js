@@ -94,6 +94,51 @@ function computeLayout(root, hiddenNodeIds = new Set()) {
   return { nodes, nodeMap, maxX, maxY: tipCounter };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Visual-root helpers used by computeLayoutFromGraph
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Count visible (non-hidden) tips reachable from `nodeIdx` going away from
+ * `fromIdx`. Hidden nodes (their whole subtree) are not entered.
+ */
+function _countVisibleTips(gnodes, hiddenNodeIds, nodeIdx, fromIdx) {
+  let count = 0;
+  const stack = [{ ni: nodeIdx, fi: fromIdx }];
+  while (stack.length) {
+    const { ni, fi } = stack.pop();
+    const gnode = gnodes[ni];
+    if (hiddenNodeIds.has(gnode.origId)) continue;
+    const children = gnode.adjacents.filter(a => a !== fi);
+    if (children.length === 0) count++;
+    else for (const c of children) stack.push({ ni: c, fi: ni });
+  }
+  return count;
+}
+
+/**
+ * Walk down from `startIdx` (coming from `fromIdx`) following the single
+ * visible child until we reach a node with ≠ 1 visible child (i.e. a
+ * bifurcation, a leaf, or a dead-end).  Returns the effective root as
+ * `{ nodeIdx, fromIdx }`.
+ */
+function _findEffectiveRoot(gnodes, hiddenNodeIds, startIdx, fromIdx) {
+  let curIdx  = startIdx;
+  let curFrom = fromIdx;
+  while (true) {
+    const gnode = gnodes[curIdx];
+    const visChildren = gnode.adjacents.filter(adjIdx => {
+      if (adjIdx === curFrom) return false;
+      const childOrigId = gnodes[adjIdx].origId;
+      if (hiddenNodeIds.has(childOrigId)) return false;
+      return _countVisibleTips(gnodes, hiddenNodeIds, adjIdx, curIdx) > 0;
+    });
+    if (visChildren.length !== 1) return { nodeIdx: curIdx, fromIdx: curFrom };
+    curFrom = curIdx;
+    curIdx  = visChildren[0];
+  }
+}
+
 /**
  * Compute the rectangular layout from a PhyloGraph (adjacency-list model).
  *
@@ -180,40 +225,59 @@ export function computeLayoutFromGraph(graph, subtreeRootId = null) {
     }
   } else if (lenA === 0) {
     // Real root: nodeA is the layout root.
-    traverse(nodeA, -1, 0, null);
+    // If all visible tips are on only one branch, collapse to the first
+    // bifurcating ancestor so the tree renders without a dangling root stub.
+    const eff = hiddenNodeIds.size
+      ? _findEffectiveRoot(gnodes, hiddenNodeIds, nodeA, -1)
+      : { nodeIdx: nodeA, fromIdx: -1 };
+    traverse(eff.nodeIdx, eff.fromIdx, 0, null);
 
   } else {
     // Virtual bifurcating root between nodeA and nodeB.
-    const ROOT_LAYOUT_ID = '__graph_root__';
-    const gNodeA = gnodes[nodeA];
-    const gNodeB = gnodes[nodeB];
+    const tipsA = hiddenNodeIds.size ? _countVisibleTips(gnodes, hiddenNodeIds, nodeA, nodeB) : 1;
+    const tipsB = hiddenNodeIds.size ? _countVisibleTips(gnodes, hiddenNodeIds, nodeB, nodeA) : 1;
 
-    if (!hiddenNodeIds.has(gNodeA.origId)) traverse(nodeA, nodeB, lenA, ROOT_LAYOUT_ID);
-    if (!hiddenNodeIds.has(gNodeB.origId)) traverse(nodeB, nodeA, lenB, ROOT_LAYOUT_ID);
+    if (tipsA > 0 && tipsB > 0) {
+      // Both sides have visible tips — use the normal virtual bifurcating root.
+      const ROOT_LAYOUT_ID = '__graph_root__';
+      const gNodeA = gnodes[nodeA];
+      const gNodeB = gnodes[nodeB];
 
-    const aEntry = nodeMap.get(gNodeA.origId);
-    const bEntry = nodeMap.get(gNodeB.origId);
-    const rootChildren = [];
-    if (aEntry) rootChildren.push(gNodeA.origId);
-    if (bEntry) rootChildren.push(gNodeB.origId);
-    const rootY = aEntry && bEntry ? (aEntry.y + bEntry.y) / 2
-                : aEntry ? aEntry.y : bEntry ? bEntry.y : 1;
+      if (!hiddenNodeIds.has(gNodeA.origId)) traverse(nodeA, nodeB, lenA, ROOT_LAYOUT_ID);
+      if (!hiddenNodeIds.has(gNodeB.origId)) traverse(nodeB, nodeA, lenB, ROOT_LAYOUT_ID);
 
-    const rootEntry = {
-      id:                ROOT_LAYOUT_ID,
-      name:              null,
-      label:             null,
-      annotations:       root.annotations || {},
-      x:                 0,
-      y:                 rootY,
-      isTip:             rootChildren.length === 0,
-      hasHiddenChildren: hiddenNodeIds.has(gNodeA.origId) || hiddenNodeIds.has(gNodeB.origId),
-      children:          rootChildren,
-      parentId:          null,
-    };
-    if (rootEntry.isTip) { tipCounter++; rootEntry.y = tipCounter; }
-    layoutNodes.unshift(rootEntry);
-    nodeMap.set(ROOT_LAYOUT_ID, rootEntry);
+      const aEntry = nodeMap.get(gNodeA.origId);
+      const bEntry = nodeMap.get(gNodeB.origId);
+      const rootChildren = [];
+      if (aEntry) rootChildren.push(gNodeA.origId);
+      if (bEntry) rootChildren.push(gNodeB.origId);
+      const rootY = aEntry && bEntry ? (aEntry.y + bEntry.y) / 2
+                  : aEntry ? aEntry.y : bEntry ? bEntry.y : 1;
+
+      const rootEntry = {
+        id:                ROOT_LAYOUT_ID,
+        name:              null,
+        label:             null,
+        annotations:       root.annotations || {},
+        x:                 0,
+        y:                 rootY,
+        isTip:             rootChildren.length === 0,
+        hasHiddenChildren: hiddenNodeIds.has(gNodeA.origId) || hiddenNodeIds.has(gNodeB.origId),
+        children:          rootChildren,
+        parentId:          null,
+      };
+      if (rootEntry.isTip) { tipCounter++; rootEntry.y = tipCounter; }
+      layoutNodes.unshift(rootEntry);
+      nodeMap.set(ROOT_LAYOUT_ID, rootEntry);
+
+    } else {
+      // One entire side of the virtual root is hidden.  Walk down the visible
+      // side to the first bifurcating ancestor and use that as the visual root.
+      const startIdx  = tipsA > 0 ? nodeA : nodeB;
+      const startFrom = tipsA > 0 ? nodeB : nodeA;
+      const eff = _findEffectiveRoot(gnodes, hiddenNodeIds, startIdx, startFrom);
+      traverse(eff.nodeIdx, eff.fromIdx, 0, null);
+    }
   }
 
   // ── Post-pass: suppress single-child non-root internal nodes ─────────────

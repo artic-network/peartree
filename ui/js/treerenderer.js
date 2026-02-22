@@ -157,6 +157,11 @@ export class TreeRenderer {
     this._reorderToY    = null;   // Map<id, newY>
     this._reorderAlpha  = 1;      // 0→1; 1 = not animating
 
+    // Root-shift animation (when effective visual root moves deeper/shallower after hide/show)
+    this._rootShiftAlpha  = 1;    // 0→1; 1 = not animating
+    this._rootShiftFromX  = 0;    // starting offsetX
+    this._rootShiftToX    = 0;    // target offsetX (paddingLeft)
+
     // Cross-fade animation (used on midpoint-root and similar wholesale tree changes)
     this._crossfadeSnapshot = null;   // OffscreenCanvas capturing old frame
 
@@ -1200,7 +1205,7 @@ export class TreeRenderer {
 
     // ── Per-node reorder animation (y positions) ──
     if (this._reorderAlpha < 1) {
-      const EASE = 0.14;
+      const EASE = 0.05;   // ~20 frames ≈ 330 ms at 60 fps (matches root-shift animation)
       this._reorderAlpha = Math.min(1, this._reorderAlpha + EASE);
       // Ease-in-out curve
       const t = this._reorderAlpha;
@@ -1224,23 +1229,34 @@ export class TreeRenderer {
       this._dirty = true;
     }
 
+    // ── Root-shift animation (slow ease-in-out for visual-root changes) ──
+    if (this._rootShiftAlpha < 1) {
+      const EASE = 0.05;   // ~20 frames ≈ 330 ms at 60 fps
+      this._rootShiftAlpha = Math.min(1, this._rootShiftAlpha + EASE);
+      const t = this._rootShiftAlpha;
+      const a = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;   // ease-in-out
+      this.offsetX = this._rootShiftFromX + (this._rootShiftToX - this._rootShiftFromX) * a;
+      this._dirty = true;
+    }
+
     if (this._animating) {
       const EASE = 0.16;
       const dY  = this._targetOffsetY - this.offsetY;
       const dSY = this._targetScaleY  - this.scaleY;
       const dSX = this._targetScaleX  - this.scaleX;
-      const dOX = this._targetOffsetX - this.offsetX;
+      // Skip the fast offsetX spring while the dedicated root-shift animation owns it.
+      const dOX = this._rootShiftAlpha < 1 ? 0 : this._targetOffsetX - this.offsetX;
       if (Math.abs(dY) < 0.05 && Math.abs(dSY) < 5e-5 && Math.abs(dSX) < 5e-5 && Math.abs(dOX) < 0.05) {
         this.offsetY = this._targetOffsetY;
         this.scaleY  = this._targetScaleY;
         this.scaleX  = this._targetScaleX;
-        this.offsetX = this._targetOffsetX;
+        if (this._rootShiftAlpha >= 1) this.offsetX = this._targetOffsetX;
         this._animating = false;
       } else {
         this.offsetY += dY  * EASE;
         this.scaleY  += dSY * EASE;
         this.scaleX  += dSX * EASE;
-        this.offsetX += dOX * EASE;
+        if (this._rootShiftAlpha >= 1) this.offsetX += dOX * EASE;
       }
       this._dirty = true;
     }
@@ -1260,7 +1276,7 @@ export class TreeRenderer {
       this._draw();
       this._dirty = false;
     }
-    if (this._onViewChange && (this._animating || this._reorderAlpha < 1 || this._crossfadeAlpha > 0 || !this._lastViewHash || this._lastViewHash !== this._viewHash())) {
+    if (this._onViewChange && (this._animating || this._reorderAlpha < 1 || this._rootShiftAlpha < 1 || this._crossfadeAlpha > 0 || !this._lastViewHash || this._lastViewHash !== this._viewHash())) {
       this._lastViewHash = this._viewHash();
       this._onViewChange(this.scaleX, this.offsetX, this.paddingLeft, this.labelRightPad, this.bgColor, this.fontSize, window.devicePixelRatio || 1);
     }

@@ -2569,7 +2569,8 @@ import { AxisRenderer  } from './axisrenderer.js';
         countA = _graphVisibleTipCount(nodeA, nodeB, nodeId);
         countB = _graphVisibleTipCount(nodeB, nodeA, nodeId);
       }
-      if (countA === 0 || countB === 0) return false;
+      // Allow hiding an entire side of the root: only require ≥ 2 visible tips remain in total.
+      if (countA + countB < 2) return false;
       return true;
     }
 
@@ -2704,10 +2705,55 @@ import { AxisRenderer  } from './axisrenderer.js';
     btnRotateAll.addEventListener('click', () => applyRotate(true));
 
     // ── Hide / Show ───────────────────────────────────────────────────────────
+
+    /**
+     * If the visual root changes after a hide/show (because one side of the
+     * root was collapsed away), seed renderer.offsetX so the effective root
+     * node starts at its OLD screen position, then let the existing _animating
+     * lerp slide it to paddingLeft.  Call this AFTER setDataAnimated but
+     * BEFORE fitToWindow.
+     *
+     * @param {object|null} oldRoot    - the old layout root node (may be null)
+     * @param {Map}         oldNodeMap - the layout nodeMap BEFORE the new layout was installed
+     * @param {object[]}    newNodes   - new layout nodes array
+     * @param {'in'|'out'}  direction  - 'in' = root moved deeper, 'out' = root moved toward real root
+     */
+    function _seedRootShiftAnimation(oldRoot, oldNodeMap, newNodes, direction) {
+      if (renderer._viewSubtreeRootId) return; // only for full-tree view
+      const newRoot = newNodes.find(n => !n.parentId);
+      if (!newRoot || !oldRoot || newRoot.id === oldRoot.id) return;
+
+      const curScaleX  = renderer.scaleX;   // still old value (lerp hasn't ticked yet)
+      const curOffsetX = renderer.offsetX;  // still paddingLeft from old layout
+
+      if (direction === 'in') {
+        // Root moved deeper: new root was at oldX > 0 in the old layout.
+        // Slide from that displaced position in to paddingLeft.
+        const oldNode = oldNodeMap?.get(newRoot.id);
+        if (!oldNode) return;
+        renderer._rootShiftFromX = curOffsetX + oldNode.x * curScaleX;
+      } else {
+        // Root moved toward real root: old effective root is somewhere down the new layout.
+        // Slide from that negative-offset position out to paddingLeft.
+        const newOldRootNode = renderer.nodeMap?.get(oldRoot.id);
+        if (!newOldRootNode) return;
+        renderer._rootShiftFromX = curOffsetX - newOldRootNode.x * curScaleX;
+      }
+      renderer._rootShiftToX   = renderer._targetOffsetX;   // = paddingLeft
+      renderer._rootShiftAlpha = 0;
+      renderer.offsetX  = renderer._rootShiftFromX;   // snap to start position immediately
+      renderer._animating = true;
+    }
+
     function applyHide() {
       if (!canHide()) return;
       const nodeId = _selectedNodeId();
       if (!nodeId) return;
+
+      // Snapshot the current visual root BEFORE mutating the graph / layout.
+      const oldRoot    = renderer.nodes?.find(n => !n.parentId) ?? null;
+      const oldNodeMap = renderer.nodeMap;
+
       graph.hiddenNodeIds.add(nodeId);
       renderer._selectedTipIds.clear();
       renderer._mrcaNodeId = null;
@@ -2721,6 +2767,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       btnOrderDesc.classList.remove('active');
       const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId);
       renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+      _seedRootShiftAnimation(oldRoot, oldNodeMap, layout.nodes, 'in');
       renderer.fitToWindow();
     }
 
@@ -2771,8 +2818,14 @@ import { AxisRenderer  } from './axisrenderer.js';
       currentOrder = null;
       btnOrderAsc .classList.remove('active');
       btnOrderDesc.classList.remove('active');
+
+      // Snapshot the current visual root BEFORE installing the new layout.
+      const oldRoot    = renderer.nodes?.find(n => !n.parentId) ?? null;
+      const oldNodeMap = renderer.nodeMap;
+
       const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId);
       renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+      _seedRootShiftAnimation(oldRoot, oldNodeMap, layout.nodes, 'out');
       renderer.fitToWindow();
     }
 
