@@ -52,10 +52,36 @@
       border-bottom: 1px solid var(--pt-border);
       padding: 5px 0.75rem;
       display: flex;
-      align-items: center;
-      gap: 4px;
+      align-items: flex-start;  /* so left/right track top when centre grows tall */
+      gap: 0;
       flex-shrink: 0;
+      flex-wrap: nowrap;        /* left and right never wrap off-screen */
+    }
+    /* Fixed left section: palette toggle + file ops */
+    .pt-toolbar-left {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      gap: 4px;
+      padding-right: 4px;
+    }
+    /* Wrapping centre section: all tree-manipulation controls */
+    .pt-toolbar-center {
+      display: flex;
+      align-items: center;
       flex-wrap: wrap;
+      gap: 4px;
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 0 2px;
+    }
+    /* Fixed right section: filter + about/help */
+    .pt-toolbar-right {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      gap: 4px;
+      padding-left: 4px;
     }
     .pt-toolbar-sep {
       width: 1px;
@@ -863,120 +889,123 @@
 <body>
 
 <nav class="pt-toolbar">
-  <!-- Visual options palette (left panel) -->
-  <button id="btn-palette" class="btn btn-sm btn-outline-secondary" title="Visual options panel (Tab)"><i class="bi bi-sliders"></i><i class="bi bi-caret-right"></i></button>
-  <div class="pt-toolbar-sep"></div>
 
-  <!-- Open file / Import annotations -->
-  <button id="btn-open-tree" class="btn btn-sm btn-outline-primary" title="Open tree file (⌘O)"><i class="bi bi-folder2-open"></i></button>
-  <button id="btn-import-annot" class="btn btn-sm btn-outline-success" disabled title="Import annotations from CSV/TSV (⌘⇧O)"><i class="bi bi-table"></i></button>
-  <button id="btn-export-tree"    class="btn btn-sm btn-outline-info" disabled title="Export tree (Newick or NEXUS)"><i class="bi bi-file-earmark-arrow-down"></i></button>
-  <button id="btn-export-graphic" class="btn btn-sm btn-outline-warning" disabled title="Download graphic (SVG or PNG)"><i class="bi bi-image"></i></button>
-  <div class="pt-toolbar-sep"></div>
-
-  <!-- Back / Forward -->
-  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Nav:</span>
-  <div class="btn-group" role="group" aria-label="Navigate history">
-    <button id="btn-back"    class="btn btn-sm btn-outline-secondary" disabled title="Navigate back (⌘[)"><i class="bi bi-chevron-left"></i></button>
-    <button id="btn-forward" class="btn btn-sm btn-outline-secondary" disabled title="Navigate forward (⌘])"><i class="bi bi-chevron-right"></i></button>
-  </div>
-  <div class="btn-group ms-1" role="group" aria-label="Navigate subtree">
-    <button id="btn-drill"   class="btn btn-sm btn-outline-secondary" disabled title="Drill into subtree (⌘⇧&gt;)"><i class="bi bi-box-arrow-in-right"></i></button>
-    <button id="btn-climb"   class="btn btn-sm btn-outline-secondary" disabled title="Climb out one level (⌘⇧&lt;)"><i class="bi bi-box-arrow-left"></i></button>
-    <button id="btn-home"    class="btn btn-sm btn-outline-secondary" disabled title="Navigate to root (⌘\)"><i class="bi bi-house"></i></button>
-  </div>
-  <div class="pt-toolbar-sep"></div>
-
-   <!-- Zoom -->
-  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Zoom:</span>
-  <div class="btn-group" role="group" aria-label="Zoom">
-    <button id="btn-zoom-in"  class="btn btn-sm btn-outline-secondary" disabled title="Zoom in (⌘+)"><i class="bi bi-zoom-in"></i></button>
-    <button id="btn-zoom-out" class="btn btn-sm btn-outline-secondary" disabled title="Zoom out (⌘−)"><i class="bi bi-zoom-out"></i></button>
+  <!-- ── Fixed left: palette toggle + file operations ── -->
+  <div class="pt-toolbar-left">
+    <button id="btn-palette" class="btn btn-sm btn-outline-secondary" title="Visual options panel (Tab)"><i class="bi bi-sliders"></i><i class="bi bi-caret-right"></i></button>
+    <div class="pt-toolbar-sep"></div>
+    <button id="btn-open-tree" class="btn btn-sm btn-outline-primary" title="Open tree file (⌘O)"><i class="bi bi-folder2-open"></i></button>
+    <button id="btn-import-annot" class="btn btn-sm btn-outline-success" disabled title="Import annotations from CSV/TSV (⌘⇧O)"><i class="bi bi-table"></i></button>
+    <button id="btn-export-tree"    class="btn btn-sm btn-outline-info" disabled title="Export tree (Newick or NEXUS)"><i class="bi bi-file-earmark-arrow-down"></i></button>
+    <button id="btn-export-graphic" class="btn btn-sm btn-outline-warning" disabled title="Download graphic (SVG or PNG)"><i class="bi bi-image"></i></button>
+    <div class="pt-toolbar-sep"></div>
   </div>
 
-  <!-- Fit -->
-  <div class="btn-group" role="group" aria-label="Fit view">
-    <button id="btn-fit"        class="btn btn-sm btn-outline-secondary" disabled title="Fit all (⌘0)"><i class="bi bi-arrows-fullscreen"></i></button>
-    <button id="btn-fit-labels" class="btn btn-sm btn-outline-secondary" disabled title="Fit labels (⌘⇧0)"><i class="bi bi-type"></i></button>
-  </div>
+  <!-- ── Wrapping centre: tree navigation and manipulation ── -->
+  <div class="pt-toolbar-center">
 
-  <!-- Hyperbolic lens width -->
-   <!-- commented out to reduce clutter -->
-  <!-- <span class="form-label-sm" style="padding: 0 2px 0 4px;">Lens:</span>
-  <div class="btn-group" role="group" aria-label="Fisheye lens width">
-    <button id="btn-hyp-up"   class="btn btn-sm btn-outline-secondary" disabled title="Expand lens area (⌘⇧+)"><i class="bi bi-plus-circle"></i></button>
-    <button id="btn-hyp-down" class="btn btn-sm btn-outline-secondary" disabled title="Contract lens area (⌘⇧−)"><i class="bi bi-dash-circle"></i></button>
-  </div>
-  <div class="pt-toolbar-sep"></div> -->
+    <!-- Back / Forward -->
+    <span class="form-label-sm" style="padding: 0 2px 0 4px;">Nav:</span>
+    <div class="btn-group" role="group" aria-label="Navigate history">
+      <button id="btn-back"    class="btn btn-sm btn-outline-secondary" disabled title="Navigate back (⌘[)"><i class="bi bi-chevron-left"></i></button>
+      <button id="btn-forward" class="btn btn-sm btn-outline-secondary" disabled title="Navigate forward (⌘])"><i class="bi bi-chevron-right"></i></button>
+    </div>
+    <div class="btn-group ms-1" role="group" aria-label="Navigate subtree">
+      <button id="btn-drill"   class="btn btn-sm btn-outline-secondary" disabled title="Drill into subtree (⌘⇧&gt;)"><i class="bi bi-box-arrow-in-right"></i></button>
+      <button id="btn-climb"   class="btn btn-sm btn-outline-secondary" disabled title="Climb out one level (⌘⇧&lt;)"><i class="bi bi-box-arrow-left"></i></button>
+      <button id="btn-home"    class="btn btn-sm btn-outline-secondary" disabled title="Navigate to root (⌘\)"><i class="bi bi-house"></i></button>
+    </div>
+    <div class="pt-toolbar-sep"></div>
 
-  <!-- Order -->
-  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Order:</span>
-  <div class="btn-group" role="group" aria-label="Branch order">
-    <button id="btn-order-asc"  class="btn btn-sm btn-outline-secondary" disabled title="Order branches ascending by clade size (⌘D)"><i class="bi bi-sort-up"></i></button>
-    <button id="btn-order-desc" class="btn btn-sm btn-outline-secondary" disabled title="Order branches descending by clade size (⌘U)"><i class="bi bi-sort-down"></i></button>
-  </div>
+    <!-- Zoom -->
+    <span class="form-label-sm" style="padding: 0 2px 0 4px;">Zoom:</span>
+    <div class="btn-group" role="group" aria-label="Zoom">
+      <button id="btn-zoom-in"  class="btn btn-sm btn-outline-secondary" disabled title="Zoom in (⌘+)"><i class="bi bi-zoom-in"></i></button>
+      <button id="btn-zoom-out" class="btn btn-sm btn-outline-secondary" disabled title="Zoom out (⌘−)"><i class="bi bi-zoom-out"></i></button>
+    </div>
 
-  <div class="pt-toolbar-sep"></div>
+    <!-- Fit -->
+    <div class="btn-group" role="group" aria-label="Fit view">
+      <button id="btn-fit"        class="btn btn-sm btn-outline-secondary" disabled title="Fit all (⌘0)"><i class="bi bi-arrows-fullscreen"></i></button>
+      <button id="btn-fit-labels" class="btn btn-sm btn-outline-secondary" disabled title="Fit labels (⌘⇧0)"><i class="bi bi-type"></i></button>
+    </div>
+
+    <!-- Hyperbolic lens width (commented out to reduce clutter) -->
+    <!-- <span class="form-label-sm" style="padding: 0 2px 0 4px;">Lens:</span>
+    <div class="btn-group" role="group" aria-label="Fisheye lens width">
+      <button id="btn-hyp-up"   class="btn btn-sm btn-outline-secondary" disabled title="Expand lens area (⌘⇧+)"><i class="bi bi-plus-circle"></i></button>
+      <button id="btn-hyp-down" class="btn btn-sm btn-outline-secondary" disabled title="Contract lens area (⌘⇧−)"><i class="bi bi-dash-circle"></i></button>
+    </div>
+    <div class="pt-toolbar-sep"></div> -->
+
+    <!-- Order -->
+    <span class="form-label-sm" style="padding: 0 2px 0 4px;">Order:</span>
+    <div class="btn-group" role="group" aria-label="Branch order">
+      <button id="btn-order-asc"  class="btn btn-sm btn-outline-secondary" disabled title="Order branches ascending by clade size (⌘D)"><i class="bi bi-sort-up"></i></button>
+      <button id="btn-order-desc" class="btn btn-sm btn-outline-secondary" disabled title="Order branches descending by clade size (⌘U)"><i class="bi bi-sort-down"></i></button>
+    </div>
+    <div class="pt-toolbar-sep"></div>
+
     <!-- Rotate node -->
-  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Rotate:</span>
-  <div class="btn-group" role="group" aria-label="Rotate node">
-    <button id="btn-rotate" class="btn btn-sm btn-outline-secondary" disabled
-      title="Rotate selected node (reverse direct children order)"><i class="bi bi-repeat" style="display:inline-block;transform:rotate(90deg)"></i></button>
-    <button id="btn-rotate-all" class="btn btn-sm btn-outline-secondary" disabled
-      title="Rotate all nodes in subtree (reverse children at every level)"><i class="bi bi-symmetry-horizontal" style="display:inline-block;transform:scaleX(-1)"></i></button>
-  </div>
-  <div class="pt-toolbar-sep"></div>
+    <span class="form-label-sm" style="padding: 0 2px 0 4px;">Rotate:</span>
+    <div class="btn-group" role="group" aria-label="Rotate node">
+      <button id="btn-rotate" class="btn btn-sm btn-outline-secondary" disabled
+        title="Rotate selected node (reverse direct children order)"><i class="bi bi-repeat" style="display:inline-block;transform:rotate(90deg)"></i></button>
+      <button id="btn-rotate-all" class="btn btn-sm btn-outline-secondary" disabled
+        title="Rotate all nodes in subtree (reverse children at every level)"><i class="bi bi-symmetry-horizontal" style="display:inline-block;transform:scaleX(-1)"></i></button>
+    </div>
+    <div class="pt-toolbar-sep"></div>
 
+    <!-- Select mode -->
+    <span class="form-label-sm" style="padding: 0 2px 0 4px;">Select:</span>
+    <div class="btn-group" role="group" aria-label="Selection mode">
+      <button id="btn-mode-nodes"    class="btn btn-sm btn-outline-secondary active" disabled title="Select nodes mode"><i class="bi bi-circle" style="display:inline-block;transform:rotate(-90deg)"></i></button>
+      <button id="btn-mode-branches" class="btn btn-sm btn-outline-secondary" disabled title="Toggle branches/nodes mode (⌘B)"><i class="bi bi-dash-lg"></i></button>
+    </div>
+    <div class="pt-toolbar-sep"></div>
 
-  <!-- Select mode -->
-  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Select:</span>
-  <div class="btn-group" role="group" aria-label="Selection mode">
-    <button id="btn-mode-nodes"    class="btn btn-sm btn-outline-secondary active" disabled title="Select nodes mode"><i class="bi bi-circle" style="display:inline-block;transform:rotate(-90deg)"></i></button>
-    <button id="btn-mode-branches" class="btn btn-sm btn-outline-secondary" disabled title="Toggle branches/nodes mode (⌘B)"><i class="bi bi-dash-lg"></i></button>
-  </div>
-  <div class="pt-toolbar-sep"></div>
+    <!-- Reroot -->
+    <span class="form-label-sm" style="padding: 0 2px 0 4px;">Root:</span>
+    <button id="btn-reroot" class="btn btn-sm btn-outline-secondary" disabled title="Reroot tree at selection"><i class="bi bi-reply-fill"></i></button>
+    <button id="btn-midpoint-root" class="btn btn-sm btn-outline-secondary" disabled title="Midpoint root (⌘M)"><i class="bi bi-vr" style="display:inline-block;transform:rotate(90deg)"></i></button>
+    <div class="pt-toolbar-sep"></div>
 
-  <!-- Reroot -->
-  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Root:</span>
-  <button id="btn-reroot" class="btn btn-sm btn-outline-secondary" disabled title="Reroot tree at selection"><i class="bi bi-reply-fill"></i></button>
-  <!-- Midpoint root -->
-  <button id="btn-midpoint-root" class="btn btn-sm btn-outline-secondary" disabled title="Midpoint root (⌘M)"><i class="bi bi-vr" style="display:inline-block;transform:rotate(90deg)"></i></button>
+    <!-- Hide / Show collapsed subtree -->
+    <span class="form-label-sm" style="padding: 0 2px 0 4px;">Hide:</span>
+    <div class="btn-group" role="group" aria-label="Hide/show subtree">
+      <button id="btn-hide" class="btn btn-sm btn-outline-secondary" disabled title="Collapse selected subtree"><i class="bi bi-eye-slash"></i></button>
+      <button id="btn-show" class="btn btn-sm btn-outline-secondary" disabled title="Expand selected collapsed subtree"><i class="bi bi-eye"></i></button>
+    </div>
+    <div class="pt-toolbar-sep"></div>
 
-  <!-- Hide / Show collapsed subtree -->
-  <div class="pt-toolbar-sep"></div>
-  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Hide:</span>
-  <div class="btn-group" role="group" aria-label="Hide/show subtree">
-    <button id="btn-hide" class="btn btn-sm btn-outline-secondary" disabled title="Collapse selected subtree"><i class="bi bi-eye-slash"></i></button>
-    <button id="btn-show" class="btn btn-sm btn-outline-secondary" disabled title="Expand selected collapsed subtree"><i class="bi bi-eye"></i></button>
-  </div>
+    <!-- Node Info -->
+    <button id="btn-node-info" class="btn btn-sm btn-outline-secondary" disabled title="Node info (⌘I)"><i class="bi bi-info-circle"></i></button>
+    <div class="pt-toolbar-sep"></div>
 
-  <!-- Node Info -->
-  <div class="pt-toolbar-sep"></div>
-  <button id="btn-node-info" class="btn btn-sm btn-outline-secondary" disabled title="Node info (⌘I)"><i class="bi bi-info-circle"></i></button>
+    <!-- User colour -->
+    <div class="pt-colour-pick-wrap">
+      <input type="color" id="btn-node-colour" class="pt-colour-picker" disabled
+        title="Pick colour for selected nodes" value="#ff8800">
+      <button id="btn-apply-user-colour" class="btn btn-sm btn-outline-secondary" disabled
+        title="Apply colour to selected nodes"><i class="bi bi-brush"></i></button>
+      <button id="btn-clear-user-colour" class="btn btn-sm btn-outline-secondary" disabled
+        title="Clear all user colours"><i class="bi bi-eraser"></i></button>
+    </div>
 
-  <!-- User colour -->
-  <div class="pt-toolbar-sep"></div>
-  <div class="pt-colour-pick-wrap">
-    <input type="color" id="btn-node-colour" class="pt-colour-picker" disabled
-      title="Pick colour for selected nodes" value="#ff8800">
-    <button id="btn-apply-user-colour" class="btn btn-sm btn-outline-secondary" disabled
-      title="Apply colour to selected nodes"><i class="bi bi-brush"></i></button>
-    <button id="btn-clear-user-colour" class="btn btn-sm btn-outline-secondary" disabled
-      title="Clear all user colours"><i class="bi bi-eraser"></i></button>
-  </div>
+  </div><!-- /.pt-toolbar-center -->
 
-  <!-- Tip filter -->
-  <div class="ms-auto"></div>
-  <div class="pt-filter-wrap">
-    <input type="search" id="tip-filter" class="pt-filter-input" placeholder="Filter tips…" disabled autocomplete="off" spellcheck="false">
-    <span id="tip-filter-count" class="pt-filter-count" hidden></span>
-  </div>
-  <div class="ms-auto"></div>
+  <!-- ── Fixed right: filter + about/help ── -->
+  <div class="pt-toolbar-right">
+    <div class="pt-toolbar-sep"></div>
+    <div class="pt-filter-wrap">
+      <input type="search" id="tip-filter" class="pt-filter-input" placeholder="Filter tips…" disabled autocomplete="off" spellcheck="false">
+      <span id="tip-filter-count" class="pt-filter-count" hidden></span>
+    </div>
+    <div class="pt-toolbar-sep"></div>
+    <button id="btn-about" class="btn btn-sm btn-outline-secondary" title="About PearTree"><i class="bi bi-caret-left"></i><i class="bi bi-info-circle"></i></button>
+    <button id="btn-help" class="btn btn-sm btn-outline-secondary" title="Help (⌘?)"><i class="bi bi-caret-left"></i><i class="bi bi-question-circle"></i></button>
+  </div><!-- /.pt-toolbar-right -->
 
-  <!-- About -->
-  <button id="btn-about" class="btn btn-sm btn-outline-secondary" title="About PearTree"><i class="bi bi-caret-left"></i><i class="bi bi-info-circle"></i></button>
-  <!-- Help -->
-  <button id="btn-help" class="btn btn-sm btn-outline-secondary" title="Help (⌘?)"><i class="bi bi-caret-left"></i><i class="bi bi-question-circle"></i></button>
 </nav>
 
 <div id="canvas-container">
