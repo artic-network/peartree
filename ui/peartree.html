@@ -394,29 +394,49 @@
       color: var(--bs-primary);
       border-color: var(--bs-primary);
     }
-    /* About panel – mirrors help panel, slides from right after it */
+    /* About modal */
+    #about-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 699;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    #about-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
     #about-panel {
       position: fixed;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      width: 380px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -48%) scale(0.96);
+      width: min(520px, 92vw);
+      max-height: min(76vh, 640px);
       background: var(--pt-bg-dark);
-      border-left: 1px solid var(--pt-border);
-      box-shadow: -4px 0 24px rgba(0,0,0,0.55);
-      z-index: 599;
+      border: 1px solid var(--pt-border);
+      border-radius: 10px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+      z-index: 700;
       display: flex;
       flex-direction: column;
-      transform: translateX(100%);
-      transition: transform 0.22s cubic-bezier(.4,0,.2,1);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
       overflow: hidden;
     }
-    #about-panel.open { transform: translateX(0); }
+    #about-panel.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
     #about-panel-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 8px 14px 8px 16px;
+      padding: 10px 14px 10px 16px;
       border-bottom: 1px solid var(--pt-border);
       flex-shrink: 0;
     }
@@ -1002,7 +1022,7 @@
       <span id="tip-filter-count" class="pt-filter-count" hidden></span>
     </div>
     <div class="pt-toolbar-sep"></div>
-    <button id="btn-about" class="btn btn-sm btn-outline-secondary" title="About PearTree"><i class="bi bi-caret-left"></i><i class="bi bi-info-circle"></i></button>
+    <button id="btn-about" class="btn btn-sm btn-outline-secondary" title="About PearTree"><i class="bi bi-info-circle"></i></button>
     <button id="btn-help" class="btn btn-sm btn-outline-secondary" title="Help (⌘?)"><i class="bi bi-caret-left"></i><i class="bi bi-question-circle"></i></button>
   </div><!-- /.pt-toolbar-right -->
 
@@ -1372,6 +1392,7 @@
   </div>
 </div>
 
+<div id="about-backdrop"></div>
 <div id="about-panel">
   <div id="about-panel-header">
     <h2><i class="bi bi-tree me-2"></i>About PearTree</h2>
@@ -1449,8 +1470,9 @@
   });
   btnHelpClose.addEventListener('click', closeHelp);
 
-  // About panel
+  // About modal
   const aboutPanel    = document.getElementById('about-panel');
+  const aboutBackdrop = document.getElementById('about-backdrop');
   const aboutContent  = document.getElementById('about-content');
   const btnAbout      = document.getElementById('btn-about');
   const btnAboutClose = document.getElementById('btn-about-close');
@@ -1470,11 +1492,13 @@
     }
     closeHelp();
     aboutPanel.classList.add('open');
+    aboutBackdrop.classList.add('open');
     btnAbout.classList.add('active');
   }
 
   function closeAbout() {
     aboutPanel.classList.remove('open');
+    aboutBackdrop.classList.remove('open');
     btnAbout.classList.remove('active');
   }
 
@@ -1483,6 +1507,7 @@
     aboutPanel.classList.contains('open') ? closeAbout() : openAbout();
   });
   btnAboutClose.addEventListener('click', closeAbout);
+  aboutBackdrop.addEventListener('click', closeAbout);
 
   // Clicking the tree canvas closes any open panel immediately.
   document.getElementById('tree-canvas').addEventListener('pointerdown', () => {
