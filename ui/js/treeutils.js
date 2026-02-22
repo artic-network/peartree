@@ -166,54 +166,79 @@ export function computeLayoutFromGraph(graph, subtreeRootId = null) {
   const nodeMap     = new Map();
 
   /**
-   * DFS from `nodeIdx`, arriving from `fromNodeIdx` (-1 = no exclusion).
+   * Iterative DFS from `startNodeIdx`, arriving from `startFromNodeIdx` (-1 = none).
    * Children whose origId is in hiddenNodeIds are skipped entirely.
    * The parent is marked hasHiddenChildren = true instead.
+   *
+   * Iterative to avoid call-stack overflow on large/deep trees (e.g. 100k-tip
+   * caterpillar trees where recursion depth ≈ tip count).
    */
-  function traverse(nodeIdx, fromNodeIdx, xFromRoot, parentLayoutId) {
-    const gnode = gnodes[nodeIdx];
-    const entry = {
-      id:                gnode.origId,
-      name:              gnode.name,
-      label:             gnode.label,
-      annotations:       gnode.annotations,
-      x:                 xFromRoot,
-      y:                 null,
-      isTip:             false,
-      hasHiddenChildren: false,
-      children:          [],
-      parentId:          parentLayoutId,
-    };
+  function traverse(startNodeIdx, startFromNodeIdx, startXFromRoot, startParentLayoutId) {
+    // Record where this call's entries start so the post-order y-pass
+    // only touches nodes added in this invocation.
+    const startLen = layoutNodes.length;
 
-    layoutNodes.push(entry);
-    nodeMap.set(entry.id, entry);
+    // Push children in REVERSE order so they are popped (visited) in FORWARD
+    // order, preserving the same left-to-right tip numbering as before.
+    const stack = [{ nodeIdx: startNodeIdx, fromNodeIdx: startFromNodeIdx,
+                     xFromRoot: startXFromRoot, parentLayoutId: startParentLayoutId }];
 
-    const allChildren = gnode.adjacents
-      .map((adjIdx, i) => ({ adjIdx, len: gnode.lengths[i] }))
-      .filter(({ adjIdx }) => adjIdx !== fromNodeIdx);
+    while (stack.length) {
+      const { nodeIdx, fromNodeIdx, xFromRoot, parentLayoutId } = stack.pop();
+      const gnode = gnodes[nodeIdx];
+      const entry = {
+        id:                gnode.origId,
+        name:              gnode.name,
+        label:             gnode.label,
+        annotations:       gnode.annotations,
+        x:                 xFromRoot,
+        y:                 null,
+        isTip:             false,
+        hasHiddenChildren: false,
+        children:          [],
+        parentId:          parentLayoutId,
+      };
 
-    entry.isTip = allChildren.length === 0;
-    if (entry.isTip) { tipCounter++; entry.y = tipCounter; }
+      layoutNodes.push(entry);
+      nodeMap.set(entry.id, entry);
 
-    for (const { adjIdx, len } of allChildren) {
-      const childOrigId = gnodes[adjIdx].origId;
-      if (hiddenNodeIds.has(childOrigId)) {
-        entry.hasHiddenChildren = true; // skip this child entirely
-      } else {
-        traverse(adjIdx, nodeIdx, xFromRoot + len, gnode.origId);
-        entry.children.push(childOrigId);
+      const allChildren = gnode.adjacents
+        .map((adjIdx, i) => ({ adjIdx, len: gnode.lengths[i] }))
+        .filter(({ adjIdx }) => adjIdx !== fromNodeIdx);
+
+      entry.isTip = allChildren.length === 0;
+      if (entry.isTip) { tipCounter++; entry.y = tipCounter; }
+
+      // Collect visible children (forward order), pre-populate entry.children,
+      // then push to stack in reverse so forward-order pops happen first.
+      const toPush = [];
+      for (const { adjIdx, len } of allChildren) {
+        const childOrigId = gnodes[adjIdx].origId;
+        if (hiddenNodeIds.has(childOrigId)) {
+          entry.hasHiddenChildren = true;
+        } else {
+          entry.children.push(childOrigId);
+          toPush.push({ adjIdx, len });
+        }
+      }
+      for (let j = toPush.length - 1; j >= 0; j--) {
+        const { adjIdx, len } = toPush[j];
+        stack.push({ nodeIdx: adjIdx, fromNodeIdx: nodeIdx,
+                     xFromRoot: xFromRoot + len, parentLayoutId: gnode.origId });
       }
     }
 
-    if (!entry.isTip) {
-      if (entry.children.length > 0) {
-        const childYs = entry.children.map(cid => nodeMap.get(cid).y).filter(y => y != null);
-        if (childYs.length > 0)
-          entry.y = childYs.reduce((a, b) => a + b, 0) / childYs.length;
-      }
-      // If children.length === 0 here, all children were hidden.
-      // Leave isTip=false so the suppression post-pass can remove this node
-      // and propagate hasHiddenChildren to the parent.
+    // Post-order y-assignment for internal nodes added in this DFS call.
+    // layoutNodes is pre-order (parent before children), so iterating in
+    // reverse guarantees every child is processed before its parent.
+    for (let i = layoutNodes.length - 1; i >= startLen; i--) {
+      const node = layoutNodes[i];
+      if (node.isTip || node.children.length === 0) continue;
+      // If children.length === 0, all children were hidden — leave isTip=false
+      // so the suppression post-pass can remove this node.
+      const childYs = node.children.map(cid => nodeMap.get(cid).y).filter(y => y != null);
+      if (childYs.length > 0)
+        node.y = childYs.reduce((a, b) => a + b, 0) / childYs.length;
     }
   }
 

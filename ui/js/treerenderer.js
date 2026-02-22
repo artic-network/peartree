@@ -96,7 +96,9 @@ export class TreeRenderer {
     this.maxY = 1;
 
     // labelRightPad is measured after font is known
-    this.labelRightPad = 200;
+    this.labelRightPad   = 200;
+    this._labelCacheKey  = null;  // invalidated when data or font/radius settings change
+    this._maxLabelWidth  = 0;     // cached result of the measureText scan
 
     // Apply theme (sets all rendering option properties)
     this.setTheme(theme, /*redraw*/ false);
@@ -273,8 +275,26 @@ export class TreeRenderer {
     this.maxX = maxX;
     this.maxY = maxY;
     this._buildGlobalHeightMap(nodes, maxX);
+    this._labelCacheKey = null;  // new node set — remeasure label widths
     this._measureLabels();
-    this.fitToWindow();
+    // For large trees the zoom-in animation stalls: each successive frame must
+    // draw progressively more of the (potentially) 200k nodes as minScaleY is
+    // approached.  Instead of animating, snap instantly to a "landing zoom"
+    // that shows ~500 rows — still readable, avoids a blank screen (minScaleY
+    // for 100k tips ≈ 0.01 px/row, which is invisible).  For smaller trees the
+    // normal animated fit-to-window is fine.
+    if (nodes.length > 60000) {
+      this._fitLabelsMode = false;
+      this._updateScaleX();          // immediate snap: scaleX/offsetX fitted
+      this._updateMinScaleY();       // recomputes this.minScaleY
+      const plotH     = this.canvas.clientHeight - this.paddingTop - this.paddingBottom;
+      const landingY  = Math.max(this.minScaleY, plotH / 500);  // show ~500 rows
+      const offsetY   = this.paddingTop + landingY * 0.5;
+      this._setTarget(offsetY, landingY, /*immediate*/ true);
+      this._dirty = true;
+    } else {
+      this.fitToWindow();  // animated
+    }
     this._drawStatusBar(null);
   }
 
@@ -285,6 +305,10 @@ export class TreeRenderer {
    * itself with _setTarget as usual.
    */
   setDataAnimated(nodes, nodeMap, maxX, maxY) {
+    // For very large trees the per-frame node iteration is too expensive.
+    // Fall back to an instant update (no reorder animation) above ~30k tips.
+    if (nodes.length > 60000) return this.setData(nodes, nodeMap, maxX, maxY);
+
     // Snapshot old y values by node id.
     const fromY = new Map();
     if (this.nodes) {
@@ -300,6 +324,7 @@ export class TreeRenderer {
     this.maxX    = maxX;
     this.maxY    = maxY;
     this._buildGlobalHeightMap(nodes, maxX);
+    this._labelCacheKey = null;  // new node set — remeasure label widths
     this._measureLabels();
     this._updateScaleX(false);
     this._updateMinScaleY();
@@ -945,18 +970,24 @@ export class TreeRenderer {
   }
   _measureLabels() {
     if (!this.nodes) return;
-    const ctx = this.ctx;
-    ctx.font = `${this.fontSize}px monospace`;
-    let max = 0;
-    for (const n of this.nodes) {
-      if (n.isTip && n.name) {
-        const w = ctx.measureText(n.name).width;
-        if (w > max) max = w;
+    // Only redo the expensive measureText scan when font size or node data changes.
+    const cacheKey = `${this.fontSize}`;
+    if (this._labelCacheKey !== cacheKey) {
+      const ctx = this.ctx;
+      ctx.font = `${this.fontSize}px monospace`;
+      let max = 0;
+      for (const n of this.nodes) {
+        if (n.isTip && n.name) {
+          const w = ctx.measureText(n.name).width;
+          if (w > max) max = w;
+        }
       }
+      this._maxLabelWidth = max;
+      this._labelCacheKey = cacheKey;
     }
     const r = this.tipRadius;
     const tipOuterR = r > 0 ? r + this.tipHaloSize : 0;
-    this.labelRightPad = max + Math.max(tipOuterR, 5) + 5;
+    this.labelRightPad = this._maxLabelWidth + Math.max(tipOuterR, 5) + 5;
   }
 
   /** Recompute scaleX so the tree always fills the full viewport width.
@@ -984,13 +1015,13 @@ export class TreeRenderer {
 
   // _clampOffsetY is replaced by _clampedOffsetY (pure) + _setTarget.
 
-  fitToWindow() {
+  fitToWindow(immediate = false) {
     if (!this.nodes) return;
     this._fitLabelsMode = false;
     this._updateScaleX();
     this._updateMinScaleY();
     const newOffsetY = this.paddingTop + this.minScaleY * 0.5;
-    this._setTarget(newOffsetY, this.minScaleY, /*immediate*/ false);
+    this._setTarget(newOffsetY, this.minScaleY, immediate);
     this._dirty = true;
   }
 
@@ -1492,6 +1523,7 @@ export class TreeRenderer {
     const W = this.canvas.clientWidth;
     const H = this.canvas.clientHeight;
 
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);  // re-assert DPR transform each frame
     ctx.clearRect(0, 0, W, H);
     if (!this._skipBg) {
       ctx.fillStyle = this.bgColor;
@@ -1516,7 +1548,7 @@ export class TreeRenderer {
     ctx.beginPath();
     for (const node of this.nodes) {
       if (!node.parentId) continue;
-      if (node.y < yWorldMin && node.y > yWorldMax) continue;
+      if (node.y < yWorldMin || node.y > yWorldMax) continue;
 
       const parent = nodeMap.get(node.parentId);
       if (!parent) continue;
@@ -1539,7 +1571,7 @@ export class TreeRenderer {
       ctx.beginPath();
       for (const node of this.nodes) {
         if (!node.parentId) continue;
-        if (node.y < yWorldMin && node.y > yWorldMax) continue;
+        if (node.y < yWorldMin || node.y > yWorldMax) continue;
 
         const parent = nodeMap.get(node.parentId);
         if (!parent) continue;
@@ -1561,7 +1593,8 @@ export class TreeRenderer {
     }
 
     // Draw root stub: a short horizontal line to the left of the root node.
-    const rootNode = this.nodes.find(n => !n.parentId);
+    // nodes[0] is always the layout root (DFS in computeLayoutFromGraph pushes root first).
+    const rootNode = this.nodes[0];
     if (rootNode) {
       const rx        = this._wx(rootNode.x);
       const ry        = this._wy(rootNode.y);
@@ -1583,18 +1616,18 @@ export class TreeRenderer {
       const childNodes = node.children.map(cid => nodeMap.get(cid)).filter(Boolean);
       if (childNodes.length < 2) continue;
 
-      const ys     = childNodes.map(c => c.y);
-      const minY   = Math.min(...ys);
-      const maxY   = Math.max(...ys);
+      // Single pass to find extreme children — avoids two temporary arrays
+      // and the spread Math.min/Math.max calls.
+      let minY = Infinity, maxY = -Infinity, topChild = null, botChild = null;
+      for (const c of childNodes) {
+        if (c.y < minY) { minY = c.y; topChild = c; }
+        if (c.y > maxY) { maxY = c.y; botChild = c; }
+      }
 
       if (maxY < yWorldMin || minY > yWorldMax) continue;
 
       const nx     = this._wx(node.x);
       const py     = this._wy(node.y);
-
-      // Find the children at the two extremes of the vertical span.
-      const topChild = childNodes.find(c => c.y === minY);
-      const botChild = childNodes.find(c => c.y === maxY);
 
       const ny_top = this._wy(topChild.y);
       const ny_bot = this._wy(botChild.y);
@@ -2618,8 +2651,15 @@ export class TreeRenderer {
     // Height above the most divergent tip *in the current view*.
     // = globalHeight(refNode) − min(globalHeight of tips in current view)
     // This gives the correct value whether viewing the full tree or a subtree.
-    const viewTips = this.nodes.filter(n => n.isTip);
-    const minTipGH = viewTips.length ? Math.min(...viewTips.map(globalH)) : 0;
+    // Use a loop instead of Math.min(spread) — spreading 100k values as
+    // function arguments overflows V8's argument stack.
+    let minTipGH = Infinity;
+    for (const n of this.nodes) {
+      if (!n.isTip) continue;
+      const gh = globalH(n);
+      if (gh < minTipGH) minTipGH = gh;
+    }
+    if (!isFinite(minTipGH)) minTipGH = 0;
 
     let height;
     if (!refNode) {
@@ -2685,6 +2725,7 @@ export class TreeRenderer {
     const sctx = this._statusCtx;
     const W    = this._statusCanvas.clientWidth;
     const H    = this._statusCanvas.clientHeight;
+    sctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);  // re-assert DPR transform (a resize or monitor change may have reset it)
     sctx.clearRect(0, 0, W, H);
     if (!this.nodes) return;
 

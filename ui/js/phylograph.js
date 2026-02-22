@@ -170,19 +170,27 @@ export function fromNestedRoot(nestedRoot) {
 
   // ── Pass 1: allocate one PhyloNode per biological node ──────────────────
   // For a bifurcating virtual root we skip nestedRoot itself.
-  function allocNode(node) {
-    const idx = nodes.length;
-    origIdToIdx.set(node.id, idx);
-    nodes.push({
-      idx,
-      origId:      node.id,
-      name:        node.name  || null,
-      label:       node.label || null,
-      annotations: node.annotations || {},
-      adjacents:   [],
-      lengths:     [],
-    });
-    if (node.children) for (const c of node.children) allocNode(c);
+  // Iterative to avoid call-stack overflow on deep/caterpillar trees.
+  function allocNode(startNode) {
+    const stack = [startNode];
+    while (stack.length) {
+      const node = stack.pop();
+      const idx = nodes.length;
+      origIdToIdx.set(node.id, idx);
+      nodes.push({
+        idx,
+        origId:      node.id,
+        name:        node.name  || null,
+        label:       node.label || null,
+        annotations: node.annotations || {},
+        adjacents:   [],
+        lengths:     [],
+      });
+      if (node.children) {
+        // Push in reverse so children are allocated in forward (original) order.
+        for (let j = node.children.length - 1; j >= 0; j--) stack.push(node.children[j]);
+      }
+    }
   }
 
   if (isBifurcating) {
@@ -206,9 +214,19 @@ export function fromNestedRoot(nestedRoot) {
     nodes[pi].lengths.push(len);
   }
 
-  function buildEdges(node, parentNode) {
-    if (parentNode !== null) linkEdge(node, parentNode);
-    if (node.children) for (const c of node.children) buildEdges(c, node);
+  // Iterative to avoid call-stack overflow on large/deep (caterpillar) trees.
+  function buildEdges(startNode, startParent) {
+    const stack = [{ node: startNode, parentNode: startParent }];
+    while (stack.length) {
+      const { node, parentNode } = stack.pop();
+      if (parentNode !== null) linkEdge(node, parentNode);
+      if (node.children) {
+        // Push in reverse so children are processed in forward (original) order.
+        for (let j = node.children.length - 1; j >= 0; j--) {
+          stack.push({ node: node.children[j], parentNode: node });
+        }
+      }
+    }
   }
 
   let root;
@@ -283,8 +301,9 @@ function inferAnnotationType(values) {
   // ── Numeric types ────────────────────────────────────────────────────────
   const numericValues = values.filter(v => typeof v === 'number' && !Number.isNaN(v));
   if (numericValues.length === values.length) {
-    const min = Math.min(...numericValues);
-    const max = Math.max(...numericValues);
+    // Avoid Math.min/max spread — large annotation arrays overflow the argument stack.
+    let min = Infinity, max = -Infinity;
+    for (const v of numericValues) { if (v < min) min = v; if (v > max) max = v; }
     const allInteger = numericValues.every(v => Number.isInteger(v));
     return { dataType: allInteger ? 'integer' : 'real', min, max };
   }
@@ -365,14 +384,15 @@ export function rotateNodeGraph(graph, origId, recursive = false) {
   if (!recursive) {
     reverseChildren(startIdx);
   } else {
-    // DFS downward from startIdx.  adjacents[0] is always the parent direction,
-    // so we only recurse into adjacents[1..] — avoiding the cycle back up.
-    function dfs(nodeIdx) {
+    // Iterative DFS downward from startIdx.  adjacents[0] is always the parent
+    // direction, so we only descend into adjacents[1..] — avoiding cycles.
+    const dfsStack = [startIdx];
+    while (dfsStack.length) {
+      const nodeIdx = dfsStack.pop();
       reverseChildren(nodeIdx);
       const n = nodes[nodeIdx];
-      for (let i = 1; i < n.adjacents.length; i++) dfs(n.adjacents[i]);
+      for (let i = 1; i < n.adjacents.length; i++) dfsStack.push(n.adjacents[i]);
     }
-    dfs(startIdx);
   }
 }
 
@@ -391,22 +411,39 @@ export function reorderGraph(graph, ascending) {
   const { nodes, root: { nodeA, nodeB, lenA } } = graph;
   const hiddenNodeIds = graph.hiddenNodeIds || new Set();
 
-  // Post-order DFS.  Returns VISIBLE tip count of the subtree rooted at nodeIdx.
-  // Hidden nodes and their entire subtrees contribute 0 to the count.
-  // Sorts adjacents[1..] in-place at each internal node visited.
-  function sortSubtree(nodeIdx) {
-    const n = nodes[nodeIdx];
-    if (hiddenNodeIds.has(n.origId)) return 0;  // entire subtree is hidden
-    if (n.adjacents.length === 1) return 1;  // tip (only parent at [0])
-
-    const pairs = [];
-    for (let i = 1; i < n.adjacents.length; i++) {
-      const ct = sortSubtree(n.adjacents[i]);
-      pairs.push({ adj: n.adjacents[i], len: n.lengths[i], ct });
+  // Iterative post-order DFS: collect nodes top-down (pre-order), then process
+  // bottom-up to compute visible tip counts and sort children in-place.
+  // Avoids call-stack overflow on deep/caterpillar trees.
+  // adjacents[0] is always the parent direction; we only descend into adjacents[1..].
+  function sortSubtree(rootNodeIdx) {
+    const order = [];
+    const stk = [rootNodeIdx];
+    while (stk.length) {
+      const i = stk.pop();
+      const n = nodes[i];
+      if (hiddenNodeIds.has(n.origId)) continue;  // skip entire hidden subtree
+      order.push(i);
+      for (let k = n.adjacents.length - 1; k >= 1; k--) stk.push(n.adjacents[k]);
     }
-    pairs.sort((a, b) => ascending ? a.ct - b.ct : b.ct - a.ct);
-    pairs.forEach(({ adj, len }, i) => { n.adjacents[i + 1] = adj; n.lengths[i + 1] = len; });
-    return pairs.reduce((s, p) => s + p.ct, 0);
+
+    const tipCounts = new Map();
+    for (let i = order.length - 1; i >= 0; i--) {
+      const idx = order[i];
+      const n = nodes[idx];
+      if (n.adjacents.length === 1) {
+        tipCounts.set(idx, 1);  // tip
+      } else {
+        const pairs = [];
+        for (let k = 1; k < n.adjacents.length; k++) {
+          const ct = tipCounts.get(n.adjacents[k]) ?? 0;
+          pairs.push({ adj: n.adjacents[k], len: n.lengths[k], ct });
+        }
+        pairs.sort((a, b) => ascending ? a.ct - b.ct : b.ct - a.ct);
+        pairs.forEach(({ adj, len }, k) => { n.adjacents[k + 1] = adj; n.lengths[k + 1] = len; });
+        tipCounts.set(idx, pairs.reduce((s, p) => s + p.ct, 0));
+      }
+    }
+    return tipCounts.get(rootNodeIdx) ?? 0;
   }
 
   if (lenA === 0) {
