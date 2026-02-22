@@ -79,7 +79,7 @@ import { AxisRenderer  } from './axisrenderer.js';
         },
         "Minimal": {
             canvasBgColor:    '#fff',
-            branchColor:      '#000',
+            branchColor:      '#444444',
             branchWidth:      '1',
             fontSize:         '11',
             labelColor:       '#000',
@@ -346,7 +346,7 @@ import { AxisRenderer  } from './axisrenderer.js';
     axisColor:        '#f2f1e6',
     axisFontSize:     '9',
     axisLineWidth:    '1',
-    legendShow:         'off',
+    legendShow:         'right',
     axisShow:           'off',
     axisDateAnnotation: '',
     axisMajorInterval:    'auto',
@@ -2304,9 +2304,6 @@ import { AxisRenderer  } from './axisrenderer.js';
       renderer._branchHoverX     = null;
       renderer._selectedTipIds.clear();
       renderer._mrcaNodeId       = null;
-      if (renderer._onNavChange)          renderer._onNavChange(false, false);
-      if (renderer._onBranchSelectChange) renderer._onBranchSelectChange(false);
-      if (renderer._onNodeSelectChange)   renderer._onNodeSelectChange(false);
 
       // Reset tip filter for each tree load
       tipFilterEl.value   = '';
@@ -2324,8 +2321,10 @@ import { AxisRenderer  } from './axisrenderer.js';
         document.getElementById('btn-zoom-out').disabled      = false;
         document.getElementById('btn-fit').disabled           = false;
         document.getElementById('btn-fit-labels').disabled    = false;
-        document.getElementById('btn-hyp-up').disabled        = false;
-        document.getElementById('btn-hyp-down').disabled      = false;
+        const _btnHypUp   = document.getElementById('btn-hyp-up');
+        const _btnHypDown = document.getElementById('btn-hyp-down');
+        if (_btnHypUp)   _btnHypUp.disabled   = false;
+        if (_btnHypDown) _btnHypDown.disabled = false;
         document.getElementById('btn-order-asc').disabled     = false;
         document.getElementById('btn-order-desc').disabled    = false;
         document.getElementById('btn-mode-nodes').disabled    = false;
@@ -2347,6 +2346,11 @@ import { AxisRenderer  } from './axisrenderer.js';
         bindControls();
         controlsBound = true;
       }
+
+      // Sync button states through callbacks now that bindControls() is guaranteed to have run.
+      if (renderer._onNavChange)          renderer._onNavChange(false, false);
+      if (renderer._onBranchSelectChange) renderer._onBranchSelectChange(false);
+      if (renderer._onNodeSelectChange)   renderer._onNodeSelectChange(false);
 
       // Sync button active states with restored settings.
       document.getElementById('btn-order-asc') .classList.toggle('active', currentOrder === 'desc');
@@ -2579,8 +2583,8 @@ import { AxisRenderer  } from './axisrenderer.js';
     _setMenuEnabled('tree-midpoint', !isExplicitlyRooted);
     document.getElementById('btn-zoom-in') .addEventListener('click', () => renderer.zoomIn());
     document.getElementById('btn-zoom-out').addEventListener('click', () => renderer.zoomOut());
-    document.getElementById('btn-hyp-up')  .addEventListener('click', () => renderer.hypMagUp());
-    document.getElementById('btn-hyp-down').addEventListener('click', () => renderer.hypMagDown());
+    document.getElementById('btn-hyp-up')  ?.addEventListener('click', () => renderer.hypMagUp());
+    document.getElementById('btn-hyp-down')?.addEventListener('click', () => renderer.hypMagDown());
 
     renderer._onNavChange = (canBack, canFwd) => {
       btnBack.disabled    = !canBack;
@@ -3139,16 +3143,17 @@ import { AxisRenderer  } from './axisrenderer.js';
   // ── Legend controls ───────────────────────────────────────────────────────
 
   function applyLegend() {
-    const pos = legendShowEl.value;   // 'off' | 'left' | 'right'
-    const key = legendAnnotEl.value || null;
-    const W   = 180;   // legend canvas width in CSS pixels
+    const key  = legendAnnotEl.value || null;
+    const show = !!key;                        // visible only when an annotation is selected
+    const pos  = legendShowEl.value;           // 'left' | 'right'
+    const W    = 180;   // legend canvas width in CSS pixels
 
-    legendLeftCanvas.style.display  = pos === 'left'  ? 'block' : 'none';
+    legendLeftCanvas.style.display  = (show && pos === 'left')  ? 'block' : 'none';
     legendLeftCanvas.style.width    = W + 'px';
-    legendRightCanvas.style.display = pos === 'right' ? 'block' : 'none';
+    legendRightCanvas.style.display = (show && pos === 'right') ? 'block' : 'none';
     legendRightCanvas.style.width   = W + 'px';
 
-    renderer.setLegend(pos === 'off' ? null : pos, key);
+    renderer.setLegend(show ? pos : null, key);
     saveSettings();
   }
 
