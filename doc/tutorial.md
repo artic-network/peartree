@@ -107,11 +107,11 @@ The hyperbolic lens lets you expand a region of the tree without zooming — the
 
 ### Activating the Lens
 
-Hold **Shift** and move the cursor over the canvas. The tree distorts around the cursor's vertical position.
+Hold **~** (the backtick/tilde key) and move the cursor over the canvas. The tree distorts around the cursor's vertical position.
 
 > **📸 SCREENSHOT PLACEHOLDER** — Lens active: tips near the cursor are spread apart and readable; tips further away are compressed.
 
-The lens **persists** after you release Shift — the focus stays fixed so you can interact with the expanded region normally. Move with Shift held to reposition it.
+The lens **persists** after you release ~ — the focus stays fixed so you can interact with the expanded region normally. Move with ~ held to reposition it.
 
 Press **Escape** to dismiss the lens with a smooth fade-out animation.
 
@@ -383,7 +383,7 @@ When you export a NEXUS file with **Embed settings** ticked, those settings trav
 | **⌘I** | Node info |
 | **⌘[** | Navigate back |
 | **⌘]** | Navigate forward |
-| **Shift** (hold) | Activate hyperbolic lens at cursor |
+| **~** (hold) | Activate hyperbolic lens at cursor |
 | **⌘⇧+** | Expand lens area |
 | **⌘⇧−** | Contract lens area |
 | **Escape** | Dismiss lens / close dialog / clear selection |

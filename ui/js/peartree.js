@@ -2445,6 +2445,8 @@ import { AxisRenderer  } from './axisrenderer.js';
     const btnBack      = document.getElementById('btn-back');
     const btnForward   = document.getElementById('btn-forward');
     const btnHome      = document.getElementById('btn-home');
+    const btnDrill     = document.getElementById('btn-drill');
+    const btnClimb     = document.getElementById('btn-climb');
     const btnOrderAsc  = document.getElementById('btn-order-asc');
     const btnOrderDesc = document.getElementById('btn-order-desc');
     const btnReroot       = document.getElementById('btn-reroot');
@@ -2599,6 +2601,31 @@ import { AxisRenderer  } from './axisrenderer.js';
       return { gIdx, gFromIdx };
     }
 
+    function _prevStackIsDownward() {
+      // Returns true when the top of _navStack is a node that lives within the
+      // current layout — i.e. the last history entry was a drill-down, so the
+      // drill button can act as "undo climb".
+      if (!renderer._navStack.length || !renderer.nodeMap) return false;
+      const prevId = renderer._navStack[renderer._navStack.length - 1].subtreeRootId;
+      if (!prevId) return false;
+      const prevNode = renderer.nodeMap.get(prevId);
+      return !!(prevNode && prevNode.parentId); // must exist in current layout and not be the view root
+    }
+
+    function canDrill() {
+      if (!renderer.nodeMap) return false;
+      const nodeId = _selectedNodeId();
+      // No selection: enable drill as "undo climb" only if the previous stack
+      // entry is a node inside the current subtree (a downward move).
+      if (!nodeId) return _prevStackIsDownward();
+      const node = renderer.nodeMap.get(nodeId);
+      return !!(node && !node.isTip && node.parentId);
+    }
+
+    function canClimb() {
+      return !!renderer._viewSubtreeRootId;
+    }
+
     function canShow() {
       if (!graph || !graph.hiddenNodeIds.size) return false;
       const nodeId = _selectedNodeId();
@@ -2633,9 +2660,13 @@ import { AxisRenderer  } from './axisrenderer.js';
       btnBack.disabled    = !canBack;
       btnForward.disabled = !canFwd;
       btnHome.disabled    = !renderer._viewSubtreeRootId;
+      btnDrill.disabled   = !canDrill();
+      btnClimb.disabled   = !canClimb();
       _setMenuEnabled('view-back',    canBack);
       _setMenuEnabled('view-forward', canFwd);
       _setMenuEnabled('view-home',    !!renderer._viewSubtreeRootId);
+      _setMenuEnabled('view-drill',   canDrill());
+      _setMenuEnabled('view-climb',   canClimb());
     };
 
     renderer._onBranchSelectChange = (hasSelection) => {
@@ -2655,8 +2686,12 @@ import { AxisRenderer  } from './axisrenderer.js';
       btnRotateAll.disabled = !canRotate;
       btnHide.disabled      = !canHide();
       btnShow.disabled      = !canShow();
+      btnDrill.disabled     = !canDrill();
+      btnClimb.disabled     = !canClimb();
       btnNodeInfo.disabled        = !graph;  // enabled whenever a tree is loaded
-      _setMenuEnabled('view-info', !!graph);
+      _setMenuEnabled('view-info',  !!graph);
+      _setMenuEnabled('view-drill', canDrill());
+      _setMenuEnabled('view-climb', canClimb());
       btnApplyUserColour.disabled = !hasSelection;
       _setMenuEnabled('tree-rotate',      canRotate);
       _setMenuEnabled('tree-rotate-all',  canRotate);
@@ -2668,6 +2703,19 @@ import { AxisRenderer  } from './axisrenderer.js';
     btnBack.addEventListener('click',    () => renderer.navigateBack());
     btnForward.addEventListener('click', () => renderer.navigateForward());
     btnHome.addEventListener('click',    () => renderer.navigateHome());
+    btnDrill.addEventListener('click',   () => {
+      const nodeId = _selectedNodeId();
+      if (nodeId && canDrill()) renderer.navigateInto(nodeId);
+      else if (!nodeId && _prevStackIsDownward()) {
+        renderer.navigateBack();
+        // navigateBack() seeds offsetX via the fast spring; hijack it with the
+        // slow root-shift animation so the undo-climb transition mirrors the climb.
+        renderer._rootShiftFromX = renderer.offsetX;
+        renderer._rootShiftToX   = renderer._targetOffsetX;
+        renderer._rootShiftAlpha = 0;
+      }
+    });
+    btnClimb.addEventListener('click',   () => renderer.navigateClimb());
 
     btnOrderAsc.addEventListener('click',  () => applyOrder(false));
     btnOrderDesc.addEventListener('click', () => applyOrder(true));
@@ -3111,9 +3159,11 @@ import { AxisRenderer  } from './axisrenderer.js';
       if (!e.metaKey && !e.ctrlKey) return;
       if (e.key === 'u' || e.key === 'U') { e.preventDefault(); applyOrder(false); }
       if (e.key === 'd' || e.key === 'D') { e.preventDefault(); applyOrder(true);  }
-      if (e.key === '[' || e.key === '<') { e.preventDefault(); renderer.navigateBack(); }
-      if (e.key === ']' || e.key === '>') { e.preventDefault(); renderer.navigateForward(); }
-      if (e.key === '\\')                 { e.preventDefault(); renderer.navigateHome(); }
+      if (e.key === '[') { e.preventDefault(); renderer.navigateBack(); }
+      if (e.key === ']') { e.preventDefault(); renderer.navigateForward(); }
+      if (e.key === '\\')  { e.preventDefault(); renderer.navigateHome(); }
+      if (e.shiftKey && e.code === 'Comma')  { e.preventDefault(); renderer.navigateClimb(); }
+      if (e.shiftKey && e.code === 'Period') { e.preventDefault(); document.getElementById('btn-drill')?.click(); }
       if (e.key === 'a' || e.key === 'A') {
         const inField = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable);
         if (!inField) {
@@ -3443,6 +3493,8 @@ import { AxisRenderer  } from './axisrenderer.js';
         // ── View menu ────────────────────────────────────────────────────────
         case 'view-back':       document.getElementById('btn-back').click();        break;
         case 'view-forward':    document.getElementById('btn-forward').click();     break;
+        case 'view-drill':      document.getElementById('btn-drill').click();       break;
+        case 'view-climb':      document.getElementById('btn-climb').click();       break;
         case 'view-home':       document.getElementById('btn-home').click();        break;
         case 'view-zoom-in':    document.getElementById('btn-zoom-in').click();     break;
         case 'view-zoom-out':   document.getElementById('btn-zoom-out').click();    break;

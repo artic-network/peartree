@@ -630,6 +630,13 @@ export class TreeRenderer {
     const py_cur = curRootLayout ? this.offsetY + curRootLayout.y * this.scaleY : this.canvas.clientHeight / 2;
     const curRootId = curRootLayout ? curRootLayout.id : null;
 
+    // Save the current layout's info before we replace it (needed for undo-climb seeding).
+    const oldNodeMap = this.nodeMap;
+    const oldOffsetX = this.offsetX;
+    const oldOffsetY = this.offsetY;
+    const oldScaleX  = this.scaleX;
+    const oldScaleY  = this.scaleY;
+
     this._fwdStack.push(this._currentViewState());
     const state              = this._navStack.pop();
     this._viewSubtreeRootId  = state.subtreeRootId;
@@ -643,12 +650,31 @@ export class TreeRenderer {
     this._updateMinScaleY();
     this._setTarget(state.offsetY, state.scaleY, false);
 
-    // Seed animation so the restored node appears where the current root was.
+    // Seed animation so the transition looks smooth.
+    // Case A (undo drill-down): the previous layout's root exists in the
+    //   restored layout — place it at its old screen position and spring in.
+    // Case B (undo climb): the previous layout's root is NOT in the restored
+    //   layout, but the restored subtree root IS visible in the old layout —
+    //   place the new layout's root at that node's old screen position.
+    let seeded = false;
     if (curRootId) {
       const restoredNode = nodeMap.get(curRootId);
       if (restoredNode) {
         this.offsetX = px_cur - restoredNode.x * this.scaleX;
         this.offsetY = py_cur - restoredNode.y * this.scaleY;
+        seeded = true;
+      }
+    }
+    if (!seeded && state.subtreeRootId && oldNodeMap) {
+      const subtreeInOld = oldNodeMap.get(state.subtreeRootId);
+      if (subtreeInOld) {
+        // Screen position of the future-root node in the OLD layout.
+        const px_sub = oldOffsetX + subtreeInOld.x * oldScaleX;
+        const py_sub = oldOffsetY + subtreeInOld.y * oldScaleY;
+        // The new layout's root sits at world x = 0, so offsetX = px_sub.
+        const newRoot = nodes.find(n => !n.parentId);
+        this.offsetX = px_sub;
+        this.offsetY = newRoot ? py_sub - newRoot.y * this.scaleY : py_sub;
       }
     }
     this._animating = true;
@@ -738,7 +764,67 @@ export class TreeRenderer {
     if (this._onNodeSelectChange) this._onNodeSelectChange(false);
   }
 
-  /** Measure the widest tip label once so _updateScaleX can stay cheap. */
+  /**
+   * Move the view one level up the tree from the current subtree root.
+   * The parent of the current subtree root becomes the new subtree root
+   * (or the full tree is shown if the parent is the global root).
+   * The current state is pushed onto the back stack.
+   */
+  navigateClimb() {
+    if (!this._viewSubtreeRootId) return; // only valid in subtree view
+
+    const nodeIdx = this.graph.origIdToIdx.get(this._viewSubtreeRootId);
+    if (nodeIdx === undefined) return;
+
+    // adjacents[0] is the ‘parent direction’ for any subtree root.
+    const parentIdx = this.graph.nodes[nodeIdx].adjacents[0];
+    if (parentIdx === undefined || parentIdx < 0) return;
+
+    // Determine whether climbing reaches the global root → show full tree.
+    const { nodeA, nodeB, lenA } = this.graph.root;
+    const parentIsRoot = lenA === 0
+      ? parentIdx === nodeA
+      : parentIdx === nodeA || parentIdx === nodeB;
+    const newSubtreeRootId = parentIsRoot ? null : this.graph.nodes[parentIdx].origId;
+
+    // Capture current root screen position before installing new layout.
+    const curRootLayout = this.nodes ? this.nodes.find(n => !n.parentId) : null;
+    const py_cur    = curRootLayout ? this.offsetY + curRootLayout.y * this.scaleY : this.canvas.clientHeight / 2;
+    const curRootId = curRootLayout ? curRootLayout.id : null;
+
+    this._navStack.push(this._currentViewState());
+    this._fwdStack          = [];
+    this._viewSubtreeRootId = newSubtreeRootId;
+    this._selectedTipIds.clear();
+    this._mrcaNodeId = null;
+
+    const { nodes, nodeMap, maxX, maxY } = computeLayoutFromGraph(this.graph, newSubtreeRootId);
+    this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
+    this._measureLabels();
+    this._updateScaleX(false);
+    this._updateMinScaleY();
+    const newOffsetY = this.paddingTop + this.minScaleY * 0.5;
+    this._setTarget(newOffsetY, this.minScaleY, false);
+
+    // Seed animation: old root slides rightward to its natural x in the new layout.
+    if (curRootId) {
+      const restoredNode = nodeMap.get(curRootId);
+      if (restoredNode) {
+        // x: start displaced so old root still appears at paddingLeft, animate to paddingLeft
+        this._rootShiftFromX = this.paddingLeft - restoredNode.x * this.scaleX;
+        this._rootShiftToX   = this.paddingLeft; // = _targetOffsetX
+        this._rootShiftAlpha = 0;
+        this.offsetX = this._rootShiftFromX;
+        // y: old root appears at same screen y, then eases to fit-window position
+        this.offsetY = py_cur - restoredNode.y * this.scaleY;
+      }
+    }
+    this._animating = true;
+    this._dirty = true;
+    if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
+    if (this._onNavChange) this._onNavChange(true, false);
+    if (this._onNodeSelectChange) this._onNodeSelectChange(false);
+  }
   _measureLabels() {
     if (!this.nodes) return;
     const ctx = this.ctx;
@@ -2190,7 +2276,7 @@ export class TreeRenderer {
 
       if (e.target === this.canvas) this._updateStatus(e);
 
-      // ── Hyperbolic stretch: update focus while Shift is held; persists on release ──
+      // ── Hyperbolic stretch: update focus while ~ (backtick/tilde) is held; persists on release ──
       if (this._shiftHeld && !this._dragging && !this._dragSelActive) {
         const rect_h = this.canvas.getBoundingClientRect();
         const hx = e.clientX - rect_h.left;
@@ -2302,8 +2388,9 @@ export class TreeRenderer {
         return;
       }
 
-      // Track Shift for hyperbolic stretch (no return — allow Shift combos to fall through)
-      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+      // Track the backtick/tilde key (~) for hyperbolic stretch — no modifier needed.
+      // Using e.code (physical key) to avoid conflicts with Shift-based hotkeys.
+      if (e.code === 'Backquote') {
         this._shiftHeld = true;
       }
 
@@ -2388,7 +2475,7 @@ export class TreeRenderer {
         this.canvas.classList.remove('space', 'grabbing');
         this.canvas.style.cursor = this._hoveredNodeId ? 'pointer' : 'default';
       }
-      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+      if (e.code === 'Backquote') {
         this._shiftHeld = false;
         // Focus persists — just restore the normal cursor hint.
         if (!this._spaceDown) {

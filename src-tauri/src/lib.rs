@@ -102,9 +102,11 @@ pub fn run() {
             ])?;
 
             // ── View ─────────────────────────────────────────────────────────
-            let view_back       = MenuItem::with_id(app, "view-back",       "Back",       true, Some("CmdOrCtrl+["))?;
-            let view_forward    = MenuItem::with_id(app, "view-forward",    "Forward",    true, Some("CmdOrCtrl+]"))?;
-            let view_home       = MenuItem::with_id(app, "view-home",       "Root",       true, Some("CmdOrCtrl+\\"))?;
+            let view_back       = MenuItem::with_id(app, "view-back",       "Back",               true, Some("CmdOrCtrl+["))?;
+            let view_forward    = MenuItem::with_id(app, "view-forward",    "Forward",            true, Some("CmdOrCtrl+]"))?;
+            let view_drill      = MenuItem::with_id(app, "view-drill",      "Drill into Subtree",  true, Some("CmdOrCtrl+Shift+."))?;
+            let view_climb      = MenuItem::with_id(app, "view-climb",      "Climb Out One Level", true, Some("CmdOrCtrl+Shift+,"))?;
+            let view_home       = MenuItem::with_id(app, "view-home",       "Root",               true, Some("CmdOrCtrl+\\"))?;
             let view_zoom_in    = MenuItem::with_id(app, "view-zoom-in",    "Zoom In",    true, Some("CmdOrCtrl+="))?;
             let view_zoom_out   = MenuItem::with_id(app, "view-zoom-out",   "Zoom Out",   true, Some("CmdOrCtrl+-"))?;
             let view_fit        = MenuItem::with_id(app, "view-fit",        "Fit All",    true, Some("CmdOrCtrl+0"))?;
@@ -114,6 +116,9 @@ pub fn run() {
             let view_menu = Submenu::with_items(app, "View", true, &[
                 &view_back,
                 &view_forward,
+                &PredefinedMenuItem::separator(app)?,
+                &view_climb,
+                &view_drill,
                 &view_home,
                 &PredefinedMenuItem::separator(app)?,
                 &view_zoom_in,

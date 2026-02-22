@@ -875,10 +875,14 @@
   <div class="pt-toolbar-sep"></div>
 
   <!-- Back / Forward -->
-  <span class="form-label-sm" style="padding: 0 2px 0 4px;">History:</span>
+  <span class="form-label-sm" style="padding: 0 2px 0 4px;">Nav:</span>
   <div class="btn-group" role="group" aria-label="Navigate history">
     <button id="btn-back"    class="btn btn-sm btn-outline-secondary" disabled title="Navigate back (⌘[)"><i class="bi bi-chevron-left"></i></button>
     <button id="btn-forward" class="btn btn-sm btn-outline-secondary" disabled title="Navigate forward (⌘])"><i class="bi bi-chevron-right"></i></button>
+  </div>
+  <div class="btn-group ms-1" role="group" aria-label="Navigate subtree">
+    <button id="btn-drill"   class="btn btn-sm btn-outline-secondary" disabled title="Drill into subtree (⌘⇧&gt;)"><i class="bi bi-box-arrow-in-right"></i></button>
+    <button id="btn-climb"   class="btn btn-sm btn-outline-secondary" disabled title="Climb out one level (⌘⇧&lt;)"><i class="bi bi-box-arrow-left"></i></button>
     <button id="btn-home"    class="btn btn-sm btn-outline-secondary" disabled title="Navigate to root (⌘\)"><i class="bi bi-house"></i></button>
   </div>
   <div class="pt-toolbar-sep"></div>
