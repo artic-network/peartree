@@ -8,17 +8,19 @@ This tutorial walks through the main features of PearTree using the built-in Ebo
 
 When you first launch PearTree you will see the startup screen.
 
-> ![](images/fig1.png) — Startup screen showing the "No tree loaded" and the **Open…** and **Example…** buttons.
+> <img src="images/fig1.png" style="width:200px;"/> 
+> 
+> Startup screen showing the "No tree loaded" and the **Open…** and **Example…** buttons.
 
 Click **Example…** to load the built-in EBOV dataset immediately. 
 
-Alternatively, click the open button ![](images/open_button.png) (or press **⌘O**) to open the *Open Tree File* dialog, switch to the **Example** tab, and click **Load Example Data**.
+Alternatively, click the open button <img src="images/open_button.png" style="width:32px;"/> (or press **⌘O**) to open the *Open Tree File* dialog, switch to the **Example** tab, and click **Load Example Data**.
 
-> ![](images/fig4.png) — *Open Tree File* dialog with the Example tab selected.
+> <img src="images/fig4.png" style="width:300px;"/>
+>
+> *Open Tree File* dialog with the Example tab selected.
 
 After a moment the tree will appear on the canvas.
-
-> ![](images/fig5.png) — EBOV tree loaded and filling the canvas. Tip labels will not currently be visible because of the size of the tree.
 
 ---
 
@@ -30,6 +32,10 @@ The interface has four main areas:
 - **Canvas** (centre) — the tree drawing; fills the remaining space
 - **Visual Options palette** (left, hidden by default) — all display controls
 - **Status bar** (bottom) — live readout of values under the cursor
+
+> <img src="images/fig5.png" style="width:400px;"/>
+> 
+> EBOV tree loaded and filling the canvas. Tip labels will not currently be visible because of the size of the tree.
 
 ---
 
@@ -51,7 +57,7 @@ You can also use the toolbar zoom buttons or keyboard shortcuts:
 
 | Button | Shortcut | Action |
 |---|---|---|
-|![](images/open_button.png)| **⌘=** | Zoom in (×1.5) |
+|<img src="images/open_button.png" style="width:32px;"/>| **⌘=** | Zoom in (×1.5) |
 |---| **⌘−** | Zoom out (×1.5) |
 |---| **⌘0** | Fit the whole tree to the window |
 |---| **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
