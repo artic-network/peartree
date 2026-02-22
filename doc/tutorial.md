@@ -33,7 +33,7 @@ The interface has four main areas:
 - **Visual Options palette** (left, hidden by default) — all display controls
 - **Status bar** (bottom) — live readout of values under the cursor
 
-> <img src="images/fig5.png" style="width:400px;"/>
+> <img src="images/fig5.png" style="width:500px;"/>
 > 
 > EBOV tree loaded and filling the canvas. Tip labels will not currently be visible because of the size of the tree.
 
@@ -53,27 +53,60 @@ Firstly you can zoom in and then scroll up and down. You can do this with the mo
 | **⇧ + Scroll** | Zoom in/out, anchored at the mouse position |
 | **Pinch** (trackpad) | Zoom in/out |
 
-You can also use the toolbar zoom buttons or keyboard shortcuts:
-
-| Button | Shortcut | Action |
-|---|---|---|
-|<img src="images/open_button.png" style="width:32px;"/>| **⌘=** | Zoom in (×1.5) |
-|---| **⌘−** | Zoom out (×1.5) |
-|---| **⌘0** | Fit the whole tree to the window |
-|---| **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
-
-Zoom in until individual tip names are readable or press the Fit Labels button or ⌘⇧0 to do this automatically. Press the Fit all button or **⌘0** to return to the full view.
-
-> **📸 SCREENSHOT PLACEHOLDER** — Tree zoomed in to show a small cluster of tips with readable labels.
-
-### Scrolling with Arrow Keys
+Arrow keys allow a fine control over the scrolling amount:
 
 - **↑ / ↓** — scroll one row at a time
 - **⌘↑ / ⌘↓** — scroll one page at a time
 
+
+You can also use the toolbar zoom buttons or keyboard shortcuts:
+
+| Button | Shortcut | Action |
+|---|---|---|
+|<img src="images/zoom_in_button.png" style="width:32px;"/>| **⌘=** | Zoom in (×1.5) |
+|<img src="images/zoom_out_button.png" style="width:32px;"/>| **⌘−** | Zoom out (×1.5) |
+|<img src="images/show_labels_button.png" style="width:32px;"/>| **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
+|<img src="images/show_all_button.png" style="width:32px;"/>| **⌘0** | Fit the whole tree to the window |
+
+Zoom in until individual tip names are readable or press the Fit Labels button or ⌘⇧0 to do this automatically. 
+
+> <img src="images/fig6.png" style="width:400px;"/>
+>
+> Tree zoomed in to show a small cluster of tips with readable labels.
+
+Press the Fit all button or **⌘0** to return to the full view.
+
 ---
 
-## 4. Selecting Nodes and Tips
+## 4. The Hyperbolic Lens
+
+The hyperbolic lens lets you expand a region of the tree without zooming — the area near the cursor is stretched to label-readable spacing while the rest compresses but remains visible.
+
+### Activating the Lens
+
+Hold **~** (the backtick/tilde key) and move the cursor over the canvas. The tree distorts around the cursor's vertical position.
+
+> <img src="images/fig8.png" style="width:400px;"/>
+>
+> Lens active: tips near the cursor are spread apart and readable; tips further away are compressed.
+
+The lens **persists** after you release ~ — the focus stays fixed so you can interact with the expanded region normally. Move with ~ held to reposition it.
+
+Press **Escape** to dismiss the lens effect.
+
+### Adjusting the Lens Width
+
+The **Lens:** button pair in the toolbar (or **⌘⇧+** / **⌘⇧−**) controls the size of the uniformly-expanded centre zone:
+
+- Each press of **⊕** adds one extra row of tip-spacing to the flat centre zone.
+- Each press of **⊖** removes one row.
+- At zero (default) the lens is a pure hyperbolic falloff from the focus point.
+
+The peak magnification is always capped at the *Fit Labels* spacing level, so labels in the expanded zone never overlap.
+
+---
+
+## 5. Selecting Nodes and Tips
 
 PearTree has two selection modes; **Nodes** mode is active by default.
 
@@ -85,21 +118,28 @@ PearTree has two selection modes; **Nodes** mode is active by default.
 - **⌘A** — select all visible tips.
 - **Click empty space** — clears the selection.
 
+You can also click and drag to select all the tips within an area.
+
 Try clicking an internal node near the root of the EBOV tree.
 
-> **📸 SCREENSHOT PLACEHOLDER** — Several tips selected (highlighted) and MRCA ring visible on an internal node.
+> <img src="images/fig7.png" style="width:400px;"/>
+>
+> Several tips selected (highlighted) and MRCA ring visible on an internal node.
 
 ### Branches Mode (⌘B)
 
-Press **⌘B** (or click the branch-mode button) to switch to **Branches** mode. Click anywhere along a horizontal branch to place a precise positional marker.
+> [!NOTE]
+> Branch selection mode is generally used to allow  re-rooting of a tree. However, as the example tree is a rooted, time-calibrated tree, re-rooting is disabled.
 
-> **📸 SCREENSHOT PLACEHOLDER** — Branch marker (small vertical tick) placed partway along a branch.
+Press **⌘B** (or click the branch-mode button) to switch to **Branches** mode. Click anywhere along a horizontal branch to place a precise positional marker.
 
 Press **⌘B** again to return to **Nodes** mode.
 
 ---
 
-## 5. Subtree Navigation
+## 6. Subtree Navigation
+
+PearTree has some useful functions for 'drilling-down' into parts of the tree to view subtrees and clades and then easily return back to the previous view.
 
 Double-click any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node.
 
@@ -108,59 +148,6 @@ Double-click any internal node to zoom into its subtree. The canvas re-renders s
 Use the **History** buttons in the toolbar (or **⌘[** / **⌘]**) to navigate back and forward through your drill-down history.
 
 > **📸 SCREENSHOT PLACEHOLDER** — Toolbar with the Back (**‹**) button highlighted after navigating into a subtree.
-
----
-
-## 6. The Hyperbolic Lens
-
-The hyperbolic lens lets you expand a region of the tree without zooming — the area near the cursor is stretched to label-readable spacing while the rest compresses to remain visible.
-
-### Activating the Lens
-
-Hold **~** (the backtick/tilde key) and move the cursor over the canvas. The tree distorts around the cursor's vertical position.
-
-> **📸 SCREENSHOT PLACEHOLDER** — Lens active: tips near the cursor are spread apart and readable; tips further away are compressed.
-
-The lens **persists** after you release ~ — the focus stays fixed so you can interact with the expanded region normally. Move with ~ held to reposition it.
-
-Press **Escape** to dismiss the lens with a smooth fade-out animation.
-
-### Adjusting the Lens Width
-
-The **Lens:** button pair in the toolbar (or **⌘⇧+** / **⌘⇧−**) controls the size of the uniformly-expanded centre zone:
-
-- Each press of **⊕** adds one extra row of tip-spacing to the flat centre zone.
-- Each press of **⊖** removes one row.
-- At zero (default) the lens is a pure hyperbolic falloff from the focus point.
-
-> **📸 SCREENSHOT PLACEHOLDER** — Wide lens (flat zone = 5 rows) showing a broad band of readable tips with gradual compression above and below.
-
-The peak magnification is always capped at the *Fit Labels* spacing level, so labels in the expanded zone never overlap.
-
----
-
-## 7. Rerooting the Tree
-
-Re-rooting of trees is not possible for trees that are explicitly rooted (generally determined by whether they have annotations for the root node). This will be the case for time calibrated trees from BEAST, for example.
-
-### Midpoint Root (⌘M)
-
-Press **⌘M** (or click **Midpoint** in the toolbar) to automatically root the tree at the midpoint of its longest path. This is a common starting point for exploratory analysis.
-
-> **📸 SCREENSHOT PLACEHOLDER** — EBOV tree after midpoint rerooting; root is repositioned.
-
-### Rerooting at a Selection
-
-1. Select a tip or a group of tips (their MRCA defines the branch).
-2. Click the **Reroot** button — the root is placed at the midpoint of the branch above the MRCA.
-
-### Rerooting at an Exact Branch Position
-
-1. Press **⌘B** to enter **Branches** mode.
-2. Click precisely where you want the new root on any branch.
-3. Click **Reroot**.
-
-> **📸 SCREENSHOT PLACEHOLDER** — Branch mode with marker placed near the base of a clade; tree after rerooting at that position.
 
 ---
 
@@ -399,3 +386,30 @@ When you export a NEXUS file with **Embed settings** ticked, those settings trav
 | **Escape** | Dismiss lens / close dialog / clear selection |
 
 > On Windows and Linux replace **⌘** with **Ctrl**.
+
+
+## Appendix: Rerooting the Tree
+
+Re-rooting of trees is not possible for trees that are explicitly rooted (generally determined by whether they have annotations for the root node). This will be the case for time calibrated trees from BEAST, for example. If the tree is not explicitly rooted then some options for changing the root position will be available.
+
+### Midpoint Root (⌘M)
+
+Press **⌘M** (or click **Midpoint** in the toolbar) to automatically root the tree at the midpoint of its longest path. This is a common starting point for exploratory analysis.
+
+> **📸 SCREENSHOT PLACEHOLDER** — EBOV tree after midpoint rerooting; root is repositioned.
+
+### Rerooting at a Selection
+
+1. Select a tip or a group of tips (their MRCA defines the branch).
+2. Click the **Reroot** button — the root is placed at the midpoint of the branch above the MRCA.
+
+### Rerooting at an Exact Branch Position
+
+1. Press **⌘B** to enter **Branches** mode.
+2. Click precisely where you want the new root on any branch.
+3. Click **Reroot**.
+
+> **📸 SCREENSHOT PLACEHOLDER** — Branch mode with marker placed near the base of a clade; tree after rerooting at that position.
+
+---
+
