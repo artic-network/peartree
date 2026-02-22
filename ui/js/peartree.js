@@ -2,6 +2,7 @@ import { parseNexus, parseNewick, graphToNewick } from './treeio.js';
 import { computeLayoutFromGraph } from './treeutils.js';
 import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointRootGraph, buildAnnotationSchema } from './phylograph.js';
 import { TreeRenderer } from './treerenderer.js';
+import { LegendRenderer } from './legendrenderer.js';
 import { AxisRenderer  } from './axisrenderer.js';
 
 (async () => {
@@ -838,8 +839,8 @@ import { AxisRenderer  } from './axisrenderer.js';
       renderer.setTipColourBy('user_colour');
       renderer.setNodeColourBy('user_colour');
       renderer.setLabelColourBy('user_colour');
-      renderer.setLegendFontSize(parseInt(DEFAULTS.legendFontSize));
-      renderer.setLegendTextColor(DEFAULTS.legendTextColor);
+      legendRenderer.setFontSize(parseInt(DEFAULTS.legendFontSize));
+      legendRenderer.setTextColor(DEFAULTS.legendTextColor);
       renderer.setMode('nodes');
       applyLegend();
       applyAxis();
@@ -919,7 +920,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       renderer.setNodeShapeColor(t.nodeShapeColor);
       renderer.setNodeShapeBgColor(t.nodeShapeBgColor);
       if (t.axisColor) axisRenderer.setColor(t.axisColor);
-      renderer.setLegendTextColor(legendColor);
+      legendRenderer.setTextColor(legendColor);
       // Invalidate axis hash so next update redraws
       axisRenderer._lastHash = '';
     }
@@ -1100,7 +1101,11 @@ import { AxisRenderer  } from './axisrenderer.js';
   statusCanvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
 
   const renderer = new TreeRenderer(canvas, undefined, statusCanvas);
-  renderer.setLegendCanvases(legendLeftCanvas, legendRightCanvas);
+
+  // ── Legend renderer ────────────────────────────────────────────────────────
+  // Must be created before applyTheme() (which calls legendRenderer.setTextColor).
+  const legendRenderer = new LegendRenderer(legendLeftCanvas, legendRightCanvas);
+  renderer.setLegendRenderer(legendRenderer);
 
   // ── Axis renderer ─────────────────────────────────────────────────────────
   // Must be created before applyTheme() is called below (applyTheme references
@@ -1161,8 +1166,8 @@ import { AxisRenderer  } from './axisrenderer.js';
     renderer.setNodeShapeBgColor(nodeShapeBgEl.value);
   }
 
-  renderer.setLegendFontSize(parseInt(legendFontSizeSlider.value));
-  renderer.setLegendTextColor(legendTextColorEl.value);
+  legendRenderer.setFontSize(parseInt(legendFontSizeSlider.value));
+  legendRenderer.setTextColor(legendTextColorEl.value);
 
   renderer._onViewChange = (scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr) => {
     axisRenderer.update(scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr);
@@ -3813,9 +3818,10 @@ import { AxisRenderer  } from './axisrenderer.js';
     legendRightCanvas.style.display = (show && pos === 'right') ? 'block' : 'none';
     legendRightCanvas.style.width   = W + 'px';
 
-    renderer.setLegendFontSize(parseInt(legendFontSizeSlider.value));
-    renderer.setLegendTextColor(legendTextColorEl.value);
-    renderer.setLegend(show ? pos : null, key);
+    legendRenderer.setFontSize(parseInt(legendFontSizeSlider.value));
+    legendRenderer.setTextColor(legendTextColorEl.value);
+    legendRenderer.setAnnotation(show ? pos : null, key);
+    renderer._resize();   // recalculates tree canvas width after legend canvases shown/hidden
     saveSettings();
   }
 
@@ -3823,12 +3829,12 @@ import { AxisRenderer  } from './axisrenderer.js';
   legendAnnotEl.addEventListener('change', applyLegend);
 
   legendTextColorEl.addEventListener('input', () => {
-    renderer.setLegendTextColor(legendTextColorEl.value);
+    legendRenderer.setTextColor(legendTextColorEl.value);
     saveSettings();
   });
   legendFontSizeSlider.addEventListener('input', () => {
     document.getElementById('legend-font-size-value').textContent = legendFontSizeSlider.value;
-    renderer.setLegendFontSize(parseInt(legendFontSizeSlider.value));
+    legendRenderer.setFontSize(parseInt(legendFontSizeSlider.value));
     saveSettings();
   });
 
