@@ -23,8 +23,10 @@ import { AxisRenderer  } from './axisrenderer.js';
   const tipColourBy       = document.getElementById('tip-colour-by');
   const nodeColourBy      = document.getElementById('node-colour-by');
   const labelColourBy     = document.getElementById('label-colour-by');
-  const legendShowEl      = document.getElementById('legend-show');
-  const legendAnnotEl     = document.getElementById('legend-annotation');
+  const legendShowEl          = document.getElementById('legend-show');
+  const legendAnnotEl         = document.getElementById('legend-annotation');
+  const legendTextColorEl     = document.getElementById('legend-text-color');
+  const legendFontSizeSlider  = document.getElementById('legend-font-size-slider');
   const legendLeftCanvas  = document.getElementById('legend-left-canvas');
   const legendRightCanvas = document.getElementById('legend-right-canvas');
   const axisCanvas             = document.getElementById('axis-canvas');
@@ -76,6 +78,22 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeShapeColor:   '#E06961',
             nodeShapeBgColor: '#02292e',
             axisColor:        '#f7eeca',
+        },
+        "BEAST": {
+            canvasBgColor:    '#5A5F62',
+            branchColor:      '#3B6F84',
+            branchWidth:      '1',
+            fontSize:         '11',
+            labelColor:       '#B1CBB8',
+            tipSize:          '3',
+            tipHaloSize:      '1',
+            tipShapeColor:    '#B58901',
+            tipShapeBgColor:  '#02292e',
+            nodeSize:         '0',
+            nodeHaloSize:     '1',
+            nodeShapeColor:   '#E06961',
+            nodeShapeBgColor: '#02292e',
+            axisColor:        '#B1CBB8',
         },
         "Minimal": {
             canvasBgColor:    '#fff',
@@ -305,6 +323,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       nodeShapeColor:   nodeShapeColorEl.value,
       nodeShapeBgColor: nodeShapeBgEl.value,
       axisColor:        axisColorEl.value,
+      legendTextColor:  legendTextColorEl.value,
     };
   }
 
@@ -347,6 +366,8 @@ import { AxisRenderer  } from './axisrenderer.js';
     axisFontSize:     '9',
     axisLineWidth:    '1',
     legendShow:         'right',
+    legendTextColor:    '#f7eeca',
+    legendFontSize:     '11',
     axisShow:           'off',
     axisDateAnnotation: '',
     axisMajorInterval:    'auto',
@@ -381,6 +402,8 @@ import { AxisRenderer  } from './axisrenderer.js';
       labelColourBy:    labelColourBy.value,
       legendShow:       legendShowEl.value,
       legendAnnotation: legendAnnotEl.value,
+      legendTextColor:  legendTextColorEl.value,
+      legendFontSize:   legendFontSizeSlider.value,
       axisShow:           axisShowEl.value,
       axisDateAnnotation: axisDateAnnotEl.value,
       axisMajorInterval:    axisMajorIntervalEl.value,
@@ -420,6 +443,8 @@ import { AxisRenderer  } from './axisrenderer.js';
       labelColourBy:    labelColourBy.value,
       legendShow:       legendShowEl.value,
       legendAnnotation: legendAnnotEl.value,
+      legendTextColor:  legendTextColorEl.value,
+      legendFontSize:   legendFontSizeSlider.value,
       axisShow:           axisShowEl.value,
       axisDateAnnotation: axisDateAnnotEl.value,
       axisMajorInterval:    axisMajorIntervalEl.value,
@@ -481,6 +506,11 @@ import { AxisRenderer  } from './axisrenderer.js';
     if (s.axisMinorLabelFormat)  axisMinorLabelEl.value   = s.axisMinorLabelFormat;
     if (s.axisColor)             axisColorEl.value        = s.axisColor;
     if (s.legendShow)            legendShowEl.value       = s.legendShow;
+    if (s.legendTextColor) legendTextColorEl.value = s.legendTextColor;
+    if (s.legendFontSize != null) {
+      legendFontSizeSlider.value = s.legendFontSize;
+      document.getElementById('legend-font-size-value').textContent = s.legendFontSize;
+    }
     // Set themeSelect to the stored theme name (or 'custom' if not known).
     const themeName = s.theme && themeRegistry.has(s.theme) ? s.theme : (s.theme === 'custom' ? 'custom' : 'custom');
     themeSelect.value = themeName;
@@ -515,6 +545,9 @@ import { AxisRenderer  } from './axisrenderer.js';
     labelColourBy.value      = 'user_colour';
     legendShowEl.value       = DEFAULTS.legendShow;
     legendAnnotEl.value      = '';
+    legendTextColorEl.value  = DEFAULTS.legendTextColor;
+    legendFontSizeSlider.value = DEFAULTS.legendFontSize;
+    document.getElementById('legend-font-size-value').textContent = DEFAULTS.legendFontSize;
     axisShowEl.value         = DEFAULTS.axisShow;
     axisDateAnnotEl.value    = '';
     axisMajorIntervalEl.value    = DEFAULTS.axisMajorInterval;
@@ -531,6 +564,8 @@ import { AxisRenderer  } from './axisrenderer.js';
       renderer.setTipColourBy('user_colour');
       renderer.setNodeColourBy('user_colour');
       renderer.setLabelColourBy('user_colour');
+      renderer.setLegendFontSize(parseInt(DEFAULTS.legendFontSize));
+      renderer.setLegendTextColor(DEFAULTS.legendTextColor);
       renderer.setMode('nodes');
       applyLegend();
       applyAxis();
@@ -574,6 +609,9 @@ import { AxisRenderer  } from './axisrenderer.js';
     if (t.axisColor) {
       axisColorEl.value = t.axisColor;
     }
+    // legendTextColor falls back to labelColor for themes that don't define it explicitly.
+    const legendColor = t.legendTextColor || t.labelColor;
+    legendTextColorEl.value = legendColor;
     if (renderer) {
       renderer.setBgColor(t.canvasBgColor);
       renderer.setBranchColor(t.branchColor);
@@ -589,6 +627,7 @@ import { AxisRenderer  } from './axisrenderer.js';
       renderer.setNodeShapeColor(t.nodeShapeColor);
       renderer.setNodeShapeBgColor(t.nodeShapeBgColor);
       if (t.axisColor) axisRenderer.setColor(t.axisColor);
+      renderer.setLegendTextColor(legendColor);
       // Invalidate axis hash so next update redraws
       axisRenderer._lastHash = '';
     }
@@ -709,6 +748,9 @@ import { AxisRenderer  } from './axisrenderer.js';
   axisRenderer.setFontSize(parseInt(axisFontSizeSlider.value));
   axisRenderer.setLineWidth(parseFloat(axisLineWidthSlider.value));
   const canvasAndAxisWrapper  = document.getElementById('canvas-and-axis-wrapper');
+
+  renderer.setLegendFontSize(parseInt(legendFontSizeSlider.value));
+  renderer.setLegendTextColor(legendTextColorEl.value);
 
   renderer._onViewChange = (scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr) => {
     axisRenderer.update(scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr);
@@ -3153,12 +3195,24 @@ import { AxisRenderer  } from './axisrenderer.js';
     legendRightCanvas.style.display = (show && pos === 'right') ? 'block' : 'none';
     legendRightCanvas.style.width   = W + 'px';
 
+    renderer.setLegendFontSize(parseInt(legendFontSizeSlider.value));
+    renderer.setLegendTextColor(legendTextColorEl.value);
     renderer.setLegend(show ? pos : null, key);
     saveSettings();
   }
 
   legendShowEl .addEventListener('change', applyLegend);
   legendAnnotEl.addEventListener('change', applyLegend);
+
+  legendTextColorEl.addEventListener('input', () => {
+    renderer.setLegendTextColor(legendTextColorEl.value);
+    saveSettings();
+  });
+  legendFontSizeSlider.addEventListener('input', () => {
+    document.getElementById('legend-font-size-value').textContent = legendFontSizeSlider.value;
+    renderer.setLegendFontSize(parseInt(legendFontSizeSlider.value));
+    saveSettings();
+  });
 
   // ── Axis controls ─────────────────────────────────────────────────────────
 

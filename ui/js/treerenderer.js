@@ -175,6 +175,8 @@ export class TreeRenderer {
     this._legendRightCanvas = null;  // <canvas> for the right legend panel
     this._legendPosition    = null;  // 'left' | 'right' | null
     this._legendAnnotation  = null;  // annotation key currently shown in legend
+    this.legendFontSize     = 11;         // label font size (px)
+    this.legendTextColor    = '#f7eeca';  // label text colour
 
     this._rafId = null;
     this._dirty = true;
@@ -554,6 +556,16 @@ export class TreeRenderer {
     this._legendAnnotation = annotationKey || null;
     this._resize();      // recalculates tree canvas width after legend canvases shown/hidden
     this._drawLegend();  // paints the legend onto the visible legend canvas
+  }
+
+  setLegendFontSize(size) {
+    this.legendFontSize = size;
+    this._drawLegend();
+  }
+
+  setLegendTextColor(color) {
+    this.legendTextColor = color;
+    this._drawLegend();
   }
 
   /** Snapshot the current view state for the nav stacks. */
@@ -1107,51 +1119,73 @@ export class TreeRenderer {
     const FONT  = 'monospace';
     let   y     = PAD;
 
+    const lfs = this.legendFontSize;
+    const ltc = this.legendTextColor;
+
     // Title — the annotation name.
-    ctx.font         = `700 ${this.fontSize}px ${FONT}`;
-    ctx.fillStyle    = '#b58900';   // --pt-gold
+    ctx.font         = `700 ${lfs}px ${FONT}`;
+    ctx.fillStyle    = ltc;
     ctx.textAlign    = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText(key, PAD, y, W - PAD * 2);
-    y += this.fontSize + 10;
+    y += lfs + 10;
 
     if (def.dataType === 'categorical' || def.dataType === 'ordinal') {
       const PALETTE = [
         '#2aa198', '#cb4b16', '#268bd2', '#d33682',
         '#6c71c4', '#b58900', '#859900', '#dc322f',
       ];
-      const SWATCH = 12;
-      const ROW_H  = Math.max(SWATCH + 4, this.fontSize + 4);
-      ctx.font         = `${this.fontSize}px ${FONT}`;
+      const SWATCH = Math.max(8, lfs);
+      const ROW_H  = Math.max(SWATCH + 4, lfs + 4);
+      ctx.font         = `${lfs}px ${FONT}`;
       ctx.textBaseline = 'middle';
       (def.values || []).forEach((val, i) => {
         if (y + SWATCH > H - PAD) return;   // no space left
         const colour = PALETTE[i % PALETTE.length];
         ctx.fillStyle = colour;
         ctx.fillRect(PAD, y, SWATCH, SWATCH);
-        ctx.fillStyle = '#F7EECA';   // --pt-cream
+        ctx.fillStyle = ltc;
         ctx.textAlign = 'left';
         ctx.fillText(String(val), PAD + SWATCH + 6, y + SWATCH / 2, W - PAD * 2 - SWATCH - 6);
         y += ROW_H;
       });
     } else if (def.dataType === 'real' || def.dataType === 'integer') {
-      const BAR_W  = W - PAD * 2;
-      const BAR_H  = 14;
-      const grad   = ctx.createLinearGradient(PAD, 0, PAD + BAR_W, 0);
-      grad.addColorStop(0, '#2aa198');   // teal (min)
-      grad.addColorStop(1, '#dc322f');   // red  (max)
+      const BAR_W  = 14;
+      const BAR_X  = PAD;
+      const BAR_Y  = y;
+      const BAR_H  = Math.max(40, H - y - PAD);
+      // Vertical gradient: top = max (red), bottom = min (teal).
+      const grad   = ctx.createLinearGradient(0, BAR_Y, 0, BAR_Y + BAR_H);
+      grad.addColorStop(0, '#dc322f');   // red  (max)
+      grad.addColorStop(1, '#2aa198');   // teal (min)
       ctx.fillStyle = grad;
-      ctx.fillRect(PAD, y, BAR_W, BAR_H);
-      y += BAR_H + 4;
+      ctx.fillRect(BAR_X, BAR_Y, BAR_W, BAR_H);
+
       const min = def.min ?? 0;
       const max = def.max ?? 1;
-      ctx.fillStyle    = '#F7EECA';
-      ctx.font         = `${this.fontSize}px ${FONT}`;
-      ctx.textBaseline = 'top';
+      const range = max - min;
+      const LABEL_X = BAR_X + BAR_W + 6;
+      const LABEL_W = W - LABEL_X - PAD;
+
+      // Draw tick labels: as many as fit, spread evenly.
+      const tickCount = Math.max(2, Math.min(6, Math.floor(BAR_H / (lfs + 6))));
+      ctx.font         = `${lfs}px ${FONT}`;
+      ctx.fillStyle    = ltc;
       ctx.textAlign    = 'left';
-      ctx.fillText(String(min), PAD, y, BAR_W / 2);
-      ctx.textAlign    = 'right';
-      ctx.fillText(String(max), PAD + BAR_W, y, BAR_W / 2);
+      for (let i = 0; i < tickCount; i++) {
+        const t      = i / (tickCount - 1);           // 0 = top (max) → 1 = bottom (min)
+        const val    = max - t * range;
+        const tickY  = BAR_Y + t * BAR_H;
+        // Tick mark
+        ctx.fillStyle = ltc;
+        ctx.fillRect(BAR_X + BAR_W, tickY - 0.5, 4, 1);
+        // Label — baseline anchors top/bottom at extremes, middle otherwise
+        ctx.textBaseline = i === 0 ? 'top' : (i === tickCount - 1 ? 'bottom' : 'middle');
+        const label  = def.dataType === 'integer'
+          ? String(Math.round(val))
+          : (Number.isInteger(range) ? String(Math.round(val)) : val.toPrecision(3));
+        ctx.fillText(label, LABEL_X, tickY, LABEL_W);
+      }
     }
   }
 
