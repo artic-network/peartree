@@ -128,7 +128,7 @@ Try clicking an internal node near the root of the EBOV tree.
 
 ### Branches Mode (⌘B)
 
-> [!NOTE]
+> ![NOTE]
 > Branch selection mode is generally used to allow  re-rooting of a tree. However, as the example tree is a rooted, time-calibrated tree, re-rooting is disabled.
 
 Press **⌘B** (or click the branch-mode button) to switch to **Branches** mode. Click anywhere along a horizontal branch to place a precise positional marker.
@@ -144,6 +144,7 @@ PearTree has some useful functions for 'drilling-down' into parts of the tree to
 Double-click any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node.
 
 > <img src="images/fig9a.png" style="width:400px;"/>
+>
 > <img src="images/fig9b.png" style="width:400px;"/>
 >
 > A sub-clade of the EBOV tree filling the full canvas after double-clicking.
