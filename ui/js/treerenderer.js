@@ -80,14 +80,10 @@ export const DEFAULT_THEME = new Theme();
 // ─────────────────────────────────────────────────────────────────────────────
 
 export class TreeRenderer {
-  constructor(canvas, theme = DEFAULT_THEME, statusCanvas = null) {
+  constructor(canvas, theme = DEFAULT_THEME) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.dpr = window.devicePixelRatio || 1;
-
-    // Optional dedicated status-bar canvas
-    this._statusCanvas = statusCanvas || null;
-    this._statusCtx    = statusCanvas ? statusCanvas.getContext('2d') : null;
 
     // layout data
     this.nodes = null;
@@ -158,8 +154,7 @@ export class TreeRenderer {
     this._hypStrength     = 0;       // 0..1 blend factor (animated)
     this._hypTarget       = 0;       // animation target: 0 = off, 1 = full
     this._hypMagMult      = 10;      // flat-zone half-width in rows (0 = pure hyperbolic)
-    this._lastStatusMx    = null;  // cached mouse x for status bar redraws
-    this._lastStatusMy    = null;  // cached mouse y for status bar redraws
+    this._onStatsChange   = null;  // callback(stats|null) fired when selection/data changes
 
     this._mode             = 'nodes';  // 'nodes' | 'branches'
     this._branchHoverNode  = null;     // node whose horizontal branch is hovered
@@ -290,7 +285,7 @@ export class TreeRenderer {
     } else {
       this.fitToWindow();  // animated
     }
-    this._drawStatusBar(null);
+    this._notifyStats();
   }
 
   /**
@@ -387,7 +382,7 @@ export class TreeRenderer {
     this._mode = mode;
     if (this._onBranchSelectChange) this._onBranchSelectChange(false);
     if (this._onNodeSelectChange)   this._onNodeSelectChange(false);
-    this._drawStatusBar(this._lastStatusMx);
+    this._notifyStats();
     this._dirty = true;
   }
 
@@ -1257,15 +1252,6 @@ export class TreeRenderer {
     this.canvas.width  = W * this.dpr;
     this.canvas.height = H * this.dpr;
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-    if (this._statusCanvas) {
-      const SW = this._statusCanvas.parentElement.clientWidth;
-      const SH = this._statusCanvas.parentElement.clientHeight;
-      this._statusCanvas.style.width  = SW + 'px';
-      this._statusCanvas.style.height = SH + 'px';
-      this._statusCanvas.width  = SW * this.dpr;
-      this._statusCanvas.height = SH * this.dpr;
-      this._statusCtx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-    }
     if (this.nodes) {
       // X always re-fits; preserve the current vertical zoom ratio if already zoomed in.
       const zoomRatio = (this.minScaleY > 0) ? this._targetScaleY / this.minScaleY : 1;
@@ -2114,7 +2100,7 @@ export class TreeRenderer {
       }
       this._updateMRCA();
       if (this._onNodeSelectChange) this._onNodeSelectChange(this._selectedTipIds.size > 0);
-      this._drawStatusBar(this._lastStatusMx);
+      this._notifyStats();
       this._dirty = true;
     });
 
@@ -2249,8 +2235,6 @@ export class TreeRenderer {
           }
         }
       }
-
-      if (e.target === this.canvas) this._updateStatus(e);
 
       // ── Hyperbolic stretch: update focus while ~ (backtick/tilde) is held; persists on release ──
       if (this._shiftHeld && !this._dragging && !this._dragSelActive) {
@@ -2438,7 +2422,7 @@ export class TreeRenderer {
           this._hypTarget = 0;   // triggers animated fade-out; focus Y cleared when strength reaches 0
           this._dirty     = true;
         }
-        this._drawStatusBar(this._lastStatusMx);
+        this._notifyStats();
         this._dirty = true;
         return;
       }
@@ -2541,94 +2525,8 @@ export class TreeRenderer {
     return { tipCount, distance, height, totalLength };
   }
 
-  /**
-   * Redraw the status canvas (or fallback div).
-   * mx = screen x of the mouse pointer, or null if unknown.
-   */
-  _drawStatusBar(mx = null) {
-    if (!this._statusCanvas) {
-      // Fallback: plain text in the DOM element
-      if (!this.nodes) return;
-      const el = document.getElementById('status');
-      if (!el) return;
-      const stats = this._computeStats();
-      const lines = [];
-      if (mx !== null) {
-        const wx = this._worldXfromScreen(mx);
-        const wy = this._worldYfromScreen(this._lastStatusMy || 0);
-        const tip = Math.min(this.maxY, Math.max(1, Math.round(wy)));
-        lines.push(`div: ${wx.toFixed(5)}`, `tip: ${tip}`);
-      }
-      if (stats) {
-        lines.push(
-          `Tips: ${stats.tipCount}`,
-          `Dist: ${stats.distance.toFixed(5)}`,
-          `Height: ${stats.height.toFixed(5)}`,
-          `Length: ${stats.totalLength.toFixed(5)}`,
-        );
-      }
-      el.textContent = lines.join('  |  ');
-      return;
-    }
-
-    const sctx = this._statusCtx;
-    const W    = this._statusCanvas.clientWidth;
-    const H    = this._statusCanvas.clientHeight;
-    sctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);  // re-assert DPR transform (a resize or monitor change may have reset it)
-    sctx.clearRect(0, 0, W, H);
-    if (!this.nodes) return;
-
-    sctx.font         = '11px monospace';
-    sctx.textBaseline = 'middle';
-    const cy = H / 2;
-    // Leave the left 120 px for the brand element in the DOM.
-    const BRAND_W = 120;
-    const POS = {
-      div:    BRAND_W,
-      tip:    BRAND_W + 128,
-      tips:   BRAND_W + 228,
-      dist:   BRAND_W + 338,
-      height: BRAND_W + 478,
-      length: BRAND_W + 628,
-    };
-
-    // Dim teal for mouse-position fields, brighter for stats
-    const mouseColor = 'rgba(25,166,153,0.55)';
-    const statColor  = 'rgba(242,241,230,0.65)';
-    const labelColor = 'rgba(230,213,149,0.75)';
-
-    const draw = (x, label, value, lc, vc) => {
-      sctx.fillStyle = lc;
-      sctx.fillText(label, x, cy);
-      const lw = sctx.measureText(label).width;
-      sctx.fillStyle = vc;
-      sctx.fillText(value, x + lw, cy);
-    };
-
-    // Mouse-position fields (only when mouse is over the canvas)
-    if (mx !== null) {
-      const wx  = this._worldXfromScreen(mx);
-      const wy  = this._worldYfromScreen(this._lastStatusMy || 0);
-      const tip = Math.min(this.maxY, Math.max(1, Math.round(wy)));
-      draw(POS.div,  'div\u2009',  wx.toFixed(5),  mouseColor, mouseColor);
-      draw(POS.tip,  'tip\u2009',  String(tip),    mouseColor, mouseColor);
-    }
-
-    // Tree stats (always shown once data is loaded)
-    const stats = this._computeStats();
-    if (stats) {
-      draw(POS.tips,   'Tips\u2009',   String(stats.tipCount),        labelColor, statColor);
-      draw(POS.dist,   'Dist\u2009',   stats.distance.toFixed(5),     labelColor, statColor);
-      draw(POS.height, 'Height\u2009', stats.height.toFixed(5),       labelColor, statColor);
-      draw(POS.length, 'Length\u2009', stats.totalLength.toFixed(5),  labelColor, statColor);
-    }
-  }
-
-  _updateStatus(e) {
-    if (!this.nodes) return;
-    const rect = this.canvas.getBoundingClientRect();
-    this._lastStatusMx = e.clientX - rect.left;
-    this._lastStatusMy = e.clientY - rect.top;
-    this._drawStatusBar(this._lastStatusMx);
+  /** Fire the stats-change callback with current selection/tree stats. */
+  _notifyStats() {
+    if (this._onStatsChange) this._onStatsChange(this._computeStats());
   }
 }

@@ -1091,16 +1091,21 @@ import { AxisRenderer  } from './axisrenderer.js';
   const ctx = canvas.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  // Size the status canvas
-  const statusCanvas = document.getElementById('status-canvas');
-  const statusBar    = statusCanvas.parentElement;
-  statusCanvas.style.width  = statusBar.clientWidth  + 'px';
-  statusCanvas.style.height = statusBar.clientHeight + 'px';
-  statusCanvas.width  = statusBar.clientWidth  * dpr;
-  statusCanvas.height = statusBar.clientHeight * dpr;
-  statusCanvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+  const renderer = new TreeRenderer(canvas);
 
-  const renderer = new TreeRenderer(canvas, undefined, statusCanvas);
+  renderer._onStatsChange = (stats) => {
+    const el = document.getElementById('status-stats');
+    if (!el) return;
+    if (!stats) { el.innerHTML = ''; return; }
+    el.innerHTML =
+      `<span class="st-lbl">Tips\u2009</span><span class="st-val">${stats.tipCount}</span>` +
+      `<span class="st-sep"> | </span>` +
+      `<span class="st-lbl">Dist\u2009</span><span class="st-val">${stats.distance.toFixed(5)}</span>` +
+      `<span class="st-sep"> | </span>` +
+      `<span class="st-lbl">Height\u2009</span><span class="st-val">${stats.height.toFixed(5)}</span>` +
+      `<span class="st-sep"> | </span>` +
+      `<span class="st-lbl">Length\u2009</span><span class="st-val">${stats.totalLength.toFixed(5)}</span>`;
+  };
 
   // ── Legend renderer ────────────────────────────────────────────────────────
   // Must be created before applyTheme() (which calls legendRenderer.setTextColor).

@@ -194,7 +194,20 @@
       border-top: 1px solid var(--pt-border);
       position: relative;
     }
-    #status-bar canvas { display: block; }
+    #status-stats {
+      position: absolute;
+      left: 120px;
+      top: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font: 11px/1 monospace;
+      white-space: nowrap;
+    }
+    .st-lbl { color: rgba(230,213,149,0.75); }
+    .st-val { color: rgba(242,241,230,0.65); }
+    .st-sep { color: rgba(242,241,230,0.3); }
     #status-brand {
       position: absolute;
       left: 0;
@@ -1062,7 +1075,7 @@
 
 <div id="status-bar">
   <a id="status-brand" href="https://github.com/artic-network/peartree" target="_blank" rel="noopener" title="PearTree on GitHub"><i class="bi bi-tree"></i>PearTree</a>
-  <canvas id="status-canvas"></canvas>
+  <span id="status-stats"></span>
 </div>
 
 <!-- Open Tree Modal -->
