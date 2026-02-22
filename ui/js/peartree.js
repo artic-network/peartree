@@ -721,6 +721,16 @@ import { AxisRenderer  } from './axisrenderer.js';
   const renderer = new TreeRenderer(canvas, undefined, statusCanvas);
   renderer.setLegendCanvases(legendLeftCanvas, legendRightCanvas);
 
+  // ── Axis renderer ─────────────────────────────────────────────────────────
+  // Must be created before applyTheme() is called below (applyTheme references
+  // axisRenderer, and const bindings have TDZ — calling the function before this
+  // line would throw "Cannot access 'axisRenderer' before initialization").
+  const axisRenderer          = new AxisRenderer(axisCanvas);
+  axisRenderer.setColor(axisColorEl.value);
+  axisRenderer.setFontSize(parseInt(axisFontSizeSlider.value));
+  axisRenderer.setLineWidth(parseFloat(axisLineWidthSlider.value));
+  const canvasAndAxisWrapper  = document.getElementById('canvas-and-axis-wrapper');
+
   // Apply stored visual settings to the renderer immediately.
   // If no saved theme exists yet, apply the default 'Artic' theme.
   if (!_saved.theme) {
@@ -740,14 +750,6 @@ import { AxisRenderer  } from './axisrenderer.js';
     renderer.setNodeShapeColor(nodeShapeColorEl.value);
     renderer.setNodeShapeBgColor(nodeShapeBgEl.value);
   }
-
-  // ── Axis renderer ─────────────────────────────────────────────────────────
-  const axisRenderer          = new AxisRenderer(axisCanvas);
-  // Apply saved (or default) axis style immediately
-  axisRenderer.setColor(axisColorEl.value);
-  axisRenderer.setFontSize(parseInt(axisFontSizeSlider.value));
-  axisRenderer.setLineWidth(parseFloat(axisLineWidthSlider.value));
-  const canvasAndAxisWrapper  = document.getElementById('canvas-and-axis-wrapper');
 
   renderer.setLegendFontSize(parseInt(legendFontSizeSlider.value));
   renderer.setLegendTextColor(legendTextColorEl.value);
