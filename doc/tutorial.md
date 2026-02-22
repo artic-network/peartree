@@ -33,7 +33,7 @@ The interface has four main areas:
 - **Visual Options palette** (left, hidden by default) — all display controls
 - **Status bar** (bottom) — live readout of values under the cursor
 
-> <img src="images/fig5.png" style="width:500px;"/>
+> <img src="images/fig5b.png" style="width:500px;"/>
 > 
 > EBOV tree loaded and filling the canvas. Tip labels will not currently be visible because of the size of the tree.
 
@@ -70,7 +70,7 @@ You can also use the toolbar zoom buttons or keyboard shortcuts:
 
 Zoom in until individual tip names are readable or press the Fit Labels button or ⌘⇧0 to do this automatically. 
 
-> <img src="images/fig6.png" style="width:400px;"/>
+> <img src="images/fig6b.png" style="width:400px;"/>
 >
 > Tree zoomed in to show a small cluster of tips with readable labels.
 
@@ -143,7 +143,10 @@ PearTree has some useful functions for 'drilling-down' into parts of the tree to
 
 Double-click any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node.
 
-> **📸 SCREENSHOT PLACEHOLDER** — A sub-clade of the EBOV tree filling the full canvas after double-clicking.
+> <img src="images/fig9a.png" style="width:400px;"/>
+> <img src="images/fig9b.png" style="width:400px;"/>
+>
+> A sub-clade of the EBOV tree filling the full canvas after double-clicking.
 
 Use the **History** buttons in the toolbar (or **⌘[** / **⌘]**) to navigate back and forward through your drill-down history.
 
