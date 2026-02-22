@@ -415,8 +415,10 @@ export class TreeRenderer {
     this._dirty = true;
   }
 
-  /** Convert a CSS hex colour (#rrggbb) to {h: 0‑360, s: 0‑100, l: 0‑100}. */
+  /** Convert a CSS hex colour (#rrggbb or #rgb) to {h: 0‑360, s: 0‑100, l: 0‑100}. */
   static _hexToHsl(hex) {
+    // Expand 3-char shorthand (#rgb → #rrggbb)
+    if (hex.length === 4) hex = '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
     let r = parseInt(hex.slice(1, 3), 16) / 255;
     let g = parseInt(hex.slice(3, 5), 16) / 255;
     let b = parseInt(hex.slice(5, 7), 16) / 255;
@@ -1605,14 +1607,16 @@ export class TreeRenderer {
           if (!this._showLabelAt(node.y)) continue;
           if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
         }
-        // Sub-pass 3b: selected labels in selected colour
+        // Sub-pass 3b: selected labels in bold + selected colour
         ctx.fillStyle = this.selectedLabelColor;
+        ctx.font = `bold ${this.fontSize}px monospace`;
         for (const node of this.nodes) {
           if (!node.isTip || !this._selectedTipIds.has(node.id)) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           if (!this._showLabelAt(node.y)) continue;
           if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
         }
+        ctx.font = `${this.fontSize}px monospace`;
       } else if (this._labelColourBy && this._labelColourScale) {
         const key = this._labelColourBy;
         for (const node of this.nodes) {

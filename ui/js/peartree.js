@@ -62,7 +62,24 @@ import { AxisRenderer  } from './axisrenderer.js';
   const USER_THEMES_KEY = 'peartree-user-themes';
   let currentOrder = null;  // null | 'asc' | 'desc' — declared early so saveSettings() is safe to call during init
 
-    const THEMES = {
+  const THEMES = {
+        "Minimal": {
+            canvasBgColor:    '#ffffff',
+            branchColor:      '#444444',
+            branchWidth:      '1',
+            fontSize:         '11',
+            labelColor:       '#000000',
+            tipSize:          '2',
+            tipHaloSize:      '1',
+            tipShapeColor:    '#ffffff',
+            tipShapeBgColor:  '#000000',
+            nodeSize:         '0',
+            nodeHaloSize:     '1',
+            nodeShapeColor:   '#000000',
+            nodeShapeBgColor: '#000000',
+            axisColor:        '#444444',
+            legendTextColor:  '#444444',
+        },
         "Artic": {
             canvasBgColor:    '#02292e',
             branchColor:      '#19A699',
@@ -78,6 +95,7 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeShapeColor:   '#E06961',
             nodeShapeBgColor: '#02292e',
             axisColor:        '#f7eeca',
+            legendTextColor:  '#f7eeca',
         },
         "BEAST": {
             canvasBgColor:    '#5A5F62',
@@ -94,22 +112,7 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeShapeColor:   '#E06961',
             nodeShapeBgColor: '#02292e',
             axisColor:        '#B1CBB8',
-        },
-        "Minimal": {
-            canvasBgColor:    '#fff',
-            branchColor:      '#444444',
-            branchWidth:      '1',
-            fontSize:         '11',
-            labelColor:       '#000',
-            tipSize:          '3',
-            tipHaloSize:      '1',
-            tipShapeColor:    '#fff',
-            tipShapeBgColor:  '#000',
-            nodeSize:         '2',
-            nodeHaloSize:     '1',
-            nodeShapeColor:   '#000',
-            nodeShapeBgColor: '#000',
-            axisColor:        '#444444',
+            legendTextColor:  '#B1CBB8',
         },
         // // Warm pastels: Grand Budapest Hotel / Moonrise Kingdom palette
         // "Wes": {
@@ -144,6 +147,7 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeShapeColor:   '#7dbfcc',
             nodeShapeBgColor: '#1e2d3a',
             axisColor:        '#edd59c',
+            legendTextColor:  '#edd59c',
         },
         // Royal Tenenbaums: aged plaster, forest green, burgundy, tennis-ball gold
         "Tenenbaums": {
@@ -161,6 +165,7 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeShapeColor:   '#c8a020',
             nodeShapeBgColor: '#f0e8d8',
             axisColor:        '#2b4a2a',
+            legendTextColor:  '#2b4a2a',
         },
         // Fantastic Mr Fox: night earth, fox orange, rust, harvest green
         "Mr Fox": {
@@ -178,6 +183,7 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeShapeColor:   '#508a28',
             nodeShapeBgColor: '#1a0d00',
             axisColor:        '#f0c060',
+            legendTextColor:  '#f0c060',  
         },
         // The Darjeeling Limited: warm cream, saffron, cerulean, rust
         "Darjeeling": {
@@ -195,6 +201,7 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeShapeColor:   '#c04428',
             nodeShapeBgColor: '#faf0d8',
             axisColor:        '#3a2010',
+            legendTextColor:  '#3a2010',
         },
         // // Mid Century Modern – Birch: warm white, teak, avocado, harvest gold
         // "MCM Birch": {
@@ -262,6 +269,7 @@ import { AxisRenderer  } from './axisrenderer.js';
             nodeShapeColor:   '#88B2BA',
             nodeShapeBgColor: '#D8D4D3',
             axisColor:        '#7984BC',
+            legendTextColor:  '#7984BC',
         },
   };
 
