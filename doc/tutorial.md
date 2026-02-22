@@ -8,15 +8,17 @@ This tutorial walks through the main features of PearTree using the built-in Ebo
 
 When you first launch PearTree you will see the startup screen.
 
-> **📸 SCREENSHOT PLACEHOLDER** — Startup screen showing the "No tree loaded" overlay with the **Open…** and **Example…** buttons.
+> ![](images/fig1.png) — Startup screen showing the "No tree loaded" and the **Open…** and **Example…** buttons.
 
-Click **Example…** to load the built-in EBOV dataset immediately. Alternatively, click **Open…** (or press **⌘O**) to open the *Open Tree File* dialog, switch to the **Example** tab, and click **Load Example Data**.
+Click **Example…** to load the built-in EBOV dataset immediately. 
 
-> **📸 SCREENSHOT PLACEHOLDER** — *Open Tree File* dialog with the Example tab selected.
+Alternatively, click the open button ![](images/open_button.png) (or press **⌘O**) to open the *Open Tree File* dialog, switch to the **Example** tab, and click **Load Example Data**.
+
+> ![](images/fig4.png) — *Open Tree File* dialog with the Example tab selected.
 
 After a moment the tree will appear on the canvas.
 
-> **📸 SCREENSHOT PLACEHOLDER** — EBOV tree loaded and filling the canvas. Tip labels visible on the right; branches radiate from the root on the left.
+> ![](images/fig5.png) — EBOV tree loaded and filling the canvas. Tip labels will not currently be visible because of the size of the tree.
 
 ---
 
@@ -29,30 +31,32 @@ The interface has four main areas:
 - **Visual Options palette** (left, hidden by default) — all display controls
 - **Status bar** (bottom) — live readout of values under the cursor
 
-> **📸 SCREENSHOT PLACEHOLDER** — Annotated overview of the four areas with callouts.
-
 ---
 
 ## 3. Navigating the Tree
 
+There are many ways of quickly navigating the tree which will be useful if the tree is very large.
+
 ### Scrolling and Zooming
+
+Firstly you can zoom in and then scroll up and down. You can do this with the mouse/trackpad either using the mouse scroll wheel or a two-fingered drag on the trackpad. Holding the Shift key whilst using the scroll gesture will perform a zoom instead.
 
 | Action | Effect |
 |---|---|
 | **Scroll** | Pan the tree vertically |
-| **⌥ + Scroll** | Zoom in/out, anchored at the mouse position |
+| **⇧ + Scroll** | Zoom in/out, anchored at the mouse position |
 | **Pinch** (trackpad) | Zoom in/out |
 
-Use the toolbar zoom buttons or keyboard shortcuts:
+You can also use the toolbar zoom buttons or keyboard shortcuts:
 
-| Shortcut | Action |
-|---|---|
-| **⌘=** | Zoom in (×1.5) |
-| **⌘−** | Zoom out (×1.5) |
-| **⌘0** | Fit the whole tree to the window |
-| **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
+| Button | Shortcut | Action |
+|---|---|---|
+|![](images/open_button.png)| **⌘=** | Zoom in (×1.5) |
+|---| **⌘−** | Zoom out (×1.5) |
+|---| **⌘0** | Fit the whole tree to the window |
+|---| **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
 
-Zoom in until individual tip names are readable, then press **⌘0** to return to the full view.
+Zoom in until individual tip names are readable or press the Fit Labels button or ⌘⇧0 to do this automatically. Press the Fit all button or **⌘0** to return to the full view.
 
 > **📸 SCREENSHOT PLACEHOLDER** — Tree zoomed in to show a small cluster of tips with readable labels.
 
