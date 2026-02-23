@@ -47,7 +47,8 @@ _define({ id: 'export-tree',  label: 'Export Tree…',            shortcut: 'Cmd
 _define({ id: 'export-image', label: 'Export Image…',           shortcut: 'CmdOrCtrl+Shift+E', group: 'file', enabled: false, buttonId: 'btn-export-graphic' });
 
 // Edit
-_define({ id: 'select-all',   label: 'Select All',             shortcut: 'CmdOrCtrl+A',       group: 'edit', enabled: true  });
+_define({ id: 'select-all',    label: 'Select All',            shortcut: 'CmdOrCtrl+A',         group: 'edit', enabled: true  });
+_define({ id: 'select-invert', label: 'Invert Selection',      shortcut: 'CmdOrCtrl+Shift+I',   group: 'edit', enabled: true  });
 
 // View
 _define({ id: 'view-back',       label: 'Back',                shortcut: 'CmdOrCtrl+[',       group: 'view', enabled: false, buttonId: 'btn-back'        });

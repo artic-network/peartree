@@ -2959,6 +2959,17 @@ import * as commands from './commands.js';
       renderer._dirty = true;
     }
   };
+  commands.get('select-invert').exec = () => {
+    if (!renderer.nodes) return;
+    const allTipIds = renderer.nodes.filter(n => n.isTip).map(n => n.id);
+    const inverted  = new Set(allTipIds.filter(id => !renderer._selectedTipIds.has(id)));
+    renderer._selectedTipIds = inverted;
+    renderer._mrcaNodeId = null;
+    renderer._updateMRCA();
+    if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(inverted.size > 0);
+    renderer._notifyStats();
+    renderer._dirty = true;
+  };
   // Button-backed commands: exec clicks the toolbar button so all existing
   // click-handler logic runs without duplication.
   for (const cmd of commands.getAll().values()) {

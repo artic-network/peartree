@@ -134,8 +134,23 @@ pub fn run() {
                             .into_values()
                             .find(|w| w.is_focused().unwrap_or(false));
                         if let Some(w) = focused {
+                            // App running and focused — deliver directly.
                             w.emit("open-file", &path_str).ok();
                         } else {
+                            // No focused window.  Two cases:
+                            //   (a) Fresh launch — JS not yet loaded, event would be lost.
+                            //       Store in PendingFiles so take_pending_file() picks it up.
+                            //   (b) App backgrounded — JS is loaded but window not focused.
+                            //       Broadcast so the active open-file listener handles it.
+                            // Both actions are safe to do together: on a fresh launch the
+                            // broadcast fires before any listener is registered (no-op),
+                            // while take_pending_file() is called on startup and sees the
+                            // stored path.  For a backgrounded app, the broadcast triggers
+                            // the listener; the stale PendingFiles["main"] entry is harmless
+                            // because take_pending_file() was already called at that window's
+                            // startup and won't be called again.
+                            app_handle.state::<PendingFiles>().0.lock().unwrap()
+                                .insert("main".to_string(), path_str.clone());
                             app_handle.emit("open-file", &path_str).ok();
                         }
                     }
@@ -181,7 +196,8 @@ pub fn run() {
             ])?;
 
             // ── Edit ──────────────────────────────────────────────────────────
-            let select_all = MenuItem::with_id(app, "select-all", "Select All", true, Some("CmdOrCtrl+A"))?;
+            let select_all    = MenuItem::with_id(app, "select-all",    "Select All",       true, Some("CmdOrCtrl+A"))?;
+            let select_invert = MenuItem::with_id(app, "select-invert", "Invert Selection", true, Some("CmdOrCtrl+Shift+I"))?;
 
             let edit_menu = Submenu::with_items(app, "Edit", true, &[
                 // &PredefinedMenuItem::undo(app, None)?,
@@ -191,6 +207,7 @@ pub fn run() {
                 &PredefinedMenuItem::copy(app, None)?,
                 &PredefinedMenuItem::paste(app, None)?,
                 &select_all,
+                &select_invert,
             ])?;
 
             // ── View ─────────────────────────────────────────────────────────
@@ -314,6 +331,7 @@ pub fn run() {
                 ("export-tree",      export_tree),
                 ("export-image",     export_image),
                 ("select-all",       select_all),
+                ("select-invert",    select_invert),
                 ("view-back",        view_back),
                 ("view-forward",     view_forward),
                 ("view-home",        view_home),
@@ -341,6 +359,22 @@ pub fn run() {
             app.manage(MenuItems(Mutex::new(map)));
             app.manage(WindowCounter(AtomicU32::new(0)));
             app.manage(PendingFiles(Mutex::new(HashMap::new())));
+
+            // Check whether the app was launched by opening a file (drag-to-icon,
+            // "Open With", double-click).  get_current() reads the launch URL
+            // synchronously in setup — before the window's JS has a chance to call
+            // take_pending_file — so this is the only race-free place to capture it.
+            // We store it in PendingFiles["main"] so the startup take_pending_file
+            // invocation in peartree-tauri.js picks it up.
+            if let Ok(Some(urls)) = app.deep_link().get_current() {
+                if let Some(url) = urls.into_iter().next() {
+                    if let Ok(path) = url.to_file_path() {
+                        let path_str = path.to_string_lossy().to_string();
+                        app.state::<PendingFiles>().0.lock().unwrap()
+                            .insert("main".to_string(), path_str);
+                    }
+                }
+            }
 
             // Forward every menu event to the focused window as a "menu-event".
             // Targeting only the focused window ensures each window only receives
