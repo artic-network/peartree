@@ -1641,9 +1641,15 @@ import { createAnnotImporter } from './annotationsio.js';
         document.getElementById('btn-mode-branches').disabled = false;
         // Hide the empty-state overlay
         emptyStateEl.classList.add('hidden');
-        _setMenuEnabled('import-annot', true);
-        _setMenuEnabled('export-tree',  true);
-        _setMenuEnabled('export-image', true);
+        _setMenuEnabled('import-annot',   true);
+        _setMenuEnabled('export-tree',     true);
+        _setMenuEnabled('export-image',    true);
+        _setMenuEnabled('view-zoom-in',    true);
+        _setMenuEnabled('view-zoom-out',   true);
+        _setMenuEnabled('view-fit',        true);
+        _setMenuEnabled('view-fit-labels', true);
+        _setMenuEnabled('tree-order-up',   true);
+        _setMenuEnabled('tree-order-down', true);
       }
 
       // Restore interaction mode (file settings take priority).
