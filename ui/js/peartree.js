@@ -1025,38 +1025,11 @@ import { createAnnotImporter } from './annotationsio.js';
     }
   }
 
-  /** Opens a tree file using the OS-native dialog.
-   *  In Tauri, WKWebView blocks file-input clicks from async callbacks
-   *  (menu events, keyboard shortcuts), so we use a Rust command instead.
-   *  In the web app we fall back to the hidden file input. */
+  /** Opens a tree file. Delegates to window.peartree.pickFile(), which defaults
+   *  to clicking the hidden <input type="file"> but can be overridden by a
+   *  platform adapter (e.g. peartree-tauri.js) to use a native dialog. */
   async function pickTreeFile() {
-    if (window.__TAURI__?.core?.invoke) {
-      try {
-        const result = await window.__TAURI__.core.invoke('pick_tree_file');
-        if (result) await loadTree(result.content, result.name);
-      } catch (err) {
-        console.error('pick_tree_file failed:', err);
-      }
-    } else {
-      fileInput.click();
-    }
-  }
-
-  // ── Tauri: open-file event (drag-to-icon / double-click / file association) ──
-  if (window.__TAURI__?.event?.listen) {
-    window.__TAURI__.event.listen('open-file', async (event) => {
-      const filePath = event.payload;
-      if (!filePath) return;
-      try {
-        const content = await window.__TAURI__.core.invoke('read_file_content', { path: filePath });
-        const name = filePath.split('/').pop() || 'tree';
-        closeModal();
-        await loadTree(content, name);
-      } catch (err) {
-        openModal();
-        setModalError(err.message);
-      }
-    });
+    await window.peartree.pickFile();
   }
 
   // ── URL tab ───────────────────────────────────────────────────────────────
@@ -2919,73 +2892,41 @@ import { createAnnotImporter } from './annotationsio.js';
     }
   });
 
-  // ── Native menu bridge (Tauri only) ─────────────────────────────────────
-  // window.__TAURI__ is available when withGlobalTauri:true is set in tauri.conf.json.
-  // The guard means this code is silently skipped when running in a plain browser.
-
-  // Sync native menu item enabled state with toolbar button state.
-  // Initialised to a no-op so bindControls() can call it unconditionally;
-  // replaced below with the real invoke-based helper when running under Tauri.
+  // Sync native menu item enabled state with a platform bridge.
+  // Initialised to a no-op; override via window.peartree.setMenuEnabledImpl().
   let _setMenuEnabled = () => {};
 
-  if (window.__TAURI__?.event) {
-    // Use a Tauri command to enable/disable native menu items.
-    // invoke() is always available under withGlobalTauri and needs no extra capabilities.
-    if (window.__TAURI__?.core?.invoke) {
-      _setMenuEnabled = (id, enabled) => {
-        window.__TAURI__.core.invoke('set_menu_item_enabled', { id, enabled }).catch(() => {});
-      };
-    }
+  // ── Public API for framework adapters ────────────────────────────────────
+  // Exposed on window.peartree so that platform-specific glue scripts (e.g.
+  // peartree-tauri.js) can hook in without modifying this file.
+  window.peartree = {
+    /** Load a tree from a text string (async). */
+    loadTree,
+    openModal,
+    closeModal,
+    setModalError,
 
-    window.__TAURI__.event.listen('menu-event', ({ payload: id }) => {
-      switch (id) {
-        // ── File menu ────────────────────────────────────────────────────────
-        case 'open-file':  pickTreeFile();                                        break;
-        case 'open-tree':  document.getElementById('btn-open-tree').click();       break;
-        case 'import-annot': document.getElementById('btn-import-annot').click();   break;
-        case 'export-tree':  document.getElementById('btn-export-tree').click();    break;
-        case 'export-image': document.getElementById('btn-export-graphic').click(); break;
-        case 'show-help':    document.getElementById('btn-help').click();           break;
-        // ── View menu ────────────────────────────────────────────────────────
-        case 'view-back':       document.getElementById('btn-back').click();        break;
-        case 'view-forward':    document.getElementById('btn-forward').click();     break;
-        case 'view-drill':      document.getElementById('btn-drill').click();       break;
-        case 'view-climb':      document.getElementById('btn-climb').click();       break;
-        case 'view-home':       document.getElementById('btn-home').click();        break;
-        case 'view-zoom-in':    document.getElementById('btn-zoom-in').click();     break;
-        case 'view-zoom-out':   document.getElementById('btn-zoom-out').click();    break;
-        case 'view-fit':        document.getElementById('btn-fit').click();         break;
-        case 'view-fit-labels': document.getElementById('btn-fit-labels').click();  break;
-        case 'view-info':       document.getElementById('btn-node-info').click();   break;
-        // ── Tree menu ────────────────────────────────────────────────────────
-        case 'tree-rotate':        document.getElementById('btn-rotate').click();            break;
-        case 'tree-rotate-all':    document.getElementById('btn-rotate-all').click();        break;
-        case 'tree-order-up':      document.getElementById('btn-order-asc').click();         break;
-        case 'tree-order-down':    document.getElementById('btn-order-desc').click();        break;
-        case 'tree-reroot':        document.getElementById('btn-reroot').click();            break;
-        case 'tree-midpoint':      document.getElementById('btn-midpoint-root').click();     break;
-        case 'tree-hide':          document.getElementById('btn-hide').click();              break;
-        case 'tree-show':          document.getElementById('btn-show').click();              break;
-        case 'tree-paint':         document.getElementById('btn-apply-user-colour').click(); break;
-        case 'tree-clear-colours': document.getElementById('btn-clear-user-colour').click(); break;
-        // ── Edit menu ────────────────────────────────────────────────────────
-        case 'select-all': {
-          // If focus is inside a text input let the OS handle it natively
-          const tag = document.activeElement?.tagName;
-          if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) {
-            document.execCommand('selectAll');
-          } else if (renderer.nodes) {
-            const allTipIds = new Set(renderer.nodes.filter(n => n.isTip).map(n => n.id));
-            renderer._selectedTipIds = allTipIds;
-            renderer._mrcaNodeId = null;
-            if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(allTipIds.size > 0);
-            renderer._dirty = true;
-          }
-          break;
-        }
+    /** Select all tips in the current tree (e.g. for Edit > Select All). */
+    selectAll() {
+      if (renderer.nodes) {
+        const allTipIds = new Set(renderer.nodes.filter(n => n.isTip).map(n => n.id));
+        renderer._selectedTipIds = allTipIds;
+        renderer._mrcaNodeId = null;
+        if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(allTipIds.size > 0);
+        renderer._dirty = true;
       }
-    });
-  }
+    },
+
+    /** Trigger a file open. Default: click the hidden <input type="file">.
+     *  Override with a platform-specific implementation (e.g. Tauri native dialog). */
+    pickFile: () => fileInput.click(),
+
+    /** Register a function (id, enabled) => void to sync a native menu item's
+     *  enabled state. Called internally on every state change; default is a no-op. */
+    setMenuEnabledImpl(fn) { _setMenuEnabled = fn; },
+  };
+
+  window.dispatchEvent(new CustomEvent('peartree-ready'));
 
 })();
 

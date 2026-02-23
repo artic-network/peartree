@@ -20,8 +20,12 @@ fn set_menu_item_enabled(app: tauri::AppHandle, id: &str, enabled: bool) {
 /// Opens a native OS file picker filtered to tree file types, reads the
 /// selected file, and returns `{"name": "...", "content": "..."}` to JS.
 /// Returns `null` if the user cancels.
+///
+/// Must be `async` so Tauri runs it on a worker thread instead of the main
+/// thread — blocking_pick_file() blocks its caller, and calling it on the
+/// main thread freezes the WebKit event loop (spinning wheel).
 #[tauri::command]
-fn pick_tree_file(app: tauri::AppHandle) -> Result<Option<serde_json::Value>, String> {
+async fn pick_tree_file(app: tauri::AppHandle) -> Result<Option<serde_json::Value>, String> {
     let result = app
         .dialog()
         .file()
