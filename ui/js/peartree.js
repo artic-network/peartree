@@ -84,6 +84,7 @@ import * as commands from './commands.js';
   const btnResetSettings       = document.getElementById('btn-reset-settings');
   const btnImportAnnot         = document.getElementById('btn-import-annot');
   const btnExportTree          = document.getElementById('btn-export-tree');
+  const btnMPR                 = document.getElementById('btn-midpoint-root');
   const tipColourPickerEl            = document.getElementById('btn-node-colour');
   const btnApplyUserColour           = document.getElementById('btn-apply-user-colour');
   const btnClearUserColour           = document.getElementById('btn-clear-user-colour');
@@ -1483,17 +1484,13 @@ import * as commands from './commands.js';
       _cachedMidpoint = null;
       isExplicitlyRooted = graph.rooted;
 
-      // Disable reroot / midpoint-root for explicitly rooted trees.
-      // (bindControls may not have run yet on first load; the selector always works.)
-      const btnMPR = document.getElementById('btn-midpoint-root');
-      btnMPR.title = isExplicitlyRooted
-        ? 'Tree is explicitly rooted (root has annotations) — rerooting disabled'
-        : 'Midpoint root (⌘M)';
+      // Show/hide the Select + Reroot toolbar sections based on whether the
+      // tree is explicitly rooted. display:contents keeps the flex layout intact.
+      document.getElementById('reroot-controls').style.display =
+        isExplicitlyRooted ? 'none' : 'contents';
+
       commands.setEnabled('tree-midpoint', !isExplicitlyRooted);
-      const btnRR = document.getElementById('btn-reroot');
-      btnRR.title = isExplicitlyRooted
-        ? 'Tree is explicitly rooted (root has annotations) — rerooting disabled'
-        : 'Reroot tree at selection';
+      commands.setEnabled('tree-reroot',   false); // re-enabled on selection by bindControls
 
       // Populate the "Colour by" dropdowns. user_colour is always the first option.
       const schema = graph.annotationSchema;

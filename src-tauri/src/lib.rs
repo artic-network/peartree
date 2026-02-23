@@ -198,7 +198,7 @@ pub fn run() {
             let view_forward    = MenuItem::with_id(app, "view-forward",    "Forward",            true, Some("CmdOrCtrl+]"))?;
             let view_drill      = MenuItem::with_id(app, "view-drill",      "Drill into Subtree",  true, Some("CmdOrCtrl+Shift+."))?;
             let view_climb      = MenuItem::with_id(app, "view-climb",      "Climb Out One Level", true, Some("CmdOrCtrl+Shift+,"))?;
-            let view_home       = MenuItem::with_id(app, "view-home",       "Root",               true, Some("CmdOrCtrl+\\"))?;
+            let view_home       = MenuItem::with_id(app, "view-home",       "Return to Root",               true, Some("CmdOrCtrl+\\"))?;
             let view_zoom_in    = MenuItem::with_id(app, "view-zoom-in",    "Zoom In",    true, Some("CmdOrCtrl+="))?;
             let view_zoom_out   = MenuItem::with_id(app, "view-zoom-out",   "Zoom Out",   true, Some("CmdOrCtrl+-"))?;
             let view_fit        = MenuItem::with_id(app, "view-fit",        "Fit All",    true, Some("CmdOrCtrl+0"))?;
@@ -206,18 +206,18 @@ pub fn run() {
             let view_info       = MenuItem::with_id(app, "view-info",       "Get Info...", true, Some("CmdOrCtrl+I"))?;
 
             let view_menu = Submenu::with_items(app, "View", true, &[
-                &view_back,
-                &view_forward,
-                &PredefinedMenuItem::separator(app)?,
-                &view_climb,
-                &view_drill,
-                &view_home,
-                &PredefinedMenuItem::separator(app)?,
                 &view_zoom_in,
                 &view_zoom_out,
                 &PredefinedMenuItem::separator(app)?,
                 &view_fit,
                 &view_fit_labels,
+                &PredefinedMenuItem::separator(app)?,
+                &view_back,
+                &view_forward,
+                &PredefinedMenuItem::separator(app)?,
+                &view_drill,
+                &view_climb,
+                &view_home,
                 &PredefinedMenuItem::separator(app)?,
                 &view_info,
             ])?;
@@ -225,8 +225,8 @@ pub fn run() {
             // ── Tree ─────────────────────────────────────────────────────────
             let tree_rotate        = MenuItem::with_id(app, "tree-rotate",        "Rotate Node",    true, None::<&str>)?;
             let tree_rotate_all    = MenuItem::with_id(app, "tree-rotate-all",    "Rotate Clade",   true, None::<&str>)?;
-            let tree_order_up      = MenuItem::with_id(app, "tree-order-up",      "Order Up",       true, Some("CmdOrCtrl+D"))?;
-            let tree_order_down    = MenuItem::with_id(app, "tree-order-down",    "Order Down",     true, Some("CmdOrCtrl+U"))?;
+            let tree_order_up      = MenuItem::with_id(app, "tree-order-up",      "Order Nodes Up",       true, Some("CmdOrCtrl+U"))?;
+            let tree_order_down    = MenuItem::with_id(app, "tree-order-down",    "Order Nodes Down",     true, Some("CmdOrCtrl+D"))?;
             let tree_reroot        = MenuItem::with_id(app, "tree-reroot",        "Re-root Tree",   true, None::<&str>)?;
             let tree_midpoint      = MenuItem::with_id(app, "tree-midpoint",      "Midpoint Root",  true, Some("CmdOrCtrl+M"))?;
             let tree_hide          = MenuItem::with_id(app, "tree-hide",          "Hide Nodes",     true, None::<&str>)?;
@@ -235,11 +235,11 @@ pub fn run() {
             let tree_clear_colours = MenuItem::with_id(app, "tree-clear-colours", "Clear Colours",  true, None::<&str>)?;
 
             let tree_menu = Submenu::with_items(app, "Tree", true, &[
-                &tree_rotate,
-                &tree_rotate_all,
-                &PredefinedMenuItem::separator(app)?,
                 &tree_order_up,
                 &tree_order_down,
+                &PredefinedMenuItem::separator(app)?,
+                &tree_rotate,
+                &tree_rotate_all,
                 &PredefinedMenuItem::separator(app)?,
                 &tree_reroot,
                 &tree_midpoint,

@@ -1020,8 +1020,8 @@
     <!-- Order -->
     <span class="form-label-sm" style="padding: 0 2px 0 4px;">Order:</span>
     <div class="btn-group" role="group" aria-label="Branch order">
-      <button id="btn-order-asc"  class="btn btn-sm btn-outline-secondary" disabled title="Order branches ascending by clade size (⌘D)"><i class="bi bi-sort-up"></i></button>
-      <button id="btn-order-desc" class="btn btn-sm btn-outline-secondary" disabled title="Order branches descending by clade size (⌘U)"><i class="bi bi-sort-down"></i></button>
+      <button id="btn-order-asc"  class="btn btn-sm btn-outline-secondary" disabled title="Order branches ascending by clade size (⌘U)"><i class="bi bi-sort-up"></i></button>
+      <button id="btn-order-desc" class="btn btn-sm btn-outline-secondary" disabled title="Order branches descending by clade size (⌘D)"><i class="bi bi-sort-down"></i></button>
     </div>
     <div class="pt-toolbar-sep"></div>
 
@@ -1034,6 +1034,9 @@
         title="Rotate all nodes in subtree (reverse children at every level)"><i class="bi bi-symmetry-horizontal" style="display:inline-block;transform:scaleX(-1)"></i></button>
     </div>
     <div class="pt-toolbar-sep"></div>
+
+    <!-- Select mode + Reroot (hidden for explicitly-rooted trees; shown by JS on load) -->
+    <div id="reroot-controls" style="display:none">
 
     <!-- Select mode -->
     <span class="form-label-sm" style="padding: 0 2px 0 4px;">Select:</span>
@@ -1048,6 +1051,8 @@
     <button id="btn-reroot" class="btn btn-sm btn-outline-secondary" disabled title="Reroot tree at selection"><i class="bi bi-reply-fill"></i></button>
     <button id="btn-midpoint-root" class="btn btn-sm btn-outline-secondary" disabled title="Midpoint root (⌘M)"><i class="bi bi-vr" style="display:inline-block;transform:rotate(90deg)"></i></button>
     <div class="pt-toolbar-sep"></div>
+
+    </div><!-- /#reroot-controls -->
 
     <!-- Hide / Show collapsed subtree -->
     <span class="form-label-sm" style="padding: 0 2px 0 4px;">Hide:</span>

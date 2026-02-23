@@ -64,8 +64,8 @@ _define({ id: 'view-info',       label: 'Get Info…',           shortcut: 'CmdO
 // Tree
 _define({ id: 'tree-rotate',        label: 'Rotate Node',    shortcut: null,          group: 'tree', enabled: false, buttonId: 'btn-rotate'              });
 _define({ id: 'tree-rotate-all',    label: 'Rotate Clade',   shortcut: null,          group: 'tree', enabled: false, buttonId: 'btn-rotate-all'          });
-_define({ id: 'tree-order-up',      label: 'Order Up',       shortcut: 'CmdOrCtrl+D', group: 'tree', enabled: false, buttonId: 'btn-order-asc'           });
-_define({ id: 'tree-order-down',    label: 'Order Down',     shortcut: 'CmdOrCtrl+U', group: 'tree', enabled: false, buttonId: 'btn-order-desc'          });
+_define({ id: 'tree-order-up',      label: 'Order Up',       shortcut: 'CmdOrCtrl+U', group: 'tree', enabled: false, buttonId: 'btn-order-asc'           });
+_define({ id: 'tree-order-down',    label: 'Order Down',     shortcut: 'CmdOrCtrl+D', group: 'tree', enabled: false, buttonId: 'btn-order-desc'          });
 _define({ id: 'tree-reroot',        label: 'Re-root Tree',   shortcut: null,          group: 'tree', enabled: false, buttonId: 'btn-reroot'              });
 _define({ id: 'tree-midpoint',      label: 'Midpoint Root',  shortcut: 'CmdOrCtrl+M', group: 'tree', enabled: false, buttonId: 'btn-midpoint-root'       });
 _define({ id: 'tree-hide',          label: 'Hide Nodes',     shortcut: null,          group: 'tree', enabled: false, buttonId: 'btn-hide'                });
