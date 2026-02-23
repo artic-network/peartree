@@ -69,6 +69,26 @@
     }
   };
 
+  // ── In Tauri, Export Tree / Export Graphic show native save-file dialogs
+  //    instead of triggering browser downloads.  The modal dialogs still appear
+  //    so the user can choose format, scope, etc. — only the final save step
+  //    is replaced.
+  const _nativeSave = async ({ content, contentBase64, base64 = false, filename, filterName, extensions }) => {
+    try {
+      await invoke('save_file', {
+        filename,
+        content:    base64 ? contentBase64 : content,
+        base64,
+        filterName,
+        extensions,
+      });
+    } catch (err) {
+      app.showErrorDialog(err.message ?? String(err));
+    }
+  };
+  app.setExportSaveHandler(_nativeSave);
+  app.setGraphicsSaveHandler(_nativeSave);
+
   // ── Native menu enabled-state sync ────────────────────────────────────────
   // Subscribe to state changes from the JS command registry. Rust sets the
   // correct initial disabled states at launch; this handles all dynamic

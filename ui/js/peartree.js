@@ -1135,6 +1135,13 @@ import * as commands from './commands.js';
   const exportFooter   = document.getElementById('export-tree-footer');
   const exportTitleEl  = document.getElementById('export-tree-title');
 
+  // Optional save-handler injected by platform adapters (e.g. Tauri).
+  // When set, the "Download" button becomes "Save" and calls this function
+  // with { content, filename, mimeType, filterName, extensions } instead of
+  // triggering a browser download.
+  let _exportSaveHandler   = null;
+  let _graphicsSaveHandler = null;
+
   function _openExportDialog() {
     if (!graph) return;
     exportOverlay.classList.add('open');
@@ -1195,7 +1202,7 @@ import * as commands from './commands.js';
 
     exportFooter.innerHTML = `
       <button id="exp-cancel-btn"   class="btn btn-sm btn-secondary">Cancel</button>
-      <button id="exp-download-btn" class="btn btn-sm btn-primary"><i class="bi bi-download me-1"></i>Download</button>`;
+      <button id="exp-download-btn" class="btn btn-sm btn-primary"><i class="bi bi-${_exportSaveHandler ? 'folder-check' : 'download'} me-1"></i>${_exportSaveHandler ? 'Export' : 'Download'}</button>`;
 
     document.getElementById('exp-cancel-btn').addEventListener('click', _closeExportDialog);
     document.getElementById('exp-download-btn').addEventListener('click', _doExport);
@@ -1284,17 +1291,25 @@ import * as commands from './commands.js';
       ext     = 'nwk';
     }
 
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url  = URL.createObjectURL(blob);
-    const a    = Object.assign(document.createElement('a'), { href: url, download: `tree.${ext}` });
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    if (_exportSaveHandler) {
+      _exportSaveHandler({
+        content,
+        filename:   `tree.${ext}`,
+        mimeType:   'text/plain',
+        filterName: format === 'nexus' ? 'NEXUS files' : 'Newick files',
+        extensions: [ext],
+      });
+    } else {
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url  = URL.createObjectURL(blob);
+      const a    = Object.assign(document.createElement('a'), { href: url, download: `tree.${ext}` });
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
     _closeExportDialog();
   }
-
-  // ── Export Graphic ─────────────────────────────────────────────────────────
 
   const btnExportGraphic   = document.getElementById('btn-export-graphic');
   const exportGraphicOverlay = document.getElementById('export-graphic-overlay');
@@ -1351,7 +1366,7 @@ import * as commands from './commands.js';
 
     exportGraphicFooter.innerHTML = `
       <button id="expg-cancel-btn"   class="btn btn-sm btn-secondary">Cancel</button>
-      <button id="expg-download-btn" class="btn btn-sm btn-primary"><i class="bi bi-download me-1"></i>Download</button>`;
+      <button id="expg-download-btn" class="btn btn-sm btn-primary"><i class="bi bi-${_graphicsSaveHandler ? 'folder-check' : 'download'} me-1"></i>${_graphicsSaveHandler ? 'Export' : 'Download'}</button>`;
 
     const _updateExpgHint = () => {
       const { totalW, totalH, axH, axVisible } = viewportDims({ canvas, axisCanvas, legendLeftCanvas, legendRightCanvas });
@@ -1390,20 +1405,46 @@ import * as commands from './commands.js';
             (renderer.maxY + 1) * renderer.scaleY + (axVisible ? axH : 0)) * 2)
         : Math.round(totalH * 2);
 
-      compositeViewPng({ renderer, canvas, axisCanvas, legendLeftCanvas, legendRightCanvas, axisRenderer }, targetW, targetH, fullTree, transparent).convertToBlob({ type: 'image/png' }).then(blob => {
-        const url = URL.createObjectURL(blob);
-        const a   = Object.assign(document.createElement('a'), { href: url, download: `${filename}.png` });
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+      compositeViewPng({ renderer, canvas, axisCanvas, legendLeftCanvas, legendRightCanvas, axisRenderer }, targetW, targetH, fullTree, transparent).convertToBlob({ type: 'image/png' }).then(async blob => {
+        if (_graphicsSaveHandler) {
+          const arrayBuf = await blob.arrayBuffer();
+          const bytes    = new Uint8Array(arrayBuf);
+          let binary = '';
+          for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+          _graphicsSaveHandler({
+            contentBase64: btoa(binary),
+            base64:        true,
+            filename:      `${filename}.png`,
+            mimeType:      'image/png',
+            filterName:    'PNG images',
+            extensions:    ['png'],
+          });
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a   = Object.assign(document.createElement('a'), { href: url, download: `${filename}.png` });
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
       });
     } else {
       const svgStr = buildGraphicSVG({ renderer, canvas, axisCanvas, legendLeftCanvas, legendRightCanvas, axisRenderer }, fullTree, transparent);
       if (!svgStr) return;
-      const blob = new Blob([svgStr], { type: 'image/svg+xml' });
-      const url  = URL.createObjectURL(blob);
-      const a    = Object.assign(document.createElement('a'), { href: url, download: `${filename}.svg` });
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      if (_graphicsSaveHandler) {
+        _graphicsSaveHandler({
+          content:    svgStr,
+          base64:     false,
+          filename:   `${filename}.svg`,
+          mimeType:   'image/svg+xml',
+          filterName: 'SVG images',
+          extensions: ['svg'],
+        });
+      } else {
+        const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+        const url  = URL.createObjectURL(blob);
+        const a    = Object.assign(document.createElement('a'), { href: url, download: `${filename}.svg` });
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
     }
     _closeGraphicsDialog();
   }
@@ -3026,6 +3067,17 @@ import * as commands from './commands.js';
     /** Annotation importer — platform adapters can call loadFile(name, content)
      *  to bypass the picker phase and go straight to the config dialog. */
     annotImporter,
+
+    /** Override the tree-export action for the current platform.
+     *  fn({ content, filename, mimeType, filterName, extensions }) — called
+     *  instead of a browser download when the user clicks Export/Download in
+     *  the Export Tree dialog.  Set to null to restore browser behaviour. */
+    setExportSaveHandler:    (fn) => { _exportSaveHandler   = fn; },
+
+    /** Override the graphic-export action for the current platform.
+     *  fn({ content|contentBase64, base64, filename, mimeType, filterName, extensions })
+     *  Set to null to restore browser behaviour. */
+    setGraphicsSaveHandler:  (fn) => { _graphicsSaveHandler = fn; },
   };
 
   window.dispatchEvent(new CustomEvent('peartree-ready'));

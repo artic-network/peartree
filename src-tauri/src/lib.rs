@@ -4,6 +4,7 @@ use tauri::{
 };
 use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_dialog::DialogExt;
+use base64::engine::{Engine as _, general_purpose::STANDARD as BASE64};
 use std::collections::HashMap;
 use std::sync::{
     atomic::{AtomicU32, Ordering},
@@ -95,6 +96,49 @@ async fn pick_annot_file(app: tauri::AppHandle) -> Result<Option<serde_json::Val
     }
 }
 
+/// Shows a native save-file dialog and writes `content` to the chosen path.
+///
+/// * `filename`   – suggested filename shown in the dialog (e.g. "tree.nexus")
+/// * `content`    – file content as a UTF-8 string **or** a Base64-encoded string
+///                  when `base64` is true (used for binary formats such as PNG)
+/// * `base64`     – when true, `content` is decoded from Base64 before writing
+/// * `filter_name`/ `extensions` – file-type filter shown in the dialog
+///
+/// Returns `true` if the file was saved, `false` if the user cancelled.
+#[tauri::command]
+async fn save_file(
+    app: tauri::AppHandle,
+    filename: String,
+    content: String,
+    base64: bool,
+    filter_name: String,
+    extensions: Vec<String>,
+) -> Result<bool, String> {
+    let ext_refs: Vec<&str> = extensions.iter().map(|s| s.as_str()).collect();
+    let result = app
+        .dialog()
+        .file()
+        .set_file_name(&filename)
+        .add_filter(&filter_name, &ext_refs)
+        .blocking_save_file();
+
+    match result {
+        None => Ok(false),
+        Some(path) => {
+            let path = path.into_path().map_err(|e| e.to_string())?;
+            if base64 {
+                use std::io::Write;
+                let bytes = BASE64.decode(content.as_bytes()).map_err(|e| e.to_string())?;
+                std::fs::File::create(&path).map_err(|e| e.to_string())?
+                    .write_all(&bytes).map_err(|e| e.to_string())?;
+            } else {
+                std::fs::write(&path, content.as_bytes()).map_err(|e| e.to_string())?;
+            }
+            Ok(true)
+        }
+    }
+}
+
 /// Reads a file from the given absolute path and returns its content as a string.
 /// Used by the frontend to load a file that was opened via drag-to-icon or a
 /// file association double-click (the path is emitted via the "open-file" event).
@@ -142,7 +186,7 @@ fn take_pending_file(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![set_menu_item_enabled, pick_tree_file, pick_annot_file, read_file_content, new_window, take_pending_file])
+        .invoke_handler(tauri::generate_handler![set_menu_item_enabled, pick_tree_file, pick_annot_file, save_file, read_file_content, new_window, take_pending_file])
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_deep_link::init())
