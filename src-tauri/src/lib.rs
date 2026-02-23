@@ -2,6 +2,7 @@ use tauri::{
     menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu},
     Emitter,
 };
+use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_dialog::DialogExt;
 
 /// Called from JS to enable/disable a menu item by its string id.
@@ -45,13 +46,32 @@ fn pick_tree_file(app: tauri::AppHandle) -> Result<Option<serde_json::Value>, St
     }
 }
 
+/// Reads a file from the given absolute path and returns its content as a string.
+/// Used by the frontend to load a file that was opened via drag-to-icon or a
+/// file association double-click (the path is emitted via the "open-file" event).
+#[tauri::command]
+fn read_file_content(path: String) -> Result<String, String> {
+    std::fs::read_to_string(&path).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![set_menu_item_enabled, pick_tree_file])
+        .invoke_handler(tauri::generate_handler![set_menu_item_enabled, pick_tree_file, read_file_content])
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_deep_link::init())
         .setup(|app| {
+            // Forward any file opened via drag-to-icon or double-click (macOS file
+            // association) to the frontend as an "open-file" event with the file path.
+            let app_handle = app.handle().clone();
+            app.deep_link().on_open_url(move |event| {
+                for url in event.urls() {
+                    if let Ok(path) = url.to_file_path() {
+                        app_handle.emit("open-file", path.to_string_lossy().to_string()).ok();
+                    }
+                }
+            });
             // ── PearTree (app menu) ───────────────────────────────────────────
             let app_menu = Submenu::with_items(app, "PearTree", true, &[
                 &PredefinedMenuItem::about(app, None, Some(AboutMetadata {

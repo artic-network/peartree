@@ -1042,6 +1042,23 @@ import { createAnnotImporter } from './annotationsio.js';
     }
   }
 
+  // ── Tauri: open-file event (drag-to-icon / double-click / file association) ──
+  if (window.__TAURI__?.event?.listen) {
+    window.__TAURI__.event.listen('open-file', async (event) => {
+      const filePath = event.payload;
+      if (!filePath) return;
+      try {
+        const content = await window.__TAURI__.core.invoke('read_file_content', { path: filePath });
+        const name = filePath.split('/').pop() || 'tree';
+        closeModal();
+        await loadTree(content, name);
+      } catch (err) {
+        openModal();
+        setModalError(err.message);
+      }
+    });
+  }
+
   // ── URL tab ───────────────────────────────────────────────────────────────
 
   document.getElementById('btn-load-url').addEventListener('click', async () => {
