@@ -3,6 +3,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Colour used for nodes / tips whose annotation value is absent or unknown
+ * (null, undefined, empty string, or the conventional '?' missing-data marker).
+ */
+export const MISSING_DATA_COLOUR = '#aaaaaa';
+
+/**
  * Named categorical palettes for discrete (categorical / ordinal) annotations.
  * Each value is an ordered array of CSS hex colour strings.  Values cycle when
  * there are more annotation categories than palette entries.

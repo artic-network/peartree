@@ -36,11 +36,21 @@ export function parseNewick(newickString, tipNameMap = null) {
           annotationKey = t.replace('.', '_');
         } else {
           if (isAnnotationARange) {
-            const arrNum = t !== '' ? Number(t) : NaN;
-            currentNode.annotations[annotationKey].push(!isNaN(arrNum) ? arrNum : t);
+            // Treat '?' and empty string as null (missing data).
+            if (t === '?' || t === '') {
+              currentNode.annotations[annotationKey].push(null);
+            } else {
+              const arrNum = Number(t);
+              currentNode.annotations[annotationKey].push(!isNaN(arrNum) ? arrNum : t);
+            }
           } else {
-            const num = t !== '' ? Number(t) : NaN;
-            currentNode.annotations[annotationKey] = !isNaN(num) ? num : t;
+            // Treat '?' and empty string as null (missing data).
+            if (t === '?' || t === '') {
+              currentNode.annotations[annotationKey] = null;
+            } else {
+              const num = Number(t);
+              currentNode.annotations[annotationKey] = !isNaN(num) ? num : t;
+            }
           }
         }
       }

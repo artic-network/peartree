@@ -1545,27 +1545,29 @@ import * as commands from './commands.js';
 
   /** Repopulate annotation dropdowns (tipColourBy, nodeColourBy, legendAnnotEl) after schema change. */
   function _refreshAnnotationUIs(schema) {
-    function repopulate(sel, isLegend = false) {
+    // filter: 'tips' → onTips, 'nodes' → onNodes, 'all' → no filter
+    function repopulate(sel, { isLegend = false, filter = 'all' } = {}) {
       const prev = sel.value;
       // Remove everything after the first static option (user colour / (none)).
       while (sel.options.length > 1) sel.remove(1);
       for (const [name, def] of schema) {
         if (name === 'user_colour') continue; // static first option already in HTML
-        if (def.dataType !== 'list') {
-          const opt = document.createElement('option');
-          opt.value = name; opt.textContent = name;
-          sel.appendChild(opt);
-        }
+        if (def.dataType === 'list') continue;
+        if (filter === 'tips'  && !def.onTips)  continue;
+        if (filter === 'nodes' && !def.onNodes) continue;
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        sel.appendChild(opt);
       }
       sel.disabled = false;
       // Restore previous selection if still available; legend falls back to '' (none), colour-by to user_colour.
       sel.value = [...sel.options].some(o => o.value === prev) ? prev
                   : (isLegend ? '' : 'user_colour');
     }
-    repopulate(tipColourBy);
-    repopulate(nodeColourBy);
-    repopulate(labelColourBy);
-    repopulate(legendAnnotEl, /*isLegend*/ true);
+    repopulate(tipColourBy,   { filter: 'tips'  });
+    repopulate(nodeColourBy,  { filter: 'nodes' });
+    repopulate(labelColourBy, { filter: 'tips'  });
+    repopulate(legendAnnotEl, { isLegend: true  });
     // Refresh palette selects to match current colour-by selections after annotation schema changes.
     _updatePaletteSelect(tipPaletteSelect,   tipPaletteRow,   tipColourBy.value);
     _updatePaletteSelect(nodePaletteSelect,  nodePaletteRow,  nodeColourBy.value);
@@ -1632,25 +1634,27 @@ import * as commands from './commands.js';
 
       // Populate the "Colour by" dropdowns. user_colour is always the first option.
       const schema = graph.annotationSchema;
-      function _populateColourBy(sel) {
+      // filter: 'tips' → only annotations on tips, 'nodes' → only on internals, 'all' → no filter
+      function _populateColourBy(sel, filter = 'all') {
         while (sel.options.length > 0) sel.remove(0);
         const uc = document.createElement('option');
         uc.value = 'user_colour'; uc.textContent = 'user colour';
         sel.appendChild(uc);
         for (const [name, def] of schema) {
           if (name === 'user_colour') continue;
-          if (def.dataType !== 'list') {
-            const opt = document.createElement('option');
-            opt.value = name; opt.textContent = name;
-            sel.appendChild(opt);
-          }
+          if (def.dataType === 'list') continue;
+          if (filter === 'tips'  && !def.onTips)  continue;
+          if (filter === 'nodes' && !def.onNodes) continue;
+          const opt = document.createElement('option');
+          opt.value = name; opt.textContent = name;
+          sel.appendChild(opt);
         }
         sel.disabled = false;
         sel.value = 'user_colour';
       }
-      _populateColourBy(tipColourBy);
-      _populateColourBy(nodeColourBy);
-      _populateColourBy(labelColourBy);
+      _populateColourBy(tipColourBy,   'tips');
+      _populateColourBy(nodeColourBy,  'nodes');
+      _populateColourBy(labelColourBy, 'tips');
 
       // Legend select: blank "(none)" first, then annotations (no user_colour).
       while (legendAnnotEl.options.length > 1) legendAnnotEl.remove(1);

@@ -4,7 +4,8 @@
 
 import { computeLayoutFromGraph } from './treeutils.js';
 import { getCategoricalPalette, getSequentialPalette, lerpSequential,
-         DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE } from './palettes.js';
+         DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
+         MISSING_DATA_COLOUR } from './palettes.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Canvas renderer
@@ -613,6 +614,7 @@ export class TreeRenderer {
     // user_colour: values ARE CSS colours – identity scale (value → value).
     if (key === 'user_colour') {
       const identity = new Map();
+      identity.set('__identity__', true);  // marker: missing → use default colour, not grey
       (def.values || []).forEach(v => identity.set(v, v));
       return identity;
     }
@@ -635,16 +637,23 @@ export class TreeRenderer {
 
   /** Return a CSS colour string for a value looked up in the given scale, or null. */
   _colourFromScale(value, scale) {
-    if (!scale || value === null || value === undefined) return null;
+    if (!scale) return null;
+    // Missing value: absent key, null/undefined, or '?' missing-data marker.
+    // The identity scale (user_colour) is exempt — missing means no colour assigned,
+    // so we return null and let the caller fall back to the default shape colour.
+    if (value === null || value === undefined || value === '?') {
+      return scale.get('__identity__') ? null : MISSING_DATA_COLOUR;
+    }
     if (scale.has(value)) return scale.get(value);
-    // Numeric interpolation
+    // Numeric interpolation for real/integer scales.
     if (scale.has('__min__')) {
       const min  = scale.get('__min__');
       const max  = scale.get('__max__');
       const t    = max > min ? (value - min) / (max - min) : 0.5;
       return lerpSequential(t, getSequentialPalette(scale.get('__palette__')));
     }
-    return null;
+    // Value not found in categorical scale — treat as missing.
+    return MISSING_DATA_COLOUR;
   }
 
   _tipColourForValue(value)   { return this._colourFromScale(value, this._tipColourScale);   }

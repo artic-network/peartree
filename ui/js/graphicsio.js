@@ -4,7 +4,8 @@
 
 import { AxisRenderer } from './axisrenderer.js';
 import { getCategoricalPalette, getSequentialPalette,
-         DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE } from './palettes.js';
+         DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
+         MISSING_DATA_COLOUR } from './palettes.js';
 
 /** @private HTML/SVG attribute–safe string escaper. */
 function esc(s) {
@@ -259,12 +260,18 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
 
     if (ny > -MARGIN && ny < ttH + MARGIN) {
       if (node.isTip && tr > 0) {
-        const fill = renderer._tipColourScale?.get(node.annotations?.[renderer._tipColourBy]) || renderer.tipShapeColor;
+        const _tipVal = node.annotations?.[renderer._tipColourBy];
+        const fill = renderer._tipColourBy
+          ? (renderer._tipColourForValue(_tipVal) ?? MISSING_DATA_COLOUR)
+          : renderer.tipShapeColor;
         if (tipHaloSW > 0)
           bgTipParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${esc(tipBgColor)}" stroke="${esc(tipBgColor)}" stroke-width="${tipHaloSW}"/>`);
         fgTipParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${esc(fill)}"/>`);
       } else if (!node.isTip && nr > 0) {
-        const fill = renderer._nodeColourScale?.get(node.annotations?.[renderer._nodeColourBy]) || renderer.nodeShapeColor;
+        const _nodeVal = node.annotations?.[renderer._nodeColourBy];
+        const fill = renderer._nodeColourBy
+          ? (renderer._nodeColourForValue(_nodeVal) ?? MISSING_DATA_COLOUR)
+          : renderer.nodeShapeColor;
         if (nodeHaloSW > 0)
           bgNodeParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${esc(nodeBgColor)}" stroke="${esc(nodeBgColor)}" stroke-width="${nodeHaloSW}"/>`);
         fgNodeParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${esc(fill)}"/>`);

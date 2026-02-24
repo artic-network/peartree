@@ -328,7 +328,7 @@ function inferAnnotationType(values) {
  * @returns {Map<string, AnnotationDef>}
  */
 export function buildAnnotationSchema(nodes) {
-  // Collect all annotation keys across all nodes.
+  // Collect all annotation keys across all nodes, tracking tip vs internal node presence.
   const allKeys = new Set();
   for (const node of nodes) {
     for (const k of Object.keys(node.annotations)) allKeys.add(k);
@@ -337,14 +337,21 @@ export function buildAnnotationSchema(nodes) {
   const schema = new Map();
   for (const name of allKeys) {
     const values = [];
+    let onTips  = false;
+    let onNodes = false;
     for (const node of nodes) {
       if (Object.prototype.hasOwnProperty.call(node.annotations, name)) {
         const v = node.annotations[name];
-        if (v !== null && v !== undefined) values.push(v);
+        if (v !== null && v !== undefined) {
+          values.push(v);
+          // Tips have exactly one adjacent (the parent); internal nodes have more.
+          if (node.adjacents.length === 1) onTips  = true;
+          else                             onNodes = true;
+        }
       }
     }
     if (values.length > 0) {
-      schema.set(name, { name, ...inferAnnotationType(values) });
+      schema.set(name, { name, onTips, onNodes, ...inferAnnotationType(values) });
     }
   }
   return schema;
