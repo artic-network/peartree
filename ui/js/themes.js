@@ -1,8 +1,9 @@
 // themes.js — built-in theme presets and application defaults
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const SETTINGS_KEY    = 'peartree-settings';
-export const USER_THEMES_KEY = 'peartree-user-themes';
+export const SETTINGS_KEY      = 'peartree-settings';
+export const USER_THEMES_KEY   = 'peartree-user-themes';
+export const DEFAULT_THEME_KEY = 'peartree-default-theme';
 
 export const THEMES = {
       "Minimal": {

@@ -4,7 +4,7 @@ import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointR
 import { TreeRenderer } from './treerenderer.js';
 import { LegendRenderer } from './legendrenderer.js';
 import { AxisRenderer  } from './axisrenderer.js';
-import { THEMES, DEFAULT_SETTINGS, SETTINGS_KEY, USER_THEMES_KEY } from './themes.js';
+import { THEMES, DEFAULT_SETTINGS, SETTINGS_KEY, USER_THEMES_KEY, DEFAULT_THEME_KEY } from './themes.js';
 import { viewportDims, compositeViewPng, buildGraphicSVG } from './graphicsio.js';
 import { createAnnotImporter } from './annotationsio.js';
 import * as commands from './commands.js';
@@ -80,6 +80,8 @@ import * as commands from './commands.js';
   const axisLineWidthSlider   = document.getElementById('axis-line-width-slider');
   const themeSelect            = document.getElementById('theme-select');
   const btnStoreTheme          = document.getElementById('btn-store-theme');
+  const btnDefaultTheme        = document.getElementById('btn-default-theme');
+  const btnRemoveTheme         = document.getElementById('btn-remove-theme');
   const btnFit                 = document.getElementById('btn-fit');
   const btnResetSettings       = document.getElementById('btn-reset-settings');
   const btnImportAnnot         = document.getElementById('btn-import-annot');
@@ -98,6 +100,11 @@ import * as commands from './commands.js';
 
   // Live theme registry: built-ins first, then any user-saved themes added on top.
   const themeRegistry = new Map(Object.entries(THEMES));
+
+  /** The user-set default theme for new windows (persisted in localStorage). */
+  let defaultTheme = localStorage.getItem(DEFAULT_THEME_KEY) || 'Artic';
+  // Guard: if the stored default is no longer in the registry fall back gracefully.
+  if (!themeRegistry.has(defaultTheme)) defaultTheme = Object.keys(THEMES)[0];
 
   /** Persist only user-defined (non-built-in) themes to localStorage. */
   function saveUserThemes() {
@@ -125,7 +132,7 @@ import * as commands from './commands.js';
     for (const name of themeRegistry.keys()) {
       const opt = document.createElement('option');
       opt.value = name;
-      opt.textContent = name;
+      opt.textContent = name + (name === defaultTheme ? ' ★' : '');
       themeSelect.appendChild(opt);
     }
     const customOpt = document.createElement('option');
@@ -182,8 +189,50 @@ import * as commands from './commands.js';
     saveUserThemes();
     _populateThemeSelect();
     themeSelect.value = name;
-    btnStoreTheme.disabled = true;
+    _syncThemeButtons();
     saveSettings();
+  }
+
+  /** Sync enabled/disabled state of all three theme action buttons. */
+  function _syncThemeButtons() {
+    const sel       = themeSelect.value;
+    const isCustom  = sel === 'custom';
+    const isBuiltIn = !!THEMES[sel];
+    const isDefault = sel === defaultTheme;
+    btnStoreTheme.disabled   = !isCustom;
+    btnDefaultTheme.disabled = isCustom || isDefault;
+    btnRemoveTheme.disabled  = isCustom || isBuiltIn;
+  }
+
+  /** Persist the currently selected named theme as the default for new windows. */
+  function setDefaultTheme() {
+    const name = themeSelect.value;
+    if (name === 'custom' || !themeRegistry.has(name)) return;
+    defaultTheme = name;
+    localStorage.setItem(DEFAULT_THEME_KEY, name);
+    // Repopulate select to refresh the ★ marker, then restore selection.
+    _populateThemeSelect();
+    themeSelect.value = name;
+    _syncThemeButtons();
+  }
+
+  /** Delete a user-saved (non-built-in) theme from the registry and localStorage. */
+  function removeTheme() {
+    const name = themeSelect.value;
+    if (name === 'custom' || THEMES[name]) return;
+    if (!confirm(`Remove the theme \u201c${name}\u201d?`)) return;
+    // If the removed theme was the default, fall back to the first built-in.
+    if (defaultTheme === name) {
+      defaultTheme = Object.keys(THEMES)[0];
+      localStorage.setItem(DEFAULT_THEME_KEY, defaultTheme);
+    }
+    themeRegistry.delete(name);
+    saveUserThemes();
+    _populateThemeSelect();
+    // Apply whichever theme the select fell back to.
+    const fallback = themeSelect.value;
+    if (themeRegistry.has(fallback)) applyTheme(fallback);
+    _syncThemeButtons();
   }
 
 
@@ -472,7 +521,7 @@ import * as commands from './commands.js';
     // Set themeSelect to the stored theme name (or 'custom' if not known).
     const themeName = s.theme && themeRegistry.has(s.theme) ? s.theme : (s.theme === 'custom' ? 'custom' : 'custom');
     themeSelect.value = themeName;
-    btnStoreTheme.disabled = (themeName !== 'custom');
+    _syncThemeButtons();
     if (renderer) {
       renderer.setSettings(_buildRendererSettings());
       if (s.axisColor) axisRenderer.setColor(s.axisColor);
@@ -634,7 +683,7 @@ import * as commands from './commands.js';
       axisRenderer._lastHash = '';
     }
     themeSelect.value = name;
-    btnStoreTheme.disabled = true;
+    _syncThemeButtons();
     saveSettings();
   }
 
@@ -644,16 +693,18 @@ import * as commands from './commands.js';
       themeSelect.value = 'custom';
       saveSettings();
     }
-    btnStoreTheme.disabled = false;
+    _syncThemeButtons();
   }
 
   btnResetSettings.addEventListener('click', applyDefaults);
   btnStoreTheme.addEventListener('click', storeTheme);
+  btnDefaultTheme.addEventListener('click', setDefaultTheme);
+  btnRemoveTheme.addEventListener('click', removeTheme);
 
   // Bootstrap theme registry and select options before restoring saved state.
   loadUserThemes();
   _populateThemeSelect();
-  btnStoreTheme.disabled = true;
+  _syncThemeButtons();
 
   // Load stored settings and immediately hydrate the visual DOM controls.
   const _saved = loadSettings();
@@ -839,7 +890,7 @@ import * as commands from './commands.js';
   // Apply stored visual settings to the renderer immediately.
   // If no saved theme exists yet, apply the default 'Artic' theme.
   if (!_saved.theme) {
-    applyTheme('Artic');
+    applyTheme(defaultTheme);
   } else {
     // DOM controls were already hydrated from _saved above; just sync the renderer.
     renderer.setSettings(_buildRendererSettings(), false);
@@ -2540,6 +2591,7 @@ import * as commands from './commands.js';
 
   themeSelect.addEventListener('change', () => {
     if (themeSelect.value !== 'custom') applyTheme(themeSelect.value);
+    else _syncThemeButtons();
   });
 
   canvasBgColorEl.addEventListener('input', () => {

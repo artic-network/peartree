@@ -570,7 +570,7 @@
       color: #e06961;
       opacity: 1;
     }
-    #btn-store-theme {
+    .pt-theme-btn {
       flex-shrink: 0;
       background: none;
       border: 1px solid rgba(255,255,255,0.15);
@@ -582,15 +582,27 @@
       opacity: 0.6;
       transition: background 0.15s, opacity 0.15s, border-color 0.15s;
     }
+    .pt-theme-btn:disabled {
+      opacity: 0.25;
+      cursor: default;
+    }
     #btn-store-theme:not(:disabled):hover {
       background: rgba(60,180,100,0.14);
       border-color: rgba(60,180,100,0.5);
       color: #6ddb96;
       opacity: 1;
     }
-    #btn-store-theme:disabled {
-      opacity: 0.25;
-      cursor: default;
+    #btn-default-theme:not(:disabled):hover {
+      background: rgba(25,166,153,0.14);
+      border-color: rgba(25,166,153,0.5);
+      color: #19A699;
+      opacity: 1;
+    }
+    #btn-remove-theme:not(:disabled):hover {
+      background: rgba(220,80,60,0.14);
+      border-color: rgba(220,80,60,0.5);
+      color: #e06961;
+      opacity: 1;
     }
     .pt-palette-section {
       margin-bottom: 18px;
@@ -1269,7 +1281,11 @@
       <h3><i class="bi bi-palette2"></i> Theme</h3>
       <div class="pt-palette-row">
         <select class="pt-palette-select" id="theme-select" style="flex:1"></select>
-        <button id="btn-store-theme" title="Save current settings as a named theme" disabled>Store</button>
+      </div>
+      <div class="pt-palette-row" style="gap:6px">
+        <button id="btn-store-theme"   class="pt-theme-btn" style="flex:1" title="Save current settings as a named theme" disabled>Store</button>
+        <button id="btn-default-theme" class="pt-theme-btn" style="flex:1" title="Set selected theme as the default for new windows" disabled>Default</button>
+        <button id="btn-remove-theme"  class="pt-theme-btn" style="flex:1" title="Remove this user-saved theme" disabled>Remove</button>
       </div>
     </div>
 
