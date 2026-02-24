@@ -39,6 +39,14 @@
     "longDescription": "PearTree is a fast, interactive phylogenetic tree viewer for genomic epidemiology.",
     "macOS": {
       "infoPlist": "./Info.plist"
+    },
+    "windows": {
+      "fileAssociations": [
+        {
+          "ext": ["tree", "tre", "nex", "nexus", "treefile", "nwk", "newick"],
+          "name": "PearTree phylogenetic tree file"
+        }
+      ]
     }
   },
     "plugins": {

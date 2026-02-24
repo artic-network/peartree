@@ -444,6 +444,24 @@ pub fn run() {
                 }
             }
 
+            // Windows file associations launch a fresh process with the file path
+            // as the first command-line argument (e.g. `peartree.exe file.tree`).
+            // The deep-link plugin does not intercept this, so we read args() here
+            // as a fallback.  Only store the path when PendingFiles["main"] was not
+            // already populated by the deep-link handler above.
+            #[cfg(target_os = "windows")]
+            {
+                let mut pending = app.state::<PendingFiles>().0.lock().unwrap();
+                if !pending.contains_key("main") {
+                    if let Some(arg) = std::env::args().nth(1) {
+                        let p = std::path::Path::new(&arg);
+                        if p.is_file() {
+                            pending.insert("main".to_string(), arg);
+                        }
+                    }
+                }
+            }
+
             // Forward every menu event to the focused window as a "menu-event".
             // Targeting only the focused window ensures each window only receives
             // events while it is active (correct behaviour for a global menu bar).
