@@ -52,6 +52,7 @@ async fn pick_tree_file(app: tauri::AppHandle) -> Result<Option<serde_json::Valu
             "Tree files",
             &["nex", "nexus", "tre", "tree", "treefile", "nwk", "newick", "txt"],
         )
+        .add_filter("All files", &["*"])
         .blocking_pick_file();
 
     match result {
@@ -79,6 +80,7 @@ async fn pick_annot_file(app: tauri::AppHandle) -> Result<Option<serde_json::Val
         .dialog()
         .file()
         .add_filter("Annotation files", &["csv", "tsv", "txt"])
+        .add_filter("All files", &["*"])
         .blocking_pick_file();
 
     match result {
