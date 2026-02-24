@@ -22,10 +22,14 @@
     window.addEventListener('peartree-ready', resolve, { once: true });
   });
 
-  const { invoke } = window.__TAURI__.core;
-  const { listen }  = window.__TAURI__.event;
-  const app         = window.peartree;
-  const registry    = app.commands;
+  const { invoke }        = window.__TAURI__.core;
+  const { listen }         = window.__TAURI__.event;
+  const { getCurrentWindow } = window.__TAURI__.window;
+  const app                = window.peartree;
+  const registry           = app.commands;
+
+  const setWindowTitle = (name) =>
+    getCurrentWindow().setTitle(`PearTree — ${name}`).catch(() => {});
 
   // ── File picker: native Tauri dialog ───────────────────────────────────
   // WKWebView blocks <input type="file"> clicks from async contexts, so we
@@ -42,6 +46,7 @@
           .catch(err => console.error('new_window failed:', err));
       } else {
         await app.loadTree(result.content, result.name);
+        setWindowTitle(result.name);
       }
     } catch (err) {
       app.showErrorDialog(err.message ?? String(err));
@@ -118,6 +123,7 @@
       const name = pending.split('/').pop() || 'tree';
       app.closeModal();
       await app.loadTree(content, name);
+      setWindowTitle(name);
     }
   } catch (err) {
     console.error('Failed to load pending file:', err);
@@ -141,6 +147,7 @@
       const name = filePath.split('/').pop() || 'tree';
       app.closeModal();
       await app.loadTree(content, name);
+      setWindowTitle(name);
     } catch (err) {
       app.showErrorDialog(err.message);
     }

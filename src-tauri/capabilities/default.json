@@ -4,6 +4,7 @@
   "windows": ["*"],
   "permissions": [
     "core:default",
+    "core:window:allow-set-title",
     "opener:default",
     "dialog:allow-open",
     "dialog:allow-save"
