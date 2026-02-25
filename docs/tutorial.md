@@ -86,7 +86,7 @@ The hyperbolic lens lets you expand a region of the tree without zooming — the
 
 Hold **~** (the backtick/tilde key) and move the cursor over the canvas. The tree distorts around the cursor's vertical position.
 
-> <img src="images/fig8.png" style="width:400px;"/>
+> <img src="images/fig8b.png" style="width:400px;"/>
 >
 > Lens active: tips near the cursor are spread apart and readable; tips further away are compressed.
 
@@ -122,7 +122,7 @@ You can also click and drag to select all the tips within an area.
 
 Try clicking an internal node near the root of the EBOV tree.
 
-> <img src="images/fig7.png" style="width:400px;"/>
+> <img src="images/fig7b.png" style="width:400px;"/>
 >
 > Several tips selected (highlighted) and MRCA ring visible on an internal node.
 
@@ -151,7 +151,12 @@ Double-click any internal node to zoom into its subtree. The canvas re-renders s
 
 Use the **History** buttons in the toolbar (or **⌘[** / **⌘]**) to navigate back and forward through your drill-down history.
 
-> **📸 SCREENSHOT PLACEHOLDER** — Toolbar with the Back (**‹**) button highlighted after navigating into a subtree.
+| Button | Shortcut | Effect |
+|---|---|---|
+|<img src="images/drill_down.png" style="width:32px;"/>| `⌘⇧>` | Drill-down into the selected subtree |
+|<img src="images/back_button.png" style="width:32px;"/>| `⌘[` | Go back through the drill-down history |
+|<img src="images/forward_button.png" style="width:32px;"/>| `⌘]` | Go forward through the drill-down history |
+|<img src="images/climb_up_button.png" style="width:32px;"/>| `⌘⇧<` | Climb up one node towords the root |
 
 ---
 
@@ -161,8 +166,8 @@ The **Order** buttons sort the clades by size:
 
 | Button | Shortcut | Effect |
 |---|---|---|
-| **↑ Ascending** | ⌘D | Larger clades toward the bottom |
-| **↓ Descending** | ⌘U | Larger clades toward the top |
+| <img src="images/order_up_button.png" style="width:32px;"/> | ⌘U | Larger clades toward the top |
+| <img src="images/order_down_button.png" style="width:32px;"/> | ⌘D | Larger clades toward the bottom |
 
 The reordering animates smoothly. Click the active button again to cancel the ordering.
 
@@ -176,8 +181,8 @@ Select an internal node, then use the **Rotate** buttons:
 
 | Button | Effect |
 |---|---|
-| **↻ Rotate node** | Reverses the direct children of the selected node |
-| **⇔ Rotate all** | Recursively reverses children at every level in the selected subtree |
+| <img src="images/rotate_branch_button.png" style="width:32px;"/> | Reverses the direct children of the selected node |
+| <img src="images/rotate_clade_button.png" style="width:32px;"/> | Recursively reverses children at every level in the selected subtree |
 
 > **📸 SCREENSHOT PLACEHOLDER** — Before and after rotating a node: two clades swap positions.
 
@@ -211,7 +216,7 @@ To restore hidden nodes:
 
 ## 11. Node Info (⌘I)
 
-Select any node or tip, then press **⌘I** or click the **ⓘ** button. A dialog lists every annotation on that node — name, divergence, branch length, any BEAST posterior values, or any custom annotations you have imported.
+Select any node or tip, then press **⌘I** or click the <img src="images/get_info_button.png" style="width:32px;"/> button. A dialog lists every annotation on that node — name, divergence, branch length, any BEAST posterior values, or any custom annotations you have imported.
 
 > **📸 SCREENSHOT PLACEHOLDER** — Node Info dialog showing the selected tip's name, divergence, and annotation fields.
 
