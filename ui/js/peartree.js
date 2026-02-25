@@ -67,6 +67,7 @@ import * as commands from './commands.js';
   const tipColourBy       = document.getElementById('tip-colour-by');
   const nodeColourBy      = document.getElementById('node-colour-by');
   const labelColourBy     = document.getElementById('label-colour-by');
+  const tipLabelShow      = document.getElementById('tip-label-show');
   const tipPaletteSelect   = document.getElementById('tip-palette-select');
   const tipPaletteRow      = document.getElementById('tip-palette-row');
   const nodePaletteSelect  = document.getElementById('node-palette-select');
@@ -357,6 +358,7 @@ import * as commands from './commands.js';
       nodeBarsWidth:      nodeBarsWidthSlider.value,
       nodeBarsShowMedian: nodeBarsMedianEl.value,
       nodeBarsShowRange:  nodeBarsRangeEl.value,
+      tipLabelShow:       tipLabelShow.value,
       nodeOrder:        currentOrder,
       mode:             renderer ? renderer._mode : 'nodes',
     }));
@@ -430,6 +432,7 @@ import * as commands from './commands.js';
       nodeBarsWidth:      nodeBarsWidthSlider.value,
       nodeBarsShowMedian: nodeBarsMedianEl.value,
       nodeBarsShowRange:  nodeBarsRangeEl.value,
+      tipLabelShow:       tipLabelShow.value,
       nodeOrder:        currentOrder,
       mode:             renderer ? renderer._mode : 'nodes',
     };
@@ -606,6 +609,7 @@ import * as commands from './commands.js';
     tipColourBy.value        = 'user_colour';
     nodeColourBy.value       = 'user_colour';
     labelColourBy.value      = 'user_colour';
+    tipLabelShow.value       = 'names';
     legendShowEl.value       = DEFAULT_SETTINGS.legendShow;
     legendAnnotEl.value      = '';
     legendTextColorEl.value  = DEFAULT_SETTINGS.legendTextColor;
@@ -714,6 +718,7 @@ import * as commands from './commands.js';
       nodeBarsShowMedian: nodeBarsMedianEl.value,
       nodeBarsShowRange:  nodeBarsRangeEl.value  === 'on',
       fontFamily:         fontFamilyEl.value,
+      tipLabelAnnotation: tipLabelShow.value === 'names' ? null : tipLabelShow.value,
     };
   }
 
@@ -1250,6 +1255,7 @@ import * as commands from './commands.js';
       renderer.setTipColourBy(tipColourBy.value      || null);
       renderer.setNodeColourBy(nodeColourBy.value    || null);
       renderer.setLabelColourBy(labelColourBy.value  || null);
+      renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
       applyLegend();
       renderer._dirty = true;
     },
@@ -1616,6 +1622,22 @@ import * as commands from './commands.js';
     repopulate(nodeColourBy,  { filter: 'nodes' });
     repopulate(labelColourBy, { filter: 'tips'  });
     repopulate(legendAnnotEl, { isLegend: true  });
+    // Tip label show: first option is 'names'; then all tip annotations.
+    {
+      const prev = tipLabelShow.value;
+      while (tipLabelShow.options.length > 1) tipLabelShow.remove(1);
+      for (const [name, def] of schema) {
+        if (def.dataType === 'list') continue;
+        if (def.groupMember) continue;
+        if (!def.onTips) continue;
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        tipLabelShow.appendChild(opt);
+      }
+      tipLabelShow.disabled = false;
+      tipLabelShow.value = [...tipLabelShow.options].some(o => o.value === prev) ? prev : 'names';
+      if (renderer) renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
+    }
     // Refresh palette selects to match current colour-by selections after annotation schema changes.
     _updatePaletteSelect(tipPaletteSelect,   tipPaletteRow,   tipColourBy.value);
     _updatePaletteSelect(nodePaletteSelect,  nodePaletteRow,  nodeColourBy.value);
@@ -1714,6 +1736,19 @@ import * as commands from './commands.js';
       _populateColourBy(nodeColourBy,  'nodes');
       _populateColourBy(labelColourBy, 'tips');
 
+      // Tip-label-show: 'names' is always the first option; then add tip annotations.
+      while (tipLabelShow.options.length > 1) tipLabelShow.remove(1);
+      for (const [name, def] of schema) {
+        if (name === 'user_colour') continue;
+        if (def.dataType === 'list') continue;
+        if (def.groupMember) continue;
+        if (!def.onTips) continue;
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        tipLabelShow.appendChild(opt);
+      }
+      tipLabelShow.disabled = false;
+
       // Legend select: blank "(none)" first, then annotations (no user_colour).
       while (legendAnnotEl.options.length > 1) legendAnnotEl.remove(1);
       for (const [name, def] of schema) {
@@ -1737,6 +1772,7 @@ import * as commands from './commands.js';
       nodeColourBy.value  = _hasOpt(nodeColourBy,  _eff.nodeColourBy)     ? _eff.nodeColourBy     : 'user_colour';
       labelColourBy.value = _hasOpt(labelColourBy, _eff.labelColourBy)    ? _eff.labelColourBy    : 'user_colour';
       legendAnnotEl.value = _hasOpt(legendAnnotEl, _eff.legendAnnotation) ? _eff.legendAnnotation : '';
+      tipLabelShow.value  = _hasOpt(tipLabelShow,  _eff.tipLabelShow)     ? _eff.tipLabelShow     : 'names';
       // Restore node order.
       if (_eff.nodeOrder === 'asc' || _eff.nodeOrder === 'desc') {
         const asc = _eff.nodeOrder === 'asc';
@@ -1767,6 +1803,7 @@ import * as commands from './commands.js';
       renderer.setTipColourBy(tipColourBy.value     || null);
       renderer.setNodeColourBy(nodeColourBy.value   || null);
       renderer.setLabelColourBy(labelColourBy.value || null);
+      renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
       // Show palette selects for active colour-by annotations.
       _updatePaletteSelect(tipPaletteSelect,   tipPaletteRow,   tipColourBy.value);
       _updatePaletteSelect(nodePaletteSelect,  nodePaletteRow,  nodeColourBy.value);
@@ -3051,6 +3088,11 @@ import * as commands from './commands.js';
   labelColourBy.addEventListener('change', () => {
     renderer.setLabelColourBy(labelColourBy.value || null);
     _updatePaletteSelect(labelPaletteSelect, labelPaletteRow, labelColourBy.value);
+    saveSettings();
+  });
+
+  tipLabelShow.addEventListener('change', () => {
+    renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
     saveSettings();
   });
 

@@ -173,6 +173,7 @@ export class TreeRenderer {
     this.selectedLabelColor = s.selectedLabelColor ??
       TreeRenderer._hslToHex(_hsl.h, _hsl.s * 0.50, Math.min(97, _hsl.l * 1.08));
     this.selectedLabelStyle = s.selectedLabelStyle ?? 'bold';
+    this.tipLabelAnnotation = s.tipLabelAnnotation ?? null;
 
     // ── Layout geometry ─────────────────────────────────────────────────────
     this.paddingLeft       = s.paddingLeft;
@@ -326,6 +327,14 @@ export class TreeRenderer {
 
     // Install the new layout (resets viewport via fitToWindow).
     this.setData(nodes, nodeMap, maxX, maxY);
+  }
+
+  setTipLabelAnnotation(key) {
+    this.tipLabelAnnotation = key || null;
+    this._labelCacheKey = null;
+    this._measureLabels();
+    this._updateScaleX();
+    this._dirty = true;
   }
 
   setFontSize(sz) {
@@ -928,17 +937,31 @@ export class TreeRenderer {
     if (this._onNavChange) this._onNavChange(true, false);
     if (this._onNodeSelectChange) this._onNodeSelectChange(false);
   }
+  /**
+   * Returns the display text for a tip node label.
+   * Uses the tipLabelAnnotation value when set; falls back to node.name.
+   */
+  _tipLabelText(node) {
+    if (!this.tipLabelAnnotation) return node.name || null;
+    const val = node.annotations?.[this.tipLabelAnnotation];
+    if (val == null || val === '') return node.name || null;
+    if (Array.isArray(val)) return val.join(', ');
+    return String(val);
+  }
+
   _measureLabels() {
     if (!this.nodes) return;
-    // Only redo the expensive measureText scan when font size/family or node data changes.
-    const cacheKey = `${this.fontSize}|${this.fontFamily}`;
+    // Only redo the expensive measureText scan when font/annotation settings or node data changes.
+    const cacheKey = `${this.fontSize}|${this.fontFamily}|${this.tipLabelAnnotation ?? ''}`;
     if (this._labelCacheKey !== cacheKey) {
       const ctx = this.ctx;
       ctx.font = `${this.fontSize}px ${this.fontFamily}`;
       let max = 0;
       for (const n of this.nodes) {
-        if (n.isTip && n.name) {
-          const w = ctx.measureText(n.name).width;
+        if (!n.isTip) continue;
+        const t = this._tipLabelText(n);
+        if (t) {
+          const w = ctx.measureText(t).width;
           if (w > max) max = w;
         }
       }
@@ -1775,7 +1798,8 @@ export class TreeRenderer {
           if (!node.isTip || this._selectedTipIds.has(node.id)) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           if (!this._showLabelAt(node.y)) continue;
-          if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
+          const _t = this._tipLabelText(node);
+          if (_t) ctx.fillText(_t, this._wx(node.x) + outlineR + 3, this._wy(node.y));
         }
         // Sub-pass 3b: selected labels in bold + selected colour
         ctx.fillStyle = this.selectedLabelColor;
@@ -1784,7 +1808,8 @@ export class TreeRenderer {
           if (!node.isTip || !this._selectedTipIds.has(node.id)) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           if (!this._showLabelAt(node.y)) continue;
-          if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
+          const _t = this._tipLabelText(node);
+          if (_t) ctx.fillText(_t, this._wx(node.x) + outlineR + 3, this._wy(node.y));
         }
         ctx.font = `${this.fontSize}px ${this.fontFamily}`;
       } else if (this._labelColourBy && this._labelColourScale) {
@@ -1793,10 +1818,11 @@ export class TreeRenderer {
           if (!node.isTip) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           if (!this._showLabelAt(node.y)) continue;
-          if (!node.name) continue;
+          const _t = this._tipLabelText(node);
+          if (!_t) continue;
           const val = node.annotations ? node.annotations[key] : undefined;
           ctx.fillStyle = this._labelColourForValue(val) ?? this.labelColor;
-          ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
+          ctx.fillText(_t, this._wx(node.x) + outlineR + 3, this._wy(node.y));
         }
       } else {
         ctx.fillStyle = this.labelColor;
@@ -1804,7 +1830,8 @@ export class TreeRenderer {
           if (!node.isTip) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           if (!this._showLabelAt(node.y)) continue;
-          if (node.name) ctx.fillText(node.name, this._wx(node.x) + outlineR + 3, this._wy(node.y));
+          const _t = this._tipLabelText(node);
+          if (_t) ctx.fillText(_t, this._wx(node.x) + outlineR + 3, this._wy(node.y));
         }
       }
     }
