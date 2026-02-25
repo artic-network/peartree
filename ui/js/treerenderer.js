@@ -216,7 +216,7 @@ export class TreeRenderer {
     this.nodeBarsEnabled    = s.nodeBarsEnabled    ?? false;
     this.nodeBarsColor      = s.nodeBarsColor      ?? '#2aa198';
     this.nodeBarsWidth      = s.nodeBarsWidth      ?? 6;
-    this.nodeBarsShowMedian = s.nodeBarsShowMedian ?? true;
+    this.nodeBarsShowMedian = s.nodeBarsShowMedian ?? 'mean';
     this.nodeBarsShowRange  = s.nodeBarsShowRange  ?? false;
 
     // Propagate bg colour to an attached legend renderer.
@@ -1479,10 +1479,11 @@ export class TreeRenderer {
     ctx.globalAlpha = 1;
     ctx.lineWidth   = 1;
 
-    // ── Pass 3: median vertical line ─────────────────────────────────────────
-    if (this.nodeBarsShowMedian && medianKey) {
+    // ── Pass 3: mean/median line ──────────────────────────────────────────────
+    if (this.nodeBarsShowMedian !== 'none') {
+      const useMedian = this.nodeBarsShowMedian === 'median';
       ctx.strokeStyle = col;
-      ctx.lineWidth   = 1.5;
+      ctx.lineWidth   = 2;
       ctx.globalAlpha = 0.85;
       ctx.beginPath();
       for (const node of this.nodes) {
@@ -1490,12 +1491,21 @@ export class TreeRenderer {
         if (node.y < yWorldMin || node.y > yWorldMax) continue;
         const hpd = node.annotations?.[hpdKey];
         if (!Array.isArray(hpd) || hpd.length < 2) continue;
-        const medVal = node.annotations?.[medianKey];
-        if (medVal == null) continue;
-        const xMed = this._wx(maxX - medVal);
-        const cy   = this._wy(node.y);
-        ctx.moveTo(xMed, cy - halfW);
-        ctx.lineTo(xMed, cy + halfW);
+        let xLine;
+        if (useMedian) {
+          if (!medianKey) continue;
+          const medVal = node.annotations?.[medianKey];
+          if (medVal == null) continue;
+          xLine = this._wx(maxX - medVal);
+        } else {
+          // mean: use the 'height' annotation value directly
+          const meanVal = node.annotations?.['height'];
+          if (meanVal == null) continue;
+          xLine = this._wx(maxX - meanVal);
+        }
+        const cy = this._wy(node.y);
+        ctx.moveTo(xLine, cy - halfW);
+        ctx.lineTo(xLine, cy + halfW);
       }
       ctx.stroke();
       ctx.lineWidth   = 1;

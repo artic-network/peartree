@@ -707,7 +707,7 @@ import * as commands from './commands.js';
       nodeBarsEnabled:    nodeBarsShowEl.value === 'on',
       nodeBarsColor:      nodeBarsColorEl.value,
       nodeBarsWidth:      parseInt(nodeBarsWidthSlider.value),
-      nodeBarsShowMedian: nodeBarsMedianEl.value === 'on',
+      nodeBarsShowMedian: nodeBarsMedianEl.value,
       nodeBarsShowRange:  nodeBarsRangeEl.value  === 'on',
     };
   }

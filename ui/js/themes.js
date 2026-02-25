@@ -311,6 +311,6 @@ export const DEFAULT_SETTINGS = {
   nodeBarsEnabled:    'off',
   nodeBarsColor:      '#2aa198',
   nodeBarsWidth:      '6',
-  nodeBarsShowMedian: 'on',
+  nodeBarsShowMedian: 'mean',
   nodeBarsShowRange:  'off',
 };
