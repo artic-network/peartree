@@ -38,7 +38,7 @@ export const THEMES = {
           branchColor:      '#19A699',
           branchWidth:      '1',
           fontSize:         '11',
-          fontFamily:       'monospace',
+          fontFamily:       'Helvetica',
           labelColor:       '#f7eeca',
           tipSize:          '3',
           tipHaloSize:      '1',
@@ -50,7 +50,7 @@ export const THEMES = {
           nodeShapeBgColor: '#02292e',
           axisColor:        '#f7eeca',
           legendTextColor:  '#f7eeca',
-          nodeBarsColor:    '#B58901',
+          nodeBarsColor:    '#E06961',
           selectedTipFillColor:    '#FFF4A9',
           selectedTipStrokeColor:   '#FFF4A9',
           selectedNodeFillColor:   '#FFC9C7',
@@ -262,6 +262,7 @@ export const THEMES = {
 
 export const DEFAULT_SETTINGS = {
   theme:            'Artic',
+  fontFamily:       'monospace',
   canvasBgColor:    '#ffffff',
   branchColor:      '#444444',
   branchWidth:      '1',
@@ -328,6 +329,5 @@ export const DEFAULT_SETTINGS = {
   nodeBarsColor:      '#2aa198',
   nodeBarsWidth:      '6',
   nodeBarsShowMedian: 'mean',
-  fontFamily:          'monospace',
   nodeBarsShowRange:  'off',
 };
