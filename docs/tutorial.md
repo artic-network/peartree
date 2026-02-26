@@ -24,7 +24,7 @@ After a moment the tree will appear on the canvas.
 
 ---
 
-## 2. The Interface at a Glance
+## 2. The Interface at a Glance {#interface}
 
 The interface has four main areas:
 
@@ -39,7 +39,7 @@ The interface has four main areas:
 
 ---
 
-## 3. Navigating the Tree
+## 3. Navigating the Tree {#navigating}
 
 There are many ways of quickly navigating the tree which will be useful if the tree is very large.
 
@@ -78,7 +78,7 @@ Press the Fit all button or **⌘0** to return to the full view.
 
 ---
 
-## 4. The Hyperbolic Lens
+## 4. The Hyperbolic Lens {#hyperbolic-lens}
 
 The hyperbolic lens lets you expand a region of the tree without zooming — the area near the cursor is stretched to label-readable spacing while the rest compresses but remains visible.
 
@@ -106,7 +106,7 @@ The peak magnification is always capped at the *Fit Labels* spacing level, so la
 
 ---
 
-## 5. Selecting Nodes and Tips
+## 5. Selecting Nodes and Tips {#selecting-nodes}
 
 PearTree has two selection modes; **Nodes** mode is active by default.
 
@@ -126,7 +126,10 @@ Try clicking an internal node near the root of the EBOV tree.
 >
 > Several tips selected (highlighted) and MRCA ring visible on an internal node.
 
-### Branches Mode (⌘B) [^1]: Branch selection mode is generally used to allow  re-rooting of a tree. However, as the example tree is a rooted, time-calibrated tree, re-rooting is disabled.
+### Branches Mode (⌘B)
+
+> [!TIP]
+> Branch selection mode is generally used to allow  re-rooting of a tree. However, as the example tree is a rooted, time-calibrated tree, re-rooting is disabled.
 
 Press **⌘B** (or click the branch-mode button) to switch to **Branches** mode. Click anywhere along a horizontal branch to place a precise positional marker.
 
@@ -134,7 +137,7 @@ Press **⌘B** again to return to **Nodes** mode.
 
 ---
 
-## 6. Subtree Navigation
+## 6. Subtree Navigation {#subtree-navigation}
 
 PearTree has some useful functions for 'drilling-down' into parts of the tree to view subtrees and clades and then easily return back to the previous view.
 
@@ -157,7 +160,7 @@ Use the **History** buttons in the toolbar (or **⌘[** / **⌘]**) to navigate 
 
 ---
 
-## 8. Ordering Branches
+## 8. Ordering Branches  {#ordering-branches}
 
 The **Order** buttons sort the clades by size:
 
@@ -172,7 +175,7 @@ The reordering animates smoothly. Click the active button again to cancel the or
 
 ---
 
-## 9. Rotating Nodes
+## 9. Rotating Nodes {#rotating-nodes}
 
 Select an internal node, then use the **Rotate** buttons:
 
@@ -185,7 +188,7 @@ Select an internal node, then use the **Rotate** buttons:
 
 ---
 
-## 10. Hiding and Showing Subtrees
+## 10. Hiding and Showing Subtrees {#hiding-and-showing}
 
 Hiding removes a node and all of its descendants from the tree layout entirely — they simply disappear from the canvas and the remaining tree reflows to fill the space. This is useful for focusing on a subset of the tree without changing the underlying data.
 
@@ -211,7 +214,7 @@ To restore hidden nodes:
 
 ---
 
-## 11. Node Info (⌘I)
+## 11. Node Info (⌘I) {#node-info}
 
 Select any node or tip, then press **⌘I** or click the <img src="images/get_info_button.png" style="width:32px;"/> button. A dialog lists every annotation on that node — name, divergence, branch length, any BEAST posterior values, or any custom annotations you have imported.
 
@@ -219,7 +222,7 @@ Select any node or tip, then press **⌘I** or click the <img src="images/get_in
 
 ---
 
-## 12. Importing Annotations
+## 12. Importing Annotations {#importing-annotations}
 
 The EBOV example has annotations embedded in the tree file. To add extra per-tip metadata from your own CSV or TSV:
 
@@ -238,7 +241,7 @@ After import the new annotation keys appear in all *Colour by* dropdowns and the
 
 ---
 
-## 13. Colouring the Tree by Annotation
+## 13. Colouring the Tree by Annotation {#colouring-tree}
 
 Open the **Visual Options palette** (press **Tab** or click the sliders button).
 
