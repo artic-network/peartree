@@ -51,7 +51,7 @@ The interface has four main areas:
 
 > <img src="images/fig2a.png" style="width:500px;"/>
 > 
-> EBOV tree loaded and filling the canvas. Tip labels will not currently be visible because of the size of the tree. The colours used will be determined by the `theme` currently being used - the current default is the `ARTIC` theme but this can be changed. From this point on we will use `Minimal` --- a simple monochrome theme –-- for clarity.
+> EBOV tree loaded and filling the canvas. Tip labels will not currently be visible because of the size of the tree. The colours used will be determined by the **theme** currently being used - the current default is the `ARTIC` theme but this can be changed. From this point on we will use `Minimal` --- a simple monochrome theme –-- for clarity.
 
 ---
 
@@ -94,7 +94,6 @@ Arrow keys allow a fine control over the scrolling amount:
 - **↑ / ↓** — scroll one row at a time
 - **⌘↑ / ⌘↓** — scroll one page at a time
 
-
 You can also use the toolbar zoom buttons or keyboard shortcuts:
 
 | Button | Shortcut | Action |
@@ -104,9 +103,9 @@ You can also use the toolbar zoom buttons or keyboard shortcuts:
 |<img src="images/show_labels_button.png" style="width:32px;"/>| **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
 |<img src="images/show_all_button.png" style="width:32px;"/>| **⌘0** | Fit the whole tree to the window |
 
-Zoom in until individual tip names are readable or press the Fit Labels button or ⌘⇧0 to do this automatically. 
+Zoom in until individual tip names are readable or press the Fit Labels button or `⌘⇧0` to do this automatically. 
 
-> <img src="images/fig6b.png" style="width:400px;"/>
+> <img src="images/fig4.png" style="width:400px;"/>
 >
 > Tree zoomed in to show a small cluster of tips with readable labels.
 
@@ -122,7 +121,7 @@ The hyperbolic lens lets you expand a region of the tree without zooming — the
 
 Hold **~** (the backtick/tilde key) and move the cursor over the canvas. The tree distorts around the cursor's vertical position.
 
-> <img src="images/fig8b.png" style="width:400px;"/>
+> <img src="images/fig5.png" style="width:400px;"/>
 >
 > Lens active: tips near the cursor are spread apart and readable; tips further away are compressed.
 
@@ -156,20 +155,20 @@ PearTree has two selection modes; **Nodes** mode is active by default.
 
 You can also click and drag to select all the tips within an area.
 
-Try clicking an internal node near the root of the EBOV tree.
+In the current view try clicking an internal node near the root of the visible tree.
 
-> <img src="images/fig7b.png" style="width:400px;"/>
+> <img src="images/fig6.png" style="width:400px;"/>
 >
 > Several tips selected (highlighted) and MRCA ring visible on an internal node.
 
 ### Branches Mode (⌘B)
 
-> [!TIP]
-> Branch selection mode is generally used to allow  re-rooting of a tree. However, as the example tree is a rooted, time-calibrated tree, re-rooting is disabled. See [Appendix](#appendix-rerooting-the-tree-rerooting) for information about re-rooting an unrooted tree.
-
 Press **⌘B** (or click the branch-mode button) to switch to **Branches** mode. Click anywhere along a horizontal branch to place a precise positional marker.
 
 Press **⌘B** again to return to **Nodes** mode.
+
+> [!TIP]
+> Branch selection mode is generally used to allow  re-rooting of a tree. However, as the example tree is a rooted, time-calibrated tree, re-rooting is disabled. See [Appendix](#appendix-rerooting-the-tree-rerooting) for information about re-rooting an unrooted tree.
 
 ---
 
@@ -177,15 +176,15 @@ Press **⌘B** again to return to **Nodes** mode.
 
 PearTree has some useful functions for 'drilling-down' into parts of the tree to view subtrees and clades and then easily return back to the previous view. 
 
-**Double-click** any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node.
+**Double-click** any internal node to zoom into its subtree. Or select a node and press the `drill-down` button <img src="images/drill_down_button.png" style="width:32px;"/>. The canvas re-renders showing only the descendants of that node.
 
-> <img src="images/fig9a.png" style="width:400px;"/>
+> <img src="images/fig7a.png" style="width:400px;"/>
 >
-> <img src="images/fig9b.png" style="width:400px;"/>
+> <img src="images/fig7b.png" style="width:400px;"/>
 >
 > A sub-clade of the EBOV tree filling the full canvas after double-clicking.
 
-PearTree stores a history of the parts of the tree you visit. **Double-click** on the root node of the subtree to go back to your previous view.
+PearTree stores a history of the parts of the tree you visit. **Double-click** on the root node of the subtree (or use the `back` button <img src="images/back_button.png" style="width:32px;"/>) to go back to your previous view.
 
 Use the **History** buttons in the toolbar (or **⌘[** / **⌘]**) to navigate back and forward through your drill-down history.
 
@@ -209,12 +208,13 @@ To rotate an internal node, select a node and then use the **Rotate** buttons:
 | <img src="images/rotate_branch_button.png" style="width:32px;"/> | Reverses the direct children of the selected node |
 | <img src="images/rotate_clade_button.png" style="width:32px;"/> | Recursively reverses children at every level in the selected subtree |
 
-> <img src="images/fig10a.png" style="width:400px;"/>
+> <img src="images/fig8a.png" style="width:400px;"/>
 >
-> <img src="images/fig10b.png" style="width:400px;"/>
+> <img src="images/fig8b.png" style="width:400px;"/>
 >
-> <img src="images/fig10c.png" style="width:400px;"/>
-> Before and after rotating a node: one branch swaps positions.
+> <img src="images/fig8c.png" style="width:400px;"/>
+>
+> Before and after rotating a branch: one branch (`EBOV|EM_COY_2015_017865||GIN|Dubreka|2015-06-18`) swaps position. In the bottom image, the entire clade has been 'rotated'.
 
 ---
 
@@ -222,14 +222,31 @@ To rotate an internal node, select a node and then use the **Rotate** buttons:
 
 Hiding removes a node and all of its descendants from the tree layout entirely — they simply disappear from the canvas and the remaining tree reflows to fill the space. This is useful for focusing on a subset of the tree without changing the underlying data.
 
+### Hiding a Single Tip Branch
+
+1. Select a tip node.
+2. Click the **Hide** button (eye-slash icon) in the toolbar.
+
+The selected tip is removed from the view and the visible tree rescales. The tip count shown elsewhere (e.g. in Node Info) reflects only the still-visible tips.
+
+> <img src="images/fig9a.png" style="width:400px;"/>
+>
+> <img src="images/fig9b.png" style="width:400px;"/>
+>
+> A section of the tree before and after hiding a selected tip (`EBOV|CON12930||GIN|Conakry|2015-10-13`).
+
 ### Hiding a Subtree
 
 1. Select an internal node (its descendant tips will be highlighted).
 2. Click the **Hide** button (eye-slash icon) in the toolbar.
 
-The selected node and all its descendants are removed from the view. The tree animates to close the gap, and the branch leading to the hidden node is no longer drawn. The tip count shown elsewhere (e.g. in Node Info) reflects only the still-visible tips.
+The selected node and all its descendants are hidden in the tree and removed from the view. 
 
-> **📸 SCREENSHOT PLACEHOLDER** — EBOV tree before and after hiding a clade; the remaining branches have reflowed to fill the canvas.
+> <img src="images/fig9b.png" style="width:400px;"/>
+>
+> <img src="images/fig9c.png" style="width:400px;"/>
+>
+> A section of the tree with a node and its descendents selected and after this node has been hidden.
 
 ### Showing Hidden Nodes
 
@@ -237,8 +254,6 @@ To restore hidden nodes:
 
 - **With a node selected** — select the parent node (the branch stub where the hidden subtree was attached) and click **Show** (eye icon). The hidden descendants of that node are restored.
 - **With nothing selected** — click **Show** with no selection to reveal *all* hidden nodes in the current view at once.
-
-> **📸 SCREENSHOT PLACEHOLDER** — The same clade restored after clicking Show; tree animates back to the full layout.
 
 > **Note:** Hiding changes the visible tip count, so any active branch ordering (ascending/descending) is automatically cleared when you hide or show nodes.
 
@@ -248,24 +263,35 @@ To restore hidden nodes:
 
 Select any node or tip, then press **⌘I** or click the <img src="images/get_info_button.png" style="width:32px;"/> button. A dialog lists every annotation on that node — name, divergence, branch length, any BEAST posterior values, or any custom annotations you have imported.
 
-> **📸 SCREENSHOT PLACEHOLDER** — Node Info dialog showing the selected tip's name, divergence, and annotation fields.
+> <img src="images/fig10.png" style="width:400px;"/>
+>
+> Node Info dialog showing the selected tip's name, divergence, and annotation fields.
 
 ---
 
 ## 11. Importing Annotations
 
-The EBOV example has annotations embedded in the tree file. To add extra per-tip metadata from your own CSV or TSV:
+The EBOV example has some annotations embedded in the tree file. To add extra per-tip metadata from your own CSV or TSV:
 
-1. Click the **+ file** button (or press **⌘⇧A**).
-2. **Phase 1** — Drag a CSV/TSV onto the drop zone or click *Choose File*.
+- Click the <img src="images/load_annotations_button.png" style="width:32px;"/> button (or press **⌘⇧A**).
 
-> **📸 SCREENSHOT PLACEHOLDER** — Import Annotations dialog, Phase 1 (file-pick drop zone).
+- **Step 1** — Drag a CSV/TSV onto the drop zone or click *Choose File*.
 
-3. **Phase 2** — Select which column contains the taxon name, tick the columns to import.
+> <img src="images/fig11a.png" style="width:300px;"/>
+>
+> Import Annotations dialog, Step 1 (file-pick drop zone).
 
-> **📸 SCREENSHOT PLACEHOLDER** — Import configuration screen showing column checkboxes and preview rows.
+- **Step 2** — Select which column contains the taxon name, tick the columns to import.
 
-4. Click **Import**. A summary reports how many tips matched.
+> <img src="images/fig11b.png" style="width:300px;"/>
+>
+> Import configuration dialog showing column checkboxes and preview rows.
+
+- Click **Import**. A summary reports how many tips matched.
+
+> <img src="images/fig11c.png" style="width:300px;"/>
+>
+> Import summary dialog box.
 
 After import the new annotation keys appear in all *Colour by* dropdowns and the *Legend* selector.
 

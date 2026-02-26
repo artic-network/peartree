@@ -463,6 +463,56 @@ export function buildAnnotationSchema(nodes) {
     }
   }
 
+  // ── Synthesize missing base keys from _mean ────────────────────────────
+  // If suffixed variants exist (e.g. height_mean, height_median, height_95%_HPD)
+  // but no bare base key (height) is present, promote height_mean as the primary
+  // entry named 'height', keeping height_mean as a sub-annotation (groupMember).
+  // This handles BEAST trees where the raw variable was not logged separately.
+  {
+    // First pass: collect all orphaned suffixed keys grouped by their base name.
+    const orphanedBases = new Map(); // base → Map<label, key>
+    for (const name of schema.keys()) {
+      for (const [suffix, label] of BEAST_SUFFIXES) {
+        if (name.endsWith(suffix)) {
+          const base = name.slice(0, -suffix.length);
+          if (!schema.has(base)) {
+            if (!orphanedBases.has(base)) orphanedBases.set(base, new Map());
+            orphanedBases.get(base).set(label, name);
+          }
+          break;
+        }
+      }
+    }
+
+    // Second pass: for each orphaned base that has a _mean member, synthesise
+    // a base entry that is a clone of the _mean def.  Insert it just before
+    // the first member in Map iteration order so the UI lists it naturally.
+    for (const [base, members] of orphanedBases) {
+      if (!members.has('mean')) continue;       // no _mean — nothing to promote
+      const meanKey = base + '_mean';
+      const meanDef = schema.get(meanKey);
+      if (!meanDef) continue;
+
+      // Clone _mean as the synthetic base; give it its own group map.
+      const synth = { ...meanDef, name: base, group: {} };
+
+      // Register all members (including _mean itself) under the synthetic base.
+      for (const [label, key] of members) {
+        synth.group[label] = key;
+        schema.get(key).groupMember = base;
+      }
+
+      // Rebuild the Map so the synthetic base appears before its first member.
+      const firstMemberKey = members.values().next().value;
+      const entries = [...schema];
+      schema.clear();
+      for (const [k, v] of entries) {
+        if (k === firstMemberKey) schema.set(base, synth);
+        schema.set(k, v);
+      }
+    }
+  }
+
   return schema;
 }
 

@@ -2688,6 +2688,28 @@ import * as commands from './commands.js';
             }
           }
         }
+        // Second pass: handle synthetic base keys (e.g. 'height' promoted from
+        // 'height_mean') that are in the schema but not directly in node.annotations.
+        if (schema) {
+          const SUB_LABELS = { median: 'median', hpd: '95% HPD', range: 'range', mean: 'mean', lower: 'lower', upper: 'upper' };
+          for (const [k, def] of schema) {
+            if (emitted.has(k)) continue;
+            if (def.groupMember) continue;   // only base entries
+            if (!def.group) continue;         // only grouped entries
+            if (Object.prototype.hasOwnProperty.call(annots, k)) continue; // handled by first pass
+            // Use the _mean member's value as the primary displayed value.
+            const meanKey = def.group.mean;
+            if (!meanKey || !Object.prototype.hasOwnProperty.call(annots, meanKey)) continue;
+            rows.push([k, fmtAnnot(annots[meanKey])]);
+            emitted.add(k);
+            for (const [groupKey, subAnnotName] of Object.entries(def.group)) {
+              if (Object.prototype.hasOwnProperty.call(annots, subAnnotName)) {
+                rows.push(['__sub__', [SUB_LABELS[groupKey] || groupKey, fmtAnnot(annots[subAnnotName])]]);
+                emitted.add(subAnnotName);
+              }
+            }
+          }
+        }
       }
 
       // Title
