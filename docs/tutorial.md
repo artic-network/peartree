@@ -24,7 +24,7 @@ After a moment the tree will appear on the canvas.
 
 ---
 
-## 2. The Interface at a Glance {#interface}
+## 2. The Interface at a Glance
 
 The interface has four main areas:
 
@@ -39,7 +39,7 @@ The interface has four main areas:
 
 ---
 
-## 3. Navigating the Tree {#navigating}
+## 3. Navigating the Tree
 
 There are many ways of quickly navigating the tree which will be useful if the tree is very large.
 
@@ -78,7 +78,7 @@ Press the Fit all button or **⌘0** to return to the full view.
 
 ---
 
-## 4. The Hyperbolic Lens {#hyperbolic-lens}
+## 4. The Hyperbolic Lens
 
 The hyperbolic lens lets you expand a region of the tree without zooming — the area near the cursor is stretched to label-readable spacing while the rest compresses but remains visible.
 
@@ -106,7 +106,7 @@ The peak magnification is always capped at the *Fit Labels* spacing level, so la
 
 ---
 
-## 5. Selecting Nodes and Tips {#selecting-nodes}
+## 5. Selecting Nodes and Tips
 
 PearTree has two selection modes; **Nodes** mode is active by default.
 
@@ -129,7 +129,7 @@ Try clicking an internal node near the root of the EBOV tree.
 ### Branches Mode (⌘B)
 
 > [!TIP]
-> Branch selection mode is generally used to allow  re-rooting of a tree. However, as the example tree is a rooted, time-calibrated tree, re-rooting is disabled. See [Appendix](#rerooting) for information about re-rooting an unrooted tree.
+> Branch selection mode is generally used to allow  re-rooting of a tree. However, as the example tree is a rooted, time-calibrated tree, re-rooting is disabled. See [Appendix](#appendix-rerooting-the-tree-rerooting) for information about re-rooting an unrooted tree.
 
 Press **⌘B** (or click the branch-mode button) to switch to **Branches** mode. Click anywhere along a horizontal branch to place a precise positional marker.
 
@@ -137,7 +137,7 @@ Press **⌘B** again to return to **Nodes** mode.
 
 ---
 
-## 6. Subtree Navigation {#subtree-navigation}
+## 6. Subtree Navigation
 
 PearTree has some useful functions for 'drilling-down' into parts of the tree to view subtrees and clades and then easily return back to the previous view.
 
@@ -160,7 +160,7 @@ Use the **History** buttons in the toolbar (or **⌘[** / **⌘]**) to navigate 
 
 ---
 
-## 8. Ordering Branches  {#ordering-branches}
+## 8. Ordering Branches
 
 The **Order** buttons sort the clades by size:
 
@@ -175,7 +175,7 @@ The reordering animates smoothly. Click the active button again to cancel the or
 
 ---
 
-## 9. Rotating Nodes {#rotating-nodes}
+## 9. Rotating Nodes
 
 Select an internal node, then use the **Rotate** buttons:
 
@@ -188,7 +188,7 @@ Select an internal node, then use the **Rotate** buttons:
 
 ---
 
-## 10. Hiding and Showing Subtrees {#hiding-and-showing}
+## 10. Hiding and Showing Subtrees
 
 Hiding removes a node and all of its descendants from the tree layout entirely — they simply disappear from the canvas and the remaining tree reflows to fill the space. This is useful for focusing on a subset of the tree without changing the underlying data.
 
@@ -214,7 +214,7 @@ To restore hidden nodes:
 
 ---
 
-## 11. Node Info (⌘I) {#node-info}
+## 11. Node Info (⌘I)
 
 Select any node or tip, then press **⌘I** or click the <img src="images/get_info_button.png" style="width:32px;"/> button. A dialog lists every annotation on that node — name, divergence, branch length, any BEAST posterior values, or any custom annotations you have imported.
 
@@ -222,7 +222,7 @@ Select any node or tip, then press **⌘I** or click the <img src="images/get_in
 
 ---
 
-## 12. Importing Annotations {#importing-annotations}
+## 12. Importing Annotations
 
 The EBOV example has annotations embedded in the tree file. To add extra per-tip metadata from your own CSV or TSV:
 
@@ -241,7 +241,7 @@ After import the new annotation keys appear in all *Colour by* dropdowns and the
 
 ---
 
-## 13. Colouring the Tree by Annotation {#colouring-tree}
+## 13. Colouring the Tree by Annotation
 
 Open the **Visual Options palette** (press **Tab** or click the sliders button).
 
@@ -397,7 +397,7 @@ When you export a NEXUS file with **Embed settings** ticked, those settings trav
 > On Windows and Linux replace **⌘** with **Ctrl**.
 
 
-## Appendix: Rerooting the Tree {#rerooting}
+## Appendix: Rerooting the Tree
 
 Re-rooting of trees is not possible for trees that are explicitly rooted (generally determined by whether they have annotations for the root node). This will be the case for time calibrated trees from BEAST, for example. If the tree is not explicitly rooted then some options for changing the root position will be available.
 
