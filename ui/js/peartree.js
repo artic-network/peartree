@@ -12,6 +12,8 @@ import { createAnnotImporter } from './annotationsio.js';
 import { createAnnotCurator  } from './annotcurator.js';
 import * as commands from './commands.js';
 
+const EXAMPLE_TREE_PATH = 'data/ebov.tree';
+
 (async () => {
   const canvas            = document.getElementById('tree-canvas');
   const loadingEl         = document.getElementById('loading');
@@ -1218,10 +1220,10 @@ import * as commands from './commands.js';
     setModalLoading(true);
     setModalError(null);
     try {
-      const resp = await fetch('data/ebov.tree');
-      if (!resp.ok) throw new Error('HTTP ' + resp.status + ' – could not fetch data/ebov.tree');
+      const resp = await fetch(EXAMPLE_TREE_PATH);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status + ' – could not fetch ' + EXAMPLE_TREE_PATH);
       const text = await resp.text();
-      await loadTree(text, 'ebov.tree');
+      await loadTree(text, EXAMPLE_TREE_PATH);
     } catch (err) {
       setModalError(err.message);
       setModalLoading(false);
@@ -1238,10 +1240,10 @@ import * as commands from './commands.js';
   document.getElementById('empty-state-example-btn').addEventListener('click', async () => {
     hideEmptyState();
     try {
-      const resp = await fetch('data/ebov.tree');
-      if (!resp.ok) throw new Error('HTTP ' + resp.status + ' – could not fetch data/ebov.tree');
+      const resp = await fetch(EXAMPLE_TREE_PATH);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status + ' – could not fetch ' + EXAMPLE_TREE_PATH);
       const text = await resp.text();
-      await loadTree(text, 'ebov.tree');
+      await loadTree(text, EXAMPLE_TREE_PATH);
     } catch (err) {
       showEmptyState();
       showErrorDialog(err.message);
