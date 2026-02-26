@@ -8,7 +8,7 @@ This tutorial walks through the main features of PearTree using the built-in Ebo
 
 When you first launch PearTree you will see the startup screen.
 
-> <img src="images/fig1.png" style="width:200px;"/> 
+> <img src="images/fig1a.png" style="width:200px;"/> 
 > 
 > Startup screen showing the "No tree loaded" and the **Open…** and **Example…** buttons.
 
@@ -16,11 +16,27 @@ Click **Example…** to load the built-in EBOV dataset immediately.
 
 Alternatively, click the open button <img src="images/open_button.png" style="width:32px;"/> (or press **⌘O**) to open the *Open Tree File* dialog, switch to the **Example** tab, and click **Load Example Data**.
 
-> <img src="images/fig4.png" style="width:300px;"/>
+> <img src="images/fig1b.png" style="width:300px;"/>
 >
-> *Open Tree File* dialog with the Example tab selected.
+> *Open Tree File* dialog with the `Example` tab selected.
 
 After a moment the tree will appear on the canvas.
+
+There are two other ways of loading trees from this dialog box. From a file on your hard drive:
+
+> <img src="images/fig1c.png" style="width:300px;"/>
+>
+> *Open Tree File* dialog with the `File` tab selected.
+
+Note that the tree just gets imported into the web browser, not uploaded to a server - it remains on your computer.
+
+Finally, you can point it towards a tree file on the internet by entering the URL:
+
+> <img src="images/fig1d.png" style="width:300px;"/>
+>
+> *Open Tree File* dialog with the `URL` tab selected.
+
+For this tutorial, just open the Example tree.
 
 ---
 
@@ -29,17 +45,37 @@ After a moment the tree will appear on the canvas.
 The interface has four main areas:
 
 - **Toolbar** (top) — buttons for files, navigation, zoom, ordering, selection, rerooting, and panels
-- **Canvas** (centre) — the tree drawing; fills the remaining space
+- **Canvas** (centre) — the tree drawing; fills the central space on the page
 - **Visual Options palette** (left, hidden by default) — all display controls
 - **Status bar** (bottom) — live readout of values under the cursor
 
-> <img src="images/fig5b.png" style="width:500px;"/>
+> <img src="images/fig2a.png" style="width:500px;"/>
 > 
-> EBOV tree loaded and filling the canvas. Tip labels will not currently be visible because of the size of the tree.
+> EBOV tree loaded and filling the canvas. Tip labels will not currently be visible because of the size of the tree. The colours used will be determined by the `theme` currently being used - the current default is the `ARTIC` theme but this can be changed. From this point on we will use `Minimal` --- a simple monochrome theme –-- for clarity.
 
 ---
 
-## 3. Navigating the Tree
+## 3. Ordering Branches
+
+Reordering the branches so that nodes with more tips are shown towards the bottm of the page (or top) can help better understand the relationships of the nodes. 
+
+The **Order** buttons sort the clades by size:
+
+| Button | Shortcut | Effect |
+|---|---|---|
+| <img src="images/order_up_button.png" style="width:32px;"/> | ⌘U | Larger clades toward the top |
+| <img src="images/order_down_button.png" style="width:32px;"/> | ⌘D | Larger clades toward the bottom |
+
+> [!NOTE]
+> Once the tree has been ordered, the original order has been lost and you only have the choice of up or down orders or you can [rotate the nodes manually](#9-rotating-nodes-rotating-nodes).
+
+>  <img src="images/fig3.png" style="width:500px;"/> 
+>
+> EBOV tree with ascending order applied
+
+---
+
+## 4. Navigating the Tree
 
 There are many ways of quickly navigating the tree which will be useful if the tree is very large.
 
@@ -78,7 +114,7 @@ Press the Fit all button or **⌘0** to return to the full view.
 
 ---
 
-## 4. The Hyperbolic Lens
+## 5. The Hyperbolic Lens
 
 The hyperbolic lens lets you expand a region of the tree without zooming — the area near the cursor is stretched to label-readable spacing while the rest compresses but remains visible.
 
@@ -106,7 +142,7 @@ The peak magnification is always capped at the *Fit Labels* spacing level, so la
 
 ---
 
-## 5. Selecting Nodes and Tips
+## 6. Selecting Nodes and Tips
 
 PearTree has two selection modes; **Nodes** mode is active by default.
 
@@ -137,11 +173,11 @@ Press **⌘B** again to return to **Nodes** mode.
 
 ---
 
-## 6. Subtree Navigation
+## 7. Subtree Navigation
 
-PearTree has some useful functions for 'drilling-down' into parts of the tree to view subtrees and clades and then easily return back to the previous view.
+PearTree has some useful functions for 'drilling-down' into parts of the tree to view subtrees and clades and then easily return back to the previous view. 
 
-Double-click any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node.
+**Double-click** any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node.
 
 > <img src="images/fig9a.png" style="width:400px;"/>
 >
@@ -149,46 +185,40 @@ Double-click any internal node to zoom into its subtree. The canvas re-renders s
 >
 > A sub-clade of the EBOV tree filling the full canvas after double-clicking.
 
+PearTree stores a history of the parts of the tree you visit. **Double-click** on the root node of the subtree to go back to your previous view.
+
 Use the **History** buttons in the toolbar (or **⌘[** / **⌘]**) to navigate back and forward through your drill-down history.
 
 | Button | Shortcut | Effect |
 |---|---|---|
-|<img src="images/drill_down.png" style="width:32px;"/>| `⌘⇧>` | Drill-down into the selected subtree |
+|<img src="images/drill_down_button.png" style="width:32px;"/>| `⌘⇧>` | Drill-down into the selected subtree |
 |<img src="images/back_button.png" style="width:32px;"/>| `⌘[` | Go back through the drill-down history |
 |<img src="images/forward_button.png" style="width:32px;"/>| `⌘]` | Go forward through the drill-down history |
 |<img src="images/climb_up_button.png" style="width:32px;"/>| `⌘⇧<` | Climb up one node towords the root |
 
 ---
 
-## 8. Ordering Branches
+## 8. Rotating Nodes
 
-The **Order** buttons sort the clades by size:
+By 'rotating' a node we mean putting the bottom branch at the top and the top branch at the bottom. This changes the visual layout of the tree but doesn't change the actual phylogeny or what it means. You can also rotate or flip an entire clade. Rotating a node will undo the 'Branch Ordering' [described above](#branch-ordering) and these buttons will become unselected. 
 
-| Button | Shortcut | Effect |
-|---|---|---|
-| <img src="images/order_up_button.png" style="width:32px;"/> | ⌘U | Larger clades toward the top |
-| <img src="images/order_down_button.png" style="width:32px;"/> | ⌘D | Larger clades toward the bottom |
-
-The reordering animates smoothly. Click the active button again to cancel the ordering.
-
-> **📸 SCREENSHOT PLACEHOLDER** — EBOV tree with ascending order applied; branch transitions visible mid-animation.
-
----
-
-## 9. Rotating Nodes
-
-Select an internal node, then use the **Rotate** buttons:
+To rotate an internal node, select a node and then use the **Rotate** buttons:
 
 | Button | Effect |
 |---|---|
 | <img src="images/rotate_branch_button.png" style="width:32px;"/> | Reverses the direct children of the selected node |
 | <img src="images/rotate_clade_button.png" style="width:32px;"/> | Recursively reverses children at every level in the selected subtree |
 
-> **📸 SCREENSHOT PLACEHOLDER** — Before and after rotating a node: two clades swap positions.
+> <img src="images/fig10a.png" style="width:400px;"/>
+>
+> <img src="images/fig10b.png" style="width:400px;"/>
+>
+> <img src="images/fig10c.png" style="width:400px;"/>
+> Before and after rotating a node: one branch swaps positions.
 
 ---
 
-## 10. Hiding and Showing Subtrees
+## 9. Hiding and Showing Subtrees
 
 Hiding removes a node and all of its descendants from the tree layout entirely — they simply disappear from the canvas and the remaining tree reflows to fill the space. This is useful for focusing on a subset of the tree without changing the underlying data.
 
@@ -214,7 +244,7 @@ To restore hidden nodes:
 
 ---
 
-## 11. Node Info (⌘I)
+## 10. Node Info (⌘I)
 
 Select any node or tip, then press **⌘I** or click the <img src="images/get_info_button.png" style="width:32px;"/> button. A dialog lists every annotation on that node — name, divergence, branch length, any BEAST posterior values, or any custom annotations you have imported.
 
@@ -222,7 +252,7 @@ Select any node or tip, then press **⌘I** or click the <img src="images/get_in
 
 ---
 
-## 12. Importing Annotations
+## 11. Importing Annotations
 
 The EBOV example has annotations embedded in the tree file. To add extra per-tip metadata from your own CSV or TSV:
 
@@ -241,7 +271,7 @@ After import the new annotation keys appear in all *Colour by* dropdowns and the
 
 ---
 
-## 13. Colouring the Tree by Annotation
+## 12. Colouring the Tree by Annotation
 
 Open the **Visual Options palette** (press **Tab** or click the sliders button).
 
@@ -263,7 +293,7 @@ Under **Node Shapes**, change **Colour by** to an annotation. Internal node circ
 
 ---
 
-## 14. Adding a Legend
+## 13. Adding a Legend
 
 In the **Visual Options palette**, scroll to the **Legend** section:
 
@@ -276,7 +306,7 @@ A colour key strip appears at the chosen edge of the canvas.
 
 ---
 
-## 15. Applying a User Colour
+## 14. Applying a User Colour
 
 1. Select one or more tips.
 2. Click the colour swatch in the toolbar to pick a colour.
@@ -290,7 +320,7 @@ To remove all user colours, click the **Clear** (eraser) button next to the swat
 
 ---
 
-## 16. The Time Axis
+## 15. The Time Axis
 
 If the tree file contains node-height annotations (e.g. a BEAST MCC tree with `height` values) and tip dates, an **Axis** section appears in the Visual Options palette.
 
@@ -302,7 +332,7 @@ If the tree file contains node-height annotations (e.g. a BEAST MCC tree with `h
 
 ---
 
-## 17. Themes and Visual Customisation
+## 16. Themes and Visual Customisation
 
 The **Theme** section at the top of the Visual Options palette provides quick preset starting points:
 
@@ -331,7 +361,7 @@ Click **Reset to defaults** at the bottom of the palette to restore the *Artic* 
 
 ---
 
-## 18. Exporting the Tree
+## 17. Exporting the Tree
 
 Click the **↓ file** button (or press **⌘S**) to save the tree.
 
@@ -344,7 +374,7 @@ Click the **↓ file** button (or press **⌘S**) to save the tree.
 
 ---
 
-## 19. Exporting a Graphic
+## 18. Exporting a Graphic
 
 Click the **image** button (or press **⌘E**) to download an image.
 
@@ -359,7 +389,7 @@ SVG exports include branches, labels, shapes, legend strips, and the time axis a
 
 ---
 
-## 20. Settings Persistence
+## 19. Settings Persistence
 
 PearTree automatically saves all visual settings to browser **localStorage** and restores them on your next visit. This includes theme, palette values, colour-by choices, legend, axis configuration, branch order, and selection mode.
 

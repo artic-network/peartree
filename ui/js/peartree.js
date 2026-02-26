@@ -371,7 +371,6 @@ import * as commands from './commands.js';
       nodeBarsShowRange:  nodeBarsRangeEl.value,
       tipLabelShow:       tipLabelShow.value,
       tipLabelAlign:      tipLabelAlignEl.value,
-      nodeOrder:        currentOrder,
       mode:             renderer ? renderer._mode : 'nodes',
     }));
   }
@@ -446,7 +445,6 @@ import * as commands from './commands.js';
       nodeBarsShowRange:  nodeBarsRangeEl.value,
       tipLabelShow:       tipLabelShow.value,
       tipLabelAlign:      tipLabelAlignEl.value,
-      nodeOrder:        currentOrder,
       mode:             renderer ? renderer._mode : 'nodes',
     };
   }
@@ -1795,11 +1793,12 @@ import * as commands from './commands.js';
       labelColourBy.value = _hasOpt(labelColourBy, _eff.labelColourBy)    ? _eff.labelColourBy    : 'user_colour';
       legendAnnotEl.value = _hasOpt(legendAnnotEl, _eff.legendAnnotation) ? _eff.legendAnnotation : '';
       tipLabelShow.value  = _hasOpt(tipLabelShow,  _eff.tipLabelShow)     ? _eff.tipLabelShow     : 'names';
-      // Restore node order.
-      if (_eff.nodeOrder === 'asc' || _eff.nodeOrder === 'desc') {
-        const asc = _eff.nodeOrder === 'asc';
+      // Restore node order — only from file-embedded settings, not from saved prefs
+      // (order is a per-tree choice and should not persist across different trees).
+      if (_fileSettings?.nodeOrder === 'asc' || _fileSettings?.nodeOrder === 'desc') {
+        const asc = _fileSettings.nodeOrder === 'asc';
         reorderGraph(graph, asc);
-        currentOrder = _eff.nodeOrder;
+        currentOrder = _fileSettings.nodeOrder;
       }
 
       // Pass schema to the renderer so it can build colour scales.
