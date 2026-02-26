@@ -1099,7 +1099,8 @@
   <div class="pt-toolbar-center">
 
     <!-- annotation curation box - hiding for now -->
-    <button id="btn-curate-annot"  class="btn btn-sm btn-outline-secondary" disabled title="Curate annotations"><i class="bi bi-sliders2-vertical"></i></button>
+    <button id="btn-curate-annot"  class="btn btn-sm btn-outline-secondary" disabled title="Curate annotations"><i class="bi bi-tags"></i></button>
+    <div class="pt-toolbar-sep"></div>
 
     <!-- Back / Forward -->
     <span class="form-label-sm" style="padding: 0 2px 0 4px;">Nav:</span>
@@ -1306,7 +1307,7 @@
 <div id="curate-annot-overlay" class="pt-modal-overlay">
   <div class="pt-modal" style="width:740px;max-width:calc(100vw - 40px)">
     <div class="pt-modal-header">
-      <h5 class="modal-title"><i class="bi bi-sliders2-vertical me-2"></i>Curate Annotations</h5>
+      <h5 class="modal-title"><i class="bi bi-tags me-2"></i>Annotations</h5>
       <button class="pt-modal-close-btn" id="curate-annot-close" title="Close">&times;</button>
     </div>
     <div class="pt-modal-body" style="padding:0;display:flex;flex-direction:column">
@@ -1315,7 +1316,7 @@
           <thead>
             <tr>
               <th>Annotation</th><th>Type</th><th>On</th>
-              <th>Observed range</th><th>Scale bounds</th><th>Transform</th>
+              <th>Observed range</th><th>Scale bounds</th>
             </tr>
           </thead>
           <tbody id="curate-annot-tbody"></tbody>

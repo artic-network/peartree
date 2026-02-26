@@ -1,5 +1,5 @@
 // annotcurator.js — Annotation curation dialog.
-// Lets the user inspect, retype, adjust scale bounds and apply log transforms
+// Lets the user inspect, retype and adjust scale bounds for annotations
 // to annotations loaded from a tree file or imported from CSV/TSV.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -20,14 +20,6 @@ function _fmtNum(v) {
   return parseFloat(v.toPrecision(5)).toString();
 }
 
-/** @private Human-readable label for a transform key. */
-function _transformLabel(t) {
-  if (t === 'log2')  return 'log₂';
-  if (t === 'log10') return 'log₁₀';
-  if (t === 'ln')    return 'ln';
-  return '—';  // em dash for none
-}
-
 /**
  * Create the annotation curation dialog controller.
  *
@@ -45,7 +37,7 @@ export function createAnnotCurator({ getGraph, onApply }) {
   const applyBtn = document.getElementById('curate-annot-apply');
 
   // Pending edits per annotation name, cleared on each open().
-  // Map<name, { dataType?, min?, max?, fixedBounds?, _boundsMode?, transform? }>
+  // Map<name, { dataType?, min?, max?, fixedBounds?, _boundsMode? }>
   let _pending  = new Map();
   let _selected = null;   // name of currently selected row
 
@@ -76,15 +68,6 @@ export function createAnnotCurator({ getGraph, onApply }) {
     const graph = getGraph();
     if (!graph) return;
 
-    // Warn if any transforms are pending — they rewrite node values.
-    const transformNames = [..._pending.entries()]
-      .filter(([, p]) => p.transform && p.transform !== 'none')
-      .map(([n]) => n);
-    if (transformNames.length > 0) {
-      const msg = `Applying a log transform rewrites annotation values on all nodes and cannot be undone.\n\nAffected: ${transformNames.join(', ')}\n\nProceed?`;
-      if (!confirm(msg)) return;
-    }
-
     const schema = _buildModifiedSchema(graph);
     onApply(schema);
     graph.annotationSchema = schema;
@@ -101,7 +84,6 @@ export function createAnnotCurator({ getGraph, onApply }) {
 
       const p         = _pending.get(name) ?? {};
       const type      = p.dataType  ?? def.dataType;
-      const transform = p.transform ?? 'none';
       const isNum     = type === 'real' || type === 'integer';
 
       // Observed range (always from original data)
@@ -125,6 +107,10 @@ export function createAnnotCurator({ getGraph, onApply }) {
         obsCell = `<span style="font-family:monospace">${_fmtNum(obsMin)}</span>
                    <span style="color:rgba(255,255,255,0.3);padding:0 3px">…</span>
                    <span style="font-family:monospace">${_fmtNum(obsMax)}</span>`;
+      } else if (type === 'date' && def.min != null && def.max != null) {
+        obsCell = `<span style="font-family:monospace">${esc(def.min)}</span>
+                   <span style="color:rgba(255,255,255,0.3);padding:0 3px">…</span>
+                   <span style="font-family:monospace">${esc(def.max)}</span>`;
       } else if (type === 'categorical' && def.values) {
         obsCell = `<span style="color:rgba(255,255,255,0.5)">${def.values.length} values</span>`;
       } else {
@@ -154,14 +140,11 @@ export function createAnnotCurator({ getGraph, onApply }) {
           <td class="ca-center" style="color:rgba(255,255,255,0.45);font-size:0.72rem">${onStr}</td>
           <td>${obsCell}</td>
           <td>${boundsCell}</td>
-          <td style="color:${transform !== 'none' ? 'var(--pt-teal)' : 'rgba(255,255,255,0.3)'}">
-            ${_transformLabel(transform)}
-          </td>
         </tr>`);
     }
 
     tbody.innerHTML = rows.length ? rows.join('') :
-      '<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.3);padding:16px">No annotations</td></tr>';
+      '<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,0.3);padding:16px">No annotations</td></tr>';
 
     // Row click handlers
     for (const tr of tbody.querySelectorAll('tr[data-name]')) {
@@ -194,8 +177,7 @@ export function createAnnotCurator({ getGraph, onApply }) {
     const p           = _pending.get(name) ?? {};
     const currentType = p.dataType ?? def.dataType;
     const isNumeric   = currentType === 'real' || currentType === 'integer';
-    const origIsNum   = def.dataType === 'real' || def.dataType === 'integer';
-    const currentTfm  = p.transform ?? 'none';
+    const isDate      = currentType === 'date';
 
     // Bounds state
     const scaleMin    = p.min !== undefined ? p.min : def.min;
@@ -215,11 +197,6 @@ export function createAnnotCurator({ getGraph, onApply }) {
     const chkProb   = boundsMode === 'prob'   ? ' checked' : '';
     const chkCustom = boundsMode === 'custom' ? ' checked' : '';
     const customVis = boundsMode === 'custom' ? '' : 'visibility:hidden;';
-    const selNone   = currentTfm === 'none'   ? ' selected' : '';
-    const selLog2   = currentTfm === 'log2'   ? ' selected' : '';
-    const selLog10  = currentTfm === 'log10'  ? ' selected' : '';
-    const selLn     = currentTfm === 'ln'     ? ' selected' : '';
-    const warnVis   = currentTfm !== 'none'   ? '' : 'display:none;';
     const minVal    = scaleMin != null ? scaleMin : '';
     const maxVal    = scaleMax != null ? scaleMax : '';
     const obsMinStr = esc(_fmtNum(def.observedMin ?? def.min));
@@ -248,6 +225,33 @@ export function createAnnotCurator({ getGraph, onApply }) {
     }
     html += `</div>`;
 
+    // Categorical values preview
+    if (currentType === 'categorical' && def.values?.length) {
+      const vals = def.values;
+      let preview;
+      if (vals.length <= 4) {
+        preview = vals.map(v => `<span class="ca-mono" style="margin-right:6px">${esc(v)}</span>`).join('');
+      } else {
+        preview = [vals[0], vals[1], vals[2]].map(v => `<span class="ca-mono" style="margin-right:6px">${esc(v)}</span>`).join('')
+                + `<span style="color:rgba(255,255,255,0.4);margin-right:6px">\u2026</span>`
+                + `<span class="ca-mono">${esc(vals[vals.length - 1])}</span>`;
+      }
+      html += `<div class="ca-section-lbl" style="margin-top:10px">Values <span class="ca-hint">${vals.length} distinct</span></div>`
+            + `<div class="ca-row" style="flex-wrap:wrap;gap:4px 0">${preview}</div>`;
+    }
+
+    // Date range (date type only)
+    if (isDate && def.min != null && def.max != null) {
+      html += `<div class="ca-section-lbl" style="margin-top:10px">Date range</div>`
+            + `<div class="ca-row">`
+            + `<label class="ca-row-lbl">Earliest</label>`
+            + `<span class="ca-mono" style="margin-right:16px">${esc(def.min)}</span>`
+            + `<label class="ca-row-lbl">Latest</label>`
+            + `<span class="ca-mono">${esc(def.max)}</span>`
+            + `<span class="ca-hint" style="margin-left:10px">${def.values ? def.values.length + ' distinct values' : ''}</span>`
+            + `</div>`;
+    }
+
     // Bounds (numeric only)
     if (isNumeric) {
       html += `<div class="ca-section-lbl" style="margin-top:10px">Scale bounds</div>`
@@ -267,21 +271,6 @@ export function createAnnotCurator({ getGraph, onApply }) {
             + `<label class="ca-row-lbl" style="margin-left:8px">Max</label>`
             + `<input type="number" id="cd-max" class="ca-num-input" value="${maxVal}" placeholder="auto" step="any">`
             + `</div>`;
-    }
-
-    // Transform (numeric only)
-    if (origIsNum) {
-      html += `<div class="ca-section-lbl" style="margin-top:10px">Transform</div>`
-            + `<div class="ca-row"><label class="ca-row-lbl">Apply</label>`
-            + `<select id="cd-transform" class="ca-sel">`
-            + `<option value="none"${selNone}>None</option>`
-            + `<option value="log2"${selLog2}>log\u2082</option>`
-            + `<option value="log10"${selLog10}>log\u2081\u2080</option>`
-            + `<option value="ln"${selLn}>ln \u2014 natural log</option>`
-            + `</select></div>`
-            + `<p id="cd-transform-warn" class="ca-warn" style="${warnVis}">`
-            + `<i class="bi bi-exclamation-triangle-fill me-1"></i>`
-            + `Rewrites annotation values on all nodes \u2014 cannot be undone after Apply.</p>`;
     }
 
     detail.innerHTML = html;
@@ -317,13 +306,6 @@ export function createAnnotCurator({ getGraph, onApply }) {
       _updateTableRow(name, getGraph()?.annotationSchema);
     });
 
-    // Transform
-    document.getElementById('cd-transform')?.addEventListener('change', e => {
-      _mutPending(name, { transform: e.target.value });
-      const warn = document.getElementById('cd-transform-warn');
-      if (warn) warn.style.display = e.target.value !== 'none' ? '' : 'none';
-      _updateTableRow(name, getGraph()?.annotationSchema);
-    });
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -363,7 +345,6 @@ export function createAnnotCurator({ getGraph, onApply }) {
 
   /**
    * Clone the current graph schema and apply all pending edits.
-   * Transforms are applied directly to graph.nodes[*].annotations.
    *
    * @returns {Map<string, object>} patched schema
    */
@@ -377,28 +358,7 @@ export function createAnnotCurator({ getGraph, onApply }) {
       if (!out.has(name)) continue;
       const def = out.get(name);
 
-      // 1. Transform — rewrite node values first (changes observedMin/Max)
-      if (p.transform && p.transform !== 'none') {
-        const logFn = p.transform === 'log2'  ? Math.log2
-                    : p.transform === 'log10' ? Math.log10
-                    :                           Math.log;
-        let newMin = Infinity, newMax = -Infinity;
-        for (const node of nodes) {
-          const v = node.annotations?.[name];
-          if (typeof v === 'number' && Number.isFinite(v) && v > 0) {
-            const t = logFn(v);
-            node.annotations[name] = t;
-            if (t < newMin) newMin = t;
-            if (t > newMax) newMax = t;
-          }
-        }
-        if (newMin !== Infinity)  { def.observedMin = newMin; }
-        if (newMax !== -Infinity) { def.observedMax = newMax; }
-        // Carry transform metadata for reference (not used by renderer currently)
-        def.transform = p.transform;
-      }
-
-      // 2. Type change
+      // 1. Type change
       const targetType = p.dataType ?? def.dataType;
       if (p.dataType && p.dataType !== def.dataType) {
         if (p.dataType === 'categorical') {
@@ -418,7 +378,7 @@ export function createAnnotCurator({ getGraph, onApply }) {
         }
       }
 
-      // 3. Bounds override
+      // 2. Bounds override
       if (p._boundsMode === 'auto') {
         def.min         = def.observedMin;
         def.max         = def.observedMax;
@@ -429,7 +389,7 @@ export function createAnnotCurator({ getGraph, onApply }) {
         if (p.fixedBounds !== undefined) def.fixedBounds = p.fixedBounds;
       }
 
-      // 4. Rebuild formatters for numeric types
+      // 3. Rebuild formatters for numeric types
       const finalType = def.dataType;
       if (finalType === 'real' || finalType === 'integer') {
         def.observedRange = (def.observedMax ?? def.max ?? 0) - (def.observedMin ?? def.min ?? 0);

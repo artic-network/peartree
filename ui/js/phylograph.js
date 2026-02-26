@@ -35,11 +35,11 @@
 //
 // AnnotationDef {
 //   name:        string
-//   dataType:    'real' | 'integer' | 'ordinal' | 'categorical' | 'list'
-//   min?:        number      – real / integer: observed minimum value
-//   max?:        number      – real / integer: observed maximum value
-//   values?:     string[]    – categorical / ordinal: observed distinct values
-//                              (for ordinal the array is the meaningful order)
+//   dataType:    'real' | 'integer' | 'ordinal' | 'categorical' | 'date' | 'list'
+//   min?:        number|string – real/integer: observed min; date: earliest ISO string
+//   max?:        number|string – real/integer: observed max; date: latest ISO string
+//   values?:     string[]    – categorical / ordinal / date: observed distinct values
+//                              (for ordinal and date the array is in meaningful order)
 //   elementType?: AnnotationDef  – list: recursive type description of list elements
 // }
 //
@@ -305,6 +305,42 @@ export const KNOWN_ANNOTATION_BOUNDS = new Map([
   // Common date/time decimal-year annotations do NOT have fixed bounds — omitted.
 ]);
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Date utilities
+// ─────────────────────────────────────────────────────────────────────────────
+
+const DATE_FULL_RE  = /^\d{4}-\d{2}-\d{2}$/;
+const DATE_MONTH_RE = /^\d{4}-\d{2}$/;
+const DATE_YEAR_RE  = /^\d{4}$/;
+
+function isDateString(v) {
+  return typeof v === 'string' &&
+    (DATE_FULL_RE.test(v) || DATE_MONTH_RE.test(v) || DATE_YEAR_RE.test(v));
+}
+
+/**
+ * Convert an ISO date string (yyyy-mm-dd, yyyy-mm, or yyyy) to a decimal year.
+ * Used for sequential colour scaling and legend tick positioning.
+ * @param  {string} dateStr
+ * @returns {number}
+ */
+export function dateToDecimalYear(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return NaN;
+  const parts = String(dateStr).split('-');
+  const year  = parseInt(parts[0], 10);
+  if (isNaN(year)) return NaN;
+  if (parts.length === 1) return year;                          // yyyy → start of year
+  const month = parseInt(parts[1], 10);                        // 1–12
+  if (parts.length === 2) return year + (month - 1) / 12;     // yyyy-mm → start of month
+  const day   = parseInt(parts[2], 10);
+  const startOfYear = new Date(year, 0, 1);
+  const startOfDay  = new Date(year, month - 1, day);
+  const endOfYear   = new Date(year + 1, 0, 1);
+  const daysInYear  = (endOfYear - startOfYear) / 86400000;
+  const dayOfYear   = (startOfDay - startOfYear) / 86400000;
+  return year + dayOfYear / daysInYear;
+}
+
 /**
  * Build a number-to-string formatter calibrated to an annotation's observed range.
  * Uses the actual data range (observedMin/observedMax) to set resolution, so that
@@ -366,8 +402,18 @@ function inferAnnotationType(values) {
     return { dataType: allInteger ? 'integer' : 'real', min, max, observedMin: min, observedMax: max };
   }
 
+  // ── Date type (yyyy-mm-dd, yyyy-mm, or yyyy) ─────────────────────────────
+  // Require at least one value in yyyy-mm or yyyy-mm-dd form to confirm it is
+  // a date annotation, not just bare integer years (which are detected above).
+  const stringValues = values.map(v => String(v));
+  if (stringValues.every(isDateString) &&
+      stringValues.some(v => DATE_FULL_RE.test(v) || DATE_MONTH_RE.test(v))) {
+    const distinct = [...new Set(stringValues)].sort(); // ISO lex order = chronological
+    return { dataType: 'date', values: distinct, min: distinct[0], max: distinct[distinct.length - 1] };
+  }
+
   // ── Categorical (default for string / mixed) ─────────────────────────────
-  const distinct = [...new Set(values.map(v => String(v)))].sort();
+  const distinct = [...new Set(stringValues)].sort();
   return { dataType: 'categorical', values: distinct };
 }
 
@@ -378,6 +424,7 @@ function inferAnnotationType(values) {
  * Data types are inferred automatically:
  *   real        – all values are non-integer numbers
  *   integer     – all values are integers
+ *   date        – all values are ISO date strings (yyyy-mm[-dd]); sorted chronologically
  *   categorical – values are strings (or a mix); distinct values listed
  *   ordinal     – not auto-detected; upgrade manually when order is known
  *   list        – values are arrays; elementType is inferred recursively

@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { computeLayoutFromGraph } from './treeutils.js';
+import { dateToDecimalYear } from './phylograph.js';
 import { getSequentialPalette, lerpSequential,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
          MISSING_DATA_COLOUR, buildCategoricalColourMap } from './palettes.js';
@@ -655,6 +656,12 @@ export class TreeRenderer {
       const paletteName = this._annotationPaletteOverrides.get(key);
       const colourMap = buildCategoricalColourMap(def.values || [], paletteName);
       for (const [v, c] of colourMap) scale.set(v, c);
+    } else if (def.dataType === 'date') {
+      // Sequential scale; values are ISO date strings converted to decimal years at draw time.
+      scale.set('__min__',    dateToDecimalYear(def.min));
+      scale.set('__max__',    dateToDecimalYear(def.max));
+      scale.set('__palette__', this._annotationPaletteOverrides.get(key) ?? null);
+      scale.set('__isDate__', true);
     } else if (def.dataType === 'real' || def.dataType === 'integer') {
       // Store range and palette name so _colourFromScale can interpolate at draw time.
       scale.set('__min__', def.min ?? 0);
@@ -676,9 +683,10 @@ export class TreeRenderer {
     if (scale.has(value)) return scale.get(value);
     // Numeric interpolation for real/integer scales.
     if (scale.has('__min__')) {
+      const rawValue = scale.get('__isDate__') ? dateToDecimalYear(value) : value;
       const min  = scale.get('__min__');
       const max  = scale.get('__max__');
-      const t    = max > min ? (value - min) / (max - min) : 0.5;
+      const t    = max > min ? (rawValue - min) / (max - min) : 0.5;
       return lerpSequential(t, getSequentialPalette(scale.get('__palette__')));
     }
     // Value not found in categorical scale — treat as missing.

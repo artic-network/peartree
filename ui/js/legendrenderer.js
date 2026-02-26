@@ -20,6 +20,7 @@
 import { getSequentialPalette,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
          MISSING_DATA_COLOUR, buildCategoricalColourMap } from './palettes.js';
+import { dateToDecimalYear } from './phylograph.js';
 
 export class LegendRenderer {
   /**
@@ -217,6 +218,45 @@ export class LegendRenderer {
         ctx.fillText(String(val), PAD + SWATCH + 6, y + SWATCH / 2, W - PAD * 2 - SWATCH - 6);
         y += ROW_H;
       });
+    } else if (def.dataType === 'date') {
+      // Render as a sequential gradient bar with date-string tick labels.
+      const BAR_W  = 14;
+      const BAR_X  = PAD;
+      const BAR_Y  = y;
+      const BAR_H  = Math.max(40, H - y - PAD);
+      const grad   = ctx.createLinearGradient(0, BAR_Y, 0, BAR_Y + BAR_H);
+      const seqStops = getSequentialPalette(this._paletteOverrides?.get(key));
+      const ns = seqStops.length;
+      for (let i = 0; i < ns; i++) grad.addColorStop(i / (ns - 1), seqStops[ns - 1 - i]);
+      ctx.fillStyle = grad;
+      ctx.fillRect(BAR_X, BAR_Y, BAR_W, BAR_H);
+
+      const LABEL_X   = BAR_X + BAR_W + 6;
+      const LABEL_W   = W - LABEL_X - PAD;
+      const tickCount = Math.max(2, Math.min(6, Math.floor(BAR_H / (lfs + 6))));
+      const vals    = def.values || [];
+      const minDec  = dateToDecimalYear(def.min);
+      const maxDec  = dateToDecimalYear(def.max);
+      const range   = maxDec - minDec || 1;
+      ctx.font         = `${lfs}px ${FONT}`;
+      ctx.fillStyle    = ltc;
+      ctx.textAlign    = 'left';
+      for (let i = 0; i < tickCount; i++) {
+        const t         = i / (tickCount - 1);   // 0 = top (max) → 1 = bottom (min)
+        const tickY     = BAR_Y + t * BAR_H;
+        const targetDec = maxDec - t * range;
+        // Pick the date string from def.values closest to this decimal-year position.
+        let label = vals[0] ?? def.min;
+        let bestDist = Infinity;
+        for (const v of vals) {
+          const dist = Math.abs(dateToDecimalYear(v) - targetDec);
+          if (dist < bestDist) { bestDist = dist; label = v; }
+        }
+        ctx.fillStyle    = ltc;
+        ctx.fillRect(BAR_X + BAR_W, tickY - 0.5, 4, 1);
+        ctx.textBaseline = i === 0 ? 'top' : (i === tickCount - 1 ? 'bottom' : 'middle');
+        ctx.fillText(label, LABEL_X, tickY, LABEL_W);
+      }
     } else if (def.dataType === 'real' || def.dataType === 'integer') {
       const BAR_W  = 14;
       const BAR_X  = PAD;

@@ -1851,7 +1851,8 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       while (axisDateAnnotEl.options.length > 1) axisDateAnnotEl.remove(1);
       if (_isTimedTree) {
         for (const [name, def] of schema) {
-          if (def.dataType === 'categorical' || def.dataType === 'integer' || def.dataType === 'real') {
+          if (def.dataType === 'categorical' || def.dataType === 'date' ||
+              def.dataType === 'integer' || def.dataType === 'real') {
             const opt = document.createElement('option');
             opt.value = name;
             opt.textContent = name;
