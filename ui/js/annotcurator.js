@@ -358,6 +358,7 @@ export function createAnnotCurator({ getGraph, onApply }) {
 
   function _openParseTips() {
     document.getElementById('parse-tips-name').value    = '';
+    document.getElementById('parse-tips-delim').value   = '|';
     document.getElementById('parse-tips-field').value   = '1';
     document.getElementById('parse-tips-type').value    = 'auto';
     document.getElementById('parse-tips-missing').value = '?';
@@ -403,13 +404,15 @@ export function createAnnotCurator({ getGraph, onApply }) {
     if (!graph) return;
 
     const annotName  = document.getElementById('parse-tips-name').value.trim();
+    const delimiter  = document.getElementById('parse-tips-delim').value; // default '|'
     const fieldNum   = parseInt(document.getElementById('parse-tips-field').value, 10);
     const typeHint   = document.getElementById('parse-tips-type').value;
-    const missingStr = document.getElementById('parse-tips-missing').value; // '' = no missing sentinel
+    const missingStr = document.getElementById('parse-tips-missing').value;
 
     document.getElementById('parse-tips-error').style.display = 'none';
 
     if (!annotName) { _showParseError('Please enter an annotation name.'); return; }
+    if (!delimiter) { _showParseError('Please enter a delimiter character.'); return; }
     if (isNaN(fieldNum) || fieldNum === 0) { _showParseError('Field must be a non-zero integer.'); return; }
 
     // Warn if name already exists
@@ -425,7 +428,7 @@ export function createAnnotCurator({ getGraph, onApply }) {
     const extracted = [];
     const missing   = [];
     for (const node of tips) {
-      const parts = (node.name ?? '').split('|');
+      const parts = (node.name ?? '').split(delimiter);
       const idx   = fieldNum > 0 ? fieldNum - 1 : parts.length + fieldNum;
       if (idx < 0 || idx >= parts.length) {
         missing.push(node.name);

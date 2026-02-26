@@ -1349,10 +1349,15 @@
       <button class="pt-modal-close-btn" id="parse-tips-close" title="Close">&times;</button>
     </div>
     <div class="pt-modal-body">
-      <p style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:14px">Extract an annotation from tip names split by <code style="background:rgba(255,255,255,0.08);padding:1px 4px;border-radius:3px">|</code> (pipe character).</p>
+      <p style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:14px">Extract an annotation from tip names by splitting on a delimiter.</p>
       <div class="ca-row" style="margin-bottom:10px">
         <label class="ca-row-lbl" style="width:80px">Name</label>
         <input type="text" id="parse-tips-name" class="ca-num-input" style="flex:1;width:auto" placeholder="annotation name">
+      </div>
+      <div class="ca-row" style="margin-bottom:10px">
+        <label class="ca-row-lbl" style="width:80px">Delimiter</label>
+        <input type="text" id="parse-tips-delim" class="ca-num-input" style="width:70px;font-family:monospace" value="|" placeholder="|">
+        <span class="ca-hint" style="margin-left:8px">character(s) used to split tip names into fields</span>
       </div>
       <div class="ca-row" style="margin-bottom:10px">
         <label class="ca-row-lbl" style="width:80px">Field</label>
