@@ -153,8 +153,12 @@ export function rerootOnGraph(graph, childOrigId, distFromParent) {
   // parent (which becomes N's new child on that same branch).
   //
   // Transfer map (pre-gathered to avoid overwrite corruption in a chain):
-  //   path[i]  →  path[i+1]    for i < path.length - 1
-  //   path[last]  →  otherRootAdj  (the non-path root-adjacent node)
+  //   path[i]  →  path[i+1]    for 0 ≤ i < path.length - 1
+  //   path[last]  annotation is DISCARDED — it described the old virtual-root
+  //               edge, which has no meaningful direction after rerooting.
+  //   otherRootAdj is NOT written — its adjacents[0] still points to path[last]
+  //               (unchanged by topology reversal), so its own branch annotation
+  //               keeps its original meaning without any transfer.
   //
   // The newB node is NOT in the path, so its annotation is unaffected.
   const schema = graph.annotationSchema;
@@ -164,23 +168,29 @@ export function rerootOnGraph(graph, childOrigId, distFromParent) {
       if (def.isBranchAnnotation) branchKeys.push(k);
     }
     if (branchKeys.length > 0) {
-      const otherRootAdj = root.nodeA === path[path.length - 1] ? root.nodeB : root.nodeA;
-      const oldParents   = path.map((_, i) =>
-        i < path.length - 1 ? path[i + 1] : otherRootAdj
-      );
       for (const k of branchKeys) {
-        // Read all source values BEFORE any write so chained transfers are correct.
+        // Read all source values BEFORE any write.
         const oldVals = path.map(idx => nodes[idx].annotations[k]);
-        for (let i = 0; i < path.length; i++) {
-          // Clear annotation from the source node (its branch direction changes).
-          delete nodes[path[i]].annotations[k];
-          // Write to the former parent (which now becomes the descendant of this branch).
-          const dest = oldParents[i];
+        const last    = path.length - 1;
+
+        // Pass 1: erase the annotation from every path node.  We must do this
+        // before writing so that later nodes in the path start from a clean
+        // slate (otherwise a write to path[i+1] in pass 2 would be erased when
+        // the delete-pass reaches path[i+1]).
+        for (const idx of path) delete nodes[idx].annotations[k];
+
+        // Pass 2: write each path node's old value to the next node in the
+        // path (its OLD parent, which is now its new child after edge reversal).
+        // We stop at path[last-1] → path[last]; path[last]'s annotation is
+        // simply discarded because it described the OLD virtual-root edge,
+        // which is no longer meaningful.  otherRootAdj is NOT written — its
+        // parent pointer (adjacents[0] = path[last]) is unchanged by rerooting
+        // so its own branch annotation retains its original meaning.
+        for (let i = 0; i < last; i++) {
           if (oldVals[i] !== undefined) {
-            nodes[dest].annotations[k] = oldVals[i];
-          } else {
-            delete nodes[dest].annotations[k];
+            nodes[path[i + 1]].annotations[k] = oldVals[i];
           }
+          // If oldVals[i] was undefined we already deleted, so nothing to do.
         }
       }
     }
