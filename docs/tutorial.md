@@ -252,8 +252,10 @@ The selected node and all its descendants are hidden in the tree and removed fro
 
 To restore hidden nodes:
 
-- **With a node selected** — select the parent node (the branch stub where the hidden subtree was attached) and click <img src="images/unhide_button.png" style="width:32px;"/> (**Show** ). The hidden descendants of that node are restored.
-- **With nothing selected** — click click <img src="images/unhide_button.png" style="width:32px;"/> (**Show** ) with no selection to reveal *all* hidden nodes in the current view at once.
+If there are any hidden nodes within the currently viewed part of the tree (or if a clade has been selected, amongst those nodes) then the **Unhide** (<img src="images/unhide_button.png" style="width:32px;"/>) button will be available.
+
+- **With a node selected** — select the parent node (the branch stub where the hidden subtree was attached) and click <img src="images/unhide_button.png" style="width:32px;"/> (**Unhide** ). The hidden descendants of that node are restored.
+- **With nothing selected** — click <img src="images/unhide_button.png" style="width:32px;"/> (**Show** ) with no selection to reveal *all* hidden nodes in the current view at once.
 
 > **Note:** Hiding changes the visible tip count, so any active branch ordering (ascending/descending) is automatically cleared when you hide or show nodes.
 
