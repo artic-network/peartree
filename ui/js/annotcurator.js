@@ -3,7 +3,7 @@
 // to annotations loaded from a tree file or imported from CSV/TSV.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { makeAnnotationFormatter, buildAnnotationSchema } from './phylograph.js';
+import { makeAnnotationFormatter, buildAnnotationSchema, isNumericType } from './phylograph.js';
 
 /** @private HTML-escape a value for safe insertion. */
 function esc(s) {
@@ -103,7 +103,7 @@ export function createAnnotCurator({ getGraph, onApply }) {
       const isDeleted = _deleted.has(name);
       const p         = _pending.get(name) ?? {};
       const type      = p.dataType  ?? def.dataType;
-      const isNum     = type === 'real' || type === 'integer';
+      const isNum     = isNumericType(type);
 
       // Observed range (always from original data)
       const obsMin = def.observedMin ?? def.min;
@@ -222,14 +222,19 @@ export function createAnnotCurator({ getGraph, onApply }) {
 
     const p           = _pending.get(name) ?? {};
     const currentType = p.dataType ?? def.dataType;
-    const isNumeric   = currentType === 'real' || currentType === 'integer';
+    const isNumeric   = isNumericType(currentType);
     const isDate      = currentType === 'date';
+    const isBranchAnnot = p.isBranchAnnotation !== undefined
+      ? p.isBranchAnnotation
+      : (def.isBranchAnnotation ?? false);
 
     // Bounds state
     const scaleMin    = p.min !== undefined ? p.min : def.min;
     const scaleMax    = p.max !== undefined ? p.max : def.max;
     const boundsMode  = p._boundsMode ??
-      (def.fixedBounds
+      (currentType === 'proportion' ? 'proportion' :
+       currentType === 'percentage' ? 'percentage' :
+       def.fixedBounds
         ? (def.min === 0 && def.max === 1 ? 'prob' : def.min === 0 ? 'nonneg' : 'custom')
         : 'auto');
 
@@ -237,6 +242,8 @@ export function createAnnotCurator({ getGraph, onApply }) {
 
     const selInt    = currentType === 'integer'     ? ' selected' : '';
     const selReal   = currentType === 'real'        ? ' selected' : '';
+    const selProp   = currentType === 'proportion'  ? ' selected' : '';
+    const selPerc   = currentType === 'percentage'  ? ' selected' : '';
     const selCat    = currentType === 'categorical' ? ' selected' : '';
     const chkAuto   = boundsMode === 'auto'   ? ' checked' : '';
     const chkNonneg = boundsMode === 'nonneg' ? ' checked' : '';
@@ -255,12 +262,11 @@ export function createAnnotCurator({ getGraph, onApply }) {
           + `<div class="ca-row"><label class="ca-row-lbl">Type</label>`
           + `<select id="cd-type" class="ca-sel">`;
 
-    if (def.dataType === 'integer') {
-      html += `<option value="integer"${selInt}>Integer \u2014 discrete</option>`
-            + `<option value="real"${selReal}>Real \u2014 continuous</option>`
-            + `<option value="categorical"${selCat}>Categorical</option>`;
-    } else if (def.dataType === 'real') {
-      html += `<option value="real"${selReal}>Real \u2014 continuous</option>`
+    if (isNumericType(def.dataType)) {
+      html += `<option value="integer"${selInt}>Integer — discrete</option>`
+            + `<option value="real"${selReal}>Real — continuous</option>`
+            + `<option value="proportion"${selProp}>Proportion [0–1] — fixed bounds</option>`
+            + `<option value="percentage"${selPerc}>Percentage [0–100] — fixed bounds</option>`
             + `<option value="categorical"${selCat}>Categorical</option>`;
     } else {
       html += `<option value="${esc(def.dataType)}" selected>${esc(def.dataType)}</option>`;
@@ -300,7 +306,16 @@ export function createAnnotCurator({ getGraph, onApply }) {
 
     // Bounds (numeric only)
     if (isNumeric) {
-      html += `<div class="ca-section-lbl" style="margin-top:10px">Scale bounds</div>`
+      if (currentType === 'proportion' || currentType === 'percentage') {
+        const [fbMin, fbMax] = currentType === 'proportion' ? [0, 1] : [0, 100];
+        html += `<div class="ca-section-lbl" style="margin-top:10px">Scale bounds</div>`
+              + `<div class="ca-row" style="color:rgba(255,255,255,0.55);font-size:0.78rem">`
+              + `<i class="bi bi-lock-fill me-2" style="opacity:0.5"></i>`
+              + `Fixed by type: <span class="ca-mono" style="margin:0 6px">${fbMin} … ${fbMax}</span>`
+              + `<span class="ca-hint">(change type to Real to adjust)</span>`
+              + `</div>`;
+      } else {
+        html += `<div class="ca-section-lbl" style="margin-top:10px">Scale bounds</div>`
             + `<div class="ca-row ca-wrap">`
             + `<label class="ca-chk-lbl"><input type="radio" name="cd-bounds" value="auto"${chkAuto}>`
             +   `Auto \u2014 observed <span class="ca-mono">${obsMinStr}\u2009\u2026\u2009${obsMaxStr}</span></label>`
@@ -317,7 +332,16 @@ export function createAnnotCurator({ getGraph, onApply }) {
             + `<label class="ca-row-lbl" style="margin-left:8px">Max</label>`
             + `<input type="number" id="cd-max" class="ca-num-input" value="${maxVal}" placeholder="auto" step="any">`
             + `</div>`;
+      } // end else (real / integer bounds)
     }
+
+    // Branch-annotation flag (relevant for all types with numeric / label data)
+    html += `<div class="ca-section-lbl" style="margin-top:10px">Behaviour</div>`
+          + `<div class="ca-row">`
+          + `<label class="ca-chk-lbl"><input type="checkbox" id="cd-branch-annot"${isBranchAnnot ? ' checked' : ''}>`
+          + ` Branch annotation`
+          + ` <span class="ca-hint">(stored on descendant; describes the branch above it — transferred on reroot)</span>`
+          + `</label></div>`;
 
     detail.innerHTML = html;
 
@@ -350,6 +374,11 @@ export function createAnnotCurator({ getGraph, onApply }) {
       const v = e.target.value.trim();
       _mutPending(name, { max: v === '' ? undefined : parseFloat(v) });
       _updateTableRow(name, getGraph()?.annotationSchema);
+    });
+
+    // Branch-annotation toggle
+    document.getElementById('cd-branch-annot')?.addEventListener('change', e => {
+      _mutPending(name, { isBranchAnnotation: e.target.checked });
     });
 
   }
@@ -533,9 +562,11 @@ export function createAnnotCurator({ getGraph, onApply }) {
 
   /** Return min/max overrides for a bounds preset. */
   function _boundsFromPreset(mode, def) {
-    if (mode === 'auto')   return { min: undefined, max: undefined, fixedBounds: false };
-    if (mode === 'nonneg') return { min: 0, max: undefined, fixedBounds: true };
-    if (mode === 'prob')   return { min: 0, max: 1, fixedBounds: true };
+    if (mode === 'auto')       return { min: undefined, max: undefined, fixedBounds: false };
+    if (mode === 'nonneg')     return { min: 0, max: undefined, fixedBounds: true };
+    if (mode === 'prob')       return { min: 0, max: 1, fixedBounds: true };
+    if (mode === 'proportion') return { min: 0, max: 1, fixedBounds: true };
+    if (mode === 'percentage') return { min: 0, max: 100, fixedBounds: true };
     // 'custom' — keep whoever set min/max
     return { fixedBounds: true };
   }
@@ -579,9 +610,20 @@ export function createAnnotCurator({ getGraph, onApply }) {
           delete def.min; delete def.max;
           delete def.observedMin; delete def.observedMax;
           delete def.observedRange; delete def.fmt; delete def.fmtValue;
+        } else if (p.dataType === 'proportion') {
+          def.dataType    = 'proportion';
+          def.min         = 0;
+          def.max         = 1;
+          def.fixedBounds = true;
+        } else if (p.dataType === 'percentage') {
+          def.dataType    = 'percentage';
+          def.min         = 0;
+          def.max         = 100;
+          def.fixedBounds = true;
         } else {
-          // integer → real or vice-versa: keep numeric stats, just change the label
-          def.dataType = p.dataType;
+          // integer ↔ real (and proportion/percentage → real/integer): keep numeric stats.
+          def.dataType    = p.dataType;
+          def.fixedBounds = false;  // remove fixed bounds when reverting to raw type
         }
       }
 
@@ -598,11 +640,14 @@ export function createAnnotCurator({ getGraph, onApply }) {
 
       // 3. Rebuild formatters for numeric types
       const finalType = def.dataType;
-      if (finalType === 'real' || finalType === 'integer') {
+      if (isNumericType(finalType)) {
         def.observedRange = (def.observedMax ?? def.max ?? 0) - (def.observedMin ?? def.min ?? 0);
         def.fmt      = makeAnnotationFormatter(def, 'ticks');
         def.fmtValue = makeAnnotationFormatter(def, 'value');
       }
+
+      // 4. Branch-annotation flag
+      if (p.isBranchAnnotation !== undefined) def.isBranchAnnotation = p.isBranchAnnotation;
     }
 
     return out;

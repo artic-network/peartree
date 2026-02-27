@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { AxisRenderer } from './axisrenderer.js';
+import { isNumericType } from './phylograph.js';
 import { getSequentialPalette,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
          MISSING_DATA_COLOUR, buildCategoricalColourMap } from './palettes.js';
@@ -204,7 +205,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
           legendParts.push(`<text x="${lx + PAD + SWATCH + 6}" y="${ly + SWATCH / 2}" dominant-baseline="central" font-family="monospace" font-size="${fs}px" fill="#F7EECA">${svgTextEsc(String(val))}</text>`);
           ly += ROW_H;
         });
-      } else if (def.dataType === 'real' || def.dataType === 'integer') {
+      } else if (isNumericType(def.dataType)) {
         const BAR_W   = lw - PAD * 2;
         const BAR_H   = 14;
         const gid     = 'lgrd';

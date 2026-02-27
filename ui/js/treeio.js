@@ -86,8 +86,9 @@ export function parseNewick(newickString, tipNameMap = null) {
       } else if (labelNext) {
         currentNode.label = token;
         if (!token.startsWith("#")) {
-          const v = parseFloat(token);
-          currentNode.annotations["label"] = isNaN(v) ? token : v;
+          // Store raw value under a temporary key; the caller will rename it
+          // once the user has chosen an annotation name.
+          currentNode.annotations["_node_label"] = token;
         } else {
           currentNode.id = token.slice(1);
         }

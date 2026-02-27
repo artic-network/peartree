@@ -108,7 +108,7 @@ export class AxisRenderer {
    * @param {number}      maxX      – full-tree branch span; used to compute height = maxX - node.x
    */
   setDateAnchor(annotKey, nodeMap, maxX) {
-    if (!annotKey || !this._timed) {
+    if (!annotKey) {
       this._dateMode      = false;
       this._anchorDecYear = null;
       this._anchorH       = null;
@@ -116,6 +116,9 @@ export class AxisRenderer {
       this._lastHash      = '';
       return;
     }
+    // For non-BEAST trees (no 'height' annotations) rootHeight = maxX, since the root
+    // sits at worldX=0 and its layout-based height is (maxX - 0).
+    if (!this._timed) this._rootHeight = maxX;
 
     // Scan ALL tips to:
     //   a) find the anchor (first tip that carries the date annotation)

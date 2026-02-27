@@ -1,6 +1,6 @@
 import { parseNexus, parseNewick, graphToNewick, parseDelimited } from './treeio.js';
 import { computeLayoutFromGraph, graphVisibleTipCount, graphSubtreeHasHidden } from './treeutils.js';
-import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointRootGraph, buildAnnotationSchema } from './phylograph.js';
+import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointRootGraph, buildAnnotationSchema, isNumericType } from './phylograph.js';
 import { TreeRenderer } from './treerenderer.js';
 import { LegendRenderer } from './legendrenderer.js';
 import { AxisRenderer  } from './axisrenderer.js';
@@ -462,7 +462,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
    */
   function _applyVisualSettingsFromFile(s) {
     if (!s) return;
-    if (s.canvasBgColor)        canvasBgColorEl.value    = s.canvasBgColor;
+    if (s.canvasBgColor) { canvasBgColorEl.value = s.canvasBgColor; _syncCanvasWrapperBg(s.canvasBgColor); }
     if (s.branchColor)          branchColorEl.value      = s.branchColor;
     if (s.branchWidth    != null) {
       branchWidthSlider.value = s.branchWidth;
@@ -743,11 +743,21 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     };
   }
 
+  /**
+   * Sync the CSS background of the canvas wrapper divs to match the canvas
+   * fill colour so no gap / flash is visible between the tree and axis canvases.
+   */
+  function _syncCanvasWrapperBg(color) {
+    document.getElementById('canvas-wrapper').style.background          = color;
+    document.getElementById('canvas-and-axis-wrapper').style.background = color;
+  }
+
   /** Apply a named theme: hydrate all visual DOM controls and push to renderer. */
   function applyTheme(name) {
     const t = themeRegistry.get(name);
     if (!t) return;
     canvasBgColorEl.value   = t.canvasBgColor;
+    _syncCanvasWrapperBg(t.canvasBgColor);
     branchColorEl.value     = t.branchColor;
     branchWidthSlider.value = t.branchWidth;
     document.getElementById('branch-width-value').textContent = t.branchWidth;
@@ -1001,7 +1011,6 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     fontSize:  parseInt(axisFontSizeSlider.value),
     lineWidth: parseFloat(axisLineWidthSlider.value),
   });
-  const canvasAndAxisWrapper  = document.getElementById('canvas-and-axis-wrapper');
 
   // Apply stored visual settings to the renderer immediately.
   // If no saved theme exists yet, apply the default 'Artic' theme.
@@ -1016,14 +1025,14 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     axisRenderer.update(scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr);
     // Fill any subpixel gap between the tree canvas and axis canvas with the
     // canvas background colour rather than the page background.
-    canvasAndAxisWrapper.style.backgroundColor = bgColor;
+    _syncCanvasWrapperBg(bgColor);
   };
 
   // Update axis time span whenever navigation drills into or out of a subtree.
   // Reads renderer._globalHeightMap directly so the values are always current,
   // even after rerooting (which rebuilds the map via _buildGlobalHeightMap).
   renderer._onLayoutChange = (maxX, viewSubtreeRootId) => {
-    if (!_axisIsTimedTree) return;
+    if (!_axisIsTimedTree && !axisDateAnnotEl.value) return;
     const hMap = renderer._globalHeightMap;
     const viewNodes = renderer.nodes || [];
     // The current layout root (x=0) always has height = maxX of the full-tree layout.
@@ -1720,6 +1729,33 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
         }
       }
 
+      // If the parsed tree has node labels (stored under the sentinel key
+      // "_node_label" by parseNewick), ask the user what annotation name to use.
+      {
+        const labelledNodes = [];
+        function _collectNodeLabels(node) {
+          if (node.annotations && "_node_label" in node.annotations) labelledNodes.push(node);
+          if (node.children) for (const c of node.children) _collectNodeLabels(c);
+        }
+        _collectNodeLabels(parsedRoot);
+        if (labelledNodes.length > 0) {
+          const allNumeric = labelledNodes.every(n => !isNaN(parseFloat(n.annotations["_node_label"])));
+          const defaultName = allNumeric ? 'bootstrap' : 'label';
+          const chosen = (
+            prompt(
+              `This tree has labels on ${labelledNodes.length} internal node(s).\nWhat annotation name should these be stored as?`,
+              defaultName
+            ) ?? defaultName
+          ).trim() || defaultName;
+          for (const n of labelledNodes) {
+            const raw = n.annotations["_node_label"];
+            delete n.annotations["_node_label"];
+            const num = parseFloat(raw);
+            n.annotations[chosen] = !isNaN(num) ? num : raw;
+          }
+        }
+      }
+
       graph           = fromNestedRoot(parsedRoot);
       renderer.hiddenNodeIds = graph.hiddenNodeIds;  // keep renderer in sync (same Set reference)
       renderer.graph  = graph;
@@ -1852,27 +1888,26 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       // derived from the observed range of the 'height' annotation.
       axisRenderer.setHeightFormatter(schema.get('height')?.fmt ?? null);
 
-      // Populate date annotation dropdown with all categorical/integer annotations
-      // so the user can pick whichever annotation holds their date values.
+      // Populate date annotation dropdown with any annotation that could hold dates.
+      // Available for all trees (not only BEAST timed trees).
       while (axisDateAnnotEl.options.length > 1) axisDateAnnotEl.remove(1);
-      if (_isTimedTree) {
-        for (const [name, def] of schema) {
-          if (def.dataType === 'categorical' || def.dataType === 'date' ||
-              def.dataType === 'integer' || def.dataType === 'real') {
-            const opt = document.createElement('option');
-            opt.value = name;
-            opt.textContent = name;
-            axisDateAnnotEl.appendChild(opt);
-          }
+      for (const [name, def] of schema) {
+        if (def.dataType === 'categorical' || def.dataType === 'date' ||
+          isNumericType(def.dataType)) {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          axisDateAnnotEl.appendChild(opt);
         }
       }
-      // Show the date row whenever the tree is timed; disable it if no tree loaded.
-      axisDateRow.style.display = _isTimedTree ? 'flex' : 'none';
-      axisDateAnnotEl.disabled  = !_isTimedTree;
+      // Show the date row whenever a tree is loaded; only hide if no usable annotations exist.
+      const _hasDateAnnotations = axisDateAnnotEl.options.length > 1;
+      axisDateRow.style.display = _hasDateAnnotations ? 'flex' : 'none';
+      axisDateAnnotEl.disabled  = !_hasDateAnnotations;
 
       // Restore date annotation (file settings take priority over saved prefs)
       const _savedAxisDate = _eff.axisDateAnnotation || '';
-      const _canRestoreDate = _isTimedTree && _savedAxisDate &&
+      const _canRestoreDate = _hasDateAnnotations && _savedAxisDate &&
                               [...axisDateAnnotEl.options].some(o => o.value === _savedAxisDate);
       axisDateAnnotEl.value = _canRestoreDate ? _savedAxisDate : '';
       if (_canRestoreDate) axisRenderer.setDateAnchor(_savedAxisDate, layout.nodeMap, layout.maxX);
@@ -2849,6 +2884,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   canvasBgColorEl.addEventListener('input', () => {
     _markCustomTheme();
     renderer.setBgColor(canvasBgColorEl.value);
+    _syncCanvasWrapperBg(canvasBgColorEl.value);
     saveSettings();
   });
 

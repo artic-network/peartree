@@ -1,0 +1,4 @@
+#NEXUS
+BEGIN TREES;
+	tree TREE1 = [&R] (DQ437581|Bangladesh|1975[&date="1975"]:5.293e-7,(DQ441420|Bangladesh|1974[&date="1974"]:5.293e-7,(DQ441421|Bangladesh|1974[&date="1974"]:5.293e-7,DQ441422|Bangladesh|1974[&date="1974"]:5.293e-7)40[&bootstrap=40]:5.292e-7)93[&bootstrap=93]:5.292e-7);
+END;

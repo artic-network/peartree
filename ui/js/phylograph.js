@@ -35,12 +35,17 @@
 //
 // AnnotationDef {
 //   name:        string
-//   dataType:    'real' | 'integer' | 'ordinal' | 'categorical' | 'date' | 'list'
+//   dataType:    'real' | 'integer' | 'proportion' | 'percentage' | 'ordinal' | 'categorical' | 'date' | 'list'
 //   min?:        number|string – real/integer: observed min; date: earliest ISO string
 //   max?:        number|string – real/integer: observed max; date: latest ISO string
 //   values?:     string[]    – categorical / ordinal / date: observed distinct values
 //                              (for ordinal and date the array is in meaningful order)
 //   elementType?: AnnotationDef  – list: recursive type description of list elements
+//   isBranchAnnotation?: boolean  – true when the annotation is stored on the
+//                              descendant node but semantically describes the
+//                              branch *leading to the parent*.  On rerooting,
+//                              such annotations are transferred to whichever
+//                              node becomes the new descendant of that branch.
 // }
 //
 // ─────────────────────────────────────────────────────────────────────────────
@@ -141,6 +146,47 @@ export function rerootOnGraph(graph, childOrigId, distFromParent) {
   }
   // path = [newAIdx, …, oldRootAdjacentNode]
 
+  // ── Branch-annotation transfer ──────────────────────────────────────────────────
+  // A branch annotation on node N describes the branch N→parent(N).  When
+  // rerooting reverses each directed edge in the path, every such annotation
+  // must follow its physical branch: move it to the node that was N's old
+  // parent (which becomes N's new child on that same branch).
+  //
+  // Transfer map (pre-gathered to avoid overwrite corruption in a chain):
+  //   path[i]  →  path[i+1]    for i < path.length - 1
+  //   path[last]  →  otherRootAdj  (the non-path root-adjacent node)
+  //
+  // The newB node is NOT in the path, so its annotation is unaffected.
+  const schema = graph.annotationSchema;
+  if (schema) {
+    const branchKeys = [];
+    for (const [k, def] of schema) {
+      if (def.isBranchAnnotation) branchKeys.push(k);
+    }
+    if (branchKeys.length > 0) {
+      const otherRootAdj = root.nodeA === path[path.length - 1] ? root.nodeB : root.nodeA;
+      const oldParents   = path.map((_, i) =>
+        i < path.length - 1 ? path[i + 1] : otherRootAdj
+      );
+      for (const k of branchKeys) {
+        // Read all source values BEFORE any write so chained transfers are correct.
+        const oldVals = path.map(idx => nodes[idx].annotations[k]);
+        for (let i = 0; i < path.length; i++) {
+          // Clear annotation from the source node (its branch direction changes).
+          delete nodes[path[i]].annotations[k];
+          // Write to the former parent (which now becomes the descendant of this branch).
+          const dest = oldParents[i];
+          if (oldVals[i] !== undefined) {
+            nodes[dest].annotations[k] = oldVals[i];
+          } else {
+            delete nodes[dest].annotations[k];
+          }
+        }
+      }
+    }
+  }
+
+  // ── Topology reversal ────────────────────────────────────────────────────────────
   // For each path node (from old-root end toward newA), swap the downward
   // neighbour (path[i-1]) into adjacents[0].
   for (let i = path.length - 1; i >= 1; i--) {
@@ -299,11 +345,41 @@ export const KNOWN_ANNOTATION_BOUNDS = new Map([
   ['posterior_probability', { min: 0, max: 1 }],
   ['prob',                  { min: 0, max: 1 }],
   ['probability',           { min: 0, max: 1 }],
-  // Bootstrap / general node support expressed as a proportion
+  // Bootstrap / general node support expressed as a proportion (0–1)
+  // or percentage (0–100) – detected at schema-build time from observed values.
   ['support',               { min: 0, max: 1 }],
   ['bootstrap',             { min: 0, max: 1 }],
+  // Explicitly percent-named annotations
+  ['percent',               { min: 0, max: 100 }],
+  ['percentage',            { min: 0, max: 100 }],
+  ['pct',                   { min: 0, max: 100 }],
+  ['perc',                  { min: 0, max: 100 }],
   // Common date/time decimal-year annotations do NOT have fixed bounds — omitted.
 ]);
+
+/**
+ * Annotation names that are inherently *branch* annotations: stored on the
+ * descendant node in a rooted tree but semantically describe the branch
+ * leading to the parent, not a property of the node itself.  These are
+ * transferred to the new descendant when a tree is rerooted.
+ *
+ * Matched case-insensitively.
+ * @type {Set<string>}
+ */
+export const KNOWN_BRANCH_ANNOTATIONS = new Set([
+  'bootstrap', 'support',
+  'posterior', 'posterior_probability', 'prob', 'probability',
+  'label',    // raw non-numeric Newick internal-node labels
+]);
+
+/**
+ * True for any numeric annotation type: real, integer, proportion, or percentage.
+ * Use instead of multiple `=== 'real' || === 'integer'` comparisons.
+ * @param {string} dt
+ */
+export function isNumericType(dt) {
+  return dt === 'real' || dt === 'integer' || dt === 'proportion' || dt === 'percentage';
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Date utilities
@@ -353,9 +429,11 @@ export function dateToDecimalYear(dateStr) {
  * @returns {(v:number) => string}
  */
 export function makeAnnotationFormatter(def, mode = 'ticks') {
-  if (!def || (def.dataType !== 'real' && def.dataType !== 'integer')) {
+  if (!def || !isNumericType(def.dataType)) {
     return v => String(v);
   }
+  // proportion and percentage share the 'real' continuous formatting path;
+  // integer (and percentage-from-integers) uses fast integer rounding.
   if (def.dataType === 'integer') return v => String(Math.round(v));
 
   const obsMin   = def.observedMin ?? def.min ?? 0;
@@ -463,18 +541,38 @@ export function buildAnnotationSchema(nodes) {
         .find(k => k.toLowerCase() === name.toLowerCase());
       if (knownKey && (def.dataType === 'real' || def.dataType === 'integer')) {
         const bounds = KNOWN_ANNOTATION_BOUNDS.get(knownKey);
-        def.min = bounds.min;
-        def.max = bounds.max;
+        // If the canonical range is 0–1 but observed values exceed 1, treat the
+        // annotation as a percentage (0–100 scale) instead.  This covers both
+        // real-valued fractions (e.g. 0.95) and integer percents (e.g. 95, 100)
+        // — the dataType is 'integer' when all values are whole numbers, so
+        // both branches are intentionally included in this check.
+        const effectiveBounds =
+          (bounds.max === 1 && def.observedMax != null && def.observedMax > 1)
+            ? { min: 0, max: 100 }
+            : bounds;
+        def.min = effectiveBounds.min;
+        def.max = effectiveBounds.max;
         def.fixedBounds = true;
+        // Assign semantic type based on fixed bounds range.
+        if (effectiveBounds.min === 0 && effectiveBounds.max === 1) {
+          def.dataType = 'proportion';
+        } else if (effectiveBounds.min === 0 && effectiveBounds.max === 100) {
+          def.dataType = 'percentage';
+        }
         // observedMin/observedMax are preserved from inferAnnotationType.
       }
       // Attach formatters and observed range for convenient use by renderers.
       // def.fmt      – tick/legend precision (~5 divisions)
       // def.fmtValue – higher precision for individual data values (e.g. tip labels)
-      if (def.dataType === 'real' || def.dataType === 'integer') {
+      if (isNumericType(def.dataType)) {
         def.observedRange = (def.observedMax ?? def.max ?? 0) - (def.observedMin ?? def.min ?? 0);
         def.fmt      = makeAnnotationFormatter(def, 'ticks');
         def.fmtValue = makeAnnotationFormatter(def, 'value');
+      }
+      // Auto-flag well-known branch annotations (user can override in curator).
+      const lowerName = name.toLowerCase();
+      if ([...KNOWN_BRANCH_ANNOTATIONS].some(k => k.toLowerCase() === lowerName)) {
+        def.isBranchAnnotation = true;
       }
       schema.set(name, def);
     }

@@ -20,7 +20,7 @@
 import { getSequentialPalette,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
          MISSING_DATA_COLOUR, buildCategoricalColourMap } from './palettes.js';
-import { dateToDecimalYear } from './phylograph.js';
+import { dateToDecimalYear, isNumericType } from './phylograph.js';
 
 export class LegendRenderer {
   /**
@@ -257,7 +257,7 @@ export class LegendRenderer {
         ctx.textBaseline = i === 0 ? 'top' : (i === tickCount - 1 ? 'bottom' : 'middle');
         ctx.fillText(label, LABEL_X, tickY, LABEL_W);
       }
-    } else if (def.dataType === 'real' || def.dataType === 'integer') {
+    } else if (isNumericType(def.dataType)) {
       const BAR_W  = 14;
       const BAR_X  = PAD;
       const BAR_Y  = y;

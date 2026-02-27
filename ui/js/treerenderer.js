@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { computeLayoutFromGraph } from './treeutils.js';
-import { dateToDecimalYear } from './phylograph.js';
+import { dateToDecimalYear, isNumericType } from './phylograph.js';
 import { getSequentialPalette, lerpSequential,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
          MISSING_DATA_COLOUR, buildCategoricalColourMap } from './palettes.js';
@@ -663,7 +663,7 @@ export class TreeRenderer {
       scale.set('__max__',    dateToDecimalYear(def.max));
       scale.set('__palette__', this._annotationPaletteOverrides.get(key) ?? null);
       scale.set('__isDate__', true);
-    } else if (def.dataType === 'real' || def.dataType === 'integer') {
+    } else if (isNumericType(def.dataType)) {
       // Store range and palette name so _colourFromScale can interpolate at draw time.
       scale.set('__min__', def.min ?? 0);
       scale.set('__max__', def.max ?? 1);

@@ -327,13 +327,13 @@ Under **Tip Labels**, change **Colour by** to the `country`. The tip labels now 
 
 ### Colouring Internal Nodes
 
-Internal node's can also have circles which can be coloured by annotation values. By default these may not be visible so under the **Node Shapes** section of the Tool Drawer, increase the size to change **Colour by** to `posterior`. Internal nodes will only have annotations if they were encoded in the tree --- in this tree Bayesian posterior support values have been supplied using the label `posterior`.
+Internal node's can also have circles which can be coloured by annotation values. By default these may not be visible so under the **Node Shapes** section of the Tool Drawer, increase the size to change **Colour by** to `posterior`. Internal nodes will only have annotations if they were encoded in the tree -- in this tree Bayesian posterior support values have been supplied using the label `posterior`.
 
 > <img src="images/fig12c.png" style="width:250px;"/>
 >
 > The controls for setting the node shape styles with **Colour by** set to `posterior` and **Palette** set to `Blue-Black-Red`. The size has also been increased to `3` to make the shapes visible. 
 
-The `posterior` annotation is a continuous number between 0 and 1 so will be given a gradient of colours across its possible values. There are a selection of colour palettes to chose from but because, with these types of support values (i.e., also bootstrap values) a three colour palette such as `Blue-Black-Red` will work best because it means that red colours are >0.5 and blue colours are <0.5. 
+The `posterior` annotation is a real number between 0 and 1 so will be given a gradient of colours across its possible values. There is a selection of colour palettes to chose from but with these types of support values -- support values such as posterior or bootstrap values -- a three colour palette such as `Blue-Black-Red` will work best because it means that red colours are >0.5 and blue colours are <0.5. 
 
 > <img src="images/fig12d.png" style="width:400px;"/>
 >
@@ -343,28 +343,38 @@ The `posterior` annotation is a continuous number between 0 and 1 so will be giv
 
 ## 13. Adding a Legend
 
+For a selected annotation used to colour some feature of the tree, you can also display a legend to provide a scale or key for what the colours mean.
+
 In the **Visual Options palette**, scroll to the **Legend** section:
 
-1. Set **Show** to *Left* or *Right*.
+1. Set **Show** to *Left* or *Right* -- which side of the screen you want it.
 2. Set **Annotation** to the key whose colour scale you want to display.
 
-A colour key strip appears at the chosen edge of the canvas.
+The legend that is display will depend on whether the annotation is a real number or categorical.
 
-> **📸 SCREENSHOT PLACEHOLDER** — EBOV tree with a colour legend strip on the right, labelling the `location` annotation colour scale.
+> <img src="images/fig13.png" style="width:400px;"/>
+>
+> EBOV tree with tips coloured by `country` and a legend on the right providing a key linking the colours to the countries.
 
 ---
 
 ## 14. Applying a User Colour
 
-1. Select one or more tips.
-2. Click the colour swatch in the toolbar to pick a colour.
-3. Click the **Apply** button (paint bucket icon) — those tips are marked with that colour.
+You can also manually colour tips with individual colours. First pick a colour using the colour picker in the main tool bar:
 
-> **📸 SCREENSHOT PLACEHOLDER** — A handful of tips highlighted in bright orange with the user colour.
+> <img src="images/colour_picker.png" style="width:250px;"/>
 
-User colours are stored as a `user_colour` annotation and can be used in the *Colour by* dropdowns like any other annotation. They round-trip through NEXUS export and re-import.
+Then select one or more tips. You can do this by clicking on them or using the filter box to select tips with a particular string in their tip labels.
 
-To remove all user colours, click the **Clear** (eraser) button next to the swatch.
+3. Click the **Apply** button <img src="images/paint_button.png" style="width:32px;"/> —- the selected tips are then marked with that colour.
+
+> <img src="images/fig14.png" style="width:400px;"/>
+>
+> Tips dated from July to September 2015 highlighted in bright orange.
+
+User colours are stored as a `user_colour` annotation and can be used in the *Colour by* dropdowns like any other annotation. They can also be stored in exported trees when saved in NEXUS format.
+
+To remove all user colours, click the **Clear** <img src="images/eraser_button.png" style="width:32px;"/> button next to the swatch. This will remove all user colours from the selected tips or if none are selected from the displayed tree.
 
 ---
 
@@ -376,7 +386,9 @@ If the tree file contains node-height annotations (e.g. a BEAST MCC tree with `h
 2. Set **Date annotation** to the annotation key holding calendar dates (e.g. `date`).
 3. Adjust **Major ticks**, **Minor ticks**, and label formats as needed.
 
-> **📸 SCREENSHOT PLACEHOLDER** — EBOV tree with a time axis along the bottom calibrated to calendar year; major tick labels in `yyyy` format.
+> <img src="images/fig15.png" style="width:250px;"/>
+>
+> EBOV tree with a time axis along the bottom calibrated to calendar year; major tick labels in `yyyy` format.
 
 ---
 
