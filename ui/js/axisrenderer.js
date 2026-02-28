@@ -45,6 +45,9 @@ export class AxisRenderer {
 
     this._lastHash = '';
 
+    // Direction for non-timed, non-date trees: 'forward' (0→maxX) or 'reverse' (maxX→0)
+    this._direction = 'forward';
+
     // ── Style overrides ───────────────────────────────────────────────────
     this._axisColor          = null;   // hex string; null → use built-in default colours
     this._axisLineWidth      = 1;      // stroke width for ticks and baseline
@@ -204,7 +207,7 @@ export class AxisRenderer {
     // Only auto-sync font size from tree if the user hasn't explicitly set one
     if (!this._axisFontSizeManual) this._fontSize = Math.max(7, fontSize - 1);
 
-    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${paddingLeft}|${labelRightPad}|${bgColor}|${this._fontSize}|${this._fontFamily}|${this._axisColor ?? ''}|${this._axisLineWidth}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._anchorDecYear}|${this._anchorH}|${this._minTipH}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}`;
+    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${paddingLeft}|${labelRightPad}|${bgColor}|${this._fontSize}|${this._fontFamily}|${this._axisColor ?? ''}|${this._axisLineWidth}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._anchorDecYear}|${this._anchorH}|${this._minTipH}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}|${this._direction}`;
     if (hash === this._lastHash) return;
     this._lastHash = hash;
 
@@ -248,6 +251,17 @@ export class AxisRenderer {
   setLineWidth(w) {
     this._axisLineWidth = Math.max(0.5, w);
     this._lastHash      = '';
+  }
+
+  /**
+   * Set the direction for non-timed, non-date trees.
+   * 'forward' = divergence from root (0 at root, maxX at tips).
+   * 'reverse' = height above most-divergent tip (maxX at root, 0 at tip).
+   * Has no effect when date mode or timed-tree mode is active.
+   */
+  setDirection(dir) {
+    this._direction = (dir === 'reverse') ? 'reverse' : 'forward';
+    this._lastHash  = '';
   }
 
   // ── Drawing ──────────────────────────────────────────────────────────────
@@ -421,7 +435,10 @@ export class AxisRenderer {
       // Height axis: rootHeight at worldX=0, decreasing to 0 at worldX=maxX
       return { leftVal: this._rootHeight + extraH, rightVal: 0 };
     }
-    // Divergence
+    // Non-timed: forward = divergence (0→maxX), reverse = height-from-tip (maxX→0)
+    if (this._direction === 'reverse') {
+      return { leftVal: this._maxX + extraH, rightVal: 0 };
+    }
     return { leftVal: 0, rightVal: this._maxX };
   }
 
@@ -430,7 +447,8 @@ export class AxisRenderer {
       // rootDecYear = anchorDecYear + anchorH - rootHeight
       return val - (this._anchorDecYear + this._anchorH - this._rootHeight);
     }
-    if (this._timed)    return this._rootHeight - val;
+    if (this._timed)                       return this._rootHeight - val;
+    if (this._direction === 'reverse')     return this._maxX - val;
     return val;
   }
 

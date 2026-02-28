@@ -66,6 +66,12 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   const nodeBarsRangeEl     = document.getElementById('node-bars-range');
   const nodeBarsControlsEl  = document.getElementById('node-bars-controls');
   const nodeBarsUnavailEl   = document.getElementById('node-bars-unavail');
+  const tipShapeDetailEl    = document.getElementById('tip-shape-detail');
+  const nodeShapeDetailEl   = document.getElementById('node-shape-detail');
+  const nodeLabelDetailEl   = document.getElementById('node-label-detail');
+  const nodeBarsDetailEl    = document.getElementById('node-bars-detail');
+  const legendDetailEl      = document.getElementById('legend-detail');
+  const axisDetailEl        = document.getElementById('axis-detail');
   const clampNegBranchesEl  = document.getElementById('clamp-neg-branches');
   const fontFamilyEl        = document.getElementById('font-family-select');
   const tipColourBy       = document.getElementById('tip-colour-by');
@@ -594,7 +600,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     if (s.nodeShapeColor)        nodeShapeColorEl.value   = s.nodeShapeColor;
     if (s.nodeShapeBgColor)      nodeShapeBgEl.value      = s.nodeShapeBgColor;
     // Axis non-annotation settings
-    if (s.axisShow)              axisShowEl.value         = s.axisShow;
+    if (s.axisShow) axisShowEl.value = (s.axisShow === 'on') ? 'forward' : s.axisShow;
     if (s.axisMajorInterval)     axisMajorIntervalEl.value = s.axisMajorInterval;
     if (s.axisMinorInterval)     axisMinorIntervalEl.value = s.axisMinorInterval;
     if (s.axisMajorLabelFormat)  axisMajorLabelEl.value   = s.axisMajorLabelFormat;
@@ -635,6 +641,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       renderer.setSettings(_buildRendererSettings());
       if (s.axisColor) axisRenderer.setColor(s.axisColor);
     }
+    _syncControlVisibility();
   }
 
   function applyDefaults() {
@@ -654,7 +661,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     legendTextColorEl.value  = DEFAULT_SETTINGS.legendTextColor;
     legendFontSizeSlider.value = DEFAULT_SETTINGS.legendFontSize;
     document.getElementById('legend-font-size-value').textContent = DEFAULT_SETTINGS.legendFontSize;
-    axisShowEl.value         = DEFAULT_SETTINGS.axisShow;
+    axisShowEl.value         = DEFAULT_SETTINGS.axisShow;  // 'off'
     axisDateAnnotEl.value    = '';
     axisMajorIntervalEl.value    = DEFAULT_SETTINGS.axisMajorInterval;
     axisMinorIntervalEl.value    = DEFAULT_SETTINGS.axisMinorInterval;
@@ -778,6 +785,20 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   }
 
   /**
+   * Show/hide secondary controls based on the primary on/off state of each section.
+   * Call whenever any controlling element changes, and once on page load.
+   */
+  function _syncControlVisibility() {
+    const _vis = (el, visible) => { if (el) el.classList.toggle('pt-detail-open', visible); };
+    _vis(tipShapeDetailEl,  parseInt(tipSlider.value)   > 0);
+    _vis(nodeShapeDetailEl, parseInt(nodeSlider.value)  > 0);
+    _vis(nodeLabelDetailEl, nodeLabelShowEl.value !== '');
+    _vis(nodeBarsDetailEl,  nodeBarsShowEl.value  === 'on');
+    _vis(legendDetailEl,    legendAnnotEl.value   !== '');
+    _vis(axisDetailEl,      axisShowEl.value      !== 'off');
+  }
+
+  /**
    * Sync the CSS background of the canvas wrapper divs to match the canvas
    * fill colour so no gap / flash is visible between the tree and axis canvases.
    */
@@ -839,6 +860,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     themeSelect.value = name;
     _syncThemeButtons();
     saveSettings();
+    _syncControlVisibility();
   }
 
   /** Mark the theme selector as Custom when the user manually edits any visual control. */
@@ -1063,6 +1085,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   } else {
     // DOM controls were already hydrated from _saved above; just sync the renderer.
     renderer.setSettings(_buildRendererSettings(), false);
+    _syncControlVisibility();
   }
 
   renderer._onViewChange = (scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr) => {
@@ -1099,10 +1122,12 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     });
   };
 
-  // Restore axis visibility from saved settings
-  if (_saved.axisShow === 'on') {
-    axisShowEl.value            = 'on';
+  // Restore axis visibility from saved settings (map legacy 'on' to 'forward')
+  const _savedAxisShow = _saved.axisShow === 'on' ? 'forward' : (_saved.axisShow || 'off');
+  if (_savedAxisShow !== 'off') {
+    axisShowEl.value            = _savedAxisShow;
     axisCanvas.style.display    = 'block';
+    axisRenderer.setDirection(_savedAxisShow);
     axisRenderer.setVisible(true);
   }
   // Restore tick options
@@ -1744,6 +1769,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       nodeLabelShowEl.value = [...nodeLabelShowEl.options].some(o => o.value === prev) ? prev : '';
       if (renderer) renderer.setNodeLabelAnnotation(nodeLabelShowEl.value || null);
     }
+    _syncControlVisibility();
     // Refresh palette selects to match current colour-by selections after annotation schema changes.
     _updatePaletteSelect(tipPaletteSelect,   tipPaletteRow,   tipColourBy.value);
     _updatePaletteSelect(nodePaletteSelect,  nodePaletteRow,  nodeColourBy.value);
@@ -1963,12 +1989,10 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       // derived from the observed range of the 'height' annotation.
       axisRenderer.setHeightFormatter(schema.get('height')?.fmt ?? null);
 
-      // Populate date annotation dropdown with any annotation that could hold dates.
-      // Available for all trees (not only BEAST timed trees).
+      // Populate date annotation dropdown: only annotations explicitly typed as 'date'.
       while (axisDateAnnotEl.options.length > 1) axisDateAnnotEl.remove(1);
       for (const [name, def] of schema) {
-        if (def.dataType === 'categorical' || def.dataType === 'date' ||
-          isNumericType(def.dataType)) {
+        if (def.dataType === 'date') {
           const opt = document.createElement('option');
           opt.value = name;
           opt.textContent = name;
@@ -2060,6 +2084,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       document.getElementById('btn-mode-nodes')   .classList.toggle('active', _restoredMode === 'nodes');
       document.getElementById('btn-mode-branches').classList.toggle('active', _restoredMode === 'branches');
 
+      _syncControlVisibility();
       closeModal();
     } catch (err) {
       // If the Open Tree modal is already visible, show the error inside it.
@@ -3194,6 +3219,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     _markCustomTheme();
     renderer.setTipRadius(parseInt(tipSlider.value));
     saveSettings();
+    _syncControlVisibility();
   });
 
   tipHaloSlider.addEventListener('input', () => {
@@ -3207,6 +3233,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     _markCustomTheme();
     renderer.setNodeRadius(parseInt(nodeSlider.value));
     saveSettings();
+    _syncControlVisibility();
   });
 
   nodeHaloSlider.addEventListener('input', () => {
@@ -3271,6 +3298,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   nodeLabelShowEl.addEventListener('change', () => {
     renderer?.setNodeLabelAnnotation(nodeLabelShowEl.value || null);
     saveSettings(); _markCustomTheme();
+    _syncControlVisibility();
   });
 
   nodeLabelPositionEl.addEventListener('change', () => {
@@ -3345,6 +3373,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     legendRenderer.setAnnotation(show ? pos : null, key);
     renderer._resize();   // recalculates tree canvas width after legend canvases shown/hidden
     saveSettings();
+    _syncControlVisibility();
   }
 
   legendShowEl .addEventListener('change', applyLegend);
@@ -3363,8 +3392,10 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   // ── Axis controls ─────────────────────────────────────────────────────────
 
   function applyAxis() {
-    const on = axisShowEl.value === 'on';
+    const val = axisShowEl.value;
+    const on  = val !== 'off';
     axisCanvas.style.display = on ? 'block' : 'none';
+    axisRenderer.setDirection(on ? val : 'forward');
     axisRenderer.setVisible(on);
     // Resize the tree canvas so it fills the remaining space above/below the axis.
     renderer._resize();
@@ -3377,6 +3408,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       );
     }
     saveSettings();
+    _syncControlVisibility();
   }
 
   axisShowEl.addEventListener('change', applyAxis);
@@ -3449,6 +3481,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       renderer._dirty = true;
     }
     saveSettings();
+    _syncControlVisibility();
   }
 
   nodeBarsShowEl.addEventListener('change', applyNodeBars);

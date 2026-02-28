@@ -677,6 +677,19 @@
       color: var(--pt-cream);
       flex-shrink: 0;
     }
+    /* Collapsible detail panels — animated open/close */
+    .pt-detail {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: max-height 0.22s ease, opacity 0.18s ease;
+    }
+    .pt-detail.pt-detail-open {
+      max-height: 500px;
+      opacity: 1;
+      pointer-events: auto;
+    }
     .pt-palette-select {
       flex: 1;
       background: rgba(0,0,0,0.25);
@@ -1561,28 +1574,30 @@
         <input type="range" class="form-range" id="tip-size-slider" min="0" max="12" value="3" />
         <span class="pt-val" id="tip-size-value">3</span>
       </div>
-      <div class="pt-palette-row">
-        <span class="pt-palette-label">Colour</span>
-        <input type="color" class="pt-palette-color" id="tip-shape-color" value="#888888" />
-      </div>
-      <div class="pt-palette-row">
-        <span class="pt-palette-label">Background</span>
-        <input type="color" class="pt-palette-color" id="tip-shape-bg-color" value="#02292e" />
-      </div>
-      <div class="pt-palette-row">
-        <span class="pt-palette-label">Halo</span>
-        <input type="range" class="form-range" id="tip-halo-slider" min="0" max="8" value="2" />
-        <span class="pt-val" id="tip-halo-value">2</span>
-      </div>
-      <div class="pt-palette-row">
-        <span class="pt-palette-label">Colour by</span>
-        <select class="pt-palette-select" id="tip-colour-by" disabled>
-          <option value="user_colour">user colour</option>
-        </select>
-      </div>
-      <div class="pt-palette-row" id="tip-palette-row" style="display:none">
-        <span class="pt-palette-label">Palette</span>
-        <select class="pt-palette-select" id="tip-palette-select"></select>
+      <div id="tip-shape-detail" class="pt-detail">
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Colour</span>
+          <input type="color" class="pt-palette-color" id="tip-shape-color" value="#888888" />
+        </div>
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Background</span>
+          <input type="color" class="pt-palette-color" id="tip-shape-bg-color" value="#02292e" />
+        </div>
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Halo</span>
+          <input type="range" class="form-range" id="tip-halo-slider" min="0" max="8" value="2" />
+          <span class="pt-val" id="tip-halo-value">2</span>
+        </div>
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Colour by</span>
+          <select class="pt-palette-select" id="tip-colour-by" disabled>
+            <option value="user_colour">user colour</option>
+          </select>
+        </div>
+        <div class="pt-palette-row" id="tip-palette-row" style="display:none">
+          <span class="pt-palette-label">Palette</span>
+          <select class="pt-palette-select" id="tip-palette-select"></select>
+        </div>
       </div>
     </div>
 
@@ -1593,28 +1608,30 @@
         <input type="range" class="form-range" id="node-size-slider" min="0" max="12" value="0" />
         <span class="pt-val" id="node-size-value">0</span>
       </div>
-      <div class="pt-palette-row">
-        <span class="pt-palette-label">Colour</span>
-        <input type="color" class="pt-palette-color" id="node-shape-color" value="#888888" />
-      </div>
-      <div class="pt-palette-row">
-        <span class="pt-palette-label">Background</span>
-        <input type="color" class="pt-palette-color" id="node-shape-bg-color" value="#02292e" />
-      </div>
-      <div class="pt-palette-row">
-        <span class="pt-palette-label">Halo</span>
-        <input type="range" class="form-range" id="node-halo-slider" min="0" max="8" value="2" />
-        <span class="pt-val" id="node-halo-value">2</span>
-      </div>
-      <div class="pt-palette-row">
-        <span class="pt-palette-label">Colour by</span>
-        <select class="pt-palette-select" id="node-colour-by" disabled>
-          <option value="user_colour">user colour</option>
-        </select>
-      </div>
-      <div class="pt-palette-row" id="node-palette-row" style="display:none">
-        <span class="pt-palette-label">Palette</span>
-        <select class="pt-palette-select" id="node-palette-select"></select>
+      <div id="node-shape-detail" class="pt-detail">
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Colour</span>
+          <input type="color" class="pt-palette-color" id="node-shape-color" value="#888888" />
+        </div>
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Background</span>
+          <input type="color" class="pt-palette-color" id="node-shape-bg-color" value="#02292e" />
+        </div>
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Halo</span>
+          <input type="range" class="form-range" id="node-halo-slider" min="0" max="8" value="2" />
+          <span class="pt-val" id="node-halo-value">2</span>
+        </div>
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Colour by</span>
+          <select class="pt-palette-select" id="node-colour-by" disabled>
+            <option value="user_colour">user colour</option>
+          </select>
+        </div>
+        <div class="pt-palette-row" id="node-palette-row" style="display:none">
+          <span class="pt-palette-label">Palette</span>
+          <select class="pt-palette-select" id="node-palette-select"></select>
+        </div>
       </div>
     </div>
 
@@ -1623,30 +1640,32 @@
       <div class="pt-palette-row">
         <span class="pt-palette-label">Show</span>
         <select class="pt-palette-select" id="node-label-show" disabled>
-          <option value="">(none)</option>
+          <option value="">Off</option>
         </select>
       </div>
-      <div class="pt-palette-row">
-        <span class="pt-palette-label">Position</span>
-        <select class="pt-palette-select" id="node-label-position">
-          <option value="right">Right</option>
-          <option value="above-left">Above left</option>
-          <option value="below-left">Below left</option>
-        </select>
-      </div>
-      <div class="pt-palette-row">
-        <i class="bi bi-fonts form-label-sm"></i>
-        <input type="range" class="form-range" id="node-label-font-size-slider" min="6" max="20" value="9" />
-        <span class="pt-val" id="node-label-font-size-value">9</span>
-      </div>
-      <div class="pt-palette-row">
-        <span class="pt-palette-label">Colour</span>
-        <input type="color" class="pt-palette-color" id="node-label-color" value="#aaaaaa" />
-      </div>
-      <div class="pt-palette-row">
-        <span class="pt-palette-label">Spacing</span>
-        <input type="range" class="form-range" id="node-label-spacing-slider" min="0" max="20" step="1" value="4" />
-        <span class="pt-val" id="node-label-spacing-value">4</span>
+      <div id="node-label-detail" class="pt-detail">
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Position</span>
+          <select class="pt-palette-select" id="node-label-position">
+            <option value="right">Right</option>
+            <option value="above-left">Above left</option>
+            <option value="below-left">Below left</option>
+          </select>
+        </div>
+        <div class="pt-palette-row">
+          <i class="bi bi-fonts form-label-sm"></i>
+          <input type="range" class="form-range" id="node-label-font-size-slider" min="6" max="20" value="9" />
+          <span class="pt-val" id="node-label-font-size-value">9</span>
+        </div>
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Colour</span>
+          <input type="color" class="pt-palette-color" id="node-label-color" value="#aaaaaa" />
+        </div>
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Spacing</span>
+          <input type="range" class="form-range" id="node-label-spacing-slider" min="0" max="20" step="1" value="4" />
+          <span class="pt-val" id="node-label-spacing-value">4</span>
+        </div>
       </div>
     </div>
 
@@ -1661,6 +1680,7 @@
             <option value="on">On</option>
           </select>
         </div>
+        <div id="node-bars-detail" class="pt-detail">
         <div class="pt-palette-row">
           <span class="pt-palette-label">Colour</span>
           <input type="color" class="pt-palette-color" id="node-bars-color" value="#2aa198" />
@@ -1686,32 +1706,35 @@
             <option value="on">Show</option>
           </select>
         </div>
+        </div>
       </div>
     </div>
 
     <div class="pt-palette-section">
       <h3><i class="bi bi-card-list"></i> Legend</h3>
       <div class="pt-palette-row">
-        <span class="pt-palette-label">Annotation</span>
+        <span class="pt-palette-label">Show</span>
         <select class="pt-palette-select" id="legend-annotation" disabled>
-          <option value="">(none)</option>
+          <option value="">Off</option>
         </select>
       </div>
-      <div class="pt-palette-row">
-        <span class="pt-palette-label">Location</span>
-        <select class="pt-palette-select" id="legend-show">
-          <option value="right">Right</option>
-          <option value="left">Left</option>
-        </select>
-      </div>
-      <div class="pt-palette-row">
-        <span class="pt-palette-label">Colour</span>
-        <input type="color" class="pt-palette-color" id="legend-text-color" value="#f7eeca" />
-      </div>
-      <div class="pt-palette-row">
-        <i class="bi bi-fonts form-label-sm"></i>
-        <input type="range" class="form-range" id="legend-font-size-slider" min="6" max="16" value="11" />
-        <span class="pt-val" id="legend-font-size-value">11</span>
+      <div id="legend-detail" class="pt-detail">
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Location</span>
+          <select class="pt-palette-select" id="legend-show">
+            <option value="right">Right</option>
+            <option value="left">Left</option>
+          </select>
+        </div>
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Colour</span>
+          <input type="color" class="pt-palette-color" id="legend-text-color" value="#f7eeca" />
+        </div>
+        <div class="pt-palette-row">
+          <i class="bi bi-fonts form-label-sm"></i>
+          <input type="range" class="form-range" id="legend-font-size-slider" min="6" max="16" value="11" />
+          <span class="pt-val" id="legend-font-size-value">11</span>
+        </div>
       </div>
     </div>
 
@@ -1721,9 +1744,11 @@
         <span class="pt-palette-label">Show</span>
         <select class="pt-palette-select" id="axis-show">
           <option value="off">Off</option>
-          <option value="on">On</option>
+          <option value="forward">Forward</option>
+          <option value="reverse">Reverse</option>
         </select>
       </div>
+      <div id="axis-detail" class="pt-detail">
       <div class="pt-palette-row">
         <span class="pt-palette-label">Colour</span>
         <input type="color" class="pt-palette-color" id="axis-color" value="#f2f1e6" />
@@ -1739,7 +1764,7 @@
         <span class="pt-val" id="axis-line-width-value">1</span>
       </div>
       <div class="pt-palette-row" id="axis-date-row" style="display:none">
-        <span class="pt-palette-label">Dates</span>
+        <span class="pt-palette-label">Calibrate</span>
         <select class="pt-palette-select" id="axis-date-annotation">
           <option value="">(none)</option>
         </select>
@@ -1788,6 +1813,7 @@
           <option value="yyyy-MMM-dd">yyyy-MMM-dd</option>
           <option value="dd MMM yyyy">dd MMM yyyy</option>
         </select>
+      </div>
       </div>
     </div>
 
