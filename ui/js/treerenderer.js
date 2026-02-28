@@ -3,10 +3,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { computeLayoutFromGraph } from './treeutils.js';
-import { dateToDecimalYear, isNumericType } from './phylograph.js';
+import { dateToDecimalYear, isNumericType, TreeCalibration } from './phylograph.js';
 import { getSequentialPalette, lerpSequential,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
          MISSING_DATA_COLOUR, buildCategoricalColourMap } from './palettes.js';
+
+// Sentinel annotation keys for calendar-date synthetic node/tip labels.
+// peartree.js imports these to populate the label dropdowns.
+export const CAL_DATE_KEY          = '__cal_date__';
+export const CAL_DATE_HPD_KEY      = '__cal_date_hpd__';
+export const CAL_DATE_HPD_ONLY_KEY = '__cal_date_hpd_only__';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Canvas renderer
@@ -222,6 +228,13 @@ export class TreeRenderer {
     this.nodeBarsWidth      = s.nodeBarsWidth      ?? 6;
     this.nodeBarsShowMedian = s.nodeBarsShowMedian ?? 'mean';
     this.nodeBarsShowRange  = s.nodeBarsShowRange  ?? false;
+
+    // ── Calendar-date label support ───────────────────────────────────────
+    // calCalibration: active TreeCalibration instance (or null)
+    // calDateFormat:  format string used by decYearToString()
+    // Use 'in' check so an explicit null from _buildRendererSettings properly clears the calibration.
+    this._calCalibration = 'calCalibration' in s ? (s.calCalibration ?? null) : (this._calCalibration ?? null);
+    this._calDateFormat  = s.calDateFormat  ?? this._calDateFormat  ?? 'yyyy-MM-dd';
 
     // ── Node labels (internal-node annotation labels drawn on top) ────────
     this.nodeLabelAnnotation = s.nodeLabelAnnotation || null;
@@ -460,6 +473,26 @@ export class TreeRenderer {
 
   setNodeLabelSpacing(n) {
     this.nodeLabelSpacing = +n;
+    this._dirty = true;
+  }
+
+  /**
+   * Update the calibration used for calendar-date node/tip labels.
+   * @param {TreeCalibration|null} cal
+   * @param {string} [fmt]  date format string, e.g. 'yyyy-MM-dd'
+   */
+  setCalibration(cal, fmt) {
+    this._calCalibration = cal?.isActive ? cal : null;
+    if (fmt != null) this._calDateFormat = fmt;
+    this._labelCacheKey = null;  // invalidate tip-label width cache
+    this._dirty = true;
+  }
+
+  /** Update only the date format used for calendar-date labels. */
+  setCalDateFormat(fmt) {
+    if (this._calDateFormat === fmt) return;
+    this._calDateFormat = fmt;
+    this._labelCacheKey = null;  // invalidate tip-label width cache
     this._dirty = true;
   }
 
@@ -995,14 +1028,41 @@ export class TreeRenderer {
   /**
    * Returns the display text for a tip node label.
    * Uses the tipLabelAnnotation value when set; falls back to node.name.
+   * Handles the synthetic CAL_DATE_KEY / CAL_DATE_HPD_KEY / CAL_DATE_HPD_ONLY_KEY sentinels.
    */
   _tipLabelText(node) {
-    if (!this.tipLabelAnnotation) return node.name || null;
-    const val = node.annotations?.[this.tipLabelAnnotation];
+    const key = this.tipLabelAnnotation;
+    if (!key) return node.name || null;
+
+    // ── Synthetic calendar-date labels ──────────────────────────────────
+    if (key === CAL_DATE_KEY || key === CAL_DATE_HPD_KEY || key === CAL_DATE_HPD_ONLY_KEY) {
+      const cal = this._calCalibration;
+      if (!cal?.isActive) return node.name || null;
+      const height  = this.maxX - node.x;
+      const hpdKey  = this._annotationSchema?.get('height')?.group?.hpd;
+      const hpd     = hpdKey ? node.annotations?.[hpdKey] : null;
+      const hasHpd  = Array.isArray(hpd) && hpd.length >= 2;
+      if (key === CAL_DATE_HPD_ONLY_KEY) {
+        if (!hasHpd) return null;
+        // hpd[0] = lower height (newer date), hpd[1] = upper height (older date)
+        const dOlder = cal.heightToDateString(hpd[1], 'full', this._calDateFormat);
+        const dNewer = cal.heightToDateString(hpd[0], 'full', this._calDateFormat);
+        return `[${dOlder} – ${dNewer}]`;
+      }
+      const dateStr = cal.heightToDateString(height, 'full', this._calDateFormat);
+      if (key === CAL_DATE_HPD_KEY && hasHpd) {
+        const dOlder = cal.heightToDateString(hpd[1], 'full', this._calDateFormat);
+        const dNewer = cal.heightToDateString(hpd[0], 'full', this._calDateFormat);
+        return `${dateStr} [${dOlder} – ${dNewer}]`;
+      }
+      return dateStr;
+    }
+
+    const val = node.annotations?.[key];
     if (val == null || val === '') return node.name || null;
     if (Array.isArray(val)) return val.join(', ');
     if (typeof val === 'number') {
-      const def = this._annotationSchema?.get(this.tipLabelAnnotation);
+      const def = this._annotationSchema?.get(key);
       if (def?.fmtValue) return def.fmtValue(val);
       if (def?.fmt)      return def.fmt(val);
     }
@@ -1012,10 +1072,36 @@ export class TreeRenderer {
   /**
    * Returns the display text for an internal-node label.
    * Uses nodeLabelAnnotation to look up the annotation value on the node.
+   * Handles the synthetic CAL_DATE_KEY / CAL_DATE_HPD_KEY / CAL_DATE_HPD_ONLY_KEY sentinels.
    */
   _nodeLabelText(node) {
     const key = this.nodeLabelAnnotation;
     if (!key) return null;
+
+    // ── Synthetic calendar-date labels ──────────────────────────────────
+    if (key === CAL_DATE_KEY || key === CAL_DATE_HPD_KEY || key === CAL_DATE_HPD_ONLY_KEY) {
+      const cal = this._calCalibration;
+      if (!cal?.isActive) return null;
+      const height  = this.maxX - node.x;
+      const hpdKey  = this._annotationSchema?.get('height')?.group?.hpd;
+      const hpd     = hpdKey ? node.annotations?.[hpdKey] : null;
+      const hasHpd  = Array.isArray(hpd) && hpd.length >= 2;
+      if (key === CAL_DATE_HPD_ONLY_KEY) {
+        if (!hasHpd) return null;
+        // hpd[0] = lower height (newer date), hpd[1] = upper height (older date)
+        const dOlder = cal.heightToDateString(hpd[1], 'full', this._calDateFormat);
+        const dNewer = cal.heightToDateString(hpd[0], 'full', this._calDateFormat);
+        return `[${dOlder} – ${dNewer}]`;
+      }
+      const dateStr = cal.heightToDateString(height, 'full', this._calDateFormat);
+      if (key === CAL_DATE_HPD_KEY && hasHpd) {
+        const dOlder = cal.heightToDateString(hpd[1], 'full', this._calDateFormat);
+        const dNewer = cal.heightToDateString(hpd[0], 'full', this._calDateFormat);
+        return `${dateStr} [${dOlder} – ${dNewer}]`;
+      }
+      return dateStr;
+    }
+
     const val = node.annotations?.[key];
     if (val == null || val === '') return null;
     if (Array.isArray(val)) return val.join(', ');
@@ -1030,7 +1116,7 @@ export class TreeRenderer {
   _measureLabels() {
     if (!this.nodes) return;
     // Only redo the expensive measureText scan when font/annotation settings or node data changes.
-    const cacheKey = `${this.fontSize}|${this.fontFamily}|${this.tipLabelAnnotation ?? ''}`;
+    const cacheKey = `${this.fontSize}|${this.fontFamily}|${this.tipLabelAnnotation ?? ''}|${this._calDateFormat}`;
     if (this._labelCacheKey !== cacheKey) {
       const ctx = this.ctx;
       ctx.font = `${this.fontSize}px ${this.fontFamily}`;

@@ -1,7 +1,7 @@
 import { parseNexus, parseNewick, graphToNewick, parseDelimited } from './treeio.js';
 import { computeLayoutFromGraph, graphVisibleTipCount, graphSubtreeHasHidden } from './treeutils.js';
 import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointRootGraph, buildAnnotationSchema, isNumericType, TreeCalibration } from './phylograph.js';
-import { TreeRenderer } from './treerenderer.js';
+import { TreeRenderer, CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY } from './treerenderer.js';
 import { LegendRenderer } from './legendrenderer.js';
 import { AxisRenderer  } from './axisrenderer.js';
 import { THEMES, DEFAULT_SETTINGS, SETTINGS_KEY, USER_THEMES_KEY, DEFAULT_THEME_KEY, TYPEFACES } from './themes.js';
@@ -725,6 +725,9 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
    * or the renderer is first created so there is a single source of truth for
    * what gets passed to the renderer.
    */
+  // Hoisted so _buildRendererSettings (called before line 1094) can reference it safely.
+  let calibration;
+
   function _buildRendererSettings() {
     return {
       bgColor:          canvasBgColorEl.value,
@@ -789,6 +792,8 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       nodeLabelFontSize:   parseInt(nodeLabelFontSizeSlider.value),
       nodeLabelColor:      nodeLabelColorEl.value,
       nodeLabelSpacing:    parseInt(nodeLabelSpacingSlider.value),
+      calCalibration:      calibration?.isActive ? calibration : null,
+      calDateFormat:       axisDateFmtEl.value,
     };
   }
 
@@ -1089,7 +1094,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   // Shared time-calibration state for the current tree.
   // setAnchor() is called when the tree is loaded or the annotation selection changes.
   // axisRenderer.setCalibration() is called by applyAxis() to activate it on the axis.
-  const calibration = new TreeCalibration();
+  calibration = new TreeCalibration();
 
   // Apply stored visual settings to the renderer immediately.
   // If no saved theme exists yet, apply the default 'Artic' theme.
@@ -1762,6 +1767,20 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
         opt.value = name; opt.textContent = name;
         tipLabelShow.appendChild(opt);
       }
+      // Synthetic calendar-date options (only when a date calibration is active)
+      if (calibration.isActive) {
+        const _optCal = document.createElement('option');
+        _optCal.value = CAL_DATE_KEY; _optCal.textContent = 'Calendar date';
+        tipLabelShow.appendChild(_optCal);
+        if (schema.get('height')?.group?.hpd) {
+          const _optHpd = document.createElement('option');
+          _optHpd.value = CAL_DATE_HPD_KEY; _optHpd.textContent = 'Calendar date + HPDs';
+          tipLabelShow.appendChild(_optHpd);
+          const _optHpdOnly = document.createElement('option');
+          _optHpdOnly.value = CAL_DATE_HPD_ONLY_KEY; _optHpdOnly.textContent = 'Calendar date HPDs';
+          tipLabelShow.appendChild(_optHpdOnly);
+        }
+      }
       tipLabelShow.disabled = false;
       tipLabelShow.value = [...tipLabelShow.options].some(o => o.value === prev) ? prev : 'names';
       if (renderer) renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
@@ -1777,6 +1796,20 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
         const opt = document.createElement('option');
         opt.value = name; opt.textContent = name;
         nodeLabelShowEl.appendChild(opt);
+      }
+      // Synthetic calendar-date options (only when a date calibration is active)
+      if (calibration.isActive) {
+        const _optCal = document.createElement('option');
+        _optCal.value = CAL_DATE_KEY; _optCal.textContent = 'Calendar date';
+        nodeLabelShowEl.appendChild(_optCal);
+        if (schema.get('height')?.group?.hpd) {
+          const _optHpd = document.createElement('option');
+          _optHpd.value = CAL_DATE_HPD_KEY; _optHpd.textContent = 'Calendar date + HPDs';
+          nodeLabelShowEl.appendChild(_optHpd);
+          const _optHpdOnly = document.createElement('option');
+          _optHpdOnly.value = CAL_DATE_HPD_ONLY_KEY; _optHpdOnly.textContent = 'Calendar date HPDs';
+          nodeLabelShowEl.appendChild(_optHpdOnly);
+        }
       }
       nodeLabelShowEl.disabled = false;
       nodeLabelShowEl.value = [...nodeLabelShowEl.options].some(o => o.value === prev) ? prev : '';
@@ -2030,6 +2063,43 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       calibration.setAnchor(_canRestoreDate ? _savedAxisDate : null, layout.nodeMap, layout.maxX);
       // axisRenderer.setCalibration() is called by applyAxis() below.
       axisDateFmtRow.style.display = calibration.isActive ? 'flex' : 'none';
+
+      // Append synthetic Calendar date options to the label dropdowns now that
+      // calibration is established.  The inline dropdown population above runs
+      // before setAnchor(), so we patch the options in here instead.
+      if (calibration.isActive) {
+        const _hasHpd = !!schema.get('height')?.group?.hpd;
+        for (const _sel of [tipLabelShow, nodeLabelShowEl]) {
+          if (![..._sel.options].some(o => o.value === CAL_DATE_KEY)) {
+            const _o = document.createElement('option');
+            _o.value = CAL_DATE_KEY; _o.textContent = 'Calendar date';
+            _sel.appendChild(_o);
+          }
+          if (_hasHpd && ![..._sel.options].some(o => o.value === CAL_DATE_HPD_KEY)) {
+            const _o = document.createElement('option');
+            _o.value = CAL_DATE_HPD_KEY; _o.textContent = 'Calendar date + HPDs';
+            _sel.appendChild(_o);
+          }
+          if (_hasHpd && ![..._sel.options].some(o => o.value === CAL_DATE_HPD_ONLY_KEY)) {
+            const _o = document.createElement('option');
+            _o.value = CAL_DATE_HPD_ONLY_KEY; _o.textContent = 'Calendar date HPDs';
+            _sel.appendChild(_o);
+          }
+        }
+        // Re-apply saved label annotation if it was a calendar-date key that
+        // couldn't be found when the dropdowns were first populated.
+        const _calKeys = [CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY];
+        if (_calKeys.includes(_eff.tipLabelShow)) {
+          tipLabelShow.value = _eff.tipLabelShow;
+          renderer.setTipLabelAnnotation(_eff.tipLabelShow);
+        }
+        if (_calKeys.includes(_eff.nodeLabelAnnotation)) {
+          nodeLabelShowEl.value = _eff.nodeLabelAnnotation;
+          renderer.setNodeLabelAnnotation(_eff.nodeLabelAnnotation);
+        }
+      }
+      // Sync calibration into the tree renderer so calendar-date labels are live.
+      renderer.setCalibration(calibration.isActive ? calibration : null, axisDateFmtEl.value);
 
       // Capture full-tree axis params for subtree-tracking.
       _axisIsTimedTree = _isTimedTree;
@@ -3466,6 +3536,8 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
 
   function applyTickOptions() {
     axisRenderer.setDateFormat(axisDateFmtEl.value);
+    // Keep calendar-date node/tip labels in sync when date format changes.
+    renderer?.setCalDateFormat(axisDateFmtEl.value);
     axisRenderer.setTickOptions({
       majorInterval:    axisMajorIntervalEl.value,
       minorInterval:    axisMinorIntervalEl.value,
@@ -3552,6 +3624,9 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     const key = axisDateAnnotEl.value || null;
     calibration.setAnchor(key, renderer.nodeMap || new Map(), renderer.maxX);
     axisDateFmtRow.style.display = calibration.isActive ? 'flex' : 'none';
+    // Repopulate label dropdowns to add/remove Calendar date options, then sync renderer.
+    _refreshAnnotationUIs(renderer?._annotationSchema ?? new Map());
+    if (renderer) renderer.setSettings(_buildRendererSettings());
     if (axisShowEl.value === 'time') {
       axisRenderer.setCalibration(key && calibration.isActive ? calibration : null);
       // If currently viewing a subtree, recompute its params using the new anchor.
