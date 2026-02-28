@@ -1,6 +1,8 @@
 # PearTree Tutorial
 
-This tutorial walks through the main features of PearTree using the built-in Ebola virus (EBOV) example dataset. No files need to be downloaded — everything runs locally in your browser or the desktop app.
+This tutorial walks through the main features of PearTree using the built-in Ebola virus (EBOV) example dataset. To make this simple this uses the on-line web application at [http://artic-network.github.io/peartree](http://artic-network.github.io/peartree) but it will also work with the desktop apps available for Mac, Windows & Linux here: [https://github.com/artic-network/peartree/releases](https://github.com/artic-network/peartree/releases). 
+
+No files need to be downloaded — everything runs locally in your browser using provided example files.
 
 ---
 
@@ -19,6 +21,9 @@ Alternatively, click the open button <img src="images/open_button.png" style="wi
 > <img src="images/fig1b.png" style="width:300px;"/>
 >
 > *Open Tree File* dialog with the `Example` tab selected.
+
+> **Note** 
+> In the installable, desktop, applications choosing the Open Tree command (either from the menu or the toolbar button) will go directly to openning a local file using the system's file chooser.
 
 After a moment the tree will appear on the canvas.
 
@@ -277,25 +282,26 @@ The EBOV example has some annotations embedded in the tree file. These were put 
 
 - Click the <img src="images/load_annotations_button.png" style="width:32px;"/> button (or press **⌘⇧A**).
 
-- **Step 1** — Drag a CSV/TSV onto the drop zone or click *Choose File*.
+- Drag a CSV/TSV onto the drop zone or click *Choose File*. Or for this tutorial,you can select *URL* and then paste the following URL into the box:
+```https://artic-network.github.io/peartree/docs/data/ebov.csv```
 
-> <img src="images/fig11a.png" style="width:300px;"/>
->
-> Import Annotations dialog, Step 1 (file-pick drop zone).
+  > <img src="images/fig11a.png" style="width:300px;"/>
+  >
+  > Import Annotations dialog.
 
-> **Note** this dialog box will only appear if running PearTree on a web server - for the desktop app, a native file chooser will appear for you to select the file.
+> **Note**: This dialog box will only appear if running PearTree on a web server - for the desktop app, a native file chooser will appear for you to select the file. If you want to do this step, download the file from the URL below and then select it in the file chooser.
 
-- **Step 2** — Select which column in the metadata file is going to be used to match the tip labels in the tree. By default PearTree will try to match the entire tip label but if the labels are made up of 'fields' separated by the `|` (pipe) character then you can choose which is the field to match. For the example data it is the `lab-id` in the second field.
+- A dialog box will appear which will allow you to specify how the annotation file will be used. Select which column in the metadata file is going to be used to match the tip labels in the tree. By default PearTree will try to match the entire tip label but if the labels are made up of 'fields' separated by the `|` (pipe) character then you can choose which is the field to match. For the example data it is the `lab-id` in the second field.
 
-> <img src="images/fig11b.png" style="width:300px;"/>
->
-> Import configuration dialog showing column checkboxes and preview rows.
+  > <img src="images/fig11b.png" style="width:300px;"/>
+  >
+  > Import configuration dialog showing column checkboxes and preview rows.
 
 - Click **Import**. A summary reports how many tips matched.
 
-> <img src="images/fig11c.png" style="width:300px;"/>
->
-> Import summary dialog box. This confirms that all 1610 tips of the tree were matched with a row in the metadata file annotated with the required columns.
+  > <img src="images/fig11c.png" style="width:300px;"/>
+  >
+  > Import summary dialog box. This confirms that all 1610 tips of the tree were matched with a row in the metadata file annotated with the required columns.
 
 After import the new annotation keys appear in all *Colour by* dropdowns and the *Legend* selector. They will also appear in the *Get Info* dialog box for selected tips.
 
@@ -396,32 +402,13 @@ If the tree file contains node-height annotations (e.g. a BEAST MCC tree with `h
 
 ## 16. Themes and Visual Customisation
 
-The **Theme** section at the top of the Visual Options palette provides quick preset starting points:
-
-| Theme | Description |
-|---|---|
-| **Artic** | Dark teal background, warm cream labels |
-| **Gytis** | White background, black branches |
+The **Theme** section at the top of the Visual Options palette provides quick preset starting points.
 
 Changing any individual control (background, branch colour, font size, etc.) switches the selector to *Custom*. Click **Store** to save a named personal theme.
 
-> **📸 SCREENSHOT PLACEHOLDER** — Visual Options palette open on the Theme section with the *Gytis* theme applied; tree rendered on a white background.
-
-### Key Palette Controls
-
-| Section | Control | What it does |
-|---|---|---|
-| **Canvas** | Background | Canvas background colour |
-| **Canvas** | Branches | Branch line colour |
-| **Canvas** | Branch width | Stroke thickness (0.5–8 px) |
-| **Tip Labels** | Size | Font size (6–20 pt) |
-| **Tip Shapes** | Size | Tip circle radius (0 = hidden) |
-| **Tip Shapes** | Bg size | Halo radius behind each tip |
-| **Node Shapes** | Size | Internal node circle radius |
-
-Click **Reset to defaults** at the bottom of the palette to restore the *Artic* theme.
-
----
+  > <img src="images/fig16.png" style="width:450px;"/>
+  >
+  > Visual Options palette open on the Theme section with the *MCM* theme applied.
 
 ## 17. Exporting the Tree
 
@@ -432,7 +419,9 @@ Click the **↓ file** button (or press **⌘S**) to save the tree.
 - **Annotations** — checkboxes to include or exclude each annotation key
 - **Embed settings** (NEXUS only) — ticking this embeds all current visual settings in the file so the appearance is restored automatically when the file is reopened
 
-> **📸 SCREENSHOT PLACEHOLDER** — Export Tree dialog showing NEXUS format selected, two annotation keys checked, and *Embed settings* ticked.
+> <img src="images/fig17.png" style="width:350px;"/>
+>
+> Export Tree dialog.
 
 ---
 
@@ -447,7 +436,9 @@ Click the **image** button (or press **⌘E**) to download an image.
 
 SVG exports include branches, labels, shapes, legend strips, and the time axis as true vectors — ideal for publication figures.
 
-> **📸 SCREENSHOT PLACEHOLDER** — Export Graphic dialog; SVG and Full tree selected.
+> <img src="images/fig18.png" style="width:350px;"/>
+>
+> Export Graphic dialog.
 
 ---
 
@@ -488,6 +479,110 @@ When you export a NEXUS file with **Embed settings** ticked, those settings trav
 
 > On Windows and Linux replace **⌘** with **Ctrl**.
 
+## Key Palette Controls
+
+**Theme**
+
+<img src="images/controls_themes.png" style="width:250px;"/>
+
+| Control | What it does |
+|---|---|
+| Theme selector | Choose a built-in or saved preset |
+| **Store** | Save the current settings as a named personal theme |
+| **Default** | Make the selected theme the default for new windows |
+| **Remove** | Delete a user-saved theme |
+| Typeface | Font family used for all labels |
+
+**Tree**
+
+<img src="images/controls_tree.png" style="width:250px;"/>
+
+| Control | What it does |
+|---|---|
+| Background | Canvas background colour |
+| Branches | Branch line colour |
+| Branch width | Stroke thickness (0.5–8 px) |
+| Neg. branches | Whether negative branch lengths are drawn as-is or clamped to zero |
+
+**Tip Labels**
+
+<img src="images/controls_tip_labels.png" style="width:250px;"/>
+
+| Control | What it does |
+|---|---|
+| Layout | *Normal* (labels float at each tip) or *Aligned* (labels right-aligned with optional leader lines) |
+| Size | Font size (1–20 pt) |
+| Colour | Default label colour |
+| Colour by | Colour labels by an annotation key instead of the fixed colour |
+| Palette | Colour palette to use when *Colour by* is active |
+| Selected style | Text style applied to selected tip labels: Bold, Italic, Bold+Italic, or Normal |
+
+**Tip Shapes**
+
+<img src="images/controls_tip_shapes.png" style="width:250px;"/>
+
+| Control | What it does |
+|---|---|
+| Size | Tip circle radius (0 = hidden) |
+| Colour | Tip shape stroke/fill colour |
+| Background | Background fill behind each tip circle |
+| Halo | Halo ring radius around each tip (0 = hidden) |
+| Colour by | Colour tips by an annotation key |
+| Palette | Colour palette to use when *Colour by* is active |
+
+**Node Shapes**
+
+<img src="images/controls_node_shapes.png" style="width:250px;"/>
+
+| Control | What it does |
+|---|---|
+| Size | Internal-node circle radius (0 = hidden) |
+| Colour | Node shape stroke/fill colour |
+| Background | Background fill behind each node circle |
+| Halo | Halo ring radius around each node (0 = hidden) |
+| Colour by | Colour nodes by an annotation key |
+| Palette | Colour palette to use when *Colour by* is active |
+
+**Node Bars** *(only available for BEAST trees with height HPD intervals)*
+
+| Control | What it does |
+|---|---|
+| Show | Toggle HPD bars on/off |
+| Colour | Bar colour |
+| Bar height | Vertical thickness of each bar in screen pixels |
+| Line | Draw a central line at the *Mean*, *Median*, or neither |
+| Range whiskers | Show or hide the outer extent whiskers |
+
+**Legend**
+
+<img src="images/controls_legend.png" style="width:250px;"/>
+
+| Control | What it does |
+|---|---|
+| Annotation | Which annotation's colour scale to display |
+| Location | *Left* or *Right* side of the canvas |
+| Colour | Legend text colour |
+| Font size | Legend font size (6–16 pt) |
+
+**Axis** *(only shown when node-height data are available)*
+
+<img src="images/controls_axis.png" style="width:250px;"/>
+
+| Control | What it does |
+|---|---|
+| Show | Toggle the time axis on/off |
+| Colour | Axis line and tick colour |
+| Font size | Tick-label font size (6–16 pt) |
+| Line width | Axis line stroke thickness |
+| Dates | Annotation key holding calendar dates (e.g. `date`) — enables calendar-scaled axis |
+| Major ticks | Tick interval: Auto, Decades, Years, Quarters, Months, Weeks, or Days |
+| Minor ticks | Finer tick interval between major ticks (or Off) |
+| Major labels | Date format for major tick labels |
+| Minor labels | Date format for minor tick labels (or Off) |
+
+Click **Reset to defaults** at the bottom of the palette to restore the *Artic* theme.
+
+---
 
 ## Appendix: Rerooting the Tree
 
@@ -497,7 +592,7 @@ Re-rooting of trees is not possible for trees that are explicitly rooted (genera
 
 Press **⌘M** (or click **Midpoint** in the toolbar) to automatically root the tree at the midpoint of its longest path. This is a common starting point for exploratory analysis.
 
-> **📸 SCREENSHOT PLACEHOLDER** — EBOV tree after midpoint rerooting; root is repositioned.
+<!-- > ** SCREENSHOT PLACEHOLDER** — EBOV tree after midpoint rerooting; root is repositioned. -->
 
 ### Rerooting at a Selection
 
@@ -510,17 +605,57 @@ Press **⌘M** (or click **Midpoint** in the toolbar) to automatically root the 
 2. Click precisely where you want the new root on any branch.
 3. Click **Reroot**.
 
-> **📸 SCREENSHOT PLACEHOLDER** — Branch mode with marker placed near the base of a clade; tree after rerooting at that position.
+<!-- > ** SCREENSHOT PLACEHOLDER** — Branch mode with marker placed near the base of a clade; tree after rerooting at that position. -->
+
 
 ---
 
-## Appendix: The control drawer
+## Appendix: Bootstrap Values, Branch Annotations, and Rerooting
 
-> <img src="images/controls_tip_shapes.png" style="width:250px;"/>
->
-> The controls in the tool drawer that set options for the tips of the tree.
+### Node labels vs. branch labels
 
-> <img src="images/controls_tip_labels.png" style="width:250px;"/>
->
-> The controls in the tool drawer that set options for the tips of the tree.
+In a phylogenetic tree, every internal node can carry two conceptually different kinds of annotation:
 
+- **Node annotations** — properties of the *node itself*, such as a Bayesian posterior probability for the clade defined by that node, or the inferred height of that node in time. These belong to the node regardless of where the root sits.
+- **Branch annotations** — properties of the *branch leading to the node from its parent*, such as a bootstrap support value or a maximum-likelihood branch support. These belong to the branch, not the node.
+
+The distinction matters when you reroot the tree. If you reroot on a branch that currently separates node A from the rest of the tree, that branch is split into two new branches and the old root disappears. Node annotations stay with their node unchanged. Branch annotations, however, are "carried" on a specific branch — they need to travel with it.
+
+### Bootstrap values in Newick and NEXUS files
+
+Bootstrap support values are typically written as the *internal node label* in Newick format:
+
+```
+((A,B)95,(C,(D,E)72)80);
+```
+
+Here `95`, `72`, and `80` are bootstrap values. They are stored *at* the internal node but they actually describe the branch *leading into* that node from its parent. PearTree automatically recognises annotation keys named `bootstrap`, `support`, `label`, `posterior`, `posterior_probability`, `prob`, and `probability` as branch annotations, and sets the **Branch annotation** flag on them when the tree is first loaded.
+
+### The "Branch annotation" flag
+
+Every annotation key has a **Branch annotation** checkbox in the *Annotation Curator* (open the curator from the Import Annotations dialog or from Get Info). When this flag is ticked, PearTree knows to treat that key's values as belonging to branches rather than nodes.
+
+You can inspect and change the flag at any time:
+
+1. Load a tree that has bootstrap labels (a plain Newick file or a NEXUS file with bootstrap values).
+2. Open **Get Info** (**⌘I**) on any internal node — you will see the bootstrap value listed under its key name.
+3. Open the Annotation Curator for that key. The **Branch annotation** checkbox will already be ticked for known keys such as `bootstrap`.
+
+If you have a custom annotation that behaves like a branch support (e.g. an IQ-TREE `UFBoot` value stored under a non-standard key), you can tick this box manually.
+
+### How branch annotations move when you reroot
+
+When you place the root on a new branch, every internal node in the tree gains a new parent. The affected branches are those along the path from the old root down to the newly chosen root position. PearTree updates branch annotation values along that path so they remain faithful to the branch they describe:
+
+- Each node along the path *receives* the bootstrap value that was previously on the branch above it (i.e. the branch toward the old root), because after rerooting that is the branch that leads into that node from its new parent.
+- The node that was the old root adjacent node, whose branch is now split to form the two new root branches, loses its value — there is no meaningful bootstrap for the newly created edge at the root (it is an artefact of rooting, not a clade tested during tree inference).
+- All nodes *not* on the path between old and new root are unaffected.
+
+### Notes
+
+- **Rerooting a maximum-likelihood tree** that has bootstrap values works correctly in PearTree — bootstrap values track their branches faithfully after each reroot.
+- **Multiple sequential reroots** are also handled correctly; each reroot updates only the path affected.
+- **BEAST trees** store posterior support as a node annotation (not a branch annotation) alongside node heights. Re-rooting is disabled for explicitly-rooted BEAST trees, so this does not apply.
+- Hiding nodes and branches does not change the branch annotations (and they will still be there when the branches are unhidden). But note that bootstap or other support values may not be appropriate if some nodes adjacent to that value have been hidden. 
+
+---
