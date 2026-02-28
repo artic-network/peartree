@@ -1220,9 +1220,15 @@ export class TreeCalibration {
   static niceCalendarTicks(minDY, maxDY, targetCount = 5) {
     const range = maxDY - minDY;
     if (range === 0) return [minDY];
-    const candidates = [100, 50, 25, 10, 5, 2, 1, 1/2, 1/3, 1/4, 1/6, 1/12, 1/24];
+    // Candidates in decreasing size order: years down to 1 day.
+    // W_DY and D_DY give weekly and daily resolution.
+    const W_DY = 7 / 365.25;   // ≈ 0.01915
+    const D_DY = 1 / 365.25;   // ≈ 0.00274
+    const candidates = [100, 50, 25, 10, 5, 2, 1, 1/2, 1/3, 1/4, 1/6, 1/12, 1/24, W_DY, D_DY];
     const roughStep  = range / targetCount;
-    let step = candidates[0];
+    // Default to the SMALLEST candidate so that very narrow ranges get daily ticks
+    // rather than falling back to the initial 100-year step (which produces no visible ticks).
+    let step = D_DY;
     for (const c of candidates) { if (c <= roughStep * 1.5) { step = c; break; } }
 
     const ticks = [];
@@ -1230,8 +1236,9 @@ export class TreeCalibration {
       const startYear = Math.ceil(minDY / step - 1e-9) * step;
       for (let y = startYear; y <= maxDY + step * 1e-9; y += step)
         ticks.push(parseFloat(y.toPrecision(10)));
-    } else {
-      const mps  = Math.round(step * 12);
+    } else if (step >= 0.03) {
+      // Monthly ticks — covers 1/12 through 1/2 (1/24 ≈ 0.042 also lands here → mps=1=monthly)
+      const mps  = Math.max(1, Math.round(step * 12));
       const sd   = TreeCalibration.decYearToDate(minDY);
       let m = sd.month, yr = sd.year;
       const rem = m % mps;
@@ -1244,6 +1251,12 @@ export class TreeCalibration {
         m += mps;
         while (m > 12) { m -= 12; yr++; }
       }
+    } else if (step >= 0.005) {
+      // Weekly ticks — W_DY ≈ 0.0192 lands here
+      return TreeCalibration.calendarTicksForInterval(minDY, maxDY, 'weeks');
+    } else {
+      // Daily ticks — D_DY ≈ 0.00274 lands here
+      return TreeCalibration.calendarTicksForInterval(minDY, maxDY, 'days');
     }
     return ticks;
   }

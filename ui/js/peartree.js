@@ -3515,15 +3515,15 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
 
   function _updateMinorOptions(majorVal, keepVal) {
     const opts = {
-      auto:     [['off','Off'],['years','Years'],['months','Months']],
-      decades:  [['off','Off'],['years','Years'],['months','Months']],
-      years:    [['off','Off'],['quarters','Quarters'],['months','Months'],['weeks','Weeks'],['days','Days']],
-      quarters: [['off','Off'],['months','Months'],['days','Days']],
-      months:   [['off','Off'],['days','Days']],
-      weeks:    [['off','Off'],['days','Days']],
+      auto:     [['auto','Auto'],['years','Years'],['months','Months'],['off','Off']],
+      decades:  [['auto','Auto'],['years','Years'],['months','Months'],['off','Off']],
+      years:    [['auto','Auto'],['quarters','Quarters'],['months','Months'],['weeks','Weeks'],['days','Days'],['off','Off']],
+      quarters: [['auto','Auto'],['months','Months'],['days','Days'],['off','Off']],
+      months:   [['auto','Auto'],['weeks','Weeks'],['days','Days'],['off','Off']],
+      weeks:    [['auto','Auto'],['days','Days'],['off','Off']],
       days:     [['off','Off']],
     };
-    const list = opts[majorVal] || [['off','Off'],['auto','Auto']];
+    const list = opts[majorVal] || [['auto','Auto'],['off','Off']];
     axisMinorIntervalEl.innerHTML = '';
     for (const [val, label] of list) {
       const opt = document.createElement('option');

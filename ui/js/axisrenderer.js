@@ -386,9 +386,11 @@ export class AxisRenderer {
       ? Math.max(0, this._offsetX - this._paddingLeft) / this._scaleX
       : 0;
     if (this._calibration?.isActive) {
-      // In calibrated trees, height = maxX − node.x, so the root's height is always maxX.
-      // Use _maxX (not _rootHeight which is 0 for non-BEAST trees) as the root height.
-      const leftVal  = this._calibration.heightToDecYear(this._maxX + extraH);
+      // Root height in the current view = max(rootHeight, maxX):
+      //   - Full tree: _rootHeight is 0 for non-BEAST trees, so _maxX (= layout.maxX) wins.
+      //   - Subtree:   _rootHeight = viewRootH > _maxX (= viewRootH − minTipH), so _rootHeight wins.
+      const rootH    = Math.max(this._rootHeight, this._maxX);
+      const leftVal  = this._calibration.heightToDecYear(rootH + extraH);
       const rightVal = this._calibration.heightToDecYear(this._viewMinTipH);
       return { leftVal, rightVal };
     }
@@ -405,9 +407,11 @@ export class AxisRenderer {
 
   _valToWorldX(val) {
     if (this._calibration?.isActive) {
-      // val is a decimal year; worldX = val − rootDecYear.
-      // Root height in a calibrated tree is always maxX (height = maxX − node.x).
-      return val - this._calibration.heightToDecYear(this._maxX);
+      // worldX = val − decYear(rootH), where rootH = height at worldX = 0.
+      // max(rootHeight, maxX) gives the correct root height for both full-tree
+      // and subtree views (see _valueDomain comment above).
+      const rootH = Math.max(this._rootHeight, this._maxX);
+      return val - this._calibration.heightToDecYear(rootH);
     }
     if (this._timed)                       return this._rootHeight - val;
     if (this._direction === 'reverse')     return this._maxX - val;
