@@ -85,6 +85,10 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   const nodeLabelFontSizeSlider = document.getElementById('node-label-font-size-slider');
   const nodeLabelColorEl        = document.getElementById('node-label-color');
   const nodeLabelSpacingSlider  = document.getElementById('node-label-spacing-slider');
+  const tipLabelDpRowEl          = document.getElementById('tip-label-dp-row');
+  const tipLabelDpEl             = document.getElementById('tip-label-decimal-places');
+  const nodeLabelDpRowEl         = document.getElementById('node-label-dp-row');
+  const nodeLabelDpEl            = document.getElementById('node-label-decimal-places');
   const tipPaletteSelect   = document.getElementById('tip-palette-select');
   const tipPaletteRow      = document.getElementById('tip-palette-row');
   const nodePaletteSelect  = document.getElementById('node-palette-select');
@@ -390,6 +394,8 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       clampNegBranches:   clampNegBranchesEl.value,
       tipLabelShow:       tipLabelShow.value,
       tipLabelAlign:      tipLabelAlignEl.value,
+      tipLabelDecimalPlaces:  tipLabelDpEl.value !== '' ? parseInt(tipLabelDpEl.value) : null,
+      nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
       mode:             renderer ? renderer._mode : 'nodes',
     }));
   }
@@ -466,11 +472,13 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       clampNegBranches:   clampNegBranchesEl.value,
       tipLabelShow:       tipLabelShow.value,
       tipLabelAlign:      tipLabelAlignEl.value,
+      tipLabelDecimalPlaces:  tipLabelDpEl.value !== '' ? parseInt(tipLabelDpEl.value) : null,
       nodeLabelAnnotation: nodeLabelShowEl.value,
       nodeLabelPosition:   nodeLabelPositionEl.value,
       nodeLabelFontSize:   nodeLabelFontSizeSlider.value,
       nodeLabelColor:      nodeLabelColorEl.value,
       nodeLabelSpacing:    nodeLabelSpacingSlider.value,
+      nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
       mode:             renderer ? renderer._mode : 'nodes',
     };
   }
@@ -639,6 +647,8 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       nodeLabelSpacingSlider.value = s.nodeLabelSpacing;
       document.getElementById('node-label-spacing-value').textContent = s.nodeLabelSpacing;
     }
+    if (s.tipLabelDecimalPlaces  != null && tipLabelDpEl)  tipLabelDpEl.value  = String(s.tipLabelDecimalPlaces);
+    if (s.nodeLabelDecimalPlaces != null && nodeLabelDpEl) nodeLabelDpEl.value = String(s.nodeLabelDecimalPlaces);
     // Set themeSelect to the stored theme name (or 'custom' if not known).
     const themeName = s.theme && themeRegistry.has(s.theme) ? s.theme : (s.theme === 'custom' ? 'custom' : 'custom');
     themeSelect.value = themeName;
@@ -695,6 +705,8 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     nodeLabelColorEl.value      = DEFAULT_SETTINGS.nodeLabelColor;
     nodeLabelSpacingSlider.value = DEFAULT_SETTINGS.nodeLabelSpacing;
     document.getElementById('node-label-spacing-value').textContent = DEFAULT_SETTINGS.nodeLabelSpacing;
+    if (tipLabelDpEl)    tipLabelDpEl.value    = '';
+    if (nodeLabelDpEl)   nodeLabelDpEl.value   = '';
 
     if (renderer) {
       renderer.setTipColourBy('user_colour');
@@ -788,11 +800,13 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       fontFamily:         TYPEFACES[fontFamilyEl.value] ?? fontFamilyEl.value,
       tipLabelAnnotation: tipLabelShow.value === 'names' ? null : tipLabelShow.value,
       tipLabelAlign:      tipLabelAlignEl.value,
+      tipLabelDecimalPlaces:  tipLabelDpEl.value !== '' ? parseInt(tipLabelDpEl.value) : null,
       nodeLabelAnnotation: nodeLabelShowEl.value || null,
       nodeLabelPosition:   nodeLabelPositionEl.value,
       nodeLabelFontSize:   parseInt(nodeLabelFontSizeSlider.value),
       nodeLabelColor:      nodeLabelColorEl.value,
       nodeLabelSpacing:    parseInt(nodeLabelSpacingSlider.value),
+      nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
       calCalibration:      calibration?.isActive ? calibration : null,
       calDateFormat:       axisDateFmtEl.value,
     };
@@ -1730,6 +1744,17 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   }
 
 
+  /** Show/hide a decimal-places row based on whether the chosen label annotation is numeric. */
+  function _updateLabelDpRow(rowEl, annotKey, schema) {
+    if (!rowEl) return;
+    const SYNTHETIC = [CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY];
+    const dt = schema?.get(annotKey)?.dataType;
+    const isNumeric = annotKey && annotKey !== 'names' && annotKey !== '' &&
+                      !SYNTHETIC.includes(annotKey) &&
+                      ['real', 'integer', 'proportion', 'percentage'].includes(dt);
+    rowEl.style.display = isNumeric ? '' : 'none';
+  }
+
   /** Repopulate annotation dropdowns (tipColourBy, nodeColourBy, legendAnnotEl) after schema change. */
   function _refreshAnnotationUIs(schema) {
     // filter: 'tips' → onTips, 'nodes' → onNodes, 'all' → no filter
@@ -1834,6 +1859,9 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       nodeBarsShowEl.value = 'off';
       if (renderer) { renderer.setSettings(_buildRendererSettings()); renderer._dirty = true; }
     }
+    // Show decimal-places row only when a numeric annotation is selected.
+    _updateLabelDpRow(tipLabelDpRowEl,  tipLabelShow.value,    schema);
+    _updateLabelDpRow(nodeLabelDpRowEl, nodeLabelShowEl.value, schema);
   }
 
   // ── Tree loading ──────────────────────────────────────────────────────────
@@ -2026,9 +2054,10 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
 
       // ── Axis renderer setup ───────────────────────────────────────────────
-      // Detect time-scaled tree: root AND all nodes must carry a 'height' annotation.
-      const _isTimedTree = (graph.root.annotations && 'height' in graph.root.annotations) &&
-                           graph.nodes.every(n => 'height' in n.annotations);
+      // Detect time-scaled tree: presence of 'height' in the annotation schema is the
+      // canonical signal — BEAST MCC trees annotate internal nodes with height but not
+      // always tips, so a node.every() check would incorrectly return false.
+      const _isTimedTree = schema.has('height');
       // For timed trees, root height = layout.maxX (root sits at x=0, most divergent tip at x=maxX).
       const _rootHeight  = _isTimedTree ? layout.maxX : 0;
       axisRenderer.setTreeParams({ maxX: layout.maxX, isTimedTree: _isTimedTree, rootHeight: _rootHeight });
@@ -2106,8 +2135,9 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       _axisIsTimedTree = _isTimedTree;
       // Negative-branch clamping is meaningless in a time-scaled tree (nodes have
       // fixed calendar positions); hide the control and reset to 'off'.
-      if (clampNegBranchesRowEl) clampNegBranchesRowEl.style.display = _isTimedTree ? 'none' : '';
-      if (_isTimedTree) clampNegBranchesEl.value = 'off';
+      const _hideClamp = _isTimedTree || calibration.isActive;
+      if (clampNegBranchesRowEl) clampNegBranchesRowEl.style.display = _hideClamp ? 'none' : '';
+      if (_hideClamp) clampNegBranchesEl.value = 'off';
 
       // Show tick-option rows only when axis is in Time mode with an annotation selected.
       _showDateTickRows(axisShowEl.value === 'time' && !!axisDateAnnotEl.value);
@@ -2832,9 +2862,67 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
         if (visibleTips !== totalTips) rows.push(['Visible tips', visibleTips]);
         rows.push(['Root-to-tip span', renderer.maxX.toFixed(6)]);
         rows.push(['Rooted',           isExplicitlyRooted ? 'Yes' : 'No']);
-        if (_axisIsTimedTree) rows.push(['Time-scaled', 'Yes']);
+
+        // ── Timing information ────────────────────────────────────────────
+        const _isCalibrated = calibration?.isActive;
+        const _isTimeTree   = _axisIsTimedTree || _isCalibrated;
+        rows.push(['Time-scaled', _isTimeTree ? 'Yes' : 'No']);
+
+        if (_isTimeTree) {
+          rows.push(['__divider__', 'Timing']);
+          const calFmt = axisDateFmtEl?.value || 'yyyy-MM-dd';
+
+          if (_axisIsTimedTree && !_isCalibrated) {
+            // BEAST tree with height annotations — report span in height units
+            const heightFmt = schema?.get('height')?.fmt;
+            const spanStr = heightFmt ? heightFmt(renderer.maxX) : renderer.maxX.toFixed(6) + ' y';
+            rows.push(['Tree span', spanStr]);
+          }
+
+          if (_isCalibrated) {
+            // Root date (oldest) — root height = maxX
+            const rootDate = calibration.heightToDateString(renderer.maxX, 'full', calFmt);
+            rows.push(['Root date', rootDate]);
+
+            // Tip date range — find min/max heights across all tips
+            const allNodes = renderer.nodes || [];
+            const tips = allNodes.filter(n => n.isTip);
+            if (tips.length > 0) {
+              const tipHeights = tips.map(n =>
+                renderer._globalHeightMap?.get(n.id) ?? (renderer.maxX - n.x)
+              );
+              const minTipH = Math.min(...tipHeights); // most recent tip
+              const maxTipH = Math.max(...tipHeights); // oldest tip
+              const newestDate = calibration.heightToDateString(minTipH, 'full', calFmt);
+              const oldestDate = calibration.heightToDateString(maxTipH, 'full', calFmt);
+              if (Math.abs(maxTipH - minTipH) < 1e-9) {
+                rows.push(['Tip date',  newestDate]);
+              } else {
+                rows.push(['Oldest tip',  oldestDate]);
+                rows.push(['Newest tip',  newestDate]);
+                // Tip sampling span in days (approx)
+                const spreadDays = Math.round((maxTipH - minTipH) * 365.25);
+                rows.push(['Tip spread', spreadDays >= 365
+                  ? (maxTipH - minTipH).toFixed(2) + ' y'
+                  : spreadDays + ' days']);
+              }
+              // HPD range at root if available
+              const hpdKey = schema?.get('height')?.group?.hpd;
+              const rootNode = allNodes.find(n => !n.parentId);
+              const rootHpd = hpdKey && rootNode ? rootNode.annotations?.[hpdKey] : null;
+              if (Array.isArray(rootHpd) && rootHpd.length >= 2) {
+                const dOlder = calibration.heightToDateString(rootHpd[1], 'full', calFmt);
+                const dNewer = calibration.heightToDateString(rootHpd[0], 'full', calFmt);
+                rows.push(['Root 95% HPD', `[${dOlder} – ${dNewer}]`]);
+              }
+            }
+          }
+        }
+
+        // ── Annotations ───────────────────────────────────────────────────
         if (annotKeys.length > 0) {
-          rows.push(['Annotations', annotKeys.join(', ')]);
+          rows.push(['__divider__', 'Annotations']);
+          rows.push(['', annotKeys.join(', ')]);
         }
 
         const titleEl = document.getElementById('node-info-title');
@@ -2845,13 +2933,13 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
         tbl.style.cssText = 'width:100%;border-collapse:collapse;';
         for (const [label, value] of rows) {
           const tr = tbl.insertRow();
-          if (label === null) {
+          if (label === '__divider__') {
             const td = tr.insertCell();
             td.colSpan = 2;
             td.style.cssText = 'padding:6px 0 2px;';
             const div = document.createElement('div');
             div.style.cssText = 'display:flex;align-items:center;gap:6px;color:rgba(230,213,149,0.5);font-size:0.72rem;letter-spacing:0.05em;text-transform:uppercase;';
-            div.innerHTML = '<span style="flex:0 0 auto">Annotations</span><span style="flex:1;border-top:1px solid rgba(230,213,149,0.2);display:inline-block"></span>';
+            div.innerHTML = `<span style="flex:0 0 auto">${value}</span><span style="flex:1;border-top:1px solid rgba(230,213,149,0.2);display:inline-block"></span>`;
             td.appendChild(div);
           } else {
             const td1 = tr.insertCell();
@@ -3397,6 +3485,8 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   });
 
   tipLabelShow.addEventListener('change', () => {
+    const schema = renderer?._annotationSchema ?? new Map();
+    _updateLabelDpRow(tipLabelDpRowEl, tipLabelShow.value, schema);
     renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
     saveSettings();
   });
@@ -3406,7 +3496,19 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     saveSettings();
   });
 
+  tipLabelDpEl.addEventListener('change', () => {
+    renderer?.setSettings(_buildRendererSettings());
+    saveSettings();
+  });
+
+  nodeLabelDpEl.addEventListener('change', () => {
+    renderer?.setSettings(_buildRendererSettings());
+    saveSettings(); _markCustomTheme();
+  });
+
   nodeLabelShowEl.addEventListener('change', () => {
+    const schema = renderer?._annotationSchema ?? new Map();
+    _updateLabelDpRow(nodeLabelDpRowEl, nodeLabelShowEl.value, schema);
     renderer?.setNodeLabelAnnotation(nodeLabelShowEl.value || null);
     saveSettings(); _markCustomTheme();
     _syncControlVisibility();
@@ -3644,6 +3746,9 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     const key = axisDateAnnotEl.value || null;
     calibration.setAnchor(key, renderer.nodeMap || new Map(), renderer.maxX);
     axisDateFmtRow.style.display = calibration.isActive ? 'flex' : 'none';
+    // Clamp-to-zero is irrelevant when calibration is active (tree is time-scaled).
+    if (clampNegBranchesRowEl) clampNegBranchesRowEl.style.display = (_axisIsTimedTree || calibration.isActive) ? 'none' : '';
+    if (calibration.isActive) clampNegBranchesEl.value = 'off';
     // Repopulate label dropdowns to add/remove Calendar date options, then sync renderer.
     _refreshAnnotationUIs(renderer?._annotationSchema ?? new Map());
     if (renderer) renderer.setSettings(_buildRendererSettings());

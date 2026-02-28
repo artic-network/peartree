@@ -180,7 +180,8 @@ export class TreeRenderer {
     this.selectedLabelColor = s.selectedLabelColor ??
       TreeRenderer._hslToHex(_hsl.h, _hsl.s * 0.50, Math.min(97, _hsl.l * 1.08));
     this.selectedLabelStyle = s.selectedLabelStyle ?? 'bold';
-    this.tipLabelAnnotation = s.tipLabelAnnotation ?? null;
+    this.tipLabelAnnotation      = s.tipLabelAnnotation ?? null;
+    this._tipLabelDecimalPlaces  = s.tipLabelDecimalPlaces  ?? null;  // null = auto (schema formatter)
 
     // ── Layout geometry ─────────────────────────────────────────────────────
     this.paddingLeft            = s.paddingLeft;
@@ -237,7 +238,8 @@ export class TreeRenderer {
     this._calDateFormat  = s.calDateFormat  ?? this._calDateFormat  ?? 'yyyy-MM-dd';
 
     // ── Node labels (internal-node annotation labels drawn on top) ────────
-    this.nodeLabelAnnotation = s.nodeLabelAnnotation || null;
+    this.nodeLabelAnnotation      = s.nodeLabelAnnotation || null;
+    this._nodeLabelDecimalPlaces = s.nodeLabelDecimalPlaces ?? null;  // null = auto
     this.nodeLabelPosition   = s.nodeLabelPosition   ?? 'right';
     this.nodeLabelFontSize   = s.nodeLabelFontSize   != null ? +s.nodeLabelFontSize : 9;
     this.nodeLabelColor      = s.nodeLabelColor      ?? '#aaaaaa';
@@ -1058,11 +1060,17 @@ export class TreeRenderer {
       return dateStr;
     }
 
-    const val = node.annotations?.[key];
+    const def = this._annotationSchema?.get(key);
+    let val = node.annotations?.[key];
+    // Synthetic base keys (e.g. 'height' promoted from 'height_mean') are not
+    // stored directly on node.annotations – fall back to the mean group member.
+    if ((val == null || val === '') && def?.group?.mean) {
+      val = node.annotations?.[def.group.mean];
+    }
     if (val == null || val === '') return node.name || null;
     if (Array.isArray(val)) return val.join(', ');
     if (typeof val === 'number') {
-      const def = this._annotationSchema?.get(key);
+      if (this._tipLabelDecimalPlaces != null) return val.toFixed(this._tipLabelDecimalPlaces);
       if (def?.fmtValue) return def.fmtValue(val);
       if (def?.fmt)      return def.fmt(val);
     }
@@ -1102,11 +1110,17 @@ export class TreeRenderer {
       return dateStr;
     }
 
-    const val = node.annotations?.[key];
+    const def = this._annotationSchema?.get(key);
+    let val = node.annotations?.[key];
+    // Synthetic base keys (e.g. 'height' promoted from 'height_mean') are not
+    // stored directly on node.annotations – fall back to the mean group member.
+    if ((val == null || val === '') && def?.group?.mean) {
+      val = node.annotations?.[def.group.mean];
+    }
     if (val == null || val === '') return null;
     if (Array.isArray(val)) return val.join(', ');
     if (typeof val === 'number') {
-      const def = this._annotationSchema?.get(key);
+      if (this._nodeLabelDecimalPlaces != null) return val.toFixed(this._nodeLabelDecimalPlaces);
       if (def?.fmtValue) return def.fmtValue(val);
       if (def?.fmt)      return def.fmt(val);
     }
@@ -1116,7 +1130,7 @@ export class TreeRenderer {
   _measureLabels() {
     if (!this.nodes) return;
     // Only redo the expensive measureText scan when font/annotation settings or node data changes.
-    const cacheKey = `${this.fontSize}|${this.fontFamily}|${this.tipLabelAnnotation ?? ''}|${this._calDateFormat}`;
+    const cacheKey = `${this.fontSize}|${this.fontFamily}|${this.tipLabelAnnotation ?? ''}|${this._calDateFormat}|${this._tipLabelDecimalPlaces ?? ''}|${this._nodeLabelDecimalPlaces ?? ''}`;    
     if (this._labelCacheKey !== cacheKey) {
       const ctx = this.ctx;
       ctx.font = `${this.fontSize}px ${this.fontFamily}`;
