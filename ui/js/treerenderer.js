@@ -564,6 +564,13 @@ export class TreeRenderer {
     this._calCalibration = cal?.isActive ? cal : null;
     if (fmt != null) this._calDateFormat = fmt;
     this._labelCacheKey = null;  // invalidate tip-label width cache
+    // Re-measure labels and re-fit the X scale: date strings are often wider
+    // than the plain node names measured during setData(), and labelRightPad
+    // must be updated before the next draw or the rightmost labels will clip.
+    if (this.nodes) {
+      this._measureLabels();
+      this._updateScaleX();
+    }
     this._dirty = true;
   }
 
@@ -572,6 +579,11 @@ export class TreeRenderer {
     if (this._calDateFormat === fmt) return;
     this._calDateFormat = fmt;
     this._labelCacheKey = null;  // invalidate tip-label width cache
+    // Re-measure and re-fit: the formatted date width may differ.
+    if (this.nodes) {
+      this._measureLabels();
+      this._updateScaleX();
+    }
     this._dirty = true;
   }
 

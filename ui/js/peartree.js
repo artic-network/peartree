@@ -2053,7 +2053,6 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       applyLegend();   // rebuild legend with new data (may clear it)
       const layout = computeLayoutFromGraph(graph, null, { clampNegativeBranches: clampNegBranchesEl.value === 'on' });
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
-      renderer.startIntroAnimation();
 
       // ── Axis renderer setup ───────────────────────────────────────────────
       // Detect time-scaled tree: presence of 'height' in the annotation schema is the
@@ -2147,6 +2146,9 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       applyTickOptions();
       // Apply axis mode (direction, calibration, visibility) now that calibration is established.
       applyAxis();
+      // Start intro animation AFTER all calibration setup — startIntroAnimation() mutates
+      // node.x to 0 on the shared node objects, which would corrupt setAnchor() if called earlier.
+      renderer.startIntroAnimation();
 
       // Reset navigation and selection state for the new tree
       renderer._navStack            = [];
