@@ -1076,8 +1076,12 @@ export class TreeCalibration {
       case 'quarters':
         return 'yyyy';
       case 'months':
-        if (fullFormat === 'yyyy-MMM-dd') return 'yyyy-MMM';
-        if (fullFormat === 'dd MMM yyyy') return 'MMM yyyy';
+        if (fullFormat === 'yyyy-MMM-dd')  return 'yyyy-MMM';
+        if (fullFormat === 'dd MMM yyyy')  return 'MMM yyyy';
+        if (fullFormat === 'dd MMMM yyyy') return 'MMMM yyyy';
+        if (fullFormat === 'MMM dd, yyyy') return 'MMM yyyy';
+        if (fullFormat === 'MMMM dd, yyyy') return 'MMMM yyyy';
+        if (fullFormat === 'MMM-dd-yyyy')  return 'MMM-yyyy';
         return 'yyyy-MM';
       case 'weeks':   return 'yyyy-Www';   // handled specially before _applyFormat is called
       case 'days':
@@ -1096,24 +1100,36 @@ export class TreeCalibration {
    * @returns {string}
    */
   static _applyFormat(fmt, year, mm, dd, mmm) {
+    const mmmm = TreeCalibration.MONTHS_FULL[TreeCalibration.MONTHS.indexOf(mmm)];
     switch (fmt) {
-      case 'yyyy':        return String(year);
-      case 'yyyy-MM':     return `${year}-${mm}`;
-      case 'yyyy-MMM':    return `${year}-${mmm}`;
-      case 'MMM yyyy':    return `${mmm} ${year}`;
-      case 'yyyy-MM-dd':  return `${year}-${mm}-${dd}`;
-      case 'yyyy-mm-dd':  return `${year}-${mm}-${dd}`;   // legacy alias
-      case 'yyyy-MMM-dd': return `${year}-${mmm}-${dd}`;
-      case 'dd MMM yyyy': return `${dd} ${mmm} ${year}`;
-      case 'MM-dd':       return `${mm}-${dd}`;
-      case 'dd MMM':      return `${dd} ${mmm}`;
-      default:            return `${year}-${mm}-${dd}`;
+      case 'yyyy':          return String(year);
+      case 'yyyy-MM':       return `${year}-${mm}`;
+      case 'yyyy-MMM':      return `${year}-${mmm}`;
+      case 'MMM yyyy':      return `${mmm} ${year}`;
+      case 'MMMM yyyy':     return `${mmmm} ${year}`;
+      case 'yyyy-MM-dd':    return `${year}-${mm}-${dd}`;
+      case 'yyyy-mm-dd':    return `${year}-${mm}-${dd}`;   // legacy alias
+      case 'yyyy-MMM-dd':   return `${year}-${mmm}-${dd}`;
+      case 'dd MMM yyyy':   return `${dd} ${mmm} ${year}`;
+      case 'dd MMMM yyyy':  return `${dd} ${mmmm} ${year}`;
+      case 'MMM dd, yyyy':  return `${mmm} ${dd}, ${year}`;
+      case 'MMMM dd, yyyy': return `${mmmm} ${dd}, ${year}`;
+      case 'MMM-dd-yyyy':   return `${mmm}-${dd}-${year}`;
+      case 'MMM-yyyy':      return `${mmm}-${year}`;
+      case 'MM-dd':         return `${mm}-${dd}`;
+      case 'MMM-dd':        return `${mmm}-${dd}`;
+      case 'dd MMM':        return `${dd} ${mmm}`;
+      case 'dd MMMM':       return `${dd} ${mmmm}`;
+      case 'MMM dd':        return `${mmm} ${dd}`;
+      case 'MMMM dd':       return `${mmmm} ${dd}`;
+      default:              return `${year}-${mm}-${dd}`;
     }
   }
 
   // ── Static helpers ─────────────────────────────────────────────────────────
 
-  static MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  static MONTHS      = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  static MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
   /**
    * Return the week-of-year number (1–53) for a given date.

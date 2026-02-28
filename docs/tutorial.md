@@ -386,17 +386,68 @@ To remove all user colours, click the **Clear** <img src="images/eraser_button.p
 
 ---
 
-## 15. The Time Axis
+## 15. The Axis
 
-If the tree file contains node-height annotations (e.g. a BEAST MCC tree with `height` values) and tip dates, an **Axis** section appears in the Visual Options palette.
+The **Axis** section of the Visual Options palette adds a scale bar along the bottom of the canvas. It has four modes selected from the **Show** dropdown:
 
-1. Set **Show** to *On*.
-2. Set **Date annotation** to the annotation key holding calendar dates (e.g. `date`).
-3. Adjust **Major ticks**, **Minor ticks**, and label formats as needed.
+| Value | Axis type |
+|---|---|
+| **Off** | No axis drawn |
+| **Forward** | Divergence from root (0 at root, increasing toward tips) |
+| **Reverse** | Distance from the most-divergent tip (0 at rightmost tip, increasing toward root) |
+| **Time** | Calendar-date axis (requires a date calibration — see below) |
+
+### Divergence axes (Forward / Reverse)
+
+Select **Forward** or **Reverse** to immediately draw a plain numeric scale. Use these with any tree where branch lengths represent substitutions-per-site or similar units. **Forward** is the conventional divergence axis; **Reverse** counts from the tips backwards toward the root, which can be convenient for emphasising recency.
+
+### Time-calibrated axis
+
+To draw a calendar-date axis you first need to tell PearTree which tip annotation holds sampling dates. This is done in the **Tree** section of the palette — *above* the Axis section.
+
+#### Step 1 — Calibrate
+
+In the **Tree** section, a **Calibrate** dropdown appears whenever the loaded tree has at least one annotation that PearTree recognises as a date (annotation type `date`, e.g. `collection_date` or `date`). Select that annotation key from the dropdown.
+
+Once a calibration annotation is chosen, a **Format** row appears immediately below it:
+
+| Format option | Example output |
+|---|---|
+| `1977-05-04` | ISO numeric — `2014-09-12` |
+| `1977-May-04` | Month abbreviation — `2014-Sep-12` |
+| `04 May 1977` | Day-first long — `12 Sep 2014` |
+
+The chosen format applies to all **Full** and **Partial** tick labels on the axis (see below).
+
+#### Step 2 — Switch the axis to Time
+
+In the **Axis** section set **Show** to `Time`. The axis now displays calendar dates derived from the calibration.
+
+#### Step 3 — Tick intervals
+
+With **Show** set to *Time* and a calibration active, three additional rows become visible:
+
+| Control | Options | Notes |
+|---|---|---|
+| **Major ticks** | Auto / Decades / Years / Quarters / Months / Weeks / Days | *Auto* picks the interval that gives roughly 5–8 ticks across the current view |
+| **Minor ticks** | Off / (subset of intervals finer than the major interval) | Weeks are only offered as minor ticks when major = Years |
+| **Major labels** | Partial / Full / Component / Off | See label modes below |
+| **Minor labels** | Off / Component / Partial / Full | Off by default to keep the axis uncluttered |
+
+#### Label modes
+
+| Mode | Behaviour |
+|---|---|
+| **Full** | The complete date in the chosen Format, e.g. `2014-09-12` |
+| **Partial** | Strips the sub-interval parts — a *Years* tick shows `2014`; a *Months* tick shows `2014-09`; a *Days* tick shows the full format |
+| **Component** | Only the interval-specific part — Years: `2014`; Quarters: `Q3`; Months: `Sep`; Weeks: `W37`; Days: `12` |
+| **Off** | No label drawn for ticks of this size |
+
+For **Weeks** ticks specifically: *Component* shows the week number as `W01`–`W53`; *Full* and *Partial* both show `2014-W37`.
 
 > <img src="images/fig15.png" style="width:250px;"/>
 >
-> EBOV tree with a time axis along the bottom calibrated to calendar year; major tick labels in `yyyy` format.
+> EBOV tree with a time axis along the bottom. Axis set to *Time*, major ticks = *Years*, major labels = *Partial* (showing only the year).
 
 ---
 
@@ -499,6 +550,8 @@ When you export a NEXUS file with **Embed settings** ticked, those settings trav
 
 | Control | What it does |
 |---|---|
+| Calibrate | Annotation key holding calendar dates used to calibrate a time axis; only shown when the tree has date-typed annotations |
+| Format | Display format for calibrated-axis labels: `1977-05-04` (ISO), `1977-May-04` (abbreviated month), or `04 May 1977` (day-first); only shown once a calibration is active |
 | Background | Canvas background colour |
 | Branches | Branch line colour |
 | Branch width | Stroke thickness (0.5–8 px) |
@@ -564,21 +617,20 @@ When you export a NEXUS file with **Embed settings** ticked, those settings trav
 | Colour | Legend text colour |
 | Font size | Legend font size (6–16 pt) |
 
-**Axis** *(only shown when node-height data are available)*
+**Axis**
 
 <img src="images/controls_axis.png" style="width:250px;"/>
 
 | Control | What it does |
 |---|---|
-| Show | Toggle the time axis on/off |
-| Colour | Axis line and tick colour |
+| Show | *Off* — no axis; *Forward* — divergence from root; *Reverse* — distance from tips toward root; *Time* — calendar-date axis (requires calibration in Tree section) |
+| Colour | Axis line, tick, and label colour |
 | Font size | Tick-label font size (6–16 pt) |
 | Line width | Axis line stroke thickness |
-| Dates | Annotation key holding calendar dates (e.g. `date`) — enables calendar-scaled axis |
-| Major ticks | Tick interval: Auto, Decades, Years, Quarters, Months, Weeks, or Days |
-| Minor ticks | Finer tick interval between major ticks (or Off) |
-| Major labels | Date format for major tick labels |
-| Minor labels | Date format for minor tick labels (or Off) |
+| Major ticks | Tick interval when in *Time* mode: Auto, Decades, Years, Quarters, Months, Weeks, or Days |
+| Minor ticks | Finer tick interval between major ticks (or Off); available options depend on the major interval chosen |
+| Major labels | Label mode for major ticks: *Partial* (strips sub-interval parts), *Full* (complete date in chosen Format), *Component* (interval-specific part only), or *Off* |
+| Minor labels | Label mode for minor ticks: *Off*, *Component*, *Partial*, or *Full* |
 
 Click **Reset to defaults** at the bottom of the palette to restore the *Artic* theme.
 
