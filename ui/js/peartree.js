@@ -1099,7 +1099,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   // Reads renderer._globalHeightMap directly so the values are always current,
   // even after rerooting (which rebuilds the map via _buildGlobalHeightMap).
   renderer._onLayoutChange = (maxX, viewSubtreeRootId) => {
-    if (!_axisIsTimedTree && !axisDateAnnotEl.value) return;
+    if (!_axisIsTimedTree && !(axisShowEl.value === 'time' && axisDateAnnotEl.value)) return;
     const hMap = renderer._globalHeightMap;
     const viewNodes = renderer.nodes || [];
     // The current layout root (x=0) always has height = maxX of the full-tree layout.
@@ -2015,8 +2015,8 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       // Capture full-tree axis params for subtree-tracking.
       _axisIsTimedTree = _isTimedTree;
 
-      // Show tick-option rows only when a date annotation is actively selected.
-      _showDateTickRows(!!axisDateAnnotEl.value);
+      // Show tick-option rows only when axis is in Time mode with an annotation selected.
+      _showDateTickRows(axisShowEl.value === 'time' && !!axisDateAnnotEl.value);
       // Apply stored (or default) tick options to the renderer.
       applyTickOptions();
 
@@ -3395,8 +3395,16 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     const val = axisShowEl.value;
     const on  = val !== 'off';
     axisCanvas.style.display = on ? 'block' : 'none';
-    axisRenderer.setDirection(on ? val : 'forward');
+    if (val === 'time') {
+      const key = axisDateAnnotEl.value || null;
+      axisRenderer.setDateAnchor(key, renderer.nodeMap || new Map(), renderer.maxX);
+      axisRenderer.setDirection('forward');
+    } else {
+      axisRenderer.setDateAnchor(null, renderer.nodeMap || new Map(), renderer.maxX);
+      axisRenderer.setDirection(on ? val : 'forward');
+    }
     axisRenderer.setVisible(on);
+    _showDateTickRows(val === 'time' && !!axisDateAnnotEl.value);
     // Resize the tree canvas so it fills the remaining space above/below the axis.
     renderer._resize();
     if (on) {
@@ -3525,12 +3533,14 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     if (renderer._viewSubtreeRootId && renderer._onLayoutChange) {
       renderer._onLayoutChange(renderer.maxX, renderer._viewSubtreeRootId);
     }
-    _showDateTickRows(!!key);
-    axisRenderer.update(
-      renderer.scaleX, renderer.offsetX, renderer.paddingLeft,
-      renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
-      window.devicePixelRatio || 1,
-    );
+    _showDateTickRows(axisShowEl.value === 'time' && !!key);
+    if (axisShowEl.value === 'time') {
+      axisRenderer.update(
+        renderer.scaleX, renderer.offsetX, renderer.paddingLeft,
+        renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
+        window.devicePixelRatio || 1,
+      );
+    }
     saveSettings();
   });
 
