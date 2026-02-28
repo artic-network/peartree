@@ -73,6 +73,11 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   const labelColourBy     = document.getElementById('label-colour-by');
   const tipLabelShow      = document.getElementById('tip-label-show');
   const tipLabelAlignEl   = document.getElementById('tip-label-align');
+  const nodeLabelShowEl         = document.getElementById('node-label-show');
+  const nodeLabelPositionEl     = document.getElementById('node-label-position');
+  const nodeLabelFontSizeSlider = document.getElementById('node-label-font-size-slider');
+  const nodeLabelColorEl        = document.getElementById('node-label-color');
+  const nodeLabelSpacingSlider  = document.getElementById('node-label-spacing-slider');
   const tipPaletteSelect   = document.getElementById('tip-palette-select');
   const tipPaletteRow      = document.getElementById('tip-palette-row');
   const nodePaletteSelect  = document.getElementById('node-palette-select');
@@ -450,6 +455,11 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       clampNegBranches:   clampNegBranchesEl.value,
       tipLabelShow:       tipLabelShow.value,
       tipLabelAlign:      tipLabelAlignEl.value,
+      nodeLabelAnnotation: nodeLabelShowEl.value,
+      nodeLabelPosition:   nodeLabelPositionEl.value,
+      nodeLabelFontSize:   nodeLabelFontSizeSlider.value,
+      nodeLabelColor:      nodeLabelColorEl.value,
+      nodeLabelSpacing:    nodeLabelSpacingSlider.value,
       mode:             renderer ? renderer._mode : 'nodes',
     };
   }
@@ -606,6 +616,17 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     if (s.nodeBarsShowMedian) nodeBarsMedianEl.value = s.nodeBarsShowMedian;
     if (s.nodeBarsShowRange)  nodeBarsRangeEl.value  = s.nodeBarsShowRange;
     if (s.clampNegBranches)   clampNegBranchesEl.value = s.clampNegBranches;
+    // Node label settings (annotation-dependent: nodeLabelAnnotation is applied later in loadTree)
+    if (s.nodeLabelPosition)  nodeLabelPositionEl.value   = s.nodeLabelPosition;
+    if (s.nodeLabelFontSize != null) {
+      nodeLabelFontSizeSlider.value = s.nodeLabelFontSize;
+      document.getElementById('node-label-font-size-value').textContent = s.nodeLabelFontSize;
+    }
+    if (s.nodeLabelColor)     nodeLabelColorEl.value      = s.nodeLabelColor;
+    if (s.nodeLabelSpacing != null) {
+      nodeLabelSpacingSlider.value = s.nodeLabelSpacing;
+      document.getElementById('node-label-spacing-value').textContent = s.nodeLabelSpacing;
+    }
     // Set themeSelect to the stored theme name (or 'custom' if not known).
     const themeName = s.theme && themeRegistry.has(s.theme) ? s.theme : (s.theme === 'custom' ? 'custom' : 'custom');
     themeSelect.value = themeName;
@@ -651,6 +672,13 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     nodeBarsMedianEl.value = DEFAULT_SETTINGS.nodeBarsShowMedian;
     nodeBarsRangeEl.value  = DEFAULT_SETTINGS.nodeBarsShowRange;
     clampNegBranchesEl.value = DEFAULT_SETTINGS.clampNegBranches ?? 'off';
+    nodeLabelShowEl.value       = DEFAULT_SETTINGS.nodeLabelAnnotation;
+    nodeLabelPositionEl.value   = DEFAULT_SETTINGS.nodeLabelPosition;
+    nodeLabelFontSizeSlider.value = DEFAULT_SETTINGS.nodeLabelFontSize;
+    document.getElementById('node-label-font-size-value').textContent = DEFAULT_SETTINGS.nodeLabelFontSize;
+    nodeLabelColorEl.value      = DEFAULT_SETTINGS.nodeLabelColor;
+    nodeLabelSpacingSlider.value = DEFAULT_SETTINGS.nodeLabelSpacing;
+    document.getElementById('node-label-spacing-value').textContent = DEFAULT_SETTINGS.nodeLabelSpacing;
 
     if (renderer) {
       renderer.setTipColourBy('user_colour');
@@ -659,6 +687,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       legendRenderer.setFontSize(parseInt(DEFAULT_SETTINGS.legendFontSize));
       legendRenderer.setTextColor(DEFAULT_SETTINGS.legendTextColor);
       renderer.setMode('nodes');
+      renderer.setNodeLabelAnnotation(null);
       applyLegend();
       applyAxis();
       applyTickOptions();
@@ -740,6 +769,11 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       fontFamily:         TYPEFACES[fontFamilyEl.value] ?? fontFamilyEl.value,
       tipLabelAnnotation: tipLabelShow.value === 'names' ? null : tipLabelShow.value,
       tipLabelAlign:      tipLabelAlignEl.value,
+      nodeLabelAnnotation: nodeLabelShowEl.value || null,
+      nodeLabelPosition:   nodeLabelPositionEl.value,
+      nodeLabelFontSize:   parseInt(nodeLabelFontSizeSlider.value),
+      nodeLabelColor:      nodeLabelColorEl.value,
+      nodeLabelSpacing:    parseInt(nodeLabelSpacingSlider.value),
     };
   }
 
@@ -964,6 +998,16 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   }
   if (_saved.legendShow)           legendShowEl.value       = _saved.legendShow;
   if (_saved.tipLabelAlign)        tipLabelAlignEl.value    = _saved.tipLabelAlign;
+  if (_saved.nodeLabelPosition)    nodeLabelPositionEl.value = _saved.nodeLabelPosition;
+  if (_saved.nodeLabelFontSize != null) {
+    nodeLabelFontSizeSlider.value = _saved.nodeLabelFontSize;
+    document.getElementById('node-label-font-size-value').textContent = _saved.nodeLabelFontSize;
+  }
+  if (_saved.nodeLabelColor)       nodeLabelColorEl.value   = _saved.nodeLabelColor;
+  if (_saved.nodeLabelSpacing != null) {
+    nodeLabelSpacingSlider.value = _saved.nodeLabelSpacing;
+    document.getElementById('node-label-spacing-value').textContent = _saved.nodeLabelSpacing;
+  }
   // Restore saved theme name (or default to Artic if no saved settings)
   themeSelect.value = _saved.theme || 'Artic';
 
@@ -1684,6 +1728,22 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       tipLabelShow.value = [...tipLabelShow.options].some(o => o.value === prev) ? prev : 'names';
       if (renderer) renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
     }
+    // Node label show: first option is '' (none); then all node annotations.
+    {
+      const prev = nodeLabelShowEl.value;
+      while (nodeLabelShowEl.options.length > 1) nodeLabelShowEl.remove(1);
+      for (const [name, def] of schema) {
+        if (def.dataType === 'list') continue;
+        if (def.groupMember) continue;
+        if (!def.onNodes) continue;
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        nodeLabelShowEl.appendChild(opt);
+      }
+      nodeLabelShowEl.disabled = false;
+      nodeLabelShowEl.value = [...nodeLabelShowEl.options].some(o => o.value === prev) ? prev : '';
+      if (renderer) renderer.setNodeLabelAnnotation(nodeLabelShowEl.value || null);
+    }
     // Refresh palette selects to match current colour-by selections after annotation schema changes.
     _updatePaletteSelect(tipPaletteSelect,   tipPaletteRow,   tipColourBy.value);
     _updatePaletteSelect(nodePaletteSelect,  nodePaletteRow,  nodeColourBy.value);
@@ -1813,6 +1873,19 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       }
       tipLabelShow.disabled = false;
 
+      // Node-label-show: first option is '' (none); then all node annotations.
+      while (nodeLabelShowEl.options.length > 1) nodeLabelShowEl.remove(1);
+      for (const [name, def] of schema) {
+        if (name === 'user_colour') continue;
+        if (def.dataType === 'list') continue;
+        if (def.groupMember) continue;
+        if (!def.onNodes) continue;
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        nodeLabelShowEl.appendChild(opt);
+      }
+      nodeLabelShowEl.disabled = false;
+
       // Legend select: blank "(none)" first, then annotations (no user_colour).
       while (legendAnnotEl.options.length > 1) legendAnnotEl.remove(1);
       for (const [name, def] of schema) {
@@ -1837,6 +1910,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       labelColourBy.value = _hasOpt(labelColourBy, _eff.labelColourBy)    ? _eff.labelColourBy    : 'user_colour';
       legendAnnotEl.value = _hasOpt(legendAnnotEl, _eff.legendAnnotation) ? _eff.legendAnnotation : '';
       tipLabelShow.value  = _hasOpt(tipLabelShow,  _eff.tipLabelShow)     ? _eff.tipLabelShow     : 'names';
+      nodeLabelShowEl.value = _hasOpt(nodeLabelShowEl, _eff.nodeLabelAnnotation) ? _eff.nodeLabelAnnotation : '';
       // Restore node order — only from file-embedded settings, not from saved prefs
       // (order is a per-tree choice and should not persist across different trees).
       if (_fileSettings?.nodeOrder === 'asc' || _fileSettings?.nodeOrder === 'desc') {
@@ -1869,6 +1943,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       renderer.setNodeColourBy(nodeColourBy.value   || null);
       renderer.setLabelColourBy(labelColourBy.value || null);
       renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
+      renderer.setNodeLabelAnnotation(nodeLabelShowEl.value || null);
       // Show palette selects for active colour-by annotations.
       _updatePaletteSelect(tipPaletteSelect,   tipPaletteRow,   tipColourBy.value);
       _updatePaletteSelect(nodePaletteSelect,  nodePaletteRow,  nodeColourBy.value);
@@ -3191,6 +3266,35 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   tipLabelAlignEl.addEventListener('change', () => {
     renderer.setTipLabelAlign(tipLabelAlignEl.value);
     saveSettings();
+  });
+
+  nodeLabelShowEl.addEventListener('change', () => {
+    renderer?.setNodeLabelAnnotation(nodeLabelShowEl.value || null);
+    saveSettings(); _markCustomTheme();
+  });
+
+  nodeLabelPositionEl.addEventListener('change', () => {
+    renderer?.setNodeLabelPosition(nodeLabelPositionEl.value);
+    saveSettings(); _markCustomTheme();
+  });
+
+  nodeLabelFontSizeSlider.addEventListener('input', () => {
+    const v = parseInt(nodeLabelFontSizeSlider.value);
+    document.getElementById('node-label-font-size-value').textContent = v;
+    renderer?.setNodeLabelFontSize(v);
+    saveSettings(); _markCustomTheme();
+  });
+
+  nodeLabelColorEl.addEventListener('input', () => {
+    renderer?.setNodeLabelColor(nodeLabelColorEl.value);
+    saveSettings(); _markCustomTheme();
+  });
+
+  nodeLabelSpacingSlider.addEventListener('input', () => {
+    const v = parseInt(nodeLabelSpacingSlider.value);
+    document.getElementById('node-label-spacing-value').textContent = v;
+    renderer?.setNodeLabelSpacing(v);
+    saveSettings(); _markCustomTheme();
   });
 
   tipPaletteSelect.addEventListener('change', () => {

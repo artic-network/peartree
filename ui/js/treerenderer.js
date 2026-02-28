@@ -223,6 +223,13 @@ export class TreeRenderer {
     this.nodeBarsShowMedian = s.nodeBarsShowMedian ?? 'mean';
     this.nodeBarsShowRange  = s.nodeBarsShowRange  ?? false;
 
+    // ── Node labels (internal-node annotation labels drawn on top) ────────
+    this.nodeLabelAnnotation = s.nodeLabelAnnotation || null;
+    this.nodeLabelPosition   = s.nodeLabelPosition   ?? 'right';
+    this.nodeLabelFontSize   = s.nodeLabelFontSize   != null ? +s.nodeLabelFontSize : 9;
+    this.nodeLabelColor      = s.nodeLabelColor      ?? '#aaaaaa';
+    this.nodeLabelSpacing    = s.nodeLabelSpacing    != null ? +s.nodeLabelSpacing  : 4;
+
     // ── Aligned tip labels ────────────────────────────────────────────────
     // Value is a string: 'off' | 'aligned' | 'dashed' | 'dots' | 'solid'
     // Accept legacy boolean true for backwards compatibility.
@@ -428,6 +435,31 @@ export class TreeRenderer {
 
   setNodeHaloSize(n) {
     this.nodeHaloSize = n;
+    this._dirty = true;
+  }
+
+  setNodeLabelAnnotation(key) {
+    this.nodeLabelAnnotation = key || null;
+    this._dirty = true;
+  }
+
+  setNodeLabelPosition(pos) {
+    this.nodeLabelPosition = pos;
+    this._dirty = true;
+  }
+
+  setNodeLabelFontSize(sz) {
+    this.nodeLabelFontSize = +sz;
+    this._dirty = true;
+  }
+
+  setNodeLabelColor(c) {
+    this.nodeLabelColor = c;
+    this._dirty = true;
+  }
+
+  setNodeLabelSpacing(n) {
+    this.nodeLabelSpacing = +n;
     this._dirty = true;
   }
 
@@ -977,6 +1009,24 @@ export class TreeRenderer {
     return String(val);
   }
 
+  /**
+   * Returns the display text for an internal-node label.
+   * Uses nodeLabelAnnotation to look up the annotation value on the node.
+   */
+  _nodeLabelText(node) {
+    const key = this.nodeLabelAnnotation;
+    if (!key) return null;
+    const val = node.annotations?.[key];
+    if (val == null || val === '') return null;
+    if (Array.isArray(val)) return val.join(', ');
+    if (typeof val === 'number') {
+      const def = this._annotationSchema?.get(key);
+      if (def?.fmtValue) return def.fmtValue(val);
+      if (def?.fmt)      return def.fmt(val);
+    }
+    return String(val);
+  }
+
   _measureLabels() {
     if (!this.nodes) return;
     // Only redo the expensive measureText scan when font/annotation settings or node data changes.
@@ -1474,6 +1524,7 @@ export class TreeRenderer {
     this._drawBranches(yWorldMin, yWorldMax);
     this._drawNodesAndLabels(yWorldMin, yWorldMax);
     this._drawSelectionAndHover(yWorldMin, yWorldMax);
+    this._drawNodeLabels(yWorldMin, yWorldMax);  // drawn on top
 
     // ── Cross-fade overlay: draw old snapshot fading out ──
     if (this._crossfadeSnapshot && this._crossfadeAlpha > 0) {
@@ -2128,6 +2179,59 @@ export class TreeRenderer {
       ctx.setLineDash([]);
       ctx.restore();
     }
+  }
+
+  /**
+   * Draw annotation labels for internal nodes.
+   * Drawn last (on top of everything), controlled by nodeLabelAnnotation.
+   * Positions: 'right' = to the right of the node; 'above-left' / 'below-left'
+   * = above or below the branch, to the left of the node.
+   */
+  _drawNodeLabels(yWorldMin, yWorldMax) {
+    if (!this.nodeLabelAnnotation || !this.nodes) return;
+    const minScale = this.nodeLabelFontSize * 0.5;
+    if (this.scaleY < minScale) return;
+
+    const ctx     = this.ctx;
+    const nodeR   = Math.max(this.nodeRadius, 0);
+    const spacing = this.nodeLabelSpacing;
+    const pos     = this.nodeLabelPosition;
+
+    ctx.save();
+    ctx.font      = `${this.nodeLabelFontSize}px ${this.fontFamily}`;
+    ctx.fillStyle = this.nodeLabelColor;
+    if (pos === 'right') {
+      ctx.textBaseline = 'middle';
+      ctx.textAlign    = 'left';
+    } else if (pos === 'below-left') {
+      ctx.textBaseline = 'top';
+      ctx.textAlign    = 'right';
+    } else { // 'above-left'
+      ctx.textBaseline = 'bottom';
+      ctx.textAlign    = 'right';
+    }
+
+    for (const node of this.nodes) {
+      if (node.isTip) continue;
+      if (node.y < yWorldMin || node.y > yWorldMax) continue;
+      const label = this._nodeLabelText(node);
+      if (!label) continue;
+      const nx = this._wx(node.x);
+      const ny = this._wy(node.y);
+      let tx, ty;
+      if (pos === 'right') {
+        tx = nx + nodeR + spacing;
+        ty = ny;
+      } else if (pos === 'below-left') {
+        tx = nx - nodeR - spacing;
+        ty = ny + spacing;
+      } else { // 'above-left'
+        tx = nx - nodeR - spacing;
+        ty = ny - spacing;
+      }
+      ctx.fillText(label, tx, ty);
+    }
+    ctx.restore();
   }
 
   /**

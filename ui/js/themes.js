@@ -352,4 +352,10 @@ export const DEFAULT_SETTINGS = {
   clampNegBranches:   'off',
   // Tip label layout
   tipLabelAlign:      'off',
+  // Node labels (internal-node annotation labels)
+  nodeLabelAnnotation: '',
+  nodeLabelPosition:   'right',
+  nodeLabelFontSize:   '9',
+  nodeLabelColor:      '#aaaaaa',
+  nodeLabelSpacing:    '4',
 };

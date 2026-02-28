@@ -1618,6 +1618,38 @@
       </div>
     </div>
 
+    <div class="pt-palette-section">
+      <h3><i class="bi bi-tag-fill"></i> Node Labels</h3>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Show</span>
+        <select class="pt-palette-select" id="node-label-show" disabled>
+          <option value="">(none)</option>
+        </select>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Position</span>
+        <select class="pt-palette-select" id="node-label-position">
+          <option value="right">Right</option>
+          <option value="above-left">Above left</option>
+          <option value="below-left">Below left</option>
+        </select>
+      </div>
+      <div class="pt-palette-row">
+        <i class="bi bi-fonts form-label-sm"></i>
+        <input type="range" class="form-range" id="node-label-font-size-slider" min="6" max="20" value="9" />
+        <span class="pt-val" id="node-label-font-size-value">9</span>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Colour</span>
+        <input type="color" class="pt-palette-color" id="node-label-color" value="#aaaaaa" />
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Spacing</span>
+        <input type="range" class="form-range" id="node-label-spacing-slider" min="0" max="20" step="1" value="4" />
+        <span class="pt-val" id="node-label-spacing-value">4</span>
+      </div>
+    </div>
+
     <div class="pt-palette-section" id="node-bars-section">
       <h3><i class="bi bi-bar-chart-steps"></i> Node Bars</h3>
       <div id="node-bars-unavail" style="display:block;font-size:0.78rem;color:rgba(255,255,255,0.35);font-style:italic;padding:2px 0 4px;">Requires BEAST tree with height HPD</div>
