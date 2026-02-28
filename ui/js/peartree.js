@@ -2882,6 +2882,21 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       rows.push(['Divergence',   node.x.toFixed(6)]);
       rows.push(['Height',       height.toFixed(6)]);
       rows.push(['Branch length', branchLen.toFixed(6)]);
+      // ── Calendar date (computed from calibration) ──────────────────────
+      if (calibration?.isActive) {
+        const calFmt = axisDateFmtEl.value || 'yyyy-MM-dd';
+        rows.push(['Calendar date', calibration.heightToDateString(height, 'full', calFmt)]);
+        // HPD interval, if present
+        const schema = graph ? graph.annotationSchema : null;
+        const hpdKey = schema?.get('height')?.group?.hpd;
+        const hpd    = hpdKey ? node.annotations?.[hpdKey] : null;
+        if (Array.isArray(hpd) && hpd.length >= 2) {
+          // hpd[0] = lower height (newer date), hpd[1] = upper height (older date)
+          const dOlder = calibration.heightToDateString(hpd[1], 'full', calFmt);
+          const dNewer = calibration.heightToDateString(hpd[0], 'full', calFmt);
+          rows.push(['Date 95% HPD', `[${dOlder} – ${dNewer}]`]);
+        }
+      }
       if (!node.isTip) {
         const tipCount = renderer._getDescendantTipIds
           ? renderer._getDescendantTipIds(node.id).length
