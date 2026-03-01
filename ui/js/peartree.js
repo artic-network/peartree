@@ -1162,8 +1162,8 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   // Restore axis visibility from saved settings (map legacy 'on' to 'forward')
   const _savedAxisShow = _saved.axisShow === 'on' ? 'forward' : (_saved.axisShow || 'off');
   if (_savedAxisShow !== 'off') {
-    axisShowEl.value            = _savedAxisShow;
-    axisCanvas.style.display    = 'block';
+    axisShowEl.value = _savedAxisShow;
+    // Don't reveal the canvas yet — keep it hidden until a tree is loaded.
     axisRenderer.setDirection(_savedAxisShow);
     axisRenderer.setVisible(true);
   }
@@ -2183,6 +2183,8 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
         document.getElementById('btn-mode-branches').disabled = false;
         // Hide the empty-state overlay
         emptyStateEl.classList.add('hidden');
+        // Show the axis canvas now if axis was already configured to be visible.
+        if (axisShowEl.value !== 'off') axisCanvas.style.display = 'block';
         // Enable commands — registry syncs both the button .disabled and the native menu.
         commands.setEnabled('import-annot',    true);
         commands.setEnabled('curate-annot',    true);
