@@ -1100,6 +1100,22 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   });
   renderer.setLegendRenderer(legendRenderer);
 
+  // Clicking a categorical legend entry selects all tips with that annotation value.
+  legendRenderer.onCategoryClick = (value) => {
+    if (!renderer.nodeMap) return;
+    const key = legendRenderer._annotation;
+    if (!key) return;
+    const ids = [];
+    for (const [id, n] of renderer.nodeMap) {
+      if (!n.isTip) continue;
+      if (n.annotations?.[key] === value) ids.push(id);
+    }
+    renderer._selectedTipIds = new Set(ids);
+    renderer._mrcaNodeId = null;
+    if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(ids.length > 0);
+    renderer._dirty = true;
+  };
+
   // ── Axis renderer ─────────────────────────────────────────────────────────
   // Must be created before applyTheme() is called below (applyTheme references
   // axisRenderer, and const bindings have TDZ — calling the function before this

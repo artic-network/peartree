@@ -41,6 +41,34 @@ export class LegendRenderer {
     this._dpr   = window.devicePixelRatio || 1;
     this._fontFamily = 'monospace';
 
+    // Hit regions for categorical legend entries: [{value, y0, y1}]
+    this._hitRegions = [];
+    /** Callback invoked when a categorical legend entry is clicked: (value) => void */
+    this.onCategoryClick = null;
+
+    // Wire click listeners on both canvases once, here in the constructor.
+    for (const lc of [this._leftCanvas, this._rightCanvas]) {
+      if (!lc) continue;
+      lc.addEventListener('click', (e) => {
+        if (!this.onCategoryClick || !this._hitRegions.length) return;
+        // e.offsetY is in CSS pixels relative to the canvas element
+        const cssY = e.offsetY;
+        for (const r of this._hitRegions) {
+          if (cssY >= r.y0 && cssY < r.y1) {
+            this.onCategoryClick(r.value);
+            return;
+          }
+        }
+      });
+      lc.style.cursor = 'default'; // updated dynamically per mousemove below
+      lc.addEventListener('mousemove', (e) => {
+        const cssY = e.offsetY;
+        const hit = this._hitRegions.some(r => cssY >= r.y0 && cssY < r.y1);
+        lc.style.cursor = (hit && this.onCategoryClick) ? 'pointer' : 'default';
+      });
+      lc.addEventListener('mouseleave', () => { lc.style.cursor = 'default'; });
+    }
+
     this.setSettings(settings, /*redraw*/ false);
   }
 
@@ -186,6 +214,9 @@ export class LegendRenderer {
       ctx.fillRect(0, 0, W, H);
     }
 
+    // Reset hit regions for this draw.
+    this._hitRegions = [];
+
     const PAD  = 12;
     const FONT = this._fontFamily ?? 'monospace';
     let   y    = PAD;
@@ -216,6 +247,8 @@ export class LegendRenderer {
         ctx.fillStyle = ltc;
         ctx.textAlign = 'left';
         ctx.fillText(String(val), PAD + SWATCH + 6, y + SWATCH / 2, W - PAD * 2 - SWATCH - 6);
+        // Record hit region (CSS pixels — divide by dpr since we set the transform)
+        this._hitRegions.push({ value: val, y0: y, y1: y + ROW_H });
         y += ROW_H;
       });
     } else if (def.dataType === 'date') {
