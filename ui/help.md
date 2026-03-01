@@ -38,16 +38,20 @@ Press **Escape** or click × to close the dialog without loading (once a tree is
 | Button | Shortcut | Description |
 |---|---|---|
 | **folder** | ⌘O | Open the *Open Tree File* dialog |
-| **+ file** | ⌘⇧O | Import an annotation CSV/TSV file (enabled once a tree is loaded) |
-| **↓ file** | ⌘S | Export the tree as NEXUS or Newick (enabled once a tree is loaded) |
-| **image** | ⌘E | Download a graphic (SVG or PNG) of the tree (enabled once a tree is loaded) |
+| **+ file** | ⌘⇧A | Import an annotation CSV/TSV file (enabled once a tree is loaded) |
+| **wrench** | — | Open the Annotation Curator (enabled once a tree is loaded) |
+| **↓ file** | ⌘E | Export the tree as NEXUS or Newick (enabled once a tree is loaded) |
+| **image** | ⌘⇧E | Download a graphic (SVG or PNG) of the tree (enabled once a tree is loaded) |
 
-### Navigation (History)
+### Navigation
 
 | Button | Shortcut | Description |
 |---|---|---|
 | **‹** back | ⌘[ | Navigate back to the parent subtree view |
 | **›** forward | ⌘] | Restore the next subtree view in the history |
+| **↑** climb | ⌘⇧, | Step up one level from the current subtree |
+| **↓** drill | ⌘⇧. | Zoom into the subtree rooted at the selected node |
+| **⌂** home | ⌘\ | Return to the full-tree root view |
 
 ### Zoom & Fit
 
@@ -62,8 +66,8 @@ Press **Escape** or click × to close the dialog without loading (once a tree is
 
 | Button | Shortcut | Description |
 |---|---|---|
-| **↑** ascending | ⌘D | Order branches so larger clades are toward the bottom |
-| **↓** descending | ⌘U | Order branches so larger clades are toward the top |
+| **↑** ascending | ⌘U | Order branches so larger clades are toward the top |
+| **↓** descending | ⌘D | Order branches so larger clades are toward the bottom |
 
 ### Rotate
 
@@ -108,13 +112,17 @@ Press **Escape** or click × to close the dialog without loading (once a tree is
 
 The user colour is stored as a `user_colour` annotation in `#RRGGBB` format on individual nodes. It round-trips through NEXUS export/import. Once at least one node has been coloured, **user colour** appears as the second option (after "none") in all three **Colour by** selectors (tip shape, node shape, label). It is intentionally excluded from the Legend selector.
 
+### Tip Search / Filter
+
+The **Filter tips…** search box in the toolbar searches tip labels as currently displayed — by name, annotation value, date string, or whatever the *Tip Labels → Show* dropdown is set to. Matches are selected (highlighted), non-matches are dimmed, and the count of matching tips is shown. The filter applies with a short debounce as you type and reacts to changes in the displayed label type without needing to re-enter the query.
+
 ### Panels
 
 | Button | Shortcut | Description |
 |---|---|---|
 | **sliders** | Tab | Open/close the Visual Options palette |
 | **ⓘ** About | — | Open the About panel (credits and funding) |
-| **?** Help | — | Open this help panel |
+| **?** Help | ⌘? | Open this help panel |
 
 ---
 
@@ -140,24 +148,40 @@ The user colour is stored as a `user_colour` annotation in `#RRGGBB` format on i
 | Shortcut | Action |
 |---|---|
 | **⌘O** | Open tree file |
-| **⌘⇧O** | Import annotation file |
-| **⌘S** | Export tree file |
-| **⌘E** | Export graphic |
+| **⌘N** | New window |
+| **⌘⇧A** | Import annotation file |
+| **⌘E** | Export tree file |
+| **⌘⇧E** | Export graphic |
 | **Tab** | Toggle Visual Options palette |
+| **⌘?** | Open Help |
 | **Escape** | Close the innermost open dialog or panel |
+
+### Edit / Selection
+
+| Shortcut | Action |
+|---|---|
+| **⌘A** | Select all tips in the current view |
+| **⌘⇧I** | Invert the current selection |
 
 ### Tree Interaction
 
 | Shortcut | Action |
 |---|---|
-| **⌘A** | Select all tips in the current view |
 | **⌘B** | Toggle between Nodes and Branches mode |
 | **⌘M** | Midpoint root |
 | **⌘I** | Node info dialog |
-| **⌘D** | Order branches ascending (larger clades down) |
-| **⌘U** | Order branches descending (larger clades up) |
+| **⌘D** | Order branches descending (larger clades down) |
+| **⌘U** | Order branches ascending (larger clades up) |
+
+### Navigation
+
+| Shortcut | Action |
+|---|---|
 | **⌘[** | Navigate back |
 | **⌘]** | Navigate forward |
+| **⌘⇧,** | Climb one level up |
+| **⌘⇧.** | Drill into selected subtree |
+| **⌘\\** | Return to root view |
 
 ### Zoom
 
@@ -167,6 +191,14 @@ The user colour is stored as a `user_colour` annotation in `#RRGGBB` format on i
 | **⌘−** | Zoom out |
 | **⌘0** | Fit all |
 | **⌘⇧0** | Fit labels |
+
+### Hyperbolic Lens
+
+| Shortcut | Action |
+|---|---|
+| **\`** (hold) | Activate hyperbolic lens at cursor position |
+| **⌘⇧=** | Widen hyperbolic lens magnification |
+| **⌘⇧−** | Narrow hyperbolic lens magnification |
 
 ### Dialogs
 
@@ -179,6 +211,16 @@ The user colour is stored as a `user_colour` annotation in `#RRGGBB` format on i
 
 ---
 
+## Hyperbolic Lens
+
+Hold the **\`** (backtick/tilde) key to activate a fisheye lens that expands the tree around the current cursor position without zooming the whole view. The area near the cursor is stretched to readable spacing while the rest compresses but stays visible.
+
+- Use **⌘⇧=** / **⌘⇧−** to increase or decrease the magnification strength.
+- Release **\`** to fade the lens out.
+- The lens is especially useful for browsing large trees without losing context.
+
+---
+
 ## Selection Modes
 
 ### Nodes mode
@@ -186,7 +228,8 @@ The user colour is stored as a `user_colour` annotation in `#RRGGBB` format on i
 - **Click a tip** — selects that tip; the status bar shows its name and divergence
 - **Click an internal node** — selects all descendant tips and highlights the MRCA with a teal ring
 - **⌘-click** — adds or removes individual tips from the selection
-- **Click empty space** — clears the selection
+- **⌘A** — select all tips in the current view
+- **⌘⇧I** — invert the current selection (all unselected tips become selected and vice versa)
 - With a selection active, **Reroot**, **Rotate**, **Hide**, and **Node Info** become available
 
 ### Branches mode (⌘B to toggle)
@@ -227,8 +270,9 @@ PearTree finds the two tips with the greatest path length and places the root at
 
 ## Subtree Navigation
 
-- **Double-click** an internal node in **Nodes** mode to zoom into that subtree
-- Use **‹** (**⌘[**) to return to the parent view
+- **Double-click** an internal node in **Nodes** mode to zoom into that subtree (or use **⌘⇧.**)
+- Use **‹** (**⌘[**) to return to the parent view, or **⌘⇧,** to climb one level
+- Use **⌘\\** to jump directly back to the full-tree root view
 - Use **›** (**⌘]**) to move forward through the history
 - Navigation history is preserved across reorderings but cleared on reroot
 
@@ -249,9 +293,9 @@ With a node selected, click the **ⓘ Node Info** button (or press **⌘I**) to 
 
 ---
 
-## Importing Annotations (⌘⇧O)
+## Importing Annotations (⌘⇧A)
 
-Click the **+ file** button (or press **⌘⇧O**) to add extra per-tip data from a CSV or TSV file.
+Click the **+ file** button (or press **⌘⇧A**) to add extra per-tip data from a CSV or TSV file.
 
 **Phase 1 — Choose file:** Drag-and-drop or browse for a `.csv` or `.tsv` file.
 
@@ -266,9 +310,21 @@ After import, the new annotation keys appear in the **Colour by** dropdowns and 
 
 ---
 
-## Exporting the Tree (⌘S)
+## Annotation Curator
 
-Click the **↓ file** button (or press **⌘S**) to save the tree.
+Click the **wrench** button to open the Annotation Curator, which lets you review and fine-tune every annotation key in the loaded tree:
+
+- Rename annotation keys
+- Change data types (e.g. promote a numeric key from *real* to *categorical*)
+- Mark a key as a **branch annotation** — telling PearTree the values belong to branches rather than to nodes, which changes how they are shown in Node Info and used in colour-by
+
+After editing, the updated schema is used immediately for all display and export.
+
+---
+
+## Exporting the Tree (⌘E)
+
+Click the **↓ file** button (or press **⌘E**) to save the tree.
 
 ### Format
 
@@ -296,9 +352,9 @@ When this checkbox is ticked (on by default) PearTree appends a `[peartree={…}
 
 ---
 
-## Exporting a Graphic (⌘E)
+## Exporting a Graphic (⌘⇧E)
 
-Click the **image** button (or press **⌘E**) to download an image of the tree.
+Click the **image** button (or press **⌘⇧E**) to download an image of the tree.
 
 | Setting | Options |
 |---|---|
@@ -320,12 +376,15 @@ Toggle with **Tab** or the sliders button. Close with **Tab**, **Escape**, the �
 
 ### Theme
 
-A named preset that sets all 13 visual parameters at once.
+A named preset that sets all visual parameters at once.
 
 | Control | Description |
 |---|---|
 | **Theme selector** | Choose a built-in theme (*Artic*, *Gytis*) or a saved user theme |
-| **Store** button | Active when set to *Custom*. Enter a name to save the current appearance for reuse. Built-in themes cannot be overwritten. |
+| **Store** button | Save the current appearance under a new name. Built-in themes cannot be overwritten. |
+| **Default** button | Set the selected theme as the default for newly opened windows |
+| **Remove** button | Delete a user-saved theme (built-in themes cannot be removed) |
+| **Typeface** | Font family used for all tip labels, node labels, and axis labels |
 
 When you manually change any visual control, the selector switches to *Custom* and the **Store** button is enabled.
 
@@ -336,13 +395,16 @@ When you manually change any visual control, the selector switches to *Custom* a
 
 ---
 
-### Canvas
+### Tree
 
 | Control | Description |
 |---|---|
+| **Calibrate** | Annotation key whose values supply calendar dates for time-axis calibration. Only shown when the tree has date-typed or decimal-year annotations. |
+| **Format** | Display format for calibrated calendar dates (e.g. `1977-05-04`, `04 May 1977`). Only shown once a calibration is active. |
 | **Background** | Canvas background colour |
 | **Branches** | Branch line colour |
 | **Branch width** | Stroke thickness in pixels (0.5–8) |
+| **Neg. branches** | How to handle negative branch lengths: *draw as-is* or *clamp to zero* |
 
 ---
 
@@ -350,9 +412,16 @@ When you manually change any visual control, the selector switches to *Custom* a
 
 | Control | Description |
 |---|---|
-| **Size** | Font size in points (6–20) |
+| **Show** | Which value to display next to each tip: *names* (taxon name), any annotation key, or (when calibrated) *Calendar date* / *Calendar date + HPDs* |
+| **Decimal places** | Number of decimal places for numeric annotations (*Auto* uses sensible defaults). Only shown for numeric annotation types. |
+| **Layout** | *Normal* (label floats at each tip's x position) or *Aligned* (all labels right-aligned to a common column). Aligned has optional leader line styles: *dashed*, *dots*, or *solid*. |
+| **Size** | Font size in points (1–20) |
 | **Colour** | Fixed colour for all tip labels |
-| **Colour by** | Annotation to colour each label individually using a continuous or categorical scale |
+| **Colour by** | Annotation to colour each label individually |
+| **Palette** | Colour palette used when *Colour by* is active |
+| **Selected style** | Font style applied to selected tips: *Bold*, *Italic*, *Bold + Italic*, or *Normal* |
+
+> The **Filter tips…** search box in the toolbar searches whatever *Show* is set to, so switching from *names* to a date annotation and then searching will match against the displayed date strings.
 
 ---
 
@@ -362,9 +431,10 @@ When you manually change any visual control, the selector switches to *Custom* a
 |---|---|
 | **Size** | Radius of tip circles (0 = hidden) |
 | **Colour** | Fill colour of tip circles |
-| **Background** | Colour of the halo circle behind each tip shape |
-| **Bg size** | Extra radius of the background halo (0–8) |
+| **Halo** | Extra radius of the background halo ring (0–8) |
+| **Halo Colour** | Colour of the halo circle drawn behind each tip shape |
 | **Colour by** | Annotation to colour each tip shape individually |
+| **Palette** | Colour palette used when *Colour by* is active |
 
 ---
 
@@ -374,11 +444,39 @@ When you manually change any visual control, the selector switches to *Custom* a
 |---|---|
 | **Size** | Radius of internal-node circles (0 = hidden) |
 | **Colour** | Fill colour of node circles |
-| **Background** | Colour of the halo behind each node shape |
-| **Bg size** | Extra radius of the background halo (0–8) |
+| **Halo** | Extra radius of the background halo ring (0–8) |
+| **Halo Colour** | Colour of the halo circle drawn behind each node shape |
 | **Colour by** | Annotation to colour each internal node individually |
+| **Palette** | Colour palette used when *Colour by* is active |
 
 > Tip shapes are drawn on top of node shapes. Background halos are drawn below both, so a tip halo will appear above an overlapping node halo.
+
+---
+
+### Node Labels
+
+| Control | Description |
+|---|---|
+| **Show** | Which annotation value to display beside each internal node. *Off* hides all node labels. |
+| **Decimal places** | Number of decimal places for numeric annotations. Only shown for numeric types. |
+| **Position** | Where the label is drawn: *Right* (after the node), *Above left*, or *Below left* |
+| **Size** | Font size in points (6–20) |
+| **Colour** | Label text colour |
+| **Spacing** | Extra horizontal gap between the node shape and its label (0–20 px) |
+
+---
+
+### Node Bars
+
+Node bars display 95% HPD (highest probability density) intervals from **BEAST** MCC trees as translucent rectangles behind internal nodes. They are only available when the loaded tree has a `height` annotation with associated HPD values.
+
+| Control | Description |
+|---|---|
+| **Show** | *Off* or *On* |
+| **Colour** | Fill colour of the HPD rectangle |
+| **Height** | Bar height in screen pixels (2–30) |
+| **Line** | Optional vertical line inside the bar: *(none)*, *Mean*, or *Median* |
+| **Range whiskers** | Whether to draw thin lines extending to the full range beyond the HPD rectangle |
 
 ---
 
@@ -386,19 +484,26 @@ When you manually change any visual control, the selector switches to *Custom* a
 
 | Control | Description |
 |---|---|
-| **Show** | *Off*, *Left*, or *Right* — position of the colour legend strip |
-| **Annotation** | Which annotation's colour scale to display in the legend |
+| **Show** | Select an annotation to display a colour legend for, or *Off* to hide the legend |
+| **Location** | *Right* or *Left* — which edge of the canvas the legend strip is docked to |
+| **Colour** | Text colour for legend labels |
+| **Size** | Font size for legend labels (6–16) |
 
 ---
 
 ### Axis
 
-Available only for **time-scaled trees** where every node carries a `height` annotation.
+| Control | Description |
+|---|---|
+| **Show** | *Off*, *Forward* (divergence from root), *Reverse* (divergence toward tips), or *Time* (calendar dates, requires calibration) |
+| **Colour** | Axis line and label colour |
+| **Font size** | Axis label size (6–16) |
+| **Line width** | Axis stroke thickness (0.5–4) |
+
+**Time mode only** (requires *Calibrate* to be set in the *Tree* section):
 
 | Control | Description |
 |---|---|
-| **Show** | *Off* or *On* |
-| **Date annotation** | Annotation key whose values supply calendar dates |
 | **Major ticks** | Tick interval: *Auto*, *Decades*, *Years*, *Quarters*, *Months*, *Weeks*, *Days* |
 | **Minor ticks** | Sub-division ticks between major ticks, or *Off* |
 | **Major labels** | Date format for major tick labels (e.g. `yyyy`, `yyyy-MM`, `dd MMM yyyy`) |
@@ -429,7 +534,7 @@ The status bar at the bottom updates live as you hover over the tree:
 
 ## Settings Persistence
 
-All visual settings are automatically saved in **browser localStorage** and restored the next time you open PearTree. This includes theme, all palette values, colour-by dropdowns, legend and axis configuration, branch order, and selection mode.
+All visual settings are automatically saved in **browser localStorage** and restored the next time you open PearTree. This includes theme, typeface, all palette values, colour-by dropdowns, legend and axis configuration, branch order, and selection mode.
 
 When a tree is exported with **Embed current visual settings** ticked, those settings travel with the file. Opening that `.nexus` file in PearTree restores the full appearance automatically and saves it to localStorage for future sessions.
 
@@ -451,4 +556,4 @@ Plain Newick strings with branch lengths (`name:length`) and optional square-bra
 
 ### Annotations
 
-Annotation values are auto-typed as **real**, **integer**, **categorical**, or **list** (comma-separated values inside `{}`). Only non-list annotations are available in the *Colour by* dropdowns.
+Annotation values are auto-typed as **real**, **integer**, **categorical**, or **list** (comma-separated values inside `{}`). Only non-list annotations are available in the *Colour by* dropdowns. The Annotation Curator lets you override these types if the auto-detection is incorrect.

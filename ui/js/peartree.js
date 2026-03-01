@@ -830,8 +830,11 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   /**
    * Sync the CSS background of the canvas wrapper divs to match the canvas
    * fill colour so no gap / flash is visible between the tree and axis canvases.
+   * Before a tree is loaded the wrappers have no inline background set, so the
+   * CSS rule on html/body (DEFAULT_BACKGROUND_COLOR) shows through instead.
    */
   function _syncCanvasWrapperBg(color) {
+    if (!treeLoaded) return;
     document.getElementById('canvas-wrapper').style.background          = color;
     document.getElementById('canvas-and-axis-wrapper').style.background = color;
   }
@@ -2167,6 +2170,8 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
 
       if (!treeLoaded) {
         treeLoaded = true;
+        // Now that a tree is loaded, stamp the theme background onto the canvas wrappers.
+        _syncCanvasWrapperBg(canvasBgColorEl.value);
         tipFilterEl.disabled       = false;
         tipColourPickerEl.disabled = false;
         // Buttons with no command equivalent

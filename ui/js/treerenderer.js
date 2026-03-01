@@ -1776,12 +1776,13 @@ export class TreeRenderer {
 
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);  // re-assert DPR transform each frame
     ctx.clearRect(0, 0, W, H);
+
+    if (!this.nodes) return;
+
     if (!this._skipBg) {
       ctx.fillStyle = this.bgColor;
       ctx.fillRect(0, 0, W, H);
     }
-
-    if (!this.nodes) return;
 
     // Viewport culling: world y range visible on screen (with a little margin)
     const yWorldMin = this._worldYfromScreen(-this.fontSize * 2);

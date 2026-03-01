@@ -42,7 +42,7 @@
     body {
       display: flex;
       flex-direction: column;
-      background: var(--pt-bg);
+      background: #02292e;
       color: var(--pt-off-white);
       font-family: var(--bs-body-font-family);
       font-size: 14px;
@@ -294,7 +294,7 @@
       outline-offset: -12px;
     }
     #empty-state.hidden { display: none; }
-    .pt-empty-icon  { font-size: 3.5rem; opacity: 0.18; display: block; margin-bottom: 1.2rem; }
+    .pt-empty-icon  { width: 96px; height: 96px; opacity: 0.55; display: block; margin-bottom: 1.2rem; border-radius: 18px; }
     .pt-empty-title { font-size: 1rem; font-weight: 500; opacity: 0.55; margin-bottom: 0.35rem; }
     .pt-empty-hint  { font-size: 0.8rem; opacity: 0.35; margin-bottom: 1.6rem; }
 
@@ -1237,7 +1237,7 @@
     <div id="canvas-wrapper">
       <div id="empty-state">
         <div style="text-align:center">
-          <i class="bi bi-tree pt-empty-icon"></i>
+          <img src="img/peartree.png" class="pt-empty-icon" alt="PearTree">
           <p class="pt-empty-title">No tree loaded</p>
           <p class="pt-empty-hint">Drag a NEXUS or Newick file here</p>
           <button class="btn btn-sm btn-outline-primary" id="empty-state-open-btn"><i class="bi bi-folder2-open me-1"></i>Open…</button>

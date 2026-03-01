@@ -23,6 +23,8 @@ export const SETTINGS_KEY      = 'peartree-settings';
 export const USER_THEMES_KEY   = 'peartree-user-themes';
 export const DEFAULT_THEME_KEY = 'peartree-default-theme';
 
+export const DEFAULT_BACKGROUND_COLOR = '#02292e';
+
 export const THEMES = {
       "Minimal": {
           canvasBgColor:    '#fffffc',
