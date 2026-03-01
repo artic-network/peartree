@@ -99,6 +99,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   const legendAnnotEl         = document.getElementById('legend-annotation');
   const legendTextColorEl     = document.getElementById('legend-text-color');
   const legendFontSizeSlider  = document.getElementById('legend-font-size-slider');
+  const legendFontFamilyEl    = document.getElementById('legend-font-family-select');
   const legendLeftCanvas  = document.getElementById('legend-left-canvas');
   const legendRightCanvas = document.getElementById('legend-right-canvas');
   const axisCanvas             = document.getElementById('axis-canvas');
@@ -117,6 +118,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   const axisMinorLabelRow      = document.getElementById('axis-minor-label-row');
   const axisColorEl           = document.getElementById('axis-color');
   const axisFontSizeSlider    = document.getElementById('axis-font-size-slider');
+  const axisFontFamilyEl      = document.getElementById('axis-font-family-select');
   const axisLineWidthSlider   = document.getElementById('axis-line-width-slider');
   const themeSelect            = document.getElementById('theme-select');
   const btnStoreTheme          = document.getElementById('btn-store-theme');
@@ -322,6 +324,15 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     catch { return {}; }
   }
 
+  /**
+   * Resolve a legend/axis typeface key to a CSS font-family string.
+   * 'theme' means "follow the main tree typeface".
+   */
+  function _resolveTypeface(key) {
+    const effectiveKey = (key === 'theme') ? fontFamilyEl.value : key;
+    return TYPEFACES[effectiveKey] ?? effectiveKey;
+  }
+
   function saveSettings() {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify({
       theme:            themeSelect.value,
@@ -376,6 +387,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       legendAnnotation: legendAnnotEl.value,
       legendTextColor:  legendTextColorEl.value,
       legendFontSize:   legendFontSizeSlider.value,
+      legendFontFamily: legendFontFamilyEl.value,
       axisShow:           axisShowEl.value,
       axisDateAnnotation: axisDateAnnotEl.value,
       axisDateFormat:     axisDateFmtEl.value,
@@ -385,6 +397,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       axisMinorLabelFormat: axisMinorLabelEl.value,
       axisColor:          axisColorEl.value,
       axisFontSize:       axisFontSizeSlider.value,
+      axisFontFamily:     axisFontFamilyEl.value,
       axisLineWidth:      axisLineWidthSlider.value,
       nodeBarsEnabled:    nodeBarsShowEl.value,
       nodeBarsColor:      nodeBarsColorEl.value,
@@ -454,6 +467,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       legendAnnotation: legendAnnotEl.value,
       legendTextColor:  legendTextColorEl.value,
       legendFontSize:   legendFontSizeSlider.value,
+      legendFontFamily: legendFontFamilyEl.value,
       axisShow:           axisShowEl.value,
       axisDateAnnotation: axisDateAnnotEl.value,
       axisDateFormat:     axisDateFmtEl.value,
@@ -463,6 +477,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       axisMinorLabelFormat: axisMinorLabelEl.value,
       axisColor:          axisColorEl.value,
       axisFontSize:       axisFontSizeSlider.value,
+      axisFontFamily:     axisFontFamilyEl.value,
       axisLineWidth:      axisLineWidthSlider.value,
       nodeBarsEnabled:    nodeBarsShowEl.value,
       nodeBarsColor:      nodeBarsColorEl.value,
@@ -620,12 +635,14 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     if (s.axisMajorLabelFormat)  axisMajorLabelEl.value   = s.axisMajorLabelFormat;
     if (s.axisMinorLabelFormat)  axisMinorLabelEl.value   = s.axisMinorLabelFormat;
     if (s.axisColor)             axisColorEl.value        = s.axisColor;
+    if (s.axisFontFamily)        axisFontFamilyEl.value   = s.axisFontFamily;
     if (s.legendShow)            legendShowEl.value       = s.legendShow;
     if (s.legendTextColor) legendTextColorEl.value = s.legendTextColor;
     if (s.legendFontSize != null) {
       legendFontSizeSlider.value = s.legendFontSize;
       document.getElementById('legend-font-size-value').textContent = s.legendFontSize;
     }
+    if (s.legendFontFamily)      legendFontFamilyEl.value = s.legendFontFamily;
     // Node bars settings
     if (s.nodeBarsEnabled)  nodeBarsShowEl.value  = s.nodeBarsEnabled;
     if (s.nodeBarsColor)    nodeBarsColorEl.value = s.nodeBarsColor;
@@ -677,6 +694,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     legendTextColorEl.value  = DEFAULT_SETTINGS.legendTextColor;
     legendFontSizeSlider.value = DEFAULT_SETTINGS.legendFontSize;
     document.getElementById('legend-font-size-value').textContent = DEFAULT_SETTINGS.legendFontSize;
+    legendFontFamilyEl.value = DEFAULT_SETTINGS.legendFontFamily;
     axisShowEl.value         = DEFAULT_SETTINGS.axisShow;  // 'off'
     axisDateAnnotEl.value    = '';
     calibration.setAnchor(null, new Map(), 0);
@@ -691,6 +709,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     document.getElementById('axis-font-size-value').textContent = DEFAULT_SETTINGS.axisFontSize;
     axisLineWidthSlider.value = DEFAULT_SETTINGS.axisLineWidth;
     document.getElementById('axis-line-width-value').textContent = DEFAULT_SETTINGS.axisLineWidth;
+    axisFontFamilyEl.value = DEFAULT_SETTINGS.axisFontFamily;
     nodeBarsShowEl.value  = DEFAULT_SETTINGS.nodeBarsEnabled;
     nodeBarsColorEl.value = DEFAULT_SETTINGS.nodeBarsColor;
     nodeBarsWidthSlider.value = DEFAULT_SETTINGS.nodeBarsWidth;
@@ -713,7 +732,9 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       renderer.setNodeColourBy('user_colour');
       renderer.setLabelColourBy('user_colour');
       legendRenderer.setFontSize(parseInt(DEFAULT_SETTINGS.legendFontSize));
+      legendRenderer.setFontFamily(_resolveTypeface(legendFontFamilyEl.value));
       legendRenderer.setTextColor(DEFAULT_SETTINGS.legendTextColor);
+      axisRenderer.setFontFamily(_resolveTypeface(axisFontFamilyEl.value));
       renderer.setMode('nodes');
       renderer.setNodeLabelAnnotation(null);
       applyLegend();
@@ -884,8 +905,8 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       renderer.setSettings(_buildRendererSettings());
       if (t.axisColor) axisRenderer.setColor(t.axisColor);
       legendRenderer.setTextColor(legendColor);
-      axisRenderer.setFontFamily(TYPEFACES[fontFamilyEl.value] ?? fontFamilyEl.value);
-      legendRenderer.setFontFamily(TYPEFACES[fontFamilyEl.value] ?? fontFamilyEl.value);
+      axisRenderer.setFontFamily(_resolveTypeface(axisFontFamilyEl.value));
+      legendRenderer.setFontFamily(_resolveTypeface(legendFontFamilyEl.value));
       // Invalidate axis hash so next update redraws
       axisRenderer._lastHash = '';
     }
@@ -1042,6 +1063,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   if (_saved.nodeShapeColor)       nodeShapeColorEl.value   = _saved.nodeShapeColor;
   if (_saved.nodeShapeBgColor)     nodeShapeBgEl.value      = _saved.nodeShapeBgColor;
   if (_saved.axisColor)            axisColorEl.value        = _saved.axisColor;
+  if (_saved.axisFontFamily)       axisFontFamilyEl.value   = _saved.axisFontFamily;
   if (_saved.axisFontSize != null) {
     axisFontSizeSlider.value = _saved.axisFontSize;
     document.getElementById('axis-font-size-value').textContent = _saved.axisFontSize;
@@ -1051,6 +1073,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     document.getElementById('axis-line-width-value').textContent = _saved.axisLineWidth;
   }
   if (_saved.legendShow)           legendShowEl.value       = _saved.legendShow;
+  if (_saved.legendFontFamily)     legendFontFamilyEl.value = _saved.legendFontFamily;
   if (_saved.tipLabelAlign)        tipLabelAlignEl.value    = _saved.tipLabelAlign;
   if (_saved.nodeLabelPosition)    nodeLabelPositionEl.value = _saved.nodeLabelPosition;
   if (_saved.nodeLabelFontSize != null) {
@@ -1140,6 +1163,11 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     renderer.setSettings(_buildRendererSettings(), false);
     _syncControlVisibility();
   }
+
+  // Always sync legend/axis font families after renderer init — applyTheme does
+  // this when called, but the else branch above skips applyTheme entirely.
+  legendRenderer.setFontFamily(_resolveTypeface(legendFontFamilyEl.value));
+  axisRenderer.setFontFamily(_resolveTypeface(axisFontFamilyEl.value));
 
   renderer._onViewChange = (scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr) => {
     axisRenderer.update(scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr);
@@ -3240,8 +3268,20 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   fontFamilyEl.addEventListener('change', () => {
     _markCustomTheme();
     renderer.setSettings(_buildRendererSettings());
-    axisRenderer.setFontFamily(TYPEFACES[fontFamilyEl.value] ?? fontFamilyEl.value);
-    legendRenderer.setFontFamily(TYPEFACES[fontFamilyEl.value] ?? fontFamilyEl.value);
+    applyAxisStyle();
+    legendRenderer.setFontFamily(_resolveTypeface(legendFontFamilyEl.value));
+    saveSettings();
+  });
+
+  legendFontFamilyEl.addEventListener('change', () => {
+    _markCustomTheme();
+    legendRenderer.setFontFamily(_resolveTypeface(legendFontFamilyEl.value));
+    saveSettings();
+  });
+
+  axisFontFamilyEl.addEventListener('change', () => {
+    _markCustomTheme();
+    applyAxisStyle();
     saveSettings();
   });
 
@@ -3709,6 +3749,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     axisRenderer.setColor(axisColorEl.value);
     axisRenderer.setLineWidth(parseFloat(axisLineWidthSlider.value));
     axisRenderer.setFontSize(parseInt(axisFontSizeSlider.value));
+    axisRenderer.setFontFamily(_resolveTypeface(axisFontFamilyEl.value));
     axisRenderer.update(
       renderer.scaleX, renderer.offsetX, renderer.paddingLeft,
       renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
