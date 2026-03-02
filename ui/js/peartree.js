@@ -95,6 +95,24 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   const nodePaletteRow     = document.getElementById('node-palette-row');
   const labelPaletteSelect = document.getElementById('label-palette-select');
   const labelPaletteRow    = document.getElementById('label-palette-row');
+  const tipLabelShapeEl              = document.getElementById('tip-label-shape');
+  const tipLabelShapeColorEl         = document.getElementById('tip-label-shape-color');
+  const tipLabelShapeColourBy        = document.getElementById('tip-label-shape-colour-by');
+  const tipLabelShapePaletteRow      = document.getElementById('tip-label-shape-palette-row');
+  const tipLabelShapePaletteSelect   = document.getElementById('tip-label-shape-palette-select');
+  const tipLabelShapeMarginLeftSlider  = document.getElementById('tip-label-shape-margin-left-slider');
+  const tipLabelShapeMarginRightSlider = document.getElementById('tip-label-shape-margin-right-slider');
+  const tipLabelShapeDetailEl        = document.getElementById('tip-label-shape-detail');
+  const tipLabelShape2El             = document.getElementById('tip-label-shape-2');
+  const tipLabelShape2ColorEl        = document.getElementById('tip-label-shape-2-color');
+  const tipLabelShape2ColourBy       = document.getElementById('tip-label-shape-2-colour-by');
+  const tipLabelShape2PaletteRow     = document.getElementById('tip-label-shape-2-palette-row');
+  const tipLabelShape2PaletteSelect  = document.getElementById('tip-label-shape-2-palette-select');
+  const tipLabelShape2MarginRightSlider = document.getElementById('tip-label-shape-2-margin-right-slider');
+  const tipLabelShape2SectionEl      = document.getElementById('tip-label-shape-2-section');
+  const tipLabelShape2DetailEl       = document.getElementById('tip-label-shape-2-detail');
+  const tipLabelShapeSizeSlider      = document.getElementById('tip-label-shape-size-slider');
+  const tipLabelShape2SizeSlider     = document.getElementById('tip-label-shape-2-size-slider');
   const legendShowEl          = document.getElementById('legend-show');
   const legendAnnotEl         = document.getElementById('legend-annotation');
   const legendTextColorEl     = document.getElementById('legend-text-color');
@@ -412,6 +430,17 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       tipLabelShow:       tipLabelShow.value,
       tipLabelAlign:      tipLabelAlignEl.value,
       tipLabelDecimalPlaces:  tipLabelDpEl.value !== '' ? parseInt(tipLabelDpEl.value) : null,
+      tipLabelShape:      tipLabelShapeEl.value,
+      tipLabelShapeColor: tipLabelShapeColorEl.value,
+      tipLabelShapeColourBy: tipLabelShapeColourBy.value,
+      tipLabelShapeSize:    tipLabelShapeSizeSlider.value,
+      tipLabelShapeMarginLeft:  tipLabelShapeMarginLeftSlider.value,
+      tipLabelShapeMarginRight: tipLabelShapeMarginRightSlider.value,
+      tipLabelShape2:      tipLabelShape2El.value,
+      tipLabelShape2Color: tipLabelShape2ColorEl.value,
+      tipLabelShape2ColourBy: tipLabelShape2ColourBy.value,
+      tipLabelShape2Size:   tipLabelShape2SizeSlider.value,
+      tipLabelShape2MarginRight: tipLabelShape2MarginRightSlider.value,
       nodeLabelAnnotation: nodeLabelShowEl.value,
       nodeLabelPosition:   nodeLabelPositionEl.value,
       nodeLabelFontSize:   nodeLabelFontSizeSlider.value,
@@ -541,6 +570,30 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     }
     if (s.tipShapeColor)         tipShapeColorEl.value    = s.tipShapeColor;
     if (s.tipShapeBgColor)       tipShapeBgEl.value       = s.tipShapeBgColor;
+    if (s.tipLabelShape)         tipLabelShapeEl.value      = s.tipLabelShape;
+    if (s.tipLabelShapeColor)    tipLabelShapeColorEl.value = s.tipLabelShapeColor;
+    if (s.tipLabelShapeMarginLeft != null) {
+      tipLabelShapeMarginLeftSlider.value = s.tipLabelShapeMarginLeft;
+      document.getElementById('tip-label-shape-margin-left-value').textContent = s.tipLabelShapeMarginLeft;
+    }
+    if (s.tipLabelShapeMarginRight != null) {
+      tipLabelShapeMarginRightSlider.value = s.tipLabelShapeMarginRight;
+      document.getElementById('tip-label-shape-margin-right-value').textContent = s.tipLabelShapeMarginRight;
+    }
+    if (s.tipLabelShapeSize != null) {
+      tipLabelShapeSizeSlider.value = s.tipLabelShapeSize;
+      document.getElementById('tip-label-shape-size-value').textContent = s.tipLabelShapeSize;
+    }
+    if (s.tipLabelShape2)         tipLabelShape2El.value      = s.tipLabelShape2;
+    if (s.tipLabelShape2Color)    tipLabelShape2ColorEl.value = s.tipLabelShape2Color;
+    if (s.tipLabelShape2MarginRight != null) {
+      tipLabelShape2MarginRightSlider.value = s.tipLabelShape2MarginRight;
+      document.getElementById('tip-label-shape-2-margin-right-value').textContent = s.tipLabelShape2MarginRight;
+    }
+    if (s.tipLabelShape2Size != null) {
+      tipLabelShape2SizeSlider.value = s.tipLabelShape2Size;
+      document.getElementById('tip-label-shape-2-size-value').textContent = s.tipLabelShape2Size;
+    }
     if (s.nodeSize       != null) {
       nodeSlider.value = s.nodeSize;
       document.getElementById('node-size-value').textContent = s.nodeSize;
@@ -650,11 +703,29 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     document.getElementById('node-label-spacing-value').textContent = DEFAULT_SETTINGS.nodeLabelSpacing;
     if (tipLabelDpEl)    tipLabelDpEl.value    = '';
     if (nodeLabelDpEl)   nodeLabelDpEl.value   = '';
+    tipLabelShapeEl.value        = DEFAULT_SETTINGS.tipLabelShape;
+    tipLabelShapeColorEl.value   = DEFAULT_SETTINGS.tipLabelShapeColor;
+    tipLabelShapeColourBy.value  = 'user_colour';
+    tipLabelShapeMarginLeftSlider.value  = DEFAULT_SETTINGS.tipLabelShapeMarginLeft;
+    document.getElementById('tip-label-shape-margin-left-value').textContent  = DEFAULT_SETTINGS.tipLabelShapeMarginLeft;
+    tipLabelShapeMarginRightSlider.value = DEFAULT_SETTINGS.tipLabelShapeMarginRight;
+    document.getElementById('tip-label-shape-margin-right-value').textContent = DEFAULT_SETTINGS.tipLabelShapeMarginRight;
+    tipLabelShapeSizeSlider.value = DEFAULT_SETTINGS.tipLabelShapeSize;
+    document.getElementById('tip-label-shape-size-value').textContent = DEFAULT_SETTINGS.tipLabelShapeSize;
+    tipLabelShape2El.value       = DEFAULT_SETTINGS.tipLabelShape2;
+    tipLabelShape2ColorEl.value  = DEFAULT_SETTINGS.tipLabelShape2Color;
+    tipLabelShape2ColourBy.value = 'user_colour';
+    tipLabelShape2MarginRightSlider.value = DEFAULT_SETTINGS.tipLabelShape2MarginRight;
+    document.getElementById('tip-label-shape-2-margin-right-value').textContent = DEFAULT_SETTINGS.tipLabelShape2MarginRight;
+    tipLabelShape2SizeSlider.value = DEFAULT_SETTINGS.tipLabelShape2Size;
+    document.getElementById('tip-label-shape-2-size-value').textContent = DEFAULT_SETTINGS.tipLabelShape2Size;
 
     if (renderer) {
       renderer.setTipColourBy('user_colour');
       renderer.setNodeColourBy('user_colour');
       renderer.setLabelColourBy('user_colour');
+      renderer.setTipLabelShapeColourBy('user_colour');
+      renderer.setTipLabelShape2ColourBy('user_colour');
       legendRenderer.setFontSize(parseInt(DEFAULT_SETTINGS.legendFontSize));
       legendRenderer.setFontFamily(_resolveTypeface(legendFontFamilyEl.value));
       legendRenderer.setTextColor(DEFAULT_SETTINGS.legendTextColor);
@@ -746,6 +817,15 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       tipLabelAnnotation: tipLabelShow.value === 'names' ? null : tipLabelShow.value,
       tipLabelAlign:      tipLabelAlignEl.value,
       tipLabelDecimalPlaces:  tipLabelDpEl.value !== '' ? parseInt(tipLabelDpEl.value) : null,
+      tipLabelShape:           tipLabelShapeEl.value,
+      tipLabelShapeColor:      tipLabelShapeColorEl.value,
+      tipLabelShapeSize:        parseInt(tipLabelShapeSizeSlider.value),
+      tipLabelShapeMarginLeft:  parseInt(tipLabelShapeMarginLeftSlider.value),
+      tipLabelShapeMarginRight: parseInt(tipLabelShapeMarginRightSlider.value),
+      tipLabelShape2:           tipLabelShape2El.value,
+      tipLabelShape2Color:      tipLabelShape2ColorEl.value,
+      tipLabelShape2Size:        parseInt(tipLabelShape2SizeSlider.value),
+      tipLabelShape2MarginRight: parseInt(tipLabelShape2MarginRightSlider.value),
       nodeLabelAnnotation: nodeLabelShowEl.value || null,
       nodeLabelPosition:   nodeLabelPositionEl.value,
       nodeLabelFontSize:   parseInt(nodeLabelFontSizeSlider.value),
@@ -764,12 +844,15 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
    */
   function _syncControlVisibility() {
     const _vis = (el, visible) => { if (el) el.classList.toggle('pt-detail-open', visible); };
-    _vis(tipShapeDetailEl,  parseInt(tipSlider.value)   > 0);
-    _vis(nodeShapeDetailEl, parseInt(nodeSlider.value)  > 0);
-    _vis(nodeLabelDetailEl, nodeLabelShowEl.value !== '');
-    _vis(nodeBarsDetailEl,  nodeBarsShowEl.value  === 'on');
-    _vis(legendDetailEl,    legendAnnotEl.value   !== '');
-    _vis(axisDetailEl,      axisShowEl.value      !== 'off');
+    _vis(tipShapeDetailEl,      parseInt(tipSlider.value)   > 0);
+    _vis(nodeShapeDetailEl,     parseInt(nodeSlider.value)  > 0);
+    _vis(tipLabelShapeDetailEl, tipLabelShapeEl.value       !== 'off');
+    _vis(tipLabelShape2SectionEl, tipLabelShapeEl.value     !== 'off');
+    _vis(tipLabelShape2DetailEl,  tipLabelShape2El.value    !== 'off');
+    _vis(nodeLabelDetailEl,     nodeLabelShowEl.value       !== '');
+    _vis(nodeBarsDetailEl,      nodeBarsShowEl.value        === 'on');
+    _vis(legendDetailEl,        legendAnnotEl.value         !== '');
+    _vis(axisDetailEl,          axisShowEl.value            !== 'off');
   }
 
   /**
@@ -976,6 +1059,30 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   }
   if (_saved.tipShapeColor)        tipShapeColorEl.value    = _saved.tipShapeColor;
   if (_saved.tipShapeBgColor)      tipShapeBgEl.value       = _saved.tipShapeBgColor;
+  if (_saved.tipLabelShape)        tipLabelShapeEl.value        = _saved.tipLabelShape;
+  if (_saved.tipLabelShapeColor)   tipLabelShapeColorEl.value   = _saved.tipLabelShapeColor;
+  if (_saved.tipLabelShapeMarginLeft != null) {
+    tipLabelShapeMarginLeftSlider.value = _saved.tipLabelShapeMarginLeft;
+    document.getElementById('tip-label-shape-margin-left-value').textContent = _saved.tipLabelShapeMarginLeft;
+  }
+  if (_saved.tipLabelShapeMarginRight != null) {
+    tipLabelShapeMarginRightSlider.value = _saved.tipLabelShapeMarginRight;
+    document.getElementById('tip-label-shape-margin-right-value').textContent = _saved.tipLabelShapeMarginRight;
+  }
+  if (_saved.tipLabelShape2)       tipLabelShape2El.value       = _saved.tipLabelShape2;
+  if (_saved.tipLabelShape2Color)  tipLabelShape2ColorEl.value  = _saved.tipLabelShape2Color;
+  if (_saved.tipLabelShape2MarginRight != null) {
+    tipLabelShape2MarginRightSlider.value = _saved.tipLabelShape2MarginRight;
+    document.getElementById('tip-label-shape-2-margin-right-value').textContent = _saved.tipLabelShape2MarginRight;
+  }
+  if (_saved.tipLabelShapeSize != null) {
+    tipLabelShapeSizeSlider.value = _saved.tipLabelShapeSize;
+    document.getElementById('tip-label-shape-size-value').textContent = _saved.tipLabelShapeSize;
+  }
+  if (_saved.tipLabelShape2Size != null) {
+    tipLabelShape2SizeSlider.value = _saved.tipLabelShape2Size;
+    document.getElementById('tip-label-shape-2-size-value').textContent = _saved.tipLabelShape2Size;
+  }
   if (_saved.nodeSize       != null) {
     nodeSlider.value = _saved.nodeSize;
     document.getElementById('node-size-value').textContent = _saved.nodeSize;
@@ -1362,6 +1469,8 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       renderer.setTipColourBy(tipColourBy.value      || null);
       renderer.setNodeColourBy(nodeColourBy.value    || null);
       renderer.setLabelColourBy(labelColourBy.value  || null);
+      renderer.setTipLabelShapeColourBy(tipLabelShapeColourBy.value || null);
+      renderer.setTipLabelShape2ColourBy(tipLabelShape2ColourBy.value || null);
       renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
       applyLegend();
       renderer._dirty = true;
@@ -1749,10 +1858,12 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       sel.value = [...sel.options].some(o => o.value === prev) ? prev
                   : (isLegend ? '' : 'user_colour');
     }
-    repopulate(tipColourBy,   { filter: 'tips'  });
-    repopulate(nodeColourBy,  { filter: 'nodes' });
-    repopulate(labelColourBy, { filter: 'tips'  });
-    repopulate(legendAnnotEl, { isLegend: true  });
+    repopulate(tipColourBy,          { filter: 'tips'  });
+    repopulate(nodeColourBy,         { filter: 'nodes' });
+    repopulate(labelColourBy,        { filter: 'tips'  });
+    repopulate(tipLabelShapeColourBy, { filter: 'tips' });
+    repopulate(tipLabelShape2ColourBy, { filter: 'tips' });
+    repopulate(legendAnnotEl,        { isLegend: true  });
     // Tip label show: first option is 'names'; then all tip annotations.
     {
       const prev = tipLabelShow.value;
@@ -1815,9 +1926,11 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     }
     _syncControlVisibility();
     // Refresh palette selects to match current colour-by selections after annotation schema changes.
-    _updatePaletteSelect(tipPaletteSelect,   tipPaletteRow,   tipColourBy.value);
-    _updatePaletteSelect(nodePaletteSelect,  nodePaletteRow,  nodeColourBy.value);
-    _updatePaletteSelect(labelPaletteSelect, labelPaletteRow, labelColourBy.value);
+    _updatePaletteSelect(tipPaletteSelect,            tipPaletteRow,            tipColourBy.value);
+    _updatePaletteSelect(nodePaletteSelect,           nodePaletteRow,           nodeColourBy.value);
+    _updatePaletteSelect(labelPaletteSelect,          labelPaletteRow,          labelColourBy.value);
+    _updatePaletteSelect(tipLabelShapePaletteSelect,  tipLabelShapePaletteRow,  tipLabelShapeColourBy.value);
+    _updatePaletteSelect(tipLabelShape2PaletteSelect, tipLabelShape2PaletteRow, tipLabelShape2ColourBy.value);
     // Sync clear-user-colour button: enabled only when at least one node has been coloured.
     if (btnClearUserColour) {
       commands.setEnabled('tree-clear-colours', schema.has('user_colour'));
@@ -1929,9 +2042,11 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
         sel.disabled = false;
         sel.value = 'user_colour';
       }
-      _populateColourBy(tipColourBy,   'tips');
-      _populateColourBy(nodeColourBy,  'nodes');
-      _populateColourBy(labelColourBy, 'tips');
+      _populateColourBy(tipColourBy,          'tips');
+      _populateColourBy(nodeColourBy,         'nodes');
+      _populateColourBy(labelColourBy,        'tips');
+      _populateColourBy(tipLabelShapeColourBy, 'tips');
+      _populateColourBy(tipLabelShape2ColourBy, 'tips');
 
       // Tip-label-show: 'names' is always the first option; then add tip annotations.
       while (tipLabelShow.options.length > 1) tipLabelShow.remove(1);
@@ -1978,10 +2093,12 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       // Annotation-dependent settings:  file-embedded settings take priority over saved prefs.
       const _eff = _fileSettings || _saved;
       const _hasOpt = (sel, key) => key && [...sel.options].some(o => o.value === key);
-      tipColourBy.value   = _hasOpt(tipColourBy,   _eff.tipColourBy)      ? _eff.tipColourBy      : 'user_colour';
-      nodeColourBy.value  = _hasOpt(nodeColourBy,  _eff.nodeColourBy)     ? _eff.nodeColourBy     : 'user_colour';
-      labelColourBy.value = _hasOpt(labelColourBy, _eff.labelColourBy)    ? _eff.labelColourBy    : 'user_colour';
-      legendAnnotEl.value = _hasOpt(legendAnnotEl, _eff.legendAnnotation) ? _eff.legendAnnotation : '';
+      tipColourBy.value          = _hasOpt(tipColourBy,          _eff.tipColourBy)           ? _eff.tipColourBy           : 'user_colour';
+      nodeColourBy.value         = _hasOpt(nodeColourBy,         _eff.nodeColourBy)          ? _eff.nodeColourBy          : 'user_colour';
+      labelColourBy.value        = _hasOpt(labelColourBy,        _eff.labelColourBy)         ? _eff.labelColourBy         : 'user_colour';
+      tipLabelShapeColourBy.value = _hasOpt(tipLabelShapeColourBy, _eff.tipLabelShapeColourBy) ? _eff.tipLabelShapeColourBy : 'user_colour';
+      tipLabelShape2ColourBy.value = _hasOpt(tipLabelShape2ColourBy, _eff.tipLabelShape2ColourBy) ? _eff.tipLabelShape2ColourBy : 'user_colour';
+      legendAnnotEl.value        = _hasOpt(legendAnnotEl,        _eff.legendAnnotation)      ? _eff.legendAnnotation      : '';
       tipLabelShow.value  = _hasOpt(tipLabelShow,  _eff.tipLabelShow)     ? _eff.tipLabelShow     : 'names';
       nodeLabelShowEl.value = _hasOpt(nodeLabelShowEl, _eff.nodeLabelAnnotation) ? _eff.nodeLabelAnnotation : '';
       // Restore node order — only from file-embedded settings, not from saved prefs
@@ -2015,12 +2132,16 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       renderer.setTipColourBy(tipColourBy.value     || null);
       renderer.setNodeColourBy(nodeColourBy.value   || null);
       renderer.setLabelColourBy(labelColourBy.value || null);
+      renderer.setTipLabelShapeColourBy(tipLabelShapeColourBy.value || null);
+      renderer.setTipLabelShape2ColourBy(tipLabelShape2ColourBy.value || null);
       renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
       renderer.setNodeLabelAnnotation(nodeLabelShowEl.value || null);
       // Show palette selects for active colour-by annotations.
-      _updatePaletteSelect(tipPaletteSelect,   tipPaletteRow,   tipColourBy.value);
-      _updatePaletteSelect(nodePaletteSelect,  nodePaletteRow,  nodeColourBy.value);
-      _updatePaletteSelect(labelPaletteSelect, labelPaletteRow, labelColourBy.value);
+      _updatePaletteSelect(tipPaletteSelect,            tipPaletteRow,            tipColourBy.value);
+      _updatePaletteSelect(nodePaletteSelect,           nodePaletteRow,           nodeColourBy.value);
+      _updatePaletteSelect(labelPaletteSelect,          labelPaletteRow,          labelColourBy.value);
+      _updatePaletteSelect(tipLabelShapePaletteSelect,  tipLabelShapePaletteRow,  tipLabelShapeColourBy.value);
+      _updatePaletteSelect(tipLabelShape2PaletteSelect, tipLabelShape2PaletteRow, tipLabelShape2ColourBy.value);
       applyLegend();   // rebuild legend with new data (may clear it)
       const layout = computeLayoutFromGraph(graph, null, { clampNegativeBranches: clampNegBranchesEl.value === 'on' });
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
@@ -3558,6 +3679,99 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     if (key && key !== 'user_colour') {
       annotationPalettes.set(key, labelPaletteSelect.value);
       renderer.setAnnotationPalette(key, labelPaletteSelect.value);
+      legendRenderer.draw();
+      saveSettings();
+    }
+  });
+
+  // ── Tip-label shape controls ───────────────────────────────────────────────
+
+  tipLabelShapeEl.addEventListener('change', () => {
+    renderer.setTipLabelShape(tipLabelShapeEl.value);
+    _syncControlVisibility();
+    saveSettings(); _markCustomTheme();
+  });
+
+  tipLabelShapeColorEl.addEventListener('input', () => {
+    renderer.setTipLabelShapeColor(tipLabelShapeColorEl.value);
+    saveSettings(); _markCustomTheme();
+  });
+
+  tipLabelShapeColourBy.addEventListener('change', () => {
+    renderer.setTipLabelShapeColourBy(tipLabelShapeColourBy.value || null);
+    _updatePaletteSelect(tipLabelShapePaletteSelect, tipLabelShapePaletteRow, tipLabelShapeColourBy.value);
+    saveSettings();
+  });
+
+  tipLabelShapeMarginLeftSlider.addEventListener('input', () => {
+    const v = parseInt(tipLabelShapeMarginLeftSlider.value);
+    document.getElementById('tip-label-shape-margin-left-value').textContent = v;
+    renderer.setTipLabelShapeMarginLeft(v);
+    saveSettings(); _markCustomTheme();
+  });
+
+  tipLabelShapeMarginRightSlider.addEventListener('input', () => {
+    const v = parseInt(tipLabelShapeMarginRightSlider.value);
+    document.getElementById('tip-label-shape-margin-right-value').textContent = v;
+    renderer.setTipLabelShapeMarginRight(v);
+    saveSettings(); _markCustomTheme();
+  });
+
+  tipLabelShapePaletteSelect.addEventListener('change', () => {
+    const key = tipLabelShapeColourBy.value;
+    if (key && key !== 'user_colour') {
+      annotationPalettes.set(key, tipLabelShapePaletteSelect.value);
+      renderer.setAnnotationPalette(key, tipLabelShapePaletteSelect.value);
+      legendRenderer.draw();
+      saveSettings();
+    }
+  });
+
+  // ── Tip-label shape 2 controls ────────────────────────────────────────────
+
+  tipLabelShape2El.addEventListener('change', () => {
+    renderer.setTipLabelShape2(tipLabelShape2El.value);
+    _syncControlVisibility();
+    saveSettings(); _markCustomTheme();
+  });
+
+  tipLabelShape2ColorEl.addEventListener('input', () => {
+    renderer.setTipLabelShape2Color(tipLabelShape2ColorEl.value);
+    saveSettings(); _markCustomTheme();
+  });
+
+  tipLabelShape2ColourBy.addEventListener('change', () => {
+    renderer.setTipLabelShape2ColourBy(tipLabelShape2ColourBy.value || null);
+    _updatePaletteSelect(tipLabelShape2PaletteSelect, tipLabelShape2PaletteRow, tipLabelShape2ColourBy.value);
+    saveSettings();
+  });
+
+  tipLabelShape2MarginRightSlider.addEventListener('input', () => {
+    const v = parseInt(tipLabelShape2MarginRightSlider.value);
+    document.getElementById('tip-label-shape-2-margin-right-value').textContent = v;
+    renderer.setTipLabelShape2MarginRight(v);
+    saveSettings(); _markCustomTheme();
+  });
+
+  tipLabelShapeSizeSlider.addEventListener('input', () => {
+    const v = parseInt(tipLabelShapeSizeSlider.value);
+    document.getElementById('tip-label-shape-size-value').textContent = v;
+    renderer.setTipLabelShapeSize(v);
+    saveSettings(); _markCustomTheme();
+  });
+
+  tipLabelShape2SizeSlider.addEventListener('input', () => {
+    const v = parseInt(tipLabelShape2SizeSlider.value);
+    document.getElementById('tip-label-shape-2-size-value').textContent = v;
+    renderer.setTipLabelShape2Size(v);
+    saveSettings(); _markCustomTheme();
+  });
+
+  tipLabelShape2PaletteSelect.addEventListener('change', () => {
+    const key = tipLabelShape2ColourBy.value;
+    if (key && key !== 'user_colour') {
+      annotationPalettes.set(key, tipLabelShape2PaletteSelect.value);
+      renderer.setAnnotationPalette(key, tipLabelShape2PaletteSelect.value);
       legendRenderer.draw();
       saveSettings();
     }
