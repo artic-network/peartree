@@ -182,12 +182,10 @@ export class TreeRenderer {
     // ── Labels ──────────────────────────────────────────────────────────────
     // dimLabelColor and selectedLabelColor are derived from labelColor when not
     // explicitly supplied, matching the logic in setLabelColor().
-    const _hsl              = TreeRenderer._hexToHsl(s.labelColor);
+    const { dim: _dim, selected: _sel } = TreeRenderer._deriveLabelColors(s.labelColor);
     this.labelColor         = s.labelColor;
-    this.dimLabelColor      = s.dimLabelColor      ??
-      TreeRenderer._hslToHex(_hsl.h, _hsl.s * 0.70, _hsl.l * 0.83);
-    this.selectedLabelColor = s.selectedLabelColor ??
-      TreeRenderer._hslToHex(_hsl.h, _hsl.s * 0.50, Math.min(97, _hsl.l * 1.08));
+    this.dimLabelColor      = s.dimLabelColor      ?? _dim;
+    this.selectedLabelColor = s.selectedLabelColor ?? _sel;
     this.selectedLabelStyle = s.selectedLabelStyle ?? 'bold';
     this.tipLabelAnnotation      = s.tipLabelAnnotation ?? null;
     this._tipLabelDecimalPlaces  = s.tipLabelDecimalPlaces  ?? null;  // null = auto (schema formatter)
@@ -610,10 +608,10 @@ export class TreeRenderer {
    * selected → brighter + less saturated (selected labels, approaching white)
    */
   setLabelColor(hex) {
-    const { h, s, l } = TreeRenderer._hexToHsl(hex);
-    this.labelColor        = hex;
-    this.dimLabelColor     = TreeRenderer._hslToHex(h, s * 0.70, l * 0.83);
-    this.selectedLabelColor = TreeRenderer._hslToHex(h, s * 0.50, Math.min(97, l * 1.08));
+    const { dim, selected } = TreeRenderer._deriveLabelColors(hex);
+    this.labelColor         = hex;
+    this.dimLabelColor      = dim;
+    this.selectedLabelColor = selected;
     this._dirty = true;
   }
 
@@ -732,6 +730,21 @@ export class TreeRenderer {
       return Math.round(255 * col).toString(16).padStart(2, '0');
     };
     return `#${f(0)}${f(8)}${f(4)}`;
+  }
+
+  /**
+   * Derive the dim and selected label colours from a base label colour.
+   * dim      → darker + more desaturated (unselected labels when a selection exists)
+   * selected → brighter + less saturated (selected labels, approaching white)
+   * @param {string} hex  Base label colour as a CSS hex string.
+   * @returns {{ dim: string, selected: string }}
+   */
+  static _deriveLabelColors(hex) {
+    const { h, s, l } = TreeRenderer._hexToHsl(hex);
+    return {
+      dim:      TreeRenderer._hslToHex(h, s * 0.70, l * 0.83),
+      selected: TreeRenderer._hslToHex(h, s * 0.50, Math.min(97, l * 1.08)),
+    };
   }
 
   /**
@@ -875,6 +888,21 @@ export class TreeRenderer {
     };
   }
 
+  /**
+   * Compute a new layout rooted at subtreeRootId (null = full tree) and
+   * install it as the current view state, refreshing labels and scale bounds.
+   * Used by all five navigation methods to eliminate the repeated 5-line pattern.
+   * @param {string|null} subtreeRootId
+   */
+  _computeAndInstallLayout(subtreeRootId) {
+    const { nodes, nodeMap, maxX, maxY } = computeLayoutFromGraph(
+      this.graph, subtreeRootId, { clampNegativeBranches: this.clampNegativeBranches });
+    this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
+    this._measureLabels();
+    this._updateScaleX(false);
+    this._updateMinScaleY();
+  }
+
   /** Double-click on an internal layout node id → drill into its subtree. */
   navigateInto(layoutNodeId) {
     const layoutNode = this.nodeMap?.get(layoutNodeId);
@@ -891,11 +919,7 @@ export class TreeRenderer {
     this._mrcaNodeId = null;
 
     // Compute new layout rooted at this node (x = 0).
-    const { nodes, nodeMap, maxX, maxY } = computeLayoutFromGraph(this.graph, layoutNodeId, { clampNegativeBranches: this.clampNegativeBranches });
-    this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
-    this._measureLabels();
-    this._updateScaleX(false);
-    this._updateMinScaleY();
+    this._computeAndInstallLayout(layoutNodeId);
     const newScaleY  = Math.max(this.minScaleY, this._targetScaleY);
     const newOffsetY = this.paddingTop + newScaleY * 0.5;
     this._setTarget(newOffsetY, newScaleY, false);
@@ -934,11 +958,7 @@ export class TreeRenderer {
     this._selectedTipIds     = new Set(state.selectedTipIds || []);
     this._mrcaNodeId         = state.mrcaNodeId || null;
 
-    const { nodes, nodeMap, maxX, maxY } = computeLayoutFromGraph(this.graph, state.subtreeRootId, { clampNegativeBranches: this.clampNegativeBranches });
-    this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
-    this._measureLabels();
-    this._updateScaleX(false);
-    this._updateMinScaleY();
+    this._computeAndInstallLayout(state.subtreeRootId);
     this._setTarget(state.offsetY, state.scaleY, false);
 
     // Seed animation so the transition looks smooth.
@@ -993,11 +1013,7 @@ export class TreeRenderer {
     this._selectedTipIds     = new Set(state.selectedTipIds || []);
     this._mrcaNodeId         = state.mrcaNodeId || null;
 
-    const { nodes, nodeMap, maxX, maxY } = computeLayoutFromGraph(this.graph, fwdSubtreeRootId, { clampNegativeBranches: this.clampNegativeBranches });
-    this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
-    this._measureLabels();
-    this._updateScaleX(false);
-    this._updateMinScaleY();
+    this._computeAndInstallLayout(fwdSubtreeRootId);
     this._setTarget(state.offsetY, state.scaleY, false);
 
     // Mirror navigateInto: seed the animation so the new root starts at the
@@ -1030,11 +1046,7 @@ export class TreeRenderer {
     this._selectedTipIds.clear();
     this._mrcaNodeId = null;
 
-    const { nodes, nodeMap, maxX, maxY } = computeLayoutFromGraph(this.graph, null, { clampNegativeBranches: this.clampNegativeBranches });
-    this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
-    this._measureLabels();
-    this._updateScaleX(false);
-    this._updateMinScaleY();
+    this._computeAndInstallLayout(null);
     // Fit the whole tree into view.
     const newOffsetY = this.paddingTop + this.minScaleY * 0.5;
     this._setTarget(newOffsetY, this.minScaleY, false);
@@ -1089,11 +1101,7 @@ export class TreeRenderer {
     this._selectedTipIds.clear();
     this._mrcaNodeId = null;
 
-    const { nodes, nodeMap, maxX, maxY } = computeLayoutFromGraph(this.graph, newSubtreeRootId, { clampNegativeBranches: this.clampNegativeBranches });
-    this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
-    this._measureLabels();
-    this._updateScaleX(false);
-    this._updateMinScaleY();
+    this._computeAndInstallLayout(newSubtreeRootId);
     const newOffsetY = this.paddingTop + this.minScaleY * 0.5;
     this._setTarget(newOffsetY, this.minScaleY, false);
 
@@ -1121,14 +1129,20 @@ export class TreeRenderer {
    * Uses the tipLabelAnnotation value when set; falls back to node.name.
    * Handles the synthetic CAL_DATE_KEY / CAL_DATE_HPD_KEY / CAL_DATE_HPD_ONLY_KEY sentinels.
    */
-  _tipLabelText(node) {
-    const key = this.tipLabelAnnotation;
-    if (!key) return node.name || null;
+  /**
+   * Shared implementation for _tipLabelText / _nodeLabelText.
+   * @param {object}      node           The tree node.
+   * @param {string|null} key            The annotation key.
+   * @param {number|null} decimalPlaces  Fixed decimal places for numeric values (null = auto).
+   * @param {string|null} nameFallback   Value returned when no label can be derived.
+   */
+  _labelText(node, key, decimalPlaces, nameFallback) {
+    if (!key) return nameFallback;
 
     // ── Synthetic calendar-date labels ──────────────────────────────────
     if (key === CAL_DATE_KEY || key === CAL_DATE_HPD_KEY || key === CAL_DATE_HPD_ONLY_KEY) {
       const cal = this._calCalibration;
-      if (!cal?.isActive) return node.name || null;
+      if (!cal?.isActive) return nameFallback;
       const height  = this.maxX - node.x;
       const hpdKey  = this._annotationSchema?.get('height')?.group?.hpd;
       const hpd     = hpdKey ? node.annotations?.[hpdKey] : null;
@@ -1156,14 +1170,18 @@ export class TreeRenderer {
     if ((val == null || val === '') && def?.group?.mean) {
       val = node.annotations?.[def.group.mean];
     }
-    if (val == null || val === '') return node.name || null;
+    if (val == null || val === '') return nameFallback;
     if (Array.isArray(val)) return val.join(', ');
     if (typeof val === 'number') {
-      if (this._tipLabelDecimalPlaces != null) return val.toFixed(this._tipLabelDecimalPlaces);
+      if (decimalPlaces != null) return val.toFixed(decimalPlaces);
       if (def?.fmtValue) return def.fmtValue(val);
       if (def?.fmt)      return def.fmt(val);
     }
     return String(val);
+  }
+
+  _tipLabelText(node) {
+    return this._labelText(node, this.tipLabelAnnotation, this._tipLabelDecimalPlaces, node.name || null);
   }
 
   /**
@@ -1172,48 +1190,7 @@ export class TreeRenderer {
    * Handles the synthetic CAL_DATE_KEY / CAL_DATE_HPD_KEY / CAL_DATE_HPD_ONLY_KEY sentinels.
    */
   _nodeLabelText(node) {
-    const key = this.nodeLabelAnnotation;
-    if (!key) return null;
-
-    // ── Synthetic calendar-date labels ──────────────────────────────────
-    if (key === CAL_DATE_KEY || key === CAL_DATE_HPD_KEY || key === CAL_DATE_HPD_ONLY_KEY) {
-      const cal = this._calCalibration;
-      if (!cal?.isActive) return null;
-      const height  = this.maxX - node.x;
-      const hpdKey  = this._annotationSchema?.get('height')?.group?.hpd;
-      const hpd     = hpdKey ? node.annotations?.[hpdKey] : null;
-      const hasHpd  = Array.isArray(hpd) && hpd.length >= 2;
-      if (key === CAL_DATE_HPD_ONLY_KEY) {
-        if (!hasHpd) return null;
-        // hpd[0] = lower height (newer date), hpd[1] = upper height (older date)
-        const dOlder = cal.heightToDateString(hpd[1], 'full', this._calDateFormat);
-        const dNewer = cal.heightToDateString(hpd[0], 'full', this._calDateFormat);
-        return `[${dOlder} – ${dNewer}]`;
-      }
-      const dateStr = cal.heightToDateString(height, 'full', this._calDateFormat);
-      if (key === CAL_DATE_HPD_KEY && hasHpd) {
-        const dOlder = cal.heightToDateString(hpd[1], 'full', this._calDateFormat);
-        const dNewer = cal.heightToDateString(hpd[0], 'full', this._calDateFormat);
-        return `${dateStr} [${dOlder} – ${dNewer}]`;
-      }
-      return dateStr;
-    }
-
-    const def = this._annotationSchema?.get(key);
-    let val = node.annotations?.[key];
-    // Synthetic base keys (e.g. 'height' promoted from 'height_mean') are not
-    // stored directly on node.annotations – fall back to the mean group member.
-    if ((val == null || val === '') && def?.group?.mean) {
-      val = node.annotations?.[def.group.mean];
-    }
-    if (val == null || val === '') return null;
-    if (Array.isArray(val)) return val.join(', ');
-    if (typeof val === 'number') {
-      if (this._nodeLabelDecimalPlaces != null) return val.toFixed(this._nodeLabelDecimalPlaces);
-      if (def?.fmtValue) return def.fmtValue(val);
-      if (def?.fmt)      return def.fmt(val);
-    }
-    return String(val);
+    return this._labelText(node, this.nodeLabelAnnotation, this._nodeLabelDecimalPlaces, null);
   }
 
   _measureLabels() {

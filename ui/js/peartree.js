@@ -334,86 +334,10 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   }
 
   function saveSettings() {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
-      theme:            themeSelect.value,
-      canvasBgColor:    canvasBgColorEl.value,
-      branchColor:      branchColorEl.value,
-      branchWidth:      branchWidthSlider.value,
-      fontSize:         fontSlider.value,
-      fontFamily:       fontFamilyEl.value,
-      labelColor:       labelColorEl.value,
-      selectedLabelStyle: selectedLabelStyleEl.value,
-      selectedTipStrokeColor:  selectedTipStrokeEl.value,
-      selectedNodeStrokeColor:      selectedNodeStrokeEl.value,
-      tipHoverFillColor:      tipHoverFillEl.value,
-      nodeHoverFillColor: nodeHoverFillEl.value,
-      selectedTipFillColor:      selectedTipFillEl.value,
-      selectedTipGrowthFactor:   selectedTipGrowthSlider.value,
-      selectedTipMinSize:        selectedTipMinSizeSlider.value,
-      selectedTipFillOpacity:    selectedTipFillOpacitySlider.value,
-      selectedTipStrokeWidth:    selectedTipStrokeWidthSlider.value,
-      selectedTipStrokeOpacity:  selectedTipStrokeOpacitySlider.value,
-      selectedNodeFillColor:     selectedNodeFillEl.value,
-      selectedNodeGrowthFactor:  selectedNodeGrowthSlider.value,
-      selectedNodeMinSize:       selectedNodeMinSizeSlider.value,
-      selectedNodeFillOpacity:   selectedNodeFillOpacitySlider.value,
-      selectedNodeStrokeWidth:   selectedNodeStrokeWidthSlider.value,
-      selectedNodeStrokeOpacity: selectedNodeStrokeOpacitySlider.value,
-      tipHoverStrokeColor:       tipHoverStrokeEl.value,
-      tipHoverGrowthFactor:      tipHoverGrowthSlider.value,
-      tipHoverMinSize:           tipHoverMinSizeSlider.value,
-      tipHoverFillOpacity:       tipHoverFillOpacitySlider.value,
-      tipHoverStrokeWidth:       tipHoverStrokeWidthSlider.value,
-      tipHoverStrokeOpacity:     tipHoverStrokeOpacitySlider.value,
-      nodeHoverStrokeColor:      nodeHoverStrokeEl.value,
-      nodeHoverGrowthFactor:     nodeHoverGrowthSlider.value,
-      nodeHoverMinSize:          nodeHoverMinSizeSlider.value,
-      nodeHoverFillOpacity:      nodeHoverFillOpacitySlider.value,
-      nodeHoverStrokeWidth:      nodeHoverStrokeWidthSlider.value,
-      nodeHoverStrokeOpacity:    nodeHoverStrokeOpacitySlider.value,
-      tipSize:          tipSlider.value,
-      tipHaloSize:      tipHaloSlider.value,
-      tipShapeColor:    tipShapeColorEl.value,
-      tipShapeBgColor:  tipShapeBgEl.value,
-      nodeSize:         nodeSlider.value,
-      nodeHaloSize:     nodeHaloSlider.value,
-      nodeShapeColor:   nodeShapeColorEl.value,
-      nodeShapeBgColor: nodeShapeBgEl.value,
-      tipColourBy:      tipColourBy.value,
-      nodeColourBy:     nodeColourBy.value,
-      labelColourBy:    labelColourBy.value,
-      annotationPalettes: Object.fromEntries(annotationPalettes),
-      legendShow:       legendShowEl.value,
-      legendAnnotation: legendAnnotEl.value,
-      legendTextColor:  legendTextColorEl.value,
-      legendFontSize:   legendFontSizeSlider.value,
-      legendFontFamily: legendFontFamilyEl.value,
-      axisShow:           axisShowEl.value,
-      axisDateAnnotation: axisDateAnnotEl.value,
-      axisDateFormat:     axisDateFmtEl.value,
-      axisMajorInterval:    axisMajorIntervalEl.value,
-      axisMinorInterval:    axisMinorIntervalEl.value,
-      axisMajorLabelFormat: axisMajorLabelEl.value,
-      axisMinorLabelFormat: axisMinorLabelEl.value,
-      axisColor:          axisColorEl.value,
-      axisFontSize:       axisFontSizeSlider.value,
-      axisFontFamily:     axisFontFamilyEl.value,
-      axisLineWidth:      axisLineWidthSlider.value,
-      nodeBarsEnabled:    nodeBarsShowEl.value,
-      nodeBarsColor:      nodeBarsColorEl.value,
-      nodeBarsWidth:      nodeBarsWidthSlider.value,
-      nodeBarsShowMedian: nodeBarsMedianEl.value,
-      nodeBarsShowRange:  nodeBarsRangeEl.value,
-      clampNegBranches:   clampNegBranchesEl.value,
-      tipLabelShow:       tipLabelShow.value,
-      tipLabelAlign:      tipLabelAlignEl.value,
-      tipLabelDecimalPlaces:  tipLabelDpEl.value !== '' ? parseInt(tipLabelDpEl.value) : null,
-      nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
-      mode:             renderer ? renderer._mode : 'nodes',
-    }));
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(_buildSettingsSnapshot()));
   }
 
-  function _captureCurrentSettings() {
+  function _buildSettingsSnapshot() {
     return {
       theme:            themeSelect.value,
       canvasBgColor:    canvasBgColorEl.value,
@@ -1624,7 +1548,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     if (format === 'nexus') {
       const rootedTag    = annotKeys.length > 0 ? '[&R] ' : '';
       const settingsLine = storeSettings
-        ? `\t[peartree=${JSON.stringify(_captureCurrentSettings())}]\n`
+        ? `\t[peartree=${JSON.stringify(_buildSettingsSnapshot())}]\n`
         : '';
       content = `#NEXUS\nBEGIN TREES;\n\ttree TREE1 = ${rootedTag}${newick}\n${settingsLine}END;\n`;
       ext     = 'nexus';

@@ -1131,15 +1131,29 @@ export class TreeCalibration {
   static MONTHS      = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   static MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
+  /** Return true if the given year is a leap year. */
+  static _isLeapYear(year) {
+    return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  }
+
+  /**
+   * Return a 13-element cumulative-days-in-month array for the given year.
+   * Index 0 is always 0 (sentinel); indices 1–12 are days in each month.
+   * e.g. _daysInMonth(2000)[2] === 29
+   */
+  static _daysInMonth(year) {
+    const L = TreeCalibration._isLeapYear(year);
+    return [0, 31, L ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  }
+
   /**
    * Return the week-of-year number (1–53) for a given date.
    * Uses simple ordinal day ÷ 7, matching the calendarTicksForInterval 'weeks' generator.
    */
   static _weekOfYear(year, month, day) {
-    const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-    const DIM = [0, 31, isLeap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    const dims = TreeCalibration._daysInMonth(year);
     let doy = day;
-    for (let m = 1; m < month; m++) doy += DIM[m];
+    for (let m = 1; m < month; m++) doy += dims[m];
     return Math.ceil(doy / 7);
   }
 
@@ -1169,24 +1183,22 @@ export class TreeCalibration {
    * e.g. 2014-01-01 → 2014.0,  2014-07-02 → ~2014.5
    */
   static dateToDecYear(year, month, day) {
-    const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-    const dims   = [0, 31, isLeap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    const dims = TreeCalibration._daysInMonth(year);
     let doy = day;
     for (let m = 1; m < month; m++) doy += dims[m];
-    return year + (doy - 1) / (isLeap ? 366 : 365);
+    return year + (doy - 1) / (TreeCalibration._isLeapYear(year) ? 366 : 365);
   }
 
   /**
    * Convert a decimal year to { year, month, day }.
    */
   static decYearToDate(dy) {
-    const year   = Math.floor(dy);
-    const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-    const total  = isLeap ? 366 : 365;
+    const year  = Math.floor(dy);
+    const total = TreeCalibration._isLeapYear(year) ? 366 : 365;
     let doy = Math.round((dy - year) * total) + 1;
     if (doy < 1) doy = 1;
     if (doy > total) doy = total;
-    const dims = [0, 31, isLeap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    const dims = TreeCalibration._daysInMonth(year);
     let month = 1;
     while (month < 12 && doy > dims[month]) { doy -= dims[month]; month++; }
     return { year, month, day: doy };
@@ -1308,7 +1320,7 @@ export class TreeCalibration {
       const W_DY   = 7 / 365.25;
       const n      = Math.ceil((minDY - anchor) / W_DY - 1e-9);
       let { year, month, day } = TreeCalibration.decYearToDate(anchor + n * W_DY);
-      const dim = yr => { const lp = (yr%4===0&&yr%100!==0)||yr%400===0; return [0,31,lp?29:28,31,30,31,30,31,31,30,31,30,31]; };
+      const dim = yr => TreeCalibration._daysInMonth(yr);
       for (let i = 0; i < 5000; i++) {
         const v = dy(year, month, day);
         if (v > maxDY + 1e-4) break;
@@ -1320,7 +1332,7 @@ export class TreeCalibration {
 
     } else if (interval === 'days') {
       let { year, month, day } = TreeCalibration.decYearToDate(minDY);
-      const dim = yr => { const lp = (yr%4===0&&yr%100!==0)||yr%400===0; return [0,31,lp?29:28,31,30,31,30,31,31,30,31,30,31]; };
+      const dim = yr => TreeCalibration._daysInMonth(yr);
       if (dy(year, month, day) < minDY - 1e-9) {
         day++; const d = dim(year);
         if (day > d[month]) { day = 1; month++; if (month > 12) { month = 1; year++; } }
