@@ -41,6 +41,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
+      - name: Install WiX toolset (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          Invoke-WebRequest -Uri https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip -OutFile wix314.zip
+          Expand-Archive wix314.zip -DestinationPath "$env:USERPROFILE\wix314"
+          echo "$env:USERPROFILE\wix314" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        shell: pwsh
+
       - name: Install Node dependencies
         run: npm install
 
