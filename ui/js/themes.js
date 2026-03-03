@@ -343,6 +343,10 @@ export const DEFAULT_SETTINGS = {
   legendPadding:   '12',
   // Legend canvas height as % of the canvas area (1–100, pinned to top)
   legendHeightPct: '100',
+  // Second legend
+  legendAnnotation2: '',
+  legend2Position:   'right',   // 'right' (beside L1) | 'below' (stacked under L1)
+  legendHeightPct2:  '50',
   // Axis canvas vertical padding (px) — gap above the baseline line
   axisPaddingTop: '3',
   elbowRadius:    '2',

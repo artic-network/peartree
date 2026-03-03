@@ -26,51 +26,67 @@ export class LegendRenderer {
   /**
    * @param {HTMLCanvasElement} leftCanvas
    * @param {HTMLCanvasElement} rightCanvas
-   * @param {object}            settings  Must include fontSize, textColor, bgColor (all required).
+   * @param {HTMLCanvasElement} leftCanvas2  Secondary legend canvas (far-left side).
+   * @param {HTMLCanvasElement} rightCanvas2 Secondary legend canvas (far-right side).
+   * @param {object}            settings  Must include fontSize, textColor, bgColor.
    */
-  constructor(leftCanvas, rightCanvas, settings) {
-    this._leftCanvas  = leftCanvas;
-    this._rightCanvas = rightCanvas;
+  constructor(leftCanvas, rightCanvas, leftCanvas2, rightCanvas2, settings) {
+    this._leftCanvas   = leftCanvas;
+    this._rightCanvas  = rightCanvas;
+    this._leftCanvas2  = leftCanvas2  ?? null;
+    this._rightCanvas2 = rightCanvas2 ?? null;
 
     this._position   = null;   // 'left' | 'right' | null
     this._annotation = null;   // annotation key string | null
     this._schema     = null;   // Map<string, AnnotationDef>
     this._paletteOverrides = null; // Map<annotKey, paletteName> from TreeRenderer
 
+    this._annotation2  = null;    // second legend annotation key | null
+    this._position2    = 'right'; // 'right' (beside L1) | 'below' (stacked under L1)
+    this._heightPct2   = 50;      // legend 2 height as % of canvas-container
+
     this.skipBg = false;
     this._dpr   = window.devicePixelRatio || 1;
     this._fontFamily = 'monospace';
 
-    // Hit regions for categorical legend entries: [{value, y0, y1}]
-    this._hitRegions = [];
-    /** Callback invoked when a categorical legend entry is clicked: (value) => void */
-    this.onCategoryClick = null;
+    // Hit regions for categorical entries: [{value, y0, y1, isLegend2?}]
+    this._hitRegions  = [];   // primary canvas (legend1 + legend2-below)
+    this._hitRegions2 = [];   // legend2 own canvas ('right' mode)
+    /** Callback for legend-1 categorical click: (value) => void */
+    this.onCategoryClick  = null;
+    /** Callback for legend-2 categorical click: (value) => void */
+    this.onCategoryClick2 = null;
 
-    // Wire click listeners on both canvases once, here in the constructor.
-    for (const lc of [this._leftCanvas, this._rightCanvas]) {
+    // Wire click + hover listeners on all four canvases.
+    for (const [lc, isL2canvas] of [
+      [this._leftCanvas,   false], [this._rightCanvas,  false],
+      [this._leftCanvas2,  true],  [this._rightCanvas2, true],
+    ]) {
       if (!lc) continue;
       lc.addEventListener('click', (e) => {
-        if (!this.onCategoryClick || !this._hitRegions.length) return;
-        // e.offsetY is in CSS pixels relative to the canvas element
-        const cssY = e.offsetY;
-        for (const r of this._hitRegions) {
+        const cssY   = e.offsetY;
+        const regions = isL2canvas ? this._hitRegions2 : this._hitRegions;
+        for (const r of regions) {
           if (cssY >= r.y0 && cssY < r.y1) {
-            this.onCategoryClick(r.value);
+            const cb = r.isLegend2 ? this.onCategoryClick2 : this.onCategoryClick;
+            if (cb) cb(r.value);
             return;
           }
         }
       });
-      lc.style.cursor = 'default'; // updated dynamically per mousemove below
+      lc.style.cursor = 'default';
       lc.addEventListener('mousemove', (e) => {
-        const cssY = e.offsetY;
-        const hit = this._hitRegions.some(r => cssY >= r.y0 && cssY < r.y1);
-        lc.style.cursor = (hit && this.onCategoryClick) ? 'pointer' : 'default';
+        const cssY   = e.offsetY;
+        const regions = isL2canvas ? this._hitRegions2 : this._hitRegions;
+        const hit    = regions.find(r => cssY >= r.y0 && cssY < r.y1);
+        const hasCb  = hit ? (hit.isLegend2 ? !!this.onCategoryClick2 : !!this.onCategoryClick) : false;
+        lc.style.cursor = (hit && hasCb) ? 'pointer' : 'default';
       });
       lc.addEventListener('mouseleave', () => { lc.style.cursor = 'default'; });
     }
 
     this._padding    = 12;   // internal pad around legend content (px)
-    this._heightPct  = 100;  // height as % of the canvas-container (1–100)
+    this._heightPct  = 100;  // legend 1 height as % of the canvas-container (1–100)
 
     this.setSettings(settings, /*redraw*/ false);
   }
@@ -84,17 +100,19 @@ export class LegendRenderer {
    * @param {boolean} redraw  When true (default) triggers a repaint.
    */
   setSettings(s, redraw = true) {
-    if (s.fontSize  != null) this.fontSize  = s.fontSize;
-    if (s.textColor != null) this.textColor = s.textColor;
-    if (s.bgColor   != null) {
+    if (s.fontSize   != null) this.fontSize   = s.fontSize;
+    if (s.textColor  != null) this.textColor  = s.textColor;
+    if (s.bgColor    != null) {
       this.bgColor = s.bgColor;
-      for (const lc of [this._leftCanvas, this._rightCanvas]) {
+      for (const lc of [this._leftCanvas, this._rightCanvas,
+                        this._leftCanvas2, this._rightCanvas2]) {
         if (lc) lc.style.backgroundColor = s.bgColor;
       }
     }
-    if (s.skipBg    != null) this.skipBg    = s.skipBg;
+    if (s.skipBg    != null) this.skipBg     = s.skipBg;
     if (s.padding   != null) this._padding   = s.padding;
-    if (s.heightPct != null) this._heightPct = s.heightPct;
+    if (s.heightPct  != null) this._heightPct  = s.heightPct;
+    if (s.heightPct2 != null) this._heightPct2 = s.heightPct2;
     if (redraw) this.draw();
   }
 
@@ -132,6 +150,16 @@ export class LegendRenderer {
     // physical dimensions are updated first.
   }
 
+  /**
+   * Set the second legend's annotation and position relative to legend 1.
+   * @param {'right'|'below'|null} relPos  'right' = own canvas beside L1; 'below' = stacked in same canvas
+   * @param {string|null}          key
+   */
+  setAnnotation2(relPos, key) {
+    this._position2   = relPos || 'right';
+    this._annotation2 = key    || null;
+  }
+
   /** @param {number} n — font size in CSS pixels */
   setFontSize(n) {
     this.fontSize = n;
@@ -160,7 +188,8 @@ export class LegendRenderer {
   setBgColor(color, skipBg = false) {
     this.bgColor = color;
     this.skipBg  = skipBg;
-    for (const lc of [this._leftCanvas, this._rightCanvas]) {
+    for (const lc of [this._leftCanvas, this._rightCanvas,
+                      this._leftCanvas2, this._rightCanvas2]) {
       if (lc) lc.style.backgroundColor = color;
     }
     this.draw();
@@ -172,240 +201,282 @@ export class LegendRenderer {
    */
   resize() {
     this._dpr = window.devicePixelRatio || 1;
+    const pos    = this._position;
+    const hasL2  = !!this._annotation2;
+    const below  = hasL2 && this._position2 === 'below';
+    const active = pos === 'left' ? this._leftCanvas : pos === 'right' ? this._rightCanvas : null;
+
     for (const lc of [this._leftCanvas, this._rightCanvas]) {
       if (!lc || lc.style.display === 'none') continue;
       const LW = lc.clientWidth;
-      const LH = this._computeHeight(lc);
+      const LH = (lc === active && below)
+        ? this._computeStackedHeights(lc).total
+        : this._computeHeight(lc);
       lc.style.height = LH + 'px';
       lc.width  = LW * this._dpr;
       lc.height = LH * this._dpr;
       lc.getContext('2d').setTransform(this._dpr, 0, 0, this._dpr, 0, 0);
     }
+
+    // Legend-2 side canvases — only used in 'right' (beside) mode.
+    if (hasL2 && !below) {
+      for (const lc of [this._leftCanvas2, this._rightCanvas2]) {
+        if (!lc || lc.style.display === 'none') continue;
+        const LW = lc.clientWidth;
+        const LH = this._computeHeight2(lc);
+        lc.style.height = LH + 'px';
+        lc.width  = LW * this._dpr;
+        lc.height = LH * this._dpr;
+        lc.getContext('2d').setTransform(this._dpr, 0, 0, this._dpr, 0, 0);
+      }
+    }
     this.draw();
   }
 
-  /**
-   * Compute the legend canvas height in CSS px, honouring _heightPct.
-   * @param {HTMLCanvasElement} lc
-   * @returns {number}
-   */
+  /** Legend-1 canvas height in CSS px. */
   _computeHeight(lc) {
     const containerH = lc.parentElement?.clientHeight ?? lc.clientHeight ?? 0;
     if (!containerH) return lc.clientHeight || 0;
     return Math.round(containerH * Math.min(this._heightPct, 100) / 100);
   }
 
+  /** Legend-2 side-canvas height in CSS px. */
+  _computeHeight2(lc) {
+    const containerH = lc.parentElement?.clientHeight ?? lc.clientHeight ?? 0;
+    if (!containerH) return lc.clientHeight || 0;
+    return Math.round(containerH * Math.min(this._heightPct2, 100) / 100);
+  }
+
   /**
-   * Measure the minimum canvas width (CSS px) needed to display the current
-   * annotation legend without clipping.  Returns a sensible default when the
-   * schema or annotation are not yet configured.
-   * @returns {number} width in CSS pixels
+   * For the 'below' stacked layout: compute h1, h2, and total canvas height.
+   * • pct1 + pct2 < 100 → independent percentages; total = h1 + h2.
+   * • pct1 + pct2 ≥ 100 → proportional share of full height; total = containerH.
    */
-  measureWidth() {
-    const key = this._annotation;
+  _computeStackedHeights(lc) {
+    const containerH = lc.parentElement?.clientHeight ?? lc.clientHeight ?? 0;
+    if (!containerH) return { total: lc.clientHeight || 0, h1: lc.clientHeight || 0, h2: 0 };
+    const pct1 = Math.max(1, this._heightPct);
+    const pct2 = Math.max(1, this._heightPct2);
+    if (pct1 + pct2 < 100) {
+      const h1 = Math.round(containerH * pct1 / 100);
+      const h2 = Math.round(containerH * pct2 / 100);
+      return { total: h1 + h2, h1, h2 };
+    }
+    const h1 = Math.round(containerH * pct1 / (pct1 + pct2));
+    return { total: containerH, h1, h2: containerH - h1 };
+  }
+
+  /**
+   * Measure the minimum canvas width (CSS px) for any annotation key.
+   * @param {string|null} key
+   * @returns {number}
+   */
+  _measureWidthForKey(key) {
     const def = key && this._schema?.get(key);
     if (!def) return 120;
 
     const PAD   = this._padding ?? 12;
     const lfs   = this.fontSize  ?? 11;
     const FONT  = this._fontFamily ?? 'monospace';
-
-    // Use an offscreen canvas just for text measurement.
     const mc  = document.createElement('canvas');
     const ctx = mc.getContext('2d');
-
     const measure = (text, bold = false) => {
       ctx.font = `${bold ? '700 ' : ''}${lfs}px ${FONT}`;
       return ctx.measureText(text).width;
     };
 
-    let contentW = measure(key, true);   // title row
-
+    let contentW = measure(key, true);
     if (def.dataType === 'categorical' || def.dataType === 'ordinal') {
       const SWATCH = Math.max(8, lfs);
-      const values = def.values || [];
-      for (const v of values) {
+      for (const v of (def.values || [])) {
         contentW = Math.max(contentW, SWATCH + 6 + measure(String(v)));
       }
     } else {
-      // Sequential (date / numeric): bar (14px) + gap + tick labels.
       const BAR_W = 14;
-      const fmt   = def.dataType === 'date'
-        ? (v => v)   // raw strings from def.values
-        : (def.fmt ?? (v => String(v)));
       const tickCount = 6;
-      const min = def.min ?? 0;
-      const max = def.max ?? 1;
       if (def.dataType === 'date') {
         const vals = def.values || [];
         for (let i = 0; i < Math.min(tickCount, vals.length); i++) {
           contentW = Math.max(contentW, BAR_W + 6 + measure(String(vals[i])));
         }
       } else {
+        const fmt = def.fmt ?? (v => String(v));
+        const min = def.min ?? 0;
+        const max = def.max ?? 1;
         for (let i = 0; i < tickCount; i++) {
           const val = max - (i / (tickCount - 1)) * (max - min);
-          contentW = Math.max(contentW, BAR_W + 6 + measure(fmt(val)));
+          contentW  = Math.max(contentW, BAR_W + 6 + measure(fmt(val)));
         }
       }
     }
-
     return Math.ceil(PAD + contentW + PAD);
   }
 
+  /** Minimum canvas width for legend 1. */
+  measureWidth()  { return this._measureWidthForKey(this._annotation); }
+
+  /** Minimum canvas width for legend 2. */
+  measureWidth2() { return this._measureWidthForKey(this._annotation2); }
+
   /**
-   * Paint the colour legend onto the active legend canvas.
+   * Paint the colour legend(s) onto the canvas(es).
    * Safe to call at any time; exits early when nothing is configured.
    */
   draw() {
-    const pos = this._position;
-    const key = this._annotation;
-    const lcL = this._leftCanvas;
-    const lcR = this._rightCanvas;
+    const pos  = this._position;
+    const key  = this._annotation;
+    const key2 = this._annotation2;
+    const lcL  = this._leftCanvas;
+    const lcR  = this._rightCanvas;
 
-    // Clear the inactive canvas (avoids stale content after a position change).
-    for (const lc of [lcL, lcR]) {
+    // Clear all visible canvases.
+    for (const lc of [lcL, lcR, this._leftCanvas2, this._rightCanvas2]) {
       if (!lc || lc.style.display === 'none') continue;
-      const ic = lc.getContext('2d');
-      ic.clearRect(0, 0, lc.width, lc.height);
+      lc.getContext('2d').clearRect(0, 0, lc.width, lc.height);
     }
 
     const activeCanvas = pos === 'left' ? lcL : pos === 'right' ? lcR : null;
     if (!activeCanvas || activeCanvas.style.display === 'none') return;
     if (!key || !this._schema) return;
-    const def = this._schema.get(key);
-    if (!def) return;
 
     const dpr = this._dpr;
-    const W   = activeCanvas.width  / dpr;
-    const H   = activeCanvas.height / dpr;
+    const W   = activeCanvas.width / dpr;
     const ctx = activeCanvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Background — match the tree canvas.
-    if (!this.skipBg) {
-      ctx.fillStyle = this.bgColor;
-      ctx.fillRect(0, 0, W, H);
+    const below = !!key2 && this._position2 === 'below';
+    let h1 = activeCanvas.height / dpr;
+    let h2 = 0;
+    if (below && key2) {
+      const s = this._computeStackedHeights(activeCanvas);
+      h1 = s.h1;  h2 = s.h2;
     }
 
-    // Reset hit regions for this draw.
-    this._hitRegions = [];
+    // Draw legend 1.
+    this._hitRegions = this._drawContent(ctx, W, h1, key, 0);
+
+    // Draw legend 2 — stacked below (shared canvas).
+    this._hitRegions2 = [];
+    if (below && key2 && h2 > 0) {
+      // Thin separator line.
+      ctx.fillStyle = (this.textColor ?? '#ffffff') + '44';
+      ctx.fillRect(0, h1, W, 1);
+      const regs2 = this._drawContent(ctx, W, h2, key2, h1);
+      this._hitRegions2 = regs2.map(r => ({ ...r, isLegend2: true }));
+      // Merge into primary so the single click handler on the main canvas works.
+      for (const r of this._hitRegions2) this._hitRegions.push(r);
+    }
+
+    // Draw legend 2 — beside (own canvas).
+    if (!below && key2) {
+      const lc2 = pos === 'left' ? this._leftCanvas2 : this._rightCanvas2;
+      if (lc2 && lc2.style.display !== 'none') {
+        const ctx2 = lc2.getContext('2d');
+        ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+        this._hitRegions2 = this._drawContent(ctx2, lc2.width / dpr, lc2.height / dpr, key2, 0)
+                                .map(r => ({ ...r, isLegend2: true }));
+      }
+    }
+  }
+
+  /**
+   * Draw one legend's content into `ctx` within the CSS-pixel rect
+   * [0, offsetY .. offsetY+H, W].  Returns hit regions with y values
+   * relative to the canvas origin (already include offsetY).
+   * @private
+   */
+  _drawContent(ctx, W, H, key, offsetY) {
+    const hitRegions = [];
+    if (!key || !this._schema) return hitRegions;
+    const def = this._schema.get(key);
+    if (!def) return hitRegions;
 
     const PAD  = this._padding ?? 12;
     const FONT = this._fontFamily ?? 'monospace';
-    let   y    = PAD;
+    const lfs  = this.fontSize;
+    const ltc  = this.textColor;
+    const maxY = offsetY + H - PAD;
 
-    const lfs = this.fontSize;
-    const ltc = this.textColor;
+    if (!this.skipBg) {
+      ctx.fillStyle = this.bgColor;
+      ctx.fillRect(0, offsetY, W, H);
+    }
 
-    // Title — the annotation key name.
-    ctx.font         = `700 ${lfs}px ${FONT}`;
-    ctx.fillStyle    = ltc;
-    ctx.textAlign    = 'left';
-    ctx.textBaseline = 'top';
+    let y = offsetY + PAD;
+
+    // Title.
+    ctx.font = `700 ${lfs}px ${FONT}`; ctx.fillStyle = ltc;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
     ctx.fillText(key, PAD, y, W - PAD * 2);
     y += lfs + 10;
 
     if (def.dataType === 'categorical' || def.dataType === 'ordinal') {
       const paletteName = this._paletteOverrides?.get(key);
-      const colourMap  = buildCategoricalColourMap(def.values || [], paletteName);
+      const colourMap   = buildCategoricalColourMap(def.values || [], paletteName);
       const SWATCH = Math.max(8, lfs);
       const ROW_H  = Math.max(SWATCH + 4, lfs + 4);
-      ctx.font         = `${lfs}px ${FONT}`;
-      ctx.textBaseline = 'middle';
+      ctx.font = `${lfs}px ${FONT}`; ctx.textBaseline = 'middle';
       (def.values || []).forEach((val) => {
-        if (y + SWATCH > H - PAD) return;   // no space left
-        const colour = colourMap.get(val) ?? MISSING_DATA_COLOUR;
-        ctx.fillStyle = colour;
+        if (y + SWATCH > maxY) return;
+        ctx.fillStyle = colourMap.get(val) ?? MISSING_DATA_COLOUR;
         ctx.fillRect(PAD, y, SWATCH, SWATCH);
-        ctx.fillStyle = ltc;
-        ctx.textAlign = 'left';
+        ctx.fillStyle = ltc; ctx.textAlign = 'left';
         ctx.fillText(String(val), PAD + SWATCH + 6, y + SWATCH / 2, W - PAD * 2 - SWATCH - 6);
-        // Record hit region (CSS pixels — divide by dpr since we set the transform)
-        this._hitRegions.push({ value: val, y0: y, y1: y + ROW_H });
+        hitRegions.push({ value: val, y0: y, y1: y + ROW_H });
         y += ROW_H;
       });
     } else if (def.dataType === 'date') {
-      // Render as a sequential gradient bar with date-string tick labels.
-      const BAR_W  = 14;
-      const BAR_X  = PAD;
-      const BAR_Y  = y;
-      const BAR_H  = Math.max(40, H - y - PAD);
-      const grad   = ctx.createLinearGradient(0, BAR_Y, 0, BAR_Y + BAR_H);
-      const seqStops = getSequentialPalette(this._paletteOverrides?.get(key));
-      const ns = seqStops.length;
-      for (let i = 0; i < ns; i++) grad.addColorStop(i / (ns - 1), seqStops[ns - 1 - i]);
+      const BAR_W = 14;
+      const BAR_Y = y;
+      const BAR_H = Math.max(40, maxY - y);
+      const grad  = ctx.createLinearGradient(0, BAR_Y, 0, BAR_Y + BAR_H);
+      const stops = getSequentialPalette(this._paletteOverrides?.get(key));
+      const ns = stops.length;
+      for (let i = 0; i < ns; i++) grad.addColorStop(i / (ns - 1), stops[ns - 1 - i]);
       ctx.fillStyle = grad;
-      ctx.fillRect(BAR_X, BAR_Y, BAR_W, BAR_H);
-
-      const LABEL_X   = BAR_X + BAR_W + 6;
-      const LABEL_W   = W - LABEL_X - PAD;
-      const tickCount = Math.max(2, Math.min(6, Math.floor(BAR_H / (lfs + 6))));
-      const vals    = def.values || [];
-      const minDec  = dateToDecimalYear(def.min);
-      const maxDec  = dateToDecimalYear(def.max);
-      const range   = maxDec - minDec || 1;
-      ctx.font         = `${lfs}px ${FONT}`;
-      ctx.fillStyle    = ltc;
-      ctx.textAlign    = 'left';
-      for (let i = 0; i < tickCount; i++) {
-        const t         = i / (tickCount - 1);   // 0 = top (max) → 1 = bottom (min)
-        const tickY     = BAR_Y + t * BAR_H;
+      ctx.fillRect(PAD, BAR_Y, BAR_W, BAR_H);
+      const LABEL_X = PAD + BAR_W + 6;
+      const LABEL_W = W - LABEL_X - PAD;
+      const tc = Math.max(2, Math.min(6, Math.floor(BAR_H / (lfs + 6))));
+      const vals = def.values || [];
+      const minDec = dateToDecimalYear(def.min);
+      const maxDec = dateToDecimalYear(def.max);
+      const range  = maxDec - minDec || 1;
+      ctx.font = `${lfs}px ${FONT}`; ctx.fillStyle = ltc; ctx.textAlign = 'left';
+      for (let i = 0; i < tc; i++) {
+        const t = i / (tc - 1);
+        const tickY = BAR_Y + t * BAR_H;
         const targetDec = maxDec - t * range;
-        // Pick the date string from def.values closest to this decimal-year position.
-        let label = vals[0] ?? def.min;
-        let bestDist = Infinity;
-        for (const v of vals) {
-          const dist = Math.abs(dateToDecimalYear(v) - targetDec);
-          if (dist < bestDist) { bestDist = dist; label = v; }
-        }
-        ctx.fillStyle    = ltc;
-        ctx.fillRect(BAR_X + BAR_W, tickY - 0.5, 4, 1);
-        ctx.textBaseline = i === 0 ? 'top' : (i === tickCount - 1 ? 'bottom' : 'middle');
+        let label = vals[0] ?? def.min; let best = Infinity;
+        for (const v of vals) { const d = Math.abs(dateToDecimalYear(v) - targetDec); if (d < best) { best = d; label = v; } }
+        ctx.fillRect(PAD + BAR_W, tickY - 0.5, 4, 1);
+        ctx.textBaseline = i === 0 ? 'top' : (i === tc - 1 ? 'bottom' : 'middle');
         ctx.fillText(label, LABEL_X, tickY, LABEL_W);
       }
     } else if (isNumericType(def.dataType)) {
-      const BAR_W  = 14;
-      const BAR_X  = PAD;
-      const BAR_Y  = y;
-      const BAR_H  = Math.max(40, H - y - PAD);
-      // Vertical gradient: top = max (red), bottom = min (teal).
-      const grad   = ctx.createLinearGradient(0, BAR_Y, 0, BAR_Y + BAR_H);
-      const seqStops = getSequentialPalette(this._paletteOverrides?.get(key));
-      const ns = seqStops.length;
-      // Vertical gradient: top = max (last stop), bottom = min (first stop).
-      for (let i = 0; i < ns; i++) {
-        grad.addColorStop(i / (ns - 1), seqStops[ns - 1 - i]);
-      }
+      const BAR_W = 14;
+      const BAR_Y = y;
+      const BAR_H = Math.max(40, maxY - y);
+      const grad  = ctx.createLinearGradient(0, BAR_Y, 0, BAR_Y + BAR_H);
+      const stops = getSequentialPalette(this._paletteOverrides?.get(key));
+      const ns = stops.length;
+      for (let i = 0; i < ns; i++) grad.addColorStop(i / (ns - 1), stops[ns - 1 - i]);
       ctx.fillStyle = grad;
-      ctx.fillRect(BAR_X, BAR_Y, BAR_W, BAR_H);
-
-      const min    = def.min ?? 0;
-      const max    = def.max ?? 1;
-      const range  = max - min;
-      const LABEL_X = BAR_X + BAR_W + 6;
+      ctx.fillRect(PAD, BAR_Y, BAR_W, BAR_H);
+      const min = def.min ?? 0; const max = def.max ?? 1; const range = max - min;
+      const LABEL_X = PAD + BAR_W + 6;
       const LABEL_W = W - LABEL_X - PAD;
-
-      // Draw tick labels: as many as fit, spread evenly.
-      const tickCount = Math.max(2, Math.min(6, Math.floor(BAR_H / (lfs + 6))));
-
-      // Use the pre-computed formatter attached to the annotation def by buildAnnotationSchema.
-      // Falls back to String() for any type not covered.
+      const tc  = Math.max(2, Math.min(6, Math.floor(BAR_H / (lfs + 6))));
       const fmt = def.fmt ?? (v => String(v));
-
-      ctx.font         = `${lfs}px ${FONT}`;
-      ctx.fillStyle    = ltc;
-      ctx.textAlign    = 'left';
-      for (let i = 0; i < tickCount; i++) {
-        const t     = i / (tickCount - 1);   // 0 = top (max) → 1 = bottom (min)
-        const val   = max - t * range;
+      ctx.font = `${lfs}px ${FONT}`; ctx.fillStyle = ltc; ctx.textAlign = 'left';
+      for (let i = 0; i < tc; i++) {
+        const t = i / (tc - 1);
         const tickY = BAR_Y + t * BAR_H;
-        // Tick mark
-        ctx.fillStyle = ltc;
-        ctx.fillRect(BAR_X + BAR_W, tickY - 0.5, 4, 1);
-        // Label — baseline anchors top/bottom at extremes, middle otherwise
-        ctx.textBaseline = i === 0 ? 'top' : (i === tickCount - 1 ? 'bottom' : 'middle');
-        ctx.fillText(fmt(val), LABEL_X, tickY, LABEL_W);
+        ctx.fillRect(PAD + BAR_W, tickY - 0.5, 4, 1);
+        ctx.textBaseline = i === 0 ? 'top' : (i === tc - 1 ? 'bottom' : 'middle');
+        ctx.fillText(fmt(max - t * range), LABEL_X, tickY, LABEL_W);
       }
     }
+    return hitRegions;
   }
 }

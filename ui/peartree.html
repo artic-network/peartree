@@ -1285,6 +1285,7 @@
 </nav>
 
 <div id="canvas-container">
+  <canvas id="legend2-left-canvas" class="pt-legend-canvas"></canvas>
   <canvas id="legend-left-canvas"  class="pt-legend-canvas"></canvas>
   <div id="canvas-and-axis-wrapper">
     <div id="canvas-wrapper">
@@ -1304,7 +1305,8 @@
     </div>
     <canvas id="axis-canvas"></canvas>
   </div>
-  <canvas id="legend-right-canvas" class="pt-legend-canvas right"></canvas>
+  <canvas id="legend-right-canvas"  class="pt-legend-canvas right"></canvas>
+  <canvas id="legend2-right-canvas" class="pt-legend-canvas right"></canvas>
 </div>
 
 <div id="status-bar">
@@ -1913,11 +1915,16 @@
       </div>
       <div id="legend-detail" class="pt-detail pt-sub-controls">
         <div class="pt-palette-row">
-          <span class="pt-palette-label">Location</span>
+          <span class="pt-palette-label">Position</span>
           <select class="pt-palette-select" id="legend-show">
             <option value="right">Right</option>
             <option value="left">Left</option>
           </select>
+        </div>
+        <div class="pt-palette-row">
+          <i class="bi bi-arrows-expand form-label-sm" title="Height"></i>
+          <input type="range" class="form-range" id="legend-height-pct-slider" min="10" max="100" step="5" value="100" />
+          <span class="pt-val" id="legend-height-pct-value">100%</span>
         </div>
         <div class="pt-palette-row">
           <span class="pt-palette-label">Colour</span>
@@ -1927,11 +1934,6 @@
           <i class="bi bi-fonts form-label-sm"></i>
           <input type="range" class="form-range" id="legend-font-size-slider" min="6" max="16" value="11" />
           <span class="pt-val" id="legend-font-size-value">11</span>
-        </div>
-        <div class="pt-palette-row">
-          <i class="bi bi-arrows-expand form-label-sm" title="Height"></i>
-          <input type="range" class="form-range" id="legend-height-pct-slider" min="10" max="100" step="5" value="100" />
-          <span class="pt-val" id="legend-height-pct-value">100%</span>
         </div>
         <div class="pt-palette-row">
           <span class="pt-palette-label">Typeface</span>
@@ -1947,6 +1949,27 @@
             <option value="System UI">System UI</option>
             <option value="Menlo">Menlo</option>
           </select>
+        </div>
+        <p class="pt-palette-subhead">Legend 2</p>
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Show</span>
+          <select class="pt-palette-select" id="legend-annotation-2">
+            <option value="">Off</option>
+          </select>
+        </div>
+        <div id="legend2-detail" class="pt-detail pt-sub-controls">
+          <div class="pt-palette-row">
+            <span class="pt-palette-label">Position</span>
+            <select class="pt-palette-select" id="legend2-show">
+              <option value="right">Right</option>
+              <option value="below">Below</option>
+            </select>
+          </div>
+          <div class="pt-palette-row">
+            <i class="bi bi-arrows-expand form-label-sm" title="Height"></i>
+            <input type="range" class="form-range" id="legend2-height-pct-slider" min="10" max="100" step="5" value="50" />
+            <span class="pt-val" id="legend2-height-pct-value">50%</span>
+          </div>
         </div>
       </div>
     </div>

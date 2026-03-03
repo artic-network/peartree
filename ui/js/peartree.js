@@ -120,8 +120,14 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
   const legendFontSizeSlider   = document.getElementById('legend-font-size-slider');
   const legendHeightPctSlider  = document.getElementById('legend-height-pct-slider');
   const legendFontFamilyEl     = document.getElementById('legend-font-family-select');
-  const legendLeftCanvas  = document.getElementById('legend-left-canvas');
-  const legendRightCanvas = document.getElementById('legend-right-canvas');
+  const legendLeftCanvas   = document.getElementById('legend-left-canvas');
+  const legendRightCanvas  = document.getElementById('legend-right-canvas');
+  const legend2LeftCanvas  = document.getElementById('legend2-left-canvas');
+  const legend2RightCanvas = document.getElementById('legend2-right-canvas');
+  const legend2AnnotEl          = document.getElementById('legend-annotation-2');
+  const legend2ShowEl           = document.getElementById('legend2-show');
+  const legend2HeightPctSlider  = document.getElementById('legend2-height-pct-slider');
+  const legend2DetailEl         = document.getElementById('legend2-detail');
   const axisCanvas             = document.getElementById('axis-canvas');
   const axisShowEl             = document.getElementById('axis-show');
   const axisDateAnnotEl        = document.getElementById('axis-date-annotation');
@@ -431,7 +437,10 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       labelColourBy:    labelColourBy.value,
       annotationPalettes: Object.fromEntries(annotationPalettes),
       legendShow:       legendShowEl.value,
-      legendAnnotation: legendAnnotEl.value,
+      legendAnnotation:  legendAnnotEl.value,
+      legendAnnotation2: legend2AnnotEl.value,
+      legend2Position:   legend2ShowEl.value,
+      legendHeightPct2:  legend2HeightPctSlider.value,
       legendTextColor:  legendTextColorEl.value,
       legendFontSize:    legendFontSizeSlider.value,
       legendHeightPct:   legendHeightPctSlider.value,
@@ -650,6 +659,12 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       document.getElementById('legend-height-pct-value').textContent = s.legendHeightPct + '%';
     }
     if (s.legendFontFamily)      legendFontFamilyEl.value = s.legendFontFamily;
+    if (s.legend2Position)        legend2ShowEl.value      = s.legend2Position;
+    if (s.legendHeightPct2 != null) {
+      legend2HeightPctSlider.value = s.legendHeightPct2;
+      document.getElementById('legend2-height-pct-value').textContent = s.legendHeightPct2 + '%';
+    }
+    // Note: legendAnnotation2 is annotation-dependent and restored later in loadTree.
     // Node bars settings
     if (s.nodeBarsEnabled)  nodeBarsShowEl.value  = s.nodeBarsEnabled;
     if (s.nodeBarsColor)    nodeBarsColorEl.value = s.nodeBarsColor;
@@ -699,6 +714,10 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     tipLabelAlignEl.value    = 'off';
     legendShowEl.value       = DEFAULT_SETTINGS.legendShow;
     legendAnnotEl.value      = '';
+    legend2AnnotEl.value     = '';
+    legend2ShowEl.value      = DEFAULT_SETTINGS.legend2Position;
+    legend2HeightPctSlider.value = DEFAULT_SETTINGS.legendHeightPct2;
+    document.getElementById('legend2-height-pct-value').textContent = DEFAULT_SETTINGS.legendHeightPct2 + '%';
     legendTextColorEl.value  = DEFAULT_SETTINGS.legendTextColor;
     legendFontSizeSlider.value = DEFAULT_SETTINGS.legendFontSize;
     document.getElementById('legend-font-size-value').textContent = DEFAULT_SETTINGS.legendFontSize;
@@ -887,6 +906,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     _vis(nodeLabelDetailEl,     nodeLabelShowEl.value       !== '');
     _vis(nodeBarsDetailEl,      nodeBarsShowEl.value        === 'on');
     _vis(legendDetailEl,        legendAnnotEl.value         !== '');
+    _vis(legend2DetailEl,       legendAnnotEl.value !== '' && legend2AnnotEl.value !== '');
     _vis(axisDetailEl,          axisShowEl.value            !== 'off');
   }
 
@@ -1144,6 +1164,15 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     document.getElementById('axis-line-width-value').textContent = _saved.axisLineWidth;
   }
   if (_saved.legendShow)           legendShowEl.value       = _saved.legendShow;
+  if (_saved.legendTextColor)      legendTextColorEl.value  = _saved.legendTextColor;
+  if (_saved.legendFontSize != null) {
+    legendFontSizeSlider.value = _saved.legendFontSize;
+    document.getElementById('legend-font-size-value').textContent = _saved.legendFontSize;
+  }
+  if (_saved.legendHeightPct != null) {
+    legendHeightPctSlider.value = _saved.legendHeightPct;
+    document.getElementById('legend-height-pct-value').textContent = _saved.legendHeightPct + '%';
+  }
   if (_saved.legendFontFamily)     legendFontFamilyEl.value = _saved.legendFontFamily;
   if (_saved.tipLabelAlign)        tipLabelAlignEl.value    = _saved.tipLabelAlign;
   if (_saved.nodeLabelPosition)    nodeLabelPositionEl.value = _saved.nodeLabelPosition;
@@ -1187,13 +1216,18 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
 
   // ── Legend renderer ────────────────────────────────────────────────────────
   // Must be created before applyTheme() (which calls legendRenderer.setTextColor).
-  const legendRenderer = new LegendRenderer(legendLeftCanvas, legendRightCanvas, {
-    fontSize:   parseInt(legendFontSizeSlider.value),
-    textColor:  legendTextColorEl.value,
-    bgColor:    canvasBgColorEl.value,
-    padding:    parseInt(DEFAULT_SETTINGS.legendPadding),
-    heightPct:  parseInt(DEFAULT_SETTINGS.legendHeightPct),
-  });
+  const legendRenderer = new LegendRenderer(
+    legendLeftCanvas, legendRightCanvas,
+    legend2LeftCanvas, legend2RightCanvas,
+    {
+      fontSize:    parseInt(legendFontSizeSlider.value),
+      textColor:   legendTextColorEl.value,
+      bgColor:     canvasBgColorEl.value,
+      padding:     parseInt(DEFAULT_SETTINGS.legendPadding),
+      heightPct:   parseInt(DEFAULT_SETTINGS.legendHeightPct),
+      heightPct2:  parseInt(DEFAULT_SETTINGS.legendHeightPct2),
+    },
+  );
   renderer.setLegendRenderer(legendRenderer);
 
   // Clicking a categorical legend entry selects all tips with that annotation value.
@@ -1205,6 +1239,21 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     for (const [id, n] of renderer.nodeMap) {
       if (!n.isTip) continue;
       if (n.annotations?.[key] === value) ids.push(id);
+    }
+    renderer._selectedTipIds = new Set(ids);
+    renderer._mrcaNodeId = null;
+    if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(ids.length > 0);
+    renderer._dirty = true;
+  };
+  // Same for legend 2 categorical entries.
+  legendRenderer.onCategoryClick2 = (value) => {
+    if (!renderer.nodeMap) return;
+    const key2 = legendRenderer._annotation2;
+    if (!key2) return;
+    const ids = [];
+    for (const [id, n] of renderer.nodeMap) {
+      if (!n.isTip) continue;
+      if (n.annotations?.[key2] === value) ids.push(id);
     }
     renderer._selectedTipIds = new Set(ids);
     renderer._mrcaNodeId = null;
@@ -1940,6 +1989,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     repopulate(tipLabelShapeColourBy, { filter: 'tips' });
     repopulate(tipLabelShape2ColourBy, { filter: 'tips' });
     repopulate(legendAnnotEl,        { isLegend: true  });
+    repopulate(legend2AnnotEl,       { isLegend: true  });
     // Tip label show: option[0]='off', option[1]='names', then dynamic annotations.
     {
       const prev = tipLabelShow.value;
@@ -2213,6 +2263,19 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       }
       legendAnnotEl.value    = '';
       legendAnnotEl.disabled = schema.size === 0;
+
+      // Legend 2 select: same population.
+      while (legend2AnnotEl.options.length > 1) legend2AnnotEl.remove(1);
+      for (const [name, def] of schema) {
+        if (name === 'user_colour') continue;
+        if (def.dataType !== 'list') {
+          const opt = document.createElement('option');
+          opt.value = name; opt.textContent = name;
+          legend2AnnotEl.appendChild(opt);
+        }
+      }
+      legend2AnnotEl.value    = '';
+      legend2AnnotEl.disabled = schema.size === 0;
       if (btnClearUserColour) {
         commands.setEnabled('tree-clear-colours', schema.has('user_colour'));
       }
@@ -2226,6 +2289,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       tipLabelShapeColourBy.value = _hasOpt(tipLabelShapeColourBy, _eff.tipLabelShapeColourBy) ? _eff.tipLabelShapeColourBy : 'user_colour';
       tipLabelShape2ColourBy.value = _hasOpt(tipLabelShape2ColourBy, _eff.tipLabelShape2ColourBy) ? _eff.tipLabelShape2ColourBy : 'user_colour';
       legendAnnotEl.value        = _hasOpt(legendAnnotEl,        _eff.legendAnnotation)      ? _eff.legendAnnotation      : '';
+      legend2AnnotEl.value       = _hasOpt(legend2AnnotEl,       _eff.legendAnnotation2)     ? _eff.legendAnnotation2     : '';
       tipLabelShow.value  = _hasOpt(tipLabelShow,  _eff.tipLabelShow)     ? _eff.tipLabelShow     : 'names';
       tipLabelControlsEl.style.display = tipLabelShow.value === 'off' ? 'none' : '';
       nodeLabelShowEl.value = _hasOpt(nodeLabelShowEl, _eff.nodeLabelAnnotation) ? _eff.nodeLabelAnnotation : '';
@@ -3920,19 +3984,34 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     const key  = legendAnnotEl.value || null;
     const show = !!key;                        // visible only when an annotation is selected
     const pos  = legendShowEl.value;           // 'left' | 'right'
+    const key2    = legend2AnnotEl.value || null;
+    const pos2    = legend2ShowEl.value;        // 'right' | 'below'
+    const beside2 = show && !!key2 && pos2 === 'right';
 
     // Set annotation + font first so measureWidth() has the right state.
     legendRenderer.setFontSize(parseInt(legendFontSizeSlider.value));
     legendRenderer.setTextColor(legendTextColorEl.value);
-    legendRenderer.setSettings({ heightPct: parseInt(legendHeightPctSlider.value) }, /*redraw*/ false);
+    legendRenderer.setSettings({
+      heightPct:  parseInt(legendHeightPctSlider.value),
+      heightPct2: parseInt(legend2HeightPctSlider.value),
+    }, /*redraw*/ false);
     legendRenderer.setAnnotation(show ? pos : null, key);
+    legendRenderer.setAnnotation2(key2 ? pos2 : 'right', key2);
 
-    const W = show ? legendRenderer.measureWidth() : 0;
+    const W  = show    ? legendRenderer.measureWidth()  : 0;
+    const W2 = beside2 ? legendRenderer.measureWidth2() : 0;
 
     legendLeftCanvas.style.display  = (show && pos === 'left')  ? 'block' : 'none';
     legendLeftCanvas.style.width    = W + 'px';
     legendRightCanvas.style.display = (show && pos === 'right') ? 'block' : 'none';
     legendRightCanvas.style.width   = W + 'px';
+
+    // Legend 2 side canvases — only visible in 'right' (beside) mode.
+    legend2RightCanvas.style.display = (beside2 && pos === 'right') ? 'block' : 'none';
+    legend2RightCanvas.style.width   = W2 + 'px';
+    legend2LeftCanvas.style.display  = (beside2 && pos === 'left')  ? 'block' : 'none';
+    legend2LeftCanvas.style.width    = W2 + 'px';
+
     renderer._resize();   // recalculates tree canvas width after legend canvases shown/hidden
     saveSettings();
     _syncControlVisibility();
@@ -3940,6 +4019,12 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
 
   legendShowEl .addEventListener('change', applyLegend);
   legendAnnotEl.addEventListener('change', applyLegend);
+  legend2AnnotEl.addEventListener('change', applyLegend);
+  legend2ShowEl .addEventListener('change', applyLegend);
+  legend2HeightPctSlider.addEventListener('input', () => {
+    document.getElementById('legend2-height-pct-value').textContent = legend2HeightPctSlider.value + '%';
+    applyLegend();
+  });
 
   legendTextColorEl.addEventListener('input', () => {
     legendRenderer.setTextColor(legendTextColorEl.value);
