@@ -259,9 +259,11 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       tipShapeBgColor:  tipShapeBgEl.value,
       nodeSize:         nodeSlider.value,
       nodeHaloSize:     nodeHaloSlider.value,
-      nodeShapeColor:   nodeShapeColorEl.value,
-      nodeShapeBgColor: nodeShapeBgEl.value,
-      axisColor:        axisColorEl.value,
+      nodeShapeColor:    nodeShapeColorEl.value,
+      nodeShapeBgColor:  nodeShapeBgEl.value,
+      tipLabelShapeColor:  tipLabelShapeColorEl.value,
+      tipLabelShape2Color: tipLabelShape2ColorEl.value,
+      axisColor:           axisColorEl.value,
       legendTextColor:  legendTextColorEl.value,
       selectedTipStrokeColor:   selectedTipStrokeEl.value,
       selectedNodeStrokeColor:       selectedNodeStrokeEl.value,
@@ -900,6 +902,10 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     document.getElementById('node-halo-value').textContent    = t.nodeHaloSize;
     nodeShapeColorEl.value  = t.nodeShapeColor;
     nodeShapeBgEl.value     = t.nodeShapeBgColor;
+    // Label shapes fall back to the theme's tip/node shape colours when not
+    // explicitly set (built-in themes don't define them).
+    tipLabelShapeColorEl.value  = t.tipLabelShapeColor  || t.tipShapeColor;
+    tipLabelShape2ColorEl.value = t.tipLabelShape2Color || t.nodeShapeColor;
     if (t.axisColor) {
       axisColorEl.value = t.axisColor;
     }
@@ -1802,7 +1808,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
         }
       });
     } else {
-      const svgStr = buildGraphicSVG({ renderer, canvas, axisCanvas, legendLeftCanvas, legendRightCanvas, axisRenderer }, fullTree, transparent);
+      const svgStr = buildGraphicSVG({ renderer, legendRenderer, canvas, axisCanvas, legendLeftCanvas, legendRightCanvas, axisRenderer }, fullTree, transparent);
       if (!svgStr) return;
       if (_graphicsSaveHandler) {
         _graphicsSaveHandler({
