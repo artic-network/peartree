@@ -138,7 +138,7 @@ export function compositeViewPng(ctx, targetW, targetH, fullTree = false, transp
  * @returns {string|null}
  */
 export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
-  const { renderer, axisRenderer } = ctx;
+  const { renderer, legendRenderer, axisRenderer } = ctx;
   const nm = renderer.nodeMap;
   if (!nm || !nm.size) return null;
 
@@ -178,48 +178,86 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   }
 
   // ── Legend panels (vector) ────────────────────────────────────────────
+  // The legend state lives on the LegendRenderer instance, not on TreeRenderer.
+  // For full-tree exports the legend is capped to the *window* height (ttH) so
+  // it doesn't stretch to the full tree; it stays at its natural on-screen size.
   const legendParts = [];
-  const legendPos = renderer._legendPosition;
-  const legendKey = renderer._legendAnnotation;
-  if (legendPos && legendKey && renderer._annotationSchema) {
-    const def = renderer._annotationSchema.get(legendKey);
+  const lr = legendRenderer;  // may be undefined for callers that omit it
+  const legendPos = lr?._position;
+  const legendKey = lr?._annotation;
+  const legendSchema = lr?._schema;
+  if (legendPos && legendKey && legendSchema) {
+    const def = legendSchema.get(legendKey);
     if (def) {
-      const lx = legendPos === 'left' ? 0 : llW + ttW;
-      const lw = legendPos === 'left' ? llW : lrW;
-      const PAD = 12;
-      let   ly  = PAD;
+      const lx       = legendPos === 'left' ? 0 : llW + ttW;
+      const lfs      = lr.fontSize ?? fs;
+      const ltc      = lr.textColor ?? '#F7EECA';
+      const lfont    = lr._fontFamily ?? 'monospace';
+      const PAD      = 12;
+      // Use the window height (ttH) to cap legend entries — it should not stretch
+      // to match a full-tree export height.
+      const legendH  = ttH;
+      let   ly       = PAD;
 
       // Title
-      legendParts.push(`<text x="${lx + PAD}" y="${ly}" dominant-baseline="hanging" font-family="monospace" font-size="${fs}px" font-weight="700" fill="#b58900">${svgTextEsc(legendKey)}</text>`);
-      ly += fs + 10;
+      legendParts.push(`<text x="${lx + PAD}" y="${ly}" dominant-baseline="hanging" font-family="${lfont}" font-size="${lfs}px" font-weight="700" fill="#b58900">${svgTextEsc(legendKey)}</text>`);
+      ly += lfs + 10;
 
       if (def.dataType === 'categorical' || def.dataType === 'ordinal') {
-        const paletteName = renderer._annotationPaletteOverrides?.get(legendKey);
+        const paletteName = lr._paletteOverrides?.get(legendKey);
         const colourMap  = buildCategoricalColourMap(def.values || [], paletteName);
-        const SWATCH  = 12;
-        const ROW_H   = Math.max(SWATCH + 4, fs + 4);
+        const SWATCH  = Math.max(8, lfs);
+        const ROW_H   = Math.max(SWATCH + 4, lfs + 4);
         (def.values || []).forEach((val) => {
-          if (ly + SWATCH > ttH_eff - PAD) return;
+          if (ly + SWATCH > legendH - PAD) return;
           const colour = colourMap.get(val) ?? MISSING_DATA_COLOUR;
           legendParts.push(`<rect x="${lx + PAD}" y="${ly}" width="${SWATCH}" height="${SWATCH}" fill="${esc(colour)}"/>`);
-          legendParts.push(`<text x="${lx + PAD + SWATCH + 6}" y="${ly + SWATCH / 2}" dominant-baseline="central" font-family="monospace" font-size="${fs}px" fill="#F7EECA">${svgTextEsc(String(val))}</text>`);
+          legendParts.push(`<text x="${lx + PAD + SWATCH + 6}" y="${ly + SWATCH / 2}" dominant-baseline="central" font-family="${lfont}" font-size="${lfs}px" fill="${esc(ltc)}">${svgTextEsc(String(val))}</text>`);
           ly += ROW_H;
         });
-      } else if (isNumericType(def.dataType)) {
-        const BAR_W   = lw - PAD * 2;
-        const BAR_H   = 14;
-        const gid     = 'lgrd';
-        const seqStops = getSequentialPalette(renderer._annotationPaletteOverrides?.get(legendKey));
-        const ns = seqStops.length;
+      } else if (def.dataType === 'date' || isNumericType(def.dataType)) {
+        // Vertical gradient bar (top = max, bottom = min) — matches canvas rendering.
+        const BAR_W    = 14;
+        const BAR_H    = Math.max(40, legendH - ly - PAD);
+        const gid      = 'lgrd';
+        const seqStops = getSequentialPalette(lr._paletteOverrides?.get(legendKey));
+        const ns       = seqStops.length;
+        // Vertical gradient: stop 0 = top = max colour (last stop), stop 1 = bottom = min colour.
         const stopMarkup = seqStops.map((c, i) =>
-          `<stop offset="${(ns === 1 ? 0 : i / (ns - 1) * 100).toFixed(1)}%" stop-color="${esc(c)}"/>`
+          `<stop offset="${(ns === 1 ? 0 : i / (ns - 1) * 100).toFixed(1)}%" stop-color="${esc(seqStops[ns - 1 - i])}"/>`
         ).join('');
-        defs.push(`<linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="0">${stopMarkup}</linearGradient>`);
+        defs.push(`<linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">${stopMarkup}</linearGradient>`);
         legendParts.push(`<rect x="${lx + PAD}" y="${ly}" width="${BAR_W}" height="${BAR_H}" fill="url(#${gid})"/>`);
-        ly += BAR_H + 4;
+
+        // Tick labels spread evenly from top (max) to bottom (min).
+        const LABEL_X  = lx + PAD + BAR_W + 6;
+        const tickCount = Math.max(2, Math.min(6, Math.floor(BAR_H / (lfs + 6))));
         const min = def.min ?? 0, max = def.max ?? 1;
-        legendParts.push(`<text x="${lx + PAD}" y="${ly}" dominant-baseline="hanging" font-family="monospace" font-size="${fs}px" fill="#F7EECA">${svgTextEsc(String(min))}</text>`);
-        legendParts.push(`<text x="${lx + PAD + BAR_W}" y="${ly}" text-anchor="end" dominant-baseline="hanging" font-family="monospace" font-size="${fs}px" fill="#F7EECA">${svgTextEsc(String(max))}</text>`);
+        const range = (def.dataType === 'date')
+          ? (new Date(max).getFullYear() - new Date(min).getFullYear() || 1)
+          : ((max - min) || 1);
+        const fmt = def.fmt ?? (v => String(v));
+        for (let i = 0; i < tickCount; i++) {
+          const t    = i / (tickCount - 1);
+          const tickY = ly + t * BAR_H;
+          const val   = def.dataType === 'date' ? null : (max - t * range);
+          const label = (def.dataType === 'date')
+            ? (() => {
+                const targetDec = max - t * range;
+                let best = (def.values || [])[0] ?? String(max);
+                let bestDist = Infinity;
+                for (const v of (def.values || [])) {
+                  const d = Math.abs(new Date(v).getFullYear() - targetDec);
+                  if (d < bestDist) { bestDist = d; best = v; }
+                }
+                return best;
+              })()
+            : fmt(val);
+          // Tick mark
+          legendParts.push(`<rect x="${lx + PAD + BAR_W}" y="${f(tickY - 0.5)}" width="4" height="1" fill="${esc(ltc)}"/>`);
+          const baseline = i === 0 ? 'hanging' : (i === tickCount - 1 ? 'auto' : 'central');
+          legendParts.push(`<text x="${LABEL_X}" y="${f(tickY)}" dominant-baseline="${baseline}" font-family="${lfont}" font-size="${lfs}px" fill="${esc(ltc)}">${svgTextEsc(String(label))}</text>`);
+        }
       }
     }
   }
@@ -230,7 +268,9 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   const bgTipParts  = [];  // background halo circles for tip shapes
   const fgNodeParts = [];  // foreground fill circles for node shapes
   const fgTipParts  = [];  // foreground fill circles for tip shapes
-  const labelParts  = [];
+  const labelParts      = [];
+  const connectorParts  = [];   // alignment connector lines
+  const shapeParts      = [];   // tip-label shape swatches
   // Stroke width for the bg halo: uses renderer.tipHaloSize directly
   const tipHaloSW  = renderer.tipHaloSize * 2;
   const nodeHaloSW = renderer.nodeHaloSize * 2;
@@ -243,6 +283,25 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     const stub = renderer.rootStubLength ?? 20;
     branchParts.push(`<line x1="${f(rx - stub)}" y1="${f(ry)}" x2="${f(rx)}" y2="${f(ry)}"/>`);
   }
+
+  // ── Tip-label alignment and shape pre-computation ─────────────────────
+  const outlineR     = tr > 0 ? tr + renderer.tipHaloSize : 0;
+  const _align       = renderer.tipLabelAlign;
+  const alignLabelX  = (_align && _align !== 'off')
+    ? toSX(renderer.maxX) + outlineR + 3
+    : null;
+
+  // Shape 1
+  const _svgShape   = renderer._tipLabelShape;
+  const _svgShSz    = _svgShape !== 'off' ? Math.max(2, Math.round(fs * renderer._tipLabelShapeSize / 100)) : 0;
+  const _svgShML    = _svgShape !== 'off' ? renderer._tipLabelShapeMarginLeft  : 0;
+  const _svgShMR    = _svgShape !== 'off' ? renderer._tipLabelShapeMarginRight : 0;
+  const _svgShOff   = _svgShML + _svgShSz + _svgShMR;
+  // Shape 2 (only active when shape 1 is also active)
+  const _svgShape2  = _svgShape !== 'off' ? renderer._tipLabelShape2 : 'off';
+  const _svgShSz2   = _svgShape2 !== 'off' ? Math.max(2, Math.round(fs * renderer._tipLabelShape2Size / 100)) : 0;
+  const _svgSh2MR   = _svgShape2 !== 'off' ? renderer._tipLabelShape2MarginRight : 0;
+  const _svgTxOff   = _svgShOff + _svgShSz2 + _svgSh2MR;  // total x offset from baseX to text
 
   for (const [, node] of nm) {
     const nx = toSX(node.x), ny = toSY(node.y);
@@ -265,28 +324,76 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
 
     if (ny > -MARGIN && ny < ttH + MARGIN) {
       if (node.isTip && tr > 0) {
-        const _tipVal = node.annotations?.[renderer._tipColourBy];
-        const fill = renderer._tipColourBy
-          ? (renderer._tipColourForValue(_tipVal) ?? MISSING_DATA_COLOUR)
+        const fill = (renderer._tipColourBy && renderer._tipColourScale)
+          ? (renderer._tipColourForValue(node.annotations?.[renderer._tipColourBy]) ?? renderer.tipShapeColor)
           : renderer.tipShapeColor;
         if (tipHaloSW > 0)
           bgTipParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${esc(tipBgColor)}" stroke="${esc(tipBgColor)}" stroke-width="${tipHaloSW}"/>`);
         fgTipParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${esc(fill)}"/>`);
       } else if (!node.isTip && nr > 0) {
-        const _nodeVal = node.annotations?.[renderer._nodeColourBy];
-        const fill = renderer._nodeColourBy
-          ? (renderer._nodeColourForValue(_nodeVal) ?? MISSING_DATA_COLOUR)
+        const fill = (renderer._nodeColourBy && renderer._nodeColourScale)
+          ? (renderer._nodeColourForValue(node.annotations?.[renderer._nodeColourBy]) ?? renderer.nodeShapeColor)
           : renderer.nodeShapeColor;
         if (nodeHaloSW > 0)
           bgNodeParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${esc(nodeBgColor)}" stroke="${esc(nodeBgColor)}" stroke-width="${nodeHaloSW}"/>`);
         fgNodeParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${esc(fill)}"/>`);
       }
-      if (node.isTip && node.name) {
-        const lx2 = nx + (tr > 0 ? tr + 4 : 4);
-        const labelFill = (renderer._labelColourBy && renderer._labelColourScale)
-          ? (renderer._labelColourForValue(node.annotations?.[renderer._labelColourBy]) ?? lc)
-          : lc;
-        labelParts.push(`<text x="${f(lx2)}" y="${f(ny)}" dominant-baseline="central" font-family="monospace" font-size="${fs}px" fill="${esc(labelFill)}">${svgTextEsc(node.name)}</text>`);
+      if (node.isTip) {
+        const labelText = renderer._tipLabelText ? renderer._tipLabelText(node) : node.name;
+        if (labelText) {
+          const baseX  = alignLabelX ?? (nx + outlineR + 3);
+          // Connector line (dashed / dots / solid aligned modes only).
+          if (alignLabelX !== null && _align !== 'aligned') {
+            const tipEdgeX = nx + outlineR + 2;
+            const lineEndX = alignLabelX + (_svgShOff > 0 ? _svgShML : 0) - 2;
+            if (lineEndX - tipEdgeX >= 8) {
+              let dashAttr = '';
+              if (_align === 'dashed') dashAttr = ` stroke-dasharray="3 4"`;
+              else if (_align === 'dots') dashAttr = ` stroke-dasharray="1 4"`;
+              connectorParts.push(`<line x1="${f(tipEdgeX)}" y1="${f(ny)}" x2="${f(lineEndX)}" y2="${f(ny)}" stroke="${esc(renderer.dimLabelColor)}" stroke-width="0.35"${dashAttr}/>`);
+            }
+          }
+          // Shape 1.
+          if (_svgShape !== 'off') {
+            const shapeX  = baseX + _svgShML;
+            const halfSz  = _svgShSz / 2;
+            const sFill   = (renderer._tipLabelShapeColourBy && renderer._tipLabelShapeColourScale)
+              ? (renderer._tipLabelShapeColourForValue(node.annotations?.[renderer._tipLabelShapeColourBy]) ?? renderer._tipLabelShapeColor)
+              : renderer._tipLabelShapeColor;
+            if (_svgShape === 'circle') {
+              shapeParts.push(`<circle cx="${f(shapeX + halfSz)}" cy="${f(ny)}" r="${f(halfSz)}" fill="${esc(sFill)}"/>`);
+            } else if (_svgShape === 'block') {
+              const bTop = Math.floor(ny - sy / 2);
+              const bH   = Math.ceil(ny + sy / 2) - bTop;
+              shapeParts.push(`<rect x="${f(shapeX)}" y="${f(bTop)}" width="${f(_svgShSz)}" height="${f(bH)}" fill="${esc(sFill)}"/>`);
+            } else {
+              shapeParts.push(`<rect x="${f(shapeX)}" y="${f(ny - halfSz)}" width="${f(_svgShSz)}" height="${f(_svgShSz)}" fill="${esc(sFill)}"/>`);
+            }
+          }
+          // Shape 2.
+          if (_svgShape2 !== 'off') {
+            const shape2X = baseX + _svgShOff;
+            const halfSz2 = _svgShSz2 / 2;
+            const s2Fill  = (renderer._tipLabelShape2ColourBy && renderer._tipLabelShape2ColourScale)
+              ? (renderer._tipLabelShape2ColourForValue(node.annotations?.[renderer._tipLabelShape2ColourBy]) ?? renderer._tipLabelShape2Color)
+              : renderer._tipLabelShape2Color;
+            if (_svgShape2 === 'circle') {
+              shapeParts.push(`<circle cx="${f(shape2X + halfSz2)}" cy="${f(ny)}" r="${f(halfSz2)}" fill="${esc(s2Fill)}"/>`);
+            } else if (_svgShape2 === 'block') {
+              const bTop = Math.floor(ny - sy / 2);
+              const bH   = Math.ceil(ny + sy / 2) - bTop;
+              shapeParts.push(`<rect x="${f(shape2X)}" y="${f(bTop)}" width="${f(_svgShSz2)}" height="${f(bH)}" fill="${esc(s2Fill)}"/>`);
+            } else {
+              shapeParts.push(`<rect x="${f(shape2X)}" y="${f(ny - halfSz2)}" width="${f(_svgShSz2)}" height="${f(_svgShSz2)}" fill="${esc(s2Fill)}"/>`);
+            }
+          }
+          // Label text.
+          const lx2       = baseX + _svgTxOff;
+          const labelFill = (renderer._labelColourBy && renderer._labelColourScale)
+            ? (renderer._labelColourForValue(node.annotations?.[renderer._labelColourBy]) ?? lc)
+            : lc;
+          labelParts.push(`<text x="${f(lx2)}" y="${f(ny)}" dominant-baseline="central" font-family="monospace" font-size="${fs}px" fill="${esc(labelFill)}">${svgTextEsc(labelText)}</text>`);
+        }
       } else if (!node.isTip && node.label) {
         labelParts.push(`<text x="${f(nx + 3)}" y="${f(ny - 3)}" font-family="monospace" font-size="${Math.round(fs * 0.85)}px" fill="${esc(lc)}" opacity="0.7">${svgTextEsc(node.label)}</text>`);
       }
@@ -411,6 +518,12 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   </g>
   <g clip-path="url(#tc)">
     ${fgTipParts.join('\n    ')}
+  </g>
+  <g clip-path="url(#tc)">
+    ${connectorParts.join('\n    ')}
+  </g>
+  <g clip-path="url(#tc)">
+    ${shapeParts.join('\n    ')}
   </g>
   <g clip-path="url(#tc)">
     ${labelParts.join('\n    ')}

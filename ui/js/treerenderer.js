@@ -134,6 +134,20 @@ export class TreeRenderer {
     this._nodeColourScale  = null;   // Map<value, CSS colour> | null
     this._labelColourBy    = null;   // annotation key for tip labels, or null
     this._labelColourScale = null;   // Map<value, CSS colour> | null
+    this._tipLabelShapeColourBy    = null;   // annotation key for tip-label shapes, or null
+    this._tipLabelShapeColourScale = null;   // Map<value, CSS colour> | null
+    this._tipLabelShape            = 'off';  // 'off' | 'square' | 'circle' | 'block'
+    this._tipLabelShapeColor       = '#aaaaaa';
+    this._tipLabelShapeSize        = 72;     // % of fontSize
+    this._tipLabelShapeMarginLeft  = 2;      // px gap before shape
+    this._tipLabelShapeMarginRight = 3;      // px gap after shape (before text / before shape 2)
+    // Second tip-label shape (sits immediately right of shape 1, no left margin)
+    this._tipLabelShape2           = 'off';  // 'off' | 'square' | 'circle' | 'block'
+    this._tipLabelShape2Color      = '#888888';
+    this._tipLabelShape2Size       = 72;     // % of fontSize
+    this._tipLabelShape2ColourBy   = null;
+    this._tipLabelShape2ColourScale = null;
+    this._tipLabelShape2MarginRight = 3;     // px gap after shape 2 (before text)
     this._crossfadeAlpha    = 0;      // 1→0; 0 = not animating
 
     // Legend (drawing delegated to LegendRenderer; registered via setLegendRenderer)
@@ -187,8 +201,20 @@ export class TreeRenderer {
     this.dimLabelColor      = s.dimLabelColor      ?? _dim;
     this.selectedLabelColor = s.selectedLabelColor ?? _sel;
     this.selectedLabelStyle = s.selectedLabelStyle ?? 'bold';
-    this.tipLabelAnnotation      = s.tipLabelAnnotation ?? null;
-    this._tipLabelDecimalPlaces  = s.tipLabelDecimalPlaces  ?? null;  // null = auto (schema formatter)
+    this.tipLabelAnnotation         = s.tipLabelAnnotation ?? null;
+    this._tipLabelDecimalPlaces      = s.tipLabelDecimalPlaces  ?? null;  // null = auto (schema formatter)
+
+    // ── Tip-label shapes ─────────────────────────────────────────────────────
+    this._tipLabelShape            = s.tipLabelShape            ?? 'off';
+    this._tipLabelShapeColor       = s.tipLabelShapeColor       ?? '#aaaaaa';
+    this._tipLabelShapeSize        = +(s.tipLabelShapeSize        ?? 72);
+    this._tipLabelShapeMarginLeft  = +(s.tipLabelShapeMarginLeft  ?? 2);
+    this._tipLabelShapeMarginRight = +(s.tipLabelShapeMarginRight ?? 3);
+    // ── Second tip-label shape ────────────────────────────────────────────────
+    this._tipLabelShape2           = s.tipLabelShape2           ?? 'off';
+    this._tipLabelShape2Color      = s.tipLabelShape2Color      ?? '#888888';
+    this._tipLabelShape2Size       = +(s.tipLabelShape2Size       ?? 72);
+    this._tipLabelShape2MarginRight = +(s.tipLabelShape2MarginRight ?? 3);
 
     // ── Layout geometry ─────────────────────────────────────────────────────
     this.paddingLeft            = s.paddingLeft;
@@ -754,9 +780,11 @@ export class TreeRenderer {
    */
   setAnnotationSchema(schema) {
     this._annotationSchema = schema;
-    if (this._tipColourBy)    this._tipColourScale    = this._buildColourScale(this._tipColourBy);
-    if (this._nodeColourBy)   this._nodeColourScale   = this._buildColourScale(this._nodeColourBy);
-    if (this._labelColourBy)  this._labelColourScale  = this._buildColourScale(this._labelColourBy);
+    if (this._tipColourBy)            this._tipColourScale            = this._buildColourScale(this._tipColourBy);
+    if (this._nodeColourBy)           this._nodeColourScale           = this._buildColourScale(this._nodeColourBy);
+    if (this._labelColourBy)          this._labelColourScale          = this._buildColourScale(this._labelColourBy);
+    if (this._tipLabelShapeColourBy)  this._tipLabelShapeColourScale  = this._buildColourScale(this._tipLabelShapeColourBy);
+    if (this._tipLabelShape2ColourBy) this._tipLabelShape2ColourScale = this._buildColourScale(this._tipLabelShape2ColourBy);
     this._legendRenderer?.setAnnotationSchema(schema);
     this._legendRenderer?.setPaletteOverrides(this._annotationPaletteOverrides);
     this._dirty = true;
@@ -785,6 +813,93 @@ export class TreeRenderer {
     this._dirty = true;
   }
 
+  /** Set the shape style for tip-label swatches: 'off' | 'square' | 'circle' | 'block'. */
+  setTipLabelShape(shape) {
+    this._tipLabelShape = shape || 'off';
+    this._measureLabels();
+    this._updateScaleX(false);
+    this._dirty = true;
+  }
+
+  /** Set the size of tip-label shape swatches as % of font size (10–200). */
+  setTipLabelShapeSize(n) {
+    this._tipLabelShapeSize = n;
+    this._measureLabels();
+    this._updateScaleX(false);
+    this._dirty = true;
+  }
+
+  /** Set the default fill colour for tip-label shape swatches. */
+  setTipLabelShapeColor(hex) {
+    this._tipLabelShapeColor = hex;
+    this._dirty = true;
+  }
+
+  /**
+   * Set the annotation key used to colour tip-label shape swatches.
+   * Pass null (or empty string) to revert to the default swatch colour.
+   */
+  setTipLabelShapeColourBy(key) {
+    this._tipLabelShapeColourBy    = key || null;
+    this._tipLabelShapeColourScale = this._tipLabelShapeColourBy
+      ? this._buildColourScale(this._tipLabelShapeColourBy) : null;
+    this._dirty = true;
+  }
+
+  /** Set the left margin (px) between the tip edge and the left side of the swatch. */
+  setTipLabelShapeMarginLeft(n) {
+    this._tipLabelShapeMarginLeft = n;
+    this._measureLabels();
+    this._updateScaleX(false);
+    this._dirty = true;
+  }
+
+  /** Set the right margin (px) between the right side of the swatch and the label text (or shape 2). */
+  setTipLabelShapeMarginRight(n) {
+    this._tipLabelShapeMarginRight = n;
+    this._measureLabels();
+    this._updateScaleX(false);
+    this._dirty = true;
+  }
+
+  /** Set the shape style for the second tip-label swatch: 'off' | 'square' | 'circle' | 'block'. */
+  setTipLabelShape2(shape) {
+    this._tipLabelShape2 = shape || 'off';
+    this._measureLabels();
+    this._updateScaleX(false);
+    this._dirty = true;
+  }
+
+  /** Set the size of the second tip-label shape swatch as % of font size (10–200). */
+  setTipLabelShape2Size(n) {
+    this._tipLabelShape2Size = n;
+    this._measureLabels();
+    this._updateScaleX(false);
+    this._dirty = true;
+  }
+
+  /** Set the default fill colour for the second tip-label shape swatch. */
+  setTipLabelShape2Color(hex) {
+    this._tipLabelShape2Color = hex;
+    this._dirty = true;
+  }
+
+  /** Set the annotation key used to colour the second tip-label shape swatch. */
+  setTipLabelShape2ColourBy(key) {
+    this._tipLabelShape2ColourBy    = key || null;
+    this._tipLabelShape2ColourScale = this._tipLabelShape2ColourBy
+      ? this._buildColourScale(this._tipLabelShape2ColourBy) : null;
+    this._dirty = true;
+  }
+
+  /** Set the right margin (px) between shape 2 and the label text. */
+  setTipLabelShape2MarginRight(n) {
+    this._tipLabelShape2MarginRight = n;
+    this._measureLabels();
+    this._updateScaleX(false);
+    this._dirty = true;
+  }
+
   /**
    * Set (or clear) the palette to use for a specific annotation key.
    * Rebuilds any active colour scales that use that key.
@@ -798,9 +913,11 @@ export class TreeRenderer {
       this._annotationPaletteOverrides.delete(key);
     }
     // Rebuild any colour scale that references this annotation key.
-    if (this._tipColourBy   === key) this._tipColourScale   = this._buildColourScale(key);
-    if (this._nodeColourBy  === key) this._nodeColourScale  = this._buildColourScale(key);
-    if (this._labelColourBy === key) this._labelColourScale = this._buildColourScale(key);
+    if (this._tipColourBy            === key) this._tipColourScale            = this._buildColourScale(key);
+    if (this._nodeColourBy           === key) this._nodeColourScale           = this._buildColourScale(key);
+    if (this._labelColourBy          === key) this._labelColourScale          = this._buildColourScale(key);
+    if (this._tipLabelShapeColourBy  === key) this._tipLabelShapeColourScale  = this._buildColourScale(key);
+    if (this._tipLabelShape2ColourBy === key) this._tipLabelShape2ColourScale = this._buildColourScale(key);
     // Propagate to legend so it redraws with the new palette.
     this._legendRenderer?.setPaletteOverrides(this._annotationPaletteOverrides);
     this._dirty = true;
@@ -863,9 +980,16 @@ export class TreeRenderer {
     return MISSING_DATA_COLOUR;
   }
 
-  _tipColourForValue(value)   { return this._colourFromScale(value, this._tipColourScale);   }
-  _nodeColourForValue(value)  { return this._colourFromScale(value, this._nodeColourScale);  }
-  _labelColourForValue(value) { return this._colourFromScale(value, this._labelColourScale); }
+  _tipColourForValue(value)             { return this._colourFromScale(value, this._tipColourScale);   }
+  _nodeColourForValue(value)            { return this._colourFromScale(value, this._nodeColourScale);  }
+  _labelColourForValue(value)           { return this._colourFromScale(value, this._labelColourScale); }
+  _tipLabelShapeColourForValue(value)   { return this._colourFromScale(value, this._tipLabelShapeColourScale); }
+  _tipLabelShape2ColourForValue(value)  { return this._colourFromScale(value, this._tipLabelShape2ColourScale); }
+
+  /** Pixel size of tip-label shape swatches.
+   *  sizePercent: slider value (% of fontSize). 72 ≈ cap-height; 150 ≈ full line height.
+   *  For blocks this is the *width*; height is always scaleY. */
+  _shapeSize(sizePercent) { return Math.max(2, Math.round(this.fontSize * sizePercent / 100)); }
 
   /**
    * Register a LegendRenderer instance.  TreeRenderer will automatically proxy
@@ -1214,7 +1338,13 @@ export class TreeRenderer {
     }
     const r = this.tipRadius;
     const tipOuterR = r > 0 ? r + this.tipHaloSize : 0;
-    this.labelRightPad = this._maxLabelWidth + Math.max(tipOuterR, 5) + 5;
+    const shapeExtra = this._tipLabelShape !== 'off'
+      ? this._tipLabelShapeMarginLeft + this._shapeSize(this._tipLabelShapeSize) + this._tipLabelShapeMarginRight
+      : 0;
+    const shape2Extra = this._tipLabelShape !== 'off' && this._tipLabelShape2 !== 'off'
+      ? this._shapeSize(this._tipLabelShape2Size) + this._tipLabelShape2MarginRight
+      : 0;
+    this.labelRightPad = this._maxLabelWidth + Math.max(tipOuterR, 5) + 5 + shapeExtra + shape2Extra;
   }
 
   /** Recompute scaleX so the tree always fills the full viewport width.
@@ -2141,6 +2271,21 @@ export class TreeRenderer {
         ? this._wx(this.maxX) + outlineR + 3
         : null;
 
+      // Tip-label shapes: thin coloured swatches drawn to the left of label text.
+      const _shape    = this._tipLabelShape;
+      const _shSz     = _shape !== 'off' ? this._shapeSize(this._tipLabelShapeSize) : 0;
+      const _shML     = _shape !== 'off' ? this._tipLabelShapeMarginLeft  : 0;
+      const _shMR     = _shape !== 'off' ? this._tipLabelShapeMarginRight : 0;
+      // Amount by which text shifts right to clear shape 1 + margins.
+      const _shOffset = _shML + _shSz + _shMR;
+      // Shape 2: drawn immediately after shape 1 (no left margin).
+      const _shape2   = _shape !== 'off' ? this._tipLabelShape2 : 'off';
+      const _shSz2    = _shape2 !== 'off' ? this._shapeSize(this._tipLabelShape2Size) : 0;
+      const _sh2MR    = _shape2 !== 'off' ? this._tipLabelShape2MarginRight : 0;
+      const _sh2Offset = _shSz2 + _sh2MR;
+      // Helper: text x position for a given base x (both shapes accounted for).
+      const _tx = (baseX) => baseX + _shOffset + _sh2Offset;
+
       // Sub-pass 3-pre: connector lines (aligned + line styles only).
       if (alignLabelX !== null && _align !== 'aligned') {
         ctx.save();
@@ -2155,13 +2300,76 @@ export class TreeRenderer {
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           if (!this._showLabelAt(node.y)) continue;
           const tipEdgeX = this._wx(node.x) + outlineR + 2;
-          if (alignLabelX - tipEdgeX < 8) continue;  // tip already at/near label column
+          // End just before shape (or text when no shape), leaving a 2 px gap.
+          const lineEndX = alignLabelX + (_shOffset > 0 ? _shML : 0) - 2;
+          if (lineEndX - tipEdgeX < 8) continue;  // tip already at/near label column
           const sy = this._wy(node.y);
           ctx.moveTo(tipEdgeX, sy);
-          ctx.lineTo(alignLabelX - 2, sy);
+          ctx.lineTo(lineEndX, sy);
         }
         ctx.stroke();
         ctx.restore();
+      }
+
+      // Sub-pass 3-shapes: coloured swatches (square / circle / block).
+      if (_shape !== 'off') {
+        const _shKey  = this._tipLabelShapeColourBy;
+        const _shScl  = this._tipLabelShapeColourScale;
+        const _hasSc  = !!(_shKey && _shScl);
+        const halfSz  = _shSz / 2;
+        for (const node of this.nodes) {
+          if (!node.isTip) continue;
+          if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          if (!this._showLabelAt(node.y)) continue;
+          const baseX  = alignLabelX ?? (this._wx(node.x) + outlineR + 3);
+          const shapeX = baseX + _shML;
+          const sy     = this._wy(node.y);
+          ctx.fillStyle = _hasSc
+            ? (this._tipLabelShapeColourForValue(node.annotations?.[_shKey]) ?? this._tipLabelShapeColor)
+            : this._tipLabelShapeColor;
+          if (_shape === 'circle') {
+            ctx.beginPath();
+            ctx.arc(shapeX + halfSz, sy, halfSz, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (_shape === 'block') {
+            const _bTop = Math.floor(sy - this.scaleY / 2);
+            ctx.fillRect(shapeX, _bTop, _shSz, Math.ceil(sy + this.scaleY / 2) - _bTop);
+          } else {
+            // 'square'
+            ctx.fillRect(shapeX, sy - halfSz, _shSz, _shSz);
+          }
+        }
+      }
+
+      // Sub-pass 3-shapes-2: second coloured swatch (drawn right of shape 1).
+      if (_shape2 !== 'off') {
+        const _sh2Key = this._tipLabelShape2ColourBy;
+        const _sh2Scl = this._tipLabelShape2ColourScale;
+        const _has2Sc = !!(_sh2Key && _sh2Scl);
+        const halfSz2 = _shSz2 / 2;
+        for (const node of this.nodes) {
+          if (!node.isTip) continue;
+          if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          if (!this._showLabelAt(node.y)) continue;
+          const baseX   = alignLabelX ?? (this._wx(node.x) + outlineR + 3);
+          // Shape 2 starts right after shape 1's block (marginLeft + shape1 + marginRight).
+          const shape2X = baseX + _shOffset;
+          const sy      = this._wy(node.y);
+          ctx.fillStyle = _has2Sc
+            ? (this._tipLabelShape2ColourForValue(node.annotations?.[_sh2Key]) ?? this._tipLabelShape2Color)
+            : this._tipLabelShape2Color;
+          if (_shape2 === 'circle') {
+            ctx.beginPath();
+            ctx.arc(shape2X + halfSz2, sy, halfSz2, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (_shape2 === 'block') {
+            const _bTop = Math.floor(sy - this.scaleY / 2);
+            ctx.fillRect(shape2X, _bTop, _shSz2, Math.ceil(sy + this.scaleY / 2) - _bTop);
+          } else {
+            // 'square'
+            ctx.fillRect(shape2X, sy - halfSz2, _shSz2, _shSz2);
+          }
+        }
       }
 
       if (hasSelection) {
@@ -2172,7 +2380,8 @@ export class TreeRenderer {
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           if (!this._showLabelAt(node.y)) continue;
           const _t = this._tipLabelText(node);
-          if (_t) ctx.fillText(_t, alignLabelX ?? (this._wx(node.x) + outlineR + 3), this._wy(node.y));
+          const _bX = alignLabelX ?? (this._wx(node.x) + outlineR + 3);
+          if (_t) ctx.fillText(_t, _tx(_bX), this._wy(node.y));
         }
         // Sub-pass 3b: selected labels in bold + selected colour
         ctx.fillStyle = this.selectedLabelColor;
@@ -2182,7 +2391,8 @@ export class TreeRenderer {
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           if (!this._showLabelAt(node.y)) continue;
           const _t = this._tipLabelText(node);
-          if (_t) ctx.fillText(_t, alignLabelX ?? (this._wx(node.x) + outlineR + 3), this._wy(node.y));
+          const _bX = alignLabelX ?? (this._wx(node.x) + outlineR + 3);
+          if (_t) ctx.fillText(_t, _tx(_bX), this._wy(node.y));
         }
         ctx.font = `${this.fontSize}px ${this.fontFamily}`;
       } else if (this._labelColourBy && this._labelColourScale) {
@@ -2194,8 +2404,9 @@ export class TreeRenderer {
           const _t = this._tipLabelText(node);
           if (!_t) continue;
           const val = node.annotations ? node.annotations[key] : undefined;
+          const _bX = alignLabelX ?? (this._wx(node.x) + outlineR + 3);
           ctx.fillStyle = this._labelColourForValue(val) ?? this.labelColor;
-          ctx.fillText(_t, alignLabelX ?? (this._wx(node.x) + outlineR + 3), this._wy(node.y));
+          ctx.fillText(_t, _tx(_bX), this._wy(node.y));
         }
       } else {
         ctx.fillStyle = this.labelColor;
@@ -2204,7 +2415,8 @@ export class TreeRenderer {
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           if (!this._showLabelAt(node.y)) continue;
           const _t = this._tipLabelText(node);
-          if (_t) ctx.fillText(_t, alignLabelX ?? (this._wx(node.x) + outlineR + 3), this._wy(node.y));
+          const _bX = alignLabelX ?? (this._wx(node.x) + outlineR + 3);
+          if (_t) ctx.fillText(_t, _tx(_bX), this._wy(node.y));
         }
       }
     }

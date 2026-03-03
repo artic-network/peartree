@@ -1651,6 +1651,87 @@
     </div>
 
     <div class="pt-palette-section">
+      <h3><i class="bi bi-square-fill"></i> Label Shapes</h3>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Shape</span>
+        <select class="pt-palette-select" id="tip-label-shape">
+          <option value="off">Off</option>
+          <option value="square">Square</option>
+          <option value="circle">Circle</option>
+          <option value="block">Block</option>
+        </select>
+      </div>
+      <div id="tip-label-shape-detail" class="pt-detail">
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Colour</span>
+          <input type="color" class="pt-palette-color" id="tip-label-shape-color" value="#aaaaaa" />
+        </div>
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Colour by</span>
+          <select class="pt-palette-select" id="tip-label-shape-colour-by" disabled>
+            <option value="user_colour">user colour</option>
+          </select>
+        </div>
+        <div class="pt-palette-row" id="tip-label-shape-palette-row" style="display:none">
+          <span class="pt-palette-label">Palette</span>
+          <select class="pt-palette-select" id="tip-label-shape-palette-select"></select>
+        </div>
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Size</span>
+          <input type="range" class="form-range" id="tip-label-shape-size-slider" min="10" max="200" step="5" value="72" />
+          <span class="pt-val" id="tip-label-shape-size-value">72</span>
+        </div>
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Margin left</span>
+          <input type="range" class="form-range" id="tip-label-shape-margin-left-slider" min="0" max="16" value="2" />
+          <span class="pt-val" id="tip-label-shape-margin-left-value">2</span>
+        </div>
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Margin right</span>
+          <input type="range" class="form-range" id="tip-label-shape-margin-right-slider" min="0" max="16" value="3" />
+          <span class="pt-val" id="tip-label-shape-margin-right-value">3</span>
+        </div>
+      </div>
+      <div id="tip-label-shape-2-section" class="pt-detail">
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Label shape 2</span>
+          <select class="pt-palette-select" id="tip-label-shape-2">
+            <option value="off">Off</option>
+            <option value="square">Square</option>
+            <option value="circle">Circle</option>
+            <option value="block">Block</option>
+          </select>
+        </div>
+        <div id="tip-label-shape-2-detail" class="pt-detail">
+          <div class="pt-palette-row">
+            <span class="pt-palette-label">Colour</span>
+            <input type="color" class="pt-palette-color" id="tip-label-shape-2-color" value="#888888" />
+          </div>
+          <div class="pt-palette-row">
+            <span class="pt-palette-label">Colour by</span>
+            <select class="pt-palette-select" id="tip-label-shape-2-colour-by" disabled>
+              <option value="user_colour">user colour</option>
+            </select>
+          </div>
+          <div class="pt-palette-row" id="tip-label-shape-2-palette-row" style="display:none">
+            <span class="pt-palette-label">Palette</span>
+            <select class="pt-palette-select" id="tip-label-shape-2-palette-select"></select>
+          </div>
+          <div class="pt-palette-row">
+            <span class="pt-palette-label">Size</span>
+            <input type="range" class="form-range" id="tip-label-shape-2-size-slider" min="10" max="200" step="5" value="72" />
+            <span class="pt-val" id="tip-label-shape-2-size-value">72</span>
+          </div>
+          <div class="pt-palette-row">
+            <span class="pt-palette-label">Margin right</span>
+            <input type="range" class="form-range" id="tip-label-shape-2-margin-right-slider" min="0" max="16" value="3" />
+            <span class="pt-val" id="tip-label-shape-2-margin-right-value">3</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pt-palette-section">
       <h3><i class="bi bi-circle"></i> Tip Shapes</h3>
       <div class="pt-palette-row">
         <i class="bi bi-record-circle form-label-sm"></i>
