@@ -780,6 +780,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       labelColor:       labelColorEl.value,
       selectedLabelStyle: selectedLabelStyleEl.value,
       paddingLeft:      parseInt(DEFAULT_SETTINGS.paddingLeft),
+      paddingRight:     parseInt(DEFAULT_SETTINGS.paddingRight),
       paddingTop:       parseInt(DEFAULT_SETTINGS.paddingTop),
       paddingBottom:    parseInt(DEFAULT_SETTINGS.paddingBottom),
       elbowRadius:      parseFloat(DEFAULT_SETTINGS.elbowRadius),

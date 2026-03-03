@@ -219,6 +219,7 @@ export class TreeRenderer {
 
     // ── Layout geometry ─────────────────────────────────────────────────────
     this.paddingLeft            = s.paddingLeft;
+    this.paddingRight           = s.paddingRight ?? 10;
     this.paddingTop             = s.paddingTop;
     this.paddingBottom          = s.paddingBottom;
     this.elbowRadius            = s.elbowRadius;
@@ -1359,7 +1360,7 @@ export class TreeRenderer {
     const shape2Extra = this._tipLabelShape !== 'off' && this._tipLabelShape2 !== 'off'
       ? this._shapeSize(this._tipLabelShape2Size, this._tipLabelShape2) + this._tipLabelShape2MarginRight
       : 0;
-    this.labelRightPad = this._maxLabelWidth + Math.max(tipOuterR, 5) + 5 + shapeExtra + shape2Extra;
+    this.labelRightPad = this._maxLabelWidth + Math.max(tipOuterR, 5) + 5 + shapeExtra + shape2Extra + (this.paddingRight ?? 10);
   }
 
   /** Recompute scaleX so the tree always fills the full viewport width.

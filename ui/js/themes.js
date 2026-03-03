@@ -334,11 +334,12 @@ export const DEFAULT_SETTINGS = {
   axisMajorLabelFormat: 'partial',
   axisMinorLabelFormat: 'off',
   // Layout geometry (no DOM controls — passed directly to TreeRenderer)
-  paddingLeft:    '60',
+  paddingLeft:    '20',
+  paddingRight:   '20',
   paddingTop:     '20',
   paddingBottom:  '20',
   elbowRadius:    '2',
-  rootStubLength: '20',
+  rootStubLength: '10',
   // Node bars (only shown when tree has 'height' group from BEAST)
   nodeBarsEnabled:    'off',
   nodeBarsColor:      '#2aa198',
