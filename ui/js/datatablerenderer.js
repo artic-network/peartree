@@ -13,7 +13,8 @@ function _esc(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
-
+/** Shared offscreen canvas used only for text measurement. */
+const _measureCanvas = document.createElement('canvas');
 /**
  * Create the data table panel renderer.
  *
@@ -27,9 +28,12 @@ function _esc(s) {
  * @returns {{ setColumns, setTips, syncView, open, close, isOpen }}
  */
 export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect, panel, headerEl, bodyEl }) {
-  let _columns        = [];      // array of annotation key strings to show
+  let _columns        = [];      // array of annotation key strings to show (never contains '__names__')
+  let _showNames      = false;   // whether to render the tip-name column
   let _columnSig      = '';      // serialised column list; change → rebuild all rows
   let _tips           = [];      // visible tip nodes, sorted by node.y (ascending)
+  let _tipsVersion    = 0;       // incremented on each setTips(); forces column-width recompute
+  let _colWidths      = [];      // computed px widths per column slot [namesCol?, ...annotCols]
   let _rowEls         = new Map(); // nodeId → { el:HTMLElement, cells:Map<key,HTMLInputElement> }
   let _open           = false;
   let _selectedIds    = new Set(); // tip IDs currently highlighted as selected
@@ -37,18 +41,21 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
 
   // ── Public API ──────────────────────────────────────────────────────────────
 
-  /** Replace the set of displayed columns.  Triggers a full row rebuild. */
+  /** Replace the set of displayed columns.  Triggers a full row rebuild.
+   *  The special key '__names__' controls visibility of the tip-name column. */
   function setColumns(cols) {
-    _columns   = (cols || []).filter(Boolean);
-    _columnSig = _columns.join('\0');
+    const raw  = (cols || []).filter(Boolean);
+    _showNames = raw.includes('__names__');
+    _columns   = raw.filter(c => c !== '__names__');
+    _columnSig = '';   // invalidate; _redraw() will recompute widths and rebuild
     _clearRows();
-    _renderHeader();
     if (_open) _redraw();
   }
 
   /** Replace the set of tip nodes (called on layout / tree change). */
   function setTips(tips) {
     _tips = [...(tips || [])].sort((a, b) => a.y - b.y);
+    _tipsVersion++;  // force column-width recompute on next _redraw
     _clearRows();
     if (_open) _redraw();
   }
@@ -103,11 +110,45 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
     if (bodyEl) bodyEl.innerHTML = '';
   }
 
+  /**
+   * Measure the widest content in each column (header + all tip values) and
+   * store pixel widths in _colWidths.  Uses an offscreen canvas so no DOM
+   * layout is triggered.
+   */
+  function _computeColWidths(fontPx, fontFamily) {
+    const ctx = _measureCanvas.getContext('2d');
+    ctx.font   = `${fontPx}px ${fontFamily}`;
+    const PAD  = 14;   // left + right padding per cell
+    const MIN  = 48;   // minimum column width
+    _colWidths  = [];
+
+    if (_showNames) {
+      let w = ctx.measureText('Names').width;
+      for (const tip of _tips) w = Math.max(w, ctx.measureText(tip.name ?? tip.id ?? '').width);
+      _colWidths.push(Math.max(MIN, Math.ceil(w) + PAD));
+    }
+
+    for (const col of _columns) {
+      let w = ctx.measureText(col).width;
+      for (const tip of _tips) {
+        const val = tip.annotations?.[col];
+        if (val != null) w = Math.max(w, ctx.measureText(String(val)).width);
+      }
+      _colWidths.push(Math.max(MIN, Math.ceil(w) + PAD));
+    }
+  }
+
   function _renderHeader() {
     if (!headerEl) return;
-    let html = '<div class="dt-header-name">Tip</div>';
+    let html = '';
+    let wi   = 0;
+    if (_showNames) {
+      const w = _colWidths[wi++] ?? 100;
+      html += `<div class="dt-header-name" style="flex:0 0 ${w}px;width:${w}px" title="Tip names">Names</div>`;
+    }
     for (const col of _columns) {
-      html += `<div class="dt-header-cell" title="${_esc(col)}">${_esc(col)}</div>`;
+      const w = _colWidths[wi++] ?? 80;
+      html += `<div class="dt-header-cell" style="flex:0 0 ${w}px;width:${w}px" title="${_esc(col)}">${_esc(col)}</div>`;
     }
     headerEl.innerHTML = html;
   }
@@ -119,13 +160,17 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
     const scaleY  = renderer.scaleY;
     const offsetY = renderer.offsetY;
     const rowH    = Math.max(12, Math.min(40, scaleY));   // clamp row height to readable range
+    // Match tip-label font size, but never taller than the row itself
+    const dtFontPx = Math.max(9, Math.min(rowH * 0.8, renderer.fontSize || 11));
+    panel.style.setProperty('--dt-font-size', dtFontPx + 'px');
     const bodyH   = bodyEl.clientHeight;
     const BUFFER  = rowH * 4;   // render rows this many px outside visible range
 
-    // Check if columns changed since last row was built
-    const currentSig = _columns.join('\0');
+    // Rebuild when columns, tips, or font size changes — includes width recompute
+    const currentSig = `${Math.round(dtFontPx)}|${_tipsVersion}|${_showNames ? '1':'0'}|${_columns.join('\0')}`;
     if (currentSig !== _columnSig) {
       _columnSig = currentSig;
+      _computeColWidths(dtFontPx, renderer.fontFamily || 'monospace');
       _clearRows();
       _renderHeader();
     }
@@ -171,20 +216,26 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
         row.style.top  = `${topY}px`;
         row.style.height = `${rowH}px`;
 
-        // ── Tip name ──────────────────────────────────────────────────────
-        const nameCell = document.createElement('div');
-        nameCell.className   = 'dt-name-cell';
-        const label = tip.name ?? tip.id ?? '';
-        nameCell.textContent = label;
-        nameCell.title       = label;
-        row.appendChild(nameCell);
+        // ── Tip name (only when __names__ is in the column list) ──────────
+        if (_showNames) {
+          const nameCell = document.createElement('div');
+          nameCell.className   = 'dt-name-cell';
+          const w = _colWidths[0] ?? 100;
+          nameCell.style.cssText = `flex:0 0 ${w}px;width:${w}px`;
+          const label = tip.name ?? tip.id ?? '';
+          nameCell.textContent = label;
+          nameCell.title       = label;
+          row.appendChild(nameCell);
+        }
 
         // ── Data cells ───────────────────────────────────────────────────
         const cells = new Map();
+        let wi = _showNames ? 1 : 0;
         for (const col of _columns) {
           const cell  = document.createElement('div');
           cell.className = 'dt-cell';
-
+          const w = _colWidths[wi++] ?? 80;
+          cell.style.cssText = `flex:0 0 ${w}px;width:${w}px`;
           const input = document.createElement('input');
           input.type  = 'text';
           const val   = tip.annotations?.[col];
@@ -221,7 +272,6 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
           row.appendChild(cell);
           cells.set(col, input);
         }
-
         // Selection highlight on create
         if (_selectedIds.has(tip.id)) row.classList.add('dt-row-selected');
 

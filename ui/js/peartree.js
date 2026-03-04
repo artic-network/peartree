@@ -1680,6 +1680,19 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     },
   });
 
+  /**
+   * Call renderer._resize() on every animation frame for `durationMs` milliseconds.
+   * Used whenever a CSS transition changes the canvas container size so the canvas
+   * tracks the moving boundary smoothly frame-by-frame.
+   */
+  function _resizeDuringTransition(durationMs = 230) {
+    const start = performance.now();
+    (function tick() {
+      renderer._resize();
+      if (performance.now() - start < durationMs) requestAnimationFrame(tick);
+    })();
+  }
+
   // Wire the data-table toggle button
   btnDataTable.addEventListener('click', () => {
     if (dataTableRenderer.isOpen()) {
@@ -1689,6 +1702,9 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       dataTableRenderer.open();
       btnDataTable.classList.add('active');
     }
+    // Drive _resize() on every rAF for the full transition duration so the canvas
+    // tracks the flex-basis animation frame-by-frame.
+    _resizeDuringTransition();
   });
 
   // Wire the resize handle
@@ -1711,6 +1727,7 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
       const newW  = Math.max(100, Math.min(700, _dtStartW + delta));
       _dtPanel.style.flexBasis = `${newW}px`;
       _dtPanel._dtWidth = `${newW}px`;  // persist for open/close cycle
+      renderer._resize();
     });
     window.addEventListener('mouseup', () => {
       if (_dtDragging) { _dtDragging = false; document.body.style.cursor = ''; }

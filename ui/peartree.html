@@ -305,7 +305,7 @@
       pointer-events: none;
     }
     .dt-header-name {
-      flex: 0 0 100px;
+      flex: none;
       padding: 0 5px;
       font-size: 0.65rem;
       font-weight: 600;
@@ -317,7 +317,7 @@
       text-overflow: ellipsis;
     }
     .dt-header-cell {
-      flex: 1;
+      flex: none;
       min-width: 48px;
       padding: 0 4px;
       font-size: 0.65rem;
@@ -363,9 +363,9 @@
 
     /* Tip-name column */
     .dt-name-cell {
-      flex: 0 0 100px;
+      flex: none;
       padding: 0 5px;
-      font-size: 0.72rem;
+      font-size: var(--dt-font-size, 0.72rem);
       color: rgba(255,255,255,0.45);
       overflow: hidden;
       white-space: nowrap;
@@ -379,7 +379,7 @@
 
     /* Data-value columns */
     .dt-cell {
-      flex: 1;
+      flex: none;
       min-width: 48px;
       height: 100%;
       display: flex;
@@ -392,7 +392,7 @@
       border: none;
       border-right: 1px solid rgba(255,255,255,0.04);
       color: rgba(255,255,255,0.75);
-      font-size: 0.72rem;
+      font-size: var(--dt-font-size, 0.72rem);
       font-family: inherit;
       padding: 0 5px;
       outline: none;
@@ -1294,6 +1294,10 @@
     .ca-row-deleted td { opacity:0.3; text-decoration:line-through; }
     .ca-row-deleted td:last-child { opacity:1; text-decoration:none; }
     .ca-row-deleted .ca-del-btn { color:rgba(255,255,255,0.4); }
+    /* Fixed (non-deletable) rows such as 'Names' */
+    .ca-row-fixed { border-bottom: 1px solid rgba(255,255,255,0.1); cursor: default !important; }
+    .ca-row-fixed:hover { background: transparent !important; }
+    .ca-row-fixed .ca-name { color: rgba(255,255,255,0.6); }
   </style>
 </head>
 <body>

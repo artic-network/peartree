@@ -108,6 +108,26 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
 
   function _renderTable(schema) {
     const rows = [];
+
+    // ── Synthetic 'Names' row (always first, never deletable) ────────────────
+    const namesInTable = _tableColumns.has('__names__');
+    rows.push(`
+      <tr data-name="__names__" class="ca-row-fixed">
+        <td><span class="ca-name">Names</span>
+          <span style="margin-left:5px;font-size:0.68rem;color:rgba(255,255,255,0.3);font-style:italic">tip labels</span></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td class="ca-center">
+          <input type="checkbox" class="ca-table-chk" data-name="__names__"
+            ${namesInTable ? 'checked' : ''}
+            title="Show tip names in data table panel"
+            style="cursor:pointer;accent-color:var(--pt-teal,#2aa198)">
+        </td>
+        <td class="ca-center"><span style="color:rgba(255,255,255,0.15)" title="Cannot be deleted">—</span></td>
+      </tr>`);
+
     for (const [name, def] of schema) {
       if (name === 'user_colour') continue;
       if (def.groupMember) continue;
@@ -224,6 +244,7 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
     for (const tr of tbody.querySelectorAll('tr[data-name]')) {
       tr.addEventListener('click', () => {
         const clickedName = tr.dataset.name;
+        if (clickedName === '__names__') return;  // fixed row — no detail pane
         if (_deleted.has(clickedName)) return;  // greyed-out rows are not selectable
         if (_selected === clickedName) {
           // Clicking selected row again deselects
