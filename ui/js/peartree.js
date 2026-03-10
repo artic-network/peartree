@@ -4312,6 +4312,41 @@ const EXAMPLE_TREE_PATH = 'data/ebov.tree';
     setGraphicsSaveHandler:  (fn) => { _graphicsSaveHandler = fn; },
   };
 
+  // ── URL parameter: auto-load fastaUrl on startup ──────────────────────────
+  // When the page URL contains a `fastaUrl` query parameter, automatically
+  // fetch that URL and load its content as a tree file on startup.
+  {
+    const _startParams = new URLSearchParams(window.location.search);
+    const _fastaUrl    = _startParams.get('fastaUrl');
+    if (_fastaUrl) {
+      let _validated = null;
+      try {
+        const _u = new URL(_fastaUrl);
+        if (_u.protocol === 'http:' || _u.protocol === 'https:') _validated = _u.href;
+        else throw new Error('Only http/https URLs are supported.');
+      } catch (_e) {
+        console.warn('peartree: ignoring invalid fastaUrl parameter –', _e.message);
+      }
+      if (_validated) {
+        openModal();
+        setModalLoading(true);
+        setModalError(null);
+        (async () => {
+          try {
+            const _resp = await fetch(_validated);
+            if (!_resp.ok) throw new Error('HTTP ' + _resp.status + ' – ' + _validated);
+            const _text = await _resp.text();
+            const _name = new URL(_validated).pathname.split('/').pop() || 'data';
+            await loadTree(_text, _name);
+          } catch (_err) {
+            setModalError(_err.message);
+            setModalLoading(false);
+          }
+        })();
+      }
+    }
+  }
+
   window.dispatchEvent(new CustomEvent('peartree-ready'));
 
 })();

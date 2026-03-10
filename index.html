@@ -16,6 +16,13 @@
   </style>
 </head>
 <body>
-  <iframe src="ui/peartree.html" title="PearTree — Phylogenetic Tree Viewer" allowfullscreen></iframe>
+  <iframe id="app-frame" title="PearTree — Phylogenetic Tree Viewer" allowfullscreen></iframe>
+  <script>
+    (function () {
+      var src = 'ui/peartree.html';
+      var search = window.location.search;
+      document.getElementById('app-frame').src = search ? src + search : src;
+    })();
+  </script>
 </body>
 </html>
