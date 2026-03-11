@@ -276,6 +276,148 @@
       cursor: default !important;
     }
 
+    /* ── Data table panel ─────────────────────────────────────────────── */
+    #data-table-panel {
+      flex: 0 0 0;            /* always in flex flow; JS sets flex-basis to open */
+      min-width: 0;
+      position: relative;
+      overflow: hidden;
+      border-left: 0px solid rgba(255,255,255,0.08);
+      background: #02292e;   /* matches canvas-wrapper default; overridden by _syncCanvasWrapperBg */
+      cursor: default;
+      transition: flex-basis 0.22s cubic-bezier(.4,0,.2,1);
+    }
+    #data-table-panel.open {
+      border-left-width: 1px;
+    }
+
+    /* Thin column-name header overlays the top of the panel */
+    .dt-header {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 20px;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      background: inherit;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .dt-header-name {
+      flex: none;
+      padding: 0 5px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: rgba(255,255,255,0.35);
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .dt-header-cell {
+      flex: none;
+      min-width: 48px;
+      padding: 0 4px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: rgba(255,255,255,0.35);
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    /* Scrollless body — rows are absolutely placed inside */
+    .dt-body {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    /* Each tip row */
+    .dt-row {
+      position: absolute;
+      left: 0; right: 0;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      cursor: pointer;
+    }
+    .dt-row:not(.dt-row-selected):hover {
+      background: rgba(255,255,255,0.04);
+    }
+
+    /* Selected row highlight */
+    .dt-row-selected {
+      background: rgba(42,161,152,0.18) !important;
+    }
+    .dt-row-selected .dt-name-cell {
+      color: rgba(255,255,255,0.9) !important;
+    }
+    .dt-row-selected .dt-cell input[type="text"] {
+      color: rgba(255,255,255,0.9);
+    }
+
+    /* Tip-name column */
+    .dt-name-cell {
+      flex: none;
+      padding: 0 5px;
+      font-size: var(--dt-font-size, 0.72rem);
+      color: rgba(255,255,255,0.45);
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      cursor: pointer;
+    }
+
+    /* Data-value columns */
+    .dt-cell {
+      flex: none;
+      min-width: 48px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
+    .dt-cell input[type="text"] {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      border: none;
+      border-right: 1px solid rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.75);
+      font-size: var(--dt-font-size, 0.72rem);
+      font-family: inherit;
+      padding: 0 5px;
+      outline: none;
+      transition: background 0.1s;
+    }
+    .dt-cell input[type="text"]:hover  { background: rgba(255,255,255,0.04); }
+    .dt-cell input[type="text"]:focus  {
+      background: rgba(42,161,152,0.12);
+      color: #fff;
+      border-right-color: var(--pt-teal, #2aa198);
+    }
+
+    /* Resize handle — left edge of the panel */
+    #data-table-resize-handle {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 5px;
+      cursor: ew-resize;
+      z-index: 4;
+    }
+    #data-table-resize-handle:hover,
+    #data-table-resize-handle:active {
+      background: rgba(42,161,152,0.3);
+    }
+
     /* ── Empty state (no tree loaded) ── */
     #empty-state {
       position: absolute;
@@ -1152,6 +1294,10 @@
     .ca-row-deleted td { opacity:0.3; text-decoration:line-through; }
     .ca-row-deleted td:last-child { opacity:1; text-decoration:none; }
     .ca-row-deleted .ca-del-btn { color:rgba(255,255,255,0.4); }
+    /* Fixed (non-deletable) rows such as 'Names' */
+    .ca-row-fixed { border-bottom: 1px solid rgba(255,255,255,0.1); cursor: default !important; }
+    .ca-row-fixed:hover { background: transparent !important; }
+    .ca-row-fixed .ca-name { color: rgba(255,255,255,0.6); }
   </style>
 </head>
 <body>
@@ -1279,6 +1425,8 @@
       <span id="tip-filter-count" class="pt-filter-count" hidden></span>
     </div>
     <div class="pt-toolbar-sep"></div>
+    <button id="btn-data-table" class="btn btn-sm btn-outline-secondary" disabled title="Data table panel"><i class="bi bi-layout-sidebar-reverse"></i></button>
+    <div class="pt-toolbar-sep"></div>
     <button id="btn-help" class="btn btn-sm btn-outline-secondary" title="Help (⌘?)"><i class="bi bi-caret-left"></i><i class="bi bi-question-circle"></i></button>
   </div><!-- /.pt-toolbar-right -->
 
@@ -1307,6 +1455,13 @@
   </div>
   <canvas id="legend-right-canvas"  class="pt-legend-canvas right"></canvas>
   <canvas id="legend2-right-canvas" class="pt-legend-canvas right"></canvas>
+
+  <!-- Data table panel — annotation values aligned to each visible tip -->
+  <div id="data-table-panel">
+    <div id="data-table-resize-handle"></div>
+    <div class="dt-header" id="dt-header"></div>
+    <div class="dt-body"   id="dt-body"></div>
+  </div>
 </div>
 
 <div id="status-bar">
@@ -1403,7 +1558,9 @@
           <thead>
             <tr>
               <th>Annotation</th><th>Type</th><th>On</th>
-              <th>Observed range</th><th>Scale bounds</th><th style="width:32px"></th>
+              <th>Observed range</th><th>Scale bounds</th>
+              <th title="Show column in data table panel" style="width:36px;text-align:center"><i class="bi bi-layout-sidebar-reverse" style="font-size:0.8rem"></i></th>
+              <th style="width:32px"></th>
             </tr>
           </thead>
           <tbody id="curate-annot-tbody"></tbody>
