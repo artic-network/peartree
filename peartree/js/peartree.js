@@ -4460,15 +4460,15 @@ async function fetchExampleTree() {
   // fetch that URL and load its content as a tree file on startup.
   {
     const _startParams = new URLSearchParams(window.location.search);
-    const _fastaUrl    = _startParams.get('treeUrl');
-    if (_fastaUrl) {
+    const _treeUrl     = _startParams.get('treeUrl');
+    if (_treeUrl) {
       let _validated = null;
       try {
-        const _u = new URL(_fastaUrl);
+        const _u = new URL(_treeUrl);
         if (_u.protocol === 'http:' || _u.protocol === 'https:') _validated = _u.href;
         else throw new Error('Only http/https URLs are supported.');
       } catch (_e) {
-        console.warn('peartree: ignoring invalid fastaUrl parameter –', _e.message);
+        console.warn('peartree: ignoring invalid treeUrl parameter –', _e.message);
       }
       if (_validated) {
         openModal();
@@ -4479,7 +4479,7 @@ async function fetchExampleTree() {
             const _resp = await fetch(_validated);
             if (!_resp.ok) throw new Error('HTTP ' + _resp.status + ' – ' + _validated);
             const _text = await _resp.text();
-            const _name = new URL(_validated).pathname.split('/').pop() || 'data';
+            const _name = new URL(_validated).pathname.split('/').pop() || 'tree';
             await loadTree(_text, _name);
           } catch (_err) {
             setModalError(_err.message);
