@@ -1,9 +1,9 @@
 /** Path to the bundled example tree, relative to the peartree/ directory. */
 export const EXAMPLE_TREE_PATH = 'data/ebov.tree';
 
-/** Root URL of the deployed GitHub Pages site — used as a fallback when a
- *  relative path fails (e.g. when the HTML file is opened directly from disk). */
-export const PEARTREE_BASE_URL = 'https://artic-network.github.io/peartree/';
+/** Root URL of the deployed site — used as a fallback when a relative path
+ *  fails (e.g. when the HTML file is opened directly from disk). */
+export const PEARTREE_BASE_URL = 'http://peartree.live/';
 
 export const DEFAULT_SETTINGS = {
   theme:            'Artic',
