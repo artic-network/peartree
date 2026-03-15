@@ -102,6 +102,14 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
 
   function isOpen() { return _open; }
 
+  /**
+   * Return current visible-column keys and the current tip list.
+   * Used by peartree.js to build the tab-delimited copy-tips string.
+   */
+  function getState() {
+    return { columns: [..._columns], showNames: _showNames, tips: [..._tips] };
+  }
+
   // ── Internal helpers ────────────────────────────────────────────────────────
 
   function _clearRows() {
@@ -314,5 +322,5 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
   // Initialise header on creation (no columns yet but builds the "Tip" stub)
   _renderHeader();
 
-  return { setColumns, setTips, syncView, syncSelection, open, close, isOpen };
+  return { setColumns, setTips, syncView, syncSelection, open, close, isOpen, getState };
 }

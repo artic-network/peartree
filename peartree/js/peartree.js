@@ -2604,6 +2604,8 @@ async function fetchExampleTree() {
         commands.setEnabled('curate-annot',    true);
         commands.setEnabled('export-tree',     true);
         commands.setEnabled('export-image',    true);
+        commands.setEnabled('copy-tree',       true);
+        commands.setEnabled('copy-tips',       true);
         commands.setEnabled('view-zoom-in',    true);
         commands.setEnabled('view-zoom-out',   true);
         commands.setEnabled('view-fit',        true);
@@ -4375,6 +4377,48 @@ async function fetchExampleTree() {
     renderer._notifyStats();
     renderer._dirty = true;
   };
+
+  // copy-tree: copies current view as NEXUS; if selection, copies subtending subtree only.
+  commands.get('copy-tree').exec = async () => {
+    if (!graph) return;
+    const schema    = renderer?._annotationSchema ?? new Map();
+    const annotKeys = [...schema.keys()];
+    // Determine root: MRCA of selection > current view subtree > full tree
+    let subtreeId = renderer._viewSubtreeRootId ?? null;
+    const selSize = renderer._selectedTipIds?.size ?? 0;
+    if (selSize > 0) {
+      subtreeId = renderer._mrcaNodeId ?? (selSize === 1 ? [...renderer._selectedTipIds][0] : subtreeId);
+    }
+    const newick = graphToNewick(graph, subtreeId, annotKeys);
+    if (!newick) return;
+    const rootedTag = annotKeys.length > 0 ? '[&R] ' : '';
+    const nexus = `#NEXUS\nBEGIN TREES;\n\ttree TREE1 = ${rootedTag}${newick}\nEND;\n`;
+    await navigator.clipboard.writeText(nexus);
+  };
+
+  // copy-tips: copies tip names one-per-line; if metadata table is open with columns,
+  // copies tip labels + metadata values as tab-delimited text.
+  commands.get('copy-tips').exec = async () => {
+    if (!graph || !renderer?.nodes) return;
+    const useSelection = (renderer._selectedTipIds?.size ?? 0) > 0;
+    const visibleTips  = renderer.nodes.filter(n => n.isTip);
+    const targetTips   = useSelection
+      ? visibleTips.filter(n => renderer._selectedTipIds.has(n.id))
+      : visibleTips;
+    if (dataTableRenderer.isOpen()) {
+      const { columns } = dataTableRenderer.getState();
+      if (columns.length > 0) {
+        const header = ['name', ...columns].join('\t');
+        const rows   = targetTips.map(n => {
+          const vals = columns.map(k => n.annotations?.[k] ?? '');
+          return [n.name ?? n.id, ...vals].join('\t');
+        });
+        await navigator.clipboard.writeText([header, ...rows].join('\n'));
+        return;
+      }
+    }
+    await navigator.clipboard.writeText(targetTips.map(n => n.name ?? n.id).join('\n'));
+  };
   // Button-backed commands: exec clicks the toolbar button so all existing
   // click-handler logic runs without duplication.
   for (const cmd of commands.getAll().values()) {
@@ -4388,13 +4432,21 @@ async function fetchExampleTree() {
   window.addEventListener('keydown', e => {
     if (!e.metaKey && !e.ctrlKey) return;
     if (e.altKey) return;
+    // Cmd/Ctrl+X (cut): allow natively in text fields; block everywhere else.
+    if (e.key === 'x' || e.key === 'X') {
+      const tag = document.activeElement?.tagName;
+      if (tag !== 'INPUT' && tag !== 'TEXTAREA' && !document.activeElement?.isContentEditable) {
+        e.preventDefault();
+      }
+      return;
+    }
     for (const cmd of commands.getAll().values()) {
       if (!commands.matchesShortcut(e, cmd.shortcut)) continue;
       // If no exec is registered (e.g. new-window, wired only by the Tauri adapter),
       // don't intercept — let the browser handle its own default for this shortcut.
       if (!cmd.exec) continue;
-      // select-all: let the browser handle it natively when a text field is focused.
-      if (cmd.id === 'select-all') {
+      // For copy commands: let the browser handle natively when a text field is focused.
+      if (cmd.id === 'copy-tree' || cmd.id === 'copy-tips' || cmd.id === 'select-all') {
         const tag = document.activeElement?.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
       }
