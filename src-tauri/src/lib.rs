@@ -23,6 +23,9 @@ struct WindowCounter(AtomicU32);
 /// set by `new_window`, consumed once by `take_pending_file` on startup.
 struct PendingFiles(Mutex<HashMap<String, String>>);
 
+/// The pending update returned by check_for_updates, held until install_update consumes it.
+struct PendingUpdate(Mutex<Option<tauri_plugin_updater::Update>>);
+
 /// Called from JS to enable/disable a menu item by its string id.
 #[tauri::command]
 fn set_menu_item_enabled(
@@ -200,6 +203,7 @@ fn take_pending_file(
 /// Checks for an available update against the configured GitHub Releases
 /// endpoint.  Returns null if already up to date, or a JSON object with
 /// { version, date, body, current } if a newer release exists.
+/// Stores the Update object in managed state so install_update can use it.
 #[tauri::command]
 async fn check_for_updates(app: tauri::AppHandle) -> Result<Option<serde_json::Value>, String> {
     use tauri_plugin_updater::UpdaterExt;
@@ -210,28 +214,23 @@ async fn check_for_updates(app: tauri::AppHandle) -> Result<Option<serde_json::V
         .check()
         .await
         .map_err(|e| e.to_string())?;
-    Ok(update.map(|u| serde_json::json!({
+    let info = update.as_ref().map(|u| serde_json::json!({
         "version": u.version,
         "date":    u.date.map(|d| d.to_string()),
         "body":    u.body,
         "current": env!("CARGO_PKG_VERSION"),
-    })))
+    }));
+    *app.state::<PendingUpdate>().0.lock().unwrap() = update;
+    Ok(info)
 }
 
-/// Downloads and installs the latest available update.  On macOS the app is
-/// relaunched automatically by the updater; on Windows/Linux a restart is
-/// required manually.
+/// Downloads and installs the update stored by check_for_updates.
+/// On macOS the app relaunches automatically; on Windows/Linux the user
+/// must restart manually.
 #[tauri::command]
 async fn install_update(app: tauri::AppHandle) -> Result<(), String> {
-    use tauri_plugin_updater::UpdaterExt;
-    if let Some(update) = app
-        .updater_builder()
-        .build()
-        .map_err(|e| e.to_string())?
-        .check()
-        .await
-        .map_err(|e| e.to_string())?
-    {
+    let update = app.state::<PendingUpdate>().0.lock().unwrap().take();
+    if let Some(update) = update {
         update
             .download_and_install(|_chunk, _total| {}, || {})
             .await
@@ -496,6 +495,7 @@ pub fn run() {
             app.manage(MenuItems(Mutex::new(map)));
             app.manage(WindowCounter(AtomicU32::new(0)));
             app.manage(PendingFiles(Mutex::new(HashMap::new())));
+            app.manage(PendingUpdate(Mutex::new(None)));
 
             // Check whether the app was launched by opening a file (drag-to-icon,
             // "Open With", double-click).  get_current() reads the launch URL
