@@ -289,7 +289,7 @@ pub fn run() {
                 &PredefinedMenuItem::about(app, None, Some(AboutMetadata {
                     name:      Some("PearTree".into()),
                     version:   Some(env!("CARGO_PKG_VERSION").into()),
-                    copyright: Some("© ARTIC Network".into()),
+                    copyright: Some("©2026 Andrew Rambaut".into()),
                     ..Default::default()
                 }))?,
                 &PredefinedMenuItem::separator(app)?,
