@@ -138,7 +138,7 @@ export class TreeRenderer {
     this._tipLabelShapeColourScale = null;   // Map<value, CSS colour> | null
     this._tipLabelShape            = 'off';  // 'off' | 'square' | 'circle' | 'block'
     this._tipLabelShapeColor       = '#aaaaaa';
-    this._tipLabelShapeSize        = 50;     // 1–100: % of scaleY (square/circle) or ×0.1 width factor (block)
+    this._tipLabelShapeSize        = 50;     // 1–100: % of scaleY (square/circle) or absolute px width (block)
     this._tipLabelShapeMarginLeft  = 2;      // px gap before shape
     this._tipLabelShapeMarginRight = 3;      // px gap after shape (before text / before shape 2)
     // Second tip-label shape (sits immediately right of shape 1, no left margin)
@@ -1002,7 +1002,7 @@ export class TreeRenderer {
    *  block: sizePercent 1–100 maps to 0.1×–10× scaleY (width only; height is always scaleY). */
   _shapeSize(sizePercent, shape = 'square') {
     if (shape === 'block') {
-      return Math.max(1, this.scaleY * sizePercent / 10);
+      return Math.max(1, sizePercent);  // absolute px width, independent of row spacing
     }
     return Math.max(2, Math.round(this.scaleY * sizePercent / 100));
   }

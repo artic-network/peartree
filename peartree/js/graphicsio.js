@@ -414,15 +414,24 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     ? toSX(renderer.maxX) + outlineR + 3
     : null;
 
-  // Shape 1
+  // Shape 1 — size computed the same way as _shapeSize() in treerenderer.js.
+  // block = absolute px width; square/circle = % of scaleY.
   const _svgShape   = renderer._tipLabelShape;
-  const _svgShSz    = _svgShape !== 'off' ? Math.max(2, Math.round(fs * renderer._tipLabelShapeSize / 100)) : 0;
+  const _svgShSz    = _svgShape !== 'off'
+    ? (_svgShape === 'block'
+        ? Math.max(1, renderer._tipLabelShapeSize)
+        : Math.max(2, Math.round(sy * renderer._tipLabelShapeSize / 100)))
+    : 0;
   const _svgShML    = _svgShape !== 'off' ? renderer._tipLabelShapeMarginLeft  : 0;
   const _svgShMR    = _svgShape !== 'off' ? renderer._tipLabelShapeMarginRight : 0;
   const _svgShOff   = _svgShML + _svgShSz + _svgShMR;
   // Shape 2 (only active when shape 1 is also active)
   const _svgShape2  = _svgShape !== 'off' ? renderer._tipLabelShape2 : 'off';
-  const _svgShSz2   = _svgShape2 !== 'off' ? Math.max(2, Math.round(fs * renderer._tipLabelShape2Size / 100)) : 0;
+  const _svgShSz2   = _svgShape2 !== 'off'
+    ? (_svgShape2 === 'block'
+        ? Math.max(1, renderer._tipLabelShape2Size)
+        : Math.max(2, Math.round(sy * renderer._tipLabelShape2Size / 100)))
+    : 0;
   const _svgSh2MR   = _svgShape2 !== 'off' ? renderer._tipLabelShape2MarginRight : 0;
   const _svgTxOff   = _svgShOff + _svgShSz2 + _svgSh2MR;  // total x offset from baseX to text
 
