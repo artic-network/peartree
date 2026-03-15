@@ -71,6 +71,6 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'PearTree ${{ github.ref_name }}'
           releaseBody: 'See the assets below to download PearTree for your platform.'
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
