@@ -188,13 +188,12 @@
     try {
       const update = await invoke('check_for_updates');
       if (!update) {
-        alert('PearTree is up to date.');
+        app.showErrorDialog('PearTree is up to date.');
         return;
       }
       const notes     = update.body ? `\n\nRelease notes:\n${update.body}` : '';
-      const confirmed = confirm(
-        `PearTree v${update.version} is available (you have v${update.current}).${notes}\n\nDownload and install now?`
-      );
+      const msg       = `PearTree v${update.version} is available (you have v${update.current}).${notes}`;
+      const confirmed = await app.showConfirmDialog('Update Available', msg, { okLabel: 'Install', cancelLabel: 'Later' });
       if (!confirmed) return;
       await invoke('install_update');
     } catch (err) {
