@@ -4571,6 +4571,138 @@ async function fetchExampleTree() {
     }
   }
 
+  // ── Section accordion ──────────────────────────────────────────────────────
+  // Each .pt-palette-section h3 toggles its section open/closed.
+  // A section can be "pinned" open — pinned sections are unaffected by the
+  // one-open-at-a-time rule.  Only one non-pinned section may be open at once.
+  // State is persisted to localStorage.
+  (function _initSectionAccordion() {
+    const STORE_KEY = 'peartree-section-state';
+
+    function _loadSt() {
+      try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; }
+    }
+    function _saveSt(st) {
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(st)); } catch {}
+    }
+    function _allSec() {
+      return Array.from(document.querySelectorAll('.pt-palette-section[data-sec-id]'));
+    }
+
+    function _openSec(sec) {
+      sec.classList.add('pt-palette-section--open');
+      const st = _loadSt();
+      st[sec.dataset.secId] = { ...(st[sec.dataset.secId] || {}), open: true };
+      _saveSt(st);
+    }
+    function _closeSec(sec) {
+      sec.classList.remove('pt-palette-section--open');
+      const st = _loadSt();
+      st[sec.dataset.secId] = { ...(st[sec.dataset.secId] || {}), open: false };
+      _saveSt(st);
+    }
+
+    function _toggleSec(sec) {
+      if (sec.classList.contains('pt-palette-section--pinned')) return;
+      if (sec.classList.contains('pt-palette-section--open')) {
+        _closeSec(sec);
+      } else {
+        // Close current non-pinned open section first
+        _allSec().forEach(s => {
+          if (s !== sec && s.classList.contains('pt-palette-section--open') && !s.classList.contains('pt-palette-section--pinned'))
+            _closeSec(s);
+        });
+        _openSec(sec);
+      }
+    }
+
+    function _togglePin(sec) {
+      const isPinned = sec.classList.contains('pt-palette-section--pinned');
+      const pinIcon  = sec.querySelector(':scope > h3 .pt-sec-pin i');
+      const st       = _loadSt();
+      if (isPinned) {
+        // Unpin: becomes the active non-pinned open section; close any other non-pinned open
+        sec.classList.remove('pt-palette-section--pinned');
+        if (pinIcon) pinIcon.className = 'bi bi-pin';
+        _allSec().forEach(s => {
+          if (s !== sec && s.classList.contains('pt-palette-section--open') && !s.classList.contains('pt-palette-section--pinned'))
+            _closeSec(s);
+        });
+        sec.classList.add('pt-palette-section--open');
+        st[sec.dataset.secId] = { open: true, pinned: false };
+      } else {
+        // Pin it (opens too)
+        sec.classList.add('pt-palette-section--open', 'pt-palette-section--pinned');
+        if (pinIcon) pinIcon.className = 'bi bi-pin-fill';
+        st[sec.dataset.secId] = { open: true, pinned: true };
+      }
+      _saveSt(st);
+    }
+
+    const savedState = _loadSt();
+    const noTransitionBodies = [];
+
+    document.querySelectorAll('.pt-palette-section').forEach(sec => {
+      const h3 = sec.querySelector(':scope > h3');
+      if (!h3) return;
+
+      // Stable ID from heading text (e.g. "tip-labels")
+      const secId = h3.textContent.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/, '');
+      sec.dataset.secId = secId;
+
+      // Inject pin button + chevron into h3
+      h3.insertAdjacentHTML('beforeend',
+        '<span class="pt-sec-actions">' +
+          '<button class="pt-sec-pin" title="Pin open"><i class="bi bi-pin"></i></button>' +
+          '<i class="bi bi-chevron-right pt-sec-chevron"></i>' +
+        '</span>');
+
+      // Wrap all content after h3 in .pt-section-body
+      const body = document.createElement('div');
+      body.className = 'pt-section-body';
+      while (h3.nextSibling) body.appendChild(h3.nextSibling);
+      sec.appendChild(body);
+
+      // Restore saved state without animation
+      const saved = savedState[secId] || {};
+      if (saved.pinned || saved.open) {
+        // Suppress transition for this initial restore
+        body.style.transition = 'none';
+        noTransitionBodies.push(body);
+        if (saved.pinned) {
+          sec.classList.add('pt-palette-section--open', 'pt-palette-section--pinned');
+          const pi = h3.querySelector('.pt-sec-pin i');
+          if (pi) pi.className = 'bi bi-pin-fill';
+        } else {
+          sec.classList.add('pt-palette-section--open');
+        }
+      }
+
+      // Event: click h3 to toggle (not when clicking the pin button)
+      h3.addEventListener('click', e => { if (!e.target.closest('.pt-sec-pin')) _toggleSec(sec); });
+      h3.tabIndex = 0;
+      h3.addEventListener('keydown', e => {
+        if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('.pt-sec-pin')) {
+          e.preventDefault(); _toggleSec(sec);
+        }
+      });
+
+      // Event: pin button click
+      h3.querySelector('.pt-sec-pin').addEventListener('click', e => {
+        e.stopPropagation(); _togglePin(sec);
+      });
+    });
+
+    // Re-enable transitions after the initial paint (otherwise restoring state animates)
+    if (noTransitionBodies.length) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          noTransitionBodies.forEach(b => { b.style.transition = ''; });
+        });
+      });
+    }
+  })();
+
   window.dispatchEvent(new CustomEvent('peartree-ready'));
 
 })();

@@ -800,10 +800,64 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--pt-teal);
-      margin: 0 0 8px;
+      margin: 0;
       display: flex;
       align-items: center;
       gap: 5px;
+      cursor: pointer;
+      user-select: none;
+      padding: 3px 0;
+      transition: color 0.15s;
+    }
+    .pt-palette-section h3:hover { color: #3bc3b6; }
+    /* Section accordion — chevron + pin button */
+    .pt-sec-actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .pt-sec-chevron {
+      transition: transform 0.22s ease;
+      font-size: 0.58rem;
+      opacity: 0.35;
+      pointer-events: none;
+    }
+    .pt-palette-section--open > h3 .pt-sec-chevron,
+    .pt-palette-section--pinned > h3 .pt-sec-chevron {
+      transform: rotate(90deg);
+      opacity: 0.72;
+    }
+    .pt-sec-pin {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--pt-off-white);
+      opacity: 0;
+      padding: 0 2px;
+      font-size: 0.68rem;
+      line-height: 1;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .pt-palette-section--open > h3 .pt-sec-pin,
+    .pt-palette-section--pinned > h3 .pt-sec-pin { opacity: 0.28; }
+    .pt-sec-pin:hover { opacity: 0.8 !important; }
+    .pt-palette-section--pinned > h3 .pt-sec-pin { opacity: 1 !important; color: var(--pt-gold); }
+    /* Section body — animated open/close */
+    .pt-section-body {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: max-height 0.26s cubic-bezier(0,0,0.2,1), opacity 0.2s ease;
+    }
+    .pt-palette-section--open > .pt-section-body,
+    .pt-palette-section--pinned > .pt-section-body {
+      max-height: 2500px;
+      opacity: 1;
+      pointer-events: auto;
+      padding-top: 8px;
     }
     .pt-palette-subhead {
       font-size: 0.68rem;
