@@ -4393,16 +4393,25 @@ async function fetchExampleTree() {
     loadTree(text, 'clipboard');
   };
 
-  // copy-tree: copies current view as NEXUS; if selection, copies subtending subtree only.
+  // copy-tree: copies current view as NEXUS; if 2+ tips selected, copies subtending subtree;
+  // if exactly 1 tip selected, copies the tip name only.
   commands.get('copy-tree').exec = async () => {
     if (!graph) return;
+    const selSize = renderer._selectedTipIds?.size ?? 0;
+    // Single tip selected → copy just the name
+    if (selSize === 1) {
+      const tipId = [...renderer._selectedTipIds][0];
+      const node  = renderer.nodes?.find(n => n.id === tipId);
+      const name  = node?.name ?? tipId;
+      await navigator.clipboard.writeText(name);
+      return;
+    }
     const schema    = renderer?._annotationSchema ?? new Map();
     const annotKeys = [...schema.keys()];
-    // Determine root: MRCA of selection > current view subtree > full tree
+    // Determine root: MRCA of selection (2+ tips) > current view subtree > full tree
     let subtreeId = renderer._viewSubtreeRootId ?? null;
-    const selSize = renderer._selectedTipIds?.size ?? 0;
-    if (selSize > 0) {
-      subtreeId = renderer._mrcaNodeId ?? (selSize === 1 ? [...renderer._selectedTipIds][0] : subtreeId);
+    if (selSize > 1) {
+      subtreeId = renderer._mrcaNodeId ?? subtreeId;
     }
     const newick = graphToNewick(graph, subtreeId, annotKeys);
     if (!newick) return;
