@@ -212,7 +212,7 @@ async fn check_for_updates(app: tauri::AppHandle) -> Result<Option<serde_json::V
         .map_err(|e| e.to_string())?;
     Ok(update.map(|u| serde_json::json!({
         "version": u.version,
-        "date":    u.date,
+        "date":    u.date.map(|d| d.to_string()),
         "body":    u.body,
         "current": env!("CARGO_PKG_VERSION"),
     })))
