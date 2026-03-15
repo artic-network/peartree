@@ -919,7 +919,8 @@ async function fetchExampleTree() {
     _vis(tipShapeDetailEl,      parseInt(tipSlider.value)   > 0);
     _vis(nodeShapeDetailEl,     parseInt(nodeSlider.value)  > 0);
     _vis(tipLabelShapeDetailEl, tipLabelShapeEl.value       !== 'off');
-    _vis(document.getElementById('tip-label-shape-spacing-row'), tipLabelShapeEl.value !== 'off' && tipLabelShapeExtraEls[0].value !== 'off');
+    const _spacingRow = document.getElementById('tip-label-shape-spacing-row');
+    if (_spacingRow) _spacingRow.style.display = (tipLabelShapeEl.value !== 'off' && tipLabelShapeExtraEls[0].value !== 'off') ? '' : 'none';
     // Progressive disclosure: extra shape N section shown only when shape N-1 is on.
     for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) {
       const prevValue = i === 0 ? tipLabelShapeEl.value : tipLabelShapeExtraEls[i - 1].value;

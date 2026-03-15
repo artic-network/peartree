@@ -873,9 +873,10 @@
       margin-top: 4px;
       border-radius: 0 0 0 2px;
     }
-    /* Suppress left-border flicker during .pt-detail collapse animation */
+    /* Suppress left-border flicker and margin during .pt-detail collapse animation */
     .pt-detail.pt-sub-controls:not(.pt-detail-open) {
       border-left-color: transparent;
+      margin-top: 0;
     }
     .pt-palette-color {
       width: 36px;
@@ -1877,12 +1878,10 @@
           <input type="range" class="form-range" id="tip-label-shape-margin-right-slider" min="0" max="16" value="3" />
           <span class="pt-val" id="tip-label-shape-margin-right-value">3</span>
         </div>
-        <div id="tip-label-shape-spacing-row" class="pt-detail">
-          <div class="pt-palette-row">
-            <span class="pt-palette-label">Spacing</span>
-            <input type="range" class="form-range" id="tip-label-shape-spacing-slider" min="0" max="16" value="3" />
-            <span class="pt-val" id="tip-label-shape-spacing-value">3</span>
-          </div>
+        <div class="pt-palette-row" id="tip-label-shape-spacing-row" style="display:none">
+          <span class="pt-palette-label">Spacing</span>
+          <input type="range" class="form-range" id="tip-label-shape-spacing-slider" min="0" max="16" value="3" />
+          <span class="pt-val" id="tip-label-shape-spacing-value">3</span>
         </div>
       </div>
       <div id="tip-label-shape-2-section" class="pt-detail pt-sub-controls">
