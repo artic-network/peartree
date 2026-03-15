@@ -323,6 +323,7 @@ pub fn run() {
             ])?;
 
             // ── Edit ──────────────────────────────────────────────────────────
+            let paste_tree    = MenuItem::with_id(app, "paste-tree",    "Paste Tree",       true,  Some("CmdOrCtrl+V"))?;
             let copy_tree     = MenuItem::with_id(app, "copy-tree",     "Copy Tree",        false, Some("CmdOrCtrl+C"))?;
             let copy_tips     = MenuItem::with_id(app, "copy-tips",     "Copy Tips",        false, Some("CmdOrCtrl+Shift+C"))?;
             let select_all    = MenuItem::with_id(app, "select-all",    "Select All",       true, Some("CmdOrCtrl+A"))?;
@@ -335,7 +336,7 @@ pub fn run() {
                 &PredefinedMenuItem::cut(app, None)?,
                 &copy_tree,
                 &copy_tips,
-                &PredefinedMenuItem::paste(app, None)?,
+                &paste_tree,
                 &select_all,
                 &select_invert,
             ])?;
@@ -462,6 +463,7 @@ pub fn run() {
                 ("import-annot",     import_annot),
                 ("export-tree",      export_tree),
                 ("export-image",     export_image),
+                ("paste-tree",       paste_tree),
                 ("copy-tree",        copy_tree),
                 ("copy-tips",        copy_tips),
                 ("select-all",       select_all),

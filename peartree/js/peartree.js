@@ -2600,6 +2600,7 @@ async function fetchExampleTree() {
         // Show the axis canvas now if axis was already configured to be visible.
         if (axisShowEl.value !== 'off') axisCanvas.style.display = 'block';
         // Enable commands — registry syncs both the button .disabled and the native menu.
+        commands.setEnabled('paste-tree',      false);  // disable once a tree is loaded
         commands.setEnabled('import-annot',    true);
         commands.setEnabled('curate-annot',    true);
         commands.setEnabled('export-tree',     true);
@@ -4378,6 +4379,20 @@ async function fetchExampleTree() {
     renderer._dirty = true;
   };
 
+  // paste-tree: when no tree is loaded, read clipboard text and attempt to load it as a tree.
+  commands.get('paste-tree').exec = async () => {
+    if (treeLoaded) return;  // only active before first load
+    let text;
+    try {
+      text = await navigator.clipboard.readText();
+    } catch {
+      return;  // clipboard access denied or empty
+    }
+    if (!text?.trim()) return;
+    openModal();
+    loadTree(text, 'clipboard');
+  };
+
   // copy-tree: copies current view as NEXUS; if selection, copies subtending subtree only.
   commands.get('copy-tree').exec = async () => {
     if (!graph) return;
@@ -4445,11 +4460,13 @@ async function fetchExampleTree() {
       // If no exec is registered (e.g. new-window, wired only by the Tauri adapter),
       // don't intercept — let the browser handle its own default for this shortcut.
       if (!cmd.exec) continue;
-      // For copy commands: let the browser handle natively when a text field is focused.
-      if (cmd.id === 'copy-tree' || cmd.id === 'copy-tips' || cmd.id === 'select-all') {
+      // For copy/paste commands: let the browser handle natively when a text field is focused.
+      if (cmd.id === 'paste-tree' || cmd.id === 'copy-tree' || cmd.id === 'copy-tips' || cmd.id === 'select-all') {
         const tag = document.activeElement?.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
       }
+      // paste-tree: only intercept when no tree is loaded yet.
+      if (cmd.id === 'paste-tree' && treeLoaded) return;
       e.preventDefault();
       commands.execute(cmd.id);
       return;
