@@ -124,17 +124,16 @@ async function fetchExampleTree() {
   const tipLabelShapePaletteSelect   = document.getElementById('tip-label-shape-palette-select');
   const tipLabelShapeMarginLeftSlider  = document.getElementById('tip-label-shape-margin-left-slider');
   const tipLabelShapeMarginRightSlider = document.getElementById('tip-label-shape-margin-right-slider');
+  const tipLabelShapeSizeSlider        = document.getElementById('tip-label-shape-size-slider');
   const tipLabelShapeDetailEl        = document.getElementById('tip-label-shape-detail');
-  const tipLabelShape2El             = document.getElementById('tip-label-shape-2');
-  const tipLabelShape2ColorEl        = document.getElementById('tip-label-shape-2-color');
-  const tipLabelShape2ColourBy       = document.getElementById('tip-label-shape-2-colour-by');
-  const tipLabelShape2PaletteRow     = document.getElementById('tip-label-shape-2-palette-row');
-  const tipLabelShape2PaletteSelect  = document.getElementById('tip-label-shape-2-palette-select');
-  const tipLabelShape2MarginRightSlider = document.getElementById('tip-label-shape-2-margin-right-slider');
-  const tipLabelShape2SectionEl      = document.getElementById('tip-label-shape-2-section');
-  const tipLabelShape2DetailEl       = document.getElementById('tip-label-shape-2-detail');
-  const tipLabelShapeSizeSlider      = document.getElementById('tip-label-shape-size-slider');
-  const tipLabelShape2SizeSlider     = document.getElementById('tip-label-shape-2-size-slider');
+  // Extra label shapes 2–10 (indices 0–8 correspond to shape numbers 2–10)
+  const EXTRA_SHAPE_COUNT = 9;
+  const tipLabelShapeExtraEls           = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => document.getElementById(`tip-label-shape-${i + 2}`));
+  const tipLabelShapeExtraColourBys     = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => document.getElementById(`tip-label-shape-${i + 2}-colour-by`));
+  const tipLabelShapeExtraPaletteRows   = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => document.getElementById(`tip-label-shape-${i + 2}-palette-row`));
+  const tipLabelShapeExtraPaletteSelects = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => document.getElementById(`tip-label-shape-${i + 2}-palette-select`));
+  const tipLabelShapeExtraSectionEls    = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => document.getElementById(`tip-label-shape-${i + 2}-section`));
+  const tipLabelShapeExtraDetailEls     = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => document.getElementById(`tip-label-shape-${i + 2}-detail`));
   const legendShowEl          = document.getElementById('legend-show');
   const legendAnnotEl         = document.getElementById('legend-annotation');
   const legendTextColorEl     = document.getElementById('legend-text-color');
@@ -249,7 +248,7 @@ async function fetchExampleTree() {
       [nodeColourBy,           nodePaletteSelect],
       [labelColourBy,          labelPaletteSelect],
       [tipLabelShapeColourBy,  tipLabelShapePaletteSelect],
-      [tipLabelShape2ColourBy, tipLabelShape2PaletteSelect],
+      ...tipLabelShapeExtraColourBys.map((cb, i) => [cb, tipLabelShapeExtraPaletteSelects[i]]),
     ];
     for (const [colourBy, sel] of pairs()) {
       if (colourBy.value === key && sel.value !== paletteName) {
@@ -313,7 +312,6 @@ async function fetchExampleTree() {
       nodeShapeColor:    nodeShapeColorEl.value,
       nodeShapeBgColor:  nodeShapeBgEl.value,
       tipLabelShapeColor:  tipLabelShapeColorEl.value,
-      tipLabelShape2Color: tipLabelShape2ColorEl.value,
       axisColor:           axisColorEl.value,
       legendTextColor:  legendTextColorEl.value,
       selectedTipStrokeColor:   selectedTipStrokeEl.value,
@@ -493,11 +491,8 @@ async function fetchExampleTree() {
       tipLabelShapeSize:    tipLabelShapeSizeSlider.value,
       tipLabelShapeMarginLeft:  tipLabelShapeMarginLeftSlider.value,
       tipLabelShapeMarginRight: tipLabelShapeMarginRightSlider.value,
-      tipLabelShape2:      tipLabelShape2El.value,
-      tipLabelShape2Color: tipLabelShape2ColorEl.value,
-      tipLabelShape2ColourBy: tipLabelShape2ColourBy.value,
-      tipLabelShape2Size:   tipLabelShape2SizeSlider.value,
-      tipLabelShape2MarginRight: tipLabelShape2MarginRightSlider.value,
+      tipLabelShapesExtra:        tipLabelShapeExtraEls.map(e => e.value),
+      tipLabelShapeExtraColourBys: tipLabelShapeExtraColourBys.map(e => e.value),
       nodeLabelAnnotation: nodeLabelShowEl.value,
       nodeLabelPosition:   nodeLabelPositionEl.value,
       nodeLabelFontSize:   nodeLabelFontSizeSlider.value,
@@ -641,15 +636,15 @@ async function fetchExampleTree() {
       tipLabelShapeSizeSlider.value = s.tipLabelShapeSize;
       document.getElementById('tip-label-shape-size-value').textContent = s.tipLabelShapeSize;
     }
-    if (s.tipLabelShape2)         tipLabelShape2El.value      = s.tipLabelShape2;
-    if (s.tipLabelShape2Color)    tipLabelShape2ColorEl.value = s.tipLabelShape2Color;
-    if (s.tipLabelShape2MarginRight != null) {
-      tipLabelShape2MarginRightSlider.value = s.tipLabelShape2MarginRight;
-      document.getElementById('tip-label-shape-2-margin-right-value').textContent = s.tipLabelShape2MarginRight;
+    // Extra shapes 2–10 (new array format + backward compat for old tipLabelShape2 key)
+    if (Array.isArray(s.tipLabelShapesExtra)) {
+      s.tipLabelShapesExtra.forEach((v, i) => { if (tipLabelShapeExtraEls[i]) tipLabelShapeExtraEls[i].value = v; });
+    } else if (s.tipLabelShape2) {
+      // Backward compat: old single-shape-2 setting
+      tipLabelShapeExtraEls[0].value = s.tipLabelShape2;
     }
-    if (s.tipLabelShape2Size != null) {
-      tipLabelShape2SizeSlider.value = s.tipLabelShape2Size;
-      document.getElementById('tip-label-shape-2-size-value').textContent = s.tipLabelShape2Size;
+    if (Array.isArray(s.tipLabelShapeExtraColourBys)) {
+      s.tipLabelShapeExtraColourBys.forEach((v, i) => { if (tipLabelShapeExtraColourBys[i]) tipLabelShapeExtraColourBys[i].value = v; });
     }
     if (s.nodeSize       != null) {
       nodeSlider.value = s.nodeSize;
@@ -784,20 +779,15 @@ async function fetchExampleTree() {
     document.getElementById('tip-label-shape-margin-right-value').textContent = DEFAULT_SETTINGS.tipLabelShapeMarginRight;
     tipLabelShapeSizeSlider.value = DEFAULT_SETTINGS.tipLabelShapeSize;
     document.getElementById('tip-label-shape-size-value').textContent = DEFAULT_SETTINGS.tipLabelShapeSize;
-    tipLabelShape2El.value       = DEFAULT_SETTINGS.tipLabelShape2;
-    tipLabelShape2ColorEl.value  = DEFAULT_SETTINGS.tipLabelShape2Color;
-    tipLabelShape2ColourBy.value = 'user_colour';
-    tipLabelShape2MarginRightSlider.value = DEFAULT_SETTINGS.tipLabelShape2MarginRight;
-    document.getElementById('tip-label-shape-2-margin-right-value').textContent = DEFAULT_SETTINGS.tipLabelShape2MarginRight;
-    tipLabelShape2SizeSlider.value = DEFAULT_SETTINGS.tipLabelShape2Size;
-    document.getElementById('tip-label-shape-2-size-value').textContent = DEFAULT_SETTINGS.tipLabelShape2Size;
+    tipLabelShapeExtraEls.forEach(e => { e.value = 'off'; });
+    tipLabelShapeExtraColourBys.forEach(e => { e.value = 'user_colour'; });
 
     if (renderer) {
       renderer.setTipColourBy('user_colour');
       renderer.setNodeColourBy('user_colour');
       renderer.setLabelColourBy('user_colour');
       renderer.setTipLabelShapeColourBy('user_colour');
-      renderer.setTipLabelShape2ColourBy('user_colour');
+      for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) renderer.setTipLabelShapeExtraColourBy(i, null);
       legendRenderer.setFontSize(parseInt(DEFAULT_SETTINGS.legendFontSize));
       legendRenderer.setFontFamily(_resolveTypeface(legendFontFamilyEl.value));
       legendRenderer.setTextColor(DEFAULT_SETTINGS.legendTextColor);
@@ -898,10 +888,7 @@ async function fetchExampleTree() {
       tipLabelShapeSize:        parseInt(tipLabelShapeSizeSlider.value),
       tipLabelShapeMarginLeft:  parseInt(tipLabelShapeMarginLeftSlider.value),
       tipLabelShapeMarginRight: parseInt(tipLabelShapeMarginRightSlider.value),
-      tipLabelShape2:           tipLabelShape2El.value,
-      tipLabelShape2Color:      tipLabelShape2ColorEl.value,
-      tipLabelShape2Size:        parseInt(tipLabelShape2SizeSlider.value),
-      tipLabelShape2MarginRight: parseInt(tipLabelShape2MarginRightSlider.value),
+      tipLabelShapesExtra:      tipLabelShapeExtraEls.map(e => e.value),
       nodeLabelAnnotation: nodeLabelShowEl.value || null,
       nodeLabelPosition:   nodeLabelPositionEl.value,
       nodeLabelFontSize:   parseInt(nodeLabelFontSizeSlider.value),
@@ -923,8 +910,12 @@ async function fetchExampleTree() {
     _vis(tipShapeDetailEl,      parseInt(tipSlider.value)   > 0);
     _vis(nodeShapeDetailEl,     parseInt(nodeSlider.value)  > 0);
     _vis(tipLabelShapeDetailEl, tipLabelShapeEl.value       !== 'off');
-    _vis(tipLabelShape2SectionEl, tipLabelShapeEl.value     !== 'off');
-    _vis(tipLabelShape2DetailEl,  tipLabelShape2El.value    !== 'off');
+    // Progressive disclosure: extra shape N section shown only when shape N-1 is on.
+    for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) {
+      const prevValue = i === 0 ? tipLabelShapeEl.value : tipLabelShapeExtraEls[i - 1].value;
+      _vis(tipLabelShapeExtraSectionEls[i], prevValue !== 'off');
+      _vis(tipLabelShapeExtraDetailEls[i],  tipLabelShapeExtraEls[i].value !== 'off');
+    }
     _vis(nodeLabelDetailEl,     nodeLabelShowEl.value       !== '');
     _vis(nodeBarsDetailEl,      nodeBarsShowEl.value        === 'on');
     _vis(legendDetailEl,        legendAnnotEl.value         !== '');
@@ -982,7 +973,6 @@ async function fetchExampleTree() {
     // Label shapes fall back to the theme's tip/node shape colours when not
     // explicitly set (built-in themes don't define them).
     tipLabelShapeColorEl.value  = t.tipLabelShapeColor  || t.tipShapeColor;
-    tipLabelShape2ColorEl.value = t.tipLabelShape2Color || t.nodeShapeColor;
     if (t.axisColor) {
       axisColorEl.value = t.axisColor;
     }
@@ -1152,19 +1142,18 @@ async function fetchExampleTree() {
     tipLabelShapeMarginRightSlider.value = _saved.tipLabelShapeMarginRight;
     document.getElementById('tip-label-shape-margin-right-value').textContent = _saved.tipLabelShapeMarginRight;
   }
-  if (_saved.tipLabelShape2)       tipLabelShape2El.value       = _saved.tipLabelShape2;
-  if (_saved.tipLabelShape2Color)  tipLabelShape2ColorEl.value  = _saved.tipLabelShape2Color;
-  if (_saved.tipLabelShape2MarginRight != null) {
-    tipLabelShape2MarginRightSlider.value = _saved.tipLabelShape2MarginRight;
-    document.getElementById('tip-label-shape-2-margin-right-value').textContent = _saved.tipLabelShape2MarginRight;
+  // Extra shapes 2–10 — new array format or backward compat for old single tipLabelShape2 key.
+  if (Array.isArray(_saved.tipLabelShapesExtra)) {
+    _saved.tipLabelShapesExtra.forEach((v, i) => { if (tipLabelShapeExtraEls[i]) tipLabelShapeExtraEls[i].value = v; });
+  } else if (_saved.tipLabelShape2) {
+    tipLabelShapeExtraEls[0].value = _saved.tipLabelShape2;
+  }
+  if (Array.isArray(_saved.tipLabelShapeExtraColourBys)) {
+    _saved.tipLabelShapeExtraColourBys.forEach((v, i) => { if (tipLabelShapeExtraColourBys[i]) tipLabelShapeExtraColourBys[i].value = v; });
   }
   if (_saved.tipLabelShapeSize != null) {
     tipLabelShapeSizeSlider.value = _saved.tipLabelShapeSize;
     document.getElementById('tip-label-shape-size-value').textContent = _saved.tipLabelShapeSize;
-  }
-  if (_saved.tipLabelShape2Size != null) {
-    tipLabelShape2SizeSlider.value = _saved.tipLabelShape2Size;
-    document.getElementById('tip-label-shape-2-size-value').textContent = _saved.tipLabelShape2Size;
   }
   if (_saved.nodeSize       != null) {
     nodeSlider.value = _saved.nodeSize;
@@ -1615,7 +1604,8 @@ async function fetchExampleTree() {
       renderer.setNodeColourBy(nodeColourBy.value    || null);
       renderer.setLabelColourBy(labelColourBy.value  || null);
       renderer.setTipLabelShapeColourBy(tipLabelShapeColourBy.value || null);
-      renderer.setTipLabelShape2ColourBy(tipLabelShape2ColourBy.value || null);
+      for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++)
+        renderer.setTipLabelShapeExtraColourBy(_i, tipLabelShapeExtraColourBys[_i].value || null);
       renderer.setTipLabelsOff(tipLabelShow.value === 'off');
       if (tipLabelShow.value !== 'off') renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
       applyLegend();
@@ -2118,7 +2108,9 @@ async function fetchExampleTree() {
     repopulate(nodeColourBy,         { filter: 'nodes' });
     repopulate(labelColourBy,        { filter: 'tips'  });
     repopulate(tipLabelShapeColourBy, { filter: 'tips' });
-    repopulate(tipLabelShape2ColourBy, { filter: 'tips' });
+    for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) {
+      repopulate(tipLabelShapeExtraColourBys[i], { filter: 'tips' });
+    }
     repopulate(legendAnnotEl,        { isLegend: true  });
     repopulate(legend2AnnotEl,       { isLegend: true  });
     // Tip label show: option[0]='off', option[1]='names', then dynamic annotations.
@@ -2192,7 +2184,9 @@ async function fetchExampleTree() {
     _updatePaletteSelect(nodePaletteSelect,           nodePaletteRow,           nodeColourBy.value);
     _updatePaletteSelect(labelPaletteSelect,          labelPaletteRow,          labelColourBy.value);
     _updatePaletteSelect(tipLabelShapePaletteSelect,  tipLabelShapePaletteRow,  tipLabelShapeColourBy.value);
-    _updatePaletteSelect(tipLabelShape2PaletteSelect, tipLabelShape2PaletteRow, tipLabelShape2ColourBy.value);
+    for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) {
+      _updatePaletteSelect(tipLabelShapeExtraPaletteSelects[i], tipLabelShapeExtraPaletteRows[i], tipLabelShapeExtraColourBys[i].value);
+    }
     // Sync clear-user-colour button: enabled only when at least one node has been coloured.
     if (btnClearUserColour) {
       commands.setEnabled('tree-clear-colours', schema.has('user_colour'));
@@ -2353,7 +2347,7 @@ async function fetchExampleTree() {
       _populateColourBy(nodeColourBy,         'nodes');
       _populateColourBy(labelColourBy,        'tips');
       _populateColourBy(tipLabelShapeColourBy, 'tips');
-      _populateColourBy(tipLabelShape2ColourBy, 'tips');
+      for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++) _populateColourBy(tipLabelShapeExtraColourBys[_i], 'tips');
 
       // Tip-label-show: option[0]='off', option[1]='names', then dynamic annotations.
       while (tipLabelShow.options.length > 2) tipLabelShow.remove(2);
@@ -2418,7 +2412,15 @@ async function fetchExampleTree() {
       nodeColourBy.value         = _hasOpt(nodeColourBy,         _eff.nodeColourBy)          ? _eff.nodeColourBy          : 'user_colour';
       labelColourBy.value        = _hasOpt(labelColourBy,        _eff.labelColourBy)         ? _eff.labelColourBy         : 'user_colour';
       tipLabelShapeColourBy.value = _hasOpt(tipLabelShapeColourBy, _eff.tipLabelShapeColourBy) ? _eff.tipLabelShapeColourBy : 'user_colour';
-      tipLabelShape2ColourBy.value = _hasOpt(tipLabelShape2ColourBy, _eff.tipLabelShape2ColourBy) ? _eff.tipLabelShape2ColourBy : 'user_colour';
+      if (Array.isArray(_eff.tipLabelShapeExtraColourBys)) {
+        _eff.tipLabelShapeExtraColourBys.forEach((v, i) => {
+          if (tipLabelShapeExtraColourBys[i])
+            tipLabelShapeExtraColourBys[i].value = _hasOpt(tipLabelShapeExtraColourBys[i], v) ? v : 'user_colour';
+        });
+      } else if (_eff.tipLabelShape2ColourBy) {
+        // Backward compat: old single tipLabelShape2ColourBy key
+        tipLabelShapeExtraColourBys[0].value = _hasOpt(tipLabelShapeExtraColourBys[0], _eff.tipLabelShape2ColourBy) ? _eff.tipLabelShape2ColourBy : 'user_colour';
+      }
       legendAnnotEl.value        = _hasOpt(legendAnnotEl,        _eff.legendAnnotation)      ? _eff.legendAnnotation      : '';
       legend2AnnotEl.value       = _hasOpt(legend2AnnotEl,       _eff.legendAnnotation2)     ? _eff.legendAnnotation2     : '';
       tipLabelShow.value  = _hasOpt(tipLabelShow,  _eff.tipLabelShow)     ? _eff.tipLabelShow     : 'names';
@@ -2456,7 +2458,8 @@ async function fetchExampleTree() {
       renderer.setNodeColourBy(nodeColourBy.value   || null);
       renderer.setLabelColourBy(labelColourBy.value || null);
       renderer.setTipLabelShapeColourBy(tipLabelShapeColourBy.value || null);
-      renderer.setTipLabelShape2ColourBy(tipLabelShape2ColourBy.value || null);
+      for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++)
+        renderer.setTipLabelShapeExtraColourBy(_i, tipLabelShapeExtraColourBys[_i].value || null);
       renderer.setTipLabelsOff(tipLabelShow.value === 'off');
       if (tipLabelShow.value !== 'off') renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
       renderer.setNodeLabelAnnotation(nodeLabelShowEl.value || null);
@@ -2465,7 +2468,8 @@ async function fetchExampleTree() {
       _updatePaletteSelect(nodePaletteSelect,           nodePaletteRow,           nodeColourBy.value);
       _updatePaletteSelect(labelPaletteSelect,          labelPaletteRow,          labelColourBy.value);
       _updatePaletteSelect(tipLabelShapePaletteSelect,  tipLabelShapePaletteRow,  tipLabelShapeColourBy.value);
-      _updatePaletteSelect(tipLabelShape2PaletteSelect, tipLabelShape2PaletteRow, tipLabelShape2ColourBy.value);
+      for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++)
+        _updatePaletteSelect(tipLabelShapeExtraPaletteSelects[_i], tipLabelShapeExtraPaletteRows[_i], tipLabelShapeExtraColourBys[_i].value);
       applyLegend();   // rebuild legend with new data (may clear it)
       const layout = computeLayoutFromGraph(graph, null, { clampNegativeBranches: clampNegBranchesEl.value === 'on' });
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
@@ -4064,55 +4068,37 @@ async function fetchExampleTree() {
     }
   });
 
-  // ── Tip-label shape 2 controls ────────────────────────────────────────────
+  // ── Tip-label shape extra controls (shapes 2–10) ─────────────────────────
 
-  tipLabelShape2El.addEventListener('change', () => {
-    renderer.setTipLabelShape2(tipLabelShape2El.value);
-    _syncControlVisibility();
-    saveSettings(); _markCustomTheme();
-  });
-
-  tipLabelShape2ColorEl.addEventListener('input', () => {
-    renderer.setTipLabelShape2Color(tipLabelShape2ColorEl.value);
-    saveSettings(); _markCustomTheme();
-  });
-
-  tipLabelShape2ColourBy.addEventListener('change', () => {
-    renderer.setTipLabelShape2ColourBy(tipLabelShape2ColourBy.value || null);
-    _updatePaletteSelect(tipLabelShape2PaletteSelect, tipLabelShape2PaletteRow, tipLabelShape2ColourBy.value);
-    saveSettings();
-  });
-
-  tipLabelShape2MarginRightSlider.addEventListener('input', () => {
-    const v = parseInt(tipLabelShape2MarginRightSlider.value);
-    document.getElementById('tip-label-shape-2-margin-right-value').textContent = v;
-    renderer.setTipLabelShape2MarginRight(v);
-    saveSettings(); _markCustomTheme();
-  });
+  for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++) {
+    const _idx = _i;
+    tipLabelShapeExtraEls[_idx].addEventListener('change', () => {
+      renderer.setTipLabelShapeExtra(_idx, tipLabelShapeExtraEls[_idx].value);
+      _syncControlVisibility();
+      saveSettings(); _markCustomTheme();
+    });
+    tipLabelShapeExtraColourBys[_idx].addEventListener('change', () => {
+      renderer.setTipLabelShapeExtraColourBy(_idx, tipLabelShapeExtraColourBys[_idx].value || null);
+      _updatePaletteSelect(tipLabelShapeExtraPaletteSelects[_idx], tipLabelShapeExtraPaletteRows[_idx], tipLabelShapeExtraColourBys[_idx].value);
+      saveSettings();
+    });
+    tipLabelShapeExtraPaletteSelects[_idx].addEventListener('change', () => {
+      const key = tipLabelShapeExtraColourBys[_idx].value;
+      if (key && key !== 'user_colour') {
+        annotationPalettes.set(key, tipLabelShapeExtraPaletteSelects[_idx].value);
+        _syncPaletteSelects(key, tipLabelShapeExtraPaletteSelects[_idx].value);
+        renderer.setAnnotationPalette(key, tipLabelShapeExtraPaletteSelects[_idx].value);
+        legendRenderer.draw();
+        saveSettings();
+      }
+    });
+  }
 
   tipLabelShapeSizeSlider.addEventListener('input', () => {
     const v = parseInt(tipLabelShapeSizeSlider.value);
     document.getElementById('tip-label-shape-size-value').textContent = v;
     renderer.setTipLabelShapeSize(v);
     saveSettings(); _markCustomTheme();
-  });
-
-  tipLabelShape2SizeSlider.addEventListener('input', () => {
-    const v = parseInt(tipLabelShape2SizeSlider.value);
-    document.getElementById('tip-label-shape-2-size-value').textContent = v;
-    renderer.setTipLabelShape2Size(v);
-    saveSettings(); _markCustomTheme();
-  });
-
-  tipLabelShape2PaletteSelect.addEventListener('change', () => {
-    const key = tipLabelShape2ColourBy.value;
-    if (key && key !== 'user_colour') {
-      annotationPalettes.set(key, tipLabelShape2PaletteSelect.value);
-      _syncPaletteSelects(key, tipLabelShape2PaletteSelect.value);
-      renderer.setAnnotationPalette(key, tipLabelShape2PaletteSelect.value);
-      legendRenderer.draw();
-      saveSettings();
-    }
   });
 
   // ── Legend controls ───────────────────────────────────────────────────────

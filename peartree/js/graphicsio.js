@@ -425,15 +425,22 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   const _svgShML    = _svgShape !== 'off' ? renderer._tipLabelShapeMarginLeft  : 0;
   const _svgShMR    = _svgShape !== 'off' ? renderer._tipLabelShapeMarginRight : 0;
   const _svgShOff   = _svgShML + _svgShSz + _svgShMR;
-  // Shape 2 (only active when shape 1 is also active)
-  const _svgShape2  = _svgShape !== 'off' ? renderer._tipLabelShape2 : 'off';
-  const _svgShSz2   = _svgShape2 !== 'off'
-    ? (_svgShape2 === 'block'
-        ? Math.max(1, renderer._tipLabelShape2Size)
-        : Math.max(2, Math.round(sy * renderer._tipLabelShape2Size / 100)))
-    : 0;
-  const _svgSh2MR   = _svgShape2 !== 'off' ? renderer._tipLabelShape2MarginRight : 0;
-  const _svgTxOff   = _svgShOff + _svgShSz2 + _svgSh2MR;  // total x offset from baseX to text
+  // Extra shapes (2–N): each uses shape 1's size/margins, own colour scale.
+  const _svgExtraShapes = _svgShape !== 'off' ? renderer._tipLabelShapesExtra : [];
+  // Precompute per-extra-shape pixel sizes (same formula as shape 1).
+  const _svgExtraShSzs = _svgExtraShapes.map(s => {
+    if (s === 'off') return 0;
+    return s === 'block'
+      ? Math.max(1, renderer._tipLabelShapeSize)
+      : Math.max(2, Math.round(sy * renderer._tipLabelShapeSize / 100));
+  });
+  // Total x offset from baseX to text start.
+  let _svgExtraTotalOff = 0;
+  for (let _i = 0; _i < _svgExtraShapes.length; _i++) {
+    if (_svgExtraShapes[_i] === 'off') break;
+    _svgExtraTotalOff += _svgExtraShSzs[_i] + _svgShMR;
+  }
+  const _svgTxOff = _svgShOff + _svgExtraTotalOff;  // total x offset from baseX to text
 
   for (const [, node] of nm) {
     const nx = toSX(node.x), ny = toSY(node.y);
@@ -501,21 +508,30 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
             shapeParts.push(`<rect x="${f(shapeX)}" y="${f(ny - halfSz)}" width="${f(_svgShSz)}" height="${f(_svgShSz)}" fill="${esc(sFill)}"/>`);
           }
         }
-        // Shape 2 — rendered independently of label text visibility.
-        if (_svgShape2 !== 'off') {
-          const shape2X = baseX + _svgShOff;
-          const halfSz2 = _svgShSz2 / 2;
-          const s2Fill  = (renderer._tipLabelShape2ColourBy && renderer._tipLabelShape2ColourScale)
-            ? (renderer._tipLabelShape2ColourForValue(node.annotations?.[renderer._tipLabelShape2ColourBy]) ?? renderer._tipLabelShape2Color)
-            : renderer._tipLabelShape2Color;
-          if (_svgShape2 === 'circle') {
-            shapeParts.push(`<circle cx="${f(shape2X + halfSz2)}" cy="${f(ny)}" r="${f(halfSz2)}" fill="${esc(s2Fill)}"/>`);
-          } else if (_svgShape2 === 'block') {
-            const bTop = Math.floor(ny - sy / 2);
-            const bH   = Math.ceil(ny + sy / 2) - bTop;
-            shapeParts.push(`<rect x="${f(shape2X)}" y="${f(bTop)}" width="${f(_svgShSz2)}" height="${f(bH)}" fill="${esc(s2Fill)}"/>`);
-          } else {
-            shapeParts.push(`<rect x="${f(shape2X)}" y="${f(ny - halfSz2)}" width="${f(_svgShSz2)}" height="${f(_svgShSz2)}" fill="${esc(s2Fill)}"/>`);
+        // Extra shapes 2..N — rendered independently of label text visibility.
+        {
+          let _xOff = _svgShOff;
+          for (let _i = 0; _i < _svgExtraShapes.length; _i++) {
+            const _sType = _svgExtraShapes[_i];
+            if (_sType === 'off') break;
+            const _sSz    = _svgExtraShSzs[_i];
+            const _halfSz = _sSz / 2;
+            const _xKey   = renderer._tipLabelShapeExtraColourBys[_i];
+            const _xScl   = renderer._tipLabelShapeExtraColourScales[_i];
+            const _xFill  = (_xKey && _xScl)
+              ? (renderer._tipLabelShapeExtraColourForValue(_i, node.annotations?.[_xKey]) ?? renderer._tipLabelShapeColor)
+              : renderer._tipLabelShapeColor;
+            const _shapeXX = baseX + _xOff;
+            if (_sType === 'circle') {
+              shapeParts.push(`<circle cx="${f(_shapeXX + _halfSz)}" cy="${f(ny)}" r="${f(_halfSz)}" fill="${esc(_xFill)}"/>`);
+            } else if (_sType === 'block') {
+              const bTop = Math.floor(ny - sy / 2);
+              const bH   = Math.ceil(ny + sy / 2) - bTop;
+              shapeParts.push(`<rect x="${f(_shapeXX)}" y="${f(bTop)}" width="${f(_sSz)}" height="${f(bH)}" fill="${esc(_xFill)}"/>`);
+            } else {
+              shapeParts.push(`<rect x="${f(_shapeXX)}" y="${f(ny - _halfSz)}" width="${f(_sSz)}" height="${f(_sSz)}" fill="${esc(_xFill)}"/>`);
+            }
+            _xOff += _sSz + _svgShMR;
           }
         }
         // Label text.

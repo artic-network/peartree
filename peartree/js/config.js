@@ -99,11 +99,9 @@ export const DEFAULT_SETTINGS = {
   tipLabelShapeColor:        '#aaaaaa',
   tipLabelShapeMarginLeft:   '2',
   tipLabelShapeMarginRight:  '3',
-  // Second tip label shape (shown immediately to the right of shape 1)
-  tipLabelShape2:            'off',
-  tipLabelShape2Size:        '50',
-  tipLabelShape2Color:       '#888888',
-  tipLabelShape2MarginRight: '3',
+  // Extra tip label shapes 2–10 (shown immediately to the right of shape 1; share shape 1's size/colour/margins)
+  tipLabelShapesExtra:       ['off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off'],
+  tipLabelShapeExtraColourBys: ['user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour'],
   // Node labels (internal-node annotation labels)
   nodeLabelAnnotation: '',
   nodeLabelPosition:   'right',

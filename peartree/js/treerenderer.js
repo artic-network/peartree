@@ -141,13 +141,10 @@ export class TreeRenderer {
     this._tipLabelShapeSize        = 50;     // 1–100: % of scaleY (square/circle) or absolute px width (block)
     this._tipLabelShapeMarginLeft  = 2;      // px gap before shape
     this._tipLabelShapeMarginRight = 3;      // px gap after shape (before text / before shape 2)
-    // Second tip-label shape (sits immediately right of shape 1, no left margin)
-    this._tipLabelShape2           = 'off';  // 'off' | 'square' | 'circle' | 'block'
-    this._tipLabelShape2Color      = '#888888';
-    this._tipLabelShape2Size       = 50;     // 1–100: % of scaleY (square/circle) or ×0.1 width factor (block)
-    this._tipLabelShape2ColourBy   = null;
-    this._tipLabelShape2ColourScale = null;
-    this._tipLabelShape2MarginRight = 3;     // px gap after shape 2 (before text)
+    // Extra tip-label shapes 2–10 (share shape 1's colour/size/margins; progressive disclosure)
+    this._tipLabelShapesExtra         = Array(9).fill('off');  // shape type per extra slot
+    this._tipLabelShapeExtraColourBys = Array(9).fill(null);   // annotation key per extra slot
+    this._tipLabelShapeExtraColourScales = Array(9).fill(null); // colour scale per extra slot
     this._crossfadeAlpha    = 0;      // 1→0; 0 = not animating
 
     // Legend (drawing delegated to LegendRenderer; registered via setLegendRenderer)
@@ -211,11 +208,14 @@ export class TreeRenderer {
     this._tipLabelShapeSize        = +(s.tipLabelShapeSize        ?? 50);
     this._tipLabelShapeMarginLeft  = +(s.tipLabelShapeMarginLeft  ?? 2);
     this._tipLabelShapeMarginRight = +(s.tipLabelShapeMarginRight ?? 3);
-    // ── Second tip-label shape ────────────────────────────────────────────────
-    this._tipLabelShape2           = s.tipLabelShape2           ?? 'off';
-    this._tipLabelShape2Color      = s.tipLabelShape2Color      ?? '#888888';
-    this._tipLabelShape2Size       = +(s.tipLabelShape2Size       ?? 50);
-    this._tipLabelShape2MarginRight = +(s.tipLabelShape2MarginRight ?? 3);
+    // ── Extra tip-label shapes 2–10 (share shape 1's colour/size/margins) ────
+    if (Array.isArray(s.tipLabelShapesExtra)) {
+      for (let i = 0; i < this._tipLabelShapesExtra.length; i++)
+        this._tipLabelShapesExtra[i] = s.tipLabelShapesExtra[i] ?? 'off';
+    } else if (s.tipLabelShape2) {
+      // Backward compat: old single shape-2 setting
+      this._tipLabelShapesExtra[0] = s.tipLabelShape2;
+    }
 
     // ── Layout geometry ─────────────────────────────────────────────────────
     this.paddingLeft            = s.paddingLeft;
@@ -795,7 +795,10 @@ export class TreeRenderer {
     if (this._nodeColourBy)           this._nodeColourScale           = this._buildColourScale(this._nodeColourBy);
     if (this._labelColourBy)          this._labelColourScale          = this._buildColourScale(this._labelColourBy);
     if (this._tipLabelShapeColourBy)  this._tipLabelShapeColourScale  = this._buildColourScale(this._tipLabelShapeColourBy);
-    if (this._tipLabelShape2ColourBy) this._tipLabelShape2ColourScale = this._buildColourScale(this._tipLabelShape2ColourBy);
+    for (let i = 0; i < this._tipLabelShapeExtraColourBys.length; i++) {
+      if (this._tipLabelShapeExtraColourBys[i])
+        this._tipLabelShapeExtraColourScales[i] = this._buildColourScale(this._tipLabelShapeExtraColourBys[i]);
+    }
     this._legendRenderer?.setAnnotationSchema(schema);
     this._legendRenderer?.setPaletteOverrides(this._annotationPaletteOverrides);
     this._dirty = true;
@@ -873,41 +876,19 @@ export class TreeRenderer {
     this._dirty = true;
   }
 
-  /** Set the shape style for the second tip-label swatch: 'off' | 'square' | 'circle' | 'block'. */
-  setTipLabelShape2(shape) {
-    this._tipLabelShape2 = shape || 'off';
+  /** Set the shape type for extra tip-label slot i (0-based, slots 0–8 = shapes 2–10): 'off' | 'square' | 'circle' | 'block'. */
+  setTipLabelShapeExtra(i, shape) {
+    this._tipLabelShapesExtra[i] = shape || 'off';
     this._measureLabels();
     this._updateScaleX(false);
     this._dirty = true;
   }
 
-  /** Set the size of the second tip-label shape swatch (1–100). For square/circle: % of scaleY. For block: ×0.1 width factor of scaleY. */
-  setTipLabelShape2Size(n) {
-    this._tipLabelShape2Size = n;
-    this._measureLabels();
-    this._updateScaleX(false);
-    this._dirty = true;
-  }
-
-  /** Set the default fill colour for the second tip-label shape swatch. */
-  setTipLabelShape2Color(hex) {
-    this._tipLabelShape2Color = hex;
-    this._dirty = true;
-  }
-
-  /** Set the annotation key used to colour the second tip-label shape swatch. */
-  setTipLabelShape2ColourBy(key) {
-    this._tipLabelShape2ColourBy    = key || null;
-    this._tipLabelShape2ColourScale = this._tipLabelShape2ColourBy
-      ? this._buildColourScale(this._tipLabelShape2ColourBy) : null;
-    this._dirty = true;
-  }
-
-  /** Set the right margin (px) between shape 2 and the label text. */
-  setTipLabelShape2MarginRight(n) {
-    this._tipLabelShape2MarginRight = n;
-    this._measureLabels();
-    this._updateScaleX(false);
+  /** Set the annotation key used to colour extra tip-label shape slot i (0-based). */
+  setTipLabelShapeExtraColourBy(i, key) {
+    this._tipLabelShapeExtraColourBys[i]    = key || null;
+    this._tipLabelShapeExtraColourScales[i] = this._tipLabelShapeExtraColourBys[i]
+      ? this._buildColourScale(this._tipLabelShapeExtraColourBys[i]) : null;
     this._dirty = true;
   }
 
@@ -928,7 +909,10 @@ export class TreeRenderer {
     if (this._nodeColourBy           === key) this._nodeColourScale           = this._buildColourScale(key);
     if (this._labelColourBy          === key) this._labelColourScale          = this._buildColourScale(key);
     if (this._tipLabelShapeColourBy  === key) this._tipLabelShapeColourScale  = this._buildColourScale(key);
-    if (this._tipLabelShape2ColourBy === key) this._tipLabelShape2ColourScale = this._buildColourScale(key);
+    for (let i = 0; i < this._tipLabelShapeExtraColourBys.length; i++) {
+      if (this._tipLabelShapeExtraColourBys[i] === key)
+        this._tipLabelShapeExtraColourScales[i] = this._buildColourScale(key);
+    }
     // Propagate to legend so it redraws with the new palette.
     this._legendRenderer?.setPaletteOverrides(this._annotationPaletteOverrides);
     this._dirty = true;
@@ -995,7 +979,7 @@ export class TreeRenderer {
   _nodeColourForValue(value)            { return this._colourFromScale(value, this._nodeColourScale);  }
   _labelColourForValue(value)           { return this._colourFromScale(value, this._labelColourScale); }
   _tipLabelShapeColourForValue(value)   { return this._colourFromScale(value, this._tipLabelShapeColourScale); }
-  _tipLabelShape2ColourForValue(value)  { return this._colourFromScale(value, this._tipLabelShape2ColourScale); }
+  _tipLabelShapeExtraColourForValue(i, value) { return this._colourFromScale(value, this._tipLabelShapeExtraColourScales[i]); }
 
   /** Pixel size of tip-label shape swatches, relative to the current inter-tip spacing (scaleY).
    *  square / circle: sizePercent 1–100 maps to 1–100 % of scaleY.
@@ -1358,10 +1342,14 @@ export class TreeRenderer {
     const shapeExtra = this._tipLabelShape !== 'off'
       ? this._tipLabelShapeMarginLeft + this._shapeSize(this._tipLabelShapeSize, this._tipLabelShape) + this._tipLabelShapeMarginRight
       : 0;
-    const shape2Extra = this._tipLabelShape !== 'off' && this._tipLabelShape2 !== 'off'
-      ? this._shapeSize(this._tipLabelShape2Size, this._tipLabelShape2) + this._tipLabelShape2MarginRight
-      : 0;
-    this.labelRightPad = this._maxLabelWidth + Math.max(tipOuterR, 5) + 5 + shapeExtra + shape2Extra + (this.paddingRight ?? 10);
+    let shapesExtraWidth = 0;
+    if (this._tipLabelShape !== 'off') {
+      for (const s of this._tipLabelShapesExtra) {
+        if (s === 'off') break;
+        shapesExtraWidth += this._shapeSize(this._tipLabelShapeSize, s) + this._tipLabelShapeMarginRight;
+      }
+    }
+    this.labelRightPad = this._maxLabelWidth + Math.max(tipOuterR, 5) + 5 + shapeExtra + shapesExtraWidth + (this.paddingRight ?? 10);
   }
 
   /** Recompute scaleX so the tree always fills the full viewport width.
@@ -2295,13 +2283,18 @@ export class TreeRenderer {
     const _shMR     = _shape !== 'off' ? this._tipLabelShapeMarginRight : 0;
     // Amount by which text shifts right to clear shape 1 + margins.
     const _shOffset = _shML + _shSz + _shMR;
-    // Shape 2: drawn immediately after shape 1 (no left margin).
-    const _shape2   = _shape !== 'off' ? this._tipLabelShape2 : 'off';
-    const _shSz2    = _shape2 !== 'off' ? this._shapeSize(this._tipLabelShape2Size, _shape2) : 0;
-    const _sh2MR    = _shape2 !== 'off' ? this._tipLabelShape2MarginRight : 0;
-    const _sh2Offset = _shSz2 + _sh2MR;
-    // Helper: text x position for a given base x (both shapes accounted for).
-    const _tx = (baseX) => baseX + _shOffset + _sh2Offset;
+    // Extra shapes (2..N): each uses shape 1's size/margins; drawn sequentially after shape 1.
+    // Compute cumulative x-offsets for each extra shape.
+    const _extraShapes = _shape !== 'off' ? this._tipLabelShapesExtra : [];
+    let _extraTotalOff = 0;  // total extra width contributed by all active extra shapes
+    {
+      for (const s of _extraShapes) {
+        if (s === 'off') break;
+        _extraTotalOff += this._shapeSize(this._tipLabelShapeSize, s) + _shMR;
+      }
+    }
+    // Helper: text x position for a given base x (all shapes accounted for).
+    const _tx = (baseX) => baseX + _shOffset + _extraTotalOff;
 
     // Pass 3 – labels (two sub-passes when selection active: dim then bright)
     if (showLabels) {
@@ -2414,33 +2407,38 @@ export class TreeRenderer {
       }
     }
 
-    // Pass 3-shapes-2 – second label shape, also density-independent.
-    if (_shape2 !== 'off') {
-      const _sh2Key = this._tipLabelShape2ColourBy;
-      const _sh2Scl = this._tipLabelShape2ColourScale;
-      const _has2Sc = !!(_sh2Key && _sh2Scl);
-      const halfSz2 = _shSz2 / 2;
-      for (const node of this.nodes) {
-        if (!node.isTip) continue;
-        if (node.y < yWorldMin || node.y > yWorldMax) continue;
-        const baseX   = alignLabelX ?? (this._wx(node.x) + outlineR + 3);
-        // Shape 2 starts right after shape 1's block (marginLeft + shape1 + marginRight).
-        const shape2X = baseX + _shOffset;
-        const sy      = this._wy(node.y);
-        ctx.fillStyle = _has2Sc
-          ? (this._tipLabelShape2ColourForValue(node.annotations?.[_sh2Key]) ?? this._tipLabelShape2Color)
-          : this._tipLabelShape2Color;
-        if (_shape2 === 'circle') {
-          ctx.beginPath();
-          ctx.arc(shape2X + halfSz2, sy, halfSz2, 0, Math.PI * 2);
-          ctx.fill();
-        } else if (_shape2 === 'block') {
-          const _bTop = Math.floor(sy - this.scaleY / 2);
-          ctx.fillRect(shape2X, _bTop, _shSz2, Math.ceil(sy + this.scaleY / 2) - _bTop);
-        } else {
-          // 'square'
-          ctx.fillRect(shape2X, sy - halfSz2, _shSz2, _shSz2);
+    // Pass 3-shapes-extra – extra label shapes (2..N), sharing size/colour/margins from shape 1.
+    if (_shape !== 'off') {
+      let extraOff = _shOffset;  // x offset from baseX to the current extra shape
+      for (let i = 0; i < this._tipLabelShapesExtra.length; i++) {
+        const _shapeXType = this._tipLabelShapesExtra[i];
+        if (_shapeXType === 'off') break;
+        const _shSzX  = this._shapeSize(this._tipLabelShapeSize, _shapeXType);
+        const halfSzX = _shSzX / 2;
+        const _shXKey = this._tipLabelShapeExtraColourBys[i];
+        const _shXScl = this._tipLabelShapeExtraColourScales[i];
+        const _hasXSc = !!(_shXKey && _shXScl);
+        for (const node of this.nodes) {
+          if (!node.isTip) continue;
+          if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          const baseX   = alignLabelX ?? (this._wx(node.x) + outlineR + 3);
+          const shapeXX = baseX + extraOff;
+          const sy      = this._wy(node.y);
+          ctx.fillStyle = _hasXSc
+            ? (this._tipLabelShapeExtraColourForValue(i, node.annotations?.[_shXKey]) ?? this._tipLabelShapeColor)
+            : this._tipLabelShapeColor;
+          if (_shapeXType === 'circle') {
+            ctx.beginPath();
+            ctx.arc(shapeXX + halfSzX, sy, halfSzX, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (_shapeXType === 'block') {
+            const _bTop = Math.floor(sy - this.scaleY / 2);
+            ctx.fillRect(shapeXX, _bTop, _shSzX, Math.ceil(sy + this.scaleY / 2) - _bTop);
+          } else {
+            ctx.fillRect(shapeXX, sy - halfSzX, _shSzX, _shSzX);
+          }
         }
+        extraOff += _shSzX + _shMR;
       }
     }
   }
