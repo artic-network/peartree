@@ -140,8 +140,9 @@ export class TreeRenderer {
     this._tipLabelShapeColor       = '#aaaaaa';
     this._tipLabelShapeSize        = 50;     // 1–100: % of scaleY (square/circle) or absolute px width (block)
     this._tipLabelShapeMarginLeft  = 2;      // px gap before shape
-    this._tipLabelShapeMarginRight = 3;      // px gap after shape (before text / before shape 2)
-    // Extra tip-label shapes 2–10 (share shape 1's colour/size/margins; progressive disclosure)
+    this._tipLabelShapeMarginRight = 3;      // px gap after the last shape (before label text)
+    this._tipLabelShapeSpacing     = 3;      // px gap between consecutive shapes
+    // Extra tip-label shapes 2–10 (share shape 1's colour/size; progressive disclosure)
     this._tipLabelShapesExtra         = Array(9).fill('off');  // shape type per extra slot
     this._tipLabelShapeExtraColourBys = Array(9).fill(null);   // annotation key per extra slot
     this._tipLabelShapeExtraColourScales = Array(9).fill(null); // colour scale per extra slot
@@ -208,7 +209,8 @@ export class TreeRenderer {
     this._tipLabelShapeSize        = +(s.tipLabelShapeSize        ?? 50);
     this._tipLabelShapeMarginLeft  = +(s.tipLabelShapeMarginLeft  ?? 2);
     this._tipLabelShapeMarginRight = +(s.tipLabelShapeMarginRight ?? 3);
-    // ── Extra tip-label shapes 2–10 (share shape 1's colour/size/margins) ────
+    this._tipLabelShapeSpacing     = +(s.tipLabelShapeSpacing     ?? 3);
+    // ── Extra tip-label shapes 2–10 (share shape 1's colour/size) ────
     // Always reinitialise the shapes array (setSettings fully resets visual state).
     // ColourBy/Scale arrays are lazily created here on first call, then preserved
     // across subsequent setSettings calls (they are maintained by setTipLabelShapeExtraColourBy).
@@ -875,9 +877,17 @@ export class TreeRenderer {
     this._dirty = true;
   }
 
-  /** Set the right margin (px) between the right side of the swatch and the label text (or shape 2). */
+  /** Set the right margin (px) between the last shape and the label text. */
   setTipLabelShapeMarginRight(n) {
     this._tipLabelShapeMarginRight = n;
+    this._measureLabels();
+    this._updateScaleX(false);
+    this._dirty = true;
+  }
+
+  /** Set the spacing (px) between consecutive tip-label shapes. */
+  setTipLabelShapeSpacing(n) {
+    this._tipLabelShapeSpacing = n;
     this._measureLabels();
     this._updateScaleX(false);
     this._dirty = true;
@@ -1346,15 +1356,19 @@ export class TreeRenderer {
     }
     const r = this.tipRadius;
     const tipOuterR = r > 0 ? r + this.tipHaloSize : 0;
+    // Count active extra shapes to determine inter-shape gap (spacing vs marginRight).
+    const _activeExtras = [];
+    if (this._tipLabelShape !== 'off') {
+      for (const s of this._tipLabelShapesExtra) { if (s === 'off') break; _activeExtras.push(s); }
+    }
     const shapeExtra = this._tipLabelShape !== 'off'
-      ? this._tipLabelShapeMarginLeft + this._shapeSize(this._tipLabelShapeSize, this._tipLabelShape) + this._tipLabelShapeMarginRight
+      ? this._tipLabelShapeMarginLeft + this._shapeSize(this._tipLabelShapeSize, this._tipLabelShape)
+        + (_activeExtras.length > 0 ? this._tipLabelShapeSpacing : this._tipLabelShapeMarginRight)
       : 0;
     let shapesExtraWidth = 0;
-    if (this._tipLabelShape !== 'off') {
-      for (const s of this._tipLabelShapesExtra) {
-        if (s === 'off') break;
-        shapesExtraWidth += this._shapeSize(this._tipLabelShapeSize, s) + this._tipLabelShapeMarginRight;
-      }
+    for (let i = 0; i < _activeExtras.length; i++) {
+      shapesExtraWidth += this._shapeSize(this._tipLabelShapeSize, _activeExtras[i])
+        + (i < _activeExtras.length - 1 ? this._tipLabelShapeSpacing : this._tipLabelShapeMarginRight);
     }
     this.labelRightPad = this._maxLabelWidth + Math.max(tipOuterR, 5) + 5 + shapeExtra + shapesExtraWidth + (this.paddingRight ?? 10);
   }
@@ -2286,19 +2300,21 @@ export class TreeRenderer {
     // Tip-label shapes: thin coloured swatches drawn to the left of label text.
     const _shape    = this._tipLabelShape;
     const _shSz     = _shape !== 'off' ? this._shapeSize(this._tipLabelShapeSize, _shape) : 0;
-    const _shML     = _shape !== 'off' ? this._tipLabelShapeMarginLeft  : 0;
-    const _shMR     = _shape !== 'off' ? this._tipLabelShapeMarginRight : 0;
-    // Amount by which text shifts right to clear shape 1 + margins.
-    const _shOffset = _shML + _shSz + _shMR;
-    // Extra shapes (2..N): each uses shape 1's size/margins; drawn sequentially after shape 1.
-    // Compute cumulative x-offsets for each extra shape.
+    const _shML      = _shape !== 'off' ? this._tipLabelShapeMarginLeft  : 0;
+    const _shMR      = _shape !== 'off' ? this._tipLabelShapeMarginRight : 0;
+    const _shSpacing = _shape !== 'off' ? this._tipLabelShapeSpacing     : 0;
+    // Extra shapes (2..N): each uses shape 1's size/spacing; drawn sequentially after shape 1.
     const _extraShapes = _shape !== 'off' ? this._tipLabelShapesExtra : [];
-    let _extraTotalOff = 0;  // total extra width contributed by all active extra shapes
-    {
-      for (const s of _extraShapes) {
-        if (s === 'off') break;
-        _extraTotalOff += this._shapeSize(this._tipLabelShapeSize, s) + _shMR;
-      }
+    // Collect active extra shapes (terminate at first 'off').
+    const _activeXShapes = [];
+    for (const s of _extraShapes) { if (s === 'off') break; _activeXShapes.push(s); }
+    // Offset from baseX past shape 1: uses _shSpacing if extras follow, else _shMR.
+    const _shOffset = _shML + _shSz + (_activeXShapes.length > 0 ? _shSpacing : _shMR);
+    // Total width of all active extra shapes with appropriate inter-shape gaps.
+    let _extraTotalOff = 0;
+    for (let i = 0; i < _activeXShapes.length; i++) {
+      _extraTotalOff += this._shapeSize(this._tipLabelShapeSize, _activeXShapes[i])
+        + (i < _activeXShapes.length - 1 ? _shSpacing : _shMR);
     }
     // Helper: text x position for a given base x (all shapes accounted for).
     const _tx = (baseX) => baseX + _shOffset + _extraTotalOff;
@@ -2414,12 +2430,11 @@ export class TreeRenderer {
       }
     }
 
-    // Pass 3-shapes-extra – extra label shapes (2..N), sharing size/colour/margins from shape 1.
-    if (_shape !== 'off') {
+    // Pass 3-shapes-extra – extra label shapes (2..N), sharing size/colour/spacing from shape 1.
+    if (_activeXShapes.length > 0) {
       let extraOff = _shOffset;  // x offset from baseX to the current extra shape
-      for (let i = 0; i < this._tipLabelShapesExtra.length; i++) {
-        const _shapeXType = this._tipLabelShapesExtra[i];
-        if (_shapeXType === 'off') break;
+      for (let i = 0; i < _activeXShapes.length; i++) {
+        const _shapeXType = _activeXShapes[i];
         const _shSzX  = this._shapeSize(this._tipLabelShapeSize, _shapeXType);
         const halfSzX = _shSzX / 2;
         const _shXKey = this._tipLabelShapeExtraColourBys[i];
@@ -2445,7 +2460,7 @@ export class TreeRenderer {
             ctx.fillRect(shapeXX, sy - halfSzX, _shSzX, _shSzX);
           }
         }
-        extraOff += _shSzX + _shMR;
+        extraOff += _shSzX + (i < _activeXShapes.length - 1 ? _shSpacing : _shMR);
       }
     }
   }

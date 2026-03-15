@@ -422,10 +422,10 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
         ? Math.max(1, renderer._tipLabelShapeSize)
         : Math.max(2, Math.round(sy * renderer._tipLabelShapeSize / 100)))
     : 0;
-  const _svgShML    = _svgShape !== 'off' ? renderer._tipLabelShapeMarginLeft  : 0;
-  const _svgShMR    = _svgShape !== 'off' ? renderer._tipLabelShapeMarginRight : 0;
-  const _svgShOff   = _svgShML + _svgShSz + _svgShMR;
-  // Extra shapes (2–N): each uses shape 1's size/margins, own colour scale.
+  const _svgShML      = _svgShape !== 'off' ? renderer._tipLabelShapeMarginLeft  : 0;
+  const _svgShMR      = _svgShape !== 'off' ? renderer._tipLabelShapeMarginRight : 0;
+  const _svgShSpacing = _svgShape !== 'off' ? (renderer._tipLabelShapeSpacing ?? renderer._tipLabelShapeMarginRight) : 0;
+  // Extra shapes (2–N): each uses shape 1's size/spacing, own colour scale.
   const _svgExtraShapes = _svgShape !== 'off' ? renderer._tipLabelShapesExtra : [];
   // Precompute per-extra-shape pixel sizes (same formula as shape 1).
   const _svgExtraShSzs = _svgExtraShapes.map(s => {
@@ -434,11 +434,20 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
       ? Math.max(1, renderer._tipLabelShapeSize)
       : Math.max(2, Math.round(sy * renderer._tipLabelShapeSize / 100));
   });
-  // Total x offset from baseX to text start.
-  let _svgExtraTotalOff = 0;
+  // Collect active extra shape indices (break at first 'off').
+  const _svgActiveExtras = [];
   for (let _i = 0; _i < _svgExtraShapes.length; _i++) {
     if (_svgExtraShapes[_i] === 'off') break;
-    _svgExtraTotalOff += _svgExtraShSzs[_i] + _svgShMR;
+    _svgActiveExtras.push(_i);
+  }
+  // _svgShOff: offset past shape 1; uses spacing if extras follow, else marginRight.
+  const _svgShOff = _svgShML + _svgShSz + (_svgActiveExtras.length > 0 ? _svgShSpacing : _svgShMR);
+  // Total width of all active extra shapes with inter-shape gaps.
+  let _svgExtraTotalOff = 0;
+  for (let _i = 0; _i < _svgActiveExtras.length; _i++) {
+    const _idx = _svgActiveExtras[_i];
+    _svgExtraTotalOff += _svgExtraShSzs[_idx]
+      + (_i < _svgActiveExtras.length - 1 ? _svgShSpacing : _svgShMR);
   }
   const _svgTxOff = _svgShOff + _svgExtraTotalOff;  // total x offset from baseX to text
 
@@ -511,15 +520,15 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
         // Extra shapes 2..N — rendered independently of label text visibility.
         {
           let _xOff = _svgShOff;
-          for (let _i = 0; _i < _svgExtraShapes.length; _i++) {
-            const _sType = _svgExtraShapes[_i];
-            if (_sType === 'off') break;
-            const _sSz    = _svgExtraShSzs[_i];
+          for (let _i = 0; _i < _svgActiveExtras.length; _i++) {
+            const _idx  = _svgActiveExtras[_i];
+            const _sType = _svgExtraShapes[_idx];
+            const _sSz    = _svgExtraShSzs[_idx];
             const _halfSz = _sSz / 2;
-            const _xKey   = renderer._tipLabelShapeExtraColourBys[_i];
-            const _xScl   = renderer._tipLabelShapeExtraColourScales[_i];
+            const _xKey   = renderer._tipLabelShapeExtraColourBys[_idx];
+            const _xScl   = renderer._tipLabelShapeExtraColourScales[_idx];
             const _xFill  = (_xKey && _xScl)
-              ? (renderer._tipLabelShapeExtraColourForValue(_i, node.annotations?.[_xKey]) ?? renderer._tipLabelShapeColor)
+              ? (renderer._tipLabelShapeExtraColourForValue(_idx, node.annotations?.[_xKey]) ?? renderer._tipLabelShapeColor)
               : renderer._tipLabelShapeColor;
             const _shapeXX = baseX + _xOff;
             if (_sType === 'circle') {
@@ -531,7 +540,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
             } else {
               shapeParts.push(`<rect x="${f(_shapeXX)}" y="${f(ny - _halfSz)}" width="${f(_sSz)}" height="${f(_sSz)}" fill="${esc(_xFill)}"/>`);
             }
-            _xOff += _sSz + _svgShMR;
+            _xOff += _sSz + (_i < _svgActiveExtras.length - 1 ? _svgShSpacing : _svgShMR);
           }
         }
         // Label text.

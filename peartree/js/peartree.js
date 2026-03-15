@@ -124,6 +124,7 @@ async function fetchExampleTree() {
   const tipLabelShapePaletteSelect   = document.getElementById('tip-label-shape-palette-select');
   const tipLabelShapeMarginLeftSlider  = document.getElementById('tip-label-shape-margin-left-slider');
   const tipLabelShapeMarginRightSlider = document.getElementById('tip-label-shape-margin-right-slider');
+  const tipLabelShapeSpacingSlider     = document.getElementById('tip-label-shape-spacing-slider');
   const tipLabelShapeSizeSlider        = document.getElementById('tip-label-shape-size-slider');
   const tipLabelShapeDetailEl        = document.getElementById('tip-label-shape-detail');
   // Extra label shapes 2–10 (indices 0–8 correspond to shape numbers 2–10)
@@ -491,6 +492,7 @@ async function fetchExampleTree() {
       tipLabelShapeSize:    tipLabelShapeSizeSlider.value,
       tipLabelShapeMarginLeft:  tipLabelShapeMarginLeftSlider.value,
       tipLabelShapeMarginRight: tipLabelShapeMarginRightSlider.value,
+      tipLabelShapeSpacing:     tipLabelShapeSpacingSlider.value,
       tipLabelShapesExtra:        tipLabelShapeExtraEls.map(e => e.value),
       tipLabelShapeExtraColourBys: tipLabelShapeExtraColourBys.map(e => e.value),
       nodeLabelAnnotation: nodeLabelShowEl.value,
@@ -631,6 +633,10 @@ async function fetchExampleTree() {
     if (s.tipLabelShapeMarginRight != null) {
       tipLabelShapeMarginRightSlider.value = s.tipLabelShapeMarginRight;
       document.getElementById('tip-label-shape-margin-right-value').textContent = s.tipLabelShapeMarginRight;
+    }
+    if (s.tipLabelShapeSpacing != null) {
+      tipLabelShapeSpacingSlider.value = s.tipLabelShapeSpacing;
+      document.getElementById('tip-label-shape-spacing-value').textContent = s.tipLabelShapeSpacing;
     }
     if (s.tipLabelShapeSize != null) {
       tipLabelShapeSizeSlider.value = s.tipLabelShapeSize;
@@ -777,6 +783,8 @@ async function fetchExampleTree() {
     document.getElementById('tip-label-shape-margin-left-value').textContent  = DEFAULT_SETTINGS.tipLabelShapeMarginLeft;
     tipLabelShapeMarginRightSlider.value = DEFAULT_SETTINGS.tipLabelShapeMarginRight;
     document.getElementById('tip-label-shape-margin-right-value').textContent = DEFAULT_SETTINGS.tipLabelShapeMarginRight;
+    tipLabelShapeSpacingSlider.value = DEFAULT_SETTINGS.tipLabelShapeSpacing;
+    document.getElementById('tip-label-shape-spacing-value').textContent = DEFAULT_SETTINGS.tipLabelShapeSpacing;
     tipLabelShapeSizeSlider.value = DEFAULT_SETTINGS.tipLabelShapeSize;
     document.getElementById('tip-label-shape-size-value').textContent = DEFAULT_SETTINGS.tipLabelShapeSize;
     tipLabelShapeExtraEls.forEach(e => { e.value = 'off'; });
@@ -888,6 +896,7 @@ async function fetchExampleTree() {
       tipLabelShapeSize:        parseInt(tipLabelShapeSizeSlider.value),
       tipLabelShapeMarginLeft:  parseInt(tipLabelShapeMarginLeftSlider.value),
       tipLabelShapeMarginRight: parseInt(tipLabelShapeMarginRightSlider.value),
+      tipLabelShapeSpacing:     parseInt(tipLabelShapeSpacingSlider.value),
       tipLabelShapesExtra:      tipLabelShapeExtraEls.map(e => e.value),
       nodeLabelAnnotation: nodeLabelShowEl.value || null,
       nodeLabelPosition:   nodeLabelPositionEl.value,
@@ -910,6 +919,7 @@ async function fetchExampleTree() {
     _vis(tipShapeDetailEl,      parseInt(tipSlider.value)   > 0);
     _vis(nodeShapeDetailEl,     parseInt(nodeSlider.value)  > 0);
     _vis(tipLabelShapeDetailEl, tipLabelShapeEl.value       !== 'off');
+    _vis(document.getElementById('tip-label-shape-spacing-row'), tipLabelShapeEl.value !== 'off' && tipLabelShapeExtraEls[0].value !== 'off');
     // Progressive disclosure: extra shape N section shown only when shape N-1 is on.
     for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) {
       const prevValue = i === 0 ? tipLabelShapeEl.value : tipLabelShapeExtraEls[i - 1].value;
@@ -1141,6 +1151,10 @@ async function fetchExampleTree() {
   if (_saved.tipLabelShapeMarginRight != null) {
     tipLabelShapeMarginRightSlider.value = _saved.tipLabelShapeMarginRight;
     document.getElementById('tip-label-shape-margin-right-value').textContent = _saved.tipLabelShapeMarginRight;
+  }
+  if (_saved.tipLabelShapeSpacing != null) {
+    tipLabelShapeSpacingSlider.value = _saved.tipLabelShapeSpacing;
+    document.getElementById('tip-label-shape-spacing-value').textContent = _saved.tipLabelShapeSpacing;
   }
   // Extra shapes 2–10 — new array format or backward compat for old single tipLabelShape2 key.
   if (Array.isArray(_saved.tipLabelShapesExtra)) {
@@ -4054,6 +4068,13 @@ async function fetchExampleTree() {
     const v = parseInt(tipLabelShapeMarginRightSlider.value);
     document.getElementById('tip-label-shape-margin-right-value').textContent = v;
     renderer.setTipLabelShapeMarginRight(v);
+    saveSettings(); _markCustomTheme();
+  });
+
+  tipLabelShapeSpacingSlider.addEventListener('input', () => {
+    const v = parseInt(tipLabelShapeSpacingSlider.value);
+    document.getElementById('tip-label-shape-spacing-value').textContent = v;
+    renderer.setTipLabelShapeSpacing(v);
     saveSettings(); _markCustomTheme();
   });
 
