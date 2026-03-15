@@ -3,15 +3,18 @@
 // Usage: node scripts/set-version.js v0.1.0-beta9
 //
 // Tag format:  v{semver}         e.g. v1.2.3
-//              v{semver}-beta{n} e.g. v0.1.0-beta9  →  0.1.0-beta.9
+//              v{semver}-beta{n} e.g. v0.1.0-beta10  →  0.1.0-10
+//
+// MSI requires the pre-release identifier to be numeric-only (no "beta" text),
+// so we strip the alpha prefix and keep only the number.
 
 const fs  = require('fs');
 const tag = process.argv[2] || '';
 
-// Strip leading 'v', then normalise betaN → beta.N (semver pre-release).
+// Strip leading 'v', then normalise betaN → N (numeric-only pre-release).
 const version = tag
   .replace(/^v/, '')
-  .replace(/beta(\d+)$/, 'beta.$1');
+  .replace(/-?beta\.?(\d+)$/, '-$1');
 
 if (!version) {
   console.error('Usage: node scripts/set-version.js <tag>');
