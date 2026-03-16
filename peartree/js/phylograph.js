@@ -748,23 +748,32 @@ export function reorderGraph(graph, ascending) {
     }
 
     const tipCounts = new Map();
+    const maxDepths  = new Map();  // max branch-length depth from this node outward
     for (let i = order.length - 1; i >= 0; i--) {
       const idx = order[i];
       const n = nodes[idx];
       if (n.adjacents.length === 1) {
         tipCounts.set(idx, 1);  // tip
+        maxDepths.set(idx, 0);
       } else {
         const pairs = [];
         for (let k = 1; k < n.adjacents.length; k++) {
-          const ct = tipCounts.get(n.adjacents[k]) ?? 0;
-          pairs.push({ adj: n.adjacents[k], len: n.lengths[k], ct });
+          const ct  = tipCounts.get(n.adjacents[k]) ?? 0;
+          const dep = (maxDepths.get(n.adjacents[k]) ?? 0) + (n.lengths[k] ?? 0);
+          pairs.push({ adj: n.adjacents[k], len: n.lengths[k], ct, dep });
         }
-        pairs.sort((a, b) => ascending ? a.ct - b.ct : b.ct - a.ct);
+        pairs.sort((a, b) => {
+          const diff = ascending ? a.ct - b.ct : b.ct - a.ct;
+          if (diff !== 0) return diff;
+          // Tiebreak: larger divergence (deeper subtree) goes last when ascending, first when descending
+          return ascending ? b.dep - a.dep : a.dep - b.dep;
+        });
         pairs.forEach(({ adj, len }, k) => { n.adjacents[k + 1] = adj; n.lengths[k + 1] = len; });
         tipCounts.set(idx, pairs.reduce((s, p) => s + p.ct, 0));
+        maxDepths.set(idx, Math.max(...pairs.map(p => p.dep)));
       }
     }
-    return tipCounts.get(rootNodeIdx) ?? 0;
+    return { ct: tipCounts.get(rootNodeIdx) ?? 0, dep: maxDepths.get(rootNodeIdx) ?? 0 };
   }
 
   if (lenA === 0) {
@@ -773,10 +782,15 @@ export function reorderGraph(graph, ascending) {
     // child, not a parent, so we must not restore it after sorting.
     // Keep graph.root.nodeB in sync with whatever lands at adjacents[0].
     const n = nodes[nodeA];
-    const pairs = n.adjacents.map((adj, i) => ({
-      adj, len: n.lengths[i], ct: sortSubtree(adj),
-    }));
-    pairs.sort((a, b) => ascending ? a.ct - b.ct : b.ct - a.ct);
+    const pairs = n.adjacents.map((adj, i) => {
+      const { ct, dep } = sortSubtree(adj);
+      return { adj, len: n.lengths[i], ct, dep: dep + (n.lengths[i] ?? 0) };
+    });
+    pairs.sort((a, b) => {
+      const diff = ascending ? a.ct - b.ct : b.ct - a.ct;
+      if (diff !== 0) return diff;
+      return ascending ? b.dep - a.dep : a.dep - b.dep;
+    });
     pairs.forEach(({ adj, len }, i) => { n.adjacents[i] = adj; n.lengths[i] = len; });
     // Update nodeB so the invariant (nodeB === adjacents[0] of nodeA) is kept.
     graph.root = { ...graph.root, nodeB: n.adjacents[0] };
@@ -785,16 +799,28 @@ export function reorderGraph(graph, ascending) {
     // Bifurcating root: sort each side of the root edge independently.
     const nA = nodes[nodeA];
     const pairsA = [];
-    for (let i = 1; i < nA.adjacents.length; i++)
-      pairsA.push({ adj: nA.adjacents[i], len: nA.lengths[i], ct: sortSubtree(nA.adjacents[i]) });
-    pairsA.sort((a, b) => ascending ? a.ct - b.ct : b.ct - a.ct);
+    for (let i = 1; i < nA.adjacents.length; i++) {
+      const { ct, dep } = sortSubtree(nA.adjacents[i]);
+      pairsA.push({ adj: nA.adjacents[i], len: nA.lengths[i], ct, dep: dep + (nA.lengths[i] ?? 0) });
+    }
+    pairsA.sort((a, b) => {
+      const diff = ascending ? a.ct - b.ct : b.ct - a.ct;
+      if (diff !== 0) return diff;
+      return ascending ? b.dep - a.dep : a.dep - b.dep;
+    });
     pairsA.forEach(({ adj, len }, i) => { nA.adjacents[i + 1] = adj; nA.lengths[i + 1] = len; });
 
     const nB = nodes[nodeB];
     const pairsB = [];
-    for (let i = 1; i < nB.adjacents.length; i++)
-      pairsB.push({ adj: nB.adjacents[i], len: nB.lengths[i], ct: sortSubtree(nB.adjacents[i]) });
-    pairsB.sort((a, b) => ascending ? a.ct - b.ct : b.ct - a.ct);
+    for (let i = 1; i < nB.adjacents.length; i++) {
+      const { ct, dep } = sortSubtree(nB.adjacents[i]);
+      pairsB.push({ adj: nB.adjacents[i], len: nB.lengths[i], ct, dep: dep + (nB.lengths[i] ?? 0) });
+    }
+    pairsB.sort((a, b) => {
+      const diff = ascending ? a.ct - b.ct : b.ct - a.ct;
+      if (diff !== 0) return diff;
+      return ascending ? b.dep - a.dep : a.dep - b.dep;
+    });
     pairsB.forEach(({ adj, len }, i) => { nB.adjacents[i + 1] = adj; nB.lengths[i + 1] = len; });
 
     // Also sort the two root branches against each other.  computeLayoutFromGraph
@@ -802,7 +828,12 @@ export function reorderGraph(graph, ascending) {
     // ordering demands it.
     const ctA = pairsA.length ? pairsA.reduce((s, p) => s + p.ct, 0) : 1;
     const ctB = pairsB.length ? pairsB.reduce((s, p) => s + p.ct, 0) : 1;
-    if (ascending ? ctA > ctB : ctA < ctB) {
+    const depA = (pairsA.length ? Math.max(...pairsA.map(p => p.dep)) : 0) + (graph.root.lenA ?? 0);
+    const depB = (pairsB.length ? Math.max(...pairsB.map(p => p.dep)) : 0) + (graph.root.lenB ?? 0);
+    const shouldSwap = ascending
+      ? (ctA > ctB || (ctA === ctB && depA > depB))
+      : (ctA < ctB || (ctA === ctB && depA < depB));
+    if (shouldSwap) {
       const { lenA: la, lenB: lb } = graph.root;
       graph.root = { nodeA: nodeB, nodeB: nodeA, lenA: lb, lenB: la };
     }
