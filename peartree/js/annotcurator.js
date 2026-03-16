@@ -4,6 +4,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { makeAnnotationFormatter, buildAnnotationSchema, isNumericType } from './phylograph.js';
+import { CATEGORICAL_PALETTES, SEQUENTIAL_PALETTES,
+         DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE } from './palettes.js';
 
 /** @private HTML-escape a value for safe insertion. */
 function esc(s) {
@@ -30,7 +32,7 @@ function _fmtNum(v) {
  *                                    renderer.setAnnotationSchema(schema).
  * @returns {{ open: Function, close: Function }}
  */
-export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, getTableColumns }) {
+export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, getTableColumns, getAnnotationPalette, onPaletteChange }) {
   const overlay  = document.getElementById('curate-annot-overlay');
   const tbody    = document.getElementById('curate-annot-tbody');
   const detail   = document.getElementById('curate-annot-detail');
@@ -151,10 +153,12 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
             <td>${obsCell}</td>
             <td><span style="color:rgba(255,255,255,0.2)">—</span></td>
             <td class="ca-center">
-              <input type="checkbox" class="ca-table-chk" data-name="${esc(name)}"
-                ${_tableColumns.has(name) ? 'checked' : ''}
-                title="Show in data table panel"
-                style="cursor:pointer;accent-color:var(--pt-teal,#2aa198)">
+              ${def.onTips
+                ? `<input type="checkbox" class="ca-table-chk" data-name="${esc(name)}"
+                    ${_tableColumns.has(name) ? 'checked' : ''}
+                    title="Show in data table panel"
+                    style="cursor:pointer;accent-color:var(--pt-teal,#2aa198)">`
+                : `<span style="color:rgba(255,255,255,0.15)" title="Node-only attribute">—</span>`}
             </td>
             <td class="ca-center"><span style="color:rgba(255,255,255,0.15)" title="Cannot be deleted">—</span></td>
           </tr>`);
@@ -226,10 +230,12 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
           <td>${obsCell}</td>
           <td>${boundsCell}</td>
           <td class="ca-center">
-            <input type="checkbox" class="ca-table-chk" data-name="${esc(name)}"
-              ${_tableColumns.has(name) ? 'checked' : ''}
-              title="Show in data table panel"
-              style="cursor:pointer;accent-color:var(--pt-teal,#2aa198)">
+            ${def.onTips
+              ? `<input type="checkbox" class="ca-table-chk" data-name="${esc(name)}"
+                  ${_tableColumns.has(name) ? 'checked' : ''}
+                  title="Show in data table panel"
+                  style="cursor:pointer;accent-color:var(--pt-teal,#2aa198)">`
+              : `<span style="color:rgba(255,255,255,0.2)" title="Node-only attribute">—</span>`}
           </td>
           <td class="ca-center">${delBtn}</td>
         </tr>`);
@@ -418,6 +424,23 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
 
     // Branch-annotation flag (relevant for all types with numeric / label data)
     html += `<div class="ca-section-lbl" style="margin-top:10px">Behaviour</div>`
+
+    // Palette picker — for all colourable (non-list) types
+    {
+      const isCat    = currentType === 'categorical' || currentType === 'ordinal';
+      const palettes = isCat ? CATEGORICAL_PALETTES : SEQUENTIAL_PALETTES;
+      const defPal   = isCat ? DEFAULT_CATEGORICAL_PALETTE : DEFAULT_SEQUENTIAL_PALETTE;
+      const stored   = (getAnnotationPalette ? getAnnotationPalette(name) : null) ?? defPal;
+      const opts = Object.keys(palettes)
+        .map(p => `<option value="${esc(p)}"${p === stored ? ' selected' : ''}>${esc(p)}</option>`)
+        .join('');
+      html += `<div class="ca-section-lbl" style="margin-top:10px">Palette</div>`
+            + `<div class="ca-row"><label class="ca-row-lbl">Colour scheme</label>`
+            + `<select id="cd-palette" class="ca-sel" style="width:auto">${opts}</select>`
+            + `</div>`;
+    }
+
+    html += `<div class="ca-section-lbl" style="margin-top:10px">Behaviour</div>`
           + `<div class="ca-row">`
           + `<label class="ca-chk-lbl"><input type="checkbox" id="cd-branch-annot"${isBranchAnnot ? ' checked' : ''}>`
           + ` Branch annotation`
@@ -455,6 +478,11 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
       const v = e.target.value.trim();
       _mutPending(name, { max: v === '' ? undefined : parseFloat(v) });
       _updateTableRow(name, getGraph()?.annotationSchema);
+    });
+
+    // Palette
+    document.getElementById('cd-palette')?.addEventListener('change', e => {
+      if (onPaletteChange) onPaletteChange(name, e.target.value);
     });
 
     // Branch-annotation toggle

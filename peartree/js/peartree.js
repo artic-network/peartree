@@ -1642,6 +1642,13 @@ async function fetchExampleTree() {
     onTableColumnsChange: (cols) => {
       dataTableRenderer.setColumns(cols);
     },
+    getAnnotationPalette: (key) => annotationPalettes.get(key) ?? null,
+    onPaletteChange: (key, paletteName) => {
+      annotationPalettes.set(key, paletteName);
+      renderer.setAnnotationPalette(key, paletteName);
+      _syncPaletteSelects(key, paletteName);
+      renderer._dirty = true;
+    },
   });
   btnCurateAnnot.addEventListener('click', () => commands.execute('curate-annot'));
 
