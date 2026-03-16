@@ -280,7 +280,6 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
       tr.addEventListener('click', () => {
         const clickedName = tr.dataset.name;
         if (clickedName === '__names__') return;  // fixed row — no detail pane
-        if (tr.dataset.builtin) return;           // computed stats — read-only, no detail
         if (_deleted.has(clickedName)) return;  // greyed-out rows are not selectable
         if (_selected === clickedName) {
           // Clicking selected row again deselects
@@ -306,7 +305,30 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
       return;
     }
 
-    const p           = _pending.get(name) ?? {};
+    // Built-in computed stats: show a read-only summary and palette picker only.
+    if (def.builtin) {
+      const displayName = esc(def.label ?? name);
+      const isCat    = def.dataType === 'categorical' || def.dataType === 'ordinal';
+      const palettes = isCat ? CATEGORICAL_PALETTES : SEQUENTIAL_PALETTES;
+      const defPal   = isCat ? DEFAULT_CATEGORICAL_PALETTE : DEFAULT_SEQUENTIAL_PALETTE;
+      const stored   = (getAnnotationPalette ? getAnnotationPalette(name) : null) ?? defPal;
+      const opts = Object.keys(palettes)
+        .map(p => `<option value="${esc(p)}"${p === stored ? ' selected' : ''}>${esc(p)}</option>`)
+        .join('');
+      detail.innerHTML =
+          `<div class="ca-detail-header"><i class="bi bi-tag me-1"></i>${displayName}</div>`
+        + `<div class="ca-row" style="color:rgba(255,255,255,0.45);font-size:0.78rem;margin-top:4px">`
+        + `<i class="bi bi-lock-fill me-2" style="opacity:0.45"></i>Computed attribute — read-only</div>`
+        + `<div class="ca-section-lbl" style="margin-top:10px">Palette</div>`
+        + `<div class="ca-row"><label class="ca-row-lbl">Colour scheme</label>`
+        + `<select id="cd-palette" class="ca-sel" style="width:auto">${opts}</select>`
+        + `</div>`;
+      document.getElementById('cd-palette')?.addEventListener('change', e => {
+        if (onPaletteChange) onPaletteChange(name, e.target.value);
+      });
+      return;
+    }
+
     const currentType = p.dataType ?? def.dataType;
     const isNumeric   = isNumericType(currentType);
     const isDate      = currentType === 'date';
@@ -335,7 +357,7 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
     const chkNonneg = boundsMode === 'nonneg' ? ' checked' : '';
     const chkProb   = boundsMode === 'prob'   ? ' checked' : '';
     const chkCustom = boundsMode === 'custom' ? ' checked' : '';
-    const customVis = boundsMode === 'custom' ? '' : 'visibility:hidden;';
+    const customVis = boundsMode === 'custom' ? '' : 'display:none;';
     const minVal    = scaleMin != null ? scaleMin : '';
     const maxVal    = scaleMax != null ? scaleMax : '';
     const obsMinStr = esc(_fmtNum(def.observedMin ?? def.min));
@@ -422,8 +444,12 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
       } // end else (real / integer bounds)
     }
 
-    // Branch-annotation flag (relevant for all types with numeric / label data)
     html += `<div class="ca-section-lbl" style="margin-top:10px">Behaviour</div>`
+          + `<div class="ca-row">`
+          + `<label class="ca-chk-lbl"><input type="checkbox" id="cd-branch-annot"${isBranchAnnot ? ' checked' : ''}>`
+          + ` Branch annotation`
+          + ` <span class="ca-hint">(stored on descendant; describes the branch above it — transferred on reroot)</span>`
+          + `</label></div>`;
 
     // Palette picker — for all colourable (non-list) types
     {
@@ -440,13 +466,6 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
             + `</div>`;
     }
 
-    html += `<div class="ca-section-lbl" style="margin-top:10px">Behaviour</div>`
-          + `<div class="ca-row">`
-          + `<label class="ca-chk-lbl"><input type="checkbox" id="cd-branch-annot"${isBranchAnnot ? ' checked' : ''}>`
-          + ` Branch annotation`
-          + ` <span class="ca-hint">(stored on descendant; describes the branch above it — transferred on reroot)</span>`
-          + `</label></div>`;
-
     detail.innerHTML = html;
 
     // ── Wire controls ───────────────────────────────────────────────────────
@@ -462,7 +481,7 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
       radio.addEventListener('change', () => {
         const mode = detail.querySelector('[name="cd-bounds"]:checked')?.value ?? 'auto';
         const customRow = document.getElementById('cd-custom-row');
-        if (customRow) customRow.style.visibility = mode === 'custom' ? '' : 'hidden';
+        if (customRow) customRow.style.display = mode === 'custom' ? '' : 'none';
         _mutPending(name, { _boundsMode: mode, ..._boundsFromPreset(mode, def) });
         _updateTableRow(name, getGraph()?.annotationSchema);
       });
