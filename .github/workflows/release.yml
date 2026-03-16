@@ -101,3 +101,45 @@ jobs:
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}
+
+  patch-updater-json:
+    # After all platform builds finish, add the darwin-universal key to latest.json.
+    # Tauri builds the macOS universal binary but tauri-action writes architecture-specific
+    # keys (darwin-aarch64 / darwin-x86_64).  The running universal app reports its platform
+    # as "darwin-universal", so the updater fails unless that key exists.
+    needs: [create-release, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Patch darwin-universal into latest.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          RELEASE_ID: ${{ needs.create-release.outputs.release_id }}
+        run: |
+          # Find the latest.json asset that tauri-action uploaded
+          ASSET_ID=$(gh api \
+            /repos/${{ github.repository }}/releases/${RELEASE_ID}/assets \
+            --jq '.[] | select(.name == "latest.json") | .id')
+
+          # Download it (auth required for draft releases)
+          curl -sSfL \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/octet-stream" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/assets/${ASSET_ID}" \
+            -o latest.json
+
+          # Add darwin-universal (same as darwin-aarch64 – both install the universal binary)
+          jq '.platforms["darwin-universal"] = .platforms["darwin-aarch64"]' \
+            latest.json > latest_patched.json
+
+          # Replace the asset
+          gh api --method DELETE \
+            /repos/${{ github.repository }}/releases/assets/${ASSET_ID}
+
+          curl -sSfL \
+            -X POST \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @latest_patched.json \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/${RELEASE_ID}/assets?name=latest.json"
