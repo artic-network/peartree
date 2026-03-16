@@ -1783,7 +1783,13 @@ async function fetchExampleTree() {
       }
     });
     window.addEventListener('mouseup', () => {
-      if (_dtDragging) { _dtDragging = false; document.body.style.cursor = ''; }
+      if (_dtDragging) {
+        _dtDragging = false;
+        document.body.style.cursor = '';
+        // Let the table renderer know the user has chosen a custom width so it
+        // won't auto-resize the panel when columns or font size change.
+        if (dataTableRenderer.isPinned()) dataTableRenderer.notifyUserResized();
+      }
     });
   }
 

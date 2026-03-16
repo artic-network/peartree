@@ -64,6 +64,7 @@ export function createDataTableRenderer({
   let _rowEls         = new Map(); // nodeId → { rowEl, numEl, cells:Map<key,input> }
   let _open           = false;
   let _pinned         = false;
+  let _userResized    = false;    // true once user drags the panel handle while pinned
   let _selectedIds    = new Set();
   let _lastClickedIdx = -1;
 
@@ -129,6 +130,11 @@ export function createDataTableRenderer({
 
   function _setPin(pinned) {
     _pinned = pinned;
+    if (!pinned) {
+      // Restore auto-sizing when unpinned so the next open/pin uses content width.
+      _userResized = false;
+      _columnSig   = '';
+    }
     panel.classList.toggle('pinned', pinned);
     _syncPinButton();
     if (onPinChange) onPinChange(pinned);
@@ -316,18 +322,21 @@ export function createDataTableRenderer({
       // when the data columns are wider than the visible scroll area.
       bodyEl.style.minWidth = dataW + 'px';
 
-      // Total panel width = frozen number column + data area
-      const panelW = _numColW + dataW;
-      panel.style.width = panelW + 'px';
-
-      // CSS variables used by #dt-num-col width and (when pinned) flex-basis /
-      // canvas-container padding-right.
+      // Frozen number column width always updates (number of digits may grow).
       panel.style.setProperty('--dt-num-w', _numColW + 'px');
-      document.documentElement.style.setProperty('--dt-panel-w', panelW + 'px');
 
-      // When pinned the canvas width changes — defer _resize() until after the
-      // browser has applied the new flex layout.
-      if (_pinned) requestAnimationFrame(() => renderer._resize());
+      // Total panel width = frozen number column + data area.
+      // When the user has manually dragged the panel to a custom width while
+      // pinned, respect that width — only update the scroll-area min-width so
+      // content is reachable via horizontal scroll, but don't move the panel.
+      const panelW = _numColW + dataW;
+      if (!(_pinned && _userResized)) {
+        panel.style.width = panelW + 'px';
+        document.documentElement.style.setProperty('--dt-panel-w', panelW + 'px');
+        // When pinned the canvas width changes — defer _resize() until after
+        // the browser has applied the new flex layout.
+        if (_pinned) requestAnimationFrame(() => renderer._resize());
+      }
     }
 
     // Mirror the tree renderer's label-visibility threshold: hide rows when tips
@@ -513,9 +522,12 @@ export function createDataTableRenderer({
   // Render an empty-state header on construction
   _renderHeader();
 
+  /** Called by the host when the user drags the panel handle while pinned. */
+  function notifyUserResized() { _userResized = true; }
+
   return {
     setColumns, setTips, syncView, syncSelection,
     open, close, isOpen, isPinned, pin, unpin,
-    getState, invalidate,
+    getState, invalidate, notifyUserResized,
   };
 }
