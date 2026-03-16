@@ -393,7 +393,7 @@
       border-right: 1px solid rgba(255,255,255,0.04);
       color: rgba(255,255,255,0.75);
       font-size: var(--dt-font-size, 0.72rem);
-      font-family: inherit;
+      font-family: var(--dt-cell-font-family, monospace);
       padding: 0 5px;
       outline: none;
       transition: background 0.1s;
@@ -409,8 +409,8 @@
     #data-table-resize-handle {
       position: absolute;
       left: 0; top: 0; bottom: 0;
-      width: 5px;
-      cursor: ew-resize;
+      width: 8px;
+      cursor: col-resize;
       z-index: 4;
     }
     #data-table-resize-handle:hover,

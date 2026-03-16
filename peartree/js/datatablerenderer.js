@@ -173,7 +173,8 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
   /**
    * Measure the widest content in each column (header + all tip values) and
    * store pixel widths in _colWidths.  Uses an offscreen canvas so no DOM
-   * layout is triggered.
+   * layout is triggered.  Samples at most MAX_SAMPLE tips to keep the loop
+   * fast for large trees.
    */
   function _computeColWidths(fontPx, fontFamily) {
     const ctx = _measureCanvas.getContext('2d');
@@ -182,18 +183,40 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
     const MIN  = 48;   // minimum column width
     _colWidths  = [];
 
+    // Sample evenly across the tip list — enough to find representative widths
+    // without scanning all 15K+ nodes per column every zoom step.
+    const MAX_SAMPLE = 500;
+    const tips = _tips;
+    const sample = tips.length <= MAX_SAMPLE
+      ? tips
+      : Array.from({ length: MAX_SAMPLE }, (_, i) => tips[Math.floor(i * tips.length / MAX_SAMPLE)]);
+
+    // Cache schema + renderer once rather than re-fetching per tip.
+    const renderer = getRenderer();
+    const schema   = renderer?._annotationSchema;
+
     if (_showNames) {
       let w = ctx.measureText('Names').width;
-      for (const tip of _tips) w = Math.max(w, ctx.measureText(tip.name ?? tip.id ?? '').width);
+      for (const tip of sample) w = Math.max(w, ctx.measureText(tip.name ?? tip.id ?? '').width);
       _colWidths.push(Math.max(MIN, Math.ceil(w) + PAD));
     }
 
     for (const col of _columns) {
-      const label = _colLabel(col);
+      const def    = schema?.get(col);
+      const label  = def?.label ?? col;
       let w = ctx.measureText(label).width;
-      for (const tip of _tips) {
-        const val = _tipValue(tip, col);
-        if (val != null) w = Math.max(w, ctx.measureText(_fmtValue(col, val)).width);
+      const isBuiltin  = col.startsWith('__');
+      const actualKey  = def?.dataKey ?? col;
+      for (const tip of sample) {
+        const raw = isBuiltin
+          ? (renderer?._statValue ? renderer._statValue(tip, col) : null)
+          : (tip.annotations?.[actualKey] ?? null);
+        if (raw == null) continue;
+        let str;
+        if (typeof raw === 'number' && def?.fmtValue) str = def.fmtValue(raw);
+        else str = String(raw);
+        const tw = ctx.measureText(str).width;
+        if (tw > w) w = tw;
       }
       _colWidths.push(Math.max(MIN, Math.ceil(w) + PAD));
     }
@@ -229,35 +252,45 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
 
     const scaleY  = renderer.scaleY;
     const offsetY = renderer.offsetY;
-    const rowH    = Math.max(12, Math.min(40, scaleY));   // clamp row height to readable range
-    // Match tip-label font size, but never taller than the row itself
-    const dtFontPx = Math.max(9, Math.min(rowH * 0.8, renderer.fontSize || 11));
-    panel.style.setProperty('--dt-font-size', dtFontPx + 'px');
+    const rowH      = Math.max(12, Math.min(40, scaleY));   // clamp row height to readable range
+    // Label font: the *tree* tip-label font size — used for column-width measurement,
+    // cell text size, and the label-visibility threshold.  Independent of zoom.
+    const labelFontPx = renderer.fontSize || 11;
+    panel.style.setProperty('--dt-font-size', labelFontPx + 'px');
+    panel.style.setProperty('--dt-cell-font-family', renderer.fontFamily || 'monospace');
     const bodyH   = bodyEl.clientHeight;
     const BUFFER  = rowH * 4;   // render rows this many px outside visible range
 
-    // Rebuild when columns, tips, or font size changes — includes width recompute
-    const currentSig = `${Math.round(dtFontPx)}|${_tipsVersion}|${_showNames ? '1':'0'}|${_columns.join('\0')}`;
+    // Rebuild columns only when columns, tips, or the tree's label font changes —
+    // NOT on every zoom step (dtFontPx is zoom-dependent; labelFontPx is not).
+    const currentSig = `${Math.round(labelFontPx)}|${_tipsVersion}|${_showNames ? '1':'0'}|${_columns.join('\0')}`;
     if (currentSig !== _columnSig) {
       _columnSig = currentSig;
-      _computeColWidths(dtFontPx, renderer.fontFamily || 'monospace');
+      _computeColWidths(labelFontPx, renderer.fontFamily || 'monospace');
       _clearRows();
       _renderHeader();
       // Auto-size the panel to fit the computed column widths exactly.
       // In empty state use a fixed minimum width so the hint text is readable.
       const totalW = _colWidths.reduce((s, w) => s + w, 0);
       panel.style.flexBasis = (_isEmpty() ? '130' : (totalW + 2)) + 'px';
+      // The flex layout reflow hasn't happened yet at this point in the rAF.
+      // Defer _resize() to the next frame so the canvas container has its new
+      // dimensions before we read clientWidth.
+      requestAnimationFrame(() => renderer._resize());
     }
 
     const visible  = new Set();
+    // Mirror the tree renderer's label-visibility rule: blank cells when tips
+    // are too close together to show labels (same threshold as treerenderer.js).
+    const labelsVisible = scaleY >= labelFontPx * 0.5;
 
     for (const tip of _tips) {
       const screenY = tip.y * scaleY + offsetY;   // centre of row in CSS px
       const topY    = screenY - rowH * 0.5;
 
       const inView = screenY + BUFFER >= 0 && screenY - BUFFER <= bodyH;
-      if (!inView) {
-        // Hide or remove out-of-view rows
+      if (!inView || !labelsVisible) {
+        // Hide rows that are out of view, or when tip labels aren't visible
         const existing = _rowEls.get(tip.id);
         if (existing) {
           existing.el.style.display = 'none';
@@ -278,7 +311,7 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
         // Refresh annotation values (skip focused inputs to avoid clobbering edits)
         for (const [key, input] of cells) {
           if (document.activeElement !== input) {
-            const str = _fmtValue(key, _tipValue(tip, key));
+            const str = labelsVisible ? _fmtValue(key, _tipValue(tip, key)) : '';
             if (input.value !== str) input.value = str;
           }
         }
@@ -312,8 +345,8 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
           const input = document.createElement('input');
           input.type  = 'text';
           const isBuiltin = col.startsWith('__');
-          const rawVal = _tipValue(tip, col);
-          input.value = _fmtValue(col, rawVal);
+          const rawVal = labelsVisible ? _tipValue(tip, col) : null;
+          input.value = labelsVisible ? _fmtValue(col, rawVal) : '';
           input.placeholder = _colLabel(col);
           input.title = (tip.name ?? tip.id ?? '') + ' / ' + _colLabel(col);
           if (isBuiltin) {
@@ -382,10 +415,10 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
     }
 
     // Clean up rows that no longer belong to visible tips
+    const tipIdSet = new Set(_tips.map(t => t.id));
     for (const [id, { el }] of [..._rowEls]) {
       if (!visible.has(id) && el.style.display !== 'none') {
-        const tip = _tips.find(t => t.id === id);
-        if (!tip) { el.remove(); _rowEls.delete(id); }
+        if (!tipIdSet.has(id)) { el.remove(); _rowEls.delete(id); }
         // else: out-of-view but tip still exists — already hidden above
       }
     }

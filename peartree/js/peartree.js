@@ -1748,6 +1748,7 @@ async function fetchExampleTree() {
     let _dtDragging = false;
     let _dtStartX   = 0;
     let _dtStartW   = 0;
+    let _dtRafId    = null;   // rAF handle for throttled resize
     _dtResizeHandle.addEventListener('mousedown', e => {
       _dtDragging = true;
       _dtStartX   = e.clientX;
@@ -1759,9 +1760,18 @@ async function fetchExampleTree() {
       if (!_dtDragging) return;
       const delta = _dtStartX - e.clientX;  // dragging left increases width
       const newW  = Math.max(100, Math.min(700, _dtStartW + delta));
+      // Update flexBasis immediately (cheap — just a CSS invalidation).
       _dtPanel.style.flexBasis = `${newW}px`;
       _dtPanel._dtWidth = `${newW}px`;  // persist for open/close cycle
-      renderer._resize();
+      // Throttle canvas resize to one call per animation frame.  mousemove
+      // can fire far faster than the browser paints; batching avoids redundant
+      // forced-layout recalculations on every pointer event.
+      if (_dtRafId === null) {
+        _dtRafId = requestAnimationFrame(() => {
+          _dtRafId = null;
+          renderer._resize();
+        });
+      }
     });
     window.addEventListener('mouseup', () => {
       if (_dtDragging) { _dtDragging = false; document.body.style.cursor = ''; }
