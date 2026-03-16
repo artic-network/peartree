@@ -119,6 +119,41 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
   }
 
   /**
+   * Return the display label for an annotation key, using the schema if available.
+   * Falls back to the raw key.
+   */
+  function _colLabel(key) {
+    const schema = getRenderer()?._annotationSchema;
+    return schema?.get(key)?.label ?? key;
+  }
+
+  /**
+   * Resolve the value for `key` on `tip`.  For built-in sentinel keys reads
+   * from tree geometry via the renderer; for regular keys reads annotations.
+   * Returns null when the value is unavailable.
+   */
+  function _tipValue(tip, key) {
+    if (key.startsWith('__')) {
+      const r = getRenderer();
+      return r?._statValue ? r._statValue(tip, key) : null;
+    }
+    return tip.annotations?.[key] ?? null;
+  }
+
+  /**
+   * Format a raw value for display in a table cell.
+   */
+  function _fmtValue(key, rawVal) {
+    if (rawVal == null) return '';
+    if (key.startsWith('__')) {
+      const schema = getRenderer()?._annotationSchema;
+      const def = schema?.get(key);
+      if (def?.fmtValue) return def.fmtValue(rawVal);
+    }
+    return String(rawVal);
+  }
+
+  /**
    * Measure the widest content in each column (header + all tip values) and
    * store pixel widths in _colWidths.  Uses an offscreen canvas so no DOM
    * layout is triggered.
@@ -137,10 +172,11 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
     }
 
     for (const col of _columns) {
-      let w = ctx.measureText(col).width;
+      const label = _colLabel(col);
+      let w = ctx.measureText(label).width;
       for (const tip of _tips) {
-        const val = tip.annotations?.[col];
-        if (val != null) w = Math.max(w, ctx.measureText(String(val)).width);
+        const val = _tipValue(tip, col);
+        if (val != null) w = Math.max(w, ctx.measureText(_fmtValue(col, val)).width);
       }
       _colWidths.push(Math.max(MIN, Math.ceil(w) + PAD));
     }
@@ -155,8 +191,9 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
       html += `<div class="dt-header-name" style="flex:0 0 ${w}px;width:${w}px" title="Tip names">Names</div>`;
     }
     for (const col of _columns) {
-      const w = _colWidths[wi++] ?? 80;
-      html += `<div class="dt-header-cell" style="flex:0 0 ${w}px;width:${w}px" title="${_esc(col)}">${_esc(col)}</div>`;
+      const w     = _colWidths[wi++] ?? 80;
+      const label = _colLabel(col);
+      html += `<div class="dt-header-cell" style="flex:0 0 ${w}px;width:${w}px" title="${_esc(label)}">${_esc(label)}</div>`;
     }
     headerEl.innerHTML = html;
   }
@@ -212,8 +249,7 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
         // Refresh annotation values (skip focused inputs to avoid clobbering edits)
         for (const [key, input] of cells) {
           if (document.activeElement !== input) {
-            const val = tip.annotations?.[key];
-            const str = val == null ? '' : String(val);
+            const str = _fmtValue(key, _tipValue(tip, key));
             if (input.value !== str) input.value = str;
           }
         }
@@ -246,17 +282,23 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
           cell.style.cssText = `flex:0 0 ${w}px;width:${w}px`;
           const input = document.createElement('input');
           input.type  = 'text';
-          const val   = tip.annotations?.[col];
-          input.value = val == null ? '' : String(val);
-          input.placeholder = col;
-          input.title = (tip.name ?? tip.id ?? '') + ' / ' + col;
+          const isBuiltin = col.startsWith('__');
+          const rawVal = _tipValue(tip, col);
+          input.value = _fmtValue(col, rawVal);
+          input.placeholder = _colLabel(col);
+          input.title = (tip.name ?? tip.id ?? '') + ' / ' + _colLabel(col);
+          if (isBuiltin) {
+            input.readOnly = true;
+            input.style.opacity = '0.6';
+            input.style.cursor  = 'default';
+          }
 
           // Commit on Enter
           input.addEventListener('keydown', e => {
             if (e.key === 'Enter')  { input.blur(); }
             if (e.key === 'Escape') {
               // Restore original value and blur without committing
-              const orig = tip.annotations?.[col];
+              const orig = isBuiltin ? _fmtValue(col, _tipValue(tip, col)) : (tip.annotations?.[col] ?? null);
               input.value = orig == null ? '' : String(orig);
               input._cancelBlur = true;
               input.blur();
@@ -266,6 +308,7 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
           // Commit on blur (unless Escape was pressed)
           input.addEventListener('blur', () => {
             if (input._cancelBlur) { input._cancelBlur = false; return; }
+            if (isBuiltin) return;  // read-only — never commit
             const orig   = tip.annotations?.[col];
             const origStr = orig == null ? '' : String(orig);
             if (input.value !== origStr) {
