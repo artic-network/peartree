@@ -4657,10 +4657,13 @@ async function fetchExampleTree() {
           '<i class="bi bi-chevron-right pt-sec-chevron"></i>' +
         '</span>');
 
-      // Wrap all content after h3 in .pt-section-body
+      // Wrap all content after h3 in .pt-section-body > .pt-section-body-inner
+      const inner = document.createElement('div');
+      inner.className = 'pt-section-body-inner';
+      while (h3.nextSibling) inner.appendChild(h3.nextSibling);
       const body = document.createElement('div');
       body.className = 'pt-section-body';
-      while (h3.nextSibling) body.appendChild(h3.nextSibling);
+      body.appendChild(inner);
       sec.appendChild(body);
 
       // Restore saved state without animation

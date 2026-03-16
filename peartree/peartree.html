@@ -788,7 +788,7 @@
       opacity: 1;
     }
     .pt-palette-section {
-      margin-bottom: 18px;
+      margin-bottom: 0;
     }
     .pt-palette-section + .pt-palette-section {
       border-top: 1px solid rgba(255,255,255,0.07);
@@ -846,18 +846,23 @@
     .pt-palette-section--pinned > h3 .pt-sec-pin { opacity: 1 !important; color: var(--pt-gold); }
     /* Section body — animated open/close */
     .pt-section-body {
-      overflow: hidden;
-      max-height: 0;
+      display: grid;
+      grid-template-rows: 0fr;
       opacity: 0;
       pointer-events: none;
-      transition: max-height 0.26s cubic-bezier(0,0,0.2,1), opacity 0.2s ease;
+      transition: grid-template-rows 0.28s cubic-bezier(0,0,0.2,1), opacity 0.22s ease;
+    }
+    .pt-section-body-inner {
+      min-height: 0;
+      overflow: hidden;
+      padding-top: 8px;
+      padding-bottom: 8px;
     }
     .pt-palette-section--open > .pt-section-body,
     .pt-palette-section--pinned > .pt-section-body {
-      max-height: 2500px;
+      grid-template-rows: 1fr;
       opacity: 1;
       pointer-events: auto;
-      padding-top: 8px;
     }
     .pt-palette-subhead {
       font-size: 0.68rem;
