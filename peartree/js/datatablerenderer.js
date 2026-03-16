@@ -67,6 +67,9 @@ export function createDataTableRenderer({
   let _userResized    = false;    // true once user drags the panel handle while pinned
   let _selectedIds    = new Set();
   let _lastClickedIdx = -1;
+  let _dragSelectActive   = false;  // true while user is drag-selecting rows
+  let _dragSelectStartIdx = -1;
+  let _dragMoved          = false;  // true once drag crossed a row boundary
 
   // ── Public API ──────────────────────────────────────────────────────────────
 
@@ -392,16 +395,18 @@ export function createDataTableRenderer({
 
         // Number cell (frozen strip)
         const numEl = document.createElement('div');
-        numEl.className    = 'dt-num-cell';
-        numEl.style.top    = `${topY}px`;
+        numEl.className     = 'dt-num-cell';
+        numEl.dataset.dtIdx = i;
+        numEl.style.top     = `${topY}px`;
         numEl.style.height = `${rowH}px`;
         numEl.textContent  = tipNum;
         if (_selectedIds.has(tip.id)) numEl.classList.add('dt-row-selected');
 
         // Data row (scrollable body)
         const rowEl = document.createElement('div');
-        rowEl.className    = 'dt-row';
-        rowEl.style.top    = `${topY}px`;
+        rowEl.className     = 'dt-row';
+        rowEl.dataset.dtIdx = i;
+        rowEl.style.top     = `${topY}px`;
         rowEl.style.height = `${rowH}px`;
 
         // Optional tip-name cell
@@ -472,6 +477,7 @@ export function createDataTableRenderer({
         // Shared click handler for both numEl and rowEl
         const handleClick = (e) => {
           if (e.target.tagName === 'INPUT') return;
+          if (_dragMoved) return;  // selection already handled by drag-select
           const tipIdx = i;   // closure over loop `let i`
           const meta   = e.metaKey || e.ctrlKey;
           const shift  = e.shiftKey;
@@ -488,8 +494,17 @@ export function createDataTableRenderer({
           if (!shift) _lastClickedIdx = tipIdx;
           if (onRowSelect) onRowSelect(next);
         };
-        rowEl.addEventListener('click', handleClick);
-        numEl.addEventListener('click', handleClick);
+        const handleMouseDown = (e) => {
+          if (e.target.tagName === 'INPUT') return;
+          e.preventDefault();       // prevent browser text-selection highlight
+          _dragSelectActive   = true;
+          _dragSelectStartIdx = i;
+          _dragMoved          = false;
+        };
+        rowEl.addEventListener('click',     handleClick);
+        rowEl.addEventListener('mousedown', handleMouseDown);
+        numEl.addEventListener('click',     handleClick);
+        numEl.addEventListener('mousedown', handleMouseDown);
 
         bodyEl.appendChild(rowEl);
         numBodyEl.appendChild(numEl);
@@ -509,6 +524,28 @@ export function createDataTableRenderer({
       }
     }
   }
+
+  // ── Drag-select: extend selection by dragging over rows ────────────────────
+  // Prevent the browser's native drag ghost.
+  panel.addEventListener('dragstart', e => e.preventDefault());
+
+  window.addEventListener('mousemove', e => {
+    if (!_dragSelectActive) return;
+    const hit = document.elementFromPoint(e.clientX, e.clientY);
+    if (!hit) return;
+    const el = hit.closest('[data-dt-idx]');
+    if (!el) return;
+    const idx = +el.dataset.dtIdx;
+    if (idx === _dragSelectStartIdx && !_dragMoved) return;
+    _dragMoved = true;
+    const lo = Math.min(_dragSelectStartIdx, idx);
+    const hi = Math.max(_dragSelectStartIdx, idx);
+    const next = new Set();
+    for (let j = lo; j <= hi; j++) if (_tips[j]) next.add(_tips[j].id);
+    if (onRowSelect) onRowSelect(next);
+  });
+
+  window.addEventListener('mouseup', () => { _dragSelectActive = false; });
 
   // ── Forward wheel events on the panel to the tree renderer ─────────────────
   // Vertical wheel scrolls the tree (keeping rows aligned with tips).
