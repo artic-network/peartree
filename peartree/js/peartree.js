@@ -1,6 +1,6 @@
 import { parseNexus, parseNewick, graphToNewick, parseDelimited } from './treeio.js';
 import { computeLayoutFromGraph, graphVisibleTipCount, graphSubtreeHasHidden } from './treeutils.js';
-import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointRootGraph, buildAnnotationSchema, isNumericType, TreeCalibration } from './phylograph.js';
+import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointRootGraph, buildAnnotationSchema, injectBuiltinStats, isNumericType, TreeCalibration } from './phylograph.js';
 import { TreeRenderer, CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY } from './treerenderer.js';
 import { LegendRenderer } from './legendrenderer.js';
 import { AxisRenderer  } from './axisrenderer.js';
@@ -2099,6 +2099,13 @@ async function fetchExampleTree() {
 
   /** Repopulate annotation dropdowns (tipColourBy, nodeColourBy, legendAnnotEl) after schema change. */
   function _refreshAnnotationUIs(schema) {
+    // Re-inject built-in geometric stats so they reflect the current tree and
+    // calibration state.  This is idempotent — removes old entries first.
+    if (renderer?.nodes?.length) {
+      injectBuiltinStats(schema, renderer.nodes, renderer.maxX, renderer.maxY,
+                         calibration?.isActive ? calibration : null);
+      renderer.setAnnotationSchema(schema);
+    }
     // filter: 'tips' → onTips, 'nodes' → onNodes, 'all' → no filter
     function repopulate(sel, { isLegend = false, filter = 'all' } = {}) {
       const prev = sel.value;
@@ -2111,7 +2118,7 @@ async function fetchExampleTree() {
         if (filter === 'tips'  && !def.onTips)  continue;
         if (filter === 'nodes' && !def.onNodes) continue;
         const opt = document.createElement('option');
-        opt.value = name; opt.textContent = name;
+        opt.value = name; opt.textContent = def.label ?? name;
         sel.appendChild(opt);
       }
       sel.disabled = false;
@@ -2138,22 +2145,19 @@ async function fetchExampleTree() {
         if (def.groupMember) continue;
         if (!def.onTips) continue;
         const opt = document.createElement('option');
-        opt.value = name; opt.textContent = name;
+        opt.value = name; opt.textContent = def.label ?? name;
         tipLabelShow.appendChild(opt);
       }
-      // Synthetic calendar-date options (only when a date calibration is active)
-      if (calibration.isActive) {
-        const _optCal = document.createElement('option');
-        _optCal.value = CAL_DATE_KEY; _optCal.textContent = 'Calendar date';
-        tipLabelShow.appendChild(_optCal);
-        if (schema.get('height')?.group?.hpd) {
-          const _optHpd = document.createElement('option');
-          _optHpd.value = CAL_DATE_HPD_KEY; _optHpd.textContent = 'Calendar date + HPDs';
-          tipLabelShow.appendChild(_optHpd);
-          const _optHpdOnly = document.createElement('option');
-          _optHpdOnly.value = CAL_DATE_HPD_ONLY_KEY; _optHpdOnly.textContent = 'Calendar date HPDs';
-          tipLabelShow.appendChild(_optHpdOnly);
-        }
+      // CAL_DATE_KEY (__cal_date__) is in the schema when calibration is active and
+      // is therefore already added by the loop above.  Only the HPD variants, which
+      // are special sentinel strings rather than schema entries, need manual injection.
+      if (calibration.isActive && schema.get('height')?.group?.hpd) {
+        const _optHpd = document.createElement('option');
+        _optHpd.value = CAL_DATE_HPD_KEY; _optHpd.textContent = 'Calendar date + HPDs';
+        tipLabelShow.appendChild(_optHpd);
+        const _optHpdOnly = document.createElement('option');
+        _optHpdOnly.value = CAL_DATE_HPD_ONLY_KEY; _optHpdOnly.textContent = 'Calendar date HPDs';
+        tipLabelShow.appendChild(_optHpdOnly);
       }
       tipLabelShow.disabled = false;
       tipLabelShow.value = [...tipLabelShow.options].some(o => o.value === prev) ? prev : 'names';
@@ -2172,22 +2176,18 @@ async function fetchExampleTree() {
         if (def.groupMember) continue;
         if (!def.onNodes) continue;
         const opt = document.createElement('option');
-        opt.value = name; opt.textContent = name;
+        opt.value = name; opt.textContent = def.label ?? name;
         nodeLabelShowEl.appendChild(opt);
       }
-      // Synthetic calendar-date options (only when a date calibration is active)
-      if (calibration.isActive) {
-        const _optCal = document.createElement('option');
-        _optCal.value = CAL_DATE_KEY; _optCal.textContent = 'Calendar date';
-        nodeLabelShowEl.appendChild(_optCal);
-        if (schema.get('height')?.group?.hpd) {
-          const _optHpd = document.createElement('option');
-          _optHpd.value = CAL_DATE_HPD_KEY; _optHpd.textContent = 'Calendar date + HPDs';
-          nodeLabelShowEl.appendChild(_optHpd);
-          const _optHpdOnly = document.createElement('option');
-          _optHpdOnly.value = CAL_DATE_HPD_ONLY_KEY; _optHpdOnly.textContent = 'Calendar date HPDs';
-          nodeLabelShowEl.appendChild(_optHpdOnly);
-        }
+      // CAL_DATE_KEY is in the schema when calibration is active (added above).
+      // Only inject HPD variants, which are special sentinels not in the schema.
+      if (calibration.isActive && schema.get('height')?.group?.hpd) {
+        const _optHpd = document.createElement('option');
+        _optHpd.value = CAL_DATE_HPD_KEY; _optHpd.textContent = 'Calendar date + HPDs';
+        nodeLabelShowEl.appendChild(_optHpd);
+        const _optHpdOnly = document.createElement('option');
+        _optHpdOnly.value = CAL_DATE_HPD_ONLY_KEY; _optHpdOnly.textContent = 'Calendar date HPDs';
+        nodeLabelShowEl.appendChild(_optHpdOnly);
       }
       nodeLabelShowEl.disabled = false;
       nodeLabelShowEl.value = [...nodeLabelShowEl.options].some(o => o.value === prev) ? prev : '';
@@ -2337,8 +2337,15 @@ async function fetchExampleTree() {
       commands.setEnabled('tree-midpoint', !isExplicitlyRooted);
       commands.setEnabled('tree-reroot',   false); // re-enabled on selection by bindControls
 
+      // Compute layout early so injectBuiltinStats() has maxX/maxY/node array
+      // before the dropdowns are populated.
+      const layout = computeLayoutFromGraph(graph, null, { clampNegativeBranches: clampNegBranchesEl.value === 'on' });
+
       // Populate the "Colour by" dropdowns. user_colour is always the first option.
       const schema = graph.annotationSchema;
+      // Inject built-in geometric stats (divergence, age, branch length, tips below)
+      // into the schema before populating dropdowns so they appear as options.
+      injectBuiltinStats(schema, layout.nodes, layout.maxX, layout.maxY, null);
       // filter: 'tips' → only annotations on tips, 'nodes' → only on internals, 'all' → no filter
       function _populateColourBy(sel, filter = 'all') {
         while (sel.options.length > 0) sel.remove(0);
@@ -2352,7 +2359,7 @@ async function fetchExampleTree() {
           if (filter === 'tips'  && !def.onTips)  continue;
           if (filter === 'nodes' && !def.onNodes) continue;
           const opt = document.createElement('option');
-          opt.value = name; opt.textContent = name;
+          opt.value = name; opt.textContent = def.label ?? name;
           sel.appendChild(opt);
         }
         sel.disabled = false;
@@ -2372,7 +2379,7 @@ async function fetchExampleTree() {
         if (def.groupMember) continue;
         if (!def.onTips) continue;
         const opt = document.createElement('option');
-        opt.value = name; opt.textContent = name;
+        opt.value = name; opt.textContent = def.label ?? name;
         tipLabelShow.appendChild(opt);
       }
       tipLabelShow.disabled = false;
@@ -2386,7 +2393,7 @@ async function fetchExampleTree() {
         if (def.groupMember) continue;
         if (!def.onNodes) continue;
         const opt = document.createElement('option');
-        opt.value = name; opt.textContent = name;
+        opt.value = name; opt.textContent = def.label ?? name;
         nodeLabelShowEl.appendChild(opt);
       }
       nodeLabelShowEl.disabled = false;
@@ -2397,7 +2404,7 @@ async function fetchExampleTree() {
         if (name === 'user_colour') continue;
         if (def.dataType !== 'list') {
           const opt = document.createElement('option');
-          opt.value = name; opt.textContent = name;
+          opt.value = name; opt.textContent = def.label ?? name;
           legendAnnotEl.appendChild(opt);
         }
       }
@@ -2410,7 +2417,7 @@ async function fetchExampleTree() {
         if (name === 'user_colour') continue;
         if (def.dataType !== 'list') {
           const opt = document.createElement('option');
-          opt.value = name; opt.textContent = name;
+          opt.value = name; opt.textContent = def.label ?? name;
           legend2AnnotEl.appendChild(opt);
         }
       }
@@ -2486,7 +2493,6 @@ async function fetchExampleTree() {
       for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++)
         _updatePaletteSelect(tipLabelShapeExtraPaletteSelects[_i], tipLabelShapeExtraPaletteRows[_i], tipLabelShapeExtraColourBys[_i].value);
       applyLegend();   // rebuild legend with new data (may clear it)
-      const layout = computeLayoutFromGraph(graph, null, { clampNegativeBranches: clampNegBranchesEl.value === 'on' });
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
 
       // ── Axis renderer setup ───────────────────────────────────────────────
@@ -2504,8 +2510,10 @@ async function fetchExampleTree() {
       // Populate date annotation dropdown: accept 'date' annotations (ISO strings) and
       // numeric 'real'/'integer' annotations whose range falls within calendar years
       // (1000–3000), since BEAST-style decimal years (e.g. 2014.45) are typed as 'real'.
+      // Exclude built-in sentinel keys (__ prefix) — those are not user-visible tree annotations.
       while (axisDateAnnotEl.options.length > 1) axisDateAnnotEl.remove(1);
       for (const [name, def] of schema) {
+        if (name.startsWith('__')) continue; // skip built-in geometric stat sentinels
         const isDate       = def.dataType === 'date';
         const isDecimalYear = (def.dataType === 'real' || def.dataType === 'integer') &&
                                def.min >= 1000 && def.max <= 3000;
@@ -2530,30 +2538,13 @@ async function fetchExampleTree() {
       // axisRenderer.setCalibration() is called by applyAxis() below.
       axisDateFmtRow.style.display = calibration.isActive ? 'flex' : 'none';
 
-      // Append synthetic Calendar date options to the label dropdowns now that
-      // calibration is established.  The inline dropdown population above runs
-      // before setAnchor(), so we patch the options in here instead.
+      // Re-inject built-in stats with calibration active so __cal_date__ appears
+      // in the schema and all dropdowns; then re-apply any saved cal-date selections
+      // that were unavailable when the dropdowns were first populated above.
       if (calibration.isActive) {
-        const _hasHpd = !!schema.get('height')?.group?.hpd;
-        for (const _sel of [tipLabelShow, nodeLabelShowEl]) {
-          if (![..._sel.options].some(o => o.value === CAL_DATE_KEY)) {
-            const _o = document.createElement('option');
-            _o.value = CAL_DATE_KEY; _o.textContent = 'Calendar date';
-            _sel.appendChild(_o);
-          }
-          if (_hasHpd && ![..._sel.options].some(o => o.value === CAL_DATE_HPD_KEY)) {
-            const _o = document.createElement('option');
-            _o.value = CAL_DATE_HPD_KEY; _o.textContent = 'Calendar date + HPDs';
-            _sel.appendChild(_o);
-          }
-          if (_hasHpd && ![..._sel.options].some(o => o.value === CAL_DATE_HPD_ONLY_KEY)) {
-            const _o = document.createElement('option');
-            _o.value = CAL_DATE_HPD_ONLY_KEY; _o.textContent = 'Calendar date HPDs';
-            _sel.appendChild(_o);
-          }
-        }
-        // Re-apply saved label annotation if it was a calendar-date key that
-        // couldn't be found when the dropdowns were first populated.
+        _refreshAnnotationUIs(schema);
+        // _refreshAnnotationUIs restores previous selection values; force the saved
+        // cal-date key back in case it fell back to 'names'/'none' at first population.
         const _calKeys = [CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY];
         if (_calKeys.includes(_eff.tipLabelShow)) {
           tipLabelShow.value = _eff.tipLabelShow;

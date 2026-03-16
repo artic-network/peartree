@@ -132,6 +132,35 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
       if (name === 'user_colour') continue;
       if (def.groupMember) continue;
 
+      // Built-in computed stats are read-only: show with their friendly label but
+      // don't allow editing or deletion.
+      if (def.builtin) {
+        const displayName = esc(def.label ?? name);
+        const onStr = (def.onTips && def.onNodes) ? 'T+N' : (def.onTips ? 'T' : 'N');
+        const obsMin = def.observedMin ?? def.min;
+        const obsMax = def.observedMax ?? def.max;
+        const obsCell = `<span style="font-family:monospace">${_fmtNum(obsMin)}</span>
+                   <span style="color:rgba(255,255,255,0.3);padding:0 3px">…</span>
+                   <span style="font-family:monospace">${_fmtNum(obsMax)}</span>`;
+        rows.push(`
+          <tr data-name="${esc(name)}" data-builtin="1" class="ca-row-fixed">
+            <td><span class="ca-name">${displayName}</span>
+              <span style="margin-left:5px;font-size:0.68rem;color:rgba(255,255,255,0.3);font-style:italic">computed</span></td>
+            <td><span class="ca-type-badge ca-type-${esc(def.dataType)}">${esc(def.dataType)}</span></td>
+            <td class="ca-center" style="color:rgba(255,255,255,0.45);font-size:0.72rem">${onStr}</td>
+            <td>${obsCell}</td>
+            <td><span style="color:rgba(255,255,255,0.2)">—</span></td>
+            <td class="ca-center">
+              <input type="checkbox" class="ca-table-chk" data-name="${esc(name)}"
+                ${_tableColumns.has(name) ? 'checked' : ''}
+                title="Show in data table panel"
+                style="cursor:pointer;accent-color:var(--pt-teal,#2aa198)">
+            </td>
+            <td class="ca-center"><span style="color:rgba(255,255,255,0.15)" title="Cannot be deleted">—</span></td>
+          </tr>`);
+        continue;
+      }
+
       const isDeleted = _deleted.has(name);
       const p         = _pending.get(name) ?? {};
       const type      = p.dataType  ?? def.dataType;
@@ -190,7 +219,7 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
         <tr data-name="${esc(name)}"${rowAttr}>
           <td>
             ${hasPending ? '<span class="ca-pending-dot" title="Unsaved changes"></span>' : ''}
-            <span class="ca-name">${esc(name)}</span>
+            <span class="ca-name">${esc(def.label ?? name)}</span>
           </td>
           <td><span class="ca-type-badge ca-type-${esc(type)}">${esc(type)}</span></td>
           <td class="ca-center" style="color:rgba(255,255,255,0.45);font-size:0.72rem">${onStr}</td>
@@ -245,6 +274,7 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
       tr.addEventListener('click', () => {
         const clickedName = tr.dataset.name;
         if (clickedName === '__names__') return;  // fixed row — no detail pane
+        if (tr.dataset.builtin) return;           // computed stats — read-only, no detail
         if (_deleted.has(clickedName)) return;  // greyed-out rows are not selectable
         if (_selected === clickedName) {
           // Clicking selected row again deselects
@@ -305,7 +335,8 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
     const obsMinStr = esc(_fmtNum(def.observedMin ?? def.min));
     const obsMaxStr = esc(_fmtNum(def.observedMax ?? def.max));
 
-    let html = `<div class="ca-detail-header"><i class="bi bi-tag me-1"></i>${esc(name)}</div>`;
+    let html = `<div class="ca-detail-header"><i class="bi bi-tag me-1"></i>${esc(def.label ?? name)}</div>`;
+
 
     // Type
     html += `<div class="ca-section-lbl">Interpret as</div>`

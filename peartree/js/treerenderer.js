@@ -1280,6 +1280,20 @@ export class TreeRenderer {
   _labelText(node, key, decimalPlaces, nameFallback) {
     if (!key) return nameFallback;
 
+    // ── Built-in geometry-based stat keys ──────────────────────────────
+    if (key === '__divergence__' || key === '__age__' || key === '__branch_length__') {
+      const val = this._statValue(node, key);
+      if (val == null) return nameFallback;
+      const def = this._annotationSchema?.get(key);
+      if (decimalPlaces != null) return val.toFixed(decimalPlaces);
+      if (def?.fmtValue) return def.fmtValue(val);
+      return val.toFixed(6);
+    }
+    if (key === '__tips_below__') {
+      const val = this._statValue(node, key);
+      return val != null ? String(val) : nameFallback;
+    }
+
     // ── Synthetic calendar-date labels ──────────────────────────────────
     if (key === CAL_DATE_KEY || key === CAL_DATE_HPD_KEY || key === CAL_DATE_HPD_ONLY_KEY) {
       const cal = this._calCalibration;
@@ -2239,7 +2253,7 @@ export class TreeRenderer {
         for (const node of this.nodes) {
           if (node.isTip) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
-          const val = node.annotations ? node.annotations[key] : undefined;
+          const val = this._statValue(node, key);
           ctx.fillStyle = this._nodeColourForValue(val) ?? this.nodeShapeColor;
           ctx.beginPath();
           ctx.arc(this._wx(node.x), this._wy(node.y), nodeR, 0, Math.PI * 2);
@@ -2266,7 +2280,7 @@ export class TreeRenderer {
         for (const node of this.nodes) {
           if (!node.isTip) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
-          const val   = node.annotations ? node.annotations[key] : undefined;
+          const val   = this._statValue(node, key);
           const col   = this._tipColourForValue(val) ?? this.tipShapeColor;
           ctx.fillStyle = col;
           ctx.beginPath();
@@ -2380,7 +2394,7 @@ export class TreeRenderer {
           if (!this._showLabelAt(node.y)) continue;
           const _t = this._tipLabelText(node);
           if (!_t) continue;
-          const val = node.annotations ? node.annotations[key] : undefined;
+          const val = this._statValue(node, key);
           const _bX = alignLabelX ?? (this._wx(node.x) + outlineR + 3);
           ctx.fillStyle = this._labelColourForValue(val) ?? this.labelColor;
           ctx.fillText(_t, _tx(_bX), this._wy(node.y));
@@ -2414,7 +2428,7 @@ export class TreeRenderer {
         const shapeX = baseX + _shML;
         const sy     = this._wy(node.y);
         ctx.fillStyle = _hasSc
-          ? (this._tipLabelShapeColourForValue(node.annotations?.[_shKey]) ?? this._tipLabelShapeColor)
+          ? (this._tipLabelShapeColourForValue(this._statValue(node, _shKey)) ?? this._tipLabelShapeColor)
           : this._tipLabelShapeColor;
         if (_shape === 'circle') {
           ctx.beginPath();
@@ -2447,7 +2461,7 @@ export class TreeRenderer {
           const shapeXX = baseX + extraOff;
           const sy      = this._wy(node.y);
           ctx.fillStyle = _hasXSc
-            ? (this._tipLabelShapeExtraColourForValue(i, node.annotations?.[_shXKey]) ?? this._tipLabelShapeColor)
+            ? (this._tipLabelShapeExtraColourForValue(i, this._statValue(node, _shXKey)) ?? this._tipLabelShapeColor)
             : this._tipLabelShapeColor;
           if (_shapeXType === 'circle') {
             ctx.beginPath();
@@ -2500,7 +2514,7 @@ export class TreeRenderer {
           for (const node of this.nodes) {
             if (!node.isTip || !this._selectedTipIds.has(node.id)) continue;
             if (node.y < yWorldMin || node.y > yWorldMax) continue;
-            const val = node.annotations ? node.annotations[key] : undefined;
+            const val = this._statValue(node, key);
             ctx.fillStyle = this._tipColourForValue(val) ?? this.tipShapeColor;
             ctx.beginPath();
             ctx.arc(this._wx(node.x), this._wy(node.y), r, 0, Math.PI * 2);
@@ -2602,7 +2616,7 @@ export class TreeRenderer {
         if (baseR > 0) {
           if (hn.isTip) {
             if (this._tipColourBy && this._tipColourScale) {
-              const val = hn.annotations ? hn.annotations[this._tipColourBy] : undefined;
+              const val = this._statValue(hn, this._tipColourBy);
               ctx.fillStyle = this._tipColourForValue(val) ?? this.tipShapeColor;
             } else {
               ctx.fillStyle = this.tipShapeColor;
@@ -3367,6 +3381,46 @@ export class TreeRenderer {
   _buildGlobalHeightMap(nodes, maxX) {
     this._globalHeightMap = new Map();
     for (const n of nodes) this._globalHeightMap.set(n.id, maxX - n.x);
+    this._buildTipsBelowMap(nodes);
+  }
+
+  /** Post-order pass over the pre-order layout array to count descendant tips. */
+  _buildTipsBelowMap(nodes) {
+    this._tipsBelowMap = new Map();
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      const n = nodes[i];
+      if (n.isTip) {
+        this._tipsBelowMap.set(n.id, 1);
+      } else {
+        let count = 0;
+        for (const cid of n.children) count += this._tipsBelowMap.get(cid) ?? 1;
+        this._tipsBelowMap.set(n.id, count);
+      }
+    }
+  }
+
+  /**
+   * Resolve the value for annotation key `key` on `node`.
+   * For built-in sentinel keys (prefixed with `__`) reads from layout geometry;
+   * for all others reads from node.annotations.
+   */
+  _statValue(node, key) {
+    switch (key) {
+      case '__divergence__':    return node.x;
+      case '__age__':           return this._globalHeightMap?.get(node.id) ?? (this.maxX - node.x);
+      case '__branch_length__': {
+        if (node.parentId == null) return null;
+        const parent = this.nodeMap?.get(node.parentId);
+        return parent != null ? node.x - parent.x : null;
+      }
+      case '__tips_below__':    return this._tipsBelowMap?.get(node.id) ?? null;
+      case '__cal_date__':
+        if (!this._calCalibration?.isActive) return null;
+        return this._calCalibration.heightToDecYear(
+          this._globalHeightMap?.get(node.id) ?? (this.maxX - node.x));
+      default:
+        return node.annotations?.[key];
+    }
   }
 
   _computeStats() {

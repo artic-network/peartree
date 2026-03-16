@@ -383,6 +383,135 @@ export const KNOWN_BRANCH_ANNOTATIONS = new Set([
 ]);
 
 /**
+ * Sentinel keys for built-in node/tip attributes computed from tree geometry
+ * rather than stored in node.annotations.  These are injected into the schema
+ * by injectBuiltinStats() after layout is computed.
+ */
+export const BUILTIN_STAT_KEYS = new Set([
+  '__divergence__',
+  '__age__',
+  '__tips_below__',
+  '__branch_length__',
+  '__cal_date__',
+]);
+
+/**
+ * Inject built-in stat entries into an annotation schema Map.
+ * Idempotent — removes any previously injected built-in entries first.
+ * Must be called after layout is computed (needs maxX, node array for bounds)
+ * and after calibration is resolved (needs cal.isActive for __cal_date__).
+ *
+ * @param {Map}                  schema  – annotation schema to mutate in-place
+ * @param {Array}                nodes   – layout LayoutNode[] for computing bounds
+ * @param {number}               maxX    – full-tree maximum divergence
+ * @param {number}               maxY    – total visible tip count
+ * @param {TreeCalibration|null} cal     – calibration object, or null
+ */
+export function injectBuiltinStats(schema, nodes, maxX, maxY, cal) {
+  // Remove any previously injected builtin entries.
+  for (const k of BUILTIN_STAT_KEYS) schema.delete(k);
+  if (!nodes || !nodes.length) return;
+
+  // ── Compute branch-length min/max ─────────────────────────────────────────
+  const nodeXById = new Map(nodes.map(n => [n.id, n.x]));
+  let minBL = Infinity, maxBL = 0;
+  for (const n of nodes) {
+    if (n.parentId == null) continue;
+    const parentX = nodeXById.get(n.parentId);
+    if (parentX == null) continue;
+    const bl = n.x - parentX;
+    if (bl < minBL) minBL = bl;
+    if (bl > maxBL) maxBL = bl;
+  }
+  if (!isFinite(minBL)) { minBL = 0; maxBL = maxX; }
+
+  // ── Compute tips-below max (post-order pass over pre-order layout array) ──
+  const tipsBelowById = new Map();
+  let maxTipsBelow = 0;
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const n = nodes[i];
+    if (n.isTip) {
+      tipsBelowById.set(n.id, 1);
+    } else {
+      let count = 0;
+      for (const cid of n.children) count += tipsBelowById.get(cid) ?? 1;
+      tipsBelowById.set(n.id, count);
+      if (count > maxTipsBelow) maxTipsBelow = count;
+    }
+  }
+
+  // ── Helper: attach formatters to a numeric def ───────────────────────────
+  const attachFmt = (def) => {
+    def.observedRange = def.max - def.min;
+    def.fmt      = makeAnnotationFormatter(def, 'ticks');
+    def.fmtValue = makeAnnotationFormatter(def, 'value');
+  };
+
+  // ── __divergence__ ────────────────────────────────────────────────────────
+  {
+    const def = {
+      name: '__divergence__', label: 'Divergence',
+      dataType: 'real', min: 0, max: maxX,
+      observedMin: 0, observedMax: maxX,
+      onTips: true, onNodes: true, builtin: true,
+    };
+    attachFmt(def);
+    schema.set('__divergence__', def);
+  }
+
+  // ── __age__ ───────────────────────────────────────────────────────────────
+  {
+    const def = {
+      name: '__age__', label: 'Age',
+      dataType: 'real', min: 0, max: maxX,
+      observedMin: 0, observedMax: maxX,
+      onTips: true, onNodes: true, builtin: true,
+    };
+    attachFmt(def);
+    schema.set('__age__', def);
+  }
+
+  // ── __branch_length__ ─────────────────────────────────────────────────────
+  {
+    const def = {
+      name: '__branch_length__', label: 'Branch Length',
+      dataType: 'real', min: minBL, max: maxBL,
+      observedMin: minBL, observedMax: maxBL,
+      onTips: true, onNodes: true, builtin: true,
+    };
+    attachFmt(def);
+    schema.set('__branch_length__', def);
+  }
+
+  // ── __tips_below__ (internal nodes only) ─────────────────────────────────
+  if (maxTipsBelow > 1) {
+    const def = {
+      name: '__tips_below__', label: 'Tips Below',
+      dataType: 'integer', min: 1, max: maxTipsBelow,
+      observedMin: 1, observedMax: maxTipsBelow,
+      onTips: false, onNodes: true, builtin: true,
+    };
+    attachFmt(def);
+    schema.set('__tips_below__', def);
+  }
+
+  // ── __cal_date__ (only when calibration is active) ───────────────────────
+  if (cal?.isActive) {
+    // Date range expressed as decimal years for a sequential colour scale.
+    const minDecYear = cal.heightToDecYear(maxX);
+    const maxDecYear = cal.heightToDecYear(0);
+    const def = {
+      name: '__cal_date__', label: 'Calendar date',
+      dataType: 'real', min: minDecYear, max: maxDecYear,
+      observedMin: minDecYear, observedMax: maxDecYear,
+      onTips: true, onNodes: true, builtin: true,
+    };
+    attachFmt(def);
+    schema.set('__cal_date__', def);
+  }
+}
+
+/**
  * True for any numeric annotation type: real, integer, proportion, or percentage.
  * Use instead of multiple `=== 'real' || === 'integer'` comparisons.
  * @param {string} dt
