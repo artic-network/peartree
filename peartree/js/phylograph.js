@@ -765,8 +765,8 @@ export function reorderGraph(graph, ascending) {
         pairs.sort((a, b) => {
           const diff = ascending ? a.ct - b.ct : b.ct - a.ct;
           if (diff !== 0) return diff;
-          // Tiebreak: larger divergence (deeper subtree) goes last when ascending, first when descending
-          return ascending ? b.dep - a.dep : a.dep - b.dep;
+          // Tiebreak: larger divergence (deeper subtree) goes first when ascending, last when descending
+          return ascending ? a.dep - b.dep : b.dep - a.dep;
         });
         pairs.forEach(({ adj, len }, k) => { n.adjacents[k + 1] = adj; n.lengths[k + 1] = len; });
         tipCounts.set(idx, pairs.reduce((s, p) => s + p.ct, 0));
@@ -789,7 +789,7 @@ export function reorderGraph(graph, ascending) {
     pairs.sort((a, b) => {
       const diff = ascending ? a.ct - b.ct : b.ct - a.ct;
       if (diff !== 0) return diff;
-      return ascending ? b.dep - a.dep : a.dep - b.dep;
+      return ascending ? a.dep - b.dep : b.dep - a.dep;
     });
     pairs.forEach(({ adj, len }, i) => { n.adjacents[i] = adj; n.lengths[i] = len; });
     // Update nodeB so the invariant (nodeB === adjacents[0] of nodeA) is kept.
@@ -806,7 +806,7 @@ export function reorderGraph(graph, ascending) {
     pairsA.sort((a, b) => {
       const diff = ascending ? a.ct - b.ct : b.ct - a.ct;
       if (diff !== 0) return diff;
-      return ascending ? b.dep - a.dep : a.dep - b.dep;
+      return ascending ? a.dep - b.dep : b.dep - a.dep;
     });
     pairsA.forEach(({ adj, len }, i) => { nA.adjacents[i + 1] = adj; nA.lengths[i + 1] = len; });
 
@@ -819,7 +819,7 @@ export function reorderGraph(graph, ascending) {
     pairsB.sort((a, b) => {
       const diff = ascending ? a.ct - b.ct : b.ct - a.ct;
       if (diff !== 0) return diff;
-      return ascending ? b.dep - a.dep : a.dep - b.dep;
+      return ascending ? a.dep - b.dep : b.dep - a.dep;
     });
     pairsB.forEach(({ adj, len }, i) => { nB.adjacents[i + 1] = adj; nB.lengths[i + 1] = len; });
 
