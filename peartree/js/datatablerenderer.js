@@ -103,6 +103,17 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
   function isOpen() { return _open; }
 
   /**
+   * Notify the table that the annotation schema has changed (e.g. formatters
+   * were updated in the curator).  Invalidates all cached rows so the next
+   * syncView() / _redraw() rebuilds them with the new formatters.
+   */
+  function invalidate() {
+    _columnSig = '';  // force full rebuild on next _redraw
+    _clearRows();
+    if (_open) _redraw();
+  }
+
+  /**
    * Return current visible-column keys and the current tip list.
    * Used by peartree.js to build the tab-delimited copy-tips string.
    */
@@ -150,11 +161,11 @@ export function createDataTableRenderer({ getRenderer, onEditCommit, onRowSelect
    */
   function _fmtValue(key, rawVal) {
     if (rawVal == null) return '';
-    if (key.startsWith('__')) {
-      const schema = getRenderer()?._annotationSchema;
-      const def = schema?.get(key);
-      if (def?.fmtValue) return def.fmtValue(rawVal);
-    }
+    // Use the schema formatter for any numeric annotation (builtins and user-defined)
+    // so that custom decimal-place settings and auto-precision are both respected.
+    const schema = getRenderer()?._annotationSchema;
+    const def    = schema?.get(key);
+    if (typeof rawVal === 'number' && def?.fmtValue) return def.fmtValue(rawVal);
     return String(rawVal);
   }
 

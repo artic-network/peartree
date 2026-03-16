@@ -574,6 +574,8 @@ export function makeAnnotationFormatter(def, mode = 'ticks') {
   // proportion and percentage share the 'real' continuous formatting path;
   // integer (and percentage-from-integers) uses fast integer rounding.
   if (def.dataType === 'integer') return v => String(Math.round(v));
+  // If the user has pinned a fixed number of decimal places in the curator, honour it.
+  if (def.decimalPlaces != null) return v => v.toFixed(def.decimalPlaces);
 
   const obsMin   = def.observedMin ?? def.min ?? 0;
   const obsMax   = def.observedMax ?? def.max ?? 1;

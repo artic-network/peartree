@@ -1637,6 +1637,7 @@ async function fetchExampleTree() {
       renderer.setAnnotationSchema(schema);
       axisRenderer.setHeightFormatter(schema.get('height')?.fmt ?? null);
       applyLegend();
+      dataTableRenderer.invalidate();
       renderer._dirty = true;
     },
     onTableColumnsChange: (cols) => {

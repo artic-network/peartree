@@ -427,6 +427,20 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
       } // end else (real / integer bounds)
     }
 
+    // Decimal places display control (real / proportion / percentage types only)
+    if (currentType === 'real' || currentType === 'proportion' || currentType === 'percentage') {
+      const storedDp = p.decimalPlaces !== undefined ? p.decimalPlaces : (def.decimalPlaces ?? null);
+      const dpOpts = [['', 'auto'], ['0', '0'], ['1', '1'], ['2', '2'], ['3', '3'], ['4', '4'], ['5', '5'], ['6', '6']]
+        .map(([val, label]) => {
+          const sel = (storedDp == null && val === '') || (storedDp != null && String(storedDp) === val) ? ' selected' : '';
+          return `<option value="${val}"${sel}>${label}</option>`;
+        }).join('');
+      html += `<div class="ca-section-lbl" style="margin-top:10px">Display</div>`
+            + `<div class="ca-row"><label class="ca-row-lbl">Decimal places</label>`
+            + `<select id="cd-decimal-places" class="ca-sel" style="width:auto">${dpOpts}</select>`
+            + `</div>`;
+    }
+
     html += `<div class="ca-section-lbl" style="margin-top:10px">Behaviour</div>`
           + `<div class="ca-row">`
           + `<label class="ca-chk-lbl"><input type="checkbox" id="cd-branch-annot"${isBranchAnnot ? ' checked' : ''}>`
@@ -490,6 +504,12 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
     // Branch-annotation toggle
     document.getElementById('cd-branch-annot')?.addEventListener('change', e => {
       _mutPending(name, { isBranchAnnotation: e.target.checked });
+    });
+
+    // Decimal places
+    document.getElementById('cd-decimal-places')?.addEventListener('change', e => {
+      const val = e.target.value === '' ? null : parseInt(e.target.value, 10);
+      _mutPending(name, { decimalPlaces: val });
     });
 
   }
@@ -749,7 +769,10 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
         if (p.fixedBounds !== undefined) def.fixedBounds = p.fixedBounds;
       }
 
-      // 3. Rebuild formatters for numeric types
+      // 3. Decimal places + rebuild formatters for numeric types
+      if (p.decimalPlaces !== undefined) {
+        def.decimalPlaces = p.decimalPlaces;  // null = auto
+      }
       const finalType = def.dataType;
       if (isNumericType(finalType)) {
         def.observedRange = (def.observedMax ?? def.max ?? 0) - (def.observedMin ?? def.min ?? 0);
