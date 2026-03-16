@@ -1833,6 +1833,14 @@ async function fetchExampleTree() {
     const hasSubtree = !!renderer._viewSubtreeRootId;
     const schema     = graph ? graph.annotationSchema : new Map();
     const annotKeys  = schema ? [...schema.keys()] : [];
+    // Computed builtins (__divergence__ etc.) are not stored in annotations and
+    // cannot be embedded in Newick/NEXUS; filter them out of the tree grid.
+    const treeAnnotKeys = annotKeys.filter(k => !k.startsWith('__'));
+    // Keys that have at least one value on a tip node (suitable for CSV export),
+    // including computed builtins that are meaningful for tips.
+    // __tips_below__ is excluded — it counts descendants so is only useful on internal nodes.
+    const TIP_BUILTINS = new Set(['__divergence__', '__age__', '__branch_length__', '__cal_date__']);
+    const tipAnnotKeys = annotKeys.filter(k => schema.get(k)?.onTips || TIP_BUILTINS.has(k));
 
     exportTitleEl.innerHTML = '<i class="bi bi-file-earmark-arrow-down me-2"></i>Export Tree';
 
@@ -1842,6 +1850,7 @@ async function fetchExampleTree() {
         <div class="exp-radio-group">
           <label class="exp-radio-opt"><input type="radio" name="exp-format" value="nexus" checked>&nbsp;NEXUS <span style="color:var(--bs-secondary-color);font-size:0.78rem">(.nexus)</span></label>
           <label class="exp-radio-opt"><input type="radio" name="exp-format" value="newick">&nbsp;Newick <span style="color:var(--bs-secondary-color);font-size:0.78rem">(.nwk)</span></label>
+          <label class="exp-radio-opt"><input type="radio" name="exp-format" value="csv">&nbsp;CSV metadata <span style="color:var(--bs-secondary-color);font-size:0.78rem">(.csv)</span></label>
         </div>
       </div>
       <div class="exp-section" id="exp-settings-row">
@@ -1860,7 +1869,7 @@ async function fetchExampleTree() {
         </div>
       </div>
       ${annotKeys.length > 0 ? `
-      <div class="exp-section">
+      <div class="exp-section" id="exp-annot-section">
         <span class="exp-section-label" style="display:flex;align-items:center;justify-content:space-between;">
           <span>Annotations to include</span>
           <span style="display:flex;gap:0.3rem">
@@ -1868,12 +1877,22 @@ async function fetchExampleTree() {
             <button id="exp-none-btn" class="btn btn-sm btn-outline-secondary" style="font-size:0.7rem;padding:1px 8px;line-height:1.4">None</button>
           </span>
         </span>
-        <div class="imp-col-grid" id="exp-annot-grid" style="margin-top:0.35rem">
-          ${annotKeys.map(k => `
+        <div class="imp-col-grid" id="exp-annot-grid-tree" style="margin-top:0.35rem">
+          ${treeAnnotKeys.map(k => `
             <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.82rem;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
               <input type="checkbox" class="exp-annot-cb" value="${_esc(k)}" checked>
               <code style="font-size:0.78rem;background:#02292e;padding:0 3px;border-radius:3px">${_esc(k)}</code>
             </label>`).join('')}
+        </div>
+        <div class="imp-col-grid" id="exp-annot-grid-csv" style="margin-top:0.35rem;display:none">
+          ${tipAnnotKeys.length > 0
+            ? tipAnnotKeys.map(k => {
+                const def = schema.get(k);
+                return `<label style="display:flex;align-items:center;gap:0.3rem;font-size:0.82rem;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                  <input type="checkbox" class="exp-annot-cb" value="${_esc(k)}" checked>
+                  <code style="font-size:0.78rem;background:#02292e;padding:0 3px;border-radius:3px">${_esc(def?.label ?? k)}</code>
+                </label>`;}).join('')
+            : '<div style="font-size:0.82rem;color:rgba(255,255,255,0.4);font-style:italic">No tip annotations found</div>'}
         </div>
       </div>` : ''}`;
 
@@ -1888,14 +1907,16 @@ async function fetchExampleTree() {
     // regardless of whether annotations are present.
     document.querySelectorAll('input[name="exp-format"]').forEach(radio =>
       radio.addEventListener('change', () => {
+        const fmt         = document.querySelector('input[name="exp-format"]:checked')?.value;
         const settingsRow = document.getElementById('exp-settings-row');
-        if (settingsRow) settingsRow.style.display =
-          document.querySelector('input[name="exp-format"]:checked')?.value === 'newick' ? 'none' : '';
+        if (settingsRow) settingsRow.style.display = fmt === 'nexus' ? '' : 'none';
       }));
 
     if (annotKeys.length > 0) {
-      const annotGrid    = document.getElementById('exp-annot-grid');
-      const allCbs       = () => annotGrid.querySelectorAll('.exp-annot-cb');
+      const treeGrid = document.getElementById('exp-annot-grid-tree');
+      const csvGrid  = document.getElementById('exp-annot-grid-csv');
+      const activeGrid   = () => document.querySelector('input[name="exp-format"]:checked')?.value === 'csv' ? csvGrid : treeGrid;
+      const allCbs       = () => activeGrid()?.querySelectorAll('.exp-annot-cb') ?? [];
       const isNewick     = () => document.querySelector('input[name="exp-format"]:checked')?.value === 'newick';
 
       const _newickWarning = `
@@ -1905,18 +1926,23 @@ async function fetchExampleTree() {
         </div>`;
 
       const _syncAnnotSection = () => {
-        const nwk = isNewick();
+        const fmt = document.querySelector('input[name="exp-format"]:checked')?.value;
         const settingsRow = document.getElementById('exp-settings-row');
-        if (nwk) {
-          // Uncheck all annotation checkboxes but leave them enabled.
-          allCbs().forEach(cb => { cb.checked = false; });
-          document.getElementById('exp-newick-warn')?.remove();
-          // Hide "store settings" — not applicable to Newick.
+        document.getElementById('exp-newick-warn')?.remove();
+        if (fmt === 'csv') {
+          treeGrid.style.display = 'none';
+          csvGrid.style.display  = '';
+          csvGrid.querySelectorAll('.exp-annot-cb').forEach(cb => { cb.checked = true; });
+          if (settingsRow) settingsRow.style.display = 'none';
+        } else if (fmt === 'newick') {
+          treeGrid.style.display = '';
+          csvGrid.style.display  = 'none';
+          treeGrid.querySelectorAll('.exp-annot-cb').forEach(cb => { cb.checked = false; });
           if (settingsRow) settingsRow.style.display = 'none';
         } else {
-          // Switching back to NEXUS: re-check all and remove warning.
-          allCbs().forEach(cb => { cb.checked = true; });
-          document.getElementById('exp-newick-warn')?.remove();
+          treeGrid.style.display = '';
+          csvGrid.style.display  = 'none';
+          treeGrid.querySelectorAll('.exp-annot-cb').forEach(cb => { cb.checked = true; });
           if (settingsRow) settingsRow.style.display = '';
         }
       };
@@ -1926,17 +1952,17 @@ async function fetchExampleTree() {
         radio.addEventListener('change', _syncAnnotSection));
 
       // Individual checkbox re-checked while Newick is active → show warning.
-      annotGrid.addEventListener('change', e => {
+      treeGrid.addEventListener('change', e => {
         if (!isNewick() || !e.target.matches('.exp-annot-cb')) return;
         if (!document.getElementById('exp-newick-warn')) {
-          annotGrid.insertAdjacentHTML('afterend', _newickWarning);
+          treeGrid.insertAdjacentHTML('afterend', _newickWarning);
         }
       });
 
       document.getElementById('exp-all-btn').addEventListener('click', () => {
         allCbs().forEach(cb => { cb.checked = true; });
         if (isNewick() && !document.getElementById('exp-newick-warn')) {
-          annotGrid.insertAdjacentHTML('afterend', _newickWarning);
+          treeGrid.insertAdjacentHTML('afterend', _newickWarning);
         }
       });
       document.getElementById('exp-none-btn').addEventListener('click', () => {
@@ -1946,13 +1972,89 @@ async function fetchExampleTree() {
     }
   }
 
+  /** CSV-escape a single cell value. */
+  function _csvCell(v) {
+    const s = v == null ? '' : String(v);
+    return /[,"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+
   function _doExport() {
     const format      = document.querySelector('input[name="exp-format"]:checked')?.value || 'nexus';
     const scope       = document.querySelector('input[name="exp-scope"]:checked')?.value  || 'full';
-    const annotKeys   = [...document.querySelectorAll('#exp-annot-grid .exp-annot-cb:checked')].map(cb => cb.value);
     const storeSettings = format === 'nexus' && document.getElementById('exp-store-settings')?.checked;
     const subtreeId   = scope === 'subtree' ? renderer._viewSubtreeRootId : null;
-    const newick      = graphToNewick(graph, subtreeId, annotKeys);
+    const gridId      = format === 'csv' ? '#exp-annot-grid-csv' : '#exp-annot-grid-tree';
+    const annotKeys   = [...document.querySelectorAll(`${gridId} .exp-annot-cb:checked`)].map(cb => cb.value);
+
+    // ── CSV metadata export ───────────────────────────────────────────────────
+    if (format === 'csv') {
+      if (!renderer.nodes) return;
+      // Collect all tips using the renderer's layout nodes (have isTip, name, annotations, y).
+      let tips = renderer.nodes.filter(n => n.isTip);
+      if (subtreeId) {
+        // Keep only tips that are descendants of the subtree root.
+        const subtreeSet = new Set();
+        const stack = [subtreeId];
+        while (stack.length) {
+          const id   = stack.pop();
+          const node = renderer.nodeMap?.get(id);
+          if (!node) continue;
+          if (node.isTip) subtreeSet.add(id);
+          else if (node.children) node.children.forEach(c => stack.push(c));
+        }
+        tips = tips.filter(n => subtreeSet.has(n.id));
+      }
+      // Sort tips in tree display order by layout y position.
+      tips = [...tips].sort((a, b) => (a.y ?? 0) - (b.y ?? 0));
+
+      const schema   = graph.annotationSchema;
+      // Resolve display labels and actual data keys from schema.
+      const cols = annotKeys.map(k => {
+        const def  = schema?.get(k);
+        return { key: k, label: def?.label ?? k, dataKey: def?.dataKey ?? k, isBuiltin: k.startsWith('__'), fmtValue: def?.fmtValue };
+      });
+
+      const header = ['name', ...cols.map(c => c.label)].map(_csvCell).join(',');
+      const rows   = tips.map(tip => {
+        const cells = [tip.name ?? tip.id ?? ''];
+        for (const { key, dataKey, isBuiltin, fmtValue } of cols) {
+          let raw;
+          if (isBuiltin) {
+            raw = renderer._statValue ? renderer._statValue(tip, key) : null;
+          } else {
+            raw = tip.annotations?.[dataKey] ?? null;
+          }
+          const val = raw == null ? ''
+            : (typeof raw === 'number' && fmtValue) ? fmtValue(raw)
+            : String(raw);
+          cells.push(val);
+        }
+        return cells.map(_csvCell).join(',');
+      });
+      const content = [header, ...rows].join('\n') + '\n';
+
+      if (_exportSaveHandler) {
+        _exportSaveHandler({
+          content,
+          filename:   'metadata.csv',
+          mimeType:   'text/csv',
+          filterName: 'CSV files',
+          extensions: ['csv'],
+        });
+      } else {
+        const blob = new Blob([content], { type: 'text/csv' });
+        const url  = URL.createObjectURL(blob);
+        const a    = Object.assign(document.createElement('a'), { href: url, download: 'metadata.csv' });
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+      _closeExportDialog();
+      return;
+    }
+
+    const newick = graphToNewick(graph, subtreeId, annotKeys);
     if (!newick) return;
 
     let content, ext;
