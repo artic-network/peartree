@@ -86,11 +86,11 @@ function computeLayout(root, hiddenNodeIds = new Set()) {
         const ys = n.children.map(cid => nodeMap.get(cid)?.y).filter(y => y != null);
         if (ys.length) n.y = ys.reduce((a, b) => a + b, 0) / ys.length;
       }
-      return { nodes: finalNodes, nodeMap, maxX: finalNodes.reduce((m, n) => Math.max(m, n.x), 0), maxY: tipCounter };
+      return { nodes: finalNodes, nodeMap, maxX: finalNodes.reduce((m, n) => Math.max(m, n.collapsedMaxX ?? n.x), 0), maxY: tipCounter };
     }
   }
 
-  const maxX = nodes.reduce((m, n) => Math.max(m, n.x), 0);
+  const maxX = nodes.reduce((m, n) => Math.max(m, n.collapsedMaxX ?? n.x), 0);
   return { nodes, nodeMap, maxX, maxY: tipCounter };
 }
 
@@ -156,11 +156,76 @@ function _findEffectiveRoot(gnodes, hiddenNodeIds, startIdx, fromIdx) {
  * Trifurcating root (rootEdge.proportion === 0, nodeA.parentIdx === -1):
  *   nodeA is the real root; no virtual node is needed.
  */
+/**
+ * DFS walk from `startIdx` (coming from `fromIdx`) to find the maximum
+ * accumulated x-from-root value among all tips in that subtree.
+ * `startXFromRoot` is the x value already accumulated at `startIdx`.
+ * Hidden nodes and already-collapsed nodes are not descended into.
+ */
+function _subtreeMaxX(gnodes, hiddenNodeIds, collapsedCladeIds, startIdx, fromIdx, startXFromRoot, clampNeg) {
+  let maxX = startXFromRoot;
+  const stack = [{ ni: startIdx, fi: fromIdx, x: startXFromRoot }];
+  while (stack.length) {
+    const { ni, fi, x } = stack.pop();
+    const gnode = gnodes[ni];
+    const children = gnode.adjacents
+      .map((adjIdx, i) => ({ adjIdx, len: gnode.lengths[i] }))
+      .filter(({ adjIdx }) => adjIdx !== fi);
+    if (children.length === 0) {
+      if (x > maxX) maxX = x;
+    } else {
+      for (const { adjIdx, len } of children) {
+        const childOrigId = gnodes[adjIdx].origId;
+        if (hiddenNodeIds.has(childOrigId)) continue;
+        const nextX = x + (clampNeg ? Math.max(0, len) : len);
+        if (nextX > maxX) maxX = nextX;
+        // Don't descend into already-collapsed sub-clades beyond their apex
+        if (!collapsedCladeIds.has(childOrigId)) {
+          stack.push({ ni: adjIdx, fi: ni, x: nextX });
+        }
+      }
+    }
+  }
+  return maxX;
+}
+
+/**
+ * Count true tips under `startIdx` (coming from `fromIdx`), ignoring hidden
+ * nodes and treating collapsed-clade nodes as leaves (don't descend further).
+ */
+function _subtreeTipCount(gnodes, hiddenNodeIds, collapsedCladeIds, startIdx, fromIdx) {
+  let count = 0;
+  const stack = [{ ni: startIdx, fi: fromIdx }];
+  while (stack.length) {
+    const { ni, fi } = stack.pop();
+    const gnode = gnodes[ni];
+    const children = gnode.adjacents.filter(a => a !== fi);
+    const visChildren = children.filter(a => !hiddenNodeIds.has(gnodes[a].origId));
+    if (visChildren.length === 0) {
+      count++;
+    } else {
+      for (const a of visChildren) {
+        if (collapsedCladeIds.has(gnodes[a].origId)) {
+          // Collapsed sub-clade counts as its stored tipCount
+          count += collapsedCladeIds.get(gnodes[a].origId).tipCount || 1;
+        } else {
+          stack.push({ ni: a, fi: ni });
+        }
+      }
+    }
+  }
+  return count;
+}
+
 export function computeLayoutFromGraph(graph, subtreeRootId = null, options = {}) {
   const { nodes: gnodes, root } = graph;
   const { nodeA, nodeB, lenA, lenB } = root;
   const hiddenNodeIds = graph.hiddenNodeIds || new Set();
+  const collapsedCladeIds = graph.collapsedCladeIds || new Map();
   const clampNeg = !!options.clampNegativeBranches;
+  // collapsedCladeHeightN: how many tip-row slots each collapsed clade occupies.
+  // null/undefined means use the clade's actual tip count.
+  const collapsedHeightN = options.collapsedCladeHeightN != null ? Math.max(1, +options.collapsedCladeHeightN) : null;
 
   let tipCounter = 0;
   const layoutNodes = [];
@@ -185,7 +250,7 @@ export function computeLayoutFromGraph(graph, subtreeRootId = null, options = {}
                      xFromRoot: startXFromRoot, parentLayoutId: startParentLayoutId }];
 
     while (stack.length) {
-      const { nodeIdx, fromNodeIdx, xFromRoot, parentLayoutId } = stack.pop();
+      const { nodeIdx, fromNodeIdx, xFromRoot, parentLayoutId, collapsed } = stack.pop();
       const gnode = gnodes[nodeIdx];
       const entry = {
         id:                gnode.origId,
@@ -196,6 +261,9 @@ export function computeLayoutFromGraph(graph, subtreeRootId = null, options = {}
         y:                 null,
         isTip:             false,
         hasHiddenChildren: false,
+        isCollapsed:       false,
+        collapsedTipCount: 0,
+        collapsedMaxX:     xFromRoot,
         children:          [],
         parentId:          parentLayoutId,
       };
@@ -203,12 +271,32 @@ export function computeLayoutFromGraph(graph, subtreeRootId = null, options = {}
       layoutNodes.push(entry);
       nodeMap.set(entry.id, entry);
 
+      // If this node was pushed as a collapsed clade root, treat it as a leaf.
+      if (collapsed) {
+        const info = collapsedCladeIds.get(gnode.origId);
+        const realTipCount = info?.tipCount || _subtreeTipCount(gnodes, hiddenNodeIds, collapsedCladeIds, nodeIdx, fromNodeIdx);
+        // heightN is the number of row-slots this clade occupies in the layout.
+        // Cap at the clade's own real tip count so it never occupies more space
+        // than it would when fully expanded.
+        const heightN  = collapsedHeightN != null ? Math.min(collapsedHeightN, realTipCount) : realTipCount;
+        const maxX     = _subtreeMaxX(gnodes, hiddenNodeIds, collapsedCladeIds, nodeIdx, fromNodeIdx, xFromRoot, clampNeg);
+        entry.isCollapsed       = true;
+        entry.collapsedTipCount = heightN;   // layout height (row-slots)
+        entry.collapsedRealTips = realTipCount; // actual descendant tip count
+        entry.collapsedMaxX     = maxX;
+        entry.collapsedColour   = info?.colour ?? null;
+        entry.isTip             = true;   // acts as leaf for y-assignment
+        tipCounter += heightN;
+        entry.y = tipCounter - (heightN - 1) / 2;
+        continue; // don't push children onto stack
+      }
+
       const allChildren = gnode.adjacents
         .map((adjIdx, i) => ({ adjIdx, len: gnode.lengths[i] }))
         .filter(({ adjIdx }) => adjIdx !== fromNodeIdx);
 
       entry.isTip = allChildren.length === 0;
-      if (entry.isTip) { tipCounter++; entry.y = tipCounter; }
+      if (entry.isTip) { tipCounter++; entry.y = tipCounter; entry.collapsedMaxX = xFromRoot; }
 
       // Collect visible children (forward order), pre-populate entry.children,
       // then push to stack in reverse so forward-order pops happen first.
@@ -217,16 +305,21 @@ export function computeLayoutFromGraph(graph, subtreeRootId = null, options = {}
         const childOrigId = gnodes[adjIdx].origId;
         if (hiddenNodeIds.has(childOrigId)) {
           entry.hasHiddenChildren = true;
+        } else if (collapsedCladeIds.has(childOrigId)) {
+          // Collapsed clade: treat as a leaf in layout but mark it specially.
+          entry.children.push(childOrigId);
+          toPush.push({ adjIdx, len, collapsed: true });
         } else {
           entry.children.push(childOrigId);
           toPush.push({ adjIdx, len });
         }
       }
       for (let j = toPush.length - 1; j >= 0; j--) {
-        const { adjIdx, len } = toPush[j];
+        const { adjIdx, len, collapsed } = toPush[j];
         stack.push({ nodeIdx: adjIdx, fromNodeIdx: nodeIdx,
                      xFromRoot: xFromRoot + (clampNeg ? Math.max(0, len) : len),
-                     parentLayoutId: gnode.origId });
+                     parentLayoutId: gnode.origId,
+                     collapsed: !!collapsed });
       }
     }
 
@@ -379,7 +472,7 @@ export function computeLayoutFromGraph(graph, subtreeRootId = null, options = {}
       node.y = childYs.reduce((a, b) => a + b, 0) / childYs.length;
   }
 
-  const maxX = finalNodes.reduce((m, n) => Math.max(m, n.x), 0);
+  const maxX = finalNodes.reduce((m, n) => Math.max(m, n.collapsedMaxX ?? n.x), 0);
   const maxY = tipCounter;
 
   return { nodes: finalNodes, nodeMap, maxX, maxY };

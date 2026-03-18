@@ -104,9 +104,11 @@ export class TreeRenderer {
     this._targetScaleY  = 1;
     this._targetScaleX  = 1;   // animated horizontal scale
     this._animating     = false;
-    this._reorderFromY  = null;   // Map<id, oldY> during reorder animation
-    this._reorderToY    = null;   // Map<id, newY>
-    this._reorderAlpha  = 1;      // 0→1; 1 = not animating
+    this._reorderFromY          = null;   // Map<id, oldY> during reorder animation
+    this._reorderToY            = null;   // Map<id, newY>
+    this._reorderFromCollapsedN = null;   // Map<id, oldCollapsedTipCount>
+    this._reorderToCollapsedN   = null;   // Map<id, newCollapsedTipCount>
+    this._reorderAlpha          = 1;      // 0→1; 1 = not animating
 
     // Intro animation (played once per tree load)
     this._introPhase          = null;   // null | 1 | 2
@@ -295,8 +297,12 @@ export class TreeRenderer {
     const _al = s.tipLabelAlign ?? 'off';
     this.tipLabelAlign = (_al === true || _al === 'on') ? 'aligned' : (_al === false ? 'off' : _al);
 
-    // Intro animation style — persisted across tree loads.
+    // ── Intro animation style — persisted across tree loads. ──────────────
     if (s.introAnimation !== undefined) this._introAnimationStyle = s.introAnimation;
+
+    // ── Collapsed clades ─────────────────────────────────────────────────
+    this._collapsedCladeOpacity = s.collapsedCladeOpacity != null ? +s.collapsedCladeOpacity : (this._collapsedCladeOpacity ?? 0.25);
+    this._collapsedCladeHeightN = s.collapsedCladeHeightN != null ? +s.collapsedCladeHeightN : (this._collapsedCladeHeightN ?? 3);
 
     // Propagate bg colour to an attached legend renderer.
     this._legendRenderer?.setBgColor(this.bgColor, this._skipBg);
@@ -354,14 +360,22 @@ export class TreeRenderer {
     // Fall back to an instant update (no reorder animation) above ~30k tips.
     if (nodes.length > 60000) return this.setData(nodes, nodeMap, maxX, maxY);
 
-    // Snapshot old y values by node id.
+    // Snapshot old y values and collapsedTipCount values by node id.
     const fromY = new Map();
+    const fromCollapsedN = new Map();
     if (this.nodes) {
-      for (const n of this.nodes) fromY.set(n.id, n.y);
+      for (const n of this.nodes) {
+        fromY.set(n.id, n.y);
+        if (n.isCollapsed) fromCollapsedN.set(n.id, n.collapsedTipCount);
+      }
     }
-    // Build target y map from new layout.
+    // Build target y map and target collapsedTipCount map from new layout.
     const toY = new Map();
-    for (const n of nodes) toY.set(n.id, n.y);
+    const toCollapsedN = new Map();
+    for (const n of nodes) {
+      toY.set(n.id, n.y);
+      if (n.isCollapsed) toCollapsedN.set(n.id, n.collapsedTipCount);
+    }
 
     // Install new layout.
     this.nodes   = nodes;
@@ -380,8 +394,10 @@ export class TreeRenderer {
       const fy = fromY.get(n.id);
       if (fy !== undefined) n.y = fy;
     }
-    this._reorderFromY  = fromY;
-    this._reorderToY    = toY;
+    this._reorderFromY        = fromY;
+    this._reorderToY          = toY;
+    this._reorderFromCollapsedN = fromCollapsedN;
+    this._reorderToCollapsedN   = toCollapsedN;
     this._reorderAlpha  = 0;
     this._dirty = true;
     if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
@@ -1037,17 +1053,21 @@ export class TreeRenderer {
    */
   _computeAndInstallLayout(subtreeRootId) {
     const { nodes, nodeMap, maxX, maxY } = computeLayoutFromGraph(
-      this.graph, subtreeRootId, { clampNegativeBranches: this.clampNegativeBranches });
+      this.graph, subtreeRootId, {
+        clampNegativeBranches: this.clampNegativeBranches,
+        collapsedCladeHeightN: this._collapsedCladeHeightN,
+      });
     this.nodes = nodes; this.nodeMap = nodeMap; this.maxX = maxX; this.maxY = maxY;
     this._measureLabels();
     this._updateScaleX(false);
     this._updateMinScaleY();
   }
 
-  /** Double-click on an internal layout node id → drill into its subtree. */
+  /** Double-click on an internal layout node id → drill into its subtree.
+   *  Also accepts collapsed clade nodes (isTip=true, isCollapsed=true). */
   navigateInto(layoutNodeId) {
     const layoutNode = this.nodeMap?.get(layoutNodeId);
-    if (!layoutNode || layoutNode.isTip || !layoutNode.parentId) return;
+    if (!layoutNode || (layoutNode.isTip && !layoutNode.isCollapsed) || !layoutNode.parentId) return;
 
     // Capture screen position of the clicked node BEFORE layout swap.
     const px_old = this.offsetX + layoutNode.x * this.scaleX;
@@ -1836,15 +1856,28 @@ export class TreeRenderer {
         if (fy !== undefined && ty !== undefined) {
           node.y = fy + (ty - fy) * a;
         }
+        if (node.isCollapsed) {
+          const fc = this._reorderFromCollapsedN.get(node.id);
+          const tc = this._reorderToCollapsedN.get(node.id);
+          if (fc !== undefined && tc !== undefined) {
+            node.collapsedTipCount = fc + (tc - fc) * a;
+          }
+        }
       }
       if (this._reorderAlpha >= 1) {
         // Snap to final positions
         for (const node of this.nodes) {
           const ty = this._reorderToY.get(node.id);
           if (ty !== undefined) node.y = ty;
+          if (node.isCollapsed) {
+            const tc = this._reorderToCollapsedN.get(node.id);
+            if (tc !== undefined) node.collapsedTipCount = tc;
+          }
         }
-        this._reorderFromY = null;
-        this._reorderToY   = null;
+        this._reorderFromY          = null;
+        this._reorderToY            = null;
+        this._reorderFromCollapsedN = null;
+        this._reorderToCollapsedN   = null;
       }
       this._dirty = true;
     }
@@ -1937,6 +1970,7 @@ export class TreeRenderer {
 
     this._drawNodeBars(yWorldMin, yWorldMax);
     this._drawBranches(yWorldMin, yWorldMax);
+    this._drawCollapsedClades(yWorldMin, yWorldMax);
     this._drawNodesAndLabels(yWorldMin, yWorldMax);
     this._drawSelectionAndHover(yWorldMin, yWorldMax);
     this._drawNodeLabels(yWorldMin, yWorldMax);  // drawn on top
@@ -2195,6 +2229,48 @@ export class TreeRenderer {
     ctx.stroke();
   }
 
+  /** Draw collapsed-clade triangles over the branches. */
+  _drawCollapsedClades(yWorldMin, yWorldMax) {
+    if (!this.nodes) return;
+    const ctx     = this.ctx;
+    const opacity = this._collapsedCladeOpacity;
+
+    for (const node of this.nodes) {
+      if (!node.isCollapsed) continue;
+
+      // Use the layout height stored on the node (= collapsedCladeHeightN option
+      // passed to computeLayoutFromGraph) so the triangle exactly spans the rows.
+      const halfN = node.collapsedTipCount / 2;
+
+      // Cull: bottom of triangle above viewport or top below viewport
+      const bottomY = node.y + halfN;
+      const topY    = node.y - halfN;
+      if (bottomY < yWorldMin || topY > yWorldMax) continue;
+
+      const apexSX  = this._wx(node.x);
+      const apexSY  = this._wy(node.y);
+      const baseSX  = this._wx(node.collapsedMaxX);
+      const topSY   = this._wy(node.y - halfN);
+      const botSY   = this._wy(node.y + halfN);
+
+      const colour = node.collapsedColour ?? this.branchColor;
+
+      ctx.beginPath();
+      ctx.moveTo(apexSX, apexSY);
+      ctx.lineTo(baseSX, topSY);
+      ctx.lineTo(baseSX, botSY);
+      ctx.closePath();
+
+      ctx.globalAlpha = opacity;
+      ctx.fillStyle   = colour;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = colour;
+      ctx.lineWidth   = this.branchWidth;
+      ctx.stroke();
+    }
+  }
+
   /** Draw node/tip shapes (halos + fills) and tip labels. */
   _drawNodesAndLabels(yWorldMin, yWorldMax) {
     const ctx = this.ctx;
@@ -2238,6 +2314,7 @@ export class TreeRenderer {
       ctx.beginPath();
       for (const node of this.nodes) {
         if (!node.isTip) continue;
+        if (node.isCollapsed) continue;
         if (node.y < yWorldMin || node.y > yWorldMax) continue;
         ctx.moveTo(this._wx(node.x) + r, this._wy(node.y));
         ctx.arc(this._wx(node.x), this._wy(node.y), r, 0, Math.PI * 2);
@@ -2245,8 +2322,6 @@ export class TreeRenderer {
       ctx.stroke();
       ctx.lineWidth = 1;
     }
-
-    // Pass 2 – fill circles for internal node shapes
     if (nodeR > 0) {
       if (this._nodeColourBy && this._nodeColourScale) {
         const key = this._nodeColourBy;
@@ -2279,6 +2354,7 @@ export class TreeRenderer {
         const key = this._tipColourBy;
         for (const node of this.nodes) {
           if (!node.isTip) continue;
+          if (node.isCollapsed) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           const val   = this._statValue(node, key);
           const col   = this._tipColourForValue(val) ?? this.tipShapeColor;
@@ -2292,6 +2368,7 @@ export class TreeRenderer {
         ctx.beginPath();
         for (const node of this.nodes) {
           if (!node.isTip) continue;
+          if (node.isCollapsed) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           ctx.moveTo(this._wx(node.x) + r, this._wy(node.y));
           ctx.arc(this._wx(node.x), this._wy(node.y), r, 0, Math.PI * 2);
@@ -2351,7 +2428,11 @@ export class TreeRenderer {
           if (!node.isTip) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           if (!this._showLabelAt(node.y)) continue;
-          const tipEdgeX = this._wx(node.x) + outlineR + 2;
+          // For collapsed clades the connector starts at the right-hand base
+          // of the triangle, not the apex.
+          const tipEdgeX = node.isCollapsed
+            ? this._wx(node.collapsedMaxX)
+            : this._wx(node.x) + outlineR + 2;
           // End just before shape (or text when no shape), leaving a 2 px gap.
           const lineEndX = alignLabelX + (_shOffset > 0 ? _shML : 0) - 2;
           if (lineEndX - tipEdgeX < 8) continue;  // tip already at/near label column
@@ -2368,6 +2449,7 @@ export class TreeRenderer {
         ctx.fillStyle = dimColor;
         for (const node of this.nodes) {
           if (!node.isTip || this._selectedTipIds.has(node.id)) continue;
+          if (node.isCollapsed) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           if (!this._showLabelAt(node.y)) continue;
           const _t = this._tipLabelText(node);
@@ -2379,6 +2461,7 @@ export class TreeRenderer {
         ctx.font = `${this.selectedLabelStyle} ${this.fontSize}px ${this.fontFamily}`;
         for (const node of this.nodes) {
           if (!node.isTip || !this._selectedTipIds.has(node.id)) continue;
+          if (node.isCollapsed) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           if (!this._showLabelAt(node.y)) continue;
           const _t = this._tipLabelText(node);
@@ -2390,6 +2473,7 @@ export class TreeRenderer {
         const key = this._labelColourBy;
         for (const node of this.nodes) {
           if (!node.isTip) continue;
+          if (node.isCollapsed) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           if (!this._showLabelAt(node.y)) continue;
           const _t = this._tipLabelText(node);
@@ -2403,12 +2487,37 @@ export class TreeRenderer {
         ctx.fillStyle = this.labelColor;
         for (const node of this.nodes) {
           if (!node.isTip) continue;
+          if (node.isCollapsed) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           if (!this._showLabelAt(node.y)) continue;
           const _t = this._tipLabelText(node);
           const _bX = alignLabelX ?? (this._wx(node.x) + outlineR + 3);
           if (_t) ctx.fillText(_t, _tx(_bX), this._wy(node.y));
         }
+      }
+
+      // Pass 3-collapsed: "X tips" labels for collapsed clade nodes (names mode only).
+      if (!this._tipLabelsOff && this.tipLabelAnnotation === null) {
+        const hasSelection = this._selectedTipIds.size > 0;
+        for (const node of this.nodes) {
+          if (!node.isCollapsed) continue;
+          if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          const label = `${node.collapsedRealTips} tips`;
+          const _bX   = alignLabelX ?? (this._wx(node.collapsedMaxX) + 4);
+          const isSelected = this._mrcaNodeId === node.id;
+          if (hasSelection && !isSelected) {
+            ctx.fillStyle = this.dimLabelColor;
+            ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
+          } else if (isSelected) {
+            ctx.fillStyle = this.selectedLabelColor;
+            ctx.font      = `${this.selectedLabelStyle} ${this.fontSize}px ${this.fontFamily}`;
+          } else {
+            ctx.fillStyle = this.labelColor;
+            ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
+          }
+          ctx.fillText(label, _tx(_bX), this._wy(node.y));
+        }
+        ctx.font = `${this.fontSize}px ${this.fontFamily}`;
       }
     }
 
@@ -2423,9 +2532,8 @@ export class TreeRenderer {
       const halfSz  = _shSz / 2;
       for (const node of this.nodes) {
         if (!node.isTip) continue;
+        if (node.isCollapsed) continue;
         if (node.y < yWorldMin || node.y > yWorldMax) continue;
-        const baseX  = alignLabelX ?? (this._wx(node.x) + outlineR + 3);
-        const shapeX = baseX + _shML;
         const sy     = this._wy(node.y);
         ctx.fillStyle = _hasSc
           ? (this._tipLabelShapeColourForValue(this._statValue(node, _shKey)) ?? this._tipLabelShapeColor)
@@ -2456,6 +2564,7 @@ export class TreeRenderer {
         const _hasXSc = !!(_shXKey && _shXScl);
         for (const node of this.nodes) {
           if (!node.isTip) continue;
+          if (node.isCollapsed) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           const baseX   = alignLabelX ?? (this._wx(node.x) + outlineR + 3);
           const shapeXX = baseX + extraOff;
@@ -2547,8 +2656,9 @@ export class TreeRenderer {
       ctx.globalAlpha = 1;
     }
 
-    // Pass 3.6 – MRCA circle: shown when 2+ tips are selected (drawn above labels)
-    if (this._mrcaNodeId && this._selectedTipIds.size >= 2) {
+    // Pass 3.6 – MRCA circle: shown when 2+ tips are selected, or when an MRCA
+    // node is explicitly set by the app (e.g., after collapsing a clade).
+    if (this._mrcaNodeId) {
       const mn = this.nodeMap.get(this._mrcaNodeId);
       if (mn) {
         const mnx     = this._wx(mn.x);
@@ -2831,6 +2941,27 @@ export class TreeRenderer {
     const yWorldMax = this._worldYfromScreen(H + this.tipRadius * 4);
     const hitR = this.tipRadius * 3 + 6;
     let best = null, bestDist2 = hitR * hitR;
+
+    // First pass: check collapsed clade triangles (point-in-triangle hit test)
+    // Use per-node collapsedTipCount (= layout height) to match _drawCollapsedClades.
+    for (const node of this.nodes) {
+      if (!node.isCollapsed) continue;
+      const halfN  = node.collapsedTipCount / 2;
+      const apexSX = this._wx(node.x);
+      const apexSY = this._wy(node.y);
+      const baseSX = this._wx(node.collapsedMaxX);
+      const topSY  = this._wy(node.y - halfN);
+      const botSY  = this._wy(node.y + halfN);
+      // Bounding-box cull first
+      if (mx < apexSX || mx > baseSX) continue;
+      if (my < topSY  || my > botSY) continue;
+      // Point-in-triangle: interpolate the triangle edges at x=mx
+      const t = baseSX > apexSX ? (mx - apexSX) / (baseSX - apexSX) : 0;
+      const triTopY = apexSY + t * (topSY - apexSY);
+      const triBotY = apexSY + t * (botSY - apexSY);
+      if (my >= triTopY && my <= triBotY) return node;
+    }
+
     for (const node of this.nodes) {
       if (node.y < yWorldMin || node.y > yWorldMax) continue;
       const dx = this._wx(node.x) - mx;
@@ -2953,7 +3084,13 @@ export class TreeRenderer {
       if (this._spaceDown || !this.graph) return;
       const rect = canvas.getBoundingClientRect();
       const node = this._findNodeAtScreen(e.clientX - rect.left, e.clientY - rect.top);
-      if (!node || node.isTip) return;
+      if (!node) return;
+      // Double-click on a collapsed clade: drill into it (shows it expanded).
+      if (node.isCollapsed) {
+        this.navigateInto(node.id);
+        return;
+      }
+      if (node.isTip) return;
       // Double-clicking the current root while inside a subtree navigates back.
       if (!node.parentId && this._navStack.length > 0) {
         this.navigateBack();

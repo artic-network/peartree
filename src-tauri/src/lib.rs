@@ -384,6 +384,8 @@ pub fn run() {
             let tree_midpoint      = MenuItem::with_id(app, "tree-midpoint",      "Midpoint Root",  true, Some("CmdOrCtrl+M"))?;
             let tree_hide          = MenuItem::with_id(app, "tree-hide",          "Hide Nodes",     true, None::<&str>)?;
             let tree_show          = MenuItem::with_id(app, "tree-show",          "Show Nodes",     true, None::<&str>)?;
+            let tree_collapse_clade = MenuItem::with_id(app, "tree-collapse-clade", "Collapse Clade", true, None::<&str>)?;
+            let tree_expand_clade   = MenuItem::with_id(app, "tree-expand-clade",   "Expand Clade",   true, None::<&str>)?;
             let tree_paint         = MenuItem::with_id(app, "tree-paint",         "Paint Node",     true, None::<&str>)?;
             let tree_clear_colours = MenuItem::with_id(app, "tree-clear-colours", "Clear Colours",  true, None::<&str>)?;
 
@@ -399,6 +401,9 @@ pub fn run() {
                 &PredefinedMenuItem::separator(app)?,
                 &tree_hide,
                 &tree_show,
+                &PredefinedMenuItem::separator(app)?,
+                &tree_collapse_clade,
+                &tree_expand_clade,
                 &PredefinedMenuItem::separator(app)?,
                 &tree_paint,
                 &tree_clear_colours,
@@ -453,6 +458,7 @@ pub fn run() {
                 &tree_order_up, &tree_order_down,
                 &tree_reroot, &tree_midpoint,
                 &tree_hide, &tree_show,
+                &tree_collapse_clade, &tree_expand_clade,
                 &tree_paint, &tree_clear_colours,
             ] {
                 item.set_enabled(false)?;
@@ -491,6 +497,8 @@ pub fn run() {
                 ("tree-midpoint",    tree_midpoint),
                 ("tree-hide",        tree_hide),
                 ("tree-show",        tree_show),
+                ("tree-collapse-clade", tree_collapse_clade),
+                ("tree-expand-clade",   tree_expand_clade),
                 ("tree-paint",       tree_paint),
                 ("tree-clear-colours", tree_clear_colours),
                 ("show-help",           show_help),

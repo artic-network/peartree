@@ -87,6 +87,8 @@ async function fetchExampleTree() {
   const nodeBarsRangeEl     = document.getElementById('node-bars-range');
   const nodeBarsControlsEl  = document.getElementById('node-bars-controls');
   const nodeBarsUnavailEl   = document.getElementById('node-bars-unavail');
+  const collapsedOpacitySlider = document.getElementById('collapsed-opacity-slider');
+  const collapsedHeightNSlider = document.getElementById('collapsed-height-n-slider');
   const tipShapeDetailEl    = document.getElementById('tip-shape-detail');
   const nodeShapeDetailEl   = document.getElementById('node-shape-detail');
   const nodeLabelDetailEl   = document.getElementById('node-label-detail');
@@ -482,6 +484,8 @@ async function fetchExampleTree() {
       nodeBarsWidth:      nodeBarsWidthSlider.value,
       nodeBarsShowMedian: nodeBarsMedianEl.value,
       nodeBarsShowRange:  nodeBarsRangeEl.value,
+      collapsedCladeOpacity: collapsedOpacitySlider.value,
+      collapsedCladeHeightN: collapsedHeightNSlider.value,
       clampNegBranches:   clampNegBranchesEl.value,
       tipLabelShow:       tipLabelShow.value,
       tipLabelAlign:      tipLabelAlignEl.value,
@@ -697,6 +701,14 @@ async function fetchExampleTree() {
     }
     if (s.nodeBarsShowMedian) nodeBarsMedianEl.value = s.nodeBarsShowMedian;
     if (s.nodeBarsShowRange)  nodeBarsRangeEl.value  = s.nodeBarsShowRange;
+    if (s.collapsedCladeOpacity != null) {
+      collapsedOpacitySlider.value = s.collapsedCladeOpacity;
+      document.getElementById('collapsed-opacity-value').textContent = s.collapsedCladeOpacity;
+    }
+    if (s.collapsedCladeHeightN != null) {
+      collapsedHeightNSlider.value = s.collapsedCladeHeightN;
+      document.getElementById('collapsed-height-n-value').textContent = s.collapsedCladeHeightN;
+    }
     if (s.clampNegBranches)   clampNegBranchesEl.value = s.clampNegBranches;
     // Node label settings (annotation-dependent: nodeLabelAnnotation is applied later in loadTree)
     if (s.nodeLabelPosition)  nodeLabelPositionEl.value   = s.nodeLabelPosition;
@@ -827,6 +839,14 @@ async function fetchExampleTree() {
   // Hoisted so _buildRendererSettings (called before line 1094) can reference it safely.
   let calibration;
 
+  /** Options object for computeLayoutFromGraph — centralised so every call site is consistent. */
+  function _layoutOptions() {
+    return {
+      clampNegativeBranches: clampNegBranchesEl.value === 'on',
+      collapsedCladeHeightN: parseInt(collapsedHeightNSlider.value),
+    };
+  }
+
   function _buildRendererSettings() {
     return {
       bgColor:          canvasBgColorEl.value,
@@ -883,6 +903,8 @@ async function fetchExampleTree() {
       nodeBarsWidth:      parseInt(nodeBarsWidthSlider.value),
       nodeBarsShowMedian: nodeBarsMedianEl.value,
       nodeBarsShowRange:  nodeBarsRangeEl.value  === 'on',
+      collapsedCladeOpacity: parseFloat(collapsedOpacitySlider.value),
+      collapsedCladeHeightN: parseInt(collapsedHeightNSlider.value),
       clampNegativeBranches: clampNegBranchesEl.value === 'on',
       fontFamily:         TYPEFACES[fontFamilyEl.value] ?? fontFamilyEl.value,
       tipLabelsOff:       tipLabelShow.value === 'off',
@@ -2482,7 +2504,7 @@ async function fetchExampleTree() {
 
       // Compute layout early so injectBuiltinStats() has maxX/maxY/node array
       // before the dropdowns are populated.
-      const layout = computeLayoutFromGraph(graph, null, { clampNegativeBranches: clampNegBranchesEl.value === 'on' });
+      const layout = computeLayoutFromGraph(graph, null, _layoutOptions());
 
       // Populate the "Colour by" dropdowns. user_colour is always the first option.
       const schema = graph.annotationSchema;
@@ -2818,7 +2840,7 @@ async function fetchExampleTree() {
     const anchorId  = isZoomed ? renderer.nodeIdAtViewportCenter() : null;
 
     reorderGraph(graph, ascending);
-    const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId, { clampNegativeBranches: clampNegBranchesEl.value === 'on' });
+    const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId, _layoutOptions());
     renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
 
     if (isZoomed && anchorId) {
@@ -3001,7 +3023,8 @@ async function fetchExampleTree() {
       // entry is a node inside the current subtree (a downward move).
       if (!nodeId) return _prevStackIsDownward();
       const node = renderer.nodeMap.get(nodeId);
-      return !!(node && !node.isTip && node.parentId);
+      // Allow drilling into collapsed clades (isTip=true but isCollapsed=true).
+      return !!(node && (!node.isTip || node.isCollapsed) && node.parentId);
     }
 
     function canClimb() {
@@ -3062,6 +3085,8 @@ async function fetchExampleTree() {
       commands.setEnabled('tree-rotate-all',  canRotate);
       commands.setEnabled('tree-hide',        canHide());
       commands.setEnabled('tree-show',        canShow());
+      commands.setEnabled('tree-collapse-clade', canCollapse());
+      commands.setEnabled('tree-expand-clade',   canExpand());
       commands.setEnabled('tree-paint',       hasSelection);
       // Keep the data table in sync with the canvas selection
       dataTableRenderer.syncSelection(renderer._selectedTipIds);
@@ -3110,7 +3135,7 @@ async function fetchExampleTree() {
       btnOrderDesc.classList.remove('active');
 
       // Recompute layout and animate.
-      const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId, { clampNegativeBranches: clampNegBranchesEl.value === 'on' });
+      const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId, _layoutOptions());
       renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
 
       saveSettings();
@@ -3266,7 +3291,7 @@ async function fetchExampleTree() {
       currentOrder = null;
       btnOrderAsc .classList.remove('active');
       btnOrderDesc.classList.remove('active');
-      const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId, { clampNegativeBranches: clampNegBranchesEl.value === 'on' });
+      const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId, _layoutOptions());
       renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
       _seedRootShiftAnimation(oldRoot, oldNodeMap, layout.nodes, 'in');
       renderer.fitToWindow();
@@ -3324,7 +3349,7 @@ async function fetchExampleTree() {
       const oldRoot    = renderer.nodes?.find(n => !n.parentId) ?? null;
       const oldNodeMap = renderer.nodeMap;
 
-      const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId, { clampNegativeBranches: clampNegBranchesEl.value === 'on' });
+      const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId, _layoutOptions());
       renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
       _seedRootShiftAnimation(oldRoot, oldNodeMap, layout.nodes, 'out');
       renderer.fitToWindow();
@@ -3332,6 +3357,195 @@ async function fetchExampleTree() {
 
     btnHide.addEventListener('click', () => applyHide());
     btnShow.addEventListener('click', () => applyShow());
+
+    // ── Collapse / Expand clade triangle ─────────────────────────────────────
+    const btnCollapseClade = document.getElementById('btn-collapse-clade');
+    const btnExpandClade   = document.getElementById('btn-expand-clade');
+
+    function canCollapse() {
+      if (!graph) return false;
+      // Need a selected internal MRCA that isn't already collapsed.
+      const nodeId = renderer._mrcaNodeId ?? _selectedNodeId();
+      if (!nodeId) return false;
+      const layoutNode = renderer.nodeMap?.get(nodeId);
+      if (!layoutNode) return false;
+      // Already collapsed → can't collapse again (use expand first).
+      if (layoutNode.isCollapsed) return false;
+      // Must be an internal node (has children in layout).
+      if (layoutNode.isTip) return false;
+      // Cannot collapse the root of the current view.
+      if (!layoutNode.parentId) return false;
+      return true;
+    }
+
+    /**
+     * Returns the effective root node id for expand/collapse operations:
+     * MRCA, single selected node, or the layout root if nothing is selected.
+     */
+    function _effectiveRootId() {
+      const nodeId = renderer._mrcaNodeId ?? _selectedNodeId();
+      if (nodeId) return nodeId;
+      return renderer.nodes?.find(n => !n.parentId)?.id ?? null;
+    }
+
+    /**
+     * Returns the origIds of all collapsed clades reachable at the first level
+     * from `layoutNodeId` (traversal stops at — and collects — each collapsed node).
+     */
+    function _firstLevelCollapsedUnder(layoutNodeId) {
+      const result = [];
+      const stack  = [layoutNodeId];
+      while (stack.length) {
+        const id   = stack.pop();
+        const node = renderer.nodeMap?.get(id);
+        if (!node) continue;
+        if (node.isCollapsed) {
+          result.push(id);
+        } else {
+          for (const cid of node.children) stack.push(cid);
+        }
+      }
+      return result;
+    }
+
+    function canExpand() {
+      if (!graph || !graph.collapsedCladeIds.size) return false;
+      const rootId = _effectiveRootId();
+      if (!rootId) return false;
+      return _firstLevelCollapsedUnder(rootId).length > 0;
+    }
+
+    /**
+     * Count the real (actual) descendant tip count under `layoutNodeId`.
+     * For nested collapsed clades, uses their stored `collapsedRealTips` so
+     * the count reflects actual tips, not layout row-slots.
+     */
+    function _countRealDescendantTips(layoutNodeId) {
+      let count = 0;
+      const stack = [layoutNodeId];
+      while (stack.length) {
+        const id   = stack.pop();
+        const node = renderer.nodeMap?.get(id);
+        if (!node) continue;
+        if (node.isTip) {
+          // isCollapsed nodes store the real descendant tip count in collapsedRealTips.
+          count += node.isCollapsed ? (node.collapsedRealTips || 1) : 1;
+        } else {
+          for (const cid of node.children) stack.push(cid);
+        }
+      }
+      return count;
+    }
+
+    /**
+     * Update the collapsed-clade height slider's max and value to reflect the
+     * current set of collapsed clades.  Max = largest real tip count among all
+     * collapsed clades.  If the slider was already at its old max it is moved
+     * to the new max; otherwise the value is clamped to the new max.
+     * Call this BEFORE computeLayoutFromGraph so _layoutOptions() sees the
+     * updated value.
+     */
+    function _updateCollapsedHeightSlider() {
+      if (!graph || !graph.collapsedCladeIds.size) return;
+      let maxTips = 0;
+      for (const [, info] of graph.collapsedCladeIds) {
+        maxTips = Math.max(maxTips, info.tipCount || 1);
+      }
+      maxTips = Math.max(1, maxTips);
+
+      const oldMax   = parseInt(collapsedHeightNSlider.max)   || 20;
+      const oldValue = parseInt(collapsedHeightNSlider.value) || 1;
+      const wasAtMax = oldValue >= oldMax;
+
+      collapsedHeightNSlider.max = maxTips;
+      const newValue = wasAtMax ? maxTips : Math.min(oldValue, maxTips);
+      collapsedHeightNSlider.value = newValue;
+      document.getElementById('collapsed-height-n-value').textContent = newValue;
+    }
+
+    function applyCollapse() {
+      if (!canCollapse()) return;
+      const nodeId   = renderer._mrcaNodeId ?? _selectedNodeId();
+      const colour   = tipColourPickerEl?.value ?? null;
+      const tipCount = _countRealDescendantTips(nodeId);
+      graph.collapsedCladeIds.set(nodeId, { colour, tipCount });
+
+      // Update the slider range/value now that there's a new collapsed clade,
+      // before computing the layout so _layoutOptions() reads the updated value.
+      _updateCollapsedHeightSlider();
+      renderer.setSettings(_buildRendererSettings());
+
+      const oldRoot    = renderer.nodes?.find(n => !n.parentId) ?? null;
+      const oldNodeMap = renderer.nodeMap;
+
+      renderer._selectedTipIds.clear();
+      renderer._mrcaNodeId = null;
+
+      const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId, _layoutOptions());
+      renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+      // Keep the collapsed node selected so commands remain meaningful.
+      renderer._mrcaNodeId = nodeId;
+      if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(true);
+      _seedRootShiftAnimation(oldRoot, oldNodeMap, layout.nodes, 'in');
+      renderer.fitToWindow();
+    }
+
+    function applyExpand(nodeId) {
+      if (!graph) return;
+      // Capture explicit selection (MRCA or single tip) before clearing.
+      // _selectedNodeId() returns null when nothing/multi-tip selected,
+      // so this is non-null only when the user had something meaningfully selected.
+      const savedSelection = renderer._mrcaNodeId ?? _selectedNodeId();
+
+      if (nodeId) {
+        // Single-node expand: called from double-click on a collapsed triangle.
+        graph.collapsedCladeIds.delete(nodeId);
+      } else {
+        // Button / command: expand ALL first-level collapsed clades under the
+        // effective root (selected node, MRCA, or layout root if nothing selected).
+        const rootId    = _effectiveRootId();
+        if (!rootId) return;
+        const toExpand  = _firstLevelCollapsedUnder(rootId);
+        if (!toExpand.length) return;
+        for (const id of toExpand) graph.collapsedCladeIds.delete(id);
+      }
+
+      // Update the slider range now that a clade has been removed.
+      _updateCollapsedHeightSlider();
+      renderer.setSettings(_buildRendererSettings());
+
+      const oldRoot    = renderer.nodes?.find(n => !n.parentId) ?? null;
+      const oldNodeMap = renderer.nodeMap;
+
+      renderer._selectedTipIds.clear();
+      renderer._mrcaNodeId = null;
+
+      const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId, _layoutOptions());
+      renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+      // Restore the previously selected node if there was an explicit selection
+      // and the node still exists in the new layout.
+      if (savedSelection && layout.nodeMap.has(savedSelection)) {
+        // Re-select all descendant tips so they appear highlighted, then let
+        // the renderer recompute the MRCA from those tips.
+        const tips = renderer._getDescendantTipIds(savedSelection);
+        for (const id of tips) renderer._selectedTipIds.add(id);
+        renderer._updateMRCA();
+        if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(true);
+      } else {
+        if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(false);
+      }
+      _seedRootShiftAnimation(oldRoot, oldNodeMap, layout.nodes, 'out');
+      renderer.fitToWindow();
+    }
+
+    // Double-click on collapsed triangle calls this callback.
+    renderer._onCollapseExpand = (nodeId) => applyExpand(nodeId);
+
+    btnCollapseClade.addEventListener('click', () => applyCollapse());
+    btnExpandClade  .addEventListener('click', () => applyExpand());
+
+    commands.get('tree-collapse-clade').exec = () => applyCollapse();
+    commands.get('tree-expand-clade').exec   = () => applyExpand();
 
     // Mode menu
     const btnModeNodes    = document.getElementById('btn-mode-nodes');
@@ -3368,7 +3582,7 @@ async function fetchExampleTree() {
       if (renderer._onNodeSelectChange)   renderer._onNodeSelectChange(false);
       btnReroot.disabled = true;
 
-      const layout = computeLayoutFromGraph(graph, null, { clampNegativeBranches: clampNegBranchesEl.value === 'on' });
+      const layout = computeLayoutFromGraph(graph, null, _layoutOptions());
       renderer.setDataCrossfade(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
     }
 
@@ -3699,6 +3913,14 @@ async function fetchExampleTree() {
       for (const id of renderer._selectedTipIds) {
         const idx = graph.origIdToIdx.get(id);
         if (idx !== undefined) graph.nodes[idx].annotations['user_colour'] = colour;
+        // If this node is a collapsed clade root, update its stored colour too.
+        if (graph.collapsedCladeIds?.has(id)) {
+          const info = graph.collapsedCladeIds.get(id);
+          graph.collapsedCladeIds.set(id, { ...info, colour });
+          // Refresh the collapsed clade's colour in the layout so it redraws immediately.
+          const layoutNode = renderer.nodeMap?.get(id);
+          if (layoutNode) layoutNode.collapsedColour = colour;
+        }
       }
       graph.annotationSchema = buildAnnotationSchema(graph.nodes);
       _refreshAnnotationUIs(graph.annotationSchema);
@@ -4433,11 +4655,26 @@ async function fetchExampleTree() {
   nodeBarsMedianEl.addEventListener('change', applyNodeBars);
   nodeBarsRangeEl.addEventListener('change', applyNodeBars);
 
+  collapsedOpacitySlider.addEventListener('input', () => {
+    document.getElementById('collapsed-opacity-value').textContent = collapsedOpacitySlider.value;
+    if (renderer) { renderer.setSettings(_buildRendererSettings()); renderer._dirty = true; }
+    saveSettings();
+  });
+  collapsedHeightNSlider.addEventListener('input', () => {
+    document.getElementById('collapsed-height-n-value').textContent = collapsedHeightNSlider.value;
+    if (renderer && graph) {
+      renderer.setSettings(_buildRendererSettings());
+      const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId, _layoutOptions());
+      renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+      renderer.fitToWindow();
+    }
+    saveSettings();
+  });
+
   clampNegBranchesEl.addEventListener('change', () => {
     if (!renderer || !graph) { saveSettings(); return; }
     renderer.setSettings(_buildRendererSettings());
-    const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId,
-      { clampNegativeBranches: clampNegBranchesEl.value === 'on' });
+    const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId, _layoutOptions());
     renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
     saveSettings();
   });

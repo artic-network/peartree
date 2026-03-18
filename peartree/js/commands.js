@@ -75,6 +75,8 @@ _define({ id: 'tree-reroot',        label: 'Re-root Tree',   shortcut: null,    
 _define({ id: 'tree-midpoint',      label: 'Midpoint Root',  shortcut: 'CmdOrCtrl+M', group: 'tree', enabled: false, buttonId: 'btn-midpoint-root'       });
 _define({ id: 'tree-hide',          label: 'Hide Nodes',     shortcut: null,          group: 'tree', enabled: false, buttonId: 'btn-hide'                });
 _define({ id: 'tree-show',          label: 'Show Nodes',     shortcut: null,          group: 'tree', enabled: false, buttonId: 'btn-show'                });
+_define({ id: 'tree-collapse-clade', label: 'Collapse Clade', shortcut: null,         group: 'tree', enabled: false, buttonId: 'btn-collapse-clade'      });
+_define({ id: 'tree-expand-clade',   label: 'Expand Clade',   shortcut: null,         group: 'tree', enabled: false, buttonId: 'btn-expand-clade'        });
 _define({ id: 'tree-paint',         label: 'Paint Node',     shortcut: null,          group: 'tree', enabled: false, buttonId: 'btn-apply-user-colour'   });
 _define({ id: 'tree-clear-colours', label: 'Clear Colours',  shortcut: null,          group: 'tree', enabled: false, buttonId: 'btn-clear-user-colour'   });
 

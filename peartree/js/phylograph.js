@@ -333,7 +333,16 @@ export function fromNestedRoot(nestedRoot) {
   // represents a biologically meaningful reconstruction, not an arbitrary outgroup.
   const rooted = Object.keys(root.annotations).length > 0;
 
-  return { nodes, root, origIdToIdx, annotationSchema: buildAnnotationSchema(nodes), rooted, hiddenNodeIds: new Set() };
+  return {
+    nodes, root, origIdToIdx,
+    annotationSchema: buildAnnotationSchema(nodes),
+    rooted,
+    hiddenNodeIds:      new Set(),
+    // Map<origId, { colour: string|null, tipCount: number }>
+    // Entries here cause computeLayoutFromGraph to stop traversal at the node,
+    // rendering it as a collapsed triangle rather than expanding its children.
+    collapsedCladeIds:  new Map(),
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
