@@ -2459,6 +2459,24 @@ export class TreeRenderer {
         for (const node of this.nodes) {
           if (!node.isTip) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
+          // Collapsed clade at full height: draw one connector per virtual tip.
+          if (node.isCollapsed && node.collapsedTipNames &&
+              Math.round(node.collapsedTipCount) >= node.collapsedRealTips) {
+            const N    = node.collapsedRealTips;
+            const topY = node.y - (N - 1) / 2;
+            const tipEdgeX = this._wx(node.collapsedMaxX);
+            const lineEndX = alignLabelX + (_shOffset > 0 ? _shML : 0) - 2;
+            if (lineEndX - tipEdgeX >= 8) {
+              for (let i = 0; i < N; i++) {
+                const wy = topY + i;
+                if (wy < yWorldMin || wy > yWorldMax) continue;
+                if (!this._showLabelAt(wy)) continue;
+                ctx.moveTo(tipEdgeX, this._wy(wy));
+                ctx.lineTo(lineEndX, this._wy(wy));
+              }
+            }
+            continue;
+          }
           if (!this._showLabelAt(node.y)) continue;
           // For collapsed clades the connector starts at the right-hand base
           // of the triangle, not the apex.
@@ -2528,26 +2546,58 @@ export class TreeRenderer {
         }
       }
 
-      // Pass 3-collapsed: "X tips" labels for collapsed clade nodes (names mode only).
+      // Pass 3-collapsed: labels for collapsed clade nodes (names mode only).
       if (!this._tipLabelsOff && this.tipLabelAnnotation === null) {
         const hasSelection = this._selectedTipIds.size > 0;
+        const isSelected   = (node) => this._mrcaNodeId === node.id;
         for (const node of this.nodes) {
           if (!node.isCollapsed) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
-          const label = `${node.collapsedRealTips} tips`;
-          const _bX   = alignLabelX ?? (this._wx(node.collapsedMaxX) + 4);
-          const isSelected = this._mrcaNodeId === node.id;
-          if (hasSelection && !isSelected) {
-            ctx.fillStyle = this.dimLabelColor;
-            ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
-          } else if (isSelected) {
-            ctx.fillStyle = this.selectedLabelColor;
-            ctx.font      = `${this.selectedLabelStyle} ${this.fontSize}px ${this.fontFamily}`;
+          const _bX = alignLabelX ?? (this._wx(node.collapsedMaxX) + 4);
+          const sel = isSelected(node);
+          const dim = hasSelection && !sel;
+          // At full height: render one label per virtual tip.
+          if (node.collapsedTipNames && Math.round(node.collapsedTipCount) >= node.collapsedRealTips) {
+            const N    = node.collapsedRealTips;
+            const topY = node.y - (N - 1) / 2;
+            const _bX  = alignLabelX ?? (this._wx(node.collapsedMaxX) + 4);
+            for (let i = 0; i < node.collapsedTipNames.length; i++) {
+              const tip = node.collapsedTipNames[i];
+              if (!tip.name) continue;
+              const wy = topY + i;
+              if (wy < yWorldMin || wy > yWorldMax) continue;
+              if (!this._showLabelAt(wy)) continue;
+              // Colour: follow same logic as regular tip labels.
+              if (dim) {
+                ctx.fillStyle = this.dimLabelColor;
+                ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
+              } else if (sel) {
+                ctx.fillStyle = this.selectedLabelColor;
+                ctx.font      = `${this.selectedLabelStyle} ${this.fontSize}px ${this.fontFamily}`;
+              } else if (this._labelColourBy && this._labelColourScale) {
+                ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
+                ctx.fillStyle = this._labelColourForValue(this._statValue(tip, this._labelColourBy)) ?? this.labelColor;
+              } else {
+                ctx.fillStyle = this.labelColor;
+                ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
+              }
+              ctx.fillText(tip.name, _tx(_bX), this._wy(wy));
+            }
           } else {
-            ctx.fillStyle = this.labelColor;
-            ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
+            // Show count label at the node's y centre.
+            const label = `${node.collapsedRealTips} tips`;
+            if (dim) {
+              ctx.fillStyle = this.dimLabelColor;
+              ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
+            } else if (sel) {
+              ctx.fillStyle = this.selectedLabelColor;
+              ctx.font      = `${this.selectedLabelStyle} ${this.fontSize}px ${this.fontFamily}`;
+            } else {
+              ctx.fillStyle = this.labelColor;
+              ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
+            }
+            ctx.fillText(label, _tx(_bX), this._wy(node.y));
           }
-          ctx.fillText(label, _tx(_bX), this._wy(node.y));
         }
         ctx.font = `${this.fontSize}px ${this.fontFamily}`;
       }

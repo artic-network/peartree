@@ -157,6 +157,35 @@ function _findEffectiveRoot(gnodes, hiddenNodeIds, startIdx, fromIdx) {
  *   nodeA is the real root; no virtual node is needed.
  */
 /**
+ * Collect all visible tip info under `startIdx` (coming from `fromIdx`) in
+ * tree traversal order (top-to-bottom in the layout).  Each entry is
+ * { name, annotations, x } so the renderer can colour by annotation.
+ * Descends through nested collapsed clades so every actual leaf is included.
+ */
+function _subtreeTipNamesOrdered(gnodes, hiddenNodeIds, startIdx, fromIdx, startXFromRoot, clampNeg) {
+  const tips = [];
+  const stack = [{ ni: startIdx, fi: fromIdx, x: startXFromRoot }];
+  while (stack.length) {
+    const { ni, fi, x } = stack.pop();
+    const gnode = gnodes[ni];
+    const fwdChildren = gnode.adjacents
+      .map((adjIdx, i) => ({ adjIdx, len: gnode.lengths[i] }))
+      .filter(({ adjIdx }) => adjIdx !== fi && !hiddenNodeIds.has(gnodes[adjIdx].origId));
+    if (fwdChildren.length === 0) {
+      tips.push({ name: gnode.name ?? null, annotations: gnode.annotations ?? {}, x });
+    } else {
+      // Push in reverse so forward (left-to-right) order is popped first.
+      for (let j = fwdChildren.length - 1; j >= 0; j--) {
+        const { adjIdx, len } = fwdChildren[j];
+        const nextX = x + (clampNeg ? Math.max(0, len) : len);
+        stack.push({ ni: adjIdx, fi: ni, x: nextX });
+      }
+    }
+  }
+  return tips;
+}
+
+/**
  * DFS walk from `startIdx` (coming from `fromIdx`) to find the maximum
  * accumulated x-from-root value among all tips in that subtree.
  * `startXFromRoot` is the x value already accumulated at `startIdx`.
@@ -285,6 +314,11 @@ export function computeLayoutFromGraph(graph, subtreeRootId = null, options = {}
         entry.collapsedRealTips = realTipCount; // actual descendant tip count
         entry.collapsedMaxX     = maxX;
         entry.collapsedColour   = info?.colour ?? null;
+        // When the clade is shown at full height, store tip info so the
+        // renderer can draw individual tip labels instead of "X tips".
+        entry.collapsedTipNames = (heightN === realTipCount)
+          ? _subtreeTipNamesOrdered(gnodes, hiddenNodeIds, nodeIdx, fromNodeIdx, xFromRoot, clampNeg)
+          : null;
         entry.isTip             = true;   // acts as leaf for y-assignment
         tipCounter += heightN;
         entry.y = tipCounter - (heightN - 1) / 2;
