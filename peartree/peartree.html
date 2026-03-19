@@ -135,13 +135,109 @@
       display: flex;
       align-items: center;
       gap: 3px;
+      position: relative;
     }
-    .pt-colour-picker {
+    /* Colour trigger button: shows the current colour as a swatch */
+    #btn-colour-trigger {
+      width: 26px;
+      height: 26px;
+      padding: 2px;
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 4px;
+      background: rgba(255,255,255,0.07);
+      cursor: pointer;
+      flex-shrink: 0;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #btn-colour-trigger:hover:not(:disabled) { border-color: rgba(255,255,255,0.5); }
+    #btn-colour-trigger:disabled { opacity: 0.2; pointer-events: none; cursor: default; }
+    #btn-colour-trigger-swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 2px;
+      background: #ff8800;
+      pointer-events: none;
+    }
+    /* Hidden native colour input used only to open the OS colour dialog */
+    #btn-node-colour {
+      position: absolute;
+      width: 0; height: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+    /* ── Colour picker popup ── */
+    #colour-picker-popup {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      z-index: 700;
+      background: var(--pt-bg-dark);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 6px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.55);
+      padding: 10px;
+      min-width: 220px;
+    }
+    #colour-picker-popup.open { display: block; }
+    .pt-cp-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 6px;
+    }
+    .pt-cp-row:last-child { margin-bottom: 0; }
+    .pt-cp-label {
+      font-size: 0.65rem;
+      color: rgba(230,213,149,0.75);
+      white-space: nowrap;
+      min-width: 52px;
+    }
+    .pt-cp-swatches {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+    }
+    .pt-cp-swatch {
+      width: 18px;
+      height: 18px;
+      border-radius: 3px;
+      border: 1px solid rgba(255,255,255,0.15);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.08s, border-color 0.08s;
+    }
+    .pt-cp-swatch:hover {
+      transform: scale(1.18);
+      border-color: rgba(255,255,255,0.6);
+      z-index: 1;
+    }
+    .pt-cp-swatch.selected {
+      border-color: #fff;
+      box-shadow: 0 0 0 1px #fff;
+    }
+    .pt-cp-native-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .pt-cp-divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      margin: 4px 0 6px;
+    }
+    #btn-colour-native-open {
       -webkit-appearance: none;
       appearance: none;
-      width: 24px;
-      height: 24px;
-      padding: 1px;
+      width: 28px;
+      height: 28px;
+      padding: 2px;
       border: 1px solid rgba(255,255,255,0.25);
       border-radius: 4px;
       background: rgba(255,255,255,0.07);
@@ -149,9 +245,8 @@
       flex-shrink: 0;
       box-sizing: border-box;
     }
-    .pt-colour-picker::-webkit-color-swatch-wrapper { padding: 2px; }
-    .pt-colour-picker::-webkit-color-swatch { border: none; border-radius: 2px; }
-    .pt-colour-picker:disabled { opacity: 0.2; pointer-events: none; cursor: default; }
+    #btn-colour-native-open::-webkit-color-swatch-wrapper { padding: 2px; }
+    #btn-colour-native-open::-webkit-color-swatch { border: none; border-radius: 2px; }
     /* Toolbar buttons: subtle fill so enabled buttons read as interactive */
     .pt-toolbar .btn {
       background: rgba(255,255,255,0.05);
@@ -1564,9 +1659,27 @@
     <div class="pt-toolbar-sep"></div>
 
     <!-- User colour -->
-    <div class="pt-colour-pick-wrap">
-      <input type="color" id="btn-node-colour" class="pt-colour-picker" disabled
-        title="Pick colour for selected nodes" value="#ff8800">
+    <div class="pt-colour-pick-wrap" id="colour-pick-wrap">
+      <!-- Trigger button showing current colour swatch -->
+      <button id="btn-colour-trigger" disabled title="Choose colour for selected nodes">
+        <span id="btn-colour-trigger-swatch"></span>
+      </button>
+      <!-- Hidden native colour input (opened programmatically) -->
+      <input type="color" id="btn-node-colour" value="#ff8800" tabindex="-1">
+      <!-- Colour picker popup -->
+      <div id="colour-picker-popup">
+        <div class="pt-cp-native-row">
+          <input type="color" id="btn-colour-native-open" value="#ff8800" title="Open colour picker…">
+          <span style="font-size:0.75rem;color:rgba(242,241,230,0.5);">Custom colour…</span>
+        </div>
+        <div id="colour-picker-recent-row" class="pt-cp-row">
+          <span class="pt-cp-label">Recent</span>
+          <div class="pt-cp-swatches" id="colour-picker-recent"></div>
+        </div>
+        <hr class="pt-cp-divider">
+        <!-- Categorical palette rows injected by JS -->
+        <div id="colour-picker-palettes"></div>
+      </div>
       <button id="btn-apply-user-colour" class="btn btn-sm btn-outline-secondary" disabled
         title="Apply colour to selected nodes"><i class="bi bi-brush"></i></button>
       <button id="btn-clear-user-colour" class="btn btn-sm btn-outline-secondary" disabled

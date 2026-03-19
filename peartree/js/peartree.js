@@ -180,9 +180,131 @@ async function fetchExampleTree() {
   const btnDataTable           = document.getElementById('btn-data-table');
   const btnExportTree          = document.getElementById('btn-export-tree');
   const btnMPR                 = document.getElementById('btn-midpoint-root');
+  // Hidden native <input type="color"> — value only, never shown directly
   const tipColourPickerEl            = document.getElementById('btn-node-colour');
+  // Colour panel elements
+  const btnColourTrigger             = document.getElementById('btn-colour-trigger');
+  const btnColourTriggerSwatch       = document.getElementById('btn-colour-trigger-swatch');
+  const colourPickerPopup            = document.getElementById('colour-picker-popup');
+  const btnColourNativeOpen          = document.getElementById('btn-colour-native-open');
+  const colourPickerRecentEl         = document.getElementById('colour-picker-recent');
+  const colourPickerPalettesEl       = document.getElementById('colour-picker-palettes');
   const btnApplyUserColour           = document.getElementById('btn-apply-user-colour');
   const btnClearUserColour           = document.getElementById('btn-clear-user-colour');
+
+  // Recent colours (persisted) — max 8 entries
+  const RECENT_COLOURS_KEY = 'pt-recent-colours';
+  let _recentColours = (() => {
+    try { return JSON.parse(localStorage.getItem(RECENT_COLOURS_KEY) || '[]'); }
+    catch { return []; }
+  })();
+
+  function _saveRecentColours() {
+    try { localStorage.setItem(RECENT_COLOURS_KEY, JSON.stringify(_recentColours)); } catch {}
+  }
+
+  function _addRecentColour(hex) {
+    hex = hex.toLowerCase();
+    _recentColours = [hex, ..._recentColours.filter(c => c !== hex)].slice(0, 8);
+    _saveRecentColours();
+  }
+
+  // Normalise any hex to #rrggbb (e.g. shorthand #rgb)
+  function _normaliseHex(h) {
+    h = h.trim();
+    if (/^#[0-9a-f]{3}$/i.test(h))
+      h = '#' + h[1]+h[1]+h[2]+h[2]+h[3]+h[3];
+    return /^#[0-9a-f]{6}$/i.test(h) ? h.toLowerCase() : null;
+  }
+
+  function _renderColourPanel() {
+    // Recent row
+    colourPickerRecentEl.innerHTML = '';
+    if (_recentColours.length === 0) {
+      const empty = document.createElement('span');
+      empty.style.cssText = 'font-size:0.65rem;color:rgba(242,241,230,0.3);font-style:italic;';
+      empty.textContent = '—';
+      colourPickerRecentEl.appendChild(empty);
+    } else {
+      for (const hex of _recentColours) {
+        colourPickerRecentEl.appendChild(_makeSwatch(hex));
+      }
+    }
+    // Palette rows
+    colourPickerPalettesEl.innerHTML = '';
+    for (const [name, colours] of Object.entries(CATEGORICAL_PALETTES)) {
+      const row = document.createElement('div');
+      row.className = 'pt-cp-row';
+      const label = document.createElement('span');
+      label.className = 'pt-cp-label';
+      label.textContent = name;
+      const swatches = document.createElement('div');
+      swatches.className = 'pt-cp-swatches';
+      for (const hex of colours) swatches.appendChild(_makeSwatch(hex));
+      row.appendChild(label);
+      row.appendChild(swatches);
+      colourPickerPalettesEl.appendChild(row);
+    }
+  }
+
+  function _makeSwatch(hex) {
+    const s = document.createElement('div');
+    s.className = 'pt-cp-swatch';
+    s.style.background = hex;
+    s.title = hex;
+    if (tipColourPickerEl.value.toLowerCase() === hex) s.classList.add('selected');
+    s.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _setColourPickerValue(hex);
+      _closeColourPanel();
+    });
+    return s;
+  }
+
+  function _setColourPickerValue(hex) {
+    tipColourPickerEl.value = hex;
+    btnColourNativeOpen.value = hex;
+    btnColourTriggerSwatch.style.background = hex;
+  }
+
+  function _openColourPanel() {
+    _renderColourPanel();
+    colourPickerPopup.classList.add('open');
+  }
+
+  function _closeColourPanel() {
+    colourPickerPopup.classList.remove('open');
+  }
+
+  // Toggle on trigger button
+  btnColourTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (colourPickerPopup.classList.contains('open')) {
+      _closeColourPanel();
+    } else {
+      _openColourPanel();
+    }
+  });
+
+  // Clicking the native colour input inside the panel
+  btnColourNativeOpen.addEventListener('input', (e) => {
+    e.stopPropagation();
+    const hex = e.target.value;
+    tipColourPickerEl.value = hex;
+    btnColourTriggerSwatch.style.background = hex;
+  });
+
+  // Close when clicking outside the popup
+  document.addEventListener('click', (e) => {
+    if (colourPickerPopup.classList.contains('open') &&
+        !colourPickerPopup.contains(e.target) &&
+        e.target !== btnColourTrigger) {
+      _closeColourPanel();
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') _closeColourPanel();
+  });
   const tipFilterEl            = document.getElementById('tip-filter');
   const tipFilterCnt           = document.getElementById('tip-filter-count');
 
@@ -2761,7 +2883,7 @@ async function fetchExampleTree() {
         // Now that a tree is loaded, stamp the theme background onto the canvas wrappers.
         _syncCanvasWrapperBg(canvasBgColorEl.value);
         tipFilterEl.disabled       = false;
-        tipColourPickerEl.disabled = false;
+        btnColourTrigger.disabled = false;
         // Buttons with no command equivalent
         const _btnHypUp   = document.getElementById('btn-hyp-up');
         const _btnHypDown = document.getElementById('btn-hyp-down');
@@ -3932,7 +4054,11 @@ async function fetchExampleTree() {
       saveSettings();
     }
 
-    btnApplyUserColour.addEventListener('click', () => _applyUserColour(tipColourPickerEl.value));
+    btnApplyUserColour.addEventListener('click', () => {
+      const hex = tipColourPickerEl.value;
+      _addRecentColour(hex);
+      _applyUserColour(hex);
+    });
 
     btnClearUserColour.addEventListener('click', () => {
       if (!graph) return;
