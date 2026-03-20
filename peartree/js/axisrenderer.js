@@ -218,10 +218,10 @@ export class AxisRenderer {
   }
 
   /**
-   * Set the direction for non-timed, non-date trees.
-   * 'forward' = divergence from root (0 at root, maxX at tips).
+   * Set the axis direction.
+   * 'forward' = divergence from root (0 at root, maxX at tips) — always respected.
    * 'reverse' = height above most-divergent tip (maxX at root, 0 at tip).
-   * Has no effect when date mode or timed-tree mode is active.
+   * Has no effect when date mode is active.
    */
   setDirection(dir) {
     this._direction = (dir === 'reverse') ? 'reverse' : 'forward';
@@ -276,7 +276,7 @@ export class AxisRenderer {
       // _niceTicks only generates round-number ticks, so if the last tick falls
       // noticeably short of maxX, append maxX explicitly so the axis is labelled
       // all the way to the tip.
-      if (!this._timed && majorTicks.length > 0) {
+      if (this._direction === 'forward' && !this._dateMode && majorTicks.length > 0) {
         const lastTick = majorTicks[majorTicks.length - 1];
         const step = majorTicks.length > 1 ? Math.abs(majorTicks[1] - majorTicks[0]) : 0;
         const gap  = rightVal - lastTick;
@@ -397,15 +397,13 @@ export class AxisRenderer {
       const rightVal = this._calibration.heightToDecYear(this._viewMinTipH);
       return { leftVal, rightVal };
     }
-    if (this._timed) {
-      // Height axis: rootHeight at worldX=0, decreasing to 0 at worldX=maxX
-      return { leftVal: this._rootHeight + extraH, rightVal: 0 };
+    // Forward: origin at root (0), divergence increases toward tips (maxX). Always respected.
+    if (this._direction === 'forward') {
+      return { leftVal: 0, rightVal: this._maxX };
     }
-    // Non-timed: forward = divergence (0→maxX), reverse = height-from-tip (maxX→0)
-    if (this._direction === 'reverse') {
-      return { leftVal: this._maxX + extraH, rightVal: 0 };
-    }
-    return { leftVal: 0, rightVal: this._maxX };
+    // Reverse: 0 at tips, rootHeight (or maxX) at root — values decrease left to right.
+    const span = this._timed ? this._rootHeight : this._maxX;
+    return { leftVal: span + extraH, rightVal: 0 };
   }
 
   _valToWorldX(val) {
@@ -416,9 +414,10 @@ export class AxisRenderer {
       const rootH = Math.max(this._rootHeight, this._maxX);
       return val - this._calibration.heightToDecYear(rootH);
     }
-    if (this._timed)                       return this._rootHeight - val;
-    if (this._direction === 'reverse')     return this._maxX - val;
-    return val;
+    if (this._direction === 'forward')     return val;
+    // Reverse: worldX = span − val (span = rootHeight for timed, maxX for non-timed)
+    const span = this._timed ? this._rootHeight : this._maxX;
+    return span - val;
   }
 
   _valToScreenX(val) {
