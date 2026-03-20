@@ -62,9 +62,11 @@ _define({ id: 'view-climb',      label: 'Climb Out One Level', shortcut: 'CmdOrC
 _define({ id: 'view-home',       label: 'Root',                shortcut: 'CmdOrCtrl+\\',      group: 'view', enabled: false, buttonId: 'btn-home'        });
 _define({ id: 'view-zoom-in',    label: 'Zoom In',             shortcut: 'CmdOrCtrl+=',       group: 'view', enabled: false, buttonId: 'btn-zoom-in'     });
 _define({ id: 'view-zoom-out',   label: 'Zoom Out',            shortcut: 'CmdOrCtrl+-',       group: 'view', enabled: false, buttonId: 'btn-zoom-out'    });
-_define({ id: 'view-fit',        label: 'Fit All',             shortcut: 'CmdOrCtrl+0',       group: 'view', enabled: false, buttonId: 'btn-fit'         });
-_define({ id: 'view-fit-labels', label: 'Fit Labels',          shortcut: 'CmdOrCtrl+Shift+0', group: 'view', enabled: false, buttonId: 'btn-fit-labels'  });
-_define({ id: 'view-info',       label: 'Get Info…',           shortcut: 'CmdOrCtrl+I',       group: 'view', enabled: false, buttonId: 'btn-node-info'   });
+_define({ id: 'view-fit',          label: 'Fit All',             shortcut: 'CmdOrCtrl+0',        group: 'view', enabled: false, buttonId: 'btn-fit'         });
+_define({ id: 'view-fit-labels',   label: 'Fit Labels',          shortcut: 'CmdOrCtrl+Shift+0',  group: 'view', enabled: false, buttonId: 'btn-fit-labels'  });
+_define({ id: 'view-scroll-top',   label: 'Scroll to Top',       shortcut: 'CmdOrCtrl+Shift+ArrowUp',   group: 'view', enabled: false });
+_define({ id: 'view-scroll-bottom',label: 'Scroll to Bottom',    shortcut: 'CmdOrCtrl+Shift+ArrowDown', group: 'view', enabled: false });
+_define({ id: 'view-info',         label: 'Get Info…',           shortcut: 'CmdOrCtrl+I',        group: 'view', enabled: false, buttonId: 'btn-node-info'   });
 
 // Tree
 _define({ id: 'tree-rotate',        label: 'Rotate Node',    shortcut: null,          group: 'tree', enabled: false, buttonId: 'btn-rotate'              });

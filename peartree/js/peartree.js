@@ -2882,8 +2882,10 @@ async function fetchExampleTree() {
         commands.setEnabled('copy-tips',       true);
         commands.setEnabled('view-zoom-in',    true);
         commands.setEnabled('view-zoom-out',   true);
-        commands.setEnabled('view-fit',        true);
-        commands.setEnabled('view-fit-labels', true);
+        commands.setEnabled('view-fit',           true);
+        commands.setEnabled('view-fit-labels',  true);
+        commands.setEnabled('view-scroll-top',    true);
+        commands.setEnabled('view-scroll-bottom', true);
         commands.setEnabled('tree-order-up',   true);
         commands.setEnabled('tree-order-down', true);
       }
@@ -4987,6 +4989,46 @@ async function fetchExampleTree() {
     }
     await navigator.clipboard.writeText(targetTips.map(n => n.name ?? n.id).join('\n'));
   };
+  commands.get('view-scroll-top').exec    = () => renderer._setTarget(Infinity,  renderer._targetScaleY, false);
+  commands.get('view-scroll-bottom').exec = () => renderer._setTarget(-Infinity, renderer._targetScaleY, false);
+
+  // ── Keyboard vertical scroll — all three levels in one capture-phase handler ──
+  //
+  //   ↑ / ↓                  → line scroll  (one tip row)
+  //   ⌘↑ / ⌘↓               → page scroll  (one canvas height minus one tip)
+  //   ⌘⇧↑ / ⌘⇧↓             → top / bottom (jump to start or end of tree)
+  //
+  // Using capture phase so ⌘⇧↑/↓ are intercepted before macOS / WKWebView
+  // consumes them as "select to top/bottom" text-selection shortcuts.
+  window.addEventListener('keydown', e => {
+    if (e.altKey) return;
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    // Don't steal arrows while the user is typing in a text field.
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if (!renderer.nodes) return;
+
+    e.preventDefault();
+    const scrolledDown = e.key === 'ArrowDown';
+
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
+      // Level 3 — jump to top / bottom
+      commands.execute(scrolledDown ? 'view-scroll-bottom' : 'view-scroll-top');
+    } else if ((e.metaKey || e.ctrlKey) && !e.shiftKey) {
+      // Level 2 — page scroll
+      const H      = renderer.canvas.clientHeight;
+      const pagePx = H - renderer.scaleY;
+      const sign   = scrolledDown ? -1 : 1;
+      renderer._setTarget(renderer._targetOffsetY + sign * pagePx, renderer._targetScaleY, false);
+      renderer._snapToTip(scrolledDown);
+    } else if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
+      // Level 1 — line scroll (one tip row)
+      const sign = scrolledDown ? -1 : 1;
+      renderer._setTarget(renderer._targetOffsetY + sign * renderer.scaleY, renderer._targetScaleY, false);
+      renderer._snapToTip(scrolledDown);
+    }
+  }, { capture: true });
+
   // Button-backed commands: exec clicks the toolbar button so all existing
   // click-handler logic runs without duplication.
   for (const cmd of commands.getAll().values()) {

@@ -1,4 +1,4 @@
-# PearTree Help
+Is # PearTree Help
 
 PearTree is a phylogenetic tree viewer that runs entirely in the browser. No data is ever uploaded to any server — all processing is local.
 
@@ -195,6 +195,14 @@ The **Filter tips…** search box in the toolbar searches tip labels as currentl
 | **⌘⇧,** | Climb one level up |
 | **⌘⇧.** | Drill into selected subtree |
 | **⌘\\** | Return to root view |
+
+### Vertical Scroll
+
+| Shortcut | Action |
+|---|---|
+| **↑** / **↓** | Scroll one line (one tip row) |
+| **⌘↑** / **⌘↓** | Scroll one page |
+| **⌘⇧↑** / **⌘⇧↓** | Jump to top / bottom of tree |
 
 ### Zoom
 

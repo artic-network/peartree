@@ -3603,16 +3603,8 @@ export class TreeRenderer {
         return;
       }
 
-      // Arrow keys – no modifier → one tip; Cmd/Ctrl → one page.
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        const scrolledDown = e.key === 'ArrowDown';
-        const dist   = (e.metaKey || e.ctrlKey) ? pagePx : tipPx;
-        const sign   = scrolledDown ? -1 : 1;
-        this._setTarget(this._targetOffsetY + sign * dist, this._targetScaleY, false);
-        this._snapToTip(scrolledDown);
-        return;
-      }
+      // Arrow key vertical scroll (↑/↓, ⌘↑/↓, ⌘⇧↑/↓) is handled by a
+      // capture-phase listener in peartree.js so all three levels live together.
 
       // Escape – animate out the hyperbolic lens if active.
       if (e.key === 'Escape') {
