@@ -17,7 +17,7 @@ The interface has four main areas:
 
 ## Opening a Tree File
 
-Click the **folder icon** or press **⌘O** to open the *Open Tree File* dialog. Three tabs are available:
+Click <i class="bi bi-folder2-open"></i> or press **⌘O** to open the *Open Tree File* dialog. Three tabs are available:
 
 | Tab | Description |
 |---|---|
@@ -37,87 +37,87 @@ Press **Escape** or click × to close the dialog without loading (once a tree is
 
 | Button | Shortcut | Description |
 |---|---|---|
-| **folder** | ⌘O | Open the *Open Tree File* dialog |
-| **+ file** | ⌘⇧A | Import an annotation CSV/TSV file (enabled once a tree is loaded) |
-| **tag** | — | Open the Annotation Curator (enabled once a tree is loaded) |
-| **↓ file** | ⌘E | Export the tree as NEXUS or Newick (enabled once a tree is loaded) |
-| **image** | ⌘⇧E | Download a graphic (SVG or PNG) of the tree (enabled once a tree is loaded) |
+| <i class="bi bi-folder2-open"></i> | ⌘O | Open the *Open Tree File* dialog |
+| <i class="bi bi-table"></i> | ⌘⇧A | Import an annotation CSV/TSV file (enabled once a tree is loaded) |
+| <i class="bi bi-tags"></i> | — | Open the Annotation Curator (enabled once a tree is loaded) |
+| <i class="bi bi-file-earmark-arrow-down"></i> | ⌘E | Export the tree as NEXUS or Newick (enabled once a tree is loaded) |
+| <i class="bi bi-image"></i> | ⌘⇧E | Download a graphic (SVG or PNG) of the tree (enabled once a tree is loaded) |
 
 ### Navigation
 
 | Button | Shortcut | Description |
 |---|---|---|
-| **‹** back | ⌘[ | Navigate back to the parent subtree view |
-| **›** forward | ⌘] | Restore the next subtree view in the history |
-| **↑** climb | ⌘⇧, | Step up one level from the current subtree |
-| **↓** drill | ⌘⇧. | Zoom into the subtree rooted at the selected node |
-| **⌂** home | ⌘\ | Return to the full-tree root view |
+| <i class="bi bi-chevron-left"></i> back | ⌘[ | Navigate back to the parent subtree view |
+| <i class="bi bi-chevron-right"></i> forward | ⌘] | Restore the next subtree view in the history |
+| <i class="bi bi-box-arrow-left"></i> climb | ⌘⇧, | Step up one level from the current subtree |
+| <i class="bi bi-box-arrow-in-right"></i> drill | ⌘⇧. | Zoom into the subtree rooted at the selected node |
+| <i class="bi bi-house"></i> home | ⌘\ | Return to the full-tree root view |
 
 ### Zoom & Fit
 
 | Button | Shortcut | Description |
 |---|---|---|
-| **⊕** zoom in | ⌘= | Zoom in vertically (1.5× step) |
-| **⊖** zoom out | ⌘− | Zoom out vertically (1.5× step) |
-| **⛶** fit all | ⌘0 | Fit the entire tree to the window |
-| **T** fit labels | ⌘⇧0 | Zoom so that tip labels no longer overlap |
+| <i class="bi bi-zoom-in"></i> | ⌘= | Zoom in vertically (1.5× step) |
+| <i class="bi bi-zoom-out"></i> | ⌘− | Zoom out vertically (1.5× step) |
+| <i class="bi bi-arrows-fullscreen"></i> | ⌘0 | Fit the entire tree to the window |
+| <i class="bi bi-type"></i> | ⌘⇧0 | Zoom so that tip labels no longer overlap |
 
 ### Branch Order
 
 | Button | Shortcut | Description |
 |---|---|---|
-| **↑** ascending | ⌘U | Order branches so larger clades are toward the top |
-| **↓** descending | ⌘D | Order branches so larger clades are toward the bottom |
+| <i class="bi bi-sort-up"></i> ascending | ⌘U | Order branches so larger clades are toward the top |
+| <i class="bi bi-sort-up" style="display:inline-block;transform:scaleY(-1)"></i> descending | ⌘D | Order branches so larger clades are toward the bottom |
 
 ### Rotate
 
 | Button | Description |
 |---|---|
-| **↻** Rotate node | Reverse the direct children of the selected internal node |
-| **⇔** Rotate all | Reverse children at every level in the selected subtree |
+| <i class="bi bi-repeat" style="display:inline-block;transform:rotate(90deg)"></i> Rotate node | Reverse the direct children of the selected internal node |
+| <i class="bi bi-symmetry-horizontal" style="display:inline-block;transform:scaleX(-1)"></i> Rotate all | Reverse children at every level in the selected subtree |
 
 ### Selection Mode
 
 | Button | Shortcut | Description |
 |---|---|---|
-| **○** Nodes | — | Select tips and internal nodes by clicking |
-| **⌒** Branches | ⌘B | Toggle between Nodes and Branches mode |
+| <i class="bi bi-circle"></i> Nodes | — | Select tips and internal nodes by clicking |
+| <i class="bi bi-dash-lg"></i> Branches | ⌘B | Toggle between Nodes and Branches mode |
 
 ### Root
 
 | Button | Shortcut | Description |
 |---|---|---|
-| **Reroot** | — | Root at the selection or branch marker (enabled when a selection is active) |
-| **Midpoint** | ⌘M | Automatically root at the midpoint of the longest path through the tree |
+| <i class="bi bi-reply-fill"></i> Reroot | — | Root at the selection or branch marker (enabled when a selection is active) |
+| <i class="bi bi-vr" style="display:inline-block;transform:rotate(90deg)"></i> Midpoint | ⌘M | Automatically root at the midpoint of the longest path through the tree |
 
 ### Hide / Show
 
 | Button | Description |
 |---|---|
-| **eye-slash** Hide | Hide the selected subtree (its branches and tips become invisible) |
-| **eye** Show | Reveal previously hidden tips or subtrees |
+| <i class="bi bi-eye-slash"></i> Hide | Hide the selected subtree (its branches and tips become invisible) |
+| <i class="bi bi-eye"></i> Show | Reveal previously hidden tips or subtrees |
 
 ### Collapse / Expand
 
 | Button | Description |
 |---|---|
-| **⇕** Collapse | Collapse the selected clade to a filled triangle symbol |
-| **⇕** Expand | Expand a collapsed triangle back to its full subtree |
+| <i class="bi bi-arrows-collapse"></i> Collapse | Collapse the selected clade to a filled triangle symbol |
+| <i class="bi bi-arrows-expand"></i> Expand | Expand a collapsed triangle back to its full subtree |
 
 ### Node Info
 
 | Button | Shortcut | Description |
 |---|---|---|
-| **ⓘ** Node Info | ⌘I | Open a dialog showing all annotations on the selected node |
+| <i class="bi bi-info-square"></i> Node Info | ⌘I | Open a dialog showing all annotations on the selected node |
 
 ### User Colour
 
 | Button | Description |
 |---|---|
-| **colour swatch** | With tips selected, open the colour picker to apply a colour to those tips (stored as `user_colour` annotation) |
-| **eraser** Clear | Remove all user-assigned colours from the tree |
+| <i class="bi bi-brush"></i> | With tips selected, open the colour picker to apply a colour to those tips (stored as `user_colour` annotation) |
+| <i class="bi bi-eraser"></i> Clear | Remove all user-assigned colours from the tree |
 
-Clicking the **colour swatch** button opens a popup panel with:
+Clicking the <i class="bi bi-brush"></i> button opens a popup panel with:
 - A row of **recently used colours** (persisted across sessions)
 - Rows of **categorical palette swatches** — click any swatch to apply that colour immediately
 - An **Open colour picker** button that invokes the system native colour dialog for precise hex/RGB entry
@@ -132,10 +132,10 @@ The **Filter tips…** search box in the toolbar searches tip labels as currentl
 
 | Button | Shortcut | Description |
 |---|---|---|
-| **sliders** | Tab | Open/close the Visual Options palette |
-| **data table** | — | Open/close the Data Table panel (a scrollable tip list synced to the tree) |
-| **ⓘ** About | — | Open the About panel (credits and funding) |
-| **?** Help | ⌘? | Open this help panel |
+| <i class="bi bi-sliders"></i> | Tab | Open/close the Visual Options palette |
+| <i class="bi bi-layout-sidebar-reverse"></i> | — | Open/close the Data Table panel (a scrollable tip list synced to the tree) |
+| <i class="bi bi-info-circle"></i> About | — | Open the About panel (credits and funding) |
+| <i class="bi bi-question-circle"></i> Help | ⌘? | Open this help panel |
 
 ---
 
@@ -282,19 +282,19 @@ PearTree finds the two tips with the greatest path length and places the root at
 ## Subtree Navigation
 
 - **Double-click** an internal node in **Nodes** mode to zoom into that subtree (or use **⌘⇧.**)
-- Use **‹** (**⌘[**) to return to the parent view, or **⌘⇧,** to climb one level
+- Use <i class="bi bi-chevron-left"></i> (**⌘[**) to return to the parent view, or **⌘⇧,** to climb one level
 - Use **⌘\\** to jump directly back to the full-tree root view
-- Use **›** (**⌘]**) to move forward through the history
+- Use <i class="bi bi-chevron-right"></i> (**⌘]**) to move forward through the history
 - Navigation history is preserved across reorderings but cleared on reroot
 
 ---
 
 ## Hide / Show Subtrees
 
-- Select an internal node, then click **Hide** (eye-slash) to hide that subtree's branches and tips
+- Select an internal node, then click <i class="bi bi-eye-slash"></i> **Hide** to hide that subtree's branches and tips
 - Hidden nodes are completely invisible — the tree is drawn as if they were pruned
-- Select a visible node that covers hidden descendants and click **Show** (eye) to restore them
-- With no selection, **Show** restores *all* hidden nodes in the current view
+- Select a visible node that covers hidden descendants and click <i class="bi bi-eye"></i> **Show** to restore them
+- With no selection, <i class="bi bi-eye"></i> **Show** restores *all* hidden nodes in the current view
 - Rerooting and subtree navigation work correctly in the presence of hidden nodes
 - After hiding or showing, the zoom level is preserved (or fit-labels is re-applied) rather than resetting to fit-to-window
 
@@ -305,14 +305,14 @@ PearTree finds the two tips with the greatest path length and places the root at
 Collapsing replaces a subtree with a filled **triangle symbol**, keeping it visible as a compact summary rather than hiding it entirely.
 
 1. Select an internal node (or a set of tips — their MRCA is used)
-2. Click the **Collapse** (⇕) button to replace the subtree with a triangle
+2. Click the <i class="bi bi-arrows-collapse"></i> **Collapse** button to replace the subtree with a triangle
 3. The triangle's label shows the clade name and tip count
-4. Click the **Expand** (⇕) button, or **double-click the triangle**, to restore the full subtree
+4. Click the <i class="bi bi-arrows-expand"></i> **Expand** button, or **double-click the triangle**, to restore the full subtree
 
 ### Triangle appearance
 
-- The triangle **fill colour** defaults to the current theme's tip shape colour. It can be changed by selecting the triangle and using the **colour swatch** brush tool.
-- The **eraser** button resets a triangle's colour back to the theme default.
+- The triangle **fill colour** defaults to the current theme's tip shape colour. It can be changed by selecting the triangle and using the <i class="bi bi-brush"></i> brush tool.
+- The <i class="bi bi-eraser"></i> button resets a triangle's colour back to the theme default.
 - The triangle draws a **halo** ring matching the tip shape halo settings.
 - **Fill opacity** and **Height (rows)** are controlled in the *Collapsed Clades* section of the Visual Options palette (see below).
 
@@ -325,13 +325,13 @@ Collapsing replaces a subtree with a filled **triangle symbol**, keeping it visi
 
 ## Node Info (⌘I)
 
-With a node selected, click the **ⓘ Node Info** button (or press **⌘I**) to open a dialog listing all annotation keys and values for that node. For tips this includes the taxon name; for internal nodes it shows all posterior/support and annotation fields present in the tree file.
+With a node selected, click the <i class="bi bi-info-square"></i> **Node Info** button (or press **⌘I**) to open a dialog listing all annotation keys and values for that node. For tips this includes the taxon name; for internal nodes it shows all posterior/support and annotation fields present in the tree file.
 
 ---
 
 ## Importing Annotations (⌘⇧A)
 
-Click the **+ file** button (or press **⌘⇧A**) to add extra per-tip data from a CSV or TSV file.
+Click the <i class="bi bi-table"></i> button (or press **⌘⇧A**) to add extra per-tip data from a CSV or TSV file.
 
 **Phase 1 — Choose file:** Drag-and-drop or browse for a `.csv` or `.tsv` file.
 
@@ -348,7 +348,7 @@ After import, the new annotation keys appear in the **Colour by** dropdowns and 
 
 ## Annotation Curator
 
-Click the **tag** button to open the Annotation Curator, which lets you review and fine-tune every annotation key in the loaded tree:
+Click the <i class="bi bi-tags"></i> button to open the Annotation Curator, which lets you review and fine-tune every annotation key in the loaded tree:
 
 - Rename annotation keys
 - Change data types (e.g. promote a numeric key from *real* to *categorical*)
@@ -360,7 +360,7 @@ After editing, the updated schema is used immediately for all display and export
 
 ## Exporting the Tree (⌘E)
 
-Click the **↓ file** button (or press **⌘E**) to save the tree.
+Click the <i class="bi bi-file-earmark-arrow-down"></i> button (or press **⌘E**) to save the tree.
 
 ### Format
 
@@ -390,7 +390,7 @@ When this checkbox is ticked (on by default) PearTree appends a `[peartree={…}
 
 ## Exporting a Graphic (⌘⇧E)
 
-Click the **image** button (or press **⌘⇧E**) to download an image of the tree.
+Click the <i class="bi bi-image"></i> button (or press **⌘⇧E**) to download an image of the tree.
 
 | Setting | Options |
 |---|---|
@@ -406,7 +406,7 @@ SVG export includes all visible elements — branches, tip labels, node/tip shap
 
 ## Data Table Panel
 
-Click the **data table** button in the toolbar to open a scrollable panel listing all visible tips in tree order.
+Click the <i class="bi bi-layout-sidebar-reverse"></i> button in the toolbar to open a scrollable panel listing all visible tips in tree order.
 
 - The panel is **synchronised** with the canvas: selecting a tip in the tree highlights its row, and clicking a row selects that tip.
 - For **collapsed clades**, the table shows one row per enclosed tip (if the clade is full-height) or a single placeholder row otherwise, allowing you to browse and select tips within a collapsed clade.
@@ -417,7 +417,7 @@ Click the **data table** button in the toolbar to open a scrollable panel listin
 
 ## Visual Options Palette
 
-Toggle with **Tab** or the sliders button. Close with **Tab**, **Escape**, the × button, or by clicking the canvas.
+Toggle with **Tab** or the <i class="bi bi-sliders"></i> button. Close with **Tab**, **Escape**, the × button, or by clicking the canvas.
 
 ---
 
