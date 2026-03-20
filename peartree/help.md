@@ -39,7 +39,7 @@ Press **Escape** or click × to close the dialog without loading (once a tree is
 |---|---|---|
 | **folder** | ⌘O | Open the *Open Tree File* dialog |
 | **+ file** | ⌘⇧A | Import an annotation CSV/TSV file (enabled once a tree is loaded) |
-| **wrench** | — | Open the Annotation Curator (enabled once a tree is loaded) |
+| **tag** | — | Open the Annotation Curator (enabled once a tree is loaded) |
 | **↓ file** | ⌘E | Export the tree as NEXUS or Newick (enabled once a tree is loaded) |
 | **image** | ⌘⇧E | Download a graphic (SVG or PNG) of the tree (enabled once a tree is loaded) |
 
@@ -145,9 +145,9 @@ The **Filter tips…** search box in the toolbar searches tip labels as currentl
 |---|---|
 | **Scroll** | Pan the tree vertically |
 | **⌥ + Scroll** | Zoom vertically, anchored at the mouse position |
-| **Ctrl + Scroll / Pinch** | Zoom in and out |
+| **⌘ + Scroll / Pinch** | Zoom in and out |
 | **Click** (Nodes mode) | Select a tip or internal node |
-| **⌘/Ctrl + Click** | Add to or remove from the current selection |
+| **⌘ + Click** | Add to or remove from the current selection |
 | **Double-click** (Nodes mode) | Navigate into the subtree rooted at that node |
 | **Click** (Branches mode) | Place a branch-point marker at the exact clicked position |
 | **Hover** | Highlight nodes or branches and update the status bar |
@@ -219,8 +219,6 @@ The **Filter tips…** search box in the toolbar searches tip labels as currentl
 |---|---|
 | **Enter** | Confirm / Download in the active dialog |
 | **Escape** | Cancel / close the active dialog |
-
-> On Windows/Linux, replace **⌘** with **Ctrl**.
 
 ---
 
@@ -350,7 +348,7 @@ After import, the new annotation keys appear in the **Colour by** dropdowns and 
 
 ## Annotation Curator
 
-Click the **wrench** button to open the Annotation Curator, which lets you review and fine-tune every annotation key in the loaded tree:
+Click the **tag** button to open the Annotation Curator, which lets you review and fine-tune every annotation key in the loaded tree:
 
 - Rename annotation keys
 - Change data types (e.g. promote a numeric key from *real* to *categorical*)
