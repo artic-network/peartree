@@ -2,97 +2,9 @@
 // Layout  – rectangular: x = divergence from root, y = equal spacing for tips
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * @deprecated  Internal helper used by computeLayoutFrom below.
- * @private
- */
-function computeLayout(root, hiddenNodeIds = new Set()) {
-  let tipCounter = 0;
-  const nodes = [];
-  const nodeMap = new Map();
+// (computeLayout — the legacy nested-root version — was removed; use
+//  computeLayoutFromGraph() instead.)
 
-  function traverse(node, parentDivergence, parentId) {
-    const divergence     = parentDivergence + (node.length || 0);
-    const allChildren    = node.children || [];
-    const visibleChildren = hiddenNodeIds.size
-      ? allChildren.filter(c => !hiddenNodeIds.has(c.id))
-      : allChildren;
-    const isLeaf = allChildren.length === 0;
-    const entry = {
-      id:                node.id,
-      name:              node.name || null,
-      label:             node.label || null,
-      annotations:       node.annotations || {},
-      x:                 divergence,
-      y:                 null,
-      isTip:             isLeaf,
-      hasHiddenChildren: allChildren.length !== visibleChildren.length,
-      children:          visibleChildren.map(c => c.id),
-      parentId,
-    };
-
-    if (isLeaf) { tipCounter++; entry.y = tipCounter; }
-
-    nodes.push(entry);
-    nodeMap.set(entry.id, entry);
-
-    for (const child of visibleChildren) {
-      traverse(child, divergence, node.id);
-    }
-
-    // place internal node at centre of its visible children (post-order)
-    if (!isLeaf && visibleChildren.length > 0) {
-      const childYs = visibleChildren.map(c => nodeMap.get(c.id)?.y).filter(y => y != null);
-      if (childYs.length) entry.y = childYs.reduce((a, b) => a + b, 0) / childYs.length;
-    }
-  }
-
-  traverse(root, 0, null);
-
-  // ── Post-pass: suppress zero-child and single-child non-root internal nodes ─
-  if (hiddenNodeIds.size) {
-    const toRemove = new Set();
-    for (let i = nodes.length - 1; i >= 0; i--) {
-      const node = nodes[i];
-      if (node.parentId === null) continue;
-      if (node.isTip) continue;
-      if (node.children.length === 0) {
-        const parentNode = nodeMap.get(node.parentId);
-        if (parentNode) {
-          parentNode.hasHiddenChildren = true;
-          const idx = parentNode.children.indexOf(node.id);
-          if (idx !== -1) parentNode.children.splice(idx, 1);
-        }
-        toRemove.add(node.id);
-        nodeMap.delete(node.id);
-        continue;
-      }
-      if (node.children.length !== 1) continue;
-      const parentNode = nodeMap.get(node.parentId);
-      const childNode  = nodeMap.get(node.children[0]);
-      if (!parentNode || !childNode) continue;
-      const idx = parentNode.children.indexOf(node.id);
-      if (idx !== -1) parentNode.children[idx] = childNode.id;
-      childNode.parentId = parentNode.id;
-      if (node.hasHiddenChildren) childNode.hasHiddenChildren = true;
-      toRemove.add(node.id);
-      nodeMap.delete(node.id);
-    }
-    if (toRemove.size) {
-      const finalNodes = nodes.filter(n => !toRemove.has(n.id));
-      for (let i = finalNodes.length - 1; i >= 0; i--) {
-        const n = finalNodes[i];
-        if (n.isTip) continue;
-        const ys = n.children.map(cid => nodeMap.get(cid)?.y).filter(y => y != null);
-        if (ys.length) n.y = ys.reduce((a, b) => a + b, 0) / ys.length;
-      }
-      return { nodes: finalNodes, nodeMap, maxX: finalNodes.reduce((m, n) => Math.max(m, n.collapsedMaxX ?? n.x), 0), maxY: tipCounter };
-    }
-  }
-
-  const maxX = nodes.reduce((m, n) => Math.max(m, n.collapsedMaxX ?? n.x), 0);
-  return { nodes, nodeMap, maxX, maxY: tipCounter };
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Visual-root helpers used by computeLayoutFromGraph
@@ -512,14 +424,6 @@ export function computeLayoutFromGraph(graph, subtreeRootId = null, options = {}
   return { nodes: finalNodes, nodeMap, maxX, maxY };
 }
 
-/** @deprecated – no longer used; kept for any external callers. */
-export function reorderTree() {}
-/** @deprecated – use rotateNodeGraph() from phylograph.js instead. */
-export function rotateNodeTree() {}
-/** @deprecated – use midpointRootGraph() from phylograph.js instead. */
-export function midpointRootTree() {}
-/** @deprecated – use rerootOnGraph() from phylograph.js instead. */
-export function rerootTree() {}
 
 /**
  * DFS on a PhyloGraph: count visible (non-hidden) tips in the subtree rooted at

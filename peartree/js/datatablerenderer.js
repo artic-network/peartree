@@ -22,12 +22,7 @@
 //   padding-right via body.dt-pinned, shrinking the canvas.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** HTML-escape a value for safe insertion. */
-function _esc(s) {
-  return String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { htmlEsc as _esc } from './utils.js';
 
 /** Shared offscreen canvas used only for text measurement. */
 const _measureCanvas = document.createElement('canvas');

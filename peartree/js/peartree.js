@@ -1,6 +1,7 @@
 import { parseNexus, parseNewick, graphToNewick, parseDelimited } from './treeio.js';
 import { computeLayoutFromGraph, graphVisibleTipCount, graphSubtreeHasHidden } from './treeutils.js';
 import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointRootGraph, buildAnnotationSchema, injectBuiltinStats, isNumericType, TreeCalibration } from './phylograph.js';
+import { htmlEsc as _esc, downloadBlob as _downloadBlob } from './utils.js';
 import { TreeRenderer, CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY } from './treerenderer.js';
 import { LegendRenderer } from './legendrenderer.js';
 import { AxisRenderer  } from './axisrenderer.js';
@@ -1940,12 +1941,6 @@ async function fetchExampleTree() {
   document.getElementById('export-tree-close').addEventListener('click', _closeExportDialog);
   btnExportTree.addEventListener('click', _openExportDialog);
 
-  /** HTML-escape a string for safe insertion. */
-  function _esc(s) {
-    return String(s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-
   // ── Export Tree ────────────────────────────────────────────────────────────────
   // Serialisation logic (newickEsc, fmtLen, fmtAnnot, branchLen, newickNode,
   // graphToNewick) lives in treeio.js and is imported at the top of this file.
@@ -2186,13 +2181,7 @@ async function fetchExampleTree() {
           extensions: ['csv'],
         });
       } else {
-        const blob = new Blob([content], { type: 'text/csv' });
-        const url  = URL.createObjectURL(blob);
-        const a    = Object.assign(document.createElement('a'), { href: url, download: 'metadata.csv' });
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        _downloadBlob(content, 'text/csv', 'metadata.csv');
       }
       _closeExportDialog();
       return;
@@ -2223,13 +2212,7 @@ async function fetchExampleTree() {
         extensions: [ext],
       });
     } else {
-      const blob = new Blob([content], { type: 'text/plain' });
-      const url  = URL.createObjectURL(blob);
-      const a    = Object.assign(document.createElement('a'), { href: url, download: `tree.${ext}` });
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      _downloadBlob(content, 'text/plain', `tree.${ext}`);
     }
     _closeExportDialog();
   }
@@ -2343,10 +2326,7 @@ async function fetchExampleTree() {
             extensions:    ['png'],
           });
         } else {
-          const url = URL.createObjectURL(blob);
-          const a   = Object.assign(document.createElement('a'), { href: url, download: `${filename}.png` });
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-          URL.revokeObjectURL(url);
+          _downloadBlob(blob, 'image/png', `${filename}.png`);
         }
       });
     } else {
@@ -2362,11 +2342,7 @@ async function fetchExampleTree() {
           extensions: ['svg'],
         });
       } else {
-        const blob = new Blob([svgStr], { type: 'image/svg+xml' });
-        const url  = URL.createObjectURL(blob);
-        const a    = Object.assign(document.createElement('a'), { href: url, download: `${filename}.svg` });
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        _downloadBlob(svgStr, 'image/svg+xml', `${filename}.svg`);
       }
     }
     _closeGraphicsDialog();

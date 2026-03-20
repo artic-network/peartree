@@ -543,26 +543,16 @@ function isDateString(v) {
 }
 
 /**
- * Convert an ISO date string (yyyy-mm-dd, yyyy-mm, or yyyy) to a decimal year.
- * Used for sequential colour scaling and legend tick positioning.
+ * Convert an ISO date string (yyyy-mm-dd, yyyy-mm, yyyy, or decimal year) to a
+ * decimal year. Delegates to TreeCalibration.parseDateToDecYear for consistency
+ * with annotation parsing. Returns NaN for non-string inputs or unparseable strings.
  * @param  {string} dateStr
  * @returns {number}
  */
 export function dateToDecimalYear(dateStr) {
   if (!dateStr || typeof dateStr !== 'string') return NaN;
-  const parts = String(dateStr).split('-');
-  const year  = parseInt(parts[0], 10);
-  if (isNaN(year)) return NaN;
-  if (parts.length === 1) return year;                          // yyyy → start of year
-  const month = parseInt(parts[1], 10);                        // 1–12
-  if (parts.length === 2) return year + (month - 1) / 12;     // yyyy-mm → start of month
-  const day   = parseInt(parts[2], 10);
-  const startOfYear = new Date(year, 0, 1);
-  const startOfDay  = new Date(year, month - 1, day);
-  const endOfYear   = new Date(year + 1, 0, 1);
-  const daysInYear  = (endOfYear - startOfYear) / 86400000;
-  const dayOfYear   = (startOfDay - startOfYear) / 86400000;
-  return year + dayOfYear / daysInYear;
+  const r = TreeCalibration.parseDateToDecYear(dateStr);
+  return r !== null ? r : NaN;
 }
 
 /**
