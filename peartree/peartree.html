@@ -332,6 +332,22 @@
       cursor: pointer;
     }
     #status-brand:hover { color: #e06961; }
+    #status-message {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      top: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      font: 11px/1 monospace;
+      color: rgba(230,213,149,0.9);
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    #status-message.visible { opacity: 1; }
 
     /* ── Canvas area ── */
     #canvas-container {
@@ -1748,6 +1764,7 @@
 <div id="status-bar">
   <a id="status-brand" href="https://github.com/artic-network/peartree" target="_blank" rel="noopener" title="PearTree on GitHub"><i class="bi bi-tree"></i>PearTree</a>
   <span id="status-stats"></span>
+  <span id="status-message"></span>
   <button id="btn-about" title="About PearTree"><i class="bi bi-info-circle"></i></button>
   <button id="btn-help" title="Help (⌘?)"><i class="bi bi-question-circle"></i></button>
 </div>

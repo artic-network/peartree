@@ -78,6 +78,8 @@ export class TreeRenderer {
     this._hypTarget       = 0;       // animation target: 0 = off, 1 = full
     this._hypMagMult      = 10;      // flat-zone half-width in rows (0 = pure hyperbolic)
     this._onStatsChange   = null;  // callback(stats|null) fired when selection/data changes
+    this.onHypActivate    = null;  // callback() fired when hyperbolic lens first becomes active
+    this.onHypDeactivate  = null;  // callback() fired when hyperbolic lens is dismissed
 
     this._mode             = 'nodes';  // 'nodes' | 'branches'
     this._branchHoverNode  = null;     // node whose horizontal branch is hovered
@@ -3442,9 +3444,11 @@ export class TreeRenderer {
           const sy_bot    = this.offsetY + (this.maxY + 0.5) * this.scaleY;
           const clampedHy = Math.min(sy_bot, Math.max(sy_top, hy));
           if (clampedHy !== this._hypFocusScreenY || this._hypTarget !== 1) {
+            const wasOff = this._hypTarget !== 1;
             this._hypFocusScreenY = clampedHy;
             this._hypTarget       = 1;
             this._dirty           = true;
+            if (wasOff && this.onHypActivate) this.onHypActivate();
           }
           this.canvas.style.cursor = 'ns-resize';
         }
@@ -3574,6 +3578,7 @@ export class TreeRenderer {
         if (this._hypFocusScreenY !== null && this._hypTarget !== 0) {
           this._hypTarget = 0;   // triggers animated fade-out; focus Y cleared when strength reaches 0
           this._dirty     = true;
+          if (this.onHypDeactivate) this.onHypDeactivate();
         }
         return;
       }

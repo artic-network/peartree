@@ -1372,6 +1372,20 @@ async function fetchExampleTree() {
 
   const renderer = new TreeRenderer(canvas, _buildRendererSettings());
 
+  // ── Status-bar transient messages ─────────────────────────────────────────
+  const _statusMsgEl = document.getElementById('status-message');
+  let   _statusMsgTimer = null;
+  function statusMessage(msg, duration = 0) {
+    if (!_statusMsgEl) return;
+    clearTimeout(_statusMsgTimer);
+    _statusMsgEl.textContent = msg;
+    _statusMsgEl.classList.toggle('visible', !!msg);
+    if (duration > 0) _statusMsgTimer = setTimeout(() => statusMessage(''), duration);
+  }
+
+  renderer.onHypActivate   = () => statusMessage('Lens mode active \u2013 press Esc to cancel');
+  renderer.onHypDeactivate = () => statusMessage('');
+
   renderer._onStatsChange = (stats) => {
     const el = document.getElementById('status-stats');
     if (!el) return;
