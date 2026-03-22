@@ -4,7 +4,11 @@ title: PearTree Tutorial
 permalink: /tutorial/
 ---
 
-# PearTree Tutorial
+<p align="center">
+  <img src="/logo/peartree.png" alt="PearTree logo" style="width:220px;" />
+</p>
+
+# Tutorial
 
 This tutorial walks through the main features of PearTree using the built-in Ebola virus (EBOV) example dataset. To make this simple this uses the on-line web application at [http://peartree.live](http://peartree.live) but it will also work with the desktop apps available for Mac, Windows & Linux here: [https://github.com/artic-network/peartree/releases](https://github.com/artic-network/peartree/releases). 
 
