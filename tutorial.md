@@ -805,3 +805,102 @@ When you place the root on a new branch, every internal node in the tree gains a
 - Hiding nodes and branches does not change the branch annotations (and they will still be there when the branches are unhidden). But note that bootstap or other support values may not be appropriate if some nodes adjacent to that value have been hidden. 
 
 ---
+
+## Appendix: Hints and Tips
+
+### Isolate a subset of tips by filtering and hiding
+
+The search/filter box in the toolbar lets you type a string and instantly select all tips whose labels contain it. To focus on a subset:
+
+1. Type a keyword (e.g. a country name, a year, or a host) into the filter box — all matching tips are selected.
+2. Press **⌘⇧I** to invert the selection — the tips you *don't* want are now selected.
+3. Click the **Hide** button — all the unwanted tips disappear and the tree reflows around your subset.
+4. Press **Unhide** (with nothing selected) to restore everything when you are done.
+
+This is faster than manually selecting and hiding clades one at a time.
+
+---
+
+### Select all tips with a given annotation value by clicking the legend
+
+When a categorical legend is visible, each colour swatch is clickable:
+
+- **Click a swatch** — selects all tips that have that annotation value, wherever they appear in the tree.
+- **⌘-click additional swatches** — adds those tips to the current selection.
+
+You can then colour, hide, or export just those tips without having to locate them manually in the tree.
+
+---
+
+### Select an entire clade and invert to compare outgroups
+
+1. Click an internal node to select its clade.
+2. Press **⌘⇧I** to invert — everything *outside* that clade is now selected.
+3. Use **Colour → Apply** with a contrasting colour to highlight the outgroup, or hide it to focus on your clade of interest.
+
+---
+
+### Share a tree directly from a URL
+
+If your tree file is publicly accessible online (e.g. a raw GitHub file or any server with CORS enabled), you can share a link that opens it automatically in PearTree:
+
+```
+https://peartree.live/?treeUrl=https://example.com/mytree.nwk
+```
+
+Anyone who follows the link has the tree loaded immediately — no file upload needed. The remote server must send an `Access-Control-Allow-Origin: *` header; GitHub raw URLs (`raw.githubusercontent.com/…`) work out of the box.
+
+---
+
+### Preserve your full visual layout by exporting NEXUS with embedded settings
+
+When you export a tree in **NEXUS** format, tick the **Embed settings** checkbox. All current visual settings — theme, palette choices, colour-by annotations, legend, axis configuration, branch order — are written into the file as a NEXUS metacomment. Opening that file in PearTree restores the exact appearance automatically, which is useful for sharing figures with collaborators or picking up work across sessions.
+
+---
+
+### Collapse uninteresting clades to declutter large trees
+
+Rather than hiding subtrees entirely, collapse them into triangles to keep them visible as compact summaries:
+
+1. Select the internal node at the root of the clade you want to compress.
+2. Click **Collapse** — the subtree becomes a labelled filled triangle.
+3. Repeat for other clades you want to compress.
+4. The remaining, expanded parts of the tree now fill the canvas, making labels readable without losing the overall topology.
+
+Double-click any triangle to expand it again. You can also colour individual triangles independently using the brush colour picker.
+
+---
+
+### Navigate large trees without losing context using the hyperbolic lens
+
+Instead of zooming in (which hides the rest of the tree), hold **~** and move the cursor to the region you want to read. The area under the cursor expands to label-readable spacing while the rest of the tree compresses but stays on screen. Release **~** to lock the lens in place, interact with the expanded region, then press **Escape** to dismiss it.
+
+---
+
+### Use the Data Table to find and select a specific tip by name
+
+If you know part of a tip's name but can't locate it visually in a large tree, open the **Data Table** panel. The table lists all visible tips in tree order and is searchable — click any row to select that tip in the tree and scroll the canvas to its position. This is much faster than scrolling through a tree with thousands of tips.
+
+---
+
+### Jump between distant parts of the tree using drill-down history
+
+PearTree stores a full navigation history. You can drill down into several different clades in sequence and then step back through each previous view with **⌘[**, just like a browser's Back button. Use **⌘]** to go forward again. This makes it easy to compare two widely separated parts of a large tree without having to re-zoom each time.
+
+---
+
+### Use midpoint rooting as a quick orientation for unrooted trees
+
+When you load a tree that has no explicit root (e.g. a raw IQ-TREE or RAxML output), press **⌘M** to apply a midpoint root immediately. This gives a sensible starting orientation before you apply an outgroup or manual root. You can always reroot afterwards without losing any annotation data.
+
+---
+
+### Open a tree file directly from the command line (desktop app)
+
+On macOS you can open a tree file directly in PearTree from the terminal without navigating through Finder:
+
+```bash
+open -a PearTree /path/to/mytree.nwk
+```
+
+If PearTree is already running, the file opens in a new window. On Windows, drag the file onto the PearTree icon in the taskbar, or use **Open With** from the Explorer context menu.
