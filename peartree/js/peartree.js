@@ -4322,6 +4322,7 @@ async function fetchExampleTree() {
         }
       }
       if (e.key === 'b' || e.key === 'B') { e.preventDefault(); applyMode(renderer._mode === 'branches' ? 'nodes' : 'branches'); }
+      if (e.key === 'l' || e.key === 'L') { e.preventDefault(); if (canCollapse()) applyCollapse(); else if (canExpand()) applyExpand(); }
       if (e.key === 'm' || e.key === 'M') { e.preventDefault(); applyMidpointRoot(); }
       if (!e.shiftKey && (e.key === 'i' || e.key === 'I')) { e.preventDefault(); showNodeInfo(); }
     });
