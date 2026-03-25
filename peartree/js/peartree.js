@@ -4025,7 +4025,8 @@ async function fetchExampleTree() {
         // ── Annotations ───────────────────────────────────────────────────
         if (annotKeys.length > 0) {
           rows.push(['__divider__', 'Annotations']);
-          rows.push(['', annotKeys.join(', ')]);
+          const annotLabels = annotKeys.map(k => schema.get(k)?.label ?? k);
+          rows.push(['', annotLabels.join(', ')]);
         }
 
         const titleEl = document.getElementById('node-info-title');
@@ -4121,7 +4122,7 @@ async function fetchExampleTree() {
           const def = schema ? schema.get(k) : null;
           // Skip group members here — they are shown indented under their base.
           if (def && def.groupMember) continue;
-          rows.push([k, fmtAnnot(v)]);
+          rows.push([def?.label ?? k, fmtAnnot(v)]);
           emitted.add(k);
           // If this is a BEAST base annotation, show grouped sub-metrics indented.
           if (def && def.group) {
@@ -4146,7 +4147,7 @@ async function fetchExampleTree() {
             // Use the _mean member's value as the primary displayed value.
             const meanKey = def.group.mean;
             if (!meanKey || !Object.prototype.hasOwnProperty.call(annots, meanKey)) continue;
-            rows.push([k, fmtAnnot(annots[meanKey])]);
+            rows.push([def?.label ?? k, fmtAnnot(annots[meanKey])]);
             emitted.add(k);
             for (const [groupKey, subAnnotName] of Object.entries(def.group)) {
               if (Object.prototype.hasOwnProperty.call(annots, subAnnotName)) {
