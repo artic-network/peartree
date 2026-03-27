@@ -108,6 +108,10 @@ export class RTTRenderer {
     this._calibration = null;
     this._dateFormat  = 'yyyy-MM-dd';
 
+    // Date-axis tick options (synced from Axis panel controls; mirrors AxisRenderer)
+    // { majorInterval, minorInterval, majorLabelFormat, minorLabelFormat }
+    this.tickOptions  = null;
+
     // ── Selection / hover — kept in sync with TreeRenderer ────────────────
     this._selectedTipIds = new Set();
     this._hoveredTipId   = null;
@@ -301,8 +305,8 @@ export class RTTRenderer {
 
   _drawGrid(ctx, rect) {
     const d = this._dpr;
-    const { ticks: yTks } = this._yTicksInfo();
-    const { ticks: xTks } = this._xTicksInfo();
+    const { ticks: yTks }         = this._yTicksInfo();
+    const { majorTicks: xMajTks } = this._xTicksInfo(rect);
     ctx.save();
     ctx.strokeStyle = 'rgba(255,255,255,0.055)';
     ctx.lineWidth   = d;
@@ -312,7 +316,7 @@ export class RTTRenderer {
       if (py < rect.y - 1 || py > rect.y + rect.h + 1) continue;
       ctx.moveTo(rect.x, py);  ctx.lineTo(rect.x + rect.w, py);
     }
-    for (const v of xTks) {
+    for (const v of xMajTks) {
       const px = Math.round(this._xToScreen(v, rect));
       if (px < rect.x - 1 || px > rect.x + rect.w + 1) continue;
       ctx.moveTo(px, rect.y);  ctx.lineTo(px, rect.y + rect.h);
@@ -331,12 +335,35 @@ export class RTTRenderer {
     return { ticks, step };
   }
 
-  _xTicksInfo() {
+  _xTicksInfo(rect = null) {
+    const cal = this._calibration;
+    if (cal) {
+      // Use the same calendar tick logic as AxisRenderer so tick/label options apply.
+      const targetMajor = rect
+        ? Math.max(2, Math.round((rect.w / this._dpr) / 80))
+        : Math.max(2, Math.round(this._canvas.clientWidth / 80));
+      const opts          = this.tickOptions ?? {};
+      const majorInterval = opts.majorInterval || 'auto';
+      const minorInterval = opts.minorInterval || 'off';
+      const majorTicks    = (majorInterval === 'auto')
+        ? TreeCalibration.niceCalendarTicks(this._xMin, this._xMax, targetMajor)
+        : TreeCalibration.calendarTicksForInterval(this._xMin, this._xMax, majorInterval);
+      let minorTicks = [];
+      if (minorInterval !== 'off') {
+        const allMinor = (minorInterval === 'auto')
+          ? TreeCalibration.niceCalendarTicks(this._xMin, this._xMax, targetMajor * 5)
+          : TreeCalibration.calendarTicksForInterval(this._xMin, this._xMax, minorInterval);
+        const majorSet = new Set(majorTicks.map(t => t.toFixed(8)));
+        minorTicks = allMinor.filter(t => !majorSet.has(t.toFixed(8)));
+      }
+      return { majorTicks, minorTicks, step: null, majorInterval };
+    }
+    // Fallback: plain decimal-year / divergence steps
     const step  = _niceYearStep(this._xMax - this._xMin);
     const start = Math.ceil(this._xMin / step) * step;
-    const ticks = [];
-    for (let v = start; v <= this._xMax + step * 0.001; v += step) ticks.push(v);
-    return { ticks, step };
+    const majorTicks = [];
+    for (let v = start; v <= this._xMax + step * 0.001; v += step) majorTicks.push(v);
+    return { majorTicks, minorTicks: [], step, majorInterval: 'auto' };
   }
 
   _drawAxes(ctx, rect) {
@@ -348,7 +375,6 @@ export class RTTRenderer {
     const tc    = Math.round(4 * d);           // tick half-length (physical px)
 
     const { ticks: yTks, step: yStep } = this._yTicksInfo();
-    const { ticks: xTks, step: xStep } = this._xTicksInfo();
 
     ctx.save();
 
@@ -389,26 +415,74 @@ export class RTTRenderer {
     ctx.restore();
 
     // ── X axis ─────────────────────────────────────────────────────────────
-    const cal = this._calibration;
-    const fmt = this._dateFormat;
-    const ty  = rect.y + rect.h;
-    const lhPx = Math.round(fsz * 1.3);
+    const cal  = this._calibration;
+    const fmt  = this._dateFormat;
+    const opts = this.tickOptions ?? {};
+    const ty   = rect.y + rect.h;
+    const tcMajor = Math.round(5 * d);
+    const tcMinor = Math.round(3 * d);
+
+    const { majorTicks: xMajor, minorTicks: xMinor, step: xStep, majorInterval } =
+      this._xTicksInfo(rect);
+
+    const majorLabelFmt  = opts.majorLabelFormat || 'auto';
+    const minorLabelFmt  = opts.minorLabelFormat || 'off';
+    const showMajorLabel = majorLabelFmt !== 'off';
+    const showMinorLabel = minorLabelFmt !== 'off';
+    const lblDimC        = this._colorWithAlpha(this.axisColor, 0.35);
 
     ctx.textBaseline = 'top';
     ctx.textAlign    = 'center';
-    for (const v of xTks) {
+
+    // Minor ticks (shorter, dimmer)
+    if (xMinor.length > 0) {
+      ctx.font = `${Math.max(6, Math.round(this.axisFontSize * 0.85 * d))}px ${this.fontFamily}`;
+      let lastMinorRight = -Infinity;
+      for (const v of xMinor) {
+        const px = Math.round(this._xToScreen(v, rect));
+        if (px < rect.x - 2 || px > rect.x + rect.w + 2) continue;
+        ctx.beginPath();
+        ctx.strokeStyle = this._colorWithAlpha(this.axisColor, 0.35);
+        ctx.lineWidth   = this.axisLineWidth * d;
+        ctx.moveTo(px, ty);  ctx.lineTo(px, ty + tcMinor);
+        ctx.stroke();
+        if (showMinorLabel && cal) {
+          const label = cal.decYearToString(v, minorLabelFmt, fmt, opts.minorInterval || 'off');
+          const tw    = ctx.measureText(label).width;
+          if (px - tw / 2 > lastMinorRight + 2) {
+            ctx.fillStyle = lblDimC;
+            ctx.fillText(label, px, ty + tcMinor + Math.round(2 * d));
+            lastMinorRight = px + tw / 2;
+          }
+        }
+      }
+    }
+
+    // Major ticks + labels
+    ctx.font = font;
+    let lastMajorRight = -Infinity;
+    for (const v of xMajor) {
       const px = Math.round(this._xToScreen(v, rect));
       if (px < rect.x - 2 || px > rect.x + rect.w + 2) continue;
       ctx.beginPath();
       ctx.strokeStyle = axisC;
       ctx.lineWidth   = this.axisLineWidth * d;
-      ctx.moveTo(px, ty);  ctx.lineTo(px, ty + tc);
+      ctx.moveTo(px, ty);  ctx.lineTo(px, ty + tcMajor);
       ctx.stroke();
-      const lines = _fmtDecYear(v, xStep, cal, fmt);
-      ctx.fillStyle = lblC;
-      ctx.font = font;
-      for (let i = 0; i < lines.length; i++) {
-        ctx.fillText(lines[i], px, ty + tc + Math.round(2 * d) + i * lhPx);
+      if (showMajorLabel) {
+        let label;
+        if (cal) {
+          const effFmt = (majorLabelFmt === 'auto') ? 'partial' : majorLabelFmt;
+          label = cal.decYearToString(v, effFmt, fmt, majorInterval);
+        } else {
+          label = _fmtDecYear(v, xStep, null, fmt)[0];
+        }
+        const tw = ctx.measureText(label).width;
+        if (px - tw / 2 > lastMajorRight + 2) {
+          ctx.fillStyle = lblC;
+          ctx.fillText(label, px, ty + tcMajor + Math.round(2 * d));
+          lastMajorRight = px + tw / 2;
+        }
       }
     }
 

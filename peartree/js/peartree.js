@@ -2031,6 +2031,12 @@ async function fetchExampleTree() {
     getAxisColor:    () => axisColorEl.value,
     getAxisFontSize: () => parseInt(axisFontSizeSlider.value),
     getAxisLineWidth: () => parseFloat(axisLineWidthSlider.value),
+    getTickOptions: () => ({
+      majorInterval:    axisMajorIntervalEl.value,
+      minorInterval:    axisMinorIntervalEl.value,
+      majorLabelFormat: axisMajorLabelEl.value,
+      minorLabelFormat: axisMinorLabelEl.value,
+    }),
     onClose: () => {
       btnRtt.classList.remove('active');
     },

@@ -35,6 +35,7 @@ export function createRTTChart({
   getAxisColor,
   getAxisFontSize,
   getAxisLineWidth,
+  getTickOptions,
   onClose,
   onPinChange,
 }) {
@@ -200,6 +201,7 @@ export function createRTTChart({
     const cal = getCalibration();
     if (!tr) return;
     _syncStyle();
+    if (getTickOptions) rtt.tickOptions = getTickOptions();
     rtt.setCalibration(cal?.isActive ? cal : null, getDateFormat());
     rtt.setPoints(_buildPoints());
     rtt._selectedTipIds = new Set(tr._selectedTipIds);
