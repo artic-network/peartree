@@ -2164,32 +2164,6 @@
   <div id="palette-panel-body">
 
     <div class="pt-palette-section">
-      <h3><i class="bi bi-palette2"></i> Theme</h3>
-      <div class="pt-palette-row">
-        <select class="pt-palette-select" id="theme-select" style="flex:1"></select>
-      </div>
-      <div class="pt-palette-row" style="gap:6px">
-        <button id="btn-store-theme"   class="pt-theme-btn" style="flex:1" title="Save current settings as a named theme" disabled>Store</button>
-        <button id="btn-default-theme" class="pt-theme-btn" style="flex:1" title="Set selected theme as the default for new windows" disabled>Default</button>
-        <button id="btn-remove-theme"  class="pt-theme-btn" style="flex:1" title="Remove this user-saved theme" disabled>Remove</button>
-      </div>
-      <div class="pt-palette-row">
-        <span class="pt-palette-label">Typeface</span>
-        <select class="pt-palette-select" id="font-family-select">
-          <option value="Monospace">Monospace</option>
-          <option value="Sans-serif">Sans-serif</option>
-          <option value="Serif">Serif</option>
-          <option value="Courier New">Courier New</option>
-          <option value="Helvetica">Helvetica</option>
-          <option value="Georgia">Georgia</option>
-          <option value="Times New Roman">Times New Roman</option>
-          <option value="System UI">System UI</option>
-          <option value="Menlo">Menlo</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="pt-palette-section">
       <h3><i class="bi bi-diagram-3"></i> Tree</h3>
       <div class="pt-palette-row" id="axis-date-row" style="display:none">
         <span class="pt-palette-label">Calibrate</span>
@@ -3016,6 +2990,32 @@
         <i class="bi bi-droplet form-label-sm"></i>
         <input type="range" class="form-range" id="node-hover-stroke-opacity" min="0" max="1" step="0.05" value="1" />
         <span class="pt-val" id="node-hover-stroke-opacity-value">1</span>
+      </div>
+    </div>
+
+    <div class="pt-palette-section">
+      <h3><i class="bi bi-palette2"></i> Theme</h3>
+      <div class="pt-palette-row">
+        <select class="pt-palette-select" id="theme-select" style="flex:1"></select>
+      </div>
+      <div class="pt-palette-row" style="gap:6px">
+        <button id="btn-store-theme"   class="pt-theme-btn" style="flex:1" title="Save current settings as a named theme" disabled>Store</button>
+        <button id="btn-default-theme" class="pt-theme-btn" style="flex:1" title="Set selected theme as the default for new windows" disabled>Default</button>
+        <button id="btn-remove-theme"  class="pt-theme-btn" style="flex:1" title="Remove this user-saved theme" disabled>Remove</button>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Typeface</span>
+        <select class="pt-palette-select" id="font-family-select">
+          <option value="Monospace">Monospace</option>
+          <option value="Sans-serif">Sans-serif</option>
+          <option value="Serif">Serif</option>
+          <option value="Courier New">Courier New</option>
+          <option value="Helvetica">Helvetica</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="System UI">System UI</option>
+          <option value="Menlo">Menlo</option>
+        </select>
       </div>
     </div>
 
