@@ -1273,18 +1273,24 @@ export class TreeCalibration {
    */
   decYearToString(decYear, labelMode, dateFormat = 'yyyy-MM-dd', interval = '') {
     const { year, month, day } = TreeCalibration.decYearToDate(decYear);
-    const mm  = String(month).padStart(2, '0');
-    const dd  = String(day).padStart(2, '0');
-    const mmm = TreeCalibration.MONTHS[month - 1];
+    const mm   = String(month).padStart(2, '0');
+    const dd   = String(day).padStart(2, '0');
+    const mmm  = TreeCalibration.MONTHS[month - 1];
+    const mmmm = TreeCalibration.MONTHS_FULL[month - 1];
 
     if (labelMode === 'component') {
+      // Month component respects the chosen date format:
+      //   MMMM → long name, MMM → short name, MM → zero-padded number
+      const monthComp = dateFormat.includes('MMMM') ? mmmm
+                      : dateFormat.includes('MMM')  ? mmm
+                      : mm;
       switch (interval) {
         case 'millennia': return String(Math.floor(year / 1000) * 1000);
         case 'centuries': return String(Math.floor(year / 100) * 100);
         case 'decades':  return String(Math.floor(year / 10) * 10) + 's';
         case 'years':    return String(year);
         case 'quarters': return `Q${Math.ceil(month / 3)}`;
-        case 'months':   return mmm;
+        case 'months':   return monthComp;
         case 'weeks':    return `W${String(TreeCalibration._weekOfYear(year, month, day)).padStart(2, '0')}`;
         case 'days':     return dd;
         default:         return String(year);
