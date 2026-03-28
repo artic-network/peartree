@@ -15,9 +15,10 @@ import { TreeCalibration } from './phylograph.js';
 
 /** Pick a nice step size (decimal years) giving ~5-7 ticks over the range. */
 function _niceYearStep(range) {
-  const steps = [1/365, 7/365, 1/12, 2/12, 3/12, 6/12, 1, 2, 5, 10, 25, 50, 100];
+  const steps = [1/365, 7/365, 1/12, 2/12, 3/12, 6/12, 1, 2, 5, 10, 25, 50, 100,
+                 500, 1000, 2000, 5000, 10000, 25000, 50000, 100000];
   const raw   = range / 6;
-  return steps.find(s => s >= raw) ?? 100;
+  return steps.find(s => s >= raw) ?? 100000;
 }
 
 /** Nice linear step for a value range (Y axis). */

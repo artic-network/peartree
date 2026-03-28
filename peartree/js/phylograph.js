@@ -1279,6 +1279,8 @@ export class TreeCalibration {
 
     if (labelMode === 'component') {
       switch (interval) {
+        case 'millennia': return String(Math.floor(year / 1000) * 1000);
+        case 'centuries': return String(Math.floor(year / 100) * 100);
         case 'decades':  return String(Math.floor(year / 10) * 10) + 's';
         case 'years':    return String(year);
         case 'quarters': return `Q${Math.ceil(month / 3)}`;
@@ -1334,6 +1336,8 @@ export class TreeCalibration {
    */
   static _partialFormat(fullFormat, interval) {
     switch (interval) {
+      case 'millennia':
+      case 'centuries':
       case 'decades':
       case 'years':
       case 'quarters':
@@ -1526,11 +1530,15 @@ export class TreeCalibration {
 
     // Choose the minor interval that forms the natural calendar sub-division.
     // Thresholds (in decimal years):
-    //   ~9.9  → decade boundary: use yearly minor ticks
+    //   ~999  → millennia major: use century minor ticks
+    //   ~99   → century major: use decade minor ticks
+    //   ~9.9  → decade major: use yearly minor ticks
     //   ~0.08 → roughly 1 month: use monthly minor ticks
     //   ~0.018 → roughly 1 week: use weekly minor ticks
     let minorInterval = null;
-    if      (effectiveStep >= 9.9)   minorInterval = 'years';
+    if      (effectiveStep >= 999)   minorInterval = 'centuries';
+    else if (effectiveStep >= 99)    minorInterval = 'decades';
+    else if (effectiveStep >= 9.9)   minorInterval = 'years';
     else if (effectiveStep >= 0.08)  minorInterval = 'months';  // years → months (key case)
     else if (effectiveStep >= 0.018) minorInterval = 'weeks';
     // finer than weekly major → no minor ticks
@@ -1547,11 +1555,14 @@ export class TreeCalibration {
   static niceCalendarTicks(minDY, maxDY, targetCount = 5) {
     const range = maxDY - minDY;
     if (range === 0) return [minDY];
-    // Candidates in decreasing size order: years down to 1 day.
+    // Candidates in decreasing size order: millennia down to 1 day.
     // W_DY and D_DY give weekly and daily resolution.
     const W_DY = 7 / 365.25;   // ≈ 0.01915
     const D_DY = 1 / 365.25;   // ≈ 0.00274
-    const candidates = [100, 50, 25, 10, 5, 2, 1, 1/2, 1/3, 1/4, 1/6, 1/12, 1/24, W_DY, D_DY];
+    const candidates = [
+      100000, 50000, 25000, 10000, 5000, 2000, 1000, 500,
+      100, 50, 25, 10, 5, 2, 1, 1/2, 1/3, 1/4, 1/6, 1/12, 1/24, W_DY, D_DY,
+    ];
     const roughStep  = range / targetCount;
     // Default to the SMALLEST candidate so that very narrow ranges get daily ticks
     // rather than falling back to the initial 100-year step (which produces no visible ticks).
@@ -1600,7 +1611,15 @@ export class TreeCalibration {
     const sd    = TreeCalibration.decYearToDate(minDY);
     const dy    = (yr, mo, d) => TreeCalibration.dateToDecYear(yr, mo, d);
 
-    if (interval === 'decades') {
+    if (interval === 'millennia') {
+      const start = Math.ceil(minDY / 1000 - 1e-9) * 1000;
+      for (let y = start; y <= maxDY + 1e-6; y += 1000) ticks.push(y);
+
+    } else if (interval === 'centuries') {
+      const start = Math.ceil(minDY / 100 - 1e-9) * 100;
+      for (let y = start; y <= maxDY + 1e-6; y += 100) ticks.push(y);
+
+    } else if (interval === 'decades') {
       const start = Math.ceil(minDY / 10 - 1e-9) * 10;
       for (let y = start; y <= maxDY + 1e-6; y += 10) ticks.push(dy(y, 1, 1));
 

@@ -5077,13 +5077,15 @@ async function fetchExampleTree() {
 
   function _updateMinorOptions(majorVal, keepVal) {
     const opts = {
-      auto:     [['auto','Auto'],['years','Years'],['months','Months'],['off','Off']],
-      decades:  [['auto','Auto'],['years','Years'],['months','Months'],['off','Off']],
-      years:    [['auto','Auto'],['quarters','Quarters'],['months','Months'],['weeks','Weeks'],['days','Days'],['off','Off']],
-      quarters: [['auto','Auto'],['months','Months'],['days','Days'],['off','Off']],
-      months:   [['auto','Auto'],['weeks','Weeks'],['days','Days'],['off','Off']],
-      weeks:    [['auto','Auto'],['days','Days'],['off','Off']],
-      days:     [['off','Off']],
+      auto:       [['auto','Auto'],['centuries','Centuries'],['decades','Decades'],['years','Years'],['months','Months'],['off','Off']],
+      millennia:  [['auto','Auto'],['centuries','Centuries'],['decades','Decades'],['off','Off']],
+      centuries:  [['auto','Auto'],['decades','Decades'],['years','Years'],['off','Off']],
+      decades:    [['auto','Auto'],['years','Years'],['months','Months'],['off','Off']],
+      years:      [['auto','Auto'],['quarters','Quarters'],['months','Months'],['weeks','Weeks'],['days','Days'],['off','Off']],
+      quarters:   [['auto','Auto'],['months','Months'],['days','Days'],['off','Off']],
+      months:     [['auto','Auto'],['weeks','Weeks'],['days','Days'],['off','Off']],
+      weeks:      [['auto','Auto'],['days','Days'],['off','Off']],
+      days:       [['off','Off']],
     };
     const list = opts[majorVal] || [['auto','Auto'],['off','Off']];
     axisMinorIntervalEl.innerHTML = '';
