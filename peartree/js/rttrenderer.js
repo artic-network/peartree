@@ -307,8 +307,8 @@ export class RTTRenderer {
     ctx.font         = `${Math.round(this.axisFontSize * d)}px ${this.fontFamily}`;
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('Set a date annotation in Axis controls', W / 2, H / 2 - 10 * d);
-    ctx.fillText('to view the root-to-tip plot', W / 2, H / 2 + 10 * d);
+    ctx.fillText('Provide a tip date annotation to view', W / 2, H / 2 - 10 * d);
+    ctx.fillText('the root-to-tip divergence plot', W / 2, H / 2 + 10 * d);
   }
 
   // ─── Grid ─────────────────────────────────────────────────────────────────

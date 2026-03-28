@@ -535,7 +535,7 @@ export function isNumericType(dt) {
 
 const DATE_FULL_RE  = /^\d{4}-\d{2}-\d{2}$/;
 const DATE_MONTH_RE = /^\d{4}-\d{2}$/;
-const DATE_YEAR_RE  = /^\d{4}$/;
+const DATE_YEAR_RE  = /^\d{1,4}$/;
 
 function isDateString(v) {
   return typeof v === 'string' &&
@@ -1319,13 +1319,13 @@ export class TreeCalibration {
   static parseDateToDecYear(str) {
     if (!str) return null;
     str = str.trim();
-    const decFull = str.match(/^(\d{4})\.(\d+)$/);
+    const decFull = str.match(/^(\d{1,4})\.(\d+)$/);
     if (decFull) return parseFloat(str);
     const ymd = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (ymd) return TreeCalibration.dateToDecYear(+ymd[1], +ymd[2], +ymd[3]);
     const ym = str.match(/^(\d{4})-(\d{2})$/);
     if (ym) return TreeCalibration.dateToDecYear(+ym[1], +ym[2], 15);
-    const y = str.match(/^(\d{4})$/);
+    const y = str.match(/^(\d{1,4})$/);
     if (y) return TreeCalibration.dateToDecYear(+y[1], 7, 2);
     return null;
   }
