@@ -171,7 +171,7 @@ export class AxisRenderer {
     // Only auto-sync font size from tree if the user hasn't explicitly set one
     if (!this._axisFontSizeManual) this._fontSize = Math.max(7, fontSize - 1);
 
-    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${paddingLeft}|${labelRightPad}|${bgColor}|${this._fontSize}|${this._fontFamily}|${this._axisColor ?? ''}|${this._axisLineWidth}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._calibration?.anchorDecYear ?? ''}|${this._calibration?.anchorH ?? ''}|${this._viewMinTipH}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}|${this._dateFormat}|${this._direction}`;
+    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${paddingLeft}|${labelRightPad}|${bgColor}|${this._fontSize}|${this._fontFamily}|${this._axisColor ?? ''}|${this._axisLineWidth}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._calibration?.anchorDecYear ?? ''}|${this._calibration?.anchorH ?? ''}|${this._calibration?.rate ?? ''}|${this._viewMinTipH}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}|${this._dateFormat}|${this._direction}`;
     if (hash === this._lastHash) return;
     this._lastHash = hash;
 
@@ -417,11 +417,11 @@ export class AxisRenderer {
 
   _valToWorldX(val) {
     if (this._calibration?.isActive) {
-      // worldX = val − decYear(rootH), where rootH = height at worldX = 0.
-      // max(rootHeight, maxX) gives the correct root height for both full-tree
-      // and subtree views (see _valueDomain comment above).
+      // For timed trees (rate = 1): worldX = val − decYear(rootH)  (year offset = tree units)
+      // For divergence trees (rate ≠ 1): multiply by rate to convert year-offset → substitution
+      // units that match the tree canvas coordinate space.
       const rootH = Math.max(this._rootHeight, this._maxX);
-      return val - this._calibration.heightToDecYear(rootH);
+      return (val - this._calibration.heightToDecYear(rootH)) * this._calibration.rate;
     }
     if (this._direction === 'forward')     return val;
     // Reverse: worldX = span − val (span = rootHeight for timed, maxX for non-timed)
