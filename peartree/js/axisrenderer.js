@@ -1,4 +1,5 @@
 import { TreeCalibration } from './phylograph.js';
+import { overlapsZones }   from './utils.js';
 
 /**
  * AxisRenderer — draws an x-axis below the tree canvas.
@@ -324,6 +325,18 @@ export class AxisRenderer {
     ctx.lineTo(plotRight, Y_BASE + 0.5);
     ctx.stroke();
 
+    // ── Major-label vars (hoisted so minor rendering can avoid overlapping them) ─
+    const majorLabelFmt  = this._dateMode ? this._majorLabelFormat : 'auto';
+    const showMajorLabel = majorLabelFmt !== 'off';
+    const _majorStep = majorTicks.length >= 2
+      ? Math.abs(majorTicks[1] - majorTicks[0]) : 0;
+    // When the interval was auto-selected, infer the effective calendar interval
+    // from the actual tick spacing so that labels use the correct partial format
+    // (e.g. yearly ticks → 'yyyy', monthly ticks → 'yyyy-MM').
+    const effMajorInterval = (this._dateMode && this._majorInterval === 'auto')
+      ? TreeCalibration.inferMajorInterval(majorTicks)
+      : this._majorInterval;
+
     // ── Minor ticks ───────────────────────────────────────────────────────
     const minorLabelFmt  = this._dateMode ? this._minorLabelFormat : 'off';
     const showMinorLabel = minorLabelFmt !== 'off';
@@ -333,6 +346,24 @@ export class AxisRenderer {
     const effMinorInterval = (this._dateMode && this._minorInterval === 'auto')
       ? TreeCalibration.inferMajorInterval(minorTicks)
       : this._minorInterval;
+
+    // Pre-compute major-label bounding boxes so minor labels can be suppressed
+    // when they would overlap a major label.
+    const majorLabelZones = [];
+    if (showMinorLabel && showMajorLabel) {
+      ctx.font = `${fs}px ${this._fontFamily}`;
+      for (const val of majorTicks) {
+        const sx = this._valToScreenX(val);
+        if (sx < plotLeft - 1 || sx > plotRight + 1) continue;
+        const label = this._dateMode
+          ? this._calibration?.decYearToString(val, majorLabelFmt === 'auto' ? 'partial' : majorLabelFmt, this._dateFormat, effMajorInterval)
+          : AxisRenderer._formatValue(val, _majorStep);
+        if (!label) continue;
+        const tw = ctx.measureText(label).width;
+        const lx = Math.max(plotLeft + tw / 2 + 1, Math.min(W - tw / 2 - 2, sx));
+        majorLabelZones.push([lx - tw / 2 - 4, lx + tw / 2 + 4]);
+      }
+    }
 
     ctx.font         = `${fsMinor}px ${this._fontFamily}`;
     ctx.textAlign    = 'center';
@@ -351,7 +382,7 @@ export class AxisRenderer {
         const label = this._calibration.decYearToString(val, minorLabelFmt, this._dateFormat, effMinorInterval);
         const tw    = ctx.measureText(label).width;
         const lx    = Math.max(plotLeft + tw / 2 + 1, Math.min(plotRight - tw / 2 - 1, sx));
-        if (lx - tw / 2 > minorLabelRight + 2) {
+        if (lx - tw / 2 > minorLabelRight + 2 && !overlapsZones(lx - tw / 2, lx + tw / 2, majorLabelZones)) {
           ctx.fillStyle = TEXT_DIM;
           ctx.fillText(label, lx, Y_BASE + 1 + MINOR_H + 2);
           minorLabelRight = lx + tw / 2;
@@ -360,19 +391,7 @@ export class AxisRenderer {
     }
 
     // ── Major ticks ───────────────────────────────────────────────────────
-    const majorLabelFmt  = this._dateMode ? this._majorLabelFormat : 'auto';
-    const showMajorLabel = majorLabelFmt !== 'off';
     let majorLabelRight  = -Infinity;
-    // Step between ticks drives the required decimal precision for non-date labels.
-    const _majorStep = majorTicks.length >= 2
-      ? Math.abs(majorTicks[1] - majorTicks[0]) : 0;
-
-    // When the interval was auto-selected, infer the effective calendar interval
-    // from the actual tick spacing so that labels use the correct partial format
-    // (e.g. yearly ticks → 'yyyy', monthly ticks → 'yyyy-MM').
-    const effMajorInterval = (this._dateMode && this._majorInterval === 'auto')
-      ? TreeCalibration.inferMajorInterval(majorTicks)
-      : this._majorInterval;
 
     ctx.font         = `${fs}px ${this._fontFamily}`;
     ctx.textAlign    = 'center';

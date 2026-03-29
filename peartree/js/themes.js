@@ -76,7 +76,7 @@ export const THEMES = {
       },
       "BEAST": {
           canvasBgColor:    '#02292e',
-          branchColor:      '#68A3BB',
+          branchColor:      '#68a3bb',
           branchWidth:      '1',
           fontSize:         '11',
           fontFamily:       'Monospace',

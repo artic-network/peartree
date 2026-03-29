@@ -27,3 +27,19 @@ export function downloadBlob(contentOrBlob, mimeType, filename) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+/**
+ * Returns true if the interval [x1, x2] overlaps any exclusion zone [zl, zr].
+ * Used by axis renderers to suppress minor tick labels that would overlap major tick labels.
+ *
+ * @param {number}             x1    Left edge of candidate label bounding box.
+ * @param {number}             x2    Right edge of candidate label bounding box.
+ * @param {Array<[number,number]>} zones  Array of [left, right] exclusion zones.
+ * @returns {boolean}
+ */
+export function overlapsZones(x1, x2, zones) {
+  for (const [zl, zr] of zones) {
+    if (x1 < zr && x2 > zl) return true;
+  }
+  return false;
+}

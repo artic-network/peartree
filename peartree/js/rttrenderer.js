@@ -10,6 +10,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { TreeCalibration } from './phylograph.js';
+import { overlapsZones }   from './utils.js';
 
 // ─── Tick helpers ─────────────────────────────────────────────────────────────
 
@@ -526,6 +527,22 @@ export class RTTRenderer {
     ctx.textBaseline = 'top';
     ctx.textAlign    = 'center';
 
+    // Pre-compute major-label bounding boxes so minor labels can be suppressed
+    // when they would overlap a major label.
+    const majorLabelZones = [];
+    if (showMinorLabel && showMajorLabel && cal && xMajor.length > 0) {
+      ctx.font = font;
+      for (const v of xMajor) {
+        const px = Math.round(this._xToScreen(v, rect));
+        if (px < rect.x - 2 || px > rect.x + rect.w + 2) continue;
+        const effFmt = (majorLabelFmt === 'auto') ? 'partial' : majorLabelFmt;
+        const label  = cal.decYearToString(v, effFmt, fmt, majorInterval);
+        if (!label) continue;
+        const tw = ctx.measureText(label).width;
+        majorLabelZones.push([px - tw / 2 - 4, px + tw / 2 + 4]);
+      }
+    }
+
     // Minor ticks (shorter, dimmer)
     if (xMinor.length > 0) {
       ctx.font = `${Math.max(6, Math.round(this.axisFontSize * 0.85 * d))}px ${this.fontFamily}`;
@@ -545,7 +562,7 @@ export class RTTRenderer {
         if (showMinorLabel && cal) {
           const label = cal.decYearToString(v, minorLabelFmt, fmt, effMinorInterval);
           const tw    = ctx.measureText(label).width;
-          if (px - tw / 2 > lastMinorRight + 2) {
+          if (px - tw / 2 > lastMinorRight + 2 && !overlapsZones(px - tw / 2, px + tw / 2, majorLabelZones)) {
             ctx.fillStyle = lblDimC;
             ctx.fillText(label, px, ty + tcMinor + Math.round(2 * d));
             lastMinorRight = px + tw / 2;
