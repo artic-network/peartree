@@ -717,12 +717,10 @@ export class RTTRenderer {
     lines.push(['Res. mean sq.', reg.rms != null ? reg.rms.toExponential(3) : '—']);
     lines.push(['CV',   reg.cv.toFixed(4)]);
 
-    const boxW    = Math.round(148 * d);
-    const boxH    = lines.length * lh + pad;
-    const br      = Math.round(4 * d);
-    const margin  = Math.round(6 * d);
-    // Close-button hit area: top-right corner of box, 14 CSS-px square
-    const closeSz = Math.round(14 * d);
+    const boxW   = Math.round(148 * d);
+    const boxH   = lines.length * lh + pad;
+    const br     = Math.round(4 * d);
+    const margin = Math.round(6 * d);
 
     // Box position: from corner when at rest, from drag coords when dragging
     let bx, by;
@@ -736,8 +734,7 @@ export class RTTRenderer {
     }
 
     // Store for hit-testing (physical px)
-    this._lastStatsRect      = { x: bx, y: by, w: boxW, h: boxH };
-    this._lastStatsCloseRect = { x: bx + boxW - closeSz, y: by, w: closeSz, h: closeSz };
+    this._lastStatsRect = { x: bx, y: by, w: boxW, h: boxH };
 
     ctx.save();
     // Box background
@@ -763,14 +760,6 @@ export class RTTRenderer {
       ctx.textAlign = 'right';
       ctx.fillText(lines[i][1], bx + boxW - pad * 0.7, ty);
     }
-
-    // Close button × in top-right corner of box
-    const cfsz = Math.max(8, Math.round(11 * d));
-    ctx.font         = `bold ${cfsz}px ${this.fontFamily}`;
-    ctx.fillStyle    = this._colorWithAlpha(this.axisColor, 0.55);
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('\u00d7', bx + boxW - closeSz / 2, by + closeSz / 2);
 
     ctx.restore();
   }
@@ -950,11 +939,10 @@ export class RTTRenderer {
       ['Min',      fmt(vals[0])],
       ['Max',      fmt(vals[n - 1])],
     ];
-    const boxW    = Math.round(148 * d);
-    const boxH    = lines.length * lh + pad;
-    const br      = Math.round(4 * d);
-    const margin  = Math.round(6 * d);
-    const closeSz = Math.round(14 * d);
+    const boxW   = Math.round(148 * d);
+    const boxH   = lines.length * lh + pad;
+    const br     = Math.round(4 * d);
+    const margin = Math.round(6 * d);
     let bx, by;
     if (this._statsBoxDragActive && this._statsBoxDragCss) {
       bx = Math.round(this._statsBoxDragCss.x * d);
@@ -964,8 +952,7 @@ export class RTTRenderer {
       bx = (c === 'tl' || c === 'bl') ? rect.x + margin : rect.x + rect.w - boxW - margin;
       by = (c === 'tl' || c === 'tr') ? rect.y + margin : rect.y + rect.h - boxH - margin;
     }
-    this._lastStatsRect      = { x: bx, y: by, w: boxW, h: boxH };
-    this._lastStatsCloseRect = { x: bx + boxW - closeSz, y: by, w: closeSz, h: closeSz };
+    this._lastStatsRect = { x: bx, y: by, w: boxW, h: boxH };
     ctx.save();
     ctx.globalAlpha = 0.82;
     ctx.fillStyle   = 'rgba(8,28,34,0.90)';
@@ -987,12 +974,6 @@ export class RTTRenderer {
       ctx.textAlign    = 'right';
       ctx.fillText(lines[i][1], bx + boxW - pad * 0.7, ty);
     }
-    const cfsz = Math.max(8, Math.round(11 * d));
-    ctx.font         = `bold ${cfsz}px ${this.fontFamily}`;
-    ctx.fillStyle    = this._colorWithAlpha(this.axisColor, 0.55);
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('\u00d7', bx + boxW - closeSz / 2, by + closeSz / 2);
     ctx.restore();
   }
 
@@ -1045,22 +1026,9 @@ export class RTTRenderer {
       const cssX  = e.clientX - bRect.left;
       const cssY  = e.clientY - bRect.top;
 
-      // Stats box close button and box body take cursor priority
+      // Stats box body takes cursor priority
       if (this.statsBoxVisible) {
         const d = this._dpr;
-        if (this._lastStatsCloseRect) {
-          const cr = this._lastStatsCloseRect;
-          if (cssX >= cr.x/d && cssX <= (cr.x+cr.w)/d &&
-              cssY >= cr.y/d && cssY <= (cr.y+cr.h)/d) {
-            canvas.style.cursor = 'pointer';
-            if (this._hoveredTipId !== null) {
-              this._hoveredTipId = null;
-              this._dirty = true;
-              if (this.onHoverChange) this.onHoverChange(null);
-            }
-            return;
-          }
-        }
         if (this._lastStatsRect) {
           const sr = this._lastStatsRect;
           const d2 = this._dpr;
@@ -1105,20 +1073,6 @@ export class RTTRenderer {
       // Stats box interaction takes priority over scatter drag-select
       if (this.statsBoxVisible && this._lastStatsRect) {
         const d = this._dpr;
-        // Close button — hide the box
-        if (this._lastStatsCloseRect) {
-          const cr = this._lastStatsCloseRect;
-          if (cssX >= cr.x/d && cssX <= (cr.x+cr.w)/d &&
-              cssY >= cr.y/d && cssY <= (cr.y+cr.h)/d) {
-            this.statsBoxVisible     = false;
-            this._lastStatsRect      = null;
-            this._lastStatsCloseRect = null;
-            this._dirty = true;
-            if (this.onStatsBoxVisibleChange) this.onStatsBoxVisibleChange(false);
-            e.preventDefault();
-            return;
-          }
-        }
         // Box body — start drag
         const sr = this._lastStatsRect;
         if (cssX >= sr.x/d && cssX <= (sr.x+sr.w)/d &&
