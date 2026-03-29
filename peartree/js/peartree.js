@@ -188,6 +188,7 @@ async function fetchExampleTree() {
   const btnExportTree          = document.getElementById('btn-export-tree');
   const btnMPR                 = document.getElementById('btn-midpoint-root');
   const btnTemporalRoot        = document.getElementById('btn-temporal-root');
+  const btnTemporalRootGlobal  = document.getElementById('btn-temporal-root-global');
   // Hidden native <input type="color"> — value only, never shown directly
   const tipColourPickerEl            = document.getElementById('btn-node-colour');
   // Colour panel elements
@@ -2831,6 +2832,7 @@ async function fetchExampleTree() {
 
       commands.setEnabled('tree-midpoint', !isExplicitlyRooted);
       commands.setEnabled('tree-temporal-root', !isExplicitlyRooted);
+      commands.setEnabled('tree-temporal-root-global', !isExplicitlyRooted);
       commands.setEnabled('tree-reroot',   false); // re-enabled on selection by bindControls
 
       // Compute layout early so injectBuiltinStats() has maxX/maxY/node array
@@ -4082,27 +4084,35 @@ async function fetchExampleTree() {
 
     btnMPR.addEventListener('click', () => applyMidpointRoot());
 
+    function _buildTipDates() {
+      const dateKey = axisDateAnnotEl.disabled ? null : (axisDateAnnotEl.value || null);
+      if (!dateKey || !renderer || !renderer.nodes) return null;
+      const tipDates = new Map();
+      for (const node of renderer.nodes) {
+        if (!node.isTip) continue;
+        const raw = renderer._statValue(node, dateKey);
+        if (raw != null) {
+          const dec = TreeCalibration.parseDateToDecYear(String(raw));
+          if (dec != null) tipDates.set(node.id, dec);
+        }
+      }
+      return tipDates.size > 0 ? tipDates : null;
+    }
+
     function applyTemporalRoot() {
       if (btnTemporalRoot.disabled) return;
-      const dateKey = axisDateAnnotEl.disabled ? null : (axisDateAnnotEl.value || null);
-      let tipDates = null;
-      if (dateKey && renderer && renderer.nodes) {
-        tipDates = new Map();
-        for (const node of renderer.nodes) {
-          if (!node.isTip) continue;
-          const raw = renderer._statValue(node, dateKey);
-          if (raw != null) {
-            const dec = TreeCalibration.parseDateToDecYear(String(raw));
-            if (dec != null) tipDates.set(node.id, dec);
-          }
-        }
-        if (tipDates.size === 0) tipDates = null;
-      }
-      const { childNodeId, distFromParent } = optimiseRootEdge(graph, tipDates);
+      const { childNodeId, distFromParent } = optimiseRootEdge(graph, _buildTipDates());
+      applyReroot(childNodeId, distFromParent);
+    }
+
+    function applyTemporalRootGlobal() {
+      if (btnTemporalRootGlobal.disabled) return;
+      const { childNodeId, distFromParent } = temporalRootGraph(graph, _buildTipDates());
       applyReroot(childNodeId, distFromParent);
     }
 
     btnTemporalRoot.addEventListener('click', () => applyTemporalRoot());
+    btnTemporalRootGlobal.addEventListener('click', () => applyTemporalRootGlobal());
 
     // ── Node Info (Cmd+I) ──────────────────────────────────────────────────
 

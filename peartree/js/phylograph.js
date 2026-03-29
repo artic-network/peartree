@@ -1003,174 +1003,248 @@ export function reorderGraph(graph, ascending) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Shared setup for root-edge optimisation: builds rootToTip distances,
- * tip arrays, global sums, and post-order subtree sums.
- * Returns all intermediate results needed by evalBranch.
+ * Shared setup for root-edge optimisation: builds node-relative subtree sums
+ * and top-down total-distance arrays needed by _evalBranch.
+ * Returns all intermediate results needed by _evalBranch.
  * @private
  */
 function _buildRootOptState(graph, tipDates) {
   const { nodes, root } = graph;
+  const hiddenNodeIds = graph.hiddenNodeIds || new Set();
   const contemporaneous = !tipDates || tipDates.size === 0;
 
-  const rootToTip = new Map();
+  // ── Fixed topological anchor ───────────────────────────────────────────────
+  // Use the lower-indexed root node so clade reordering (which can swap
+  // root.nodeA ↔ root.nodeB) never changes the anchor.
+  const anchor = Math.min(root.nodeA, root.nodeB);
+
+  // ── Single DFS: collect pre-order traversal + tip list ────────────────────
+  const order    = [];                              // node indices in pre-order
+  const parentOf = new Int32Array(nodes.length).fill(-1); // parentOf[i] = DFS parent of i
+  const tipPos   = new Map();                       // node index → position in tips array
   const tipIdxArr = [];
 
-  function dfs(curIdx, fromIdx, dist) {
-    const n = nodes[curIdx];
-    rootToTip.set(curIdx, dist);
-    if (n.adjacents.length === 1) { tipIdxArr.push(curIdx); return; }
-    for (let i = 0; i < n.adjacents.length; i++) {
-      const adj = n.adjacents[i];
-      if (adj === fromIdx) continue;
-      dfs(adj, curIdx, dist + n.lengths[i]);
+  {
+    const stk = [{ cur: anchor, frm: -1, hidden: false }];
+    while (stk.length) {
+      const { cur, frm, hidden } = stk.pop();
+      const n = nodes[cur];
+      const nowHidden = hidden || hiddenNodeIds.has(n.origId);
+      order.push(cur);
+      parentOf[cur] = frm;
+      if (n.adjacents.length === 1) {
+        if (!nowHidden) {
+          tipPos.set(cur, tipIdxArr.length);
+          tipIdxArr.push(cur);
+        }
+      } else {
+        for (let i = n.adjacents.length - 1; i >= 0; i--) {
+          const adj = n.adjacents[i];
+          if (adj !== frm) stk.push({ cur: adj, frm: cur, hidden: nowHidden });
+        }
+      }
     }
   }
-  dfs(root.nodeA, root.nodeB, root.lenA);
-  dfs(root.nodeB, root.nodeA, root.lenB);
 
-  const N = tipIdxArr.length;
-  const tipPos = new Map();
-  for (let i = 0; i < N; i++) tipPos.set(tipIdxArr[i], i);
+  const N  = tipIdxArr.length;
+  const Nd = N;
 
-  const y0 = tipIdxArr.map(i => rootToTip.get(i));
-  const t  = contemporaneous
+  const t = contemporaneous
     ? new Array(N).fill(0)
     : tipIdxArr.map(i => { const d = tipDates.get(nodes[i].origId); return d != null ? d : 0; });
 
-  let sum_t = 0, sum_y = 0, sum_tt = 0, sum_ty = 0, sum_yy = 0;
-  for (let i = 0; i < N; i++) {
-    sum_t  += t[i];  sum_y  += y0[i];
-    sum_tt += t[i] * t[i];  sum_ty += t[i] * y0[i];  sum_yy += y0[i] * y0[i];
-  }
-  const Nd    = N;
+  let sum_t = 0, sum_tt = 0;
+  for (let i = 0; i < N; i++) { sum_t += t[i]; sum_tt += t[i] * t[i]; }
   const t_bar = sum_t / Nd;
   const C     = sum_tt - sum_t * sum_t / Nd;
 
+  // ── Subtree sums (node-relative distances) — bottom-up pass ───────────────
+  // sub_n[i]  = #visible tips in the subtree below i (away from anchor)
+  // sub_t[i]  = sum of dates for those tips
+  // sub_y[i]  = sum of dist(i, tip) for those tips        ← measured from i, not anchor
+  // sub_yy[i] = sum of dist(i, tip)^2 for those tips      ← measured from i: no cancellation
+  // sub_ty[i] = sum of t[tip]*dist(i, tip) for those tips ← measured from i
+  //
+  // Propagation: when child c (edge e) merges into parent p:
+  //   sub_y[p]  += sub_y[c]  + sub_n[c]*e
+  //   sub_yy[p] += sub_yy[c] + 2*e*sub_y[c] + sub_n[c]*e^2
+  //   sub_ty[p] += sub_ty[c] + e*sub_t[c]
   const sub_n  = new Int32Array(nodes.length);
   const sub_t  = new Float64Array(nodes.length);
   const sub_y  = new Float64Array(nodes.length);
-  const sub_ty = new Float64Array(nodes.length);
   const sub_yy = new Float64Array(nodes.length);
+  const sub_ty = new Float64Array(nodes.length);
 
-  function postOrder(curIdx, fromIdx) {
-    const n = nodes[curIdx];
+  for (let oi = order.length - 1; oi >= 0; oi--) {
+    const curIdx = order[oi];
+    const n      = nodes[curIdx];
+    const frm    = parentOf[curIdx];
+    if (hiddenNodeIds.has(n.origId)) continue;
     if (n.adjacents.length === 1) {
       const ai = tipPos.get(curIdx);
-      sub_n[curIdx] = 1; sub_t[curIdx] = t[ai]; sub_y[curIdx] = y0[ai];
-      sub_ty[curIdx] = t[ai] * y0[ai]; sub_yy[curIdx] = y0[ai] * y0[ai];
-      return;
-    }
-    sub_n[curIdx] = 0; sub_t[curIdx] = 0; sub_y[curIdx] = 0;
-    sub_ty[curIdx] = 0; sub_yy[curIdx] = 0;
-    for (let i = 0; i < n.adjacents.length; i++) {
-      const adj = n.adjacents[i];
-      if (adj === fromIdx) continue;
-      postOrder(adj, curIdx);
-      sub_n[curIdx]  += sub_n[adj];  sub_t[curIdx]  += sub_t[adj];
-      sub_y[curIdx]  += sub_y[adj];  sub_ty[curIdx] += sub_ty[adj];
-      sub_yy[curIdx] += sub_yy[adj];
+      if (ai !== undefined) {
+        sub_n[curIdx] = 1;
+        sub_t[curIdx] = t[ai];
+        // sub_y, sub_yy, sub_ty stay 0: dist from tip to itself = 0
+      }
+    } else {
+      for (let i = 0; i < n.adjacents.length; i++) {
+        const adj = n.adjacents[i];
+        if (adj === frm) continue;
+        const e  = n.lengths[i];
+        const nc = sub_n[adj];
+        sub_n[curIdx]  += nc;
+        sub_t[curIdx]  += sub_t[adj];
+        sub_y[curIdx]  += sub_y[adj]  + nc * e;
+        sub_yy[curIdx] += sub_yy[adj] + 2 * e * sub_y[adj] + nc * e * e;
+        sub_ty[curIdx] += sub_ty[adj] + e * sub_t[adj];
+      }
     }
   }
-  postOrder(root.nodeA, root.nodeB);
-  postOrder(root.nodeB, root.nodeA);
 
-  return { nodes, root, contemporaneous,
-           rootToTip, N, Nd, t, y0,
-           sum_t, sum_y, sum_tt, sum_ty, sum_yy,
-           t_bar, C,
-           sub_n, sub_t, sub_y, sub_ty, sub_yy };
+  // ── Total-from-node sums — top-down pass ───────────────────────────────────
+  // total_y[i]  = sum of dist(i, tip) for ALL N tips (not just the subtree below i)
+  // total_yy[i] = sum of dist(i, tip)^2 for ALL N tips
+  // total_ty[i] = sum of t[tip]*dist(i, tip) for ALL N tips
+  //
+  // These enable us to derive P-side (complement) sums from i's perspective:
+  //   up_y[i]  = total_y[i]  - sub_y[i]   (= sum of dist(i,tip) for P-side tips)
+  //   up_yy[i] = total_yy[i] - sub_yy[i]
+  //   up_ty[i] = total_ty[i] - sub_ty[i]
+  //
+  // Recurrence (moving reference point from parent p to child c, edge e):
+  //   When root shifts from p to c:
+  //     - P-side tips (N - nc of them) each get dist increased by e  → +e contribution
+  //     - B-side tips (nc of them)     each get dist decreased by e  → -e contribution
+  //   total_y[c]  = total_y[p]  + (N - 2*nc)*e
+  //   total_yy[c] = total_yy[p] + 2*e*(total_y[p] - 2*(sub_y[c] + nc*e)) + N*e^2
+  //               = total_yy[p] + 2*e*(total_y[p] - 2*sub_y_from_p[c]) + N*e^2
+  //     where sub_y_from_p[c] = sub_y[c] + nc*e  (sum of dist(p, B-tips) via c)
+  //   total_ty[c] = total_ty[p] + e*(sum_t - 2*sub_t[c])
+  const total_y  = new Float64Array(nodes.length);
+  const total_yy = new Float64Array(nodes.length);
+  const total_ty = new Float64Array(nodes.length);
+
+  total_y[anchor]  = sub_y[anchor];
+  total_yy[anchor] = sub_yy[anchor];
+  total_ty[anchor] = sub_ty[anchor];
+
+  for (let oi = 0; oi < order.length; oi++) {
+    const pIdx = order[oi];
+    if (hiddenNodeIds.has(nodes[pIdx].origId)) continue;
+    const n     = nodes[pIdx];
+    const ty_p  = total_y[pIdx];
+    const tyy_p = total_yy[pIdx];
+    const tty_p = total_ty[pIdx];
+    for (let i = 0; i < n.adjacents.length; i++) {
+      const cIdx = n.adjacents[i];
+      if (cIdx === parentOf[pIdx]) continue;   // skip toward anchor
+      const e  = n.lengths[i];
+      const nc = sub_n[cIdx];
+      const sub_y_c_from_p = sub_y[cIdx] + nc * e;    // sum dist(p, B-tips) through c
+      total_y[cIdx]  = ty_p  + (N - 2 * nc) * e;
+      total_yy[cIdx] = tyy_p + 2 * e * (ty_p - 2 * sub_y_c_from_p) + N * e * e;
+      total_ty[cIdx] = tty_p + e * (sum_t - 2 * sub_t[cIdx]);
+    }
+  }
+
+  return { nodes, root, anchor, contemporaneous,
+           N, Nd, t, t_bar, C, sum_t,
+           sub_n, sub_t, sub_y, sub_yy, sub_ty,
+           total_y, total_yy, total_ty };
 }
 
 /**
  * Evaluate the analytically optimal root position on a single branch.
  * `childIdx` is the child node (its subtree is the "B side");
  * `parentIdx` is the parent node (the "P side").
- * Returns { childOrigId, distFromParent } or null if the branch has no valid solution.
+ * When `forcePositiveRate` is true (default), branches where the OLS slope
+ * would be non-positive are rejected (returns null) or clamped to the positive
+ * region.  Pass false for the global search so score comparison is symmetric.
+ * Returns { childOrigId, distFromParent, score } or null.
  * @private
  */
-function _evalBranch(childIdx, parentIdx, state) {
+function _evalBranch(childIdx, parentIdx, state, forcePositiveRate = true) {
   const { nodes, contemporaneous,
-          rootToTip, N, Nd, t, y0,
-          sum_t, sum_y, sum_ty, sum_yy,
-          t_bar, C,
-          sub_n, sub_t, sub_y, sub_ty, sub_yy } = state;
+          N, Nd, t, sum_t, t_bar, C,
+          sub_n, sub_t, sub_y, sub_yy, sub_ty,
+          total_y, total_yy, total_ty } = state;
 
   const childNode = nodes[childIdx];
   const L = childNode.lengths[0];
   if (!(L > 0)) return null;
   const nd = sub_n[childIdx];
-  if (nd === 0 || nd === N) return null;
+  const np = Nd - nd;
+  if (nd === 0 || np === 0) return null;
 
-  const H_P = rootToTip.get(parentIdx) ?? 0;
-  const H_B = rootToTip.get(childIdx)  ?? 0;
-
+  // ── B-side (below childIdx, measured from childIdx) ──────────────────────
+  const sum_rB  = sub_y[childIdx];    // sum of dist(B, tipB) — node-relative, no cancellation
+  const sum_rrB = sub_yy[childIdx];   // sum of dist(B, tipB)^2
+  const sum_trB = sub_ty[childIdx];   // sum of t*dist(B, tipB)
   const sum_tB  = sub_t[childIdx];
-  const sum_yB  = sub_y[childIdx];
-  const sum_tyB = sub_ty[childIdx];
-  const sum_tP  = sum_t  - sum_tB;
-  const sum_yP  = sum_y  - sum_yB;
-  const sum_tyP = sum_ty - sum_tyB;
 
-  const sum_dB = sum_yB - nd * H_B;
-  const sum_dP = sum_yP - (Nd - nd) * H_P;
-  const M0 = (sum_dP + sum_dB + L * nd) / Nd;
+  // ── P-side (from parentIdx's perspective) — via total-from-B sums ────────
+  // total_y[B]  = sum of dist(B, tip) for ALL tips.
+  // For P-side: dist(B, tipP) = dist(P, tipP) + L, so dist(P, tipP) = dist(B,tipP) - L.
+  //   sum_rP  = sum_P dist(P,tipP)  = total_y[B]  - sum_rB  - np*L
+  //   sum_rrP = sum_P dist(P,tipP)^2 = total_yy[B] - sum_rrB - 2L*sum_rP - np*L^2
+  //   sum_trP = sum_P t*dist(P,tipP) = total_ty[B] - sum_trB - L*sum_tP
+  const sum_tP  = sum_t - sum_tB;
+  const sum_rP  = total_y[childIdx]  - sum_rB  - np * L;
+  const sum_rrP = total_yy[childIdx] - sum_rrB - 2 * L * sum_rP - np * L * L;
+  const sum_trP = total_ty[childIdx] - sum_trB - L * sum_tP;
 
-  const B2 = 4 * nd * (Nd - nd) / Nd;
+  // ── Heights at d=0 (root at P) ────────────────────────────────────────────
+  // B-side height = dist(B,tipB) + L;  P-side height = dist(P,tipP)
+  const sum_hB0  = sum_rB  + nd * L;    // sum of (r_i + L) for B-side
+  const sum_dBL2 = sum_rrB + 2 * L * sum_rB + nd * L * L;    // sum of (r_i+L)^2 — no cancellation
+  const sum_dP2  = sum_rrP;                                    // sum of (p_j)^2
+  const M0 = (sum_rP + sum_hB0) / Nd;  // mean height at d=0
+
+  // ── Polynomial: f(d) = B0 + B1*d + B2*d^2 = N*Var(heights) at position d ─
+  const B2 = 4 * nd * np / Nd;
   if (!(B2 * L > 1e-20)) return null;
 
-  const sumV_B = sum_dB + L * nd - nd * M0;
-  const sumV_P = sum_dP - (Nd - nd) * M0;
-  const B1 = 2 * (2 * nd / Nd) * sumV_P - 2 * (2 * (Nd - nd) / Nd) * sumV_B;
+  // B0 = sum_P (p_j - M0)^2 + sum_B (r_i+L - M0)^2  (variance-like at d=0)
+  const B0 = (sum_dP2  - 2 * M0 * sum_rP  + np * M0 * M0)
+           + (sum_dBL2 - 2 * M0 * sum_hB0 + nd * M0 * M0);
 
-  const sum_yyB  = sub_yy[childIdx];
-  const sum_yyP  = sum_yy - sum_yyB;
-  const sum_dP2  = sum_yyP - 2 * H_P * sum_yP + (Nd - nd) * H_P * H_P;
-  const delta_B  = L - H_B;
-  const sum_dBL2 = sum_yyB + 2 * delta_B * sum_yB + nd * delta_B * delta_B;
-  const B0 = sum_dP2 - 2 * M0 * sum_dP + (Nd - nd) * M0 * M0
-           + sum_dBL2 - 2 * M0 * (sum_dB + L * nd) + nd * M0 * M0;
+  // B1 = 2*(sumV_P - sumV_B)  where sumV_P + sumV_B = 0 (both equal ±sumV_P)
+  // Equivalently: (4*nd/N)*sumV_P - (4*np/N)*sumV_B — same value since sumV_P = -sumV_B
+  const sumV_B = sum_hB0 - nd * M0;
+  const sumV_P = sum_rP  - np * M0;
+  const B1 = 2 * (sumV_P - sumV_B);
 
   let d, score;
 
   if (!contemporaneous && C > 1e-20) {
-    // Heterochronous: minimise OLS residual mean squared.
-    //
-    // At position d ∈ [0,L] from P toward B, root-to-tip distances are:
-    //   P-side: y_new[i] = (y0[i] - H_P) + d
-    //   B-side: y_new[i] = (y0[i] + delta_B) - d   (delta_B = L - H_B)
-    //
-    // ssxy(d) = A0 + A1*d  (linear in d)
-    // ssyy(d) = B0 + B1*d + B2*d²  (already computed above)
-    // score(d) = (ssyy - ssxy²/C) / N  =  (Q0 + Q1*d + Q2*d²) / N
-    //
-    //   Q2 = B2 - A1²/C
-    //   Q2 > 0 → convex → unique interior minimum at d* = -Q1 / (2*Q2)
-    //   Q2 ≤ 0 → concave → minimum at one of the clamped endpoints
+    // ── Heterochronous: minimise OLS regression residual ─────────────────────
+    // ssxy at d=0: A0 = sum_i t_i * h_i(0) - t_bar * sum_i h_i(0)
+    //              A1 = d(ssxy)/dd = sum_P t_j - sum_B t_i - (np-nd)*t_bar
+    //                                (P-side heights increase, B-side decrease)
+    const sum_yAdj = sum_rP + sum_hB0;   // sum of all heights at d=0
+    const sum_ty0  = sum_trP + sum_trB + L * sum_tB;   // sum of t*h at d=0
+    const A0 = sum_ty0 - t_bar * sum_yAdj;
+    // d(ssxy)/dd: P-side heights increase by d, B-side decrease by d
+    const A1 = (sum_tP - np * t_bar) - (sum_tB - nd * t_bar);
 
-    const sum_dPraw = sum_yP - (Nd - nd) * H_P;
-    const sum_yAdj  = sum_dPraw + sum_yB + nd * delta_B;
-    const sum_ty0   = (sum_tyP - H_P * sum_tP) + (sum_tyB + delta_B * sum_tB);
-
-    const A0 = sum_ty0 - t_bar * sum_yAdj;        // ssxy at d=0
-    const A1 = (sum_tP - (Nd - nd) * t_bar) - (sum_tB - nd * t_bar);  // d(ssxy)/dd
-
-    // Enforce positive-regression-rate constraint: require ssxy(d) > 0
+    // Optionally enforce positive-rate window
     let d_lo = 0, d_hi = L;
-    if      (A1 > 1e-20)  d_lo = Math.max(d_lo, -A0 / A1);
-    else if (A1 < -1e-20) d_hi = Math.min(d_hi, -A0 / A1);
-    else if (A0 <= 0)     return null;
-    if (d_lo >= d_hi) return null;
+    if (forcePositiveRate) {
+      if      (A1 > 1e-20)  d_lo = Math.max(d_lo, -A0 / A1);
+      else if (A1 < -1e-20) d_hi = Math.min(d_hi, -A0 / A1);
+      else if (A0 <= 0)     return null;
+      if (d_lo >= d_hi) return null;
+    }
 
     const Q2 = B2 - A1 * A1 / C;
     const Q1 = B1 - 2 * A0 * A1 / C;
 
     if (Q2 > 1e-30) {
-      // Convex quadratic: unique minimum
       d = Math.max(d_lo, Math.min(d_hi, -Q1 / (2 * Q2)));
     } else {
-      // Concave or flat: minimum at one of the clamped endpoints
-      const flo = B0 + B1*d_lo + B2*d_lo*d_lo - (A0 + A1*d_lo)**2 / C;
-      const fhi = B0 + B1*d_hi + B2*d_hi*d_hi - (A0 + A1*d_hi)**2 / C;
+      const flo = B0 + B1*d_lo + B2*d_lo*d_lo - (A0 + A1*d_lo) ** 2 / C;
+      const fhi = B0 + B1*d_hi + B2*d_hi*d_hi - (A0 + A1*d_hi) ** 2 / C;
       d = flo <= fhi ? d_lo : d_hi;
     }
 
@@ -1178,7 +1252,8 @@ function _evalBranch(childIdx, parentIdx, state) {
     const ssyy_new = B0 + B1 * d + B2 * d * d;
     score = (ssyy_new - ssxy_new * ssxy_new / C) / Nd;
   } else {
-    d = Math.max(0, Math.min(L, -B1 / (2 * B2)));
+    // ── Homochronous: minimise variance of root-to-tip distances ─────────────
+    d     = Math.max(0, Math.min(L, -(B1) / (2 * B2)));
     score = (B0 + B1 * d + B2 * d * d) / Nd;
   }
 
@@ -1200,19 +1275,23 @@ function _evalBranch(childIdx, parentIdx, state) {
  */
 export function optimiseRootEdge(graph, tipDates) {
   const state = _buildRootOptState(graph, tipDates);
-  const { nodes, root } = state;
+  const { nodes, root, anchor } = state;
+  // For the root edge call, childIdx must be the non-anchor node so that
+  // sub_n[childIdx] is the B-side count, not N.
+  const rootChild  = anchor === root.nodeA ? root.nodeB : root.nodeA;
+  const rootParent = anchor;
 
   if (state.N < 2) {
-    return { childNodeId: nodes[root.nodeB].origId, distFromParent: root.lenB / 2 };
+    return { childNodeId: nodes[rootChild].origId, distFromParent: (root.lenA + root.lenB) / 2 };
   }
 
   // Evaluate the current root edge only.
-  const result = _evalBranch(root.nodeB, root.nodeA, state);
+  const result = _evalBranch(rootChild, rootParent, state);
   if (result) {
     return { childNodeId: result.childOrigId, distFromParent: result.distFromParent };
   }
   // Fallback: midpoint of root edge
-  return { childNodeId: nodes[root.nodeB].origId, distFromParent: (root.lenA + root.lenB) / 2 };
+  return { childNodeId: nodes[rootChild].origId, distFromParent: (root.lenA + root.lenB) / 2 };
 }
 
 /**
@@ -1228,27 +1307,31 @@ export function optimiseRootEdge(graph, tipDates) {
  */
 export function temporalRootGraph(graph, tipDates) {
   const state = _buildRootOptState(graph, tipDates);
-  const { nodes, root } = state;
+  const { nodes, root, anchor } = state;
+  // For the root edge call, childIdx must be the non-anchor node so that
+  // sub_n[childIdx] is the B-side count, not N.
+  const rootChild  = anchor === root.nodeA ? root.nodeB : root.nodeA;
+  const rootParent = anchor;
 
   if (state.N < 2) {
-    return { childNodeId: nodes[root.nodeB].origId, distFromParent: root.lenB / 2 };
+    return { childNodeId: nodes[rootChild].origId, distFromParent: (root.lenA + root.lenB) / 2 };
   }
 
   let bestScore = Infinity, bestChildId = null, bestDist = 0;
 
   for (const node of nodes) {
     if (node.idx === root.nodeA || node.idx === root.nodeB) continue;
-    const r = _evalBranch(node.idx, node.adjacents[0], state);
+    const r = _evalBranch(node.idx, node.adjacents[0], state, true);
     if (r && r.score < bestScore) {
       bestScore = r.score; bestChildId = r.childOrigId; bestDist = r.distFromParent;
     }
   }
 
-  const re = _evalBranch(root.nodeB, root.nodeA, state);
+  const re = _evalBranch(rootChild, rootParent, state, true);
   if (re && re.score < bestScore) { bestChildId = re.childOrigId; bestDist = re.distFromParent; }
 
   if (bestChildId === null) {
-    return { childNodeId: nodes[root.nodeB].origId, distFromParent: root.lenB / 2 };
+    return { childNodeId: nodes[rootChild].origId, distFromParent: (root.lenA + root.lenB) / 2 };
   }
   return { childNodeId: bestChildId, distFromParent: bestDist };
 }
