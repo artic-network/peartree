@@ -4084,22 +4084,7 @@ async function fetchExampleTree() {
 
     function applyTemporalRoot() {
       if (btnTemporalRoot.disabled) return;
-      // Get the date annotation key (same logic as getDateAnnotKey closure)
-      let dateKey = null;
-      if (!axisDateAnnotEl.disabled) {
-        dateKey = axisDateAnnotEl.value || null;
-      } else {
-        const schema = renderer?._annotationSchema;
-        if (schema) {
-          for (const [name, def] of schema) {
-            if (name.startsWith('__')) continue;
-            const isDate        = def.dataType === 'date';
-            const isDecimalYear = (def.dataType === 'real' || def.dataType === 'integer') &&
-                                   def.min >= 1000 && def.max <= 3000;
-            if (isDate || isDecimalYear) { dateKey = name; break; }
-          }
-        }
-      }
+      const dateKey = axisDateAnnotEl.disabled ? null : (axisDateAnnotEl.value || null);
       let tipDates = null;
       if (dateKey && renderer && renderer.nodes) {
         tipDates = new Map();
@@ -4108,7 +4093,7 @@ async function fetchExampleTree() {
           const raw = renderer._statValue(node, dateKey);
           if (raw != null) {
             const dec = TreeCalibration.parseDateToDecYear(String(raw));
-            if (dec != null) tipDates.set(node.origId, dec);
+            if (dec != null) tipDates.set(node.id, dec);
           }
         }
         if (tipDates.size === 0) tipDates = null;

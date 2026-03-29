@@ -480,6 +480,7 @@ public class TemporalRooting {
     }
 
 
+
     public double getRootToTipDistance(Tree tree, NodeRef node) {
         double distance = 0;
         while (node != null) {

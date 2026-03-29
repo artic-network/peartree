@@ -1133,22 +1133,46 @@ function _evalBranch(childIdx, parentIdx, state) {
   let d, score;
 
   if (!contemporaneous && C > 1e-20) {
-    const sum_tdP = sum_tyP - H_P * sum_tP;
-    const sum_tdB = sum_tyB - H_B * sum_tB;
-    const A0 = (sum_tdP + sum_tdB + L * sum_tB) - t_bar * Nd * M0;
-    const A1 = (2 * nd / Nd) * (sum_tP - (Nd - nd) * t_bar)
-             - (2 * (Nd - nd) / Nd) * (sum_tB - nd * t_bar);
+    // Heterochronous: minimise OLS residual mean squared.
+    //
+    // At position d ∈ [0,L] from P toward B, root-to-tip distances are:
+    //   P-side: y_new[i] = (y0[i] - H_P) + d
+    //   B-side: y_new[i] = (y0[i] + delta_B) - d   (delta_B = L - H_B)
+    //
+    // ssxy(d) = A0 + A1*d  (linear in d)
+    // ssyy(d) = B0 + B1*d + B2*d²  (already computed above)
+    // score(d) = (ssyy - ssxy²/C) / N  =  (Q0 + Q1*d + Q2*d²) / N
+    //
+    //   Q2 = B2 - A1²/C
+    //   Q2 > 0 → convex → unique interior minimum at d* = -Q1 / (2*Q2)
+    //   Q2 ≤ 0 → concave → minimum at one of the clamped endpoints
 
-    const denom = 2 * (B2 - A1 * A1 / C);
-    if (!(Math.abs(denom) > 1e-20)) return null;
-    d = (2 * A0 * A1 / C - B1) / denom;
+    const sum_dPraw = sum_yP - (Nd - nd) * H_P;
+    const sum_yAdj  = sum_dPraw + sum_yB + nd * delta_B;
+    const sum_ty0   = (sum_tyP - H_P * sum_tP) + (sum_tyB + delta_B * sum_tB);
 
+    const A0 = sum_ty0 - t_bar * sum_yAdj;        // ssxy at d=0
+    const A1 = (sum_tP - (Nd - nd) * t_bar) - (sum_tB - nd * t_bar);  // d(ssxy)/dd
+
+    // Enforce positive-regression-rate constraint: require ssxy(d) > 0
     let d_lo = 0, d_hi = L;
-    if (A1 > 1e-20)       d_lo = Math.max(d_lo, -A0 / A1);
+    if      (A1 > 1e-20)  d_lo = Math.max(d_lo, -A0 / A1);
     else if (A1 < -1e-20) d_hi = Math.min(d_hi, -A0 / A1);
     else if (A0 <= 0)     return null;
     if (d_lo >= d_hi) return null;
-    d = Math.max(d_lo, Math.min(d_hi, d));
+
+    const Q2 = B2 - A1 * A1 / C;
+    const Q1 = B1 - 2 * A0 * A1 / C;
+
+    if (Q2 > 1e-30) {
+      // Convex quadratic: unique minimum
+      d = Math.max(d_lo, Math.min(d_hi, -Q1 / (2 * Q2)));
+    } else {
+      // Concave or flat: minimum at one of the clamped endpoints
+      const flo = B0 + B1*d_lo + B2*d_lo*d_lo - (A0 + A1*d_lo)**2 / C;
+      const fhi = B0 + B1*d_hi + B2*d_hi*d_hi - (A0 + A1*d_hi)**2 / C;
+      d = flo <= fhi ? d_lo : d_hi;
+    }
 
     const ssxy_new = A0 + A1 * d;
     const ssyy_new = B0 + B1 * d + B2 * d * d;
