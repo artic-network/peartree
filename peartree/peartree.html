@@ -1293,19 +1293,23 @@
       background: none;
       flex-shrink: 0;
     }
-    /* palette button active state */
-    #btn-palette.active {
+    /* Panel-toggle buttons — gold when open */
+    #btn-palette.active,
+    #btn-data-table.active,
+    #btn-rtt.active {
       color: var(--bs-primary);
       border-color: var(--bs-primary);
     }
     /* Flip carets when the panels are open */
     #btn-palette .bi-caret-right,
-    #btn-data-table .bi-caret-left  {
+    #btn-data-table .bi-caret-left,
+    #btn-rtt .bi-caret-left {
       display: inline-block;
       transition: transform 0.22s cubic-bezier(.4,0,.2,1);
     }
-    #btn-palette.active .bi-caret-right  { transform: scaleX(-1); }
+    #btn-palette.active .bi-caret-right   { transform: scaleX(-1); }
     #btn-data-table.active .bi-caret-left { transform: scaleX(-1); }
+    #btn-rtt.active .bi-caret-left        { transform: scaleX(-1); }
     #btn-order-desc .bi-sort-up { display: inline-block; transform: scaleY(-1); }
 
     /* ── Tooltip ── */
@@ -1874,8 +1878,8 @@
       <span id="tip-filter-count" class="pt-filter-count" hidden></span>
     </div>
     <div class="pt-toolbar-sep"></div>
-    <button id="btn-rtt"        class="btn btn-sm btn-outline-secondary" disabled title="Root-to-tip divergence plot"><i class="bi bi-graph-up-arrow"></i></button>
     <button id="btn-data-table" class="btn btn-sm btn-outline-secondary" disabled title="Data table panel"><i class="bi bi-caret-left"></i><i class="bi bi-layout-sidebar-reverse"></i></button>
+    <button id="btn-rtt"        class="btn btn-sm btn-outline-secondary" disabled title="Root-to-tip divergence plot"><i class="bi bi-caret-left"></i><i class="bi bi-graph-up-arrow"></i></button>
   </div><!-- /.pt-toolbar-right -->
 
 </nav>
