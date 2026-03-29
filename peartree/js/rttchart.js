@@ -79,10 +79,17 @@ export function createRTTChart({
     if (onStatsBoxCornerChange) onStatsBoxCornerChange(corner);
   };
 
+  function _syncPinIcon() {
+    const icon = btnPin?.querySelector('i');
+    if (icon) icon.className = _pinned ? 'bi bi-pin-angle-fill' : 'bi bi-pin-angle';
+    if (btnPin) btnPin.title = _pinned ? 'Unpin panel' : 'Pin panel open';
+  }
+
   btnPin.addEventListener('click', () => {
     _pinned = !_pinned;
     panel.classList.toggle('pinned', _pinned);
     btnPin.classList.toggle('active', _pinned);
+    _syncPinIcon();
     if (onPinChange) onPinChange(_pinned);
     rtt._resize();
   });
@@ -660,6 +667,7 @@ export function createRTTChart({
     if (_pinned) {
       panel.classList.add('pinned');
       btnPin.classList.add('active');
+      _syncPinIcon();
       if (onPinChange) onPinChange(true);
     }
     // Resize + populate on the next frame (panel may not have laid out yet)
@@ -676,6 +684,7 @@ export function createRTTChart({
     if (_pinned) {
       panel.classList.remove('pinned');
       btnPin.classList.remove('active');
+      _syncPinIcon();
       if (onPinChange) onPinChange(false);
     }
   }
@@ -691,6 +700,7 @@ export function createRTTChart({
     setPin(pinned) {
       _pinned = !!pinned;
       btnPin.classList.toggle('active', _pinned);
+      _syncPinIcon();
       // Only update the DOM layout if the panel is currently open.
       if (_open) {
         panel.classList.toggle('pinned', _pinned);

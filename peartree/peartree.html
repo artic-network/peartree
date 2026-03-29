@@ -604,17 +604,18 @@
     #dt-btn-pin, #dt-btn-close {
       background: none;
       border: none;
-      color: var(--pt-text-icon);
-      padding: 2px 3px;
+      color: var(--pt-off-white);
+      padding: 2px 4px;
       line-height: 1;
-      font-size: 0.75rem;
+      font-size: 0.82rem;
       border-radius: 3px;
+      opacity: 0.5;
       cursor: pointer;
-      transition: color 0.15s;
+      transition: opacity 0.15s, background 0.15s;
     }
-    #dt-btn-pin:hover  { color: var(--pt-text-icon-hover); }
-    #dt-btn-close:hover { color: var(--pt-danger); }
-    #dt-btn-pin.active  { color: var(--pt-gold, #b5890a); }
+    #dt-btn-pin:hover,
+    #dt-btn-close:hover { background: var(--pt-surface-hover); opacity: 1; }
+    #dt-btn-pin.active  { color: var(--pt-gold, #b5890a); opacity: 1; }
     /* Number cells inside the frozen strip */
     #dt-num-body {
       flex: 1;
@@ -827,7 +828,22 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    #rtt-btn-pin, #rtt-btn-close, #rtt-btn-stats {
+    #rtt-btn-pin, #rtt-btn-close {
+      background: none;
+      border: none;
+      color: var(--pt-off-white);
+      padding: 2px 4px;
+      line-height: 1;
+      font-size: 0.82rem;
+      border-radius: 3px;
+      opacity: 0.5;
+      cursor: pointer;
+      transition: opacity 0.15s, background 0.15s;
+    }
+    #rtt-btn-pin:hover,
+    #rtt-btn-close:hover { background: var(--pt-surface-hover); opacity: 1; }
+    #rtt-btn-pin.active   { color: var(--pt-gold, #b5890a); opacity: 1; }
+    #rtt-btn-stats {
       background: none;
       border: none;
       color: var(--pt-text-icon);
@@ -838,10 +854,7 @@
       cursor: pointer;
       transition: color 0.15s;
     }
-    #rtt-btn-pin:hover   { color: var(--pt-text-icon-hover); }
-    #rtt-btn-close:hover { color: var(--pt-danger); }
     #rtt-btn-stats:hover { color: var(--pt-text-icon-hover); }
-    #rtt-btn-pin.active   { color: var(--pt-gold, #b5890a); }
     #rtt-btn-stats.active { color: var(--pt-teal, #2aa198); }
     /* Canvas fills the remaining panel */
     #rtt-canvas { flex: 1; display: block; min-height: 0; min-width: 0; }
@@ -2096,8 +2109,8 @@
   <div id="rtt-panel">
     <div id="rtt-resize-handle"></div>
     <div id="rtt-header">
-      <button id="rtt-btn-close" title="Close"><i class="bi bi-x-lg"></i></button>
       <button id="rtt-btn-pin"   title="Pin panel open"><i class="bi bi-pin-angle"></i></button>
+      <button id="rtt-btn-close" title="Close"><i class="bi bi-x-lg"></i></button>
       <span class="rtt-title"></span>
       <button id="rtt-btn-download" class="btn btn-sm btn-outline-info"    title="Download RTT data as CSV"><i class="bi bi-download"></i></button>
       <button id="rtt-btn-image"    class="btn btn-sm btn-outline-warning" title="Export plot as image (SVG or PNG)"><i class="bi bi-image"></i></button>
