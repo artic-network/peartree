@@ -4036,7 +4036,8 @@ async function fetchExampleTree() {
       const layout = computeLayoutFromGraph(graph, null, _layoutOptions());
       renderer.setDataCrossfade(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
       // setDataCrossfade goes through setData which does not fire _onLayoutChange,
-      // so notify the RTT chart directly.
+      // so notify the data table and RTT chart directly.
+      dataTableRenderer.setTips(layout.nodes.filter(n => n.isTip));
       rttChart?.notifyLayoutChange?.();
     }
 

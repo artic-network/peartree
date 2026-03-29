@@ -399,6 +399,10 @@ export class TreeRenderer {
     this._updateScaleX(false);
     this._updateMinScaleY();
 
+    // Notify observers while nodes still carry their final target y values so
+    // consumers (e.g. data table) see the correct post-sort order.
+    if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
+
     // Seed animation: set every node's y and collapsedTipCount to their old
     // values so the lerp starts from the current visual state.
     for (const n of this.nodes) {
@@ -435,7 +439,6 @@ export class TreeRenderer {
     }
     this._reorderAlpha  = 0;
     this._dirty = true;
-    if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
   }
 
   /**
