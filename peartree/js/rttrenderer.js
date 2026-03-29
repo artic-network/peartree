@@ -460,8 +460,8 @@ export class RTTRenderer {
 
   _drawAxes(ctx, rect) {
     const d     = this._dpr;
-    const axisC = this._colorWithAlpha(this.axisColor, 0.60);
-    const lblC  = this._colorWithAlpha(this.axisColor, 0.50);
+    const axisC = this._colorWithAlpha(this.axisColor, 0.55);
+    const lblC  = this._colorWithAlpha(this.axisColor, 0.90);
     const fsz   = Math.max(6, Math.round(this.axisFontSize * d));
     const font  = `${fsz}px ${this.fontFamily}`;
     const tc    = Math.round(4 * d);           // tick half-length (physical px)
@@ -498,7 +498,7 @@ export class RTTRenderer {
     // Y axis title (rotated)
     ctx.save();
     ctx.font         = `${Math.max(6, Math.round(this.axisFontSize * 0.9 * d))}px ${this.fontFamily}`;
-    ctx.fillStyle    = this._colorWithAlpha(this.axisColor, 0.38);
+    ctx.fillStyle    = this._colorWithAlpha(this.axisColor, 0.90);
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
     ctx.translate(Math.round(8 * d), rect.y + rect.h / 2);
@@ -521,7 +521,7 @@ export class RTTRenderer {
     const minorLabelFmt  = opts.minorLabelFormat || 'off';
     const showMajorLabel = majorLabelFmt !== 'off';
     const showMinorLabel = minorLabelFmt !== 'off';
-    const lblDimC        = this._colorWithAlpha(this.axisColor, 0.35);
+    const lblDimC        = this._colorWithAlpha(this.axisColor, 0.50);
 
     ctx.textBaseline = 'top';
     ctx.textAlign    = 'center';
@@ -538,7 +538,7 @@ export class RTTRenderer {
         const px = Math.round(this._xToScreen(v, rect));
         if (px < rect.x - 2 || px > rect.x + rect.w + 2) continue;
         ctx.beginPath();
-        ctx.strokeStyle = this._colorWithAlpha(this.axisColor, 0.35);
+        ctx.strokeStyle = this._colorWithAlpha(this.axisColor, 0.55);
         ctx.lineWidth   = this.axisLineWidth * d;
         ctx.moveTo(px, ty);  ctx.lineTo(px, ty + tcMinor);
         ctx.stroke();
@@ -838,8 +838,8 @@ export class RTTRenderer {
 
   _drawHistoAxes(ctx, rect) {
     const d     = this._dpr;
-    const axisC = this._colorWithAlpha(this.axisColor, 0.60);
-    const lblC  = this._colorWithAlpha(this.axisColor, 0.50);
+    const axisC = this._colorWithAlpha(this.axisColor, 0.55);
+    const lblC  = this._colorWithAlpha(this.axisColor, 0.90);
     const fsz   = Math.max(6, Math.round(this.axisFontSize * d));
     const font  = `${fsz}px ${this.fontFamily}`;
     const tc    = Math.round(4 * d);
@@ -880,7 +880,7 @@ export class RTTRenderer {
     // Y axis title
     ctx.save();
     ctx.font         = `${Math.max(6, Math.round(this.axisFontSize * 0.9 * d))}px ${this.fontFamily}`;
-    ctx.fillStyle    = this._colorWithAlpha(this.axisColor, 0.38);
+    ctx.fillStyle    = this._colorWithAlpha(this.axisColor, 0.90);
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
     ctx.translate(Math.round(8 * d), rect.y + rect.h / 2);
@@ -905,7 +905,7 @@ export class RTTRenderer {
     }
     // X axis title
     ctx.font         = `${Math.max(6, Math.round(this.axisFontSize * 0.9 * d))}px ${this.fontFamily}`;
-    ctx.fillStyle    = this._colorWithAlpha(this.axisColor, 0.38);
+    ctx.fillStyle    = this._colorWithAlpha(this.axisColor, 0.90);
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
     ctx.fillText('Root-to-tip divergence',

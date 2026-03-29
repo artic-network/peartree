@@ -175,6 +175,10 @@ async function fetchExampleTree() {
   const rttXOriginEl           = document.getElementById('rtt-x-origin');
   const rttGridLinesEl          = document.getElementById('rtt-grid-lines');
   const rttAspectRatioEl        = document.getElementById('rtt-aspect-ratio');
+  const rttAxisColorEl         = document.getElementById('rtt-axis-color');
+  const rttAxisFontSizeSlider  = document.getElementById('rtt-axis-font-size-slider');
+  const rttAxisFontFamilyEl    = document.getElementById('rtt-axis-font-family-select');
+  const rttAxisLineWidthSlider = document.getElementById('rtt-axis-line-width-slider');
   const themeSelect            = document.getElementById('theme-select');
   const btnStoreTheme          = document.getElementById('btn-store-theme');
   const btnDefaultTheme        = document.getElementById('btn-default-theme');
@@ -630,6 +634,10 @@ async function fetchExampleTree() {
       rttXOrigin:         rttXOriginEl.value,
       rttGridLines:       rttGridLinesEl.value,
       rttAspectRatio:     rttAspectRatioEl.value,
+      rttAxisColor:       rttAxisColorEl.value,
+      rttAxisFontSize:    rttAxisFontSizeSlider.value,
+      rttAxisFontFamily:  rttAxisFontFamilyEl.value,
+      rttAxisLineWidth:   rttAxisLineWidthSlider.value,
       nodeBarsEnabled:    nodeBarsShowEl.value,
       nodeBarsColor:      nodeBarsColorEl.value,
       nodeBarsWidth:      nodeBarsWidthSlider.value,
@@ -931,6 +939,12 @@ async function fetchExampleTree() {
     axisLineWidthSlider.value = DEFAULT_SETTINGS.axisLineWidth;
     document.getElementById('axis-line-width-value').textContent = DEFAULT_SETTINGS.axisLineWidth;
     axisFontFamilyEl.value = DEFAULT_SETTINGS.axisFontFamily;
+    rttAxisColorEl.value         = DEFAULT_SETTINGS.rttAxisColor;
+    rttAxisFontSizeSlider.value  = DEFAULT_SETTINGS.rttAxisFontSize;
+    document.getElementById('rtt-axis-font-size-value').textContent = DEFAULT_SETTINGS.rttAxisFontSize;
+    rttAxisFontFamilyEl.value    = DEFAULT_SETTINGS.rttAxisFontFamily;
+    rttAxisLineWidthSlider.value = DEFAULT_SETTINGS.rttAxisLineWidth;
+    document.getElementById('rtt-axis-line-width-value').textContent = DEFAULT_SETTINGS.rttAxisLineWidth;
     nodeBarsShowEl.value  = DEFAULT_SETTINGS.nodeBarsEnabled;
     nodeBarsColorEl.value = DEFAULT_SETTINGS.nodeBarsColor;
     nodeBarsWidthSlider.value = DEFAULT_SETTINGS.nodeBarsWidth;
@@ -1405,6 +1419,16 @@ async function fetchExampleTree() {
   if (_saved.rttXOrigin)    rttXOriginEl.value    = _saved.rttXOrigin;
   if (_saved.rttGridLines)  rttGridLinesEl.value  = _saved.rttGridLines;
   if (_saved.rttAspectRatio) rttAspectRatioEl.value = _saved.rttAspectRatio;
+  if (_saved.rttAxisColor != null)     rttAxisColorEl.value          = _saved.rttAxisColor;
+  if (_saved.rttAxisFontSize != null) {
+    rttAxisFontSizeSlider.value = _saved.rttAxisFontSize;
+    document.getElementById('rtt-axis-font-size-value').textContent = _saved.rttAxisFontSize;
+  }
+  if (_saved.rttAxisFontFamily)        rttAxisFontFamilyEl.value     = _saved.rttAxisFontFamily;
+  if (_saved.rttAxisLineWidth != null) {
+    rttAxisLineWidthSlider.value = _saved.rttAxisLineWidth;
+    document.getElementById('rtt-axis-line-width-value').textContent = _saved.rttAxisLineWidth;
+  }
 
   // Size canvas to container before creating renderer
   const container = canvas.parentElement;
@@ -2043,9 +2067,12 @@ async function fetchExampleTree() {
       return null;
     },
     getDateFormat:   () => axisDateFmtEl.value  || 'yyyy-MM-dd',
-    getAxisColor:    () => axisColorEl.value,
-    getAxisFontSize: () => parseInt(axisFontSizeSlider.value),
-    getAxisLineWidth: () => parseFloat(axisLineWidthSlider.value),
+    getAxisColor:      () => rttAxisColorEl.value || axisColorEl.value,
+    getAxisFontSize:   () => parseInt(rttAxisFontSizeSlider.value),
+    getAxisFontFamily: () => rttAxisFontFamilyEl.value === 'axis'
+                         ? _resolveTypeface(axisFontFamilyEl.value)
+                         : _resolveTypeface(rttAxisFontFamilyEl.value),
+    getAxisLineWidth:  () => parseFloat(rttAxisLineWidthSlider.value),
     getTickOptions: () => ({
       majorInterval:    axisMajorIntervalEl.value,
       minorInterval:    axisMinorIntervalEl.value,
@@ -5204,6 +5231,25 @@ async function fetchExampleTree() {
   });
 
   rttAspectRatioEl.addEventListener('change', () => {
+    rttChart?.notifyStyleChange?.();
+    saveSettings();
+  });
+
+  rttAxisColorEl.addEventListener('input', () => {
+    rttChart?.notifyStyleChange?.();
+    saveSettings();
+  });
+  rttAxisFontSizeSlider.addEventListener('input', () => {
+    document.getElementById('rtt-axis-font-size-value').textContent = rttAxisFontSizeSlider.value;
+    rttChart?.notifyStyleChange?.();
+    saveSettings();
+  });
+  rttAxisFontFamilyEl.addEventListener('change', () => {
+    rttChart?.notifyStyleChange?.();
+    saveSettings();
+  });
+  rttAxisLineWidthSlider.addEventListener('input', () => {
+    document.getElementById('rtt-axis-line-width-value').textContent = rttAxisLineWidthSlider.value;
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });

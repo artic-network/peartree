@@ -250,7 +250,7 @@ export const THEMES = {
           branchColor:      '#7984BC',
           branchWidth:      '1',
           fontSize:         '11',
-          fontFamily:       'Helvetica',
+          fontFamily:       'Helvetica Neue Light',
           labelColor:       '#7984BC',
           tipSize:          '3',
           tipHaloSize:      '1',

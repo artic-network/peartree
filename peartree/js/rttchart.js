@@ -41,6 +41,7 @@ export function createRTTChart({
   getDateFormat,
   getAxisColor,
   getAxisFontSize,
+  getAxisFontFamily,
   getAxisLineWidth,
   getTickOptions,
   getIsTimedTree,
@@ -342,9 +343,9 @@ export function createRTTChart({
         `<text x="${f(rect.x - tc - 3)}" y="${f(py)}" text-anchor="end" dominant-baseline="middle">${esc(v.toFixed(dp))}</text>`);
     }
     if (yTickLines.length > 0)
-      parts.push(`<g stroke="${esc(axisC)}" stroke-opacity="0.6" stroke-width="${lw}" fill="none">${yTickLines.join('')}</g>`);
+      parts.push(`<g stroke="${esc(axisC)}" stroke-opacity="0.55" stroke-width="${lw}" fill="none">${yTickLines.join('')}</g>`);
     if (yTickLabels.length > 0)
-      parts.push(`<g font-family="${esc(font)}" font-size="${fsz}" fill="${esc(axisC)}" fill-opacity="0.5">${yTickLabels.join('')}</g>`);
+      parts.push(`<g font-family="${esc(font)}" font-size="${fsz}" fill="${esc(axisC)}" fill-opacity="0.90">${yTickLabels.join('')}</g>`);
 
     // Y axis title (rotated, left of plot)
     const ytCx = f(rect.y + rect.h / 2), ytCy = f(8);
@@ -352,7 +353,7 @@ export function createRTTChart({
       `<text transform="rotate(-90) translate(${f(-(rect.y + rect.h / 2))},${f(8)})"` +
       ` text-anchor="middle" dominant-baseline="middle"` +
       ` font-family="${esc(font)}" font-size="${f(fsz * 0.9, 1)}"` +
-      ` fill="${esc(axisC)}" fill-opacity="0.38">Root-to-tip divergence</text>`);
+      ` fill="${esc(axisC)}" fill-opacity="0.90">Root-to-tip divergence</text>`);
 
     // 6 ── X axis ticks + labels
     const cal  = rtt._calibration;
@@ -379,9 +380,9 @@ export function createRTTChart({
         }
       }
       if (minorLines.length > 0)
-        parts.push(`<g stroke="${esc(axisC)}" stroke-opacity="0.35" stroke-width="${lw}" fill="none">${minorLines.join('')}</g>`);
+        parts.push(`<g stroke="${esc(axisC)}" stroke-opacity="0.55" stroke-width="${lw}" fill="none">${minorLines.join('')}</g>`);
       if (minorLabels.length > 0)
-        parts.push(`<g font-family="${esc(font)}" font-size="${f(fsz * 0.85, 1)}" fill="${esc(axisC)}" fill-opacity="0.35">${minorLabels.join('')}</g>`);
+        parts.push(`<g font-family="${esc(font)}" font-size="${f(fsz * 0.85, 1)}" fill="${esc(axisC)}" fill-opacity="0.50">${minorLabels.join('')}</g>`);
     }
 
     // Major ticks + labels
@@ -398,9 +399,9 @@ export function createRTTChart({
       }
     }
     if (majLines.length > 0)
-      parts.push(`<g stroke="${esc(axisC)}" stroke-opacity="0.6" stroke-width="${lw}" fill="none">${majLines.join('')}</g>`);
+      parts.push(`<g stroke="${esc(axisC)}" stroke-opacity="0.55" stroke-width="${lw}" fill="none">${majLines.join('')}</g>`);
     if (majLabels.length > 0)
-      parts.push(`<g font-family="${esc(font)}" font-size="${fsz}" fill="${esc(axisC)}" fill-opacity="0.5">${majLabels.join('')}</g>`);
+      parts.push(`<g font-family="${esc(font)}" font-size="${fsz}" fill="${esc(axisC)}" fill-opacity="0.90">${majLabels.join('')}</g>`);
 
     // 7 ── Regression line (clipped to plot area)
     const reg = rtt._calibration?.regression;
@@ -410,7 +411,7 @@ export function createRTTChart({
       parts.push(
         `<g clip-path="url(#rp)">` +
         `<line x1="${f(rx1)}" y1="${f(ry1)}" x2="${f(rx2)}" y2="${f(ry2)}"` +
-        ` stroke="${esc(axisC)}" stroke-opacity="0.65" stroke-width="1.5"` +
+        ` stroke="${esc(axisC)}" stroke-opacity="0.55" stroke-width="1.5"` +
         ` stroke-dasharray="6 4" fill="none"/>` +
         `</g>`);
     }
@@ -609,6 +610,7 @@ export function createRTTChart({
       // Axis style (from the Axis section in the palette panel)
       axisColor:    getAxisColor?.()    ?? rtt.axisColor,
       axisFontSize: getAxisFontSize?.() ?? rtt.axisFontSize,
+      fontFamily:   getAxisFontFamily?.() ?? rtt.fontFamily,
       axisLineWidth: getAxisLineWidth?.() ?? rtt.axisLineWidth,
     });
     rtt.showRootAge   = getShowRootAge?.()  ?? false;
