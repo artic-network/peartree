@@ -2097,7 +2097,7 @@ async function fetchExampleTree() {
     },
     getAxisColor:      () => rttAxisColorEl.value || axisColorEl.value,
     getAxisFontSize:   () => parseInt(rttAxisFontSizeSlider.value),
-    getAxisFontFamily: () => rttAxisFontFamilyEl.value === 'axis'
+    getAxisFontFamily: () => rttAxisFontFamilyEl.value === 'theme'
                          ? _resolveTypeface(axisFontFamilyEl.value)
                          : _resolveTypeface(rttAxisFontFamilyEl.value),
     getAxisLineWidth:  () => parseFloat(rttAxisLineWidthSlider.value),

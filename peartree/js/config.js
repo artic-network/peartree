@@ -58,7 +58,7 @@ export const DEFAULT_SETTINGS = {
   axisLineWidth:    '1',
   rttAxisColor:     '',
   rttAxisFontSize:  '9',
-  rttAxisFontFamily: 'axis',
+  rttAxisFontFamily: 'theme',
   rttAxisLineWidth:  '1',
   rttDateFormat:        'axis',
   rttMajorInterval:     'axis',
