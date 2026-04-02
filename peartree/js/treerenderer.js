@@ -309,8 +309,9 @@ export class TreeRenderer {
     if (s.introAnimation !== undefined) this._introAnimationStyle = s.introAnimation;
 
     // ── Collapsed clades ─────────────────────────────────────────────────
-    this._collapsedCladeOpacity = s.collapsedCladeOpacity != null ? +s.collapsedCladeOpacity : (this._collapsedCladeOpacity ?? 0.25);
-    this._collapsedCladeHeightN = s.collapsedCladeHeightN != null ? +s.collapsedCladeHeightN : (this._collapsedCladeHeightN ?? 3);
+    this._collapsedCladeOpacity  = s.collapsedCladeOpacity  != null ? +s.collapsedCladeOpacity  : (this._collapsedCladeOpacity  ?? 0.25);
+    this._collapsedCladeHeightN  = s.collapsedCladeHeightN  != null ? +s.collapsedCladeHeightN  : (this._collapsedCladeHeightN  ?? 3);
+    this._collapsedCladeFontSize = s.collapsedCladeFontSize != null ? +s.collapsedCladeFontSize : (this._collapsedCladeFontSize ?? 11);
 
     // Propagate bg colour to an attached legend renderer.
     this._legendRenderer?.setBgColor(this.bgColor, this._skipBg);
@@ -2513,10 +2514,11 @@ export class TreeRenderer {
         ctx.beginPath();
         for (const node of this.nodes) {
           if (!node.isTip) continue;
-          // Full-height collapsed clades: use range-based culling so connectors
-          // draw even when node.y (the triangle apex) is off-screen.
+          // Full-height collapsed clades WITHOUT a Name annotation: draw per-tip connectors
+          // (one per virtual tip row, matching the individual tip labels drawn below).
           if (node.isCollapsed && node.collapsedTipNames &&
-              Math.round(node.collapsedTipCount) >= node.collapsedRealTips) {
+              Math.round(node.collapsedTipCount) >= node.collapsedRealTips &&
+              !(node.annotations?.['Name']?.trim())) {
             const _halfN = node.collapsedTipCount / 2;
             if (node.y + _halfN < yWorldMin || node.y - _halfN > yWorldMax) continue;
             const N    = node.collapsedRealTips;
@@ -2534,14 +2536,13 @@ export class TreeRenderer {
             }
             continue;
           }
-          // Non-full-height collapsed nodes and regular tips: cull by node.y.
+          // Compressed clades and full-height named clades: a single connector line is
+          // drawn in Pass 3-collapsed (outside this block). Skip them here.
+          if (node.isCollapsed) continue;
+          // Regular tips: cull by node.y.
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
           if (!this._showLabelAt(node.y)) continue;
-          // For collapsed clades the connector starts at the right-hand base
-          // of the triangle, not the apex.
-          const tipEdgeX = node.isCollapsed
-            ? this._wx(node.collapsedMaxX)
-            : this._wx(node.x) + outlineR + 2;
+          const tipEdgeX = this._wx(node.x) + outlineR + 2;
           // End just before shape (or text when no shape), leaving a 2 px gap.
           const lineEndX = alignLabelX + (_shOffset > 0 ? _shML : 0) - 2;
           if (lineEndX - tipEdgeX < 8) continue;  // tip already at/near label column
@@ -2605,69 +2606,106 @@ export class TreeRenderer {
         }
       }
 
-      // Pass 3-collapsed: labels for collapsed clade nodes (names mode only).
-      if (!this._tipLabelsOff && this.tipLabelAnnotation === null) {
-        const hasSelection = this._selectedTipIds.size > 0;
-        const isSelected   = (node) => this._mrcaNodeId === node.id;
+    }
+
+    // Pass 3-collapsed: labels (and per-clade connector lines) for collapsed clade nodes.
+    // Outside the showLabels gate so clade labels appear whenever the triangle has enough
+    // pixel height, regardless of overall tip-label density.
+    // Uses this.fontFamily (the theme typeface, same as tip labels); label size is
+    // independently controlled by _collapsedCladeFontSize.
+    if (!this._tipLabelsOff && this.tipLabelAnnotation === null) {
+      const hasSelection   = this._selectedTipIds.size > 0;
+      const isSelected     = (node) => this._mrcaNodeId === node.id;
+      const _cladeFontSize = this._collapsedCladeFontSize ?? this.fontSize;
+
+      // Connector lines for clade labels (dashed / dots / solid alignment modes).
+      // Draws ONE line per clade to its label Y (the clade centre, clamped to viewport).
+      // Full-height no-Name clades already have per-tip connectors from Sub-pass 3-pre.
+      if (alignLabelX !== null && _align !== 'aligned') {
+        ctx.save();
+        if      (_align === 'dashed') ctx.setLineDash([3, 4]);
+        else if (_align === 'dots')   ctx.setLineDash([1, 4]);
+        ctx.lineWidth   = 0.35;
+        ctx.strokeStyle = this.dimLabelColor;
+        ctx.beginPath();
         for (const node of this.nodes) {
           if (!node.isCollapsed) continue;
-          // Cull by triangle extent so labels render when the clade is larger
-          // than the viewport and node.y (the centre) is off-screen.
-          { const _halfN = node.collapsedTipCount / 2;
-            if (node.y + _halfN < yWorldMin || node.y - _halfN > yWorldMax) continue; }
-          const _bX = alignLabelX ?? (this._wx(node.collapsedMaxX) + 4);
-          const sel = isSelected(node);
-          const dim = hasSelection && !sel;
-          // At full height: render one label per virtual tip.
-          if (node.collapsedTipNames && Math.round(node.collapsedTipCount) >= node.collapsedRealTips) {
-            const N    = node.collapsedRealTips;
-            const topY = node.y - (N - 1) / 2;
-            const _bX  = alignLabelX ?? (this._wx(node.collapsedMaxX) + 4);
-            for (let i = 0; i < node.collapsedTipNames.length; i++) {
-              const tip = node.collapsedTipNames[i];
-              if (!tip.name) continue;
-              const wy = topY + i;
-              if (wy < yWorldMin || wy > yWorldMax) continue;
-              if (!this._showLabelAt(wy)) continue;
-              // Colour: follow same logic as regular tip labels.
-              if (dim) {
-                ctx.fillStyle = this.dimLabelColor;
-                ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
-              } else if (sel) {
-                ctx.fillStyle = this.selectedLabelColor;
-                ctx.font      = `${this.selectedLabelStyle} ${this.fontSize}px ${this.fontFamily}`;
-              } else if (this._labelColourBy && this._labelColourScale) {
-                ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
-                ctx.fillStyle = this._labelColourForValue(this._statValue(tip, this._labelColourBy)) ?? this.labelColor;
-              } else {
-                ctx.fillStyle = this.labelColor;
-                ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
-              }
-              ctx.fillText(tip.name, _tx(_bX), this._wy(wy));
-            }
-          } else {
-            // Show count label at the node's y centre, clamped to the visible
-            // portion of the triangle when the centre is off-screen.
-            const _halfN  = node.collapsedTipCount / 2;
-            const _labelY = Math.max(node.y - _halfN,
-                              Math.min(node.y + _halfN,
-                                Math.max(yWorldMin, Math.min(yWorldMax, node.y))));
-            const label = `${node.collapsedRealTips} tips`;
+          const _nodeName = node.annotations?.['Name'];
+          const _hasName  = _nodeName && _nodeName.trim();
+          // Full-height without Name already handled by per-tip connectors.
+          if (!_hasName && node.collapsedTipNames && Math.round(node.collapsedTipCount) >= node.collapsedRealTips) continue;
+          const _halfN = node.collapsedTipCount / 2;
+          if (node.y + _halfN < yWorldMin || node.y - _halfN > yWorldMax) continue;
+          const _pixelHeight = node.collapsedTipCount * this.scaleY;
+          if (_pixelHeight < _cladeFontSize) continue;  // label won't show; skip connector
+          const _labelY  = Math.max(node.y - _halfN, Math.min(node.y + _halfN,
+                             Math.max(yWorldMin, Math.min(yWorldMax, node.y))));
+          const tipEdgeX = this._wx(node.collapsedMaxX);
+          const lineEndX = alignLabelX + (_shOffset > 0 ? _shML : 0) - 2;
+          if (lineEndX - tipEdgeX < 8) continue;
+          ctx.moveTo(tipEdgeX, this._wy(_labelY));
+          ctx.lineTo(lineEndX, this._wy(_labelY));
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      for (const node of this.nodes) {
+        if (!node.isCollapsed) continue;
+        const _halfN = node.collapsedTipCount / 2;
+        if (node.y + _halfN < yWorldMin || node.y - _halfN > yWorldMax) continue;
+        const sel = isSelected(node);
+        const dim = hasSelection && !sel;
+        const _nodeName = node.annotations?.['Name'];
+        const _hasName  = _nodeName && _nodeName.trim();
+        // At full height with no Name: render individual tip labels (same typeface as tip labels).
+        if (!_hasName && node.collapsedTipNames && Math.round(node.collapsedTipCount) >= node.collapsedRealTips) {
+          const N    = node.collapsedRealTips;
+          const topY = node.y - (N - 1) / 2;
+          const _bX  = alignLabelX ?? (this._wx(node.collapsedMaxX) + 4);
+          for (let i = 0; i < node.collapsedTipNames.length; i++) {
+            const tip = node.collapsedTipNames[i];
+            if (!tip.name) continue;
+            const wy = topY + i;
+            if (wy < yWorldMin || wy > yWorldMax) continue;
+            if (!this._showLabelAt(wy)) continue;
             if (dim) {
               ctx.fillStyle = this.dimLabelColor;
               ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
             } else if (sel) {
               ctx.fillStyle = this.selectedLabelColor;
               ctx.font      = `${this.selectedLabelStyle} ${this.fontSize}px ${this.fontFamily}`;
+            } else if (this._labelColourBy && this._labelColourScale) {
+              ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
+              ctx.fillStyle = this._labelColourForValue(this._statValue(tip, this._labelColourBy)) ?? this.labelColor;
             } else {
               ctx.fillStyle = this.labelColor;
               ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
             }
-            ctx.fillText(label, _tx(_bX), this._wy(_labelY));
+            ctx.fillText(tip.name, _tx(_bX), this._wy(wy));
           }
+        } else {
+          // Name or count label — independent clade font size, theme fontFamily.
+          const _pixelHeight = node.collapsedTipCount * this.scaleY;
+          if (_pixelHeight < _cladeFontSize) continue;
+          const _labelY = Math.max(node.y - _halfN,
+                            Math.min(node.y + _halfN,
+                              Math.max(yWorldMin, Math.min(yWorldMax, node.y))));
+          const _bX  = alignLabelX ?? (this._wx(node.collapsedMaxX) + 4);
+          const label = _hasName ? _nodeName.trim() : `${node.collapsedRealTips} tips`;
+          ctx.font = `${_cladeFontSize}px ${this.fontFamily}`;
+          if (dim) {
+            ctx.fillStyle = this.dimLabelColor;
+          } else if (sel) {
+            ctx.fillStyle = this.selectedLabelColor;
+            ctx.font      = `${this.selectedLabelStyle} ${_cladeFontSize}px ${this.fontFamily}`;
+          } else {
+            ctx.fillStyle = this.labelColor;
+          }
+          ctx.fillText(label, _tx(_bX), this._wy(_labelY));
         }
-        ctx.font = `${this.fontSize}px ${this.fontFamily}`;
       }
+      ctx.font = `${this.fontSize}px ${this.fontFamily}`;
     }
 
     // Pass 3-shapes – label shapes rendered independently of tip-label density

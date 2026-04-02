@@ -118,6 +118,8 @@ export const DEFAULT_SETTINGS = {
   // Extra tip label shapes 2–10 (shown immediately to the right of shape 1; share shape 1's size/colour)
   tipLabelShapesExtra:       ['off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off'],
   tipLabelShapeExtraColourBys: ['user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour'],
+  // Collapsed clade label font size (px) — independent of tip-label font size
+  collapsedCladeFontSize: '11',
   // Node labels (internal-node annotation labels)
   nodeLabelAnnotation: '',
   nodeLabelPosition:   'right',

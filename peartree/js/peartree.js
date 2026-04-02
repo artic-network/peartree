@@ -91,6 +91,7 @@ async function fetchExampleTree() {
   const nodeBarsUnavailEl   = document.getElementById('node-bars-unavail');
   const collapsedOpacitySlider = document.getElementById('collapsed-opacity-slider');
   const collapsedHeightNSlider = document.getElementById('collapsed-height-n-slider');
+  const collapsedCladeFontSizeSlider = document.getElementById('collapsed-clade-font-size-slider');
   const tipShapeDetailEl    = document.getElementById('tip-shape-detail');
   const nodeShapeDetailEl   = document.getElementById('node-shape-detail');
   const nodeLabelDetailEl   = document.getElementById('node-label-detail');
@@ -668,8 +669,9 @@ async function fetchExampleTree() {
       nodeBarsWidth:      nodeBarsWidthSlider.value,
       nodeBarsShowMedian: nodeBarsMedianEl.value,
       nodeBarsShowRange:  nodeBarsRangeEl.value,
-      collapsedCladeOpacity: collapsedOpacitySlider.value,
-      collapsedCladeHeightN: collapsedHeightNSlider.value,
+      collapsedCladeOpacity:  collapsedOpacitySlider.value,
+      collapsedCladeHeightN:  collapsedHeightNSlider.value,
+      collapsedCladeFontSize: collapsedCladeFontSizeSlider.value,
       clampNegBranches:   clampNegBranchesEl.value,
       rootStemPct:        rootStemPctSlider.value,
       tipLabelShow:       tipLabelShow.value,
@@ -896,6 +898,10 @@ async function fetchExampleTree() {
       collapsedHeightNSlider.value = s.collapsedCladeHeightN;
       document.getElementById('collapsed-height-n-value').textContent = s.collapsedCladeHeightN;
     }
+    if (s.collapsedCladeFontSize != null) {
+      collapsedCladeFontSizeSlider.value = s.collapsedCladeFontSize;
+      document.getElementById('collapsed-clade-font-size-value').textContent = s.collapsedCladeFontSize;
+    }
     if (s.clampNegBranches)   clampNegBranchesEl.value = s.clampNegBranches;
     if (s.rootStemPct != null) {
       rootStemPctSlider.value = s.rootStemPct;
@@ -992,6 +998,8 @@ async function fetchExampleTree() {
     nodeLabelPositionEl.value   = DEFAULT_SETTINGS.nodeLabelPosition;
     nodeLabelFontSizeSlider.value = DEFAULT_SETTINGS.nodeLabelFontSize;
     document.getElementById('node-label-font-size-value').textContent = DEFAULT_SETTINGS.nodeLabelFontSize;
+    collapsedCladeFontSizeSlider.value = DEFAULT_SETTINGS.collapsedCladeFontSize;
+    document.getElementById('collapsed-clade-font-size-value').textContent = DEFAULT_SETTINGS.collapsedCladeFontSize;
     nodeLabelColorEl.value      = DEFAULT_SETTINGS.nodeLabelColor;
     nodeLabelSpacingSlider.value = DEFAULT_SETTINGS.nodeLabelSpacing;
     document.getElementById('node-label-spacing-value').textContent = DEFAULT_SETTINGS.nodeLabelSpacing;
@@ -1115,8 +1123,9 @@ async function fetchExampleTree() {
       nodeBarsWidth:      parseInt(nodeBarsWidthSlider.value),
       nodeBarsShowMedian: nodeBarsMedianEl.value,
       nodeBarsShowRange:  nodeBarsRangeEl.value  === 'on',
-      collapsedCladeOpacity: parseFloat(collapsedOpacitySlider.value),
-      collapsedCladeHeightN: parseInt(collapsedHeightNSlider.value),
+      collapsedCladeOpacity:  parseFloat(collapsedOpacitySlider.value),
+      collapsedCladeHeightN:  parseInt(collapsedHeightNSlider.value),
+      collapsedCladeFontSize: parseInt(collapsedCladeFontSizeSlider.value),
       clampNegativeBranches: clampNegBranchesEl.value === 'on',
       fontFamily:         TYPEFACES[fontFamilyEl.value] ?? fontFamilyEl.value,
       tipLabelsOff:       tipLabelShow.value === 'off',
@@ -4342,8 +4351,10 @@ async function fetchExampleTree() {
         : (renderer.maxX - node.x);
 
       const rows = [];
+      if (!node.isTip) {
+        rows.push(['__name_edit__', node.annotations?.['Name'] ?? '']);
+      }
       if (node.isTip && node.name)  rows.push(['Name',         node.name]);
-      if (!node.isTip && node.name) rows.push(['Name',         node.name]);
       if (node.label)               rows.push(['Label',        String(node.label)]);
       rows.push(['Divergence',   node.x.toFixed(6)]);
       rows.push(['Age',          height.toFixed(6)]);
@@ -4391,6 +4402,8 @@ async function fetchExampleTree() {
           const def = schema ? schema.get(k) : null;
           // Skip group members here — they are shown indented under their base.
           if (def && def.groupMember) continue;
+          // 'Name' annotation for internal nodes is shown at the top as an editable field.
+          if (k === 'Name' && !node.isTip) continue;
           rows.push([def?.label ?? k, fmtAnnot(v)]);
           emitted.add(k);
           // If this is a BEAST base annotation, show grouped sub-metrics indented.
@@ -4461,6 +4474,34 @@ async function fetchExampleTree() {
           td2.style.cssText = 'color:rgba(242,241,230,0.55);padding:1px 0;word-break:break-all;font-size:0.85em;';
           td1.textContent = subLabel;
           td2.textContent = subValue;
+        } else if (label === '__name_edit__') {
+          // Editable Name annotation field — shown at the top for internal nodes.
+          const td1 = tr.insertCell();
+          const td2 = tr.insertCell();
+          td1.style.cssText = 'color:rgba(230,213,149,0.7);padding:2px 14px 2px 0;white-space:nowrap;vertical-align:middle;';
+          td2.style.cssText = 'padding:2px 0;';
+          td1.textContent = 'Name';
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = value;
+          input.placeholder = '(unnamed)';
+          input.style.cssText = 'background:rgba(255,255,255,0.08);border:1px solid rgba(230,213,149,0.3);border-radius:3px;color:rgba(242,241,230,0.88);padding:1px 5px;width:100%;font-size:inherit;font-family:inherit;box-sizing:border-box;';
+          input.addEventListener('change', () => {
+            const newName = input.value.trim();
+            if (!node.annotations) node.annotations = {};
+            if (newName) {
+              node.annotations['Name'] = newName;
+            } else {
+              delete node.annotations['Name'];
+            }
+            if (graph) {
+              graph.annotationSchema = buildAnnotationSchema(graph.nodes);
+              _refreshAnnotationUIs(graph.annotationSchema);
+              renderer.setAnnotationSchema(graph.annotationSchema);
+            }
+            renderer.render();
+          });
+          td2.appendChild(input);
         } else {
           const td1 = tr.insertCell();
           const td2 = tr.insertCell();
@@ -5368,6 +5409,11 @@ async function fetchExampleTree() {
       const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId, _layoutOptions());
       renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY, { fitViewport: true });
     }
+    saveSettings();
+  });
+  collapsedCladeFontSizeSlider.addEventListener('input', () => {
+    document.getElementById('collapsed-clade-font-size-value').textContent = collapsedCladeFontSizeSlider.value;
+    if (renderer) { renderer.setSettings(_buildRendererSettings()); renderer._dirty = true; }
     saveSettings();
   });
 
