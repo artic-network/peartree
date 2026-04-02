@@ -113,6 +113,7 @@ async function fetchExampleTree() {
   const nodeLabelFontSizeSlider = document.getElementById('node-label-font-size-slider');
   const nodeLabelColorEl        = document.getElementById('node-label-color');
   const nodeLabelSpacingSlider  = document.getElementById('node-label-spacing-slider');
+  const tipLabelSpacingSlider   = document.getElementById('tip-label-spacing-slider');
   const tipLabelDpRowEl          = document.getElementById('tip-label-dp-row');
   const tipLabelDpEl             = document.getElementById('tip-label-decimal-places');
   const nodeLabelDpRowEl         = document.getElementById('node-label-dp-row');
@@ -691,6 +692,7 @@ async function fetchExampleTree() {
       nodeLabelFontSize:   nodeLabelFontSizeSlider.value,
       nodeLabelColor:      nodeLabelColorEl.value,
       nodeLabelSpacing:    nodeLabelSpacingSlider.value,
+      tipLabelSpacing:     tipLabelSpacingSlider.value,
       nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
       mode:             renderer ? renderer._mode : 'nodes',
       rttPinned:           rttChart?.isPinned() ?? false,
@@ -918,6 +920,10 @@ async function fetchExampleTree() {
       nodeLabelSpacingSlider.value = s.nodeLabelSpacing;
       document.getElementById('node-label-spacing-value').textContent = s.nodeLabelSpacing;
     }
+    if (s.tipLabelSpacing != null) {
+      tipLabelSpacingSlider.value = s.tipLabelSpacing;
+      document.getElementById('tip-label-spacing-value').textContent = s.tipLabelSpacing;
+    }
     if (s.tipLabelDecimalPlaces  != null && tipLabelDpEl)  tipLabelDpEl.value  = String(s.tipLabelDecimalPlaces);
     if (s.nodeLabelDecimalPlaces != null && nodeLabelDpEl) nodeLabelDpEl.value = String(s.nodeLabelDecimalPlaces);
     // Set themeSelect to the stored theme name (or 'custom' if not known).
@@ -1003,6 +1009,8 @@ async function fetchExampleTree() {
     nodeLabelColorEl.value      = DEFAULT_SETTINGS.nodeLabelColor;
     nodeLabelSpacingSlider.value = DEFAULT_SETTINGS.nodeLabelSpacing;
     document.getElementById('node-label-spacing-value').textContent = DEFAULT_SETTINGS.nodeLabelSpacing;
+    tipLabelSpacingSlider.value = DEFAULT_SETTINGS.tipLabelSpacing;
+    document.getElementById('tip-label-spacing-value').textContent = DEFAULT_SETTINGS.tipLabelSpacing;
     if (tipLabelDpEl)    tipLabelDpEl.value    = '';
     if (nodeLabelDpEl)   nodeLabelDpEl.value   = '';
     tipLabelShapeEl.value        = DEFAULT_SETTINGS.tipLabelShape;
@@ -1146,6 +1154,7 @@ async function fetchExampleTree() {
       nodeLabelFontSize:   parseInt(nodeLabelFontSizeSlider.value),
       nodeLabelColor:      nodeLabelColorEl.value,
       nodeLabelSpacing:    parseInt(nodeLabelSpacingSlider.value),
+      tipLabelSpacing:     parseInt(tipLabelSpacingSlider.value),
       nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
       calCalibration:      calibration?.isActive ? calibration : null,
       calDateFormat:       axisDateFmtEl.value,
@@ -1461,6 +1470,10 @@ async function fetchExampleTree() {
   if (_saved.nodeLabelSpacing != null) {
     nodeLabelSpacingSlider.value = _saved.nodeLabelSpacing;
     document.getElementById('node-label-spacing-value').textContent = _saved.nodeLabelSpacing;
+  }
+  if (_saved.tipLabelSpacing != null) {
+    tipLabelSpacingSlider.value = _saved.tipLabelSpacing;
+    document.getElementById('tip-label-spacing-value').textContent = _saved.tipLabelSpacing;
   }
   // Restore saved theme name (or default to Artic if no saved settings)
   themeSelect.value = _saved.theme || 'Artic';
@@ -4351,10 +4364,10 @@ async function fetchExampleTree() {
         : (renderer.maxX - node.x);
 
       const rows = [];
-      if (!node.isTip) {
+      if (!node.isTip || node.isCollapsed) {
         rows.push(['__name_edit__', node.annotations?.['Name'] ?? '']);
       }
-      if (node.isTip && node.name)  rows.push(['Name',         node.name]);
+      if (node.isTip && !node.isCollapsed && node.name)  rows.push(['Name',         node.name]);
       if (node.label)               rows.push(['Label',        String(node.label)]);
       rows.push(['Divergence',   node.x.toFixed(6)]);
       rows.push(['Age',          height.toFixed(6)]);
@@ -4374,10 +4387,12 @@ async function fetchExampleTree() {
           rows.push(['Date 95% HPD', `[${dOlder} – ${dNewer}]`]);
         }
       }
-      if (!node.isTip) {
-        const tipCount = renderer._getDescendantTipIds
-          ? renderer._getDescendantTipIds(node.id).length
-          : '—';
+      if (!node.isTip || node.isCollapsed) {
+        const tipCount = node.isCollapsed
+          ? (node.collapsedRealTips ?? node.collapsedTipCount ?? '—')
+          : renderer._getDescendantTipIds
+            ? renderer._getDescendantTipIds(node.id).length
+            : '—';
         rows.push(['Tips below', tipCount]);
       }
       const annots = node.annotations || {};
@@ -4403,7 +4418,7 @@ async function fetchExampleTree() {
           // Skip group members here — they are shown indented under their base.
           if (def && def.groupMember) continue;
           // 'Name' annotation for internal nodes is shown at the top as an editable field.
-          if (k === 'Name' && !node.isTip) continue;
+          if (k === 'Name' && (!node.isTip || node.isCollapsed)) continue;
           rows.push([def?.label ?? k, fmtAnnot(v)]);
           emitted.add(k);
           // If this is a BEAST base annotation, show grouped sub-metrics indented.
@@ -4442,13 +4457,13 @@ async function fetchExampleTree() {
       }
 
       // Title
-      const tipCount2 = (!node.isTip && renderer._getDescendantTipIds)
+      const tipCount2 = ((!node.isTip || node.isCollapsed) && renderer._getDescendantTipIds)
         ? renderer._getDescendantTipIds(node.id).length
-        : null;
+        : node.isCollapsed ? (node.collapsedRealTips ?? null) : null;
       const titleEl = document.getElementById('node-info-title');
-      titleEl.textContent = node.isTip
-        ? (node.name || 'Tip node')
-        : `Internal node (${tipCount2 != null ? tipCount2 + ' tips' : 'internal'})`;
+      titleEl.textContent = (!node.isTip || node.isCollapsed)
+        ? `Internal node (${tipCount2 != null ? tipCount2 + ' tips' : 'internal'})`
+        : (node.name || 'Tip node');
 
       // Build table
       const body = document.getElementById('node-info-body');
@@ -5023,6 +5038,13 @@ async function fetchExampleTree() {
     const v = parseInt(nodeLabelSpacingSlider.value);
     document.getElementById('node-label-spacing-value').textContent = v;
     renderer?.setNodeLabelSpacing(v);
+    saveSettings(); _markCustomTheme();
+  });
+
+  tipLabelSpacingSlider.addEventListener('input', () => {
+    const v = parseInt(tipLabelSpacingSlider.value);
+    document.getElementById('tip-label-spacing-value').textContent = v;
+    renderer?.setTipLabelSpacing(v);
     saveSettings(); _markCustomTheme();
   });
 

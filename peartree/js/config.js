@@ -126,6 +126,7 @@ export const DEFAULT_SETTINGS = {
   nodeLabelFontSize:   '9',
   nodeLabelColor:      '#aaaaaa',
   nodeLabelSpacing:    '4',
+  tipLabelSpacing:     '3',
   // Intro animation played when a tree is first loaded.
   // Options: 'y-then-x' | 'x-then-y' | 'simultaneous' | 'from-bottom' | 'from-top' | 'none'
   introAnimation:     'x-then-y',
