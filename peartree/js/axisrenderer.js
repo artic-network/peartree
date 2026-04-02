@@ -312,7 +312,7 @@ export class AxisRenderer {
     const axC = this._axisColor;
     const TICK_COLOR  = axC ? AxisRenderer._hexToRgba(axC, 0.55) : 'rgba(255,255,255,0.45)';
     const MINOR_COLOR = axC ? AxisRenderer._hexToRgba(axC, 0.30) : 'rgba(255,255,255,0.25)';
-    const TEXT_COLOR  = axC ? AxisRenderer._hexToRgba(axC, 0.90) : 'rgba(242,241,230,0.80)';
+    const TEXT_COLOR  = axC ? AxisRenderer._hexToRgba(axC, 1.0)  : 'rgba(242,241,230,1.0)';
     const TEXT_DIM    = axC ? AxisRenderer._hexToRgba(axC, 0.50) : 'rgba(242,241,230,0.45)';
     const lw          = this._axisLineWidth;
     const fsMinor     = Math.max(6, fs - 2);

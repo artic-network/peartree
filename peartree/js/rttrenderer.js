@@ -633,7 +633,7 @@ export class RTTRenderer {
     switch (this.regressionStyle) {
       case 'solid':   dash = [];                                         break;
       case 'bigdash': dash = [Math.round(12 * u), Math.round(5 * u)];  break;
-      case 'dots':    dash = [Math.round(1.5 * u), Math.round(4 * u)]; break;
+      case 'dots':    dash = [0, Math.round(this.regressionWidth * 1.5 * d)]; break;
       default:        dash = [Math.round(6 * u), Math.round(4 * u)];   break; // 'dash'
     }
 
@@ -644,6 +644,8 @@ export class RTTRenderer {
     ctx.strokeStyle = color;
     ctx.lineWidth   = this.regressionWidth * d;
     ctx.setLineDash(dash);
+    // Round line caps turn the zero-length dash segments into circles for the 'dots' style.
+    ctx.lineCap = (this.regressionStyle === 'dots') ? 'round' : 'butt';
     ctx.beginPath();
     ctx.moveTo(this._xToScreen(this._xMin, rect), this._yToScreen(y1, rect));
     ctx.lineTo(this._xToScreen(this._xMax, rect), this._yToScreen(y2, rect));
