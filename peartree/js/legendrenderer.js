@@ -413,17 +413,26 @@ export class LegendRenderer {
     if (def.dataType === 'categorical' || def.dataType === 'ordinal') {
       const paletteName = this._paletteOverrides?.get(key);
       const colourMap   = buildCategoricalColourMap(def.values || [], paletteName);
-      const SWATCH = Math.max(8, lfs);
-      const ROW_H  = Math.max(SWATCH + 4, lfs + 4);
+      const SWATCH   = Math.max(8, lfs);
+      const ROW_H    = Math.max(SWATCH + 4, lfs + 4);
+      const vals     = def.values || [];
+      const n        = vals.length;
+      const avail    = maxY - y;
+      // If all rows fit at natural height use ROW_H; otherwise compress to fit them all,
+      // down to a minimum of lfs px per row (so text remains legible).
+      const effectiveRowH = n > 0 && n * ROW_H > avail
+        ? Math.max(lfs, Math.floor(avail / n))
+        : ROW_H;
+      const effectiveSwatch = Math.min(SWATCH, effectiveRowH - 2);
       ctx.font = `${lfs}px ${FONT}`; ctx.textBaseline = 'middle';
-      (def.values || []).forEach((val) => {
-        if (y + SWATCH > maxY) return;
+      vals.forEach((val) => {
+        if (y + effectiveSwatch > maxY) return;
         ctx.fillStyle = colourMap.get(val) ?? MISSING_DATA_COLOUR;
-        ctx.fillRect(PAD, y, SWATCH, SWATCH);
+        ctx.fillRect(PAD, y, effectiveSwatch, effectiveSwatch);
         ctx.fillStyle = ltc; ctx.textAlign = 'left';
-        ctx.fillText(String(val), PAD + SWATCH + 6, y + SWATCH / 2, W - PAD * 2 - SWATCH - 6);
-        hitRegions.push({ value: val, y0: y, y1: y + ROW_H });
-        y += ROW_H;
+        ctx.fillText(String(val), PAD + effectiveSwatch + 6, y + effectiveSwatch / 2, W - PAD * 2 - effectiveSwatch - 6);
+        hitRegions.push({ value: val, y0: y, y1: y + effectiveRowH });
+        y += effectiveRowH;
       });
     } else if (def.dataType === 'date') {
       const BAR_W = 14;
