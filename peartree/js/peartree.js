@@ -964,11 +964,9 @@ async function fetchExampleTree() {
     axisLineWidthSlider.value = DEFAULT_SETTINGS.axisLineWidth;
     document.getElementById('axis-line-width-value').textContent = DEFAULT_SETTINGS.axisLineWidth;
     axisFontFamilyEl.value = DEFAULT_SETTINGS.axisFontFamily;
-    rttAxisColorEl.value         = DEFAULT_SETTINGS.rttAxisColor;
-    rttStatsBgColorEl.value      = DEFAULT_SETTINGS.rttStatsBgColor;
-    rttStatsTextColorEl.value    = DEFAULT_SETTINGS.rttStatsTextColor;
+    // RTT axis/stats/regression colours are already set by applyTheme('Artic') above.
+    // Only reset the non-colour RTT controls that applyTheme doesn't touch.
     rttRegressionStyleEl.value   = DEFAULT_SETTINGS.rttRegressionStyle;
-    rttRegressionColorEl.value   = DEFAULT_SETTINGS.rttRegressionColor;
     rttRegressionWidthSlider.value = DEFAULT_SETTINGS.rttRegressionWidth;
     document.getElementById('rtt-regression-width-value').textContent = DEFAULT_SETTINGS.rttRegressionWidth;
     rttAxisFontSizeSlider.value  = DEFAULT_SETTINGS.rttAxisFontSize;
