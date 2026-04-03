@@ -2290,10 +2290,16 @@ async function fetchExampleTree() {
     getRegressionWidth: () => parseFloat(rttRegressionWidthSlider.value),
     getAxisFontSize:   () => parseInt(rttAxisFontSizeSlider.value),
     getAxisFontFamily: () => {
+      // Returns just the CSS font-family string (used for rtt.fontFamily and SVG export).
+      // Weight/style are handled separately via getAxisTypeface → rtt.setTypeface().
+      const key = rttAxisFontFamilyEl.value || axisFontFamilyEl.value || fontFamilyEl.value;
+      return TYPEFACES[key]?.family ?? key;
+    },
+    getAxisTypeface: () => {
       // RTT axis cascades: rtt-axis → axis → main theme
       const key   = rttAxisFontFamilyEl.value || axisFontFamilyEl.value || fontFamilyEl.value;
       const style = rttAxisTypefaceStyleEl?.value || axisTypefaceStyleEl?.value || fontTypefaceStyleEl?.value || '';
-      return buildFont(key, style || null, parseInt(rttAxisFontSizeSlider.value));
+      return { key, style };
     },
     getAxisLineWidth:  () => parseFloat(rttAxisLineWidthSlider.value),
     getTickOptions: () => ({

@@ -11,6 +11,7 @@
 
 import { TreeCalibration } from './phylograph.js';
 import { overlapsZones }   from './utils.js';
+import { buildFont, TYPEFACES } from './themes.js';
 
 // ─── Tick helpers ─────────────────────────────────────────────────────────────
 
@@ -91,6 +92,8 @@ export class RTTRenderer {
     this.regressionStyle       = 'dash';
     this.fontSize              = 11;
     this.fontFamily            = 'Inter, system-ui, sans-serif';
+    this._typefaceKey          = null;
+    this._typefaceStyle        = null;
 
     // Axis style — synced from the Axis section settings in the palette panel
     this.axisColor             = '#f2f1e6';
@@ -195,6 +198,19 @@ export class RTTRenderer {
     if (this._hoveredTipId === next) return;
     this._hoveredTipId = next;
     this._dirty = true;
+  }
+
+  /** Set the typeface for axis labels (key + style from TYPEFACES). */
+  setTypeface(key, style) {
+    this._typefaceKey   = key   || null;
+    this._typefaceStyle = style || null;
+    this._dirty = true;
+  }
+
+  /** Build a full CSS font string for the given physical pixel size. */
+  _font(sizePx) {
+    if (this._typefaceKey) return buildFont(this._typefaceKey, this._typefaceStyle, sizePx);
+    return `${sizePx}px ${this.fontFamily}`;
   }
 
   /** Resize the canvas to its current CSS size, honouring devicePixelRatio. */
@@ -361,7 +377,7 @@ export class RTTRenderer {
   _drawEmptyState(ctx, W, H) {
     const d = this._dpr;
     ctx.fillStyle    = this._colorWithAlpha(this.axisColor, 0.35);
-    ctx.font         = `${Math.round(this.axisFontSize * d)}px ${this.fontFamily}`;
+    ctx.font         = this._font(Math.round(this.axisFontSize * d));
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('Provide a tip date annotation to view', W / 2, H / 2 - 10 * d);
@@ -475,7 +491,7 @@ export class RTTRenderer {
     const axisC = this._colorWithAlpha(this.axisColor, 0.55);
     const lblC  = this._colorWithAlpha(this.axisColor, 0.90);
     const fsz   = Math.max(6, Math.round(this.axisFontSize * d));
-    const font  = `${fsz}px ${this.fontFamily}`;
+    const font  = this._font(fsz);
     const tc    = Math.round(4 * d);           // tick half-length (physical px)
 
     const { ticks: yTks, step: yStep } = this._yTicksInfo();
@@ -509,7 +525,7 @@ export class RTTRenderer {
 
     // Y axis title (rotated)
     ctx.save();
-    ctx.font         = `${Math.max(6, Math.round(this.axisFontSize * 0.9 * d))}px ${this.fontFamily}`;
+    ctx.font         = this._font(Math.max(6, Math.round(this.axisFontSize * 0.9 * d)));
     ctx.fillStyle    = this._colorWithAlpha(this.axisColor, 0.90);
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
@@ -556,7 +572,7 @@ export class RTTRenderer {
 
     // Minor ticks (shorter, dimmer)
     if (xMinor.length > 0) {
-      ctx.font = `${Math.max(6, Math.round(this.axisFontSize * 0.85 * d))}px ${this.fontFamily}`;
+      ctx.font = this._font(Math.max(6, Math.round(this.axisFontSize * 0.85 * d)));
       let lastMinorRight = -Infinity;
       // Infer effective minor interval from tick spacing when 'auto'.
       const effMinorInterval = (opts.minorInterval === 'auto' || !opts.minorInterval)
@@ -794,7 +810,7 @@ export class RTTRenderer {
     ctx.stroke();
 
     // Text rows
-    ctx.font = `${fsz}px ${this.fontFamily}`;
+    ctx.font = this._font(fsz);
     for (let i = 0; i < lines.length; i++) {
       const ty = by + pad * 0.45 + i * lh + fsz * 0.55;
       ctx.fillStyle    = this._colorWithAlpha(this.statsBoxTextColor, 0.50);
@@ -886,7 +902,7 @@ export class RTTRenderer {
     const axisC = this._colorWithAlpha(this.axisColor, 0.55);
     const lblC  = this._colorWithAlpha(this.axisColor, 0.90);
     const fsz   = Math.max(6, Math.round(this.axisFontSize * d));
-    const font  = `${fsz}px ${this.fontFamily}`;
+    const font  = this._font(fsz);
     const tc    = Math.round(4 * d);
     // Use _niceStep for divergence X axis (better resolution than _niceYearStep)
     const xRange = this._xMax - this._xMin;
@@ -924,7 +940,7 @@ export class RTTRenderer {
     }
     // Y axis title
     ctx.save();
-    ctx.font         = `${Math.max(6, Math.round(this.axisFontSize * 0.9 * d))}px ${this.fontFamily}`;
+    ctx.font         = this._font(Math.max(6, Math.round(this.axisFontSize * 0.9 * d)));
     ctx.fillStyle    = this._colorWithAlpha(this.axisColor, 0.90);
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
@@ -949,7 +965,7 @@ export class RTTRenderer {
       ctx.fillText(v.toFixed(xDp), px, ty + tc + Math.round(2 * d));
     }
     // X axis title
-    ctx.font         = `${Math.max(6, Math.round(this.axisFontSize * 0.9 * d))}px ${this.fontFamily}`;
+    ctx.font         = this._font(Math.max(6, Math.round(this.axisFontSize * 0.9 * d)));
     ctx.fillStyle    = this._colorWithAlpha(this.axisColor, 0.90);
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
@@ -1008,7 +1024,7 @@ export class RTTRenderer {
     ctx.strokeStyle = this._colorWithAlpha(this.statsBoxTextColor, 0.22);
     ctx.lineWidth   = d;
     ctx.stroke();
-    ctx.font = `${fsz}px ${this.fontFamily}`;
+    ctx.font = this._font(fsz);
     for (let i = 0; i < lines.length; i++) {
       const ty = by + pad * 0.45 + i * lh + fsz * 0.55;
       ctx.fillStyle    = this._colorWithAlpha(this.statsBoxTextColor, 0.50);

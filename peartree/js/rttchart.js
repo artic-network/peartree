@@ -42,6 +42,7 @@ export function createRTTChart({
   getAxisColor,
   getAxisFontSize,
   getAxisFontFamily,
+  getAxisTypeface,
   getAxisLineWidth,
   getTickOptions,
   getStatsBoxBgColor,
@@ -646,6 +647,10 @@ export function createRTTChart({
       regressionWidth: getRegressionWidth?.() ?? rtt.regressionWidth,
       regressionStyle: getRegressionStyle?.() ?? rtt.regressionStyle,
     });
+    if (getAxisTypeface) {
+      const { key, style } = getAxisTypeface();
+      rtt.setTypeface(key, style);
+    }
     rtt.showRootAge   = getShowRootAge?.()  ?? false;
     rtt.gridLines     = getGridLines?.()    ?? 'both';
     rtt.aspectRatio   = getAspectRatio?.()  ?? 'fit';
