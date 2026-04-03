@@ -576,15 +576,6 @@ async function fetchExampleTree() {
   }
 
   /**
-   * Resolve a legend/axis typeface key to a CSS font-family string.
-   * 'theme' means "follow the main tree typeface".
-   */
-  function _resolveTypeface(key) {
-    const effectiveKey = (key === 'theme') ? fontFamilyEl.value : key;
-    return TYPEFACES[effectiveKey]?.family ?? effectiveKey;
-  }
-
-  /**
    * Populate a style <select> element with the available styles for a given typeface key.
    * @param {string} typefaceKey  - key in TYPEFACES (or 'theme')
    * @param {HTMLSelectElement} styleSelectEl
@@ -620,24 +611,31 @@ async function fetchExampleTree() {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(_buildSettingsSnapshot()));
   }
 
+  /**
+   * Resolve the effective typeface key and style for any sub-element select pair.
+   * An empty value ('') in either select means "follow the main theme".
+   * @returns {{ key: string, style: string }}
+   */
+  function _resolveElementTypeface(typefaceEl, styleEl) {
+    const key   = typefaceEl?.value  || fontFamilyEl.value;
+    const style = styleEl?.value     || fontTypefaceStyleEl?.value || '';
+    return { key, style };
+  }
+
   /** Apply current axis typeface selection to axisRenderer. */
   function _applyAxisTypeface() {
     if (!axisRenderer) return;
-    const key = axisFontFamilyEl?.value || 'theme';
-    const effectiveKey = (key === 'theme') ? fontFamilyEl.value : key;
-    const style = axisTypefaceStyleEl?.value || fontTypefaceStyleEl?.value || '';
-    axisRenderer.setTypeface(effectiveKey, style || null);
+    const { key, style } = _resolveElementTypeface(axisFontFamilyEl, axisTypefaceStyleEl);
+    axisRenderer.setTypeface(key, style || null);
   }
 
   /** Apply current legend typeface selection to legendRenderer (both legend canvases). */
   function _applyLegendTypeface() {
     if (!legendRenderer) return;
-    const key = legendFontFamilyEl?.value || 'theme';
-    const effectiveKey = (key === 'theme') ? fontFamilyEl.value : key;
-    const style = legendTypefaceStyleEl?.value || fontTypefaceStyleEl?.value || '';
-    legendRenderer.setTypeface(effectiveKey, style || null);
+    const { key, style } = _resolveElementTypeface(legendFontFamilyEl, legendTypefaceStyleEl);
+    legendRenderer.setTypeface(key, style || null);
     if (typeof legend2Renderer !== 'undefined' && legend2Renderer) {
-      legend2Renderer.setTypeface(effectiveKey, style || null);
+      legend2Renderer.setTypeface(key, style || null);
     }
   }
 
@@ -812,16 +810,13 @@ async function fetchExampleTree() {
       _populateStyleSelect(collapsedCladeTypefaceEl?.value || fontFamilyEl.value, collapsedCladeTypefaceStyleEl, s.collapsedCladeTypefaceStyle, true);
     }
     if (legendTypefaceStyleEl) {
-      const lKey = legendFontFamilyEl?.value === 'theme' ? fontFamilyEl.value : (legendFontFamilyEl?.value || fontFamilyEl.value);
-      _populateStyleSelect(lKey, legendTypefaceStyleEl, s.legendFontStyle, true);
+      _populateStyleSelect(legendFontFamilyEl?.value || fontFamilyEl.value, legendTypefaceStyleEl, s.legendFontStyle, true);
     }
     if (axisTypefaceStyleEl) {
-      const aKey = axisFontFamilyEl?.value === 'theme' ? fontFamilyEl.value : (axisFontFamilyEl?.value || fontFamilyEl.value);
-      _populateStyleSelect(aKey, axisTypefaceStyleEl, s.axisFontStyle, true);
+      _populateStyleSelect(axisFontFamilyEl?.value || fontFamilyEl.value, axisTypefaceStyleEl, s.axisFontStyle, true);
     }
     if (rttAxisTypefaceStyleEl) {
-      const rKey = rttAxisFontFamilyEl?.value === 'theme' ? fontFamilyEl.value : (rttAxisFontFamilyEl?.value || fontFamilyEl.value);
-      _populateStyleSelect(rKey, rttAxisTypefaceStyleEl, s.rttAxisFontStyle, true);
+      _populateStyleSelect(rttAxisFontFamilyEl?.value || fontFamilyEl.value, rttAxisTypefaceStyleEl, s.rttAxisFontStyle, true);
     }
     if (s.labelColor)            labelColorEl.value       = s.labelColor;
     if (s.selectedLabelStyle)    selectedLabelStyleEl.value = s.selectedLabelStyle;
@@ -970,9 +965,8 @@ async function fetchExampleTree() {
     if (s.axisMinorLabelFormat)  axisMinorLabelEl.value   = s.axisMinorLabelFormat;
     if (s.axisColor)             axisColorEl.value        = s.axisColor;
     if (s.axisFontFamily)        axisFontFamilyEl.value   = s.axisFontFamily;
-    if (axisTypefaceStyleEl && s.axisFontFamily) {
-      const aKey = s.axisFontFamily === 'theme' ? fontFamilyEl.value : s.axisFontFamily;
-      _populateStyleSelect(aKey, axisTypefaceStyleEl, s.axisFontStyle, true);
+    if (axisTypefaceStyleEl) {
+      _populateStyleSelect(axisFontFamilyEl?.value || fontFamilyEl.value, axisTypefaceStyleEl, s.axisFontStyle, true);
     }
     if (s.legendShow)            legendShowEl.value       = s.legendShow;
     if (s.legendTextColor) legendTextColorEl.value = s.legendTextColor;
@@ -985,9 +979,8 @@ async function fetchExampleTree() {
       document.getElementById('legend-height-pct-value').textContent = s.legendHeightPct + '%';
     }
     if (s.legendFontFamily)      legendFontFamilyEl.value = s.legendFontFamily;
-    if (legendTypefaceStyleEl && s.legendFontFamily) {
-      const lKey = s.legendFontFamily === 'theme' ? fontFamilyEl.value : s.legendFontFamily;
-      _populateStyleSelect(lKey, legendTypefaceStyleEl, s.legendFontStyle, true);
+    if (legendTypefaceStyleEl) {
+      _populateStyleSelect(legendFontFamilyEl?.value || fontFamilyEl.value, legendTypefaceStyleEl, s.legendFontStyle, true);
     }
     if (s.legend2Position)        legend2ShowEl.value      = s.legend2Position;
     if (s.legendHeightPct2 != null) {
@@ -1586,8 +1579,7 @@ async function fetchExampleTree() {
   if (_saved.nodeShapeBgColor)     nodeShapeBgEl.value      = _saved.nodeShapeBgColor;
   if (_saved.axisColor)            axisColorEl.value        = _saved.axisColor;
   if (_saved.axisFontFamily)       axisFontFamilyEl.value   = _saved.axisFontFamily;
-  { const aKey = (_saved.axisFontFamily === 'theme' || !_saved.axisFontFamily) ? fontFamilyEl.value : _saved.axisFontFamily;
-    _populateStyleSelect(aKey, axisTypefaceStyleEl, _saved.axisFontStyle, true); }
+  { _populateStyleSelect(axisFontFamilyEl?.value || fontFamilyEl.value, axisTypefaceStyleEl, _saved.axisFontStyle, true); }
   if (_saved.axisFontSize != null) {
     axisFontSizeSlider.value = _saved.axisFontSize;
     document.getElementById('axis-font-size-value').textContent = _saved.axisFontSize;
@@ -1607,8 +1599,7 @@ async function fetchExampleTree() {
     document.getElementById('legend-height-pct-value').textContent = _saved.legendHeightPct + '%';
   }
   if (_saved.legendFontFamily)     legendFontFamilyEl.value = _saved.legendFontFamily;
-  { const lKey = (_saved.legendFontFamily === 'theme' || !_saved.legendFontFamily) ? fontFamilyEl.value : _saved.legendFontFamily;
-    _populateStyleSelect(lKey, legendTypefaceStyleEl, _saved.legendFontStyle, true); }
+  { _populateStyleSelect(legendFontFamilyEl?.value || fontFamilyEl.value, legendTypefaceStyleEl, _saved.legendFontStyle, true); }
   if (_saved.tipLabelAlign)        tipLabelAlignEl.value    = _saved.tipLabelAlign;
   if (_saved.nodeLabelPosition)    nodeLabelPositionEl.value = _saved.nodeLabelPosition;
   if (_saved.nodeLabelFontSize != null) {
@@ -1643,8 +1634,7 @@ async function fetchExampleTree() {
     document.getElementById('rtt-axis-font-size-value').textContent = _saved.rttAxisFontSize;
   }
   if (_saved.rttAxisFontFamily)        rttAxisFontFamilyEl.value     = _saved.rttAxisFontFamily;
-  { const rKey = (_saved.rttAxisFontFamily === 'theme' || !_saved.rttAxisFontFamily) ? fontFamilyEl.value : _saved.rttAxisFontFamily;
-    _populateStyleSelect(rKey, rttAxisTypefaceStyleEl, _saved.rttAxisFontStyle, true); }
+  { _populateStyleSelect(rttAxisFontFamilyEl?.value || fontFamilyEl.value, rttAxisTypefaceStyleEl, _saved.rttAxisFontStyle, true); }
   if (_saved.rttAxisLineWidth != null) {
     rttAxisLineWidthSlider.value = _saved.rttAxisLineWidth;
     document.getElementById('rtt-axis-line-width-value').textContent = _saved.rttAxisLineWidth;
@@ -2300,11 +2290,10 @@ async function fetchExampleTree() {
     getRegressionWidth: () => parseFloat(rttRegressionWidthSlider.value),
     getAxisFontSize:   () => parseInt(rttAxisFontSizeSlider.value),
     getAxisFontFamily: () => {
-      const rttKey = rttAxisFontFamilyEl.value === 'theme' ? axisFontFamilyEl.value : rttAxisFontFamilyEl.value;
-      const effectiveKey = rttKey === 'theme' ? fontFamilyEl.value : rttKey;
+      // RTT axis cascades: rtt-axis → axis → main theme
+      const key   = rttAxisFontFamilyEl.value || axisFontFamilyEl.value || fontFamilyEl.value;
       const style = rttAxisTypefaceStyleEl?.value || axisTypefaceStyleEl?.value || fontTypefaceStyleEl?.value || '';
-      if (style && TYPEFACES[effectiveKey]) return buildFont(effectiveKey, style, parseInt(rttAxisFontSizeSlider.value));
-      return _resolveTypeface(rttKey);
+      return buildFont(key, style || null, parseInt(rttAxisFontSizeSlider.value));
     },
     getAxisLineWidth:  () => parseFloat(rttAxisLineWidthSlider.value),
     getTickOptions: () => ({
@@ -4847,7 +4836,13 @@ async function fetchExampleTree() {
   fontFamilyEl.addEventListener('change', () => {
     _markCustomTheme();
     _populateStyleSelect(fontFamilyEl.value, fontTypefaceStyleEl, '');
-    _populateStyleSelect(tipLabelTypefaceEl?.value || fontFamilyEl.value, typefaceStyleEl, '', true);
+    // Repopulate all sub-element style selects whose typeface is currently 'Theme'
+    _populateStyleSelect(tipLabelTypefaceEl?.value         || fontFamilyEl.value, typefaceStyleEl,              '', true);
+    _populateStyleSelect(nodeLabelTypefaceEl?.value        || fontFamilyEl.value, nodeLabelTypefaceStyleEl,     '', true);
+    _populateStyleSelect(collapsedCladeTypefaceEl?.value   || fontFamilyEl.value, collapsedCladeTypefaceStyleEl,'', true);
+    _populateStyleSelect(legendFontFamilyEl?.value         || fontFamilyEl.value, legendTypefaceStyleEl,        '', true);
+    _populateStyleSelect(axisFontFamilyEl?.value           || fontFamilyEl.value, axisTypefaceStyleEl,          '', true);
+    _populateStyleSelect(rttAxisFontFamilyEl?.value        || fontFamilyEl.value, rttAxisTypefaceStyleEl,       '', true);
     renderer.setSettings(_buildRendererSettings());
     applyAxisStyle();
     _applyLegendTypeface();
@@ -4856,16 +4851,14 @@ async function fetchExampleTree() {
 
   legendFontFamilyEl.addEventListener('change', () => {
     _markCustomTheme();
-    const lKey = legendFontFamilyEl.value === 'theme' ? fontFamilyEl.value : legendFontFamilyEl.value;
-    _populateStyleSelect(lKey, legendTypefaceStyleEl, '', true);
+    _populateStyleSelect(legendFontFamilyEl.value || fontFamilyEl.value, legendTypefaceStyleEl, '', true);
     _applyLegendTypeface();
     saveSettings();
   });
 
   axisFontFamilyEl.addEventListener('change', () => {
     _markCustomTheme();
-    const aKey = axisFontFamilyEl.value === 'theme' ? fontFamilyEl.value : axisFontFamilyEl.value;
-    _populateStyleSelect(aKey, axisTypefaceStyleEl, '', true);
+    _populateStyleSelect(axisFontFamilyEl.value || fontFamilyEl.value, axisTypefaceStyleEl, '', true);
     applyAxisStyle();
     saveSettings();
   });
@@ -4874,6 +4867,9 @@ async function fetchExampleTree() {
   fontTypefaceStyleEl?.addEventListener('change', () => {
     _markCustomTheme();
     renderer.setSettings(_buildRendererSettings());
+    _applyAxisTypeface();
+    _applyLegendTypeface();
+    rttChart?.notifyStyleChange?.();
     saveSettings();
   });
   tipLabelTypefaceEl?.addEventListener('change', () => {
@@ -5604,8 +5600,8 @@ async function fetchExampleTree() {
     saveSettings();
   });
   rttAxisFontFamilyEl.addEventListener('change', () => {
-    const rKey = rttAxisFontFamilyEl.value === 'theme' ? fontFamilyEl.value : rttAxisFontFamilyEl.value;
-    _populateStyleSelect(rKey, rttAxisTypefaceStyleEl, '', true);
+    _markCustomTheme();
+    _populateStyleSelect(rttAxisFontFamilyEl.value || fontFamilyEl.value, rttAxisTypefaceStyleEl, '', true);
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
