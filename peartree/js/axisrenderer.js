@@ -1,5 +1,6 @@
 import { TreeCalibration } from './phylograph.js';
 import { overlapsZones }   from './utils.js';
+import { buildFont, TYPEFACES } from './themes.js';
 
 /**
  * AxisRenderer — draws an x-axis below the tree canvas.
@@ -30,7 +31,9 @@ export class AxisRenderer {
     this._timed      = false;
     this._rootHeight = 0;
     this._fontSize   = 9;
-    this._fontFamily = 'monospace';
+    this._fontFamily    = 'monospace';
+    this._typefaceKey   = null;
+    this._typefaceStyle = null;
 
     // Date-mode calibration: provided as a TreeCalibration instance via setCalibration().
     // _viewMinTipH tracks the minimum tip height in the current view (updated by setSubtreeParams).
@@ -172,7 +175,7 @@ export class AxisRenderer {
     // Only auto-sync font size from tree if the user hasn't explicitly set one
     if (!this._axisFontSizeManual) this._fontSize = Math.max(7, fontSize - 1);
 
-    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${paddingLeft}|${labelRightPad}|${bgColor}|${this._fontSize}|${this._fontFamily}|${this._axisColor ?? ''}|${this._axisLineWidth}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._calibration?.anchorDecYear ?? ''}|${this._calibration?.anchorH ?? ''}|${this._calibration?.rate ?? ''}|${this._viewMinTipH}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}|${this._dateFormat}|${this._direction}`;
+    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${paddingLeft}|${labelRightPad}|${bgColor}|${this._fontSize}|${this._fontFamily}|${this._typefaceKey ?? ''}|${this._typefaceStyle ?? ''}|${this._axisColor ?? ''}|${this._axisLineWidth}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._calibration?.anchorDecYear ?? ''}|${this._calibration?.anchorH ?? ''}|${this._calibration?.rate ?? ''}|${this._viewMinTipH}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}|${this._dateFormat}|${this._direction}`;
     if (hash === this._lastHash) return;
     this._lastHash = hash;
 
@@ -202,8 +205,28 @@ export class AxisRenderer {
   }
 
   setFontFamily(f) {
-    this._fontFamily = f || 'monospace';
-    this._lastHash   = '';
+    this._fontFamily    = f || 'monospace';
+    this._typefaceKey   = null;
+    this._typefaceStyle = null;
+    this._lastHash      = '';
+  }
+
+  /**
+   * Set typeface by key + style (uses buildFont for correct weight).
+   * @param {string} key    – TYPEFACES key (e.g. 'Helvetica Neue')
+   * @param {string} style  – Style name (e.g. 'Thin', 'Regular')
+   */
+  setTypeface(key, style) {
+    this._typefaceKey   = key   || null;
+    this._typefaceStyle = style || null;
+    this._fontFamily    = TYPEFACES[key]?.family ?? key ?? 'monospace';
+    this._lastHash      = '';
+  }
+
+  /** Build a CSS font string for canvas ctx.font. */
+  _font(sizePx) {
+    if (this._typefaceKey) return buildFont(this._typefaceKey, this._typefaceStyle, sizePx);
+    return `${sizePx}px ${this._fontFamily}`;
   }
 
   /** Set the base colour used for ticks, baseline and labels (hex, e.g. '#f2f1e6'). */
@@ -351,7 +374,7 @@ export class AxisRenderer {
     // when they would overlap a major label.
     const majorLabelZones = [];
     if (showMinorLabel && showMajorLabel) {
-      ctx.font = `${fs}px ${this._fontFamily}`;
+      ctx.font = this._font(fs);
       for (const val of majorTicks) {
         const sx = this._valToScreenX(val);
         if (sx < plotLeft - 1 || sx > plotRight + 1) continue;
@@ -365,7 +388,7 @@ export class AxisRenderer {
       }
     }
 
-    ctx.font         = `${fsMinor}px ${this._fontFamily}`;
+    ctx.font         = this._font(fsMinor);
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
 
@@ -393,7 +416,7 @@ export class AxisRenderer {
     // ── Major ticks ───────────────────────────────────────────────────────
     let majorLabelRight  = -Infinity;
 
-    ctx.font         = `${fs}px ${this._fontFamily}`;
+    ctx.font         = this._font(fs);
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
 

@@ -21,6 +21,7 @@ import { getSequentialPalette,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
          MISSING_DATA_COLOUR, buildCategoricalColourMap } from './palettes.js';
 import { dateToDecimalYear, isNumericType } from './phylograph.js';
+import { buildFont, TYPEFACES } from './themes.js';
 
 export class LegendRenderer {
   /**
@@ -47,7 +48,9 @@ export class LegendRenderer {
 
     this.skipBg = false;
     this._dpr   = window.devicePixelRatio || 1;
-    this._fontFamily = 'monospace';
+    this._fontFamily    = 'monospace';
+    this._typefaceKey   = null;
+    this._typefaceStyle = null;
 
     // Hit regions for categorical entries: [{value, y0, y1, isLegend2?}]
     this._hitRegions  = [];   // primary canvas (legend1 + legend2-below)
@@ -172,10 +175,30 @@ export class LegendRenderer {
     this.draw();
   }
 
-  /** @param {string} f — CSS font-family string */
+  /** @param {string} f — CSS font-family string (kept for backward compat) */
   setFontFamily(f) {
     this._fontFamily = f || 'monospace';
+    this._typefaceKey   = null;
+    this._typefaceStyle = null;
     this.draw();
+  }
+
+  /**
+   * Set typeface by key + style (uses buildFont for correct weight).
+   * @param {string} key    – TYPEFACES key (e.g. 'Helvetica Neue')
+   * @param {string} style  – Style name (e.g. 'Thin', 'Regular')
+   */
+  setTypeface(key, style) {
+    this._typefaceKey   = key   || null;
+    this._typefaceStyle = style || null;
+    this._fontFamily    = TYPEFACES[key]?.family ?? key ?? 'monospace';
+    this.draw();
+  }
+
+  /** Build a CSS font string for canvas ctx.font. */
+  _font(sizePx) {
+    if (this._typefaceKey) return buildFont(this._typefaceKey, this._typefaceStyle, sizePx);
+    return `${sizePx}px ${this._fontFamily}`;
   }
 
   /**
@@ -277,11 +300,10 @@ export class LegendRenderer {
 
     const PAD   = this._padding ?? 12;
     const lfs   = this.fontSize  ?? 11;
-    const FONT  = this._fontFamily ?? 'monospace';
     const mc  = document.createElement('canvas');
     const ctx = mc.getContext('2d');
     const measure = (text, bold = false) => {
-      ctx.font = `${bold ? '700 ' : ''}${lfs}px ${FONT}`;
+      ctx.font = bold ? `700 ${lfs}px ${this._fontFamily ?? 'monospace'}` : this._font(lfs);
       return ctx.measureText(text).width;
     };
 
@@ -392,7 +414,6 @@ export class LegendRenderer {
     if (!def) return hitRegions;
 
     const PAD  = this._padding ?? 12;
-    const FONT = this._fontFamily ?? 'monospace';
     const lfs  = this.fontSize;
     const ltc  = this.textColor;
     const maxY = offsetY + H - PAD;
@@ -405,7 +426,7 @@ export class LegendRenderer {
     let y = offsetY + PAD;
 
     // Title.
-    ctx.font = `700 ${lfs}px ${FONT}`; ctx.fillStyle = ltc;
+    ctx.font = `700 ${lfs}px ${this._fontFamily ?? 'monospace'}`; ctx.fillStyle = ltc;
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
     ctx.fillText(def.label ?? key, PAD, y, W - PAD * 2);
     y += lfs + 10;
@@ -424,7 +445,7 @@ export class LegendRenderer {
         ? Math.max(lfs, Math.floor(avail / n))
         : ROW_H;
       const effectiveSwatch = Math.min(SWATCH, effectiveRowH - 2);
-      ctx.font = `${lfs}px ${FONT}`; ctx.textBaseline = 'middle';
+      ctx.font = this._font(lfs); ctx.textBaseline = 'middle';
       vals.forEach((val) => {
         if (y + effectiveSwatch > maxY) return;
         ctx.fillStyle = colourMap.get(val) ?? MISSING_DATA_COLOUR;
@@ -451,7 +472,7 @@ export class LegendRenderer {
       const minDec = dateToDecimalYear(def.min);
       const maxDec = dateToDecimalYear(def.max);
       const range  = maxDec - minDec || 1;
-      ctx.font = `${lfs}px ${FONT}`; ctx.fillStyle = ltc; ctx.textAlign = 'left';
+      ctx.font = this._font(lfs); ctx.fillStyle = ltc; ctx.textAlign = 'left';
       for (let i = 0; i < tc; i++) {
         const t = i / (tc - 1);
         const tickY = BAR_Y + t * BAR_H;
@@ -477,7 +498,7 @@ export class LegendRenderer {
       const LABEL_W = W - LABEL_X - PAD;
       const tc  = Math.max(2, Math.min(6, Math.floor(BAR_H / (lfs + 6))));
       const fmt = def.fmt ?? (v => String(v));
-      ctx.font = `${lfs}px ${FONT}`; ctx.fillStyle = ltc; ctx.textAlign = 'left';
+      ctx.font = this._font(lfs); ctx.fillStyle = ltc; ctx.textAlign = 'left';
       for (let i = 0; i < tc; i++) {
         const t = i / (tc - 1);
         const tickY = BAR_Y + t * BAR_H;

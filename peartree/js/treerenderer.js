@@ -7,6 +7,7 @@ import { dateToDecimalYear, isNumericType, TreeCalibration } from './phylograph.
 import { getSequentialPalette, lerpSequential,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
          MISSING_DATA_COLOUR, buildCategoricalColourMap } from './palettes.js';
+import { buildFont, TYPEFACES } from './themes.js';
 
 // Sentinel annotation keys for calendar-date synthetic node/tip labels.
 // peartree.js imports these to populate the label dropdowns.
@@ -186,6 +187,10 @@ export class TreeRenderer {
     this.branchWidth       = s.branchWidth;
     this.fontSize          = s.fontSize;
     this.fontFamily        = s.fontFamily        ?? 'monospace';
+    this._typefaceKey      = s.typefaceKey      ?? 'Monospace';
+    this._typefaceStyle    = s.typefaceStyle    ?? (TYPEFACES[this._typefaceKey]?.defaultStyle ?? 'Regular');
+    this._tipLabelTypefaceKey   = s.tipLabelTypefaceKey   ?? null;  // null = follow main typeface
+    this._tipLabelTypefaceStyle = s.tipLabelTypefaceStyle ?? null;
 
     // ── Tip shape ───────────────────────────────────────────────────────────
     this.tipRadius         = s.tipRadius;
@@ -298,6 +303,8 @@ export class TreeRenderer {
     this.nodeLabelFontSize   = s.nodeLabelFontSize   != null ? +s.nodeLabelFontSize : 9;
     this.nodeLabelColor      = s.nodeLabelColor      ?? '#aaaaaa';
     this.nodeLabelSpacing    = s.nodeLabelSpacing    != null ? +s.nodeLabelSpacing  : 4;
+    this._nodeLabelTypefaceKey   = s.nodeLabelTypefaceKey   ?? null;  // null = follow main typeface
+    this._nodeLabelTypefaceStyle = s.nodeLabelTypefaceStyle ?? null;
     this.tipLabelSpacing     = s.tipLabelSpacing     != null ? +s.tipLabelSpacing   : 3;
 
     // ── Aligned tip labels ────────────────────────────────────────────────
@@ -313,6 +320,8 @@ export class TreeRenderer {
     this._collapsedCladeOpacity  = s.collapsedCladeOpacity  != null ? +s.collapsedCladeOpacity  : (this._collapsedCladeOpacity  ?? 0.25);
     this._collapsedCladeHeightN  = s.collapsedCladeHeightN  != null ? +s.collapsedCladeHeightN  : (this._collapsedCladeHeightN  ?? 3);
     this._collapsedCladeFontSize = s.collapsedCladeFontSize != null ? +s.collapsedCladeFontSize : (this._collapsedCladeFontSize ?? 11);
+    this._collapsedCladeTypefaceKey   = s.collapsedCladeTypefaceKey   ?? null;  // null = follow main typeface
+    this._collapsedCladeTypefaceStyle = s.collapsedCladeTypefaceStyle ?? null;
 
     // Propagate bg colour to an attached legend renderer.
     this._legendRenderer?.setBgColor(this.bgColor, this._skipBg);
@@ -661,7 +670,68 @@ export class TreeRenderer {
   }
 
   /**
-   * Update the calibration used for calendar-date node/tip labels.
+   * Build a CSS font string for canvas rendering from typeface key + style + size.
+   * If key is null/undefined, falls back to the main tree typeface (_typefaceKey).
+   * @param {number} sizePx
+   * @param {string|null} [key]   – TYPEFACES key; null → main tree typeface
+   * @param {string|null} [style] – style name; null → typeface defaultStyle
+   * @returns {string}
+   */
+  _font(sizePx, key = null, style = null) {
+    const k = key   ?? this._typefaceKey   ?? 'Monospace';
+    const s = style ?? (key ? (TYPEFACES[k]?.defaultStyle ?? 'Regular') : (this._typefaceStyle ?? 'Regular'));
+    return buildFont(k, s, sizePx);
+  }
+
+  /** CSS font string for tip labels (uses _tipLabelTypefaceKey if set, else main typeface). */
+  _tipFont(sizePx) {
+    return this._font(sizePx, this._tipLabelTypefaceKey || null, this._tipLabelTypefaceStyle || null);
+  }
+
+  /**
+   * CSS font string for selected labels — applies selectedLabelStyle ('bold', 'italic',
+   * 'bold italic', 'normal') on top of the base typeface weight, so that e.g. Thin + bold
+   * selects the nearest bolder style rather than emitting an invalid two-weight string.
+   *
+   * @param {number} sizePx
+   * @param {string|null} key    – typeface key (null → use main typeface)
+   * @param {string|null} style  – base style name (null → use main typeface style)
+   */
+  _selectedFont(sizePx, key = null, style = null) {
+    const sel = this.selectedLabelStyle || 'bold';
+    if (sel === 'normal') return this._font(sizePx, key, style);
+
+    const k   = key   ?? this._typefaceKey   ?? 'Monospace';
+    const s   = style ?? (key ? (TYPEFACES[k]?.defaultStyle ?? 'Regular') : (this._typefaceStyle ?? 'Regular'));
+    const face = TYPEFACES[k];
+
+    if (!face) {
+      // Raw CSS family fallback — just prepend the keyword (original behaviour).
+      return `${sel} ${this._font(sizePx, key, style)}`;
+    }
+
+    // Determine desired weight and fontStyle from the sel override.
+    const wantBold   = sel === 'bold' || sel === 'bold italic';
+    const wantItalic = sel === 'italic' || sel === 'bold italic';
+
+    // Base weight from the current style.
+    const baseWeight = face.styles[s]?.weight ?? 400;
+    const targetWeight = wantBold ? Math.min(baseWeight + 300, 900) : baseWeight;
+    const targetFontStyle = wantItalic ? 'italic' : 'normal';
+
+    // Find the closest matching style in this typeface.
+    let bestKey = s;
+    let bestScore = Infinity;
+    for (const [name, desc] of Object.entries(face.styles)) {
+      const wDiff = Math.abs(desc.weight - targetWeight);
+      const fMatch = desc.fontStyle === targetFontStyle ? 0 : 1;
+      const score = wDiff + fMatch * 200;
+      if (score < bestScore) { bestScore = score; bestKey = name; }
+    }
+    return buildFont(k, bestKey, sizePx);
+  }
+
+  /**
    * @param {TreeCalibration|null} cal
    * @param {string} [fmt]  date format string, e.g. 'yyyy-MM-dd'
    */
@@ -1417,10 +1487,10 @@ export class TreeRenderer {
   _measureLabels() {
     if (!this.nodes) return;
     // Only redo the expensive measureText scan when font/annotation settings or node data changes.
-    const cacheKey = `${this.fontSize}|${this.fontFamily}|${this.tipLabelAnnotation ?? ''}|${this._calDateFormat}|${this._tipLabelDecimalPlaces ?? ''}|${this._nodeLabelDecimalPlaces ?? ''}|${this._tipLabelsOff ? '0' : '1'}`;        
+    const cacheKey = `${this.fontSize}|${this._tipLabelTypefaceKey ?? this._typefaceKey}|${this._tipLabelTypefaceStyle ?? this._typefaceStyle}|${this.tipLabelAnnotation ?? ''}|${this._calDateFormat}|${this._tipLabelDecimalPlaces ?? ''}|${this._nodeLabelDecimalPlaces ?? ''}|${this._tipLabelsOff ? '0' : '1'}`;        
     if (this._labelCacheKey !== cacheKey) {
       const ctx = this.ctx;
-      ctx.font = `${this.fontSize}px ${this.fontFamily}`;
+      ctx.font = this._tipFont(this.fontSize);
       let max = 0;
       for (const n of this.nodes) {
         if (!n.isTip) continue;
@@ -2381,7 +2451,7 @@ export class TreeRenderer {
     const outlineR = Math.max(r + tipHalo, 5);
     const tipLabelSpacing = this.tipLabelSpacing;
 
-    ctx.font         = `${this.fontSize}px ${this.fontFamily}`;
+    ctx.font         = this._tipFont(this.fontSize);
     ctx.textBaseline = 'middle';
     // Show labels only when tips are spaced at least half a label-height apart.
     // In hyperbolic-stretch mode labels are assessed per-node (see _showLabelAt).
@@ -2575,7 +2645,7 @@ export class TreeRenderer {
         }
         // Sub-pass 3b: selected labels in bold + selected colour
         ctx.fillStyle = this.selectedLabelColor;
-        ctx.font = `${this.selectedLabelStyle} ${this.fontSize}px ${this.fontFamily}`;
+        ctx.font = this._selectedFont(this.fontSize);
         for (const node of this.nodes) {
           if (!node.isTip || !this._selectedTipIds.has(node.id)) continue;
           if (node.isCollapsed) continue;
@@ -2585,7 +2655,7 @@ export class TreeRenderer {
           const _bX = alignLabelX ?? (this._wx(node.x) + outlineR + tipLabelSpacing);
           if (_t) ctx.fillText(_t, _tx(_bX), this._wy(node.y));
         }
-        ctx.font = `${this.fontSize}px ${this.fontFamily}`;
+        ctx.font = this._tipFont(this.fontSize);
       } else if (this._labelColourBy && this._labelColourScale) {
         const key = this._labelColourBy;
         for (const node of this.nodes) {
@@ -2618,7 +2688,7 @@ export class TreeRenderer {
     // Pass 3-collapsed: labels (and per-clade connector lines) for collapsed clade nodes.
     // Outside the showLabels gate so clade labels appear whenever the triangle has enough
     // pixel height, regardless of overall tip-label density.
-    // Uses this.fontFamily (the theme typeface, same as tip labels); label size is
+    // Uses the main typeface (_typefaceKey/_typefaceStyle) unless overridden; label size is
     // independently controlled by _collapsedCladeFontSize.
     if (!this._tipLabelsOff && this.tipLabelAnnotation === null) {
       const hasSelection   = this._selectedTipIds.size > 0;
@@ -2678,16 +2748,16 @@ export class TreeRenderer {
             if (!this._showLabelAt(wy)) continue;
             if (dim) {
               ctx.fillStyle = this.dimLabelColor;
-              ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
+              ctx.font      = this._tipFont(this.fontSize);
             } else if (sel) {
               ctx.fillStyle = this.selectedLabelColor;
-              ctx.font      = `${this.selectedLabelStyle} ${this.fontSize}px ${this.fontFamily}`;
+              ctx.font      = this._selectedFont(this.fontSize);
             } else if (this._labelColourBy && this._labelColourScale) {
-              ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
+              ctx.font      = this._tipFont(this.fontSize);
               ctx.fillStyle = this._labelColourForValue(this._statValue(tip, this._labelColourBy)) ?? this.labelColor;
             } else {
               ctx.fillStyle = this.labelColor;
-              ctx.font      = `${this.fontSize}px ${this.fontFamily}`;
+              ctx.font      = this._tipFont(this.fontSize);
             }
             ctx.fillText(tip.name, _tx(_bX), this._wy(wy));
           }
@@ -2700,19 +2770,19 @@ export class TreeRenderer {
                               Math.max(yWorldMin, Math.min(yWorldMax, node.y))));
           const _bX  = alignLabelX ?? (this._wx(node.collapsedMaxX) + tipLabelSpacing);
           const label = _hasName ? _nodeName.trim() : `${node.collapsedRealTips} tips`;
-          ctx.font = `${_cladeFontSize}px ${this.fontFamily}`;
+          ctx.font = this._font(_cladeFontSize, this._collapsedCladeTypefaceKey, this._collapsedCladeTypefaceStyle);
           if (dim) {
             ctx.fillStyle = this.dimLabelColor;
           } else if (sel) {
             ctx.fillStyle = this.selectedLabelColor;
-            ctx.font      = `${this.selectedLabelStyle} ${_cladeFontSize}px ${this.fontFamily}`;
+            ctx.font      = this._selectedFont(_cladeFontSize, this._collapsedCladeTypefaceKey, this._collapsedCladeTypefaceStyle);
           } else {
             ctx.fillStyle = this.labelColor;
           }
           ctx.fillText(label, _tx(_bX), this._wy(_labelY));
         }
       }
-      ctx.font = `${this.fontSize}px ${this.fontFamily}`;
+      ctx.font = this._tipFont(this.fontSize);
     }
 
     // Pass 3-shapes – label shapes rendered independently of tip-label density
@@ -3018,7 +3088,7 @@ export class TreeRenderer {
     const pos     = this.nodeLabelPosition;
 
     ctx.save();
-    ctx.font      = `${this.nodeLabelFontSize}px ${this.fontFamily}`;
+    ctx.font      = this._font(this.nodeLabelFontSize, this._nodeLabelTypefaceKey, this._nodeLabelTypefaceStyle);
     ctx.fillStyle = this.nodeLabelColor;
     if (pos === 'right') {
       ctx.textBaseline = 'middle';
@@ -3173,7 +3243,7 @@ export class TreeRenderer {
       // Match the outlineR formula used in _drawNodesAndLabels
       const outlineR = Math.max(r + this.tipHaloSize, 5);
       const halfH    = this.fontSize / 2 + 2;
-      this.ctx.font  = `${this.fontSize}px ${this.fontFamily}`;
+      this.ctx.font  = this._tipFont(this.fontSize);
       // When labels are right-aligned they are drawn at the rightmost-tip column,
       // not at each node's own x — mirror that here.
       const _align      = this.tipLabelAlign;
@@ -3552,7 +3622,7 @@ export class TreeRenderer {
           const outlineR = Math.max(r + this.tipHaloSize, 5);
           const halfH    = this.fontSize / 2 + 2;  // half-height of a label row
           const showLbls = this.scaleY >= this.fontSize * 0.5;
-          this.ctx.font  = `${this.fontSize}px ${this.fontFamily}`;
+          this.ctx.font  = this._tipFont(this.fontSize);
           // Respect right-aligned label column (same logic as _findNodeAtScreen and _draw)
           const _align      = this.tipLabelAlign;
           const isAligned   = _align && _align !== 'off';

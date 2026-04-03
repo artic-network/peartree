@@ -2448,6 +2448,28 @@
         <span class="pt-val" id="font-size-value">11</span>
       </div>
       <div class="pt-palette-row">
+        <span class="pt-palette-label">Typeface</span>
+        <select class="pt-palette-select" id="typeface-select">
+          <option value="">Theme</option>
+          <option value="Monospace">Monospace</option>
+          <option value="Sans-serif">Sans-serif</option>
+          <option value="Serif">Serif</option>
+          <option value="Courier New">Courier New</option>
+          <option value="Helvetica">Helvetica</option>
+          <option value="Helvetica Neue">Helvetica Neue</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="System UI">System UI</option>
+          <option value="Menlo">Menlo</option>
+        </select>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Style</span>
+        <select class="pt-palette-select" id="typeface-style-select">
+          <option value="">Theme</option>
+        </select>
+      </div>
+      <div class="pt-palette-row">
         <span class="pt-palette-label">Colour</span>
         <input type="color" class="pt-palette-color" id="label-color" value="#f7eeca" />
       </div>
@@ -2460,15 +2482,6 @@
       <div class="pt-palette-row" id="label-palette-row" style="display:none">
         <span class="pt-palette-label">Palette</span>
         <select class="pt-palette-select" id="label-palette-select"></select>
-      </div>
-      <div class="pt-palette-row">
-        <span class="pt-palette-label">Selected style</span>
-        <select class="pt-palette-select" id="selected-label-style">
-          <option value="bold">Bold</option>
-          <option value="italic">Italic</option>
-          <option value="bold italic">Bold + Italic</option>
-          <option value="normal">Normal</option>
-        </select>
       </div>
       <div class="pt-palette-row">
         <span class="pt-palette-label">Spacing</span>
@@ -2838,6 +2851,28 @@
           <span class="pt-val" id="node-label-font-size-value">9</span>
         </div>
         <div class="pt-palette-row">
+          <span class="pt-palette-label">Typeface</span>
+          <select class="pt-palette-select" id="node-label-typeface-select">
+            <option value="">Theme</option>
+            <option value="Monospace">Monospace</option>
+            <option value="Sans-serif">Sans-serif</option>
+            <option value="Serif">Serif</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Helvetica">Helvetica</option>
+            <option value="Helvetica Neue">Helvetica Neue</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="System UI">System UI</option>
+            <option value="Menlo">Menlo</option>
+          </select>
+        </div>
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Style</span>
+          <select class="pt-palette-select" id="node-label-typeface-style-select">
+            <option value="">Theme</option>
+          </select>
+        </div>
+        <div class="pt-palette-row">
           <span class="pt-palette-label">Colour</span>
           <input type="color" class="pt-palette-color" id="node-label-color" value="#aaaaaa" />
         </div>
@@ -2907,6 +2942,28 @@
         <input type="range" class="form-range" id="collapsed-clade-font-size-slider" min="6" max="48" step="1" value="11" />
         <span class="pt-val" id="collapsed-clade-font-size-value">11</span>
       </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Typeface</span>
+        <select class="pt-palette-select" id="collapsed-clade-typeface-select">
+          <option value="">Theme</option>
+          <option value="Monospace">Monospace</option>
+          <option value="Sans-serif">Sans-serif</option>
+          <option value="Serif">Serif</option>
+          <option value="Courier New">Courier New</option>
+          <option value="Helvetica">Helvetica</option>
+          <option value="Helvetica Neue">Helvetica Neue</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="System UI">System UI</option>
+          <option value="Menlo">Menlo</option>
+        </select>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Style</span>
+        <select class="pt-palette-select" id="collapsed-clade-typeface-style-select">
+          <option value="">Theme</option>
+        </select>
+      </div>
     </div>
 
     <div class="pt-palette-section">
@@ -2949,12 +3006,16 @@
             <option value="Courier New">Courier New</option>
             <option value="Helvetica">Helvetica</option>
             <option value="Helvetica Neue">Helvetica Neue</option>
-            <option value="Helvetica Neue Light">Helvetica Neue Light</option>
-            <option value="Helvetica Neue Thin">Helvetica Neue Thin</option>
             <option value="Georgia">Georgia</option>
             <option value="Times New Roman">Times New Roman</option>
             <option value="System UI">System UI</option>
             <option value="Menlo">Menlo</option>
+          </select>
+        </div>
+        <div class="pt-palette-row">
+          <span class="pt-palette-label">Style</span>
+          <select class="pt-palette-select" id="legend-typeface-style-select">
+            <option value="">Theme</option>
           </select>
         </div>
         <p class="pt-palette-subhead">Legend 2</p>
@@ -3012,12 +3073,16 @@
           <option value="Courier New">Courier New</option>
           <option value="Helvetica">Helvetica</option>
           <option value="Helvetica Neue">Helvetica Neue</option>
-          <option value="Helvetica Neue Light">Helvetica Neue Light</option>
-          <option value="Helvetica Neue Thin">Helvetica Neue Thin</option>
           <option value="Georgia">Georgia</option>
           <option value="Times New Roman">Times New Roman</option>
           <option value="System UI">System UI</option>
           <option value="Menlo">Menlo</option>
+        </select>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Style</span>
+        <select class="pt-palette-select" id="axis-typeface-style-select">
+          <option value="">Theme</option>
         </select>
       </div>
       <div class="pt-palette-row">
@@ -3082,6 +3147,15 @@
       <h3><i class="bi bi-cursor-fill"></i> Selection &amp; Hover</h3>
 
       <div class="pt-palette-subhead">Selected Tips</div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Label style</span>
+        <select class="pt-palette-select" id="selected-label-style">
+          <option value="bold">Bold</option>
+          <option value="italic">Italic</option>
+          <option value="bold italic">Bold + Italic</option>
+          <option value="normal">Normal</option>
+        </select>
+      </div>
       <div class="pt-palette-row">
         <span class="pt-palette-label">Stroke</span>
         <input type="color" class="pt-palette-color" id="selected-tip-stroke" value="#e06961" />
@@ -3295,12 +3369,16 @@
           <option value="Courier New">Courier New</option>
           <option value="Helvetica">Helvetica</option>
           <option value="Helvetica Neue">Helvetica Neue</option>
-          <option value="Helvetica Neue Light">Helvetica Neue Light</option>
-          <option value="Helvetica Neue Thin">Helvetica Neue Thin</option>
           <option value="Georgia">Georgia</option>
           <option value="Times New Roman">Times New Roman</option>
           <option value="System UI">System UI</option>
           <option value="Menlo">Menlo</option>
+        </select>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Style</span>
+        <select class="pt-palette-select" id="rtt-axis-typeface-style-select">
+          <option value="">Theme</option>
         </select>
       </div>
       <div class="pt-palette-row">
@@ -3379,12 +3457,16 @@
           <option value="Courier New">Courier New</option>
           <option value="Helvetica">Helvetica</option>
           <option value="Helvetica Neue">Helvetica Neue</option>
-          <option value="Helvetica Neue Light">Helvetica Neue Light</option>
-          <option value="Helvetica Neue Thin">Helvetica Neue Thin</option>
           <option value="Georgia">Georgia</option>
           <option value="Times New Roman">Times New Roman</option>
           <option value="System UI">System UI</option>
           <option value="Menlo">Menlo</option>
+        </select>
+      </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Style</span>
+        <select class="pt-palette-select" id="font-typeface-style-select">
+          <option value="Regular">Regular</option>
         </select>
       </div>
     </div>

@@ -5,7 +5,7 @@ import { htmlEsc as _esc, downloadBlob as _downloadBlob } from './utils.js';
 import { TreeRenderer, CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY } from './treerenderer.js';
 import { LegendRenderer } from './legendrenderer.js';
 import { AxisRenderer  } from './axisrenderer.js';
-import { THEMES, SETTINGS_KEY, USER_THEMES_KEY, DEFAULT_THEME_KEY, TYPEFACES } from './themes.js';
+import { THEMES, SETTINGS_KEY, USER_THEMES_KEY, DEFAULT_THEME_KEY, TYPEFACES, buildFont, resolveLegacyTypeface } from './themes.js';
 import { CATEGORICAL_PALETTES, SEQUENTIAL_PALETTES,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE } from './palettes.js';
 import { viewportDims, compositeViewPng, buildGraphicSVG } from './graphicsio.js';
@@ -102,6 +102,16 @@ async function fetchExampleTree() {
   const clampNegBranchesRowEl = document.getElementById('clamp-neg-branches-row');
   const rootStemPctSlider    = document.getElementById('root-stem-pct-slider');
   const fontFamilyEl        = document.getElementById('font-family-select');
+  const fontTypefaceStyleEl = document.getElementById('font-typeface-style-select');
+  const tipLabelTypefaceEl  = document.getElementById('typeface-select');
+  const typefaceStyleEl     = document.getElementById('typeface-style-select');
+  const nodeLabelTypefaceEl      = document.getElementById('node-label-typeface-select');
+  const nodeLabelTypefaceStyleEl = document.getElementById('node-label-typeface-style-select');
+  const collapsedCladeTypefaceEl      = document.getElementById('collapsed-clade-typeface-select');
+  const collapsedCladeTypefaceStyleEl = document.getElementById('collapsed-clade-typeface-style-select');
+  const legendTypefaceStyleEl  = document.getElementById('legend-typeface-style-select');
+  const axisTypefaceStyleEl    = document.getElementById('axis-typeface-style-select');
+  const rttAxisTypefaceStyleEl = document.getElementById('rtt-axis-typeface-style-select');
   const tipColourBy       = document.getElementById('tip-colour-by');
   const nodeColourBy      = document.getElementById('node-colour-by');
   const labelColourBy     = document.getElementById('label-colour-by');
@@ -571,11 +581,64 @@ async function fetchExampleTree() {
    */
   function _resolveTypeface(key) {
     const effectiveKey = (key === 'theme') ? fontFamilyEl.value : key;
-    return TYPEFACES[effectiveKey] ?? effectiveKey;
+    return TYPEFACES[effectiveKey]?.family ?? effectiveKey;
+  }
+
+  /**
+   * Populate a style <select> element with the available styles for a given typeface key.
+   * @param {string} typefaceKey  - key in TYPEFACES (or 'theme')
+   * @param {HTMLSelectElement} styleSelectEl
+   * @param {string} [currentStyle] - value to pre-select (if present)
+   * @param {boolean} [includeTheme=false] - whether to add a leading "Theme" / "" option
+   */
+  function _populateStyleSelect(typefaceKey, styleSelectEl, currentStyle, includeTheme = false) {
+    if (!styleSelectEl) return;
+    const effectiveKey = (typefaceKey === 'theme' || !typefaceKey) ? fontFamilyEl.value : typefaceKey;
+    const tf = TYPEFACES[effectiveKey];
+    const styles = tf ? Object.keys(tf.styles) : ['Regular'];
+    styleSelectEl.innerHTML = '';
+    if (includeTheme) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'Theme';
+      styleSelectEl.appendChild(opt);
+    }
+    for (const s of styles) {
+      const opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = s;
+      styleSelectEl.appendChild(opt);
+    }
+    if (currentStyle && styles.includes(currentStyle)) {
+      styleSelectEl.value = currentStyle;
+    } else if (!includeTheme && tf?.defaultStyle) {
+      styleSelectEl.value = tf.defaultStyle;
+    }
   }
 
   function saveSettings() {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(_buildSettingsSnapshot()));
+  }
+
+  /** Apply current axis typeface selection to axisRenderer. */
+  function _applyAxisTypeface() {
+    if (!axisRenderer) return;
+    const key = axisFontFamilyEl?.value || 'theme';
+    const effectiveKey = (key === 'theme') ? fontFamilyEl.value : key;
+    const style = axisTypefaceStyleEl?.value || '';
+    axisRenderer.setTypeface(effectiveKey, style || null);
+  }
+
+  /** Apply current legend typeface selection to legendRenderer (both legend canvases). */
+  function _applyLegendTypeface() {
+    if (!legendRenderer) return;
+    const key = legendFontFamilyEl?.value || 'theme';
+    const effectiveKey = (key === 'theme') ? fontFamilyEl.value : key;
+    const style = legendTypefaceStyleEl?.value || '';
+    legendRenderer.setTypeface(effectiveKey, style || null);
+    if (typeof legend2Renderer !== 'undefined' && legend2Renderer) {
+      legend2Renderer.setTypeface(effectiveKey, style || null);
+    }
   }
 
   function _buildSettingsSnapshot() {
@@ -586,6 +649,13 @@ async function fetchExampleTree() {
       branchWidth:      branchWidthSlider.value,
       fontSize:         fontSlider.value,
       fontFamily:       fontFamilyEl.value,
+      typefaceStyle:    fontTypefaceStyleEl?.value || '',
+      tipLabelTypefaceKey:         tipLabelTypefaceEl?.value  || '',
+      tipLabelTypefaceStyle:       typefaceStyleEl?.value     || '',
+      nodeLabelTypefaceKey:        nodeLabelTypefaceEl?.value || '',
+      nodeLabelTypefaceStyle:      nodeLabelTypefaceStyleEl?.value || '',
+      collapsedCladeTypefaceKey:   collapsedCladeTypefaceEl?.value || '',
+      collapsedCladeTypefaceStyle: collapsedCladeTypefaceStyleEl?.value || '',
       labelColor:       labelColorEl.value,
       selectedLabelStyle: selectedLabelStyleEl.value,
       selectedTipStrokeColor:  selectedTipStrokeEl.value,
@@ -637,6 +707,7 @@ async function fetchExampleTree() {
       legendFontSize:    legendFontSizeSlider.value,
       legendHeightPct:   legendHeightPctSlider.value,
       legendFontFamily:  legendFontFamilyEl.value,
+      legendFontStyle:   legendTypefaceStyleEl?.value || '',
       axisShow:           axisShowEl.value,
       axisDateAnnotation: axisDateAnnotEl.value,
       axisDateFormat:     axisDateFmtEl.value,
@@ -647,6 +718,7 @@ async function fetchExampleTree() {
       axisColor:          axisColorEl.value,
       axisFontSize:       axisFontSizeSlider.value,
       axisFontFamily:     axisFontFamilyEl.value,
+      axisFontStyle:      axisTypefaceStyleEl?.value || '',
       axisLineWidth:      axisLineWidthSlider.value,
       rttXOrigin:         rttXOriginEl.value,
       rttGridLines:       rttGridLinesEl.value,
@@ -659,6 +731,7 @@ async function fetchExampleTree() {
       rttRegressionWidth: rttRegressionWidthSlider.value,
       rttAxisFontSize:    rttAxisFontSizeSlider.value,
       rttAxisFontFamily:  rttAxisFontFamilyEl.value,
+      rttAxisFontStyle:   rttAxisTypefaceStyleEl?.value || '',
       rttAxisLineWidth:   rttAxisLineWidthSlider.value,
       rttDateFormat:        rttDateFmtEl.value,
       rttMajorInterval:     rttMajorIntervalEl.value,
@@ -673,6 +746,8 @@ async function fetchExampleTree() {
       collapsedCladeOpacity:  collapsedOpacitySlider.value,
       collapsedCladeHeightN:  collapsedHeightNSlider.value,
       collapsedCladeFontSize: collapsedCladeFontSizeSlider.value,
+      collapsedCladeTypefaceKey:   collapsedCladeTypefaceEl?.value || '',
+      collapsedCladeTypefaceStyle: collapsedCladeTypefaceStyleEl?.value || '',
       clampNegBranches:   clampNegBranchesEl.value,
       rootStemPct:        rootStemPctSlider.value,
       tipLabelShow:       tipLabelShow.value,
@@ -692,6 +767,8 @@ async function fetchExampleTree() {
       nodeLabelFontSize:   nodeLabelFontSizeSlider.value,
       nodeLabelColor:      nodeLabelColorEl.value,
       nodeLabelSpacing:    nodeLabelSpacingSlider.value,
+      nodeLabelTypefaceKey:   nodeLabelTypefaceEl?.value || '',
+      nodeLabelTypefaceStyle: nodeLabelTypefaceStyleEl?.value || '',
       tipLabelSpacing:     tipLabelSpacingSlider.value,
       nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
       mode:             renderer ? renderer._mode : 'nodes',
@@ -719,6 +796,33 @@ async function fetchExampleTree() {
       document.getElementById('font-size-value').textContent = s.fontSize;
     }
     if (s.fontFamily)            fontFamilyEl.value       = s.fontFamily;
+    if (fontTypefaceStyleEl) {
+      _populateStyleSelect(fontFamilyEl.value, fontTypefaceStyleEl, s.typefaceStyle);
+    }
+    if (tipLabelTypefaceEl && s.tipLabelTypefaceKey)   tipLabelTypefaceEl.value = s.tipLabelTypefaceKey;
+    if (typefaceStyleEl) {
+      _populateStyleSelect(tipLabelTypefaceEl?.value || fontFamilyEl.value, typefaceStyleEl, s.tipLabelTypefaceStyle, true);
+    }
+    if (nodeLabelTypefaceEl && s.nodeLabelTypefaceKey)   nodeLabelTypefaceEl.value = s.nodeLabelTypefaceKey;
+    if (nodeLabelTypefaceStyleEl) {
+      _populateStyleSelect(nodeLabelTypefaceEl?.value || fontFamilyEl.value, nodeLabelTypefaceStyleEl, s.nodeLabelTypefaceStyle, true);
+    }
+    if (collapsedCladeTypefaceEl && s.collapsedCladeTypefaceKey) collapsedCladeTypefaceEl.value = s.collapsedCladeTypefaceKey;
+    if (collapsedCladeTypefaceStyleEl) {
+      _populateStyleSelect(collapsedCladeTypefaceEl?.value || fontFamilyEl.value, collapsedCladeTypefaceStyleEl, s.collapsedCladeTypefaceStyle, true);
+    }
+    if (legendTypefaceStyleEl) {
+      const lKey = legendFontFamilyEl?.value === 'theme' ? fontFamilyEl.value : (legendFontFamilyEl?.value || fontFamilyEl.value);
+      _populateStyleSelect(lKey, legendTypefaceStyleEl, s.legendFontStyle, true);
+    }
+    if (axisTypefaceStyleEl) {
+      const aKey = axisFontFamilyEl?.value === 'theme' ? fontFamilyEl.value : (axisFontFamilyEl?.value || fontFamilyEl.value);
+      _populateStyleSelect(aKey, axisTypefaceStyleEl, s.axisFontStyle, true);
+    }
+    if (rttAxisTypefaceStyleEl) {
+      const rKey = rttAxisFontFamilyEl?.value === 'theme' ? fontFamilyEl.value : (rttAxisFontFamilyEl?.value || fontFamilyEl.value);
+      _populateStyleSelect(rKey, rttAxisTypefaceStyleEl, s.rttAxisFontStyle, true);
+    }
     if (s.labelColor)            labelColorEl.value       = s.labelColor;
     if (s.selectedLabelStyle)    selectedLabelStyleEl.value = s.selectedLabelStyle;
     if (s.selectedTipStrokeColor)     selectedTipStrokeEl.value  = s.selectedTipStrokeColor;
@@ -866,6 +970,10 @@ async function fetchExampleTree() {
     if (s.axisMinorLabelFormat)  axisMinorLabelEl.value   = s.axisMinorLabelFormat;
     if (s.axisColor)             axisColorEl.value        = s.axisColor;
     if (s.axisFontFamily)        axisFontFamilyEl.value   = s.axisFontFamily;
+    if (axisTypefaceStyleEl && s.axisFontFamily) {
+      const aKey = s.axisFontFamily === 'theme' ? fontFamilyEl.value : s.axisFontFamily;
+      _populateStyleSelect(aKey, axisTypefaceStyleEl, s.axisFontStyle, true);
+    }
     if (s.legendShow)            legendShowEl.value       = s.legendShow;
     if (s.legendTextColor) legendTextColorEl.value = s.legendTextColor;
     if (s.legendFontSize != null) {
@@ -877,6 +985,10 @@ async function fetchExampleTree() {
       document.getElementById('legend-height-pct-value').textContent = s.legendHeightPct + '%';
     }
     if (s.legendFontFamily)      legendFontFamilyEl.value = s.legendFontFamily;
+    if (legendTypefaceStyleEl && s.legendFontFamily) {
+      const lKey = s.legendFontFamily === 'theme' ? fontFamilyEl.value : s.legendFontFamily;
+      _populateStyleSelect(lKey, legendTypefaceStyleEl, s.legendFontStyle, true);
+    }
     if (s.legend2Position)        legend2ShowEl.value      = s.legend2Position;
     if (s.legendHeightPct2 != null) {
       legend2HeightPctSlider.value = s.legendHeightPct2;
@@ -960,6 +1072,7 @@ async function fetchExampleTree() {
     legendFontSizeSlider.value = DEFAULT_SETTINGS.legendFontSize;
     document.getElementById('legend-font-size-value').textContent = DEFAULT_SETTINGS.legendFontSize;
     legendFontFamilyEl.value = DEFAULT_SETTINGS.legendFontFamily;
+    _populateStyleSelect(fontFamilyEl.value, legendTypefaceStyleEl, '', true);
     axisShowEl.value         = DEFAULT_SETTINGS.axisShow;  // 'off'
     axisDateAnnotEl.value    = '';
     calibration.setAnchor(null, new Map(), 0);
@@ -976,6 +1089,7 @@ async function fetchExampleTree() {
     axisLineWidthSlider.value = DEFAULT_SETTINGS.axisLineWidth;
     document.getElementById('axis-line-width-value').textContent = DEFAULT_SETTINGS.axisLineWidth;
     axisFontFamilyEl.value = DEFAULT_SETTINGS.axisFontFamily;
+    _populateStyleSelect(fontFamilyEl.value, axisTypefaceStyleEl, '', true);
     // RTT axis/stats/regression colours are already set by applyTheme('Artic') above.
     // Only reset the non-colour RTT controls that applyTheme doesn't touch.
     rttRegressionStyleEl.value   = DEFAULT_SETTINGS.rttRegressionStyle;
@@ -984,6 +1098,7 @@ async function fetchExampleTree() {
     rttAxisFontSizeSlider.value  = DEFAULT_SETTINGS.rttAxisFontSize;
     document.getElementById('rtt-axis-font-size-value').textContent = DEFAULT_SETTINGS.rttAxisFontSize;
     rttAxisFontFamilyEl.value    = DEFAULT_SETTINGS.rttAxisFontFamily;
+    _populateStyleSelect(fontFamilyEl.value, rttAxisTypefaceStyleEl, '', true);
     rttAxisLineWidthSlider.value = DEFAULT_SETTINGS.rttAxisLineWidth;
     document.getElementById('rtt-axis-line-width-value').textContent = DEFAULT_SETTINGS.rttAxisLineWidth;
     rttDateFmtEl.value       = DEFAULT_SETTINGS.rttDateFormat;
@@ -1006,6 +1121,12 @@ async function fetchExampleTree() {
     document.getElementById('node-label-font-size-value').textContent = DEFAULT_SETTINGS.nodeLabelFontSize;
     collapsedCladeFontSizeSlider.value = DEFAULT_SETTINGS.collapsedCladeFontSize;
     document.getElementById('collapsed-clade-font-size-value').textContent = DEFAULT_SETTINGS.collapsedCladeFontSize;
+    if (tipLabelTypefaceEl)            tipLabelTypefaceEl.value = '';
+    _populateStyleSelect(fontFamilyEl.value, typefaceStyleEl, '', true);
+    if (collapsedCladeTypefaceEl)      collapsedCladeTypefaceEl.value = '';
+    _populateStyleSelect(fontFamilyEl.value, collapsedCladeTypefaceStyleEl, '', true);
+    if (nodeLabelTypefaceEl)           nodeLabelTypefaceEl.value = '';
+    _populateStyleSelect(fontFamilyEl.value, nodeLabelTypefaceStyleEl, '', true);
     nodeLabelColorEl.value      = DEFAULT_SETTINGS.nodeLabelColor;
     nodeLabelSpacingSlider.value = DEFAULT_SETTINGS.nodeLabelSpacing;
     document.getElementById('node-label-spacing-value').textContent = DEFAULT_SETTINGS.nodeLabelSpacing;
@@ -1034,9 +1155,9 @@ async function fetchExampleTree() {
       renderer.setTipLabelShapeColourBy('user_colour');
       for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) renderer.setTipLabelShapeExtraColourBy(i, null);
       legendRenderer.setFontSize(parseInt(DEFAULT_SETTINGS.legendFontSize));
-      legendRenderer.setFontFamily(_resolveTypeface(legendFontFamilyEl.value));
+      _applyLegendTypeface();
       legendRenderer.setTextColor(DEFAULT_SETTINGS.legendTextColor);
-      axisRenderer.setFontFamily(_resolveTypeface(axisFontFamilyEl.value));
+      _applyAxisTypeface();
       renderer.setMode('nodes');
       renderer.setNodeLabelAnnotation(null);
       applyLegend();
@@ -1134,8 +1255,12 @@ async function fetchExampleTree() {
       collapsedCladeOpacity:  parseFloat(collapsedOpacitySlider.value),
       collapsedCladeHeightN:  parseInt(collapsedHeightNSlider.value),
       collapsedCladeFontSize: parseInt(collapsedCladeFontSizeSlider.value),
+      collapsedCladeTypefaceKey:   collapsedCladeTypefaceEl?.value   || null,
+      collapsedCladeTypefaceStyle: collapsedCladeTypefaceStyleEl?.value || null,
       clampNegativeBranches: clampNegBranchesEl.value === 'on',
-      fontFamily:         TYPEFACES[fontFamilyEl.value] ?? fontFamilyEl.value,
+      fontFamily:         TYPEFACES[fontFamilyEl.value]?.family ?? fontFamilyEl.value,
+      typefaceKey:        fontFamilyEl.value,
+      typefaceStyle:      fontTypefaceStyleEl?.value || TYPEFACES[fontFamilyEl.value]?.defaultStyle || 'Regular',
       tipLabelsOff:       tipLabelShow.value === 'off',
       tipLabelAnnotation: tipLabelShow.value === 'names' ? null
                         : tipLabelShow.value === 'off'   ? null
@@ -1149,11 +1274,15 @@ async function fetchExampleTree() {
       tipLabelShapeMarginRight: parseInt(tipLabelShapeMarginRightSlider.value),
       tipLabelShapeSpacing:     parseInt(tipLabelShapeSpacingSlider.value),
       tipLabelShapesExtra:      tipLabelShapeExtraEls.map(e => e.value),
+      tipLabelTypefaceKey:   tipLabelTypefaceEl?.value || null,
+      tipLabelTypefaceStyle: typefaceStyleEl?.value   || null,
       nodeLabelAnnotation: nodeLabelShowEl.value || null,
       nodeLabelPosition:   nodeLabelPositionEl.value,
       nodeLabelFontSize:   parseInt(nodeLabelFontSizeSlider.value),
       nodeLabelColor:      nodeLabelColorEl.value,
       nodeLabelSpacing:    parseInt(nodeLabelSpacingSlider.value),
+      nodeLabelTypefaceKey:   nodeLabelTypefaceEl?.value   || null,
+      nodeLabelTypefaceStyle: nodeLabelTypefaceStyleEl?.value || null,
       tipLabelSpacing:     parseInt(tipLabelSpacingSlider.value),
       nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
       calCalibration:      calibration?.isActive ? calibration : null,
@@ -1244,6 +1373,16 @@ async function fetchExampleTree() {
     const legendColor = t.legendTextColor || t.labelColor;
     legendTextColorEl.value = legendColor;
     fontFamilyEl.value = t.fontFamily ?? DEFAULT_SETTINGS.fontFamily;
+    // Populate typeface style selects for the new theme
+    const _themeStyle = t.typefaceStyle ?? TYPEFACES[fontFamilyEl.value]?.defaultStyle ?? 'Regular';
+    _populateStyleSelect(fontFamilyEl.value, fontTypefaceStyleEl, _themeStyle);
+    if (tipLabelTypefaceEl) tipLabelTypefaceEl.value = '';
+    _populateStyleSelect(fontFamilyEl.value, typefaceStyleEl, '', true);
+    _populateStyleSelect(fontFamilyEl.value, legendTypefaceStyleEl, '', true);
+    _populateStyleSelect(fontFamilyEl.value, axisTypefaceStyleEl, '', true);
+    _populateStyleSelect(fontFamilyEl.value, rttAxisTypefaceStyleEl, '', true);
+    _populateStyleSelect(fontFamilyEl.value, nodeLabelTypefaceStyleEl, '', true);
+    _populateStyleSelect(fontFamilyEl.value, collapsedCladeTypefaceStyleEl, '', true);
     // RTT plot colours — only override if the theme defines them
     if (t.rttAxisColor)       rttAxisColorEl.value       = t.rttAxisColor;
     if (t.rttStatsBgColor)    rttStatsBgColorEl.value    = t.rttStatsBgColor;
@@ -1253,8 +1392,8 @@ async function fetchExampleTree() {
       renderer.setSettings(_buildRendererSettings());
       if (t.axisColor) axisRenderer.setColor(t.axisColor);
       legendRenderer.setTextColor(legendColor);
-      axisRenderer.setFontFamily(_resolveTypeface(axisFontFamilyEl.value));
-      legendRenderer.setFontFamily(_resolveTypeface(legendFontFamilyEl.value));
+      _applyAxisTypeface();
+      _applyLegendTypeface();
       // Invalidate axis hash so next update redraws
       axisRenderer._lastHash = '';
     }
@@ -1302,6 +1441,13 @@ async function fetchExampleTree() {
     document.getElementById('font-size-value').textContent = _saved.fontSize;
   }
   if (_saved.fontFamily)           fontFamilyEl.value       = _saved.fontFamily;
+  _populateStyleSelect(fontFamilyEl.value, fontTypefaceStyleEl, _saved.typefaceStyle);
+  if (_saved.tipLabelTypefaceKey && tipLabelTypefaceEl) tipLabelTypefaceEl.value = _saved.tipLabelTypefaceKey;
+  _populateStyleSelect(tipLabelTypefaceEl?.value || fontFamilyEl.value, typefaceStyleEl, _saved.tipLabelTypefaceStyle, true);
+  if (_saved.nodeLabelTypefaceKey && nodeLabelTypefaceEl)   nodeLabelTypefaceEl.value = _saved.nodeLabelTypefaceKey;
+  _populateStyleSelect(nodeLabelTypefaceEl?.value || fontFamilyEl.value, nodeLabelTypefaceStyleEl, _saved.nodeLabelTypefaceStyle, true);
+  if (_saved.collapsedCladeTypefaceKey && collapsedCladeTypefaceEl) collapsedCladeTypefaceEl.value = _saved.collapsedCladeTypefaceKey;
+  _populateStyleSelect(collapsedCladeTypefaceEl?.value || fontFamilyEl.value, collapsedCladeTypefaceStyleEl, _saved.collapsedCladeTypefaceStyle, true);
   if (_saved.labelColor)           labelColorEl.value       = _saved.labelColor;
   if (_saved.selectedLabelStyle)   selectedLabelStyleEl.value = _saved.selectedLabelStyle;
   if (_saved.selectedTipStrokeColor)    selectedTipStrokeEl.value  = _saved.selectedTipStrokeColor;
@@ -1441,6 +1587,8 @@ async function fetchExampleTree() {
   if (_saved.nodeShapeBgColor)     nodeShapeBgEl.value      = _saved.nodeShapeBgColor;
   if (_saved.axisColor)            axisColorEl.value        = _saved.axisColor;
   if (_saved.axisFontFamily)       axisFontFamilyEl.value   = _saved.axisFontFamily;
+  { const aKey = (_saved.axisFontFamily === 'theme' || !_saved.axisFontFamily) ? fontFamilyEl.value : _saved.axisFontFamily;
+    _populateStyleSelect(aKey, axisTypefaceStyleEl, _saved.axisFontStyle, true); }
   if (_saved.axisFontSize != null) {
     axisFontSizeSlider.value = _saved.axisFontSize;
     document.getElementById('axis-font-size-value').textContent = _saved.axisFontSize;
@@ -1460,6 +1608,8 @@ async function fetchExampleTree() {
     document.getElementById('legend-height-pct-value').textContent = _saved.legendHeightPct + '%';
   }
   if (_saved.legendFontFamily)     legendFontFamilyEl.value = _saved.legendFontFamily;
+  { const lKey = (_saved.legendFontFamily === 'theme' || !_saved.legendFontFamily) ? fontFamilyEl.value : _saved.legendFontFamily;
+    _populateStyleSelect(lKey, legendTypefaceStyleEl, _saved.legendFontStyle, true); }
   if (_saved.tipLabelAlign)        tipLabelAlignEl.value    = _saved.tipLabelAlign;
   if (_saved.nodeLabelPosition)    nodeLabelPositionEl.value = _saved.nodeLabelPosition;
   if (_saved.nodeLabelFontSize != null) {
@@ -1494,6 +1644,8 @@ async function fetchExampleTree() {
     document.getElementById('rtt-axis-font-size-value').textContent = _saved.rttAxisFontSize;
   }
   if (_saved.rttAxisFontFamily)        rttAxisFontFamilyEl.value     = _saved.rttAxisFontFamily;
+  { const rKey = (_saved.rttAxisFontFamily === 'theme' || !_saved.rttAxisFontFamily) ? fontFamilyEl.value : _saved.rttAxisFontFamily;
+    _populateStyleSelect(rKey, rttAxisTypefaceStyleEl, _saved.rttAxisFontStyle, true); }
   if (_saved.rttAxisLineWidth != null) {
     rttAxisLineWidthSlider.value = _saved.rttAxisLineWidth;
     document.getElementById('rtt-axis-line-width-value').textContent = _saved.rttAxisLineWidth;
@@ -1632,8 +1784,8 @@ async function fetchExampleTree() {
 
   // Always sync legend/axis font families after renderer init — applyTheme does
   // this when called, but the else branch above skips applyTheme entirely.
-  legendRenderer.setFontFamily(_resolveTypeface(legendFontFamilyEl.value));
-  axisRenderer.setFontFamily(_resolveTypeface(axisFontFamilyEl.value));
+  _applyLegendTypeface();
+  _applyAxisTypeface();
 
   renderer._onViewChange = (scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr) => {
     axisRenderer.update(scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr);
@@ -2148,9 +2300,13 @@ async function fetchExampleTree() {
     getRegressionColor: () => rttRegressionColorEl.value,
     getRegressionWidth: () => parseFloat(rttRegressionWidthSlider.value),
     getAxisFontSize:   () => parseInt(rttAxisFontSizeSlider.value),
-    getAxisFontFamily: () => rttAxisFontFamilyEl.value === 'theme'
-                         ? _resolveTypeface(axisFontFamilyEl.value)
-                         : _resolveTypeface(rttAxisFontFamilyEl.value),
+    getAxisFontFamily: () => {
+      const rttKey = rttAxisFontFamilyEl.value === 'theme' ? axisFontFamilyEl.value : rttAxisFontFamilyEl.value;
+      const effectiveKey = rttKey === 'theme' ? fontFamilyEl.value : rttKey;
+      const style = rttAxisTypefaceStyleEl?.value || axisTypefaceStyleEl?.value || '';
+      if (style && TYPEFACES[effectiveKey]) return buildFont(effectiveKey, style, parseInt(rttAxisFontSizeSlider.value));
+      return _resolveTypeface(rttKey);
+    },
     getAxisLineWidth:  () => parseFloat(rttAxisLineWidthSlider.value),
     getTickOptions: () => ({
       majorInterval:    rttMajorIntervalEl.value,
@@ -4514,7 +4670,7 @@ async function fetchExampleTree() {
               _refreshAnnotationUIs(graph.annotationSchema);
               renderer.setAnnotationSchema(graph.annotationSchema);
             }
-            renderer.render();
+            renderer._dirty = true;
           });
           td2.appendChild(input);
         } else {
@@ -4691,21 +4847,80 @@ async function fetchExampleTree() {
 
   fontFamilyEl.addEventListener('change', () => {
     _markCustomTheme();
+    _populateStyleSelect(fontFamilyEl.value, fontTypefaceStyleEl, '');
+    _populateStyleSelect(tipLabelTypefaceEl?.value || fontFamilyEl.value, typefaceStyleEl, '', true);
     renderer.setSettings(_buildRendererSettings());
     applyAxisStyle();
-    legendRenderer.setFontFamily(_resolveTypeface(legendFontFamilyEl.value));
+    _applyLegendTypeface();
     saveSettings();
   });
 
   legendFontFamilyEl.addEventListener('change', () => {
     _markCustomTheme();
-    legendRenderer.setFontFamily(_resolveTypeface(legendFontFamilyEl.value));
+    const lKey = legendFontFamilyEl.value === 'theme' ? fontFamilyEl.value : legendFontFamilyEl.value;
+    _populateStyleSelect(lKey, legendTypefaceStyleEl, '', true);
+    _applyLegendTypeface();
     saveSettings();
   });
 
   axisFontFamilyEl.addEventListener('change', () => {
     _markCustomTheme();
+    const aKey = axisFontFamilyEl.value === 'theme' ? fontFamilyEl.value : axisFontFamilyEl.value;
+    _populateStyleSelect(aKey, axisTypefaceStyleEl, '', true);
     applyAxisStyle();
+    saveSettings();
+  });
+
+  // Typeface style change listeners
+  fontTypefaceStyleEl?.addEventListener('change', () => {
+    _markCustomTheme();
+    renderer.setSettings(_buildRendererSettings());
+    saveSettings();
+  });
+  tipLabelTypefaceEl?.addEventListener('change', () => {
+    _markCustomTheme();
+    const tKey = tipLabelTypefaceEl.value || fontFamilyEl.value;
+    _populateStyleSelect(tKey, typefaceStyleEl, '', true);
+    renderer.setSettings(_buildRendererSettings());
+    saveSettings();
+  });
+  typefaceStyleEl?.addEventListener('change', () => {
+    _markCustomTheme();
+    renderer.setSettings(_buildRendererSettings());
+    saveSettings();
+  });
+  legendTypefaceStyleEl?.addEventListener('change', () => {
+    _markCustomTheme();
+    _applyLegendTypeface();
+    saveSettings();
+  });
+  axisTypefaceStyleEl?.addEventListener('change', () => {
+    _markCustomTheme();
+    applyAxisStyle();
+    saveSettings();
+  });
+  nodeLabelTypefaceEl?.addEventListener('change', () => {
+    _markCustomTheme();
+    const nKey = nodeLabelTypefaceEl.value || fontFamilyEl.value;
+    _populateStyleSelect(nKey, nodeLabelTypefaceStyleEl, '', true);
+    renderer.setSettings(_buildRendererSettings());
+    saveSettings();
+  });
+  nodeLabelTypefaceStyleEl?.addEventListener('change', () => {
+    _markCustomTheme();
+    renderer.setSettings(_buildRendererSettings());
+    saveSettings();
+  });
+  collapsedCladeTypefaceEl?.addEventListener('change', () => {
+    _markCustomTheme();
+    const cKey = collapsedCladeTypefaceEl.value || fontFamilyEl.value;
+    _populateStyleSelect(cKey, collapsedCladeTypefaceStyleEl, '', true);
+    renderer.setSettings(_buildRendererSettings());
+    saveSettings();
+  });
+  collapsedCladeTypefaceStyleEl?.addEventListener('change', () => {
+    _markCustomTheme();
+    renderer.setSettings(_buildRendererSettings());
     saveSettings();
   });
 
@@ -5324,7 +5539,7 @@ async function fetchExampleTree() {
     axisRenderer.setColor(axisColorEl.value);
     axisRenderer.setLineWidth(parseFloat(axisLineWidthSlider.value));
     axisRenderer.setFontSize(parseInt(axisFontSizeSlider.value));
-    axisRenderer.setFontFamily(_resolveTypeface(axisFontFamilyEl.value));
+    _applyAxisTypeface();
     axisRenderer.update(
       renderer.scaleX, renderer.offsetX, renderer.paddingLeft,
       renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
@@ -5390,6 +5605,13 @@ async function fetchExampleTree() {
     saveSettings();
   });
   rttAxisFontFamilyEl.addEventListener('change', () => {
+    const rKey = rttAxisFontFamilyEl.value === 'theme' ? fontFamilyEl.value : rttAxisFontFamilyEl.value;
+    _populateStyleSelect(rKey, rttAxisTypefaceStyleEl, '', true);
+    rttChart?.notifyStyleChange?.();
+    saveSettings();
+  });
+  rttAxisTypefaceStyleEl?.addEventListener('change', () => {
+    _markCustomTheme();
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });

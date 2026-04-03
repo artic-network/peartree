@@ -2,25 +2,174 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Typeface registry: short display name → CSS font-family stack.
- * Keys are stored in themes and settings; the CSS stack is resolved at
- * render time via `TYPEFACES[key] ?? key` (the fallback handles any legacy
- * CSS-stack values that may be present in older saved settings).
+ * Typeface registry: short display name → typeface descriptor.
+ *
+ * Each entry has:
+ *   family        – CSS font-family stack string.
+ *   styles        – map of style-name → { weight, fontStyle }.
+ *   defaultStyle  – the style key used when no explicit style is specified.
+ *
+ * Used by buildFont() to produce a complete CSS font string for canvas
+ * rendering (weight + font-style + size + family), fixing the historical
+ * bug where TYPEFACE_WEIGHTS were defined but never applied.
+ *
+ * Legacy keys like 'Helvetica Neue Light' and 'Helvetica Neue Thin' are kept
+ * in LEGACY_TYPEFACE_MAP so that old saved settings can be migrated on load.
  */
 export const TYPEFACES = {
-  'Monospace':       'monospace',
-  'Sans-serif':      'sans-serif',
-  'Serif':           'serif',
-  'Courier New':     "'Courier New', Courier, monospace",
-  'Helvetica':           "'Helvetica Neue', Helvetica, Arial, sans-serif",
-  'Helvetica Neue':       "'Helvetica Neue', Helvetica, Arial, sans-serif",
-  'Helvetica Neue Light': "'HelveticaNeue-Light', 'Helvetica Neue Light', 'Helvetica Neue', Helvetica, sans-serif",
-  'Helvetica Neue Thin':  "'HelveticaNeue-Thin', 'Helvetica Neue Thin', 'Helvetica Neue', Helvetica, sans-serif",
-  'Georgia':         'Georgia, serif',
-  'Times New Roman': "'Times New Roman', Times, serif",
-  'System UI':       "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-  'Menlo':           "Menlo, 'DejaVu Sans Mono', 'Lucida Console', monospace",
+  'Monospace': {
+    family:       'monospace',
+    styles: {
+      'Regular':     { weight: 400, fontStyle: 'normal'  },
+      'Bold':        { weight: 700, fontStyle: 'normal'  },
+      'Italic':      { weight: 400, fontStyle: 'italic'  },
+      'Bold Italic': { weight: 700, fontStyle: 'italic'  },
+    },
+    defaultStyle: 'Regular',
+  },
+  'Sans-serif': {
+    family:       'sans-serif',
+    styles: {
+      'Regular':     { weight: 400, fontStyle: 'normal'  },
+      'Bold':        { weight: 700, fontStyle: 'normal'  },
+      'Italic':      { weight: 400, fontStyle: 'italic'  },
+      'Bold Italic': { weight: 700, fontStyle: 'italic'  },
+    },
+    defaultStyle: 'Regular',
+  },
+  'Serif': {
+    family:       'serif',
+    styles: {
+      'Regular':     { weight: 400, fontStyle: 'normal'  },
+      'Bold':        { weight: 700, fontStyle: 'normal'  },
+      'Italic':      { weight: 400, fontStyle: 'italic'  },
+      'Bold Italic': { weight: 700, fontStyle: 'italic'  },
+    },
+    defaultStyle: 'Regular',
+  },
+  'Courier New': {
+    family:       "'Courier New', Courier, monospace",
+    styles: {
+      'Regular':     { weight: 400, fontStyle: 'normal'  },
+      'Bold':        { weight: 700, fontStyle: 'normal'  },
+      'Italic':      { weight: 400, fontStyle: 'italic'  },
+      'Bold Italic': { weight: 700, fontStyle: 'italic'  },
+    },
+    defaultStyle: 'Regular',
+  },
+  'Helvetica': {
+    family:       "'Helvetica Neue', Helvetica, Arial, sans-serif",
+    styles: {
+      'Regular':     { weight: 400, fontStyle: 'normal'  },
+      'Bold':        { weight: 700, fontStyle: 'normal'  },
+      'Italic':      { weight: 400, fontStyle: 'italic'  },
+      'Bold Italic': { weight: 700, fontStyle: 'italic'  },
+    },
+    defaultStyle: 'Regular',
+  },
+  'Helvetica Neue': {
+    family:       "'Helvetica Neue', Helvetica, Arial, sans-serif",
+    styles: {
+      'Thin':        { weight: 100, fontStyle: 'normal'  },
+      'Thin Italic': { weight: 100, fontStyle: 'italic'  },
+      'Light':       { weight: 300, fontStyle: 'normal'  },
+      'Light Italic':{ weight: 300, fontStyle: 'italic'  },
+      'Regular':     { weight: 400, fontStyle: 'normal'  },
+      'Italic':      { weight: 400, fontStyle: 'italic'  },
+      'Bold':        { weight: 700, fontStyle: 'normal'  },
+      'Bold Italic': { weight: 700, fontStyle: 'italic'  },
+    },
+    defaultStyle: 'Regular',
+  },
+  'Georgia': {
+    family:       'Georgia, serif',
+    styles: {
+      'Regular':     { weight: 400, fontStyle: 'normal'  },
+      'Bold':        { weight: 700, fontStyle: 'normal'  },
+      'Italic':      { weight: 400, fontStyle: 'italic'  },
+      'Bold Italic': { weight: 700, fontStyle: 'italic'  },
+    },
+    defaultStyle: 'Regular',
+  },
+  'Times New Roman': {
+    family:       "'Times New Roman', Times, serif",
+    styles: {
+      'Regular':     { weight: 400, fontStyle: 'normal'  },
+      'Bold':        { weight: 700, fontStyle: 'normal'  },
+      'Italic':      { weight: 400, fontStyle: 'italic'  },
+      'Bold Italic': { weight: 700, fontStyle: 'italic'  },
+    },
+    defaultStyle: 'Regular',
+  },
+  'System UI': {
+    family:       "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    styles: {
+      'Regular':     { weight: 400, fontStyle: 'normal'  },
+      'Bold':        { weight: 700, fontStyle: 'normal'  },
+      'Italic':      { weight: 400, fontStyle: 'italic'  },
+      'Bold Italic': { weight: 700, fontStyle: 'italic'  },
+    },
+    defaultStyle: 'Regular',
+  },
+  'Menlo': {
+    family:       "Menlo, 'DejaVu Sans Mono', 'Lucida Console', monospace",
+    styles: {
+      'Regular':     { weight: 400, fontStyle: 'normal'  },
+      'Bold':        { weight: 700, fontStyle: 'normal'  },
+      'Italic':      { weight: 400, fontStyle: 'italic'  },
+      'Bold Italic': { weight: 700, fontStyle: 'italic'  },
+    },
+    defaultStyle: 'Regular',
+  },
 };
+
+/**
+ * Maps legacy typeface keys (used in old saved settings and themes) to
+ * the new { typefaceKey, typefaceStyle } form.
+ */
+export const LEGACY_TYPEFACE_MAP = {
+  'Helvetica Neue Light': { typefaceKey: 'Helvetica Neue', typefaceStyle: 'Light'   },
+  'Helvetica Neue Thin':  { typefaceKey: 'Helvetica Neue', typefaceStyle: 'Thin'    },
+  // These are unchanged — include for completeness so code can always use this map.
+  'Helvetica':            { typefaceKey: 'Helvetica',      typefaceStyle: 'Regular' },
+  'Helvetica Neue':       { typefaceKey: 'Helvetica Neue', typefaceStyle: 'Regular' },
+};
+
+/**
+ * Build a CSS font string suitable for ctx.font from a typeface key, style
+ * name, and size in pixels.
+ *
+ * @param {string} typefaceKey   – Key into TYPEFACES (e.g. 'Helvetica Neue').
+ * @param {string} styleName     – Style key (e.g. 'Thin', 'Regular', 'Bold').
+ *                                 Falls back to defaultStyle if not found.
+ * @param {number} sizePx        – Font size in CSS pixels.
+ * @returns {string}             – e.g. "italic 100 11px 'Helvetica Neue', Helvetica, sans-serif"
+ */
+export function buildFont(typefaceKey, styleName, sizePx) {
+  const face = TYPEFACES[typefaceKey];
+  if (!face) {
+    // Unknown key — best-effort: treat key as a raw CSS family string.
+    return `${sizePx}px ${typefaceKey}`;
+  }
+  const style = face.styles[styleName] ?? face.styles[face.defaultStyle];
+  const parts = [];
+  if (style.fontStyle && style.fontStyle !== 'normal') parts.push(style.fontStyle);
+  if (style.weight    && style.weight    !== 400)      parts.push(style.weight);
+  parts.push(`${sizePx}px`);
+  parts.push(face.family);
+  return parts.join(' ');
+}
+
+/**
+ * Resolve a legacy fontFamily string to { typefaceKey, typefaceStyle }.
+ * Returns the original key unchanged if it is already a valid TYPEFACES key.
+ */
+export function resolveLegacyTypeface(key) {
+  if (TYPEFACES[key]) return { typefaceKey: key, typefaceStyle: TYPEFACES[key].defaultStyle };
+  if (LEGACY_TYPEFACE_MAP[key]) return LEGACY_TYPEFACE_MAP[key];
+  // Unknown — treat as raw family; use Monospace as fallback display key.
+  return { typefaceKey: 'Monospace', typefaceStyle: 'Regular' };
+}
 
 export const SETTINGS_KEY      = 'peartree-settings';
 export const USER_THEMES_KEY   = 'peartree-user-themes';
@@ -63,7 +212,8 @@ export const THEMES = {
           branchColor:      '#19A699',
           branchWidth:      '1',
           fontSize:         '11',
-          fontFamily:       'Helvetica Neue Thin',
+          fontFamily:       'Helvetica Neue',
+          typefaceStyle:    'Thin',
           labelColor:       '#f7eeca',
           tipSize:          '3',
           tipHaloSize:      '1',
@@ -114,7 +264,8 @@ export const THEMES = {
           branchColor:      '#7984BC',
           branchWidth:      '1',
           fontSize:         '11',
-          fontFamily:       'Helvetica Neue Light',
+          fontFamily:       'Helvetica Neue',
+          typefaceStyle:    'Light',
           labelColor:       '#7984BC',
           tipSize:          '3',
           tipHaloSize:      '1',
