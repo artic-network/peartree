@@ -357,6 +357,7 @@ pub fn run() {
             let view_fit        = MenuItem::with_id(app, "view-fit",        "Fit All",    true, Some("CmdOrCtrl+0"))?;
             let view_fit_labels = MenuItem::with_id(app, "view-fit-labels", "Fit Labels", true, Some("CmdOrCtrl+Shift+0"))?;
             let view_info       = MenuItem::with_id(app, "view-info",       "Get Info...", true, Some("CmdOrCtrl+I"))?;
+            let show_devtools   = MenuItem::with_id(app, "show-devtools",   "Developer Tools", true, Some("CmdOrCtrl+Alt+I"))?;
 
             let view_menu = Submenu::with_items(app, "View", true, &[
                 &view_zoom_in,
@@ -373,6 +374,8 @@ pub fn run() {
                 &view_home,
                 &PredefinedMenuItem::separator(app)?,
                 &view_info,
+                &PredefinedMenuItem::separator(app)?,
+                &show_devtools,
             ])?;
 
             // ── Tree ─────────────────────────────────────────────────────────
@@ -569,7 +572,11 @@ pub fn run() {
                     .into_values()
                     .find(|w| w.is_focused().unwrap_or(false));
                 if let Some(w) = focused {
-                    w.emit("menu-event", &id).ok();
+                    if id == "show-devtools" {
+                        w.open_devtools();
+                    } else {
+                        w.emit("menu-event", &id).ok();
+                    }
                 }
             });
 
