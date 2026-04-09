@@ -114,11 +114,12 @@
     treeUrl:   'data/ebov.tree',
     filename:  'ebov.tree',
     height:    '620px',
-    theme:     'dark',
+    theme:     'light',
     settings: {
         theme: 'Minimal',
         introAnimation: 'none',
         tipLabelShow: 'names',
+        tipLabelSize: '6',
         axisShow:     'time',
         // Time-axis tick marks and labels
         axisDateFormat:  'dd MMM yyyy',
@@ -132,6 +133,7 @@
     },
     ui: {
         palette:   false,
+        toolbar:   false,
         openTree:  false,
         import:    false,
         export:    true,
@@ -142,7 +144,7 @@
     // Show only specific toolbar button groups.
     // Available keys: 'fileOps' | 'navigation' | 'zoom' | 'order' | 'rotate' |
     //                 'reroot' | 'hideShow' | 'colour' | 'filter' | 'panels'
-    toolbarSections: ['navigation', 'zoom', 'filter'],
+    toolbarSections: ['navigation', 'zoom', 'filter', 'panels'],
   });
 </script>
 

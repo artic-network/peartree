@@ -72,6 +72,7 @@ async function _initCore() {
       : _p.get('storageKey') ?? (_p.get('nostore') === '1' ? null : SETTINGS_KEY);
     return {
       showPalette:   _flag(_ui.palette,   'palette'),
+      showToolbar:   _flag(_ui.toolbar,   'toolbar'),
       showRTT:       _flag(_ui.rtt,       'rtt'),
       showDataTable: _flag(_ui.dataTable, 'dt'),
       showImport:    _flag(_ui.import,    'import'),
@@ -83,6 +84,7 @@ async function _initCore() {
   })();
   // Apply UI restrictions immediately so hidden elements never flash visible.
   if (!_cfg.showPalette)   document.getElementById('btn-palette')        ?.classList.add('d-none');
+  if (!_cfg.showToolbar)   document.querySelector('.pt-toolbar')          ?.classList.add('d-none');
   if (!_cfg.showRTT)     { document.getElementById('btn-rtt')            ?.classList.add('d-none');
                            document.getElementById('rtt-panel')          ?.classList.add('d-none'); }
   if (!_cfg.showDataTable){ document.getElementById('btn-data-table')    ?.classList.add('d-none');
@@ -1825,9 +1827,12 @@ async function _initCore() {
   calibration = new TreeCalibration();
 
   // Apply stored visual settings to the renderer immediately.
-  // If no saved theme exists yet, apply the default 'Artic' theme.
-  if (!_saved.theme) {
-    applyTheme(defaultTheme);
+  // For embeds (storageKey=null) there are no stored colour customisations, so
+  // always apply the theme (or the default) to get correct colours.  For the
+  // standalone app, stored colour values were already hydrated into DOM above,
+  // so only call applyTheme when no theme was previously saved.
+  if (!_saved.theme || _cfg.storageKey === null) {
+    applyTheme(_saved.theme || defaultTheme);
   } else {
     // DOM controls were already hydrated from _saved above; just sync the renderer.
     renderer.setSettings(_buildRendererSettings(), false);
@@ -2711,7 +2716,7 @@ async function _initCore() {
   const exportGraphicFooter  = document.getElementById('export-graphic-footer');
 
   document.getElementById('export-graphic-close').addEventListener('click', _closeGraphicsDialog);
-  btnExportGraphic.addEventListener('click', _openGraphicsDialog);
+  btnExportGraphic?.addEventListener('click', _openGraphicsDialog);
 
   function _openGraphicsDialog() {
     if (!graph) return;
@@ -3157,7 +3162,7 @@ async function _initCore() {
 
       // Show/hide the Select + Reroot toolbar sections based on whether the
       // tree is explicitly rooted. Use a CSS class to avoid WKWebView inline-style issues.
-      document.getElementById('reroot-controls').classList.toggle('visible', !isExplicitlyRooted);
+      document.getElementById('reroot-controls')?.classList.toggle('visible', !isExplicitlyRooted);
 
       commands.setEnabled('tree-midpoint', !isExplicitlyRooted);
       commands.setEnabled('tree-temporal-root', !isExplicitlyRooted);
@@ -6449,6 +6454,7 @@ export async function embed(options = {}) {
 
   const ui = Object.assign({
     palette:   true,
+    toolbar:   true,
     openTree:  false,
     import:    false,
     export:    true,
@@ -6464,6 +6470,7 @@ export async function embed(options = {}) {
   window.peartreeConfig = {
     ui: {
       palette:   ui.palette,
+      toolbar:   ui.toolbar,
       openTree:  ui.openTree,
       import:    ui.import,
       export:    ui.export,
