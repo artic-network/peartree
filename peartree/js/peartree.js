@@ -38,7 +38,7 @@ async function fetchExampleTree() {
   return fetchWithFallback(EXAMPLE_TREE_PATH);
 }
 
-(async () => {
+async function _initCore() {
   // ── Embed configuration ───────────────────────────────────────────────────
   // Supports window.peartreeConfig (same-page / iframe embedding) and URL
   // search params as a lower-priority alternative.  window.peartreeConfig
@@ -6327,5 +6327,199 @@ async function fetchExampleTree() {
 
   window.dispatchEvent(new CustomEvent('peartree-ready'));
 
+}
+
+// ── Script / stylesheet loaders ───────────────────────────────────────────
+// Used by embed() to dynamically inject assets into the host page.
+
+function _ensureStylesheet(href) {
+  const a = document.createElement('a');
+  a.href = href;
+  const abs = a.href;
+  const existing = document.querySelectorAll('link[rel="stylesheet"]');
+  for (let i = 0; i < existing.length; i++) {
+    if (existing[i].href === abs) return;
+  }
+  const link = document.createElement('link');
+  link.rel  = 'stylesheet';
+  link.href = abs;
+  document.head.appendChild(link);
+}
+
+function _loadScript(src, isModule) {
+  return new Promise((resolve, reject) => {
+    // Check if already loaded (avoid duplicate module loads which are silently no-ops)
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const el = document.createElement('script');
+    if (isModule) el.type = 'module';
+    el.src = src;
+    el.onload  = resolve;
+    el.onerror = () => reject(new Error('PearTree: failed to load ' + src));
+    document.head.appendChild(el);
+  });
+}
+
+// Auto-detect our own asset root from import.meta.url.
+// Convention: this file lives at <root>/js/peartree.js so the root is one
+// directory up from the directory that contains this file.
+const _selfBase = (() => {
+  try {
+    const u = new URL(import.meta.url);
+    const dir = u.href.substring(0, u.href.lastIndexOf('/') + 1); // …/js/
+    return dir + '../';  // …/  (root)
+  } catch (_) { return ''; }
 })();
+
+// ── app(options) ──────────────────────────────────────────────────────────
+//
+// Entry point for the standalone webapp (peartree.html) and any page that
+// has already loaded peartree-ui.js and has a fully-populated DOM.
+//
+// Options (all optional):
+//   storageKey:      string | null  — localStorage key for settings persistence.
+//                                     Defaults to SETTINGS_KEY from themes.js.
+//                                     Pass null to disable persistence.
+//   settings:        object          — Initial settings merged over stored/defaults.
+//   ui:              object          — Feature flags (all default true in app mode).
+//   paletteSections: string | []     — Palette sections to show ('all' or array).
+//   appSections:     string | []     — App HTML sections to show.
+//   toolbarSections: string | []     — Toolbar sub-sections to show.
+//
+export async function app(options = {}) {
+  const ui = Object.assign({
+    palette:   true,
+    openTree:  true,
+    import:    true,
+    export:    true,
+    rtt:       true,
+    dataTable: true,
+    statusBar: true,
+  }, options.ui || {});
+  if (ui.openTree === false) ui.import   = false;
+  if (ui.import   === false) ui.openTree = false;
+
+  window.peartreeConfig = Object.assign(
+    // Pre-existing window.peartreeConfig (e.g. set by an inline <script> before
+    // this module loads) is used as a base so callers can still use that pattern.
+    window.peartreeConfig || {},
+    {
+      ui,
+      storageKey:      options.storageKey !== undefined ? options.storageKey : (window.peartreeConfig?.storageKey ?? SETTINGS_KEY),
+      settings:        options.settings  || window.peartreeConfig?.settings  || {},
+      paletteSections: options.paletteSections  || window.peartreeConfig?.paletteSections  || 'all',
+      appSections:     options.appSections      || window.peartreeConfig?.appSections      || 'all',
+      toolbarSections: options.toolbarSections  || window.peartreeConfig?.toolbarSections  || 'all',
+    }
+  );
+
+  await _initCore();
+}
+
+// ── embed(options) ────────────────────────────────────────────────────────
+//
+// Entry point for embedding PearTree into any container element on an
+// existing page.  Dynamically injects all required JS and CSS.
+//
+// Options:
+//   container:       string | HTMLElement  (required) — target element or ID
+//   tree:            string                — inline Newick / NEXUS string
+//   treeUrl:         string                — URL to fetch
+//   filename:        string                — hint for format detection
+//   height:          string                — CSS height of viewer (default '600px')
+//   theme:           'dark' | 'light'      (default 'dark')
+//   base:            string                — override asset root URL
+//   storageKey:      null                  — always null for embeds (no persistence)
+//   settings:        object                — initial settings
+//   ui:              object                — feature flags (most off by default)
+//   paletteSections: string | []           — palette sections
+//   appSections:     string | []           — app HTML sections
+//   toolbarSections: string | []           — toolbar sub-sections
+//
+export async function embed(options = {}) {
+  if (!options.container) throw new Error('PearTree.embed: container is required');
+
+  const container = typeof options.container === 'string'
+    ? document.getElementById(options.container)
+    : options.container;
+  if (!container) throw new Error('PearTree.embed: container element not found: ' + options.container);
+
+  const base = typeof options.base === 'string' ? options.base : _selfBase;
+
+  const ui = Object.assign({
+    palette:   true,
+    openTree:  false,
+    import:    false,
+    export:    true,
+    rtt:       false,
+    dataTable: false,
+    statusBar: true,
+  }, options.ui || {});
+  if (ui.openTree === false) ui.import   = false;
+  if (ui.import   === false) ui.openTree = false;
+
+  // Set window.peartreeConfig BEFORE loading peartree-ui.js — the IIFEs in
+  // peartree-ui.js read it while building and injecting the HTML.
+  window.peartreeConfig = {
+    ui: {
+      palette:   ui.palette,
+      openTree:  ui.openTree,
+      import:    ui.import,
+      export:    ui.export,
+      rtt:       ui.rtt,
+      dataTable: ui.dataTable,
+      statusBar: ui.statusBar,
+      theme:     options.theme || 'dark',
+    },
+    storageKey:      null,  // embeds never persist settings
+    settings:        options.settings        || {},
+    paletteSections: options.paletteSections || 'all',
+    appSections:     options.appSections     || 'all',
+    toolbarSections: options.toolbarSections || 'all',
+  };
+
+  // Inject styles immediately so the page doesn't flash unstyled.
+  _ensureStylesheet(base + 'css/peartree.css');
+  _ensureStylesheet(base + 'css/peartree-embed.css');
+
+  // Create the wrapper with an app-host placeholder.  When peartree-ui.js
+  // loads, its app-host IIFE finds #app-html-host and injects all the HTML —
+  // then every getElementById() call that follows in the script finds real
+  // elements.
+  const height = options.height || '600px';
+  const theme  = options.theme  || 'dark';
+  const wrap = document.createElement('div');
+  wrap.className = 'pt-embed-wrap';
+  wrap.setAttribute('data-bs-theme', theme);
+  wrap.style.height = height;
+  wrap.innerHTML = '<div id="app-html-host"></div>';
+  container.appendChild(wrap);
+
+  // Load dependencies in order, then initialise.
+  await _loadScript(base + 'vendor/marked.min.js', false);
+  await _loadScript(base + 'js/peartree-ui.js', false);
+  // peartree-ui.js IIFE has now fired: DOM is fully populated.
+
+  await _initCore();
+
+  // Dispatch the tree once peartree-ready fires.
+  function _dispatchTree() {
+    if (typeof options.tree === 'string') {
+      window.dispatchEvent(new MessageEvent('message', {
+        data: { type: 'pt:loadTree', text: options.tree, filename: options.filename || 'tree.nwk' },
+        origin: window.location.origin,
+      }));
+    } else if (typeof options.treeUrl === 'string') {
+      window.dispatchEvent(new MessageEvent('message', {
+        data: { type: 'pt:loadTree', url: options.treeUrl, filename: options.filename || options.treeUrl.split('/').pop() || 'tree' },
+        origin: window.location.origin,
+      }));
+    }
+  }
+  if (window.peartree) _dispatchTree();
+  else window.addEventListener('peartree-ready', _dispatchTree, { once: true });
+}
+
+// ── Expose on window for non-module callers ───────────────────────────────
+window.PearTree       = { app, embed };
+window.PearTreeEmbed  = { embed };  // backward compat
 

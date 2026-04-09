@@ -12,7 +12,7 @@
       {
         "label": "main",
         "title": "PearTree — Phylogenetic Tree Viewer",
-        "url": "peartree.html",
+        "url": "peartree-tauri.html",
         "width": 1400,
         "height": 900,
         "resizable": true,
