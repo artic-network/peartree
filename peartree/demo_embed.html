@@ -92,7 +92,7 @@
   </section>
 
   <section class="report-section">
-    <h2>Phylogenetic Tree</h2>
+    <h2>Ebola virus (EBOV) — Phylogenetic Tree</h2>
 
     <div class="pt-embed-container">
       <div id="pt-tree"></div>
@@ -100,51 +100,80 @@
 
     <p class="pt-embed-caption">
       Figure 1. Maximum-likelihood phylogeny of Ebola virus (EBOV) genome sequences from the
-      2014–2016 West Africa epidemic. Tree rendered with
-      <a href="https://github.com/artic-network/peartree" target="_blank" rel="noopener">PearTree</a>.
+      2014–2016 West Africa epidemic. Rendered with
+      <a href="https://github.com/artic-network/peartree" target="_blank" rel="noopener">PearTree</a>
+      using <code>embed()</code> — single same-page instance.
+    </p>
+  </section>
+
+    <section class="report-section">
+    <h2>Variola virus (smallpox) — Phylogenetic Tree</h2>
+
+    <div class="pt-embed-container">
+      <div id="pt-tree-2"></div>
+    </div>
+
+    <p class="pt-embed-caption">
+      Figure 2. Phylogeny of Variola virus (VARV) sequences. Rendered with
+      <a href="https://github.com/artic-network/peartree" target="_blank" rel="noopener">PearTree</a>
+      using <code>embedFrame()</code> — a fully isolated instance independent of Figure 1.
     </p>
   </section>
 
 </main>
 
 <script type="module">
-  import { embed } from './js/peartree.js';
+  // embed() — single same-page instance (injects HTML/JS directly into the document).
+  import { embed, embedFrame } from './js/peartree.js';
+
+  const _sharedSettings = {
+    theme:               'Minimal',
+    introAnimation:      'none',
+    tipLabelShow:        'names',
+    tipLabelSize:        '6',
+    axisShow:            'time',
+    axisDateFormat:      'dd MMM yyyy',
+    axisMajorInterval:   'auto',
+    axisMinorInterval:   'auto',
+    axisMajorLabelFormat: 'component',
+    axisMinorLabelFormat: 'component',
+  };
+
+  const _sharedUi = {
+    palette:   false,
+    toolbar:   false,
+    openTree:  false,
+    import:    false,
+    export:    false,
+    rtt:       false,
+    dataTable: false,
+    statusBar: false,
+  };
+
+  // First tree — same-page embed (single instance only).
   embed({
-    container: 'pt-tree',
-    treeUrl:   'data/ebov.tree',
-    filename:  'ebov.tree',
-    height:    '620px',
-    theme:     'light',
-    settings: {
-        theme: 'Minimal',
-        introAnimation: 'none',
-        tipLabelShow: 'names',
-        tipLabelSize: '6',
-        axisShow:     'time',
-        // Time-axis tick marks and labels
-        axisDateFormat:  'dd MMM yyyy',
-        // Major tick interval: 'auto' | 'millennia' | 'centuries' | 'decades' | 'years' | 'quarters' | 'months' | 'weeks' | 'days'
-        axisMajorInterval:    'auto',
-        // Minor tick interval: 'off' | (same options as major, must be finer than major)
-        axisMinorInterval:    'auto',
-        // Major/minor label format: 'component' | 'partial' | 'full' | 'off'
-        axisMajorLabelFormat: 'component',
-        axisMinorLabelFormat: 'component',
-    },
-    ui: {
-        palette:   false,
-        toolbar:   false,
-        openTree:  false,
-        import:    false,
-        export:    true,
-        rtt:       false,
-        dataTable: false,
-        statusBar: false,
-    },
-    // Show only specific toolbar button groups.
-    // Available keys: 'fileOps' | 'navigation' | 'zoom' | 'order' | 'rotate' |
-    //                 'reroot' | 'hideShow' | 'colour' | 'filter' | 'panels'
-    toolbarSections: ['navigation', 'zoom', 'filter', 'panels'],
+    container:       'pt-tree',
+    treeUrl:         'data/ebov.tree',
+    filename:        'ebov.tree',
+    height:          '620px',
+    theme:           'light',
+    settings:        _sharedSettings,
+    ui:              _sharedUi,
+    toolbarSections: ['navigation', 'zoom'],
+  });
+
+  // Second tree — embedFrame() creates an isolated <iframe>, allowing any
+  // number of independent PearTree instances on the same page.
+  // The API is identical to embed(); all options are supported.
+  embedFrame({
+    container:       'pt-tree-2',
+    treeUrl:         'data/VARV.tree',
+    filename:        'VARV.tree',
+    height:          '620px',
+    theme:           'light',
+    settings:        _sharedSettings,
+    ui:              _sharedUi,
+    toolbarSections: ['navigation', 'zoom'],
   });
 </script>
 

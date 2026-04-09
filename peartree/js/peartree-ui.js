@@ -833,11 +833,16 @@ function buildAppHTML(sections, toolbarSections) {
 // calls buildAppHTML() directly inside _buildHTML() below, so no host
 // placeholder is present in that context.
 // peartreeConfig.toolbarSections / appSections control which sections render.
+// When peartree.html is used as an embedFrame() iframe, these sections are
+// passed as base64-encoded URL params instead (no peartreeConfig in that case).
 (function () {
   const _appHost = document.getElementById('app-html-host');
   if (_appHost) {
-    const _appSec = window.peartreeConfig?.appSections || 'all';
-    const _tbSec  = window.peartreeConfig?.toolbarSections || 'all';
+    const _sec = (key) => {
+      try { const v = new URLSearchParams(location.search).get(key); return v ? JSON.parse(atob(v)) : null; } catch { return null; }
+    };
+    const _appSec = window.peartreeConfig?.appSections     || _sec('appSections')     || 'all';
+    const _tbSec  = window.peartreeConfig?.toolbarSections || _sec('toolbarSections') || 'all';
     _appHost.outerHTML = buildAppHTML(_appSec, _tbSec);
   }
 })();
@@ -850,7 +855,10 @@ function buildAppHTML(sections, toolbarSections) {
 (function () {
   const _host = document.getElementById('palette-panel-host');
   if (_host) {
-    const _secs = window.peartreeConfig?.paletteSections || 'all';
+    const _sec = (key) => {
+      try { const v = new URLSearchParams(location.search).get(key); return v ? JSON.parse(atob(v)) : null; } catch { return null; }
+    };
+    const _secs = window.peartreeConfig?.paletteSections || _sec('paletteSections') || 'all';
     _host.outerHTML = buildPalettePanel(_secs);
     // When palette is disabled, hide the panel completely so it cannot be
     // seen or interacted with (the Tab guard below prevents keyboard access).

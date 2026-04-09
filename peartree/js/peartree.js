@@ -79,7 +79,14 @@ async function _initCore() {
       showExport:    _flag(_ui.export,    'export'),
       showStatusBar: _flag(_ui.statusBar, 'statusbar'),
       storageKey:    _sk,
-      initSettings:  _wc.settings || _wc.initSettings || {},
+      initSettings:  (() => {
+        // URL ?settings=<base64-JSON> provides initial settings for embedFrame() iframes.
+        // window.peartreeConfig.settings always wins over URL params.
+        const _urlSettings = (() => {
+          try { const v = _p.get('settings'); return v ? JSON.parse(atob(v)) : {}; } catch { return {}; }
+        })();
+        return Object.assign(_urlSettings, _wc.settings || _wc.initSettings || {});
+      })(),
     };
   })();
   // Apply UI restrictions immediately so hidden elements never flash visible.
@@ -6528,7 +6535,105 @@ export async function embed(options = {}) {
   else window.addEventListener('peartree-ready', _dispatchTree, { once: true });
 }
 
+// ── embedFrame(options) ───────────────────────────────────────────────────
+//
+// Multi-instance alternative to embed().  Mounts PearTree inside a same-page
+// <iframe> rather than injecting HTML and JS directly into the host document.
+// Each call is completely isolated — duplicate element IDs, global state, and
+// localStorage keys never collide.
+//
+// The iframe loads peartree.html with configuration encoded as URL params.
+// Communication after load uses the existing postMessage API.
+//
+// Options mirror embed() exactly.  Extra option:
+//   title:  string  — iframe accessible title (default 'PearTree — Phylogenetic tree')
+//
+export function embedFrame(options = {}) {
+  if (!options.container) throw new Error('PearTree.embedFrame: container is required');
+
+  const container = typeof options.container === 'string'
+    ? document.getElementById(options.container)
+    : options.container;
+  if (!container) throw new Error('PearTree.embedFrame: container element not found: ' + options.container);
+
+  const base  = typeof options.base === 'string' ? options.base : _selfBase;
+  const height = options.height || '600px';
+  const theme  = options.theme  || 'dark';
+
+  const ui = Object.assign({
+    palette:   true,
+    toolbar:   true,
+    openTree:  false,
+    import:    false,
+    export:    true,
+    rtt:       false,
+    dataTable: false,
+    statusBar: true,
+  }, options.ui || {});
+  if (ui.openTree === false) ui.import   = false;
+  if (ui.import   === false) ui.openTree = false;
+
+  // Build URL params — boolean UI flags work natively via peartree.html's existing
+  // URL param support.  Complex objects (settings, sections) are base64-encoded JSON.
+  const params = new URLSearchParams({ nostore: '1' });
+  if (!ui.palette)   params.set('palette',   '0');
+  if (!ui.toolbar)   params.set('toolbar',   '0');
+  if (!ui.rtt)       params.set('rtt',       '0');
+  if (!ui.dataTable) params.set('dt',        '0');
+  if (!ui.import)    params.set('import',    '0');
+  if (!ui.export)    params.set('export',    '0');
+  if (!ui.statusBar) params.set('statusbar', '0');
+
+  if (options.settings && Object.keys(options.settings).length)
+    params.set('settings', btoa(JSON.stringify(options.settings)));
+  if (options.toolbarSections && options.toolbarSections !== 'all')
+    params.set('toolbarSections', btoa(JSON.stringify(options.toolbarSections)));
+  if (options.appSections && options.appSections !== 'all')
+    params.set('appSections', btoa(JSON.stringify(options.appSections)));
+  if (options.paletteSections && options.paletteSections !== 'all')
+    params.set('paletteSections', btoa(JSON.stringify(options.paletteSections)));
+
+  // treeUrl is passed as a URL param (already supported natively by peartree.html).
+  // Resolve relative URLs to absolute so they work from the iframe's origin.
+  if (typeof options.treeUrl === 'string') {
+    const _a = document.createElement('a');
+    _a.href = options.treeUrl;
+    params.set('treeUrl', _a.href);
+  }
+
+  // Wrap + iframe
+  const wrap = document.createElement('div');
+  wrap.className = 'pt-embed-frame-wrap';
+  wrap.setAttribute('data-bs-theme', theme);
+  wrap.style.cssText = `height:${height};overflow:hidden;`;
+
+  const iframe = document.createElement('iframe');
+  iframe.src   = base + 'peartree.html?' + params.toString();
+  iframe.style.cssText = 'width:100%;height:100%;border:none;display:block;';
+  iframe.title = options.title || 'PearTree — Phylogenetic tree';
+  iframe.setAttribute('allowfullscreen', '');
+  wrap.appendChild(iframe);
+  container.appendChild(wrap);
+
+  // For inline tree strings, dispatch via postMessage after the app is ready.
+  // (treeUrl is handled natively by the iframe itself via the URL param above.)
+  if (typeof options.tree === 'string') {
+    const _treeText = options.tree;
+    const _filename = options.filename || 'tree.nwk';
+    iframe.addEventListener('load', () => {
+      iframe.contentWindow.addEventListener('peartree-ready', () => {
+        iframe.contentWindow.postMessage(
+          { type: 'pt:loadTree', text: _treeText, filename: _filename },
+          window.location.origin,
+        );
+      }, { once: true });
+    }, { once: true });
+  }
+
+  return iframe;
+}
+
 // ── Expose on window for non-module callers ───────────────────────────────
-window.PearTree       = { app, embed };
-window.PearTreeEmbed  = { embed };  // backward compat
+window.PearTree       = { app, embed, embedFrame };
+window.PearTreeEmbed  = { embed, embedFrame };  // backward compat
 
