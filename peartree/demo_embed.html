@@ -116,8 +116,17 @@
     height:    '620px',
     theme:     'dark',
     settings: {
+        theme: 'Minimal',
       tipLabelShow: 'names',
       axisShow:     'time',
+      // Time-axis tick marks and labels
+      // Major tick interval: 'auto' | 'millennia' | 'centuries' | 'decades' | 'years' | 'quarters' | 'months' | 'weeks' | 'days'
+      axisMajorInterval:    'auto',
+      // Minor tick interval: 'off' | (same options as major, must be finer than major)
+      axisMinorInterval:    'auto',
+      // Major/minor label format: 'component' | 'partial' | 'full' | 'off'
+      axisMajorLabelFormat: 'component',
+      axisMinorLabelFormat: 'component',
     },
     ui: {
         palette:   false,
