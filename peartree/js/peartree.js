@@ -6758,6 +6758,14 @@ export async function embed(options = {}) {
   if (ui.openTree === false) ui.import   = false;
   if (ui.import   === false) ui.openTree = false;
 
+  // Layout/config options can be placed inside ui{} or at the top level.
+  // ui.* takes precedence; options.* is the fallback for backward compatibility.
+  const _theme           = ui.theme           || options.theme           || 'dark';
+  const _toolbarSections = ui.toolbarSections || options.toolbarSections || 'all';
+  const _rttWidth        = ui.rttWidth        ?? options.rttWidth        ?? 35;
+  const _dataTableWidth  = ui.dataTableWidth  ?? options.dataTableWidth  ?? 30;
+  const _dataTableCols   = ui.dataTableColumns ?? options.dataTableColumns ?? null;
+
   // Set window.peartreeConfig BEFORE loading or re-using peartree-ui.js.
   // On the first embed the IIFEs in peartree-ui.js read it to inject HTML.
   // On subsequent embeds we call window.buildAppHTML() / window.buildPalettePanel()
@@ -6777,17 +6785,17 @@ export async function embed(options = {}) {
       about:       ui.about,
       themeToggle: ui.themeToggle,
       brand:       ui.brand,
-      theme:     options.theme || 'dark',
+      theme:       _theme,
     },
     storageKey:       null,  // embeds never persist settings
     settings:         options.settings        || {},
     paletteSections:  options.paletteSections || 'all',
     appSections:      options.appSections     || 'all',
-    toolbarSections:  options.toolbarSections || 'all',
+    toolbarSections:  _toolbarSections,
     nodeLabelName:    options.nodeLabelName   || null,
-    rttWidth:         options.rttWidth        ?? 35,
-    dataTableWidth:   options.dataTableWidth  ?? 30,
-    dataTableColumns: options.dataTableColumns ?? null,
+    rttWidth:         _rttWidth,
+    dataTableWidth:   _dataTableWidth,
+    dataTableColumns: _dataTableCols,
   };
 
   // Inject styles immediately so the page doesn't flash unstyled.
@@ -6799,7 +6807,7 @@ export async function embed(options = {}) {
   // app HTML.  On 2nd+ embeds the script is already loaded so we call the
   // exposed builder functions directly on the new wrap's placeholder.
   const height = options.height || '600px';
-  const theme  = options.theme  || 'dark';
+  const theme  = _theme;
   const wrap = document.createElement('div');
   wrap.className = 'pt-embed-wrap';
   wrap.setAttribute('data-bs-theme', theme);
