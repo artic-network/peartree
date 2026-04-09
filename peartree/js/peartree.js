@@ -78,12 +78,14 @@ async function _initCore(root = document) {
       ? _wc.storageKey
       : _p.get('storageKey') ?? (_p.get('nostore') === '1' ? null : SETTINGS_KEY);
     return {
-      showPalette:   _flag(_ui.palette,   'palette'),
-      showToolbar:   _flag(_ui.toolbar,   'toolbar'),
-      showRTT:       _flagEx(_ui.rtt,       'rtt'),
-      showDataTable: _flagEx(_ui.dataTable, 'dt'),
-      showImport:    _flag(_ui.import,    'import'),
-      showExport:    _flag(_ui.export,    'export'),
+      showPalette:        _flag(_ui.palette,      'palette'),
+      showToolbar:        _flag(_ui.toolbar,      'toolbar'),
+      showRTT:            _flagEx(_ui.rtt,         'rtt'),
+      showRTTHeader:      _flag(_ui.rttHeader,     'rttheader'),
+      showDataTable:      _flagEx(_ui.dataTable,   'dt'),
+      showDataTableHeader:_flag(_ui.dataTableHeader,'dtheader'),
+      showImport:         _flag(_ui.import,        'import'),
+      showExport:         _flag(_ui.export,        'export'),
       showStatusBar:  _flag(_ui.statusBar,    'statusbar'),
       showHelp:        _flag(_ui.help,         'help'),
       showAbout:       _flag(_ui.about,        'about'),
@@ -107,6 +109,11 @@ async function _initCore(root = document) {
   if (!_cfg.showToolbar)   root.querySelector('.pt-toolbar')          ?.classList.add('d-none');
   if (!_cfg.showRTT)     { $('btn-rtt')            ?.classList.add('d-none');
                            $('rtt-panel')          ?.classList.add('d-none'); }
+  if (!_cfg.showRTTHeader)      $('rtt-header')?.classList.add('d-none');
+  if (!_cfg.showDataTableHeader) {
+    $('dt-num-header')?.classList.add('d-none');
+    root.querySelector('#dt-header')?.classList.add('d-none');
+  }
   if (_cfg.showRTT === 'fixed') {
     $('btn-rtt')?.classList.add('d-none');
     $('rtt-btn-pin')?.classList.add('d-none');
@@ -6777,9 +6784,11 @@ export async function embed(options = {}) {
       openTree:    ui.openTree,
       import:      ui.import,
       export:      ui.export,
-      rtt:         ui.rtt,
-      dataTable:   ui.dataTable,
-      statusBar:   ui.statusBar,
+      rtt:              ui.rtt,
+      rttHeader:        ui.rttHeader,
+      dataTable:        ui.dataTable,
+      dataTableHeader:  ui.dataTableHeader,
+      statusBar:        ui.statusBar,
       keyboard:    ui.keyboard,
       help:        ui.help,
       about:       ui.about,

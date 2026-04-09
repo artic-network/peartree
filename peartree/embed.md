@@ -30,7 +30,7 @@ PearTree can be embedded directly inside any HTML page using a single JavaScript
       container: 'my-tree',
       treeUrl:   'data/my.tree',
       height:    '600px',
-      theme:     'dark',
+      ui: { theme: 'dark' },
     });
   </script>
 
@@ -57,37 +57,126 @@ All configuration is passed as a single options object.
 | `tree` | `string` | — | Inline Newick or NEXUS string. Use instead of `treeUrl` to embed tree data directly. |
 | `filename` | `string` | — | Optional filename hint (e.g. `'ebov.nexus'`) used for format detection. |
 | `height` | `string` | `'600px'` | CSS height of the viewer (e.g. `'500px'`, `'80vh'`). Ignored if the container already has an explicit height set in CSS. |
-| `theme` | `string` | `'dark'` | Overall colour theme: `'dark'` or `'light'`. |
 | `settings` | `object` | `{}` | Initial visual settings — see [Settings Reference](#settings-reference) below. |
-| `ui` | `object` | all `true` | Feature flags to show or hide UI panels — see [UI Flags](#ui-flags) below. |
+| `ui` | `object` | — | Feature flags and layout options — see [UI Options](#ui-options) below. |
+| `dataTableColumns` | `string[]` | — | Restrict which annotation columns appear in the data table. See [Data Table Columns](#data-table-columns). |
+| `nodeLabelName` | `string` | — | Annotation key to use for internal node labels (e.g. `'bootstrap'`). |
 | `paletteSections` | `string \| string[]` | `'all'` | Which sections to include in the Visual Options panel — see [Palette Sections](#palette-sections) below. |
 | `appSections` | `string \| string[]` | `'all'` | Which major HTML sections to include. Keys: `'toolbar'`, `'canvasContainer'`, `'statusBar'`, `'modals'`, `'helpAbout'`, `'palette'`. |
-| `toolbarSections` | `string \| string[]` | `'all'` | Which toolbar sub-sections to include. Keys: `'fileOps'`, `'navigation'`, `'zoom'`, `'order'`, `'rotate'`, `'reroot'`, `'hideShow'`, `'colour'`, `'filter'`, `'panels'`. |
 | `base` | `string` | *(auto-detected)* | Override the asset root URL. Normally not needed; set only when serving assets from a non-standard path. |
 
-> **Note:** Only one PearTree instance per page is supported. The embed script assigns unique element IDs that cannot be duplicated.
+> **Multiple instances.** Multiple independent PearTree instances can be embedded on the same page. Each `embed()` call is fully scoped to its own container element.
 
 ---
 
-## UI Flags
+## UI Options
 
-The `ui` object controls which parts of the interface are visible. All flags default to `true`.
+The `ui` object controls which parts of the interface are visible and configures panel layout. All boolean flags default to `true`.
 
 ```js
 PearTreeEmbed.embed({
   container: 'my-tree',
   treeUrl:   'data/my.tree',
   ui: {
-    palette:   true,   // Visual Options panel and its toggle button
-    openTree:  false,  // "Open tree file" button and import modal
-    import:    false,  // Alias for openTree
-    export:    true,   // Export tree and export graphic buttons
-    rtt:       false,  // Root-to-tip divergence panel
-    dataTable: false,  // Data table panel
-    statusBar: true,   // Status bar at the bottom
+    // ── Colour theme ───────────────────────────────────────────
+    theme:       'dark',     // Bootstrap wrapper theme: 'dark' | 'light'
+
+    // ── Major panels ───────────────────────────────────────────
+    palette:     true,       // Visual Options panel and its toggle button
+    toolbar:     true,       // Toolbar strip across the top
+    statusBar:   true,       // Status bar at the bottom
+
+    // ── File operations ────────────────────────────────────────
+    openTree:    true,       // "Open tree file" button and import modal
+    import:      true,       // Alias for openTree (linked: setting one sets both)
+    export:      true,       // Export tree and export graphic buttons
+
+    // ── Root-to-tip panel ──────────────────────────────────────
+    rtt:         true,       // true | false | 'fixed'
+    rttWidth:    35,         // panel width when rtt:'fixed', as % of container
+    rttHeader:   true,       // show the RTT panel header bar (pin, close, title, action buttons)
+
+    // ── Data table panel ───────────────────────────────────────
+    dataTable:      true,    // true | false | 'fixed'
+    dataTableWidth: 30,      // panel width when dataTable:'fixed', as % of container
+    dataTableHeader:true,    // show the data table header bars (column labels + pin/close buttons)
+
+    // ── Toolbar contents ───────────────────────────────────────
+    toolbarSections: 'all',  // 'all' | string[] — see Toolbar Sections below
+
+    // ── Status bar contents ────────────────────────────────────
+    keyboard:    true,       // enable keyboard shortcuts
+    help:        true,       // Help button in status bar
+    about:       true,       // About button in status bar
+    themeToggle: true,       // dark/light toggle in status bar
+    brand:       true,       // PearTree brand link in status bar
   },
 });
 ```
+
+### Panel Modes: `true`, `false`, and `'fixed'`
+
+The `rtt` and `dataTable` flags accept three values:
+
+| Value | Behaviour |
+|-------|-----------|
+| `true` *(default)* | Panel is available; user can open and close it with toolbar buttons. |
+| `false` | Panel is hidden entirely; no toolbar button is shown. |
+| `'fixed'` | Panel is permanently open and pinned at the configured width. The pin, close, and toolbar toggle buttons are all hidden. |
+
+When `'fixed'`, use `rttWidth` or `dataTableWidth` to set the panel size as a percentage of the container width (default: `35` and `30` respectively). Both accept a number (treated as `%`) or a CSS string such as `'40%'`.
+
+### Hiding Panel Header Bars
+
+Set `rttHeader: false` to hide the RTT panel's header bar (which contains the pin, close, title, download, image, and statistics buttons). This is useful when the panel is in `'fixed'` mode and you want a cleaner layout.
+
+Set `dataTableHeader: false` to hide both the column-label row and the pin/close button column of the data table.
+
+---
+
+## Toolbar Sections
+
+`ui.toolbarSections` controls which groups of buttons appear in the toolbar. Pass `'all'` (default) or an array of section keys to include only specific groups.
+
+```js
+ui: {
+  toolbar:         true,
+  toolbarSections: ['navigation', 'zoom', 'order'],
+}
+```
+
+Available section keys, in display order:
+
+| Key | Buttons |
+|-----|---------|
+| `'fileOps'` | Open tree, import annotations, export tree, export graphic |
+| `'annotations'` | Curate annotations |
+| `'nodeInfo'` | Get node/tip info |
+| `'navigation'` | Fit tree, fit labels, scroll to root, scroll to tips |
+| `'zoom'` | Zoom in, zoom out |
+| `'order'` | Sort ascending, sort descending |
+| `'rotate'` | Rotate branches |
+| `'reroot'` | Reroot on selected, midpoint root |
+| `'hideShow'` | Show/hide taxa |
+| `'colour'` | Colour palette picker |
+| `'filter'` | Filter/search bar |
+| `'panels'` | RTT panel toggle, data table toggle |
+
+---
+
+## Data Table Columns
+
+By default the data table shows all annotation columns present in the tree file. Use `dataTableColumns` to restrict it to a specific ordered set:
+
+```js
+PearTreeEmbed.embed({
+  container: 'my-tree',
+  treeUrl:   'data/my.tree',
+  dataTableColumns: ['__names__', 'location', 'date'],
+});
+```
+
+The special key `'__names__'` represents the tip name column. All other keys are annotation names from the tree file. Columns are displayed in the order listed.
 
 ---
 
@@ -318,7 +407,6 @@ PearTreeEmbed.embed({
       treeUrl:   'data/my.tree',
       filename:  'my.tree',
       height:    '600px',
-      theme:     'dark',
 
       settings: {
         tipLabelShow:         'names',
@@ -330,6 +418,7 @@ PearTreeEmbed.embed({
       },
 
       ui: {
+        theme:     'dark',
         palette:   false,
         openTree:  false,
         import:    false,
@@ -350,6 +439,7 @@ PearTreeEmbed.embed({
 ## Notes
 
 - **No localStorage persistence.** When PearTree is loaded via the embed API, settings are never written to `localStorage`. The viewer always starts with the settings you provide.
+- **Multiple instances.** Multiple independent PearTree instances can be embedded on the same page. Each `embed()` call is fully scoped to its own container element.
 - **Required stylesheets.** The four CSS files listed in the quick start must all be loaded. `peartree-embed.css` adjusts the layout for embedded use (removes the full-page chrome).
 - **Asset path detection.** The embed script auto-detects the location of PearTree's assets from its own `src` path. If you serve assets from a custom location, pass `base: 'https://example.com/peartree/'` as a top-level option.
 - **Tree formats.** Both Newick (`.nwk`, `.newick`) and NEXUS (`.nex`, `.nexus`, `.tree`, `.tre`, `.treefile`) formats are supported. Supply `filename` when passing an inline `tree` string so PearTree can choose the correct parser.
