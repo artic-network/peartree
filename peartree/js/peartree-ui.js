@@ -342,6 +342,17 @@ function buildPalettePanel(sections) {
   if (_host) {
     const _secs = window.peartreeConfig?.paletteSections || 'all';
     _host.outerHTML = buildPalettePanel(_secs);
+    // When palette is disabled, hide the panel completely so it cannot be
+    // seen or interacted with (the Tab guard below prevents keyboard access).
+    // The panel must remain in the DOM because peartree.js uses its input
+    // elements as state storage for visual settings.
+    if (window.peartreeConfig?.ui?.palette === false) {
+      const _panel = document.getElementById('palette-panel');
+      if (_panel) {
+        _panel.style.display = 'none';
+        _panel.inert = true;
+      }
+    }
   }
 })();
 
@@ -405,22 +416,24 @@ function unpinPalette() {
   _afterPanelTransition();
 }
 
-btnPalette.addEventListener('click', e => {
-  e.stopPropagation();
-  if (palettePanel.classList.contains('open')) {
-    closePalette();
-  } else {
-    openPalette(e.altKey);
-  }
-});
-btnPaletteClose.addEventListener('click', closePalette);
-btnPalettePin.addEventListener('click', () => {
-  if (palettePinned) unpinPalette();
-  else               pinPalette();
-});
+if (palettePanel && window.peartreeConfig?.ui?.palette !== false) {
+  btnPalette.addEventListener('click', e => {
+    e.stopPropagation();
+    if (palettePanel.classList.contains('open')) {
+      closePalette();
+    } else {
+      openPalette(e.altKey);
+    }
+  });
+  btnPaletteClose.addEventListener('click', closePalette);
+  btnPalettePin.addEventListener('click', () => {
+    if (palettePinned) unpinPalette();
+    else               pinPalette();
+  });
 
-// Restore pinned state from previous session.
-if (localStorage.getItem(PALETTE_PIN_KEY) === '1') pinPalette();
+  // Restore pinned state from previous session.
+  if (localStorage.getItem(PALETTE_PIN_KEY) === '1') pinPalette();
+}
 
 // Slider live value readouts
 const fontSliderEl = document.getElementById('font-size-slider');
@@ -429,9 +442,9 @@ const nodeSliderEl = document.getElementById('node-size-slider');
 const fontValEl    = document.getElementById('font-size-value');
 const tipValEl     = document.getElementById('tip-size-value');
 const nodeValEl    = document.getElementById('node-size-value');
-fontSliderEl.addEventListener('input',  () => { fontValEl.textContent  = fontSliderEl.value; });
-tipSliderEl.addEventListener('input',   () => { tipValEl.textContent   = tipSliderEl.value; });
-nodeSliderEl.addEventListener('input',  () => { nodeValEl.textContent  = nodeSliderEl.value; });
+fontSliderEl?.addEventListener('input',  () => { fontValEl.textContent  = fontSliderEl.value; });
+tipSliderEl?.addEventListener('input',   () => { tipValEl.textContent   = tipSliderEl.value; });
+nodeSliderEl?.addEventListener('input',  () => { nodeValEl.textContent  = nodeSliderEl.value; });
 
 // Help panel
 const helpPanel   = document.getElementById('help-panel');
@@ -555,7 +568,8 @@ document.getElementById('tree-canvas').addEventListener('pointerdown', () => {
 });
 
 // Tab / ⌥Tab toggles palette; Alt held opens in advanced mode
-document.addEventListener('keydown', e => {
+// Guard against palette being disabled (panel is still in DOM but hidden).
+if (palettePanel && window.peartreeConfig?.ui?.palette !== false) document.addEventListener('keydown', e => {
   if (e.key === 'Tab' && !e.metaKey && !e.ctrlKey) {
     const tag = document.activeElement && document.activeElement.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;

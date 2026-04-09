@@ -515,6 +515,7 @@ async function fetchExampleTree() {
 
   /** Rebuild the theme <select> options from themeRegistry plus the fixed "Custom" entry. */
   function _populateThemeSelect() {
+    if (!themeSelect) return;
     const current = themeSelect.value;
     themeSelect.innerHTML = '';
     for (const name of themeRegistry.keys()) {
@@ -584,6 +585,7 @@ async function fetchExampleTree() {
 
   /** Sync enabled/disabled state of all three theme action buttons. */
   function _syncThemeButtons() {
+    if (!btnStoreTheme) return;
     const sel       = themeSelect.value;
     const isCustom  = sel === 'custom';
     const isBuiltIn = !!THEMES[sel];
@@ -698,7 +700,7 @@ async function fetchExampleTree() {
 
   function _buildSettingsSnapshot() {
     return {
-      theme:            themeSelect.value,
+      theme:            themeSelect?.value ?? DEFAULT_SETTINGS.theme,
       canvasBgColor:    canvasBgColorEl.value,
       branchColor:      branchColorEl.value,
       branchWidth:      branchWidthSlider.value,
@@ -1090,7 +1092,7 @@ async function fetchExampleTree() {
     if (s.nodeLabelDecimalPlaces != null && nodeLabelDpEl) nodeLabelDpEl.value = String(s.nodeLabelDecimalPlaces);
     // Set themeSelect to the stored theme name (or 'custom' if not known).
     const themeName = s.theme && themeRegistry.has(s.theme) ? s.theme : (s.theme === 'custom' ? 'custom' : 'custom');
-    themeSelect.value = themeName;
+    if (themeSelect) themeSelect.value = themeName;
     _syncThemeButtons();
     if (renderer) {
       renderer.setSettings(_buildRendererSettings());
@@ -1336,7 +1338,7 @@ async function fetchExampleTree() {
       nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
       calCalibration:      calibration?.isActive ? calibration : null,
       calDateFormat:       axisDateFmtEl.value,
-      introAnimation:      DEFAULT_SETTINGS.introAnimation,
+      introAnimation:      _saved.introAnimation ?? DEFAULT_SETTINGS.introAnimation,
     };
   }
 
@@ -1446,7 +1448,7 @@ async function fetchExampleTree() {
       // Invalidate axis hash so next update redraws
       axisRenderer._lastHash = '';
     }
-    themeSelect.value = name;
+    if (themeSelect) themeSelect.value = name;
     _syncThemeButtons();
     saveSettings();
     _syncControlVisibility();
@@ -1456,17 +1458,17 @@ async function fetchExampleTree() {
 
   /** Mark the theme selector as Custom when the user manually edits any visual control. */
   function _markCustomTheme() {
-    if (themeSelect.value !== 'custom') {
+    if (themeSelect && themeSelect.value !== 'custom') {
       themeSelect.value = 'custom';
       saveSettings();
     }
     _syncThemeButtons();
   }
 
-  btnResetSettings.addEventListener('click', applyDefaults);
-  btnStoreTheme.addEventListener('click', storeTheme);
-  btnDefaultTheme.addEventListener('click', setDefaultTheme);
-  btnRemoveTheme.addEventListener('click', removeTheme);
+  btnResetSettings?.addEventListener('click', applyDefaults);
+  btnStoreTheme?.addEventListener('click', storeTheme);
+  btnDefaultTheme?.addEventListener('click', setDefaultTheme);
+  btnRemoveTheme?.addEventListener('click', removeTheme);
 
   // Bootstrap theme registry and select options before restoring saved state.
   loadUserThemes();
@@ -1674,7 +1676,7 @@ async function fetchExampleTree() {
     document.getElementById('tip-label-spacing-value').textContent = _saved.tipLabelSpacing;
   }
   // Restore saved theme name (or default to Artic if no saved settings)
-  themeSelect.value = _saved.theme || 'Artic';
+  if (themeSelect) themeSelect.value = _saved.theme || 'Artic';
   if (_saved.rttXOrigin)    rttXOriginEl.value    = _saved.rttXOrigin;
   if (_saved.rttGridLines)  rttGridLinesEl.value  = _saved.rttGridLines;
   if (_saved.rttAspectRatio) rttAspectRatioEl.value = _saved.rttAspectRatio;
@@ -1888,6 +1890,7 @@ async function fetchExampleTree() {
   _updateMinorOptions(axisMajorIntervalEl.value, _saved.axisMinorInterval || 'off');
   if (_saved.axisMajorLabelFormat) axisMajorLabelEl.value       = _saved.axisMajorLabelFormat;
   if (_saved.axisMinorLabelFormat) axisMinorLabelEl.value       = _saved.axisMinorLabelFormat;
+  if (_saved.axisDateFormat)       axisDateFmtEl.value          = _saved.axisDateFormat;
 
   // Hide the initial loading overlay; the Open Tree modal replaces it on startup
   if (loadingEl) {
@@ -4866,7 +4869,7 @@ async function fetchExampleTree() {
 
   // ── Always-active bindings ────────────────────────────────────────────────
 
-  themeSelect.addEventListener('change', () => {
+  themeSelect?.addEventListener('change', () => {
     if (themeSelect.value !== 'custom') applyTheme(themeSelect.value);
     else _syncThemeButtons();
   });
