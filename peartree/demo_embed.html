@@ -107,9 +107,9 @@
 
 </main>
 
-<script src="js/peartree-embed.js"></script>
-<script>
-  PearTreeEmbed.embed({
+<script type="module">
+  import { embed } from './js/peartree.js';
+  embed({
     container: 'pt-tree',
     treeUrl:   'data/ebov.tree',
     filename:  'ebov.tree',
@@ -137,9 +137,12 @@
         export:    true,
         rtt:       false,
         dataTable: false,
-        openTree:  false,
         statusBar: false,
     },
+    // Show only specific toolbar button groups.
+    // Available keys: 'fileOps' | 'navigation' | 'zoom' | 'order' | 'rotate' |
+    //                 'reroot' | 'hideShow' | 'colour' | 'filter' | 'panels'
+    toolbarSections: ['navigation', 'zoom', 'filter'],
   });
 </script>
 

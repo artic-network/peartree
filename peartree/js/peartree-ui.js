@@ -370,8 +370,7 @@ function _tbSectionFileOps() {
     <button id="btn-open-tree" class="btn btn-sm btn-outline-primary" title="Open tree file (⌘O)"><i class="bi bi-folder2-open"></i></button>
     <button id="btn-import-annot" class="btn btn-sm btn-outline-success" disabled title="Import annotations from CSV/TSV (⌘⇧O)"><i class="bi bi-table"></i></button>
     <button id="btn-export-tree" class="btn btn-sm btn-outline-info" disabled title="Export tree (Newick or NEXUS)"><i class="bi bi-file-earmark-arrow-down"></i></button>
-    <button id="btn-export-graphic" class="btn btn-sm btn-outline-warning" disabled title="Download graphic (SVG or PNG)"><i class="bi bi-image"></i></button>
-    <div class="pt-toolbar-sep"></div>`;
+    <button id="btn-export-graphic" class="btn btn-sm btn-outline-warning" disabled title="Download graphic (SVG or PNG)"><i class="bi bi-image"></i></button>`;
 }
 
 function _tbSectionNavigation() {
@@ -384,8 +383,7 @@ function _tbSectionNavigation() {
       <button id="btn-drill" class="btn btn-sm btn-outline-secondary" disabled title="Drill into subtree (⌘⇧>)"><i class="bi bi-box-arrow-in-right"></i></button>
       <button id="btn-climb" class="btn btn-sm btn-outline-secondary" disabled title="Climb out one level (⌘⇧<)"><i class="bi bi-box-arrow-left"></i></button>
       <button id="btn-home" class="btn btn-sm btn-outline-secondary" disabled title="Navigate to root (⌘\\)"><i class="bi bi-house"></i></button>
-    </div>
-    <div class="pt-toolbar-sep"></div>`;
+    </div>`;
 }
 
 function _tbSectionZoom() {
@@ -397,8 +395,7 @@ function _tbSectionZoom() {
     <div class="btn-group" role="group" aria-label="Fit view">
       <button id="btn-fit" class="btn btn-sm btn-outline-secondary" disabled title="Fit all (⌘0)"><i class="bi bi-arrows-fullscreen"></i></button>
       <button id="btn-fit-labels" class="btn btn-sm btn-outline-secondary" disabled title="Fit labels (⌘⇧0)"><i class="bi bi-type"></i></button>
-    </div>
-    <div class="pt-toolbar-sep"></div>`;
+    </div>`;
 }
 
 function _tbSectionOrder() {
@@ -414,8 +411,7 @@ function _tbSectionRotate() {
     <div class="btn-group" role="group" aria-label="Rotate node">
       <button id="btn-rotate" class="btn btn-sm btn-outline-secondary" disabled title="Rotate selected node"><i class="bi bi-repeat" style="display:inline-block;transform:rotate(90deg)"></i></button>
       <button id="btn-rotate-all" class="btn btn-sm btn-outline-secondary" disabled title="Rotate all nodes in subtree"><i class="bi bi-symmetry-horizontal" style="display:inline-block;transform:scaleX(-1)"></i></button>
-    </div>
-    <div class="pt-toolbar-sep"></div>`;
+    </div>`;
 }
 
 function _tbSectionReroot() {
@@ -430,7 +426,6 @@ function _tbSectionReroot() {
       <button id="btn-midpoint-root" class="btn btn-sm btn-outline-secondary" disabled title="Midpoint root (⌘M)"><i class="bi bi-vr" style="display:inline-block;transform:rotate(90deg)"></i></button>
       <button id="btn-temporal-root-global" class="btn btn-sm btn-outline-secondary" disabled title="Global temporal root (⌘R)"><i class="bi bi-clock"></i></button>
       <button id="btn-temporal-root" class="btn btn-sm btn-outline-secondary" disabled title="Optimise root on current branch (⇧⌘R)"><i class="bi bi-clock-history"></i></button>
-      <div class="pt-toolbar-sep"></div>
     </div>`;
 }
 
@@ -443,8 +438,7 @@ function _tbSectionHideShow() {
     <div class="btn-group ms-1" role="group" aria-label="Collapse/expand clade">
       <button id="btn-collapse-clade" class="btn btn-sm btn-outline-secondary" disabled title="Collapse selected clade to triangle"><i class="bi bi-arrows-collapse"></i></button>
       <button id="btn-expand-clade" class="btn btn-sm btn-outline-secondary" disabled title="Expand collapsed clade triangle"><i class="bi bi-arrows-expand"></i></button>
-    </div>
-    <div class="pt-toolbar-sep"></div>`;
+    </div>`;
 }
 
 function _tbSectionColour() {
@@ -481,8 +475,7 @@ function _tbSectionFilter() {
         </div>
       </div>
       <span id="tip-filter-count" class="pt-filter-count" hidden></span>
-    </div>
-    <div class="pt-toolbar-sep"></div>`;
+    </div>`;
 }
 
 function _tbSectionPanels() {
@@ -511,32 +504,42 @@ const _ALL_TB_SECTIONS = [
 
 function _buildToolbar(tbSections) {
   const keys = (!tbSections || tbSections === 'all') ? _ALL_TB_SECTIONS : tbSections;
+  const SEP = '\n    <div class="pt-toolbar-sep"></div>';
+
+  // Left: palette always present, fileOps optional — sep only when fileOps is included
+  const leftFileOps = keys.includes('fileOps') ? _tbSectionFileOps() : '';
   const left = `
   <div class="pt-toolbar-left">
     <button id="btn-palette" class="btn btn-sm btn-outline-secondary" title="Visual options panel (Tab · ⌥Tab for advanced)"><i class="bi bi-sliders"></i><i class="bi bi-caret-right"></i></button>
-    <div class="pt-toolbar-sep"></div>
-    ${keys.includes('fileOps') ? _tbSectionFileOps() : ''}
+    ${leftFileOps ? SEP + '\n    ' + leftFileOps : ''}
   </div>`;
 
+  // Centre: curate-annot + node-info always present, optional sections separated between each pair
+  const CENTRE_SECTIONS = ['navigation', 'zoom', 'order', 'rotate', 'reroot', 'hideShow', 'colour'];
+  const centreParts = CENTRE_SECTIONS
+    .filter(k => keys.includes(k))
+    .map(k => _TB_SECTION_BUILDERS[k]());
+  const centreOptional = centreParts.length
+    ? SEP + '\n    ' + centreParts.join(SEP + '\n    ')
+    : '';
   const centre = `
   <div class="pt-toolbar-center">
     <button id="btn-curate-annot" class="btn btn-sm btn-outline-secondary" disabled title="Curate annotations"><i class="bi bi-tags"></i></button>
     <button id="btn-node-info" class="btn btn-sm btn-outline-secondary" disabled title="Node info (⌘I)"><i class="bi bi-info-circle"></i></button>
-    <div class="pt-toolbar-sep"></div>
-    ${keys.includes('navigation') ? _tbSectionNavigation() : ''}
-    ${keys.includes('zoom')       ? _tbSectionZoom()       : ''}
-    ${keys.includes('order')      ? _tbSectionOrder()      : ''}
-    ${keys.includes('rotate')     ? _tbSectionRotate()     : ''}
-    ${keys.includes('reroot')     ? _tbSectionReroot()     : ''}
-    ${keys.includes('hideShow')   ? _tbSectionHideShow()   : ''}
-    ${keys.includes('colour')     ? _tbSectionColour()     : ''}
+    ${centreOptional}
   </div>`;
 
+  // Right: filter + panels optional — leading sep only when at least one is included
+  const RIGHT_SECTIONS = ['filter', 'panels'];
+  const rightParts = RIGHT_SECTIONS
+    .filter(k => keys.includes(k))
+    .map(k => _TB_SECTION_BUILDERS[k]());
+  const rightOptional = rightParts.length
+    ? SEP + '\n    ' + rightParts.join(SEP + '\n    ')
+    : '';
   const right = `
   <div class="pt-toolbar-right">
-    <div class="pt-toolbar-sep"></div>
-    ${keys.includes('filter') ? _tbSectionFilter()  : ''}
-    ${keys.includes('panels') ? _tbSectionPanels()  : ''}
+    ${rightOptional}
   </div>`;
 
   return `<nav class="pt-toolbar">${left}${centre}${right}\n</nav>`;

@@ -367,15 +367,15 @@ async function _initCore() {
 
   function _openColourPanel() {
     _renderColourPanel();
-    colourPickerPopup.classList.add('open');
+    colourPickerPopup?.classList.add('open');
   }
 
   function _closeColourPanel() {
-    colourPickerPopup.classList.remove('open');
+    colourPickerPopup?.classList.remove('open');
   }
 
   // Toggle on trigger button
-  btnColourTrigger.addEventListener('click', (e) => {
+  btnColourTrigger?.addEventListener('click', (e) => {
     e.stopPropagation();
     if (colourPickerPopup.classList.contains('open')) {
       _closeColourPanel();
@@ -385,7 +385,7 @@ async function _initCore() {
   });
 
   // Clicking the native colour input inside the panel
-  btnColourNativeOpen.addEventListener('input', (e) => {
+  btnColourNativeOpen?.addEventListener('input', (e) => {
     e.stopPropagation();
     const hex = e.target.value;
     tipColourPickerEl.value = hex;
@@ -394,7 +394,7 @@ async function _initCore() {
 
   // Close when clicking outside the popup
   document.addEventListener('click', (e) => {
-    if (colourPickerPopup.classList.contains('open') &&
+    if (colourPickerPopup?.classList.contains('open') &&
         !colourPickerPopup.contains(e.target) &&
         e.target !== btnColourTrigger) {
       _closeColourPanel();
@@ -412,14 +412,14 @@ async function _initCore() {
 
   // Close filter-column popup on outside click or Escape
   document.addEventListener('click', (e) => {
-    if (filterColPopupEl.classList.contains('open') &&
+    if (filterColPopupEl?.classList.contains('open') &&
         !filterColPopupEl.contains(e.target) &&
         e.target !== btnFilterColEl) {
       filterColPopupEl.classList.remove('open');
     }
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') filterColPopupEl.classList.remove('open');
+    if (e.key === 'Escape') filterColPopupEl?.classList.remove('open');
   });
 
   // ── Settings persistence ──────────────────────────────────────────────────
@@ -2162,7 +2162,7 @@ async function _initCore() {
       rttChart?.notifyStyleChange?.();
     },
   });
-  btnImportAnnot.addEventListener('click', () => commands.execute('import-annot'));
+  btnImportAnnot?.addEventListener('click', () => commands.execute('import-annot'));
 
   // ── Curate Annotations ───────────────────────────────────────────────────
   const annotCurator = createAnnotCurator({
@@ -2205,7 +2205,7 @@ async function _initCore() {
     numHeaderEl:  document.getElementById('dt-num-header'),
     numBodyEl:    document.getElementById('dt-num-body'),
     onClose: () => {
-      btnDataTable.classList.remove('active');
+      btnDataTable?.classList.remove('active');
     },
     onPinChange: (pinned) => {
       document.body.classList.toggle('dt-pinned', pinned);
@@ -2274,12 +2274,12 @@ async function _initCore() {
   }
 
   // Wire the data-table toggle button
-  btnDataTable.addEventListener('click', () => {
+  btnDataTable?.addEventListener('click', () => {
     if (dataTableRenderer.isOpen()) {
       dataTableRenderer.close();          // onClose callback updates button state
     } else {
       dataTableRenderer.open();
-      btnDataTable.classList.add('active');
+      btnDataTable?.classList.add('active');
       // In overlay mode the canvas doesn't resize on open; in pinned mode the
       // onPinChange callback already drives _resizeDuringTransition.
     }
@@ -2399,7 +2399,7 @@ async function _initCore() {
       }
     },
     onClose: () => {
-      btnRtt.classList.remove('active');
+      btnRtt?.classList.remove('active');
     },
     onPinChange: (pinned) => {
       document.body.classList.toggle('rtt-pinned', pinned);
@@ -2416,18 +2416,18 @@ async function _initCore() {
   // Tree hover → RTT hover
   renderer._onHoverChange = id => rttChart.notifyHoverChange(id);
 
-  btnRtt.addEventListener('click', () => {
+  btnRtt?.addEventListener('click', () => {
     if (rttChart.isOpen()) {
       rttChart.close();
-      btnRtt.classList.remove('active');
+      btnRtt?.classList.remove('active');
     } else {
       rttChart.open();
-      btnRtt.classList.add('active');
+      btnRtt?.classList.add('active');
     }
   });
 
   document.getElementById('export-tree-close').addEventListener('click', _closeExportDialog);
-  btnExportTree.addEventListener('click', _openExportDialog);
+  btnExportTree?.addEventListener('click', _openExportDialog);
 
   // ── Export Tree ────────────────────────────────────────────────────────────────
   // Serialisation logic (newickEsc, fmtLen, fmtAnnot, branchLen, newickNode,
@@ -2891,15 +2891,17 @@ async function _initCore() {
         items.push({ value: name, label: def.label ?? name });
       }
       if (!items.some(i => i.value === _filterCol)) _filterCol = '__name__';
-      filterColPopupEl.innerHTML = '';
-      for (const { value, label } of items) {
-        const btn = document.createElement('button');
-        btn.className = 'pt-fcp-item' + (value === _filterCol ? ' active' : '');
-        btn.textContent = label;
-        btn.dataset.value = value;
-        filterColPopupEl.appendChild(btn);
+      if (filterColPopupEl) {
+        filterColPopupEl.innerHTML = '';
+        for (const { value, label } of items) {
+          const btn = document.createElement('button');
+          btn.className = 'pt-fcp-item' + (value === _filterCol ? ' active' : '');
+          btn.textContent = label;
+          btn.dataset.value = value;
+          filterColPopupEl.appendChild(btn);
+        }
       }
-      btnFilterColEl.title = `Search in: ${items.find(i => i.value === _filterCol)?.label ?? 'Name'}`;
+      if (btnFilterColEl) btnFilterColEl.title = `Search in: ${items.find(i => i.value === _filterCol)?.label ?? 'Name'}`;
     }
     repopulate(tipLabelShapeColourBy, { filter: 'tips' });
     for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) {
@@ -3042,7 +3044,7 @@ async function _initCore() {
     // so re-opening the panel will restore the pinned state).
     if (rttChart?.isOpen()) {
       rttChart.closeForLoad();
-      btnRtt.classList.remove('active');
+      btnRtt?.classList.remove('active');
     }
     setModalLoading(true);
     setModalError(null);
@@ -3410,15 +3412,15 @@ async function _initCore() {
       renderer._mrcaNodeId       = null;
 
       // Reset tip filter for each tree load
-      tipFilterEl.value   = '';
-      tipFilterEl.placeholder = 'Filter tips…';
+      if (tipFilterEl) tipFilterEl.value   = '';
+      if (tipFilterEl) tipFilterEl.placeholder = 'Filter tips…';
       _updateStatusSelect(0);
       _filterCol   = '__name__';
       _filterRegex = false;
-      btnFilterRegexEl.classList.remove('active');
-      tipFilterEl.closest('.pt-filter-group')?.classList.remove('regex-error');
+      btnFilterRegexEl?.classList.remove('active');
+      tipFilterEl?.closest('.pt-filter-group')?.classList.remove('regex-error');
       // Seed the popup with Name immediately so it is never blank before _refreshAnnotationUIs runs.
-      if (!filterColPopupEl.hasChildNodes()) {
+      if (filterColPopupEl && !filterColPopupEl.hasChildNodes()) {
         const _seed = document.createElement('button');
         _seed.className = 'pt-fcp-item active';
         _seed.textContent = 'Name';
@@ -3430,19 +3432,19 @@ async function _initCore() {
         treeLoaded = true;
         // Now that a tree is loaded, stamp the theme background onto the canvas wrappers.
         _syncCanvasWrapperBg(canvasBgColorEl.value);
-        tipFilterEl.disabled       = false;
-        btnFilterColEl.disabled    = false;
-        btnFilterRegexEl.disabled  = false;
-        btnColourTrigger.disabled = false;
+        if (tipFilterEl)     tipFilterEl.disabled      = false;
+        if (btnFilterColEl)  btnFilterColEl.disabled   = false;
+        if (btnFilterRegexEl) btnFilterRegexEl.disabled = false;
+        if (btnColourTrigger) btnColourTrigger.disabled = false;
         // Buttons with no command equivalent
         const _btnHypUp   = document.getElementById('btn-hyp-up');
         const _btnHypDown = document.getElementById('btn-hyp-down');
         if (_btnHypUp)   _btnHypUp.disabled   = false;
         if (_btnHypDown) _btnHypDown.disabled = false;
-        document.getElementById('btn-mode-nodes').disabled    = false;
-        document.getElementById('btn-mode-branches').disabled = false;
-        btnDataTable.disabled = false;
-        btnRtt.disabled = false;
+        document.getElementById('btn-mode-nodes')   ?.removeAttribute('disabled');
+        document.getElementById('btn-mode-branches')?.removeAttribute('disabled');
+        if (btnDataTable) btnDataTable.disabled = false;
+        if (btnRtt)       btnRtt.disabled       = false;
         // Hide the empty-state overlay
         emptyStateEl.classList.add('hidden');
         // Show the axis canvas now if axis was already configured to be visible.
@@ -3486,11 +3488,11 @@ async function _initCore() {
       if (renderer._onNodeSelectChange)   renderer._onNodeSelectChange(false);
 
       // Sync button active states with restored settings.
-      document.getElementById('btn-order-asc') .classList.toggle('active', currentOrder === 'desc');
-      document.getElementById('btn-order-desc').classList.toggle('active', currentOrder === 'asc');
+      document.getElementById('btn-order-asc') ?.classList.toggle('active', currentOrder === 'desc');
+      document.getElementById('btn-order-desc')?.classList.toggle('active', currentOrder === 'asc');
       const _restoredMode = renderer._mode;
-      document.getElementById('btn-mode-nodes')   .classList.toggle('active', _restoredMode === 'nodes');
-      document.getElementById('btn-mode-branches').classList.toggle('active', _restoredMode === 'branches');
+      document.getElementById('btn-mode-nodes')   ?.classList.toggle('active', _restoredMode === 'nodes');
+      document.getElementById('btn-mode-branches')?.classList.toggle('active', _restoredMode === 'branches');
 
       _syncControlVisibility();
       closeModal();
@@ -3536,8 +3538,8 @@ async function _initCore() {
     }
 
     currentOrder = label;
-    document.getElementById('btn-order-asc') .classList.toggle('active', !ascending);
-    document.getElementById('btn-order-desc').classList.toggle('active', ascending);
+    document.getElementById('btn-order-asc') ?.classList.toggle('active', !ascending);
+    document.getElementById('btn-order-desc')?.classList.toggle('active', ascending);
     saveSettings();
   }
 
@@ -3624,19 +3626,19 @@ async function _initCore() {
       }
     }
 
-    tipFilterEl.addEventListener('input', () => {
+    tipFilterEl?.addEventListener('input', () => {
       clearTimeout(_filterTimer);
       _filterTimer = setTimeout(_applyTipFilter, 300);
     });
-    tipFilterEl.addEventListener('blur', () => {
+    tipFilterEl?.addEventListener('blur', () => {
       clearTimeout(_filterTimer);
       _applyTipFilter();
     });
     // Native clear button in <input type="search"> fires 'search' event
-    tipFilterEl.addEventListener('search', _applyTipFilter);
+    tipFilterEl?.addEventListener('search', _applyTipFilter);
 
     // Regex toggle
-    btnFilterRegexEl.addEventListener('click', (e) => {
+    btnFilterRegexEl?.addEventListener('click', (e) => {
       e.stopPropagation();
       _filterRegex = !_filterRegex;
       btnFilterRegexEl.classList.toggle('active', _filterRegex);
@@ -3645,11 +3647,11 @@ async function _initCore() {
     });
 
     // ── Filter column popup ──────────────────────────────────────────────────────
-    btnFilterColEl.addEventListener('click', (e) => {
+    btnFilterColEl?.addEventListener('click', (e) => {
       e.stopPropagation();
       filterColPopupEl.classList.toggle('open');
     });
-    filterColPopupEl.addEventListener('click', (e) => {
+    filterColPopupEl?.addEventListener('click', (e) => {
       e.stopPropagation();
       const item = e.target.closest('.pt-fcp-item');
       if (!item) return;
@@ -3786,8 +3788,8 @@ async function _initCore() {
     // (tree-midpoint is also set per-load in loadTree; this run of bindControls
     //  is a no-op on that path but is kept for safety.)
     // Zoom / fit / lens buttons — driven by commands; direct listener no longer needed.
-    document.getElementById('btn-zoom-in') .addEventListener('click', () => commands.execute('view-zoom-in'));
-    document.getElementById('btn-zoom-out').addEventListener('click', () => commands.execute('view-zoom-out'));
+    document.getElementById('btn-zoom-in') ?.addEventListener('click', () => commands.execute('view-zoom-in'));
+    document.getElementById('btn-zoom-out')?.addEventListener('click', () => commands.execute('view-zoom-out'));
     document.getElementById('btn-hyp-up')  ?.addEventListener('click', () => commands.execute('view-hyp-up'));
     document.getElementById('btn-hyp-down')?.addEventListener('click', () => commands.execute('view-hyp-down'));
 
@@ -3821,7 +3823,7 @@ async function _initCore() {
       commands.setEnabled('tree-paint',       hasSelection);
       // Update status-bar selection count for canvas-click selections.
       // Filter-driven selections update it directly in _applyTipFilter.
-      if (!tipFilterEl.value.trim()) {
+      if (!tipFilterEl?.value?.trim()) {
         _updateStatusSelect(hasSelection ? renderer._selectedTipIds.size : 0);
       }
       // Keep the data table in sync with the canvas selection
@@ -3829,10 +3831,10 @@ async function _initCore() {
       rttChart?.notifySelectionChange?.();
     };
 
-    btnBack.addEventListener('click',    () => renderer.navigateBack());
-    btnForward.addEventListener('click', () => renderer.navigateForward());
-    btnHome.addEventListener('click',    () => renderer.navigateHome());
-    btnDrill.addEventListener('click',   () => {
+    btnBack?.addEventListener('click',    () => renderer.navigateBack());
+    btnForward?.addEventListener('click', () => renderer.navigateForward());
+    btnHome?.addEventListener('click',    () => renderer.navigateHome());
+    btnDrill?.addEventListener('click',   () => {
       const nodeId = _selectedNodeId();
       if (nodeId && canDrill()) renderer.navigateInto(nodeId);
       else if (!nodeId && _prevStackIsDownward()) {
@@ -3844,10 +3846,10 @@ async function _initCore() {
         renderer._rootShiftAlpha = 0;
       }
     });
-    btnClimb.addEventListener('click',   () => renderer.navigateClimb());
+    btnClimb?.addEventListener('click',   () => renderer.navigateClimb());
 
-    btnOrderAsc.addEventListener('click',  () => applyOrder(false));
-    btnOrderDesc.addEventListener('click', () => applyOrder(true));
+    btnOrderAsc?.addEventListener('click',  () => applyOrder(false));
+    btnOrderDesc?.addEventListener('click', () => applyOrder(true));
 
     // ── Rotate node ──────────────────────────────────────────────────────────
     // btn-rotate     → reverse direct children of the selected internal node.
@@ -3868,8 +3870,8 @@ async function _initCore() {
 
       // Disable global auto-ordering — the manual rotation must be preserved.
       currentOrder = null;
-      btnOrderAsc .classList.remove('active');
-      btnOrderDesc.classList.remove('active');
+      btnOrderAsc ?.classList.remove('active');
+      btnOrderDesc?.classList.remove('active');
 
       // Recompute layout and animate.
       const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId, _layoutOptions());
@@ -3878,8 +3880,8 @@ async function _initCore() {
       saveSettings();
     }
 
-    btnRotate.addEventListener('click',    () => applyRotate(false));
-    btnRotateAll.addEventListener('click', () => applyRotate(true));
+    btnRotate?.addEventListener('click',    () => applyRotate(false));
+    btnRotateAll?.addEventListener('click', () => applyRotate(true));
 
     // ── Hide / Show ───────────────────────────────────────────────────────────
 
@@ -4030,8 +4032,8 @@ async function _initCore() {
       if (renderer._onNavChange) renderer._onNavChange(renderer._navStack.length > 0, false);
       // Hiding changes tip counts so any auto-ordering is no longer meaningful.
       currentOrder = null;
-      btnOrderAsc .classList.remove('active');
-      btnOrderDesc.classList.remove('active');
+      btnOrderAsc ?.classList.remove('active');
+      btnOrderDesc?.classList.remove('active');
       const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId, _layoutOptions());
       renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
       _seedRootShiftAnimation(oldRoot, oldNodeMap, layout.nodes, 'in');
@@ -4083,8 +4085,8 @@ async function _initCore() {
       if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(false);
       // Showing nodes changes tip counts so any auto-ordering is no longer meaningful.
       currentOrder = null;
-      btnOrderAsc .classList.remove('active');
-      btnOrderDesc.classList.remove('active');
+      btnOrderAsc ?.classList.remove('active');
+      btnOrderDesc?.classList.remove('active');
 
       // Snapshot the current visual root and viewport BEFORE installing the new layout.
       const oldRoot           = renderer.nodes?.find(n => !n.parentId) ?? null;
@@ -4100,8 +4102,8 @@ async function _initCore() {
       _restoreViewAfterLayoutChange(wasInFitLabels, prevMinScaleY, prevTargetScaleY, prevTargetOffsetY);
     }
 
-    btnHide.addEventListener('click', () => applyHide());
-    btnShow.addEventListener('click', () => applyShow());
+    btnHide?.addEventListener('click', () => applyHide());
+    btnShow?.addEventListener('click', () => applyShow());
 
     // ── Collapse / Expand clade triangle ─────────────────────────────────────
     const btnCollapseClade = document.getElementById('btn-collapse-clade');
@@ -4323,8 +4325,8 @@ async function _initCore() {
     // Double-click on collapsed triangle calls this callback.
     renderer._onCollapseExpand = (nodeId) => applyExpand(nodeId);
 
-    btnCollapseClade.addEventListener('click', () => applyCollapse());
-    btnExpandClade  .addEventListener('click', () => applyExpand());
+    btnCollapseClade?.addEventListener('click', () => applyCollapse());
+    btnExpandClade  ?.addEventListener('click', () => applyExpand());
 
     commands.get('tree-collapse-clade').exec = () => applyCollapse();
     commands.get('tree-expand-clade').exec   = () => applyExpand();
@@ -4334,12 +4336,12 @@ async function _initCore() {
     const btnModeBranches = document.getElementById('btn-mode-branches');
     const applyMode = (mode) => {
       renderer.setMode(mode);
-      btnModeNodes.classList.toggle('active',    mode === 'nodes');
-      btnModeBranches.classList.toggle('active', mode === 'branches');
+      btnModeNodes?.classList.toggle('active',    mode === 'nodes');
+      btnModeBranches?.classList.toggle('active', mode === 'branches');
       saveSettings();
     };
-    btnModeNodes.addEventListener('click',    () => applyMode('nodes'));
-    btnModeBranches.addEventListener('click', () => applyMode('branches'));
+    btnModeNodes?.addEventListener('click',    () => applyMode('nodes'));
+    btnModeBranches?.addEventListener('click', () => applyMode('branches'));
 
     // ── Shared rerooting logic (all three methods funnel through here) ────────
     function applyReroot(childNodeId, distFromParent) {
@@ -4362,7 +4364,7 @@ async function _initCore() {
       renderer._mrcaNodeId          = null;
       if (renderer._onBranchSelectChange) renderer._onBranchSelectChange(false);
       if (renderer._onNodeSelectChange)   renderer._onNodeSelectChange(false);
-      btnReroot.disabled = true;
+      if (btnReroot) btnReroot.disabled = true;
 
       const layout = computeLayoutFromGraph(graph, null, _layoutOptions());
       renderer.setDataCrossfade(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
@@ -4373,7 +4375,7 @@ async function _initCore() {
     }
 
     // Reroot button: branch-click position or node/MRCA midpoint
-    btnReroot.addEventListener('click', () => {
+    btnReroot?.addEventListener('click', () => {
       let targetNode, distFromParent;
 
       if (renderer._mode === 'branches') {
@@ -4407,14 +4409,14 @@ async function _initCore() {
     });
 
     function applyMidpointRoot() {
-      if (btnMPR.disabled) return;
+      if (btnMPR?.disabled) return;
       if (!_cachedMidpoint) _cachedMidpoint = midpointRootGraph(graph);
       const { childNodeId, distFromParent } = _cachedMidpoint;
       _cachedMidpoint     = null;  // tree is about to change — old result is no longer valid
       applyReroot(childNodeId, distFromParent);
     }
 
-    btnMPR.addEventListener('click', () => applyMidpointRoot());
+    btnMPR?.addEventListener('click', () => applyMidpointRoot());
 
     function _buildTipDates() {
       const dateKey = axisDateAnnotEl.disabled ? null : (axisDateAnnotEl.value || null);
@@ -4432,19 +4434,19 @@ async function _initCore() {
     }
 
     function applyTemporalRoot() {
-      if (btnTemporalRoot.disabled) return;
+      if (btnTemporalRoot?.disabled) return;
       const { childNodeId, distFromParent } = optimiseRootEdge(graph, _buildTipDates());
       applyReroot(childNodeId, distFromParent);
     }
 
     function applyTemporalRootGlobal() {
-      if (btnTemporalRootGlobal.disabled) return;
+      if (btnTemporalRootGlobal?.disabled) return;
       const { childNodeId, distFromParent } = temporalRootGraph(graph, _buildTipDates());
       applyReroot(childNodeId, distFromParent);
     }
 
-    btnTemporalRoot.addEventListener('click', () => applyTemporalRoot());
-    btnTemporalRootGlobal.addEventListener('click', () => applyTemporalRootGlobal());
+    btnTemporalRoot?.addEventListener('click', () => applyTemporalRoot());
+    btnTemporalRootGlobal?.addEventListener('click', () => applyTemporalRootGlobal());
 
     // ── Node Info (Cmd+I) ──────────────────────────────────────────────────
 
@@ -4784,13 +4786,13 @@ async function _initCore() {
       rttChart?.notifyStyleChange?.();
     }
 
-    btnApplyUserColour.addEventListener('click', () => {
+    btnApplyUserColour?.addEventListener('click', () => {
       const hex = tipColourPickerEl.value;
       _addRecentColour(hex);
       _applyUserColour(hex);
     });
 
-    btnClearUserColour.addEventListener('click', () => {
+    btnClearUserColour?.addEventListener('click', () => {
       if (!graph) return;
       const hasSelection  = renderer._selectedTipIds.size > 0;
       const subtreeRootId = renderer._viewSubtreeRootId ?? null;
@@ -5827,11 +5829,11 @@ async function _initCore() {
     saveSettings();
   });
 
-  btnFit.addEventListener('click', () => renderer.fitToWindow());
-  document.getElementById('btn-fit-labels').addEventListener('click', () => renderer.fitLabels());
+  btnFit?.addEventListener('click', () => renderer.fitToWindow());
+  document.getElementById('btn-fit-labels')?.addEventListener('click', () => renderer.fitLabels());
 
   // Open button
-  document.getElementById('btn-open-tree').addEventListener('click', () => commands.execute('open-tree'));
+  document.getElementById('btn-open-tree')?.addEventListener('click', () => commands.execute('open-tree'));
 
   // ── Wire command exec functions ────────────────────────────────────────────
   // Explicitly-wired (no buttonId, or custom behaviour):
