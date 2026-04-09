@@ -14,7 +14,7 @@ import { createAnnotImporter } from './annotationsio.js';
 import { createAnnotCurator  } from './annotcurator.js';
 import { createDataTableRenderer } from './datatablerenderer.js';
 import { createRTTChart          } from './rttchart.js';
-import * as commands from './commands.js';
+import { createCommands } from './commands.js';
 import { EXAMPLE_TREE_PATH, PEARTREE_BASE_URL, DEFAULT_SETTINGS } from './config.js';
 
 /**
@@ -40,6 +40,9 @@ async function fetchExampleTree() {
 
 async function _initCore(root = document) {
   const $ = id => root.querySelector('#' + id);
+  // Per-instance command registry — each embed gets its own scoped registry so
+  // commands.exec and button enabled-state never bleed across instances.
+  const commands = createCommands(root);
   // ── Embed configuration ───────────────────────────────────────────────────
   // Supports window.peartreeConfig (same-page / iframe embedding) and URL
   // search params as a lower-priority alternative.  window.peartreeConfig
