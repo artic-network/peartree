@@ -91,6 +91,7 @@ async function _initCore(root = document) {
       showBrand:       _flag(_ui.brand,        'brand'),
       enableKeyboard: _ui.keyboard !== undefined ? Boolean(_ui.keyboard) : _p.get('keyboard') !== '0',
       storageKey:    _sk,
+      dataTableColumns: Array.isArray(_wc.dataTableColumns) ? _wc.dataTableColumns : null,
       initSettings:  (() => {
         // URL ?settings=<base64-JSON> provides initial settings for embedFrame() iframes.
         // window.peartreeConfig.settings always wins over URL params.
@@ -2383,6 +2384,10 @@ async function _initCore(root = document) {
     dataTableRenderer.pin();
     $('data-table-resize-handle')?.style.setProperty('pointer-events', 'none');
   }
+  // Apply programmatic column list if provided (works for both fixed and normal modes).
+  if (_cfg.dataTableColumns) {
+    dataTableRenderer.setColumns(_cfg.dataTableColumns);
+  }
 
   // ── Root-to-Tip Divergence Panel ─────────────────────────────────────────
   rttChart = createRTTChart({
@@ -3093,6 +3098,11 @@ async function _initCore(root = document) {
       if (_newDate !== _prevDate) {
         rttChart?.recomputeCalibration?.();
       }
+    }
+    // Re-apply programmatically configured data table columns after each schema
+    // refresh so they survive tree reloads and annotation imports.
+    if (_cfg.dataTableColumns) {
+      dataTableRenderer?.setColumns(_cfg.dataTableColumns);
     }
   }
 
@@ -6777,6 +6787,7 @@ export async function embed(options = {}) {
     nodeLabelName:    options.nodeLabelName   || null,
     rttWidth:         options.rttWidth        ?? 35,
     dataTableWidth:   options.dataTableWidth  ?? 30,
+    dataTableColumns: options.dataTableColumns ?? null,
   };
 
   // Inject styles immediately so the page doesn't flash unstyled.
