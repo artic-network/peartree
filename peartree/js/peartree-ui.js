@@ -478,6 +478,14 @@ function _tbSectionFilter() {
     </div>`;
 }
 
+function _tbSectionAnnotations() {
+  return `
+    <button id="btn-curate-annot" class="btn btn-sm btn-outline-secondary" disabled title="Curate annotations"><i class="bi bi-tags"></i></button>`;}
+
+function _tbSectionNodeInfo() {
+  return `
+    <button id="btn-node-info" class="btn btn-sm btn-outline-secondary" disabled title="Node info (⌘I)"><i class="bi bi-info-circle"></i></button>`;}
+
 function _tbSectionPanels() {
   return `
     <button id="btn-data-table" class="btn btn-sm btn-outline-secondary" disabled title="Data table panel"><i class="bi bi-caret-left"></i><i class="bi bi-layout-sidebar-reverse"></i></button>
@@ -485,20 +493,22 @@ function _tbSectionPanels() {
 }
 
 const _TB_SECTION_BUILDERS = {
-  fileOps:    _tbSectionFileOps,
-  navigation: _tbSectionNavigation,
-  zoom:       _tbSectionZoom,
-  order:      _tbSectionOrder,
-  rotate:     _tbSectionRotate,
-  reroot:     _tbSectionReroot,
-  hideShow:   _tbSectionHideShow,
-  colour:     _tbSectionColour,
-  filter:     _tbSectionFilter,
-  panels:     _tbSectionPanels,
+  fileOps:     _tbSectionFileOps,
+  annotations: _tbSectionAnnotations,
+  nodeInfo:    _tbSectionNodeInfo,
+  navigation:  _tbSectionNavigation,
+  zoom:        _tbSectionZoom,
+  order:       _tbSectionOrder,
+  rotate:      _tbSectionRotate,
+  reroot:      _tbSectionReroot,
+  hideShow:    _tbSectionHideShow,
+  colour:      _tbSectionColour,
+  filter:      _tbSectionFilter,
+  panels:      _tbSectionPanels,
 };
 
 const _ALL_TB_SECTIONS = [
-  'fileOps', 'navigation', 'zoom', 'order', 'rotate',
+  'fileOps', 'annotations', 'nodeInfo', 'navigation', 'zoom', 'order', 'rotate',
   'reroot', 'hideShow', 'colour', 'filter', 'panels',
 ];
 
@@ -515,19 +525,15 @@ function _buildToolbar(tbSections) {
     ${leftOptional}
   </div>`;
 
-  // Centre: curate-annot + node-info always present, optional sections separated between each pair
-  const CENTRE_SECTIONS = ['navigation', 'zoom', 'order', 'rotate', 'reroot', 'hideShow', 'colour'];
+  // Centre: annotations + nodeInfo + optional sections, all controllable via toolbarSections
+  const CENTRE_SECTIONS = ['annotations', 'nodeInfo', 'navigation', 'zoom', 'order', 'rotate', 'reroot', 'hideShow', 'colour'];
   const centreParts = CENTRE_SECTIONS
     .filter(k => keys.includes(k))
     .map(k => _TB_SECTION_BUILDERS[k]());
-  const centreOptional = centreParts.length
-    ? SEP + '\n    ' + centreParts.join(SEP + '\n    ')
-    : '';
+  const centreContent = centreParts.join(SEP + '\n    ');
   const centre = `
   <div class="pt-toolbar-center">
-    <button id="btn-curate-annot" class="btn btn-sm btn-outline-secondary" disabled title="Curate annotations"><i class="bi bi-tags"></i></button>
-    <button id="btn-node-info" class="btn btn-sm btn-outline-secondary" disabled title="Node info (⌘I)"><i class="bi bi-info-circle"></i></button>
-    ${centreOptional}
+    ${centreContent}
   </div>`;
 
   // Right: filter + panels optional — leading sep only when at least one is included

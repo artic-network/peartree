@@ -1883,13 +1883,18 @@ async function _initCore(root = document) {
   _applyLegendTypeface();
   _applyAxisTypeface();
 
+  // Declared here (before renderer._onViewChange) so it is never in TDZ when
+  // the animation loop fires the callback.  Initialised below after the panel
+  // DOM is ready via createDataTableRenderer().
+  let dataTableRenderer;
+
   renderer._onViewChange = (scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr) => {
     axisRenderer.update(scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr);
     // Fill any subpixel gap between the tree canvas and axis canvas with the
     // canvas background colour rather than the page background.
     _syncCanvasWrapperBg(bgColor);
     // Keep data table rows aligned with the tree canvas.
-    dataTableRenderer.syncView();
+    dataTableRenderer?.syncView();
   };
 
   // Update axis time span whenever navigation drills into or out of a subtree.
@@ -1898,7 +1903,7 @@ async function _initCore(root = document) {
   renderer._onLayoutChange = (maxX, viewSubtreeRootId) => {
     // Sync data table with new tip layout
     const viewNodes = renderer.nodes || [];
-    dataTableRenderer.setTips(viewNodes.filter(n => n.isTip));
+    dataTableRenderer?.setTips(viewNodes.filter(n => n.isTip));
     // Sync RTT plot with new visible tip set
     rttChart?.notifyLayoutChange?.();
 
@@ -2238,10 +2243,10 @@ async function _initCore(root = document) {
       renderer._dirty = true;
     },
   });
-  btnCurateAnnot.addEventListener('click', () => commands.execute('curate-annot'));
+  btnCurateAnnot?.addEventListener('click', () => commands.execute('curate-annot'));
 
   // ── Data Table Panel ─────────────────────────────────────────────────────
-  const dataTableRenderer = createDataTableRenderer({
+  dataTableRenderer = createDataTableRenderer({
     getRenderer:  () => renderer,
     panel:        $('data-table-panel'),
     headerEl:     $('dt-header'),
@@ -4826,7 +4831,7 @@ async function _initCore(root = document) {
       overlay.classList.add('open');
     }
 
-    btnNodeInfo.addEventListener('click', () => showNodeInfo());
+    btnNodeInfo?.addEventListener('click', () => showNodeInfo());
 
     // ── User colour ───────────────────────────────────────────────────────────
     function _applyUserColour(colour) {
