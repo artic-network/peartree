@@ -897,6 +897,7 @@ function initPearTreeUIBindings(root) {
   const btnPalettePin   = $('btn-palette-pin');
   const PALETTE_PIN_KEY = 'peartree-palette-pinned';
   let   palettePinned   = false;
+  palettePanel.inert = true;  // off-screen by default; inert removes from tab order
 
   function _afterPanelTransition() {
     const DURATION = 250;
@@ -910,6 +911,7 @@ function initPearTreeUIBindings(root) {
 
   function openPalette(advanced = false) {
     palettePanel.classList.add('open');
+    palettePanel.inert = false;
     palettePanel.classList.toggle('advanced', advanced);
     if (palettePinned) {
       palettePanel.classList.add('pinned');
@@ -920,6 +922,7 @@ function initPearTreeUIBindings(root) {
   }
   function closePalette() {
     palettePanel.classList.remove('open', 'advanced', 'pinned');
+    palettePanel.inert = true;
     _bodyOrWrap().classList.remove('palette-pinned');
     btnPalette.classList.remove('active');
     _afterPanelTransition();
@@ -928,6 +931,7 @@ function initPearTreeUIBindings(root) {
     palettePinned = true;
     localStorage.setItem(PALETTE_PIN_KEY, '1');
     palettePanel.classList.add('open', 'pinned');
+    palettePanel.inert = false;
     _bodyOrWrap().classList.add('palette-pinned');
     btnPalettePin.classList.add('active');
     btnPalettePin.title = 'Unpin panel';
@@ -982,6 +986,7 @@ function initPearTreeUIBindings(root) {
   const btnHelp     = $('btn-help');
   const btnHelpClose = $('btn-help-close');
   let helpLoaded = false;
+  helpPanel.inert = true;  // off-screen by default; inert removes from tab order
 
   async function openHelp() {
     if (!helpLoaded) {
@@ -995,11 +1000,13 @@ function initPearTreeUIBindings(root) {
     }
     closeAbout();
     helpPanel.classList.add('open');
+    helpPanel.inert = false;
     btnHelp.classList.add('active');
   }
 
   function closeHelp() {
     helpPanel.classList.remove('open');
+    helpPanel.inert = true;
     btnHelp.classList.remove('active');
   }
 
@@ -1016,6 +1023,7 @@ function initPearTreeUIBindings(root) {
   const btnAbout      = $('btn-about');
   const btnAboutClose = $('btn-about-close');
   let aboutLoaded = false;
+  aboutPanel.inert = true;  // off-screen by default; inert removes from tab order
 
   /* ── Light / dark mode toggle ── */
   (function () {
@@ -1071,12 +1079,14 @@ function initPearTreeUIBindings(root) {
     }
     closeHelp();
     aboutPanel.classList.add('open');
+    aboutPanel.inert = false;
     aboutBackdrop.classList.add('open');
     btnAbout.classList.add('active');
   }
 
   function closeAbout() {
     aboutPanel.classList.remove('open');
+    aboutPanel.inert = true;
     aboutBackdrop.classList.remove('open');
     btnAbout.classList.remove('active');
   }
@@ -1097,7 +1107,7 @@ function initPearTreeUIBindings(root) {
 
   // Tab / ⌥Tab toggles palette; Alt held opens in advanced mode.
   // Guarded: only act when focus is within this instance's root.
-  if (palettePanel && window.peartreeConfig?.ui?.palette !== false) {
+  if (palettePanel && window.peartreeConfig?.ui?.palette !== false && window.peartreeConfig?.ui?.keyboard !== false) {
     document.addEventListener('keydown', e => {
       if (!(root === document || root.contains(document.activeElement))) return;
       if (e.key === 'Tab' && !e.metaKey && !e.ctrlKey) {
@@ -1111,10 +1121,12 @@ function initPearTreeUIBindings(root) {
   }
 
   // Close help + palette on Escape when this instance has focus.
-  document.addEventListener('keydown', e => {
-    if (!(root === document || root.contains(document.activeElement))) return;
-    if (e.key === 'Escape') { closeHelp(); if (!palettePinned) closePalette(); closeAbout(); }
-  });
+  if (window.peartreeConfig?.ui?.keyboard !== false) {
+    document.addEventListener('keydown', e => {
+      if (!(root === document || root.contains(document.activeElement))) return;
+      if (e.key === 'Escape') { closeHelp(); if (!palettePinned) closePalette(); closeAbout(); }
+    });
+  }
 
   // ── Keep panels below toolbar ───────────────────────────────────────────
   const _toolbar = root.querySelector('.pt-toolbar');

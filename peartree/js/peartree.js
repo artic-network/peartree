@@ -78,7 +78,8 @@ async function _initCore(root = document) {
       showDataTable: _flag(_ui.dataTable, 'dt'),
       showImport:    _flag(_ui.import,    'import'),
       showExport:    _flag(_ui.export,    'export'),
-      showStatusBar: _flag(_ui.statusBar, 'statusbar'),
+      showStatusBar:  _flag(_ui.statusBar, 'statusbar'),
+      enableKeyboard: _ui.keyboard !== undefined ? Boolean(_ui.keyboard) : _p.get('keyboard') !== '0',
       storageKey:    _sk,
       initSettings:  (() => {
         // URL ?settings=<base64-JSON> provides initial settings for embedFrame() iframes.
@@ -411,7 +412,7 @@ async function _initCore(root = document) {
       _closeColourPanel();
     }
   });
-  document.addEventListener('keydown', (e) => {
+  if (_cfg.enableKeyboard) document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && (root === document || root.contains(document.activeElement))) _closeColourPanel();
   });
   const tipFilterEl            = $('tip-filter');
@@ -430,7 +431,7 @@ async function _initCore(root = document) {
       filterColPopupEl.classList.remove('open');
     }
   });
-  document.addEventListener('keydown', (e) => {
+  if (_cfg.enableKeyboard) document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && (root === document || root.contains(document.activeElement))) filterColPopupEl?.classList.remove('open');
   });
 
@@ -2005,7 +2006,7 @@ async function _initCore(root = document) {
 
   // ── Unified keyboard handler for all modal overlays ──────────────────────
   // capture:true ensures we intercept before focused elements inside modals can swallow the event
-  document.addEventListener('keydown', e => {
+  if (_cfg.enableKeyboard) document.addEventListener('keydown', e => {
     const inTextField = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName) &&
       !['checkbox', 'radio'].includes(document.activeElement?.type);
 
@@ -4877,7 +4878,7 @@ async function _initCore(root = document) {
       }
     });
 
-    window.addEventListener('keydown', e => {
+    if (_cfg.enableKeyboard) window.addEventListener('keydown', e => {
       if (!e.metaKey && !e.ctrlKey) return;
       if (e.key === 'u' || e.key === 'U') { e.preventDefault(); applyOrder(false); }
       if (e.key === 'd' || e.key === 'D') { e.preventDefault(); applyOrder(true);  }
@@ -5982,7 +5983,7 @@ async function _initCore(root = document) {
   //
   // Using capture phase so ⌘⇧↑/↓ are intercepted before macOS / WKWebView
   // consumes them as "select to top/bottom" text-selection shortcuts.
-  window.addEventListener('keydown', e => {
+  if (_cfg.enableKeyboard) window.addEventListener('keydown', e => {
     if (e.altKey) return;
     if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
     // Don't steal arrows while the user is typing in a text field.
@@ -6021,7 +6022,7 @@ async function _initCore(root = document) {
   }
 
   // ── Global keyboard shortcut dispatch (registry-driven) ───────────────────
-  window.addEventListener('keydown', e => {
+  if (_cfg.enableKeyboard) window.addEventListener('keydown', e => {
     if (!e.metaKey && !e.ctrlKey) return;
     if (e.altKey) return;
     // Cmd/Ctrl+X (cut): allow natively in text fields; block everywhere else.
@@ -6691,6 +6692,7 @@ export async function embed(options = {}) {
     rtt:       false,
     dataTable: false,
     statusBar: true,
+    keyboard:  false,
   }, options.ui || {});
   if (ui.openTree === false) ui.import   = false;
   if (ui.import   === false) ui.openTree = false;
@@ -6709,6 +6711,7 @@ export async function embed(options = {}) {
       rtt:       ui.rtt,
       dataTable: ui.dataTable,
       statusBar: ui.statusBar,
+      keyboard:  ui.keyboard,
       theme:     options.theme || 'dark',
     },
     storageKey:      null,  // embeds never persist settings

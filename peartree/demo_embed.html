@@ -154,13 +154,13 @@
 
   const _sharedUi = {
     palette:   false,
-    toolbar:   false,
+    toolbar:   true,
     openTree:  false,
     import:    false,
     export:    false,
     rtt:       false,
     dataTable: false,
-    statusBar: false,
+    statusBar: true,
   };
 
   // First tree — direct same-page embed.  Returns a controller immediately.
@@ -211,11 +211,11 @@
     toolbarSections: ['navigation', 'zoom'],
   });
 
-  // onTreeLoad() on the frame controller fires when the iframe's tree is ready.
+  // onTreeLoad() on the frame controller fires when the tree is ready.
   tree2.onTreeLoad(() => {
     tree2.midpointRoot();
     tree2.applySettings({ branchColor: '#2aa198' });
-        tree2.sort('desc');
+    tree2.sort('desc');
 
   });
 </script>
