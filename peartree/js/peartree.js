@@ -3561,6 +3561,42 @@ async function _initCore() {
     saveSettings();
   }
 
+  // ── Rerooting — hoisted so they're callable from the programmatic API ──────
+
+  /** Apply a reroot operation and refresh the layout. */
+  function applyReroot(childNodeId, distFromParent) {
+    if (!graph) return;
+    rerootOnGraph(graph, childNodeId, distFromParent);
+    _cachedMidpoint = null;
+    if (currentOrder === 'asc')  reorderGraph(graph, true);
+    if (currentOrder === 'desc') reorderGraph(graph, false);
+    renderer._navStack            = [];
+    renderer._fwdStack            = [];
+    renderer._viewSubtreeRootId   = null;
+    renderer._branchSelectNode    = null;
+    renderer._branchSelectX       = null;
+    renderer._branchHoverNode     = null;
+    renderer._branchHoverX        = null;
+    renderer._selectedTipIds.clear();
+    renderer._mrcaNodeId          = null;
+    if (renderer._onBranchSelectChange) renderer._onBranchSelectChange(false);
+    if (renderer._onNodeSelectChange)   renderer._onNodeSelectChange(false);
+    document.getElementById('btn-reroot') && (document.getElementById('btn-reroot').disabled = true);
+    const layout = computeLayoutFromGraph(graph, null, _layoutOptions());
+    renderer.setDataCrossfade(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+    dataTableRenderer?.setTips(layout.nodes.filter(n => n.isTip));
+    rttChart?.notifyLayoutChange?.();
+  }
+
+  /** Apply a midpoint root and refresh the layout. */
+  function applyMidpointRoot() {
+    if (!graph) return;
+    if (!_cachedMidpoint) _cachedMidpoint = midpointRootGraph(graph);
+    const { childNodeId, distFromParent } = _cachedMidpoint;
+    _cachedMidpoint = null;
+    applyReroot(childNodeId, distFromParent);
+  }
+
   // ── Control bindings (set up once after the first tree loads) ─────────────
 
   function bindControls() {
@@ -4361,37 +4397,6 @@ async function _initCore() {
     btnModeNodes?.addEventListener('click',    () => applyMode('nodes'));
     btnModeBranches?.addEventListener('click', () => applyMode('branches'));
 
-    // ── Shared rerooting logic (all three methods funnel through here) ────────
-    function applyReroot(childNodeId, distFromParent) {
-      // Mutate graph in-place (O(depth) parent-pointer flips, no allocation).
-      rerootOnGraph(graph, childNodeId, distFromParent);
-
-      _cachedMidpoint     = null;
-
-      if (currentOrder === 'asc')  reorderGraph(graph, true);
-      if (currentOrder === 'desc') reorderGraph(graph, false);
-
-      renderer._navStack            = [];
-      renderer._fwdStack            = [];
-      renderer._viewSubtreeRootId   = null;
-      renderer._branchSelectNode    = null;
-      renderer._branchSelectX       = null;
-      renderer._branchHoverNode     = null;
-      renderer._branchHoverX        = null;
-      renderer._selectedTipIds.clear();
-      renderer._mrcaNodeId          = null;
-      if (renderer._onBranchSelectChange) renderer._onBranchSelectChange(false);
-      if (renderer._onNodeSelectChange)   renderer._onNodeSelectChange(false);
-      if (btnReroot) btnReroot.disabled = true;
-
-      const layout = computeLayoutFromGraph(graph, null, _layoutOptions());
-      renderer.setDataCrossfade(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
-      // setDataCrossfade goes through setData which does not fire _onLayoutChange,
-      // so notify the data table and RTT chart directly.
-      dataTableRenderer.setTips(layout.nodes.filter(n => n.isTip));
-      rttChart?.notifyLayoutChange?.();
-    }
-
     // Reroot button: branch-click position or node/MRCA midpoint
     btnReroot?.addEventListener('click', () => {
       let targetNode, distFromParent;
@@ -4425,14 +4430,6 @@ async function _initCore() {
       if (!targetNode) return;
       applyReroot(targetNode.id, distFromParent);
     });
-
-    function applyMidpointRoot() {
-      if (btnMPR?.disabled) return;
-      if (!_cachedMidpoint) _cachedMidpoint = midpointRootGraph(graph);
-      const { childNodeId, distFromParent } = _cachedMidpoint;
-      _cachedMidpoint     = null;  // tree is about to change — old result is no longer valid
-      applyReroot(childNodeId, distFromParent);
-    }
 
     btnMPR?.addEventListener('click', () => applyMidpointRoot());
 
@@ -6046,6 +6043,77 @@ async function _initCore() {
   // ── Public API for framework adapters ────────────────────────────────────
   // Exposed on window.peartree so that platform-specific glue scripts (e.g.
   // peartree-tauri.js) can hook in without modifying this file.
+
+  /**
+   * Apply a partial settings object at runtime.
+   * Keys correspond to DEFAULT_SETTINGS / _buildSettingsSnapshot() keys.
+   * Only keys present in `s` are applied — everything else is left unchanged.
+   *
+   * Supported keys (subset of full settings most useful programmatically):
+   *   theme, canvasBgColor, branchColor, branchWidth, fontSize, labelColor,
+   *   tipSize, tipHaloSize, nodeSize, nodeHaloSize,
+   *   tipLabelShow, axisShow, axisDateFormat, axisMajorInterval, axisMinorInterval,
+   *   axisMajorLabelFormat, axisMinorLabelFormat, clampNegBranches,
+   *   nodeLabelAnnotation, legendShow, legendTextColor
+   */
+  function _applySettingsRuntime(s) {
+    if (!s || typeof s !== 'object') return;
+
+    // theme: delegate to the full applyTheme path (handles all colours at once).
+    if (s.theme != null) applyTheme(s.theme);
+
+    // Helper: set slider value + its visible label span.
+    const _setSlider = (el, labelId, val) => {
+      if (val == null || !el) return;
+      el.value = val;
+      const lbl = labelId ? document.getElementById(labelId) : null;
+      if (lbl) lbl.textContent = val;
+    };
+
+    // Visual settings backed by DOM input elements.
+    if (s.canvasBgColor != null) {
+      canvasBgColorEl.value = s.canvasBgColor;
+      if (treeLoaded) _syncCanvasWrapperBg(s.canvasBgColor);
+    }
+    if (s.branchColor  != null) branchColorEl.value = s.branchColor;
+    if (s.labelColor   != null) labelColorEl.value  = s.labelColor;
+    _setSlider(branchWidthSlider, 'branch-width-value', s.branchWidth);
+    _setSlider(fontSlider,        'font-size-value',    s.fontSize);
+    _setSlider(tipSlider,         'tip-size-value',     s.tipSize);
+    _setSlider(tipHaloSlider,     'tip-halo-value',     s.tipHaloSize);
+    _setSlider(nodeSlider,        'node-size-value',    s.nodeSize);
+    _setSlider(nodeHaloSlider,    'node-halo-value',    s.nodeHaloSize);
+
+    if (s.tipLabelShow != null && tipLabelShow) tipLabelShow.value = s.tipLabelShow;
+
+    // Axis settings.
+    if (s.axisShow != null) {
+      const dir = s.axisShow === 'on' ? 'forward' : s.axisShow;
+      axisShowEl.value = dir;
+      axisRenderer.setDirection(dir);
+      axisRenderer.setVisible(dir !== 'off');
+      axisRenderer._lastHash = '';  // force redraw
+    }
+    if (s.axisDateFormat       != null) axisDateFmtEl.value       = s.axisDateFormat;
+    if (s.axisMajorInterval    != null) axisMajorIntervalEl.value  = s.axisMajorInterval;
+    if (s.axisMinorInterval    != null) axisMinorIntervalEl.value  = s.axisMinorInterval;
+    if (s.axisMajorLabelFormat != null) axisMajorLabelEl.value     = s.axisMajorLabelFormat;
+    if (s.axisMinorLabelFormat != null) axisMinorLabelEl.value     = s.axisMinorLabelFormat;
+
+    if (s.clampNegBranches != null && clampNegBranchesEl) clampNegBranchesEl.value = s.clampNegBranches;
+    if (s.nodeLabelAnnotation != null && nodeLabelShowEl)  nodeLabelShowEl.value   = s.nodeLabelAnnotation;
+    if (s.legendShow      != null && legendShowEl)          legendShowEl.value     = s.legendShow;
+    if (s.legendTextColor != null && legendTextColorEl) {
+      legendTextColorEl.value = s.legendTextColor;
+      legendRenderer?.setTextColor?.(s.legendTextColor);
+    }
+
+    // Push updated DOM values to the renderer and persist.
+    if (renderer) renderer.setSettings(_buildRendererSettings());
+    _syncControlVisibility();
+    saveSettings();
+  }
+
   window.peartree = {
     /** Load a tree from a text string (async). */
     loadTree,
@@ -6138,6 +6206,52 @@ async function _initCore() {
         document.getElementById('btn-palette')?.classList.toggle('d-none', !visible);
       }
     },
+
+    // ── Programmatic tree actions ─────────────────────────────────────────
+
+    /**
+     * Sort the tree nodes ascending or descending by clade size.
+     * Equivalent to clicking the sort-asc / sort-desc toolbar buttons.
+     * Safe to call before a tree is loaded (no-op).
+     * @param {'asc'|'desc'} order
+     */
+    sort(order) {
+      if (!treeLoaded) return;
+      applyOrder(order === 'desc');
+    },
+
+    /**
+     * Reroot the tree at its midpoint.
+     * Equivalent to clicking the midpoint-root toolbar button.
+     * Safe to call before a tree is loaded (no-op).
+     */
+    midpointRoot() {
+      if (!treeLoaded) return;
+      applyMidpointRoot();
+    },
+
+    /**
+     * Zoom the viewport so the whole tree fits the canvas.
+     * Equivalent to clicking the fit-to-window toolbar button.
+     */
+    fitToWindow() { renderer?.fitToWindow(); },
+
+    /**
+     * Zoom the viewport so all tip labels are visible without clipping.
+     * Equivalent to clicking the fit-labels toolbar button.
+     */
+    fitLabels() { renderer?.fitLabels(); },
+
+    /**
+     * Apply a partial settings object at runtime.
+     * Supported keys: theme, canvasBgColor, branchColor, branchWidth, fontSize,
+     * labelColor, tipSize, tipHaloSize, nodeSize, nodeHaloSize, tipLabelShow,
+     * axisShow, axisDateFormat, axisMajorInterval, axisMinorInterval,
+     * axisMajorLabelFormat, axisMinorLabelFormat, clampNegBranches,
+     * nodeLabelAnnotation, legendShow, legendTextColor.
+     * @param {object} settings  Partial settings keyed by DEFAULT_SETTINGS key names.
+     */
+    applySettings(settings) { _applySettingsRuntime(settings); },
   };
 
   // ── postMessage API (iframe embedding) ────────────────────────────────────
@@ -6170,6 +6284,14 @@ async function _initCore() {
         }
       } else if (msg.type === 'pt:applyTheme' && typeof msg.name === 'string') {
         _applyTheme(msg.name);
+      } else if (msg.type === 'pt:command' && typeof msg.action === 'string') {
+        // Programmatic tree actions — mirror the toolbar buttons.
+        if (msg.action === 'sort'         && typeof msg.order === 'string') window.peartree.sort(msg.order);
+        else if (msg.action === 'midpointRoot') window.peartree.midpointRoot();
+        else if (msg.action === 'fitToWindow') window.peartree.fitToWindow();
+        else if (msg.action === 'fitLabels')   window.peartree.fitLabels();
+      } else if (msg.type === 'pt:applySettings' && msg.settings && typeof msg.settings === 'object') {
+        _applySettingsRuntime(msg.settings);
       }
     } catch (_) { /* never propagate errors back to caller */ }
   });
@@ -6451,7 +6573,64 @@ export async function app(options = {}) {
 //   appSections:     string | []           — app HTML sections
 //   toolbarSections: string | []           — toolbar sub-sections
 //
+// NOTE: Only one direct (same-page) embed can share the host document, because
+// peartree-ui.js creates a single set of DOM element IDs.  If embed() is called
+// more than once, every call after the first automatically uses embedFrame() so
+// each additional instance lives in an isolated <iframe>.  embedFrame() can
+// still be called explicitly when iframe isolation is always required.
+let _embedDone = false;
+
+/**
+ * Build a controller for a direct (same-page) embed.
+ * Methods call through to `window.peartree` which is set up by _initCore().
+ * Safe to call before a tree is loaded — tree-structural methods are no-ops.
+ */
+function _buildDirectController() {
+  return {
+    /** Sort nodes ascending ('asc') or descending ('desc') by clade size. */
+    sort:          (order)    => window.peartree?.sort(order),
+    /** Re-root the tree at its midpoint. */
+    midpointRoot:  ()         => window.peartree?.midpointRoot(),
+    /** Zoom to fit the whole tree in the canvas. */
+    fitToWindow:   ()         => window.peartree?.fitToWindow(),
+    /** Zoom so all tip labels are visible without clipping. */
+    fitLabels:     ()         => window.peartree?.fitLabels(),
+    /** Apply a partial settings object (same keys as window.peartreeConfig.settings). */
+    applySettings: (settings) => window.peartree?.applySettings(settings),
+    /** Apply a named built-in or user theme. */
+    applyTheme:    (name)     => window.peartree?.applyTheme(name),
+    /** Return a snapshot of the current settings (same format as initSettings). */
+    getSettings:   ()         => window.peartree?.getSettings(),
+    /** Load a tree from an inline string. */
+    loadTree:      (text, fn) => window.peartree?.loadTree(text, fn),
+  };
+}
+
+/**
+ * Build a postMessage controller for an embedFrame() iframe.
+ * Each method posts a structured message to the iframe's content window.
+ * The `iframe` property gives direct access to the element itself.
+ */
+function _buildFrameController(iframe) {
+  const _send = (msg) => iframe.contentWindow?.postMessage(msg, '*');
+  return {
+    sort:          (order)    => _send({ type: 'pt:command',       action: 'sort', order }),
+    midpointRoot:  ()         => _send({ type: 'pt:command',       action: 'midpointRoot' }),
+    fitToWindow:   ()         => _send({ type: 'pt:command',       action: 'fitToWindow' }),
+    fitLabels:     ()         => _send({ type: 'pt:command',       action: 'fitLabels' }),
+    applySettings: (settings) => _send({ type: 'pt:applySettings', settings }),
+    applyTheme:    (name)     => _send({ type: 'pt:applyTheme',    name }),
+    loadTree:      (text, fn) => _send({ type: 'pt:loadTree',      text, filename: fn }),
+    /** The underlying <iframe> element — use for layout, resize observation, etc. */
+    get iframe() { return iframe; },
+  };
+}
+
 export async function embed(options = {}) {
+  // After the first same-page embed the DOM is already populated with PearTree's
+  // element IDs, so a second direct inject would collide.  Route to embedFrame().
+  if (_embedDone) return embedFrame(options);
+
   if (!options.container) throw new Error('PearTree.embed: container is required');
 
   const container = typeof options.container === 'string'
@@ -6536,6 +6715,12 @@ export async function embed(options = {}) {
   }
   if (window.peartree) _dispatchTree();
   else window.addEventListener('peartree-ready', _dispatchTree, { once: true });
+
+  _embedDone = true;
+
+  // Return a controller so the caller can drive the embed programmatically
+  // without holding a reference to the window or internal functions.
+  return _buildDirectController();
 }
 
 // ── embedFrame(options) ───────────────────────────────────────────────────
@@ -6635,7 +6820,7 @@ export function embedFrame(options = {}) {
     }, { once: true });
   }
 
-  return iframe;
+  return _buildFrameController(iframe);
 }
 
 // ── Expose on window for non-module callers ───────────────────────────────

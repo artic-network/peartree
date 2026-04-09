@@ -116,15 +116,28 @@
     <p class="pt-embed-caption">
       Figure 2. Phylogeny of Variola virus (VARV) sequences. Rendered with
       <a href="https://github.com/artic-network/peartree" target="_blank" rel="noopener">PearTree</a>
-      using <code>embedFrame()</code> — a fully isolated instance independent of Figure 1.
+      using <code>embed()</code> — automatically isolated as a second instance.
     </p>
   </section>
 
 </main>
 
 <script type="module">
-  // embed() — single same-page instance (injects HTML/JS directly into the document).
-  import { embed, embedFrame } from './js/peartree.js';
+  // embed() handles all instances automatically: the first call injects
+  // PearTree directly into the page; every subsequent call uses an <iframe>
+  // so each extra instance is fully isolated.
+  //
+  // Both calls return a controller with the same API surface:
+  //   .sort('asc' | 'desc')       — sort nodes by clade size
+  //   .midpointRoot()              — reroot at midpoint
+  //   .fitToWindow()               — zoom to fit whole tree
+  //   .fitLabels()                 — zoom so tip labels are not clipped
+  //   .applySettings({ ... })      — change visual/display settings
+  //   .applyTheme(name)            — switch named theme
+  //   .loadTree(text, filename)    — load an inline tree string
+  //   .getSettings()               — snapshot current settings (direct embed only)
+  //   .iframe                      — the <iframe> element (frame controller only)
+  import { embed } from './js/peartree.js';
 
   const _sharedSettings = {
     theme:               'Minimal',
@@ -150,8 +163,8 @@
     statusBar: false,
   };
 
-  // First tree — same-page embed (single instance only).
-  embed({
+  // First tree — direct same-page embed.  Returns a controller immediately.
+  const tree1 = await embed({
     container:       'pt-tree',
     treeUrl:         'data/ebov.tree',
     filename:        'ebov.tree',
@@ -162,20 +175,35 @@
     toolbarSections: ['navigation', 'zoom'],
   });
 
-  // Second tree — embedFrame() creates an isolated <iframe>, allowing any
-  // number of independent PearTree instances on the same page.
-  // The API is identical to embed(); all options are supported.
-  embedFrame({
+  // Example: apply midpoint root and sort after the tree is loaded.
+  // The peartree-ready event fires once the engine is initialised; tree
+  // load is dispatched asynchronously so we listen for the data to arrive.
+  window.addEventListener('peartree-ready', () => {
+    tree1.sort('desc');
+  }, { once: true });
+
+  // Second tree — embed() detects this is a second call and automatically
+  // uses an isolated <iframe>.  Returns a postMessage controller.
+  const tree2 = await embed({
     container:       'pt-tree-2',
     treeUrl:         'data/VARV.tree',
-    filename:            'VARV.tree',
-      nodeLabelName: 'bootstrap',
+    filename:        'VARV.tree',
+    nodeLabelName:   'bootstrap',
     height:          '620px',
     theme:           'light',
     settings:        _sharedSettings,
     ui:              _sharedUi,
     toolbarSections: ['navigation', 'zoom'],
   });
+
+  // Example: programmatically change branch colour after load.
+  tree2.iframe.addEventListener('load', () => {
+    tree2.iframe.contentWindow.addEventListener('peartree-ready', () => {
+    tree2.midpointRoot();
+      tree2.applySettings({ branchColor: '#2aa198' });
+      tree2.fitLabels();
+    }, { once: true });
+  }, { once: true });
 </script>
 
 </body>
