@@ -507,11 +507,12 @@ function _buildToolbar(tbSections) {
   const SEP = '\n    <div class="pt-toolbar-sep"></div>';
 
   // Left: palette always present, fileOps optional — sep only when fileOps is included
-  const leftFileOps = keys.includes('fileOps') ? _tbSectionFileOps() : '';
+  const leftParts = keys.includes('fileOps') ? [_tbSectionFileOps()] : [];
+  const leftOptional = leftParts.length ? SEP + '\n    ' + leftParts.join('') : '';
   const left = `
   <div class="pt-toolbar-left">
     <button id="btn-palette" class="btn btn-sm btn-outline-secondary" title="Visual options panel (Tab · ⌥Tab for advanced)"><i class="bi bi-sliders"></i><i class="bi bi-caret-right"></i></button>
-    ${leftFileOps ? SEP + '\n    ' + leftFileOps : ''}
+    ${leftOptional}
   </div>`;
 
   // Centre: curate-annot + node-info always present, optional sections separated between each pair
