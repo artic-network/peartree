@@ -61,6 +61,8 @@ All configuration is passed as a single options object.
 | `settings` | `object` | `{}` | Initial visual settings — see [Settings Reference](#settings-reference) below. |
 | `ui` | `object` | all `true` | Feature flags to show or hide UI panels — see [UI Flags](#ui-flags) below. |
 | `paletteSections` | `string \| string[]` | `'all'` | Which sections to include in the Visual Options panel — see [Palette Sections](#palette-sections) below. |
+| `appSections` | `string \| string[]` | `'all'` | Which major HTML sections to include. Keys: `'toolbar'`, `'canvasContainer'`, `'statusBar'`, `'modals'`, `'helpAbout'`, `'palette'`. |
+| `toolbarSections` | `string \| string[]` | `'all'` | Which toolbar sub-sections to include. Keys: `'fileOps'`, `'navigation'`, `'zoom'`, `'order'`, `'rotate'`, `'reroot'`, `'hideShow'`, `'colour'`, `'filter'`, `'panels'`. |
 | `base` | `string` | *(auto-detected)* | Override the asset root URL. Normally not needed; set only when serving assets from a non-standard path. |
 
 > **Note:** Only one PearTree instance per page is supported. The embed script assigns unique element IDs that cannot be duplicated.

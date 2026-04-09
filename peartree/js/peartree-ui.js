@@ -333,9 +333,515 @@ function buildPalettePanel(sections) {
 </div>`;
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// App HTML builder
+// ══════════════════════════════════════════════════════════════════════════
+//
+// buildAppHTML(sections)
+//
+// Returns the complete inner HTML string for the PearTree application shell.
+// Used by both the standalone webapp (peartree.html injects via a host
+// placeholder) and the embed path (peartree-embed.js calls it directly).
+//
+// sections  'all'     – include every section (default)
+//           string[]  – array of section keys to include:
+//   'toolbar'         – the full <nav> toolbar
+//   'canvasContainer' – canvas area, data-table panel, RTT panel
+//   'statusBar'       – status / brand bar
+//   'modals'          – all dialog overlays
+//   'helpAbout'       – help + about side panels
+//   'palette'         – palette-panel-host placeholder (always injected by
+//                       the palette IIFE; listed here so embed can omit it)
+//
+// Toolbar sub-sections (passed as toolbarSections on window.peartreeConfig):
+//   'fileOps'         – open / import / export buttons
+//   'navigation'      – back/forward/drill/climb/home
+//   'zoom'            – zoom in/out + fit buttons
+//   'order'           – ascending / descending order buttons
+//   'rotate'          – rotate node/subtree buttons
+//   'reroot'          – selection-mode + reroot/midpoint/temporal buttons
+//   'hideShow'        – collapse/expand subtree + clade buttons
+//   'colour'          – user-colour picker group
+//   'filter'          – tip filter input
+//   'panels'          – data-table and RTT panel toggle buttons
+
+function _tbSectionFileOps() {
+  return `
+    <button id="btn-open-tree" class="btn btn-sm btn-outline-primary" title="Open tree file (⌘O)"><i class="bi bi-folder2-open"></i></button>
+    <button id="btn-import-annot" class="btn btn-sm btn-outline-success" disabled title="Import annotations from CSV/TSV (⌘⇧O)"><i class="bi bi-table"></i></button>
+    <button id="btn-export-tree" class="btn btn-sm btn-outline-info" disabled title="Export tree (Newick or NEXUS)"><i class="bi bi-file-earmark-arrow-down"></i></button>
+    <button id="btn-export-graphic" class="btn btn-sm btn-outline-warning" disabled title="Download graphic (SVG or PNG)"><i class="bi bi-image"></i></button>
+    <div class="pt-toolbar-sep"></div>`;
+}
+
+function _tbSectionNavigation() {
+  return `
+    <div class="btn-group" role="group" aria-label="Navigate history">
+      <button id="btn-back" class="btn btn-sm btn-outline-secondary" disabled title="Navigate back (⌘[)"><i class="bi bi-chevron-left"></i></button>
+      <button id="btn-forward" class="btn btn-sm btn-outline-secondary" disabled title="Navigate forward (⌘])"><i class="bi bi-chevron-right"></i></button>
+    </div>
+    <div class="btn-group ms-1" role="group" aria-label="Navigate subtree">
+      <button id="btn-drill" class="btn btn-sm btn-outline-secondary" disabled title="Drill into subtree (⌘⇧>)"><i class="bi bi-box-arrow-in-right"></i></button>
+      <button id="btn-climb" class="btn btn-sm btn-outline-secondary" disabled title="Climb out one level (⌘⇧<)"><i class="bi bi-box-arrow-left"></i></button>
+      <button id="btn-home" class="btn btn-sm btn-outline-secondary" disabled title="Navigate to root (⌘\\)"><i class="bi bi-house"></i></button>
+    </div>
+    <div class="pt-toolbar-sep"></div>`;
+}
+
+function _tbSectionZoom() {
+  return `
+    <div class="btn-group" role="group" aria-label="Zoom">
+      <button id="btn-zoom-in" class="btn btn-sm btn-outline-secondary" disabled title="Zoom in (⌘+)"><i class="bi bi-zoom-in"></i></button>
+      <button id="btn-zoom-out" class="btn btn-sm btn-outline-secondary" disabled title="Zoom out (⌘−)"><i class="bi bi-zoom-out"></i></button>
+    </div>
+    <div class="btn-group" role="group" aria-label="Fit view">
+      <button id="btn-fit" class="btn btn-sm btn-outline-secondary" disabled title="Fit all (⌘0)"><i class="bi bi-arrows-fullscreen"></i></button>
+      <button id="btn-fit-labels" class="btn btn-sm btn-outline-secondary" disabled title="Fit labels (⌘⇧0)"><i class="bi bi-type"></i></button>
+    </div>
+    <div class="pt-toolbar-sep"></div>`;
+}
+
+function _tbSectionOrder() {
+  return `
+    <div class="btn-group" role="group" aria-label="Branch order">
+      <button id="btn-order-asc" class="btn btn-sm btn-outline-secondary" disabled title="Order branches ascending by clade size (⌘U)"><i class="bi bi-sort-up"></i></button>
+      <button id="btn-order-desc" class="btn btn-sm btn-outline-secondary" disabled title="Order branches descending by clade size (⌘D)"><i class="bi bi-sort-up"></i></button>
+    </div>`;
+}
+
+function _tbSectionRotate() {
+  return `
+    <div class="btn-group" role="group" aria-label="Rotate node">
+      <button id="btn-rotate" class="btn btn-sm btn-outline-secondary" disabled title="Rotate selected node"><i class="bi bi-repeat" style="display:inline-block;transform:rotate(90deg)"></i></button>
+      <button id="btn-rotate-all" class="btn btn-sm btn-outline-secondary" disabled title="Rotate all nodes in subtree"><i class="bi bi-symmetry-horizontal" style="display:inline-block;transform:scaleX(-1)"></i></button>
+    </div>
+    <div class="pt-toolbar-sep"></div>`;
+}
+
+function _tbSectionReroot() {
+  return `
+    <div id="reroot-controls">
+      <div class="btn-group" role="group" aria-label="Selection mode">
+        <button id="btn-mode-nodes" class="btn btn-sm btn-outline-secondary active" disabled title="Select nodes mode"><i class="bi bi-circle" style="display:inline-block;transform:rotate(-90deg)"></i></button>
+        <button id="btn-mode-branches" class="btn btn-sm btn-outline-secondary" disabled title="Toggle branches/nodes mode (⌘B)"><i class="bi bi-dash-lg"></i></button>
+      </div>
+      <div class="pt-toolbar-sep"></div>
+      <button id="btn-reroot" class="btn btn-sm btn-outline-secondary" disabled title="Reroot tree at selection"><i class="bi bi-reply-fill"></i></button>
+      <button id="btn-midpoint-root" class="btn btn-sm btn-outline-secondary" disabled title="Midpoint root (⌘M)"><i class="bi bi-vr" style="display:inline-block;transform:rotate(90deg)"></i></button>
+      <button id="btn-temporal-root-global" class="btn btn-sm btn-outline-secondary" disabled title="Global temporal root (⌘R)"><i class="bi bi-clock"></i></button>
+      <button id="btn-temporal-root" class="btn btn-sm btn-outline-secondary" disabled title="Optimise root on current branch (⇧⌘R)"><i class="bi bi-clock-history"></i></button>
+      <div class="pt-toolbar-sep"></div>
+    </div>`;
+}
+
+function _tbSectionHideShow() {
+  return `
+    <div class="btn-group" role="group" aria-label="Hide/show subtree">
+      <button id="btn-hide" class="btn btn-sm btn-outline-secondary" disabled title="Collapse selected subtree"><i class="bi bi-node-minus"></i></button>
+      <button id="btn-show" class="btn btn-sm btn-outline-secondary" disabled title="Expand selected collapsed subtree"><i class="bi bi-node-plus"></i></button>
+    </div>
+    <div class="btn-group ms-1" role="group" aria-label="Collapse/expand clade">
+      <button id="btn-collapse-clade" class="btn btn-sm btn-outline-secondary" disabled title="Collapse selected clade to triangle"><i class="bi bi-arrows-collapse"></i></button>
+      <button id="btn-expand-clade" class="btn btn-sm btn-outline-secondary" disabled title="Expand collapsed clade triangle"><i class="bi bi-arrows-expand"></i></button>
+    </div>
+    <div class="pt-toolbar-sep"></div>`;
+}
+
+function _tbSectionColour() {
+  return `
+    <div class="pt-colour-pick-wrap" id="colour-pick-wrap">
+      <button id="btn-colour-trigger" disabled title="Choose colour for selected nodes"><span id="btn-colour-trigger-swatch"></span></button>
+      <input type="color" id="btn-node-colour" value="#ff8800" tabindex="-1">
+      <div id="colour-picker-popup">
+        <div class="pt-cp-native-row">
+          <input type="color" id="btn-colour-native-open" value="#ff8800" title="Open colour picker…">
+          <span style="font-size:0.75rem;color:var(--pt-text-status-sep);">Custom colour…</span>
+        </div>
+        <div id="colour-picker-recent-row" class="pt-cp-row">
+          <span class="pt-cp-label">Recent</span>
+          <div class="pt-cp-swatches" id="colour-picker-recent"></div>
+        </div>
+        <hr class="pt-cp-divider">
+        <div id="colour-picker-palettes"></div>
+      </div>
+      <button id="btn-apply-user-colour" class="btn btn-sm btn-outline-secondary" disabled title="Apply colour to selected nodes"><i class="bi bi-brush"></i></button>
+      <button id="btn-clear-user-colour" class="btn btn-sm btn-outline-secondary" disabled title="Clear all user colours"><i class="bi bi-eraser"></i></button>
+    </div>`;
+}
+
+function _tbSectionFilter() {
+  return `
+    <div class="pt-filter-wrap">
+      <div class="pt-filter-group">
+        <input type="search" id="tip-filter" class="pt-filter-input" placeholder="Filter tips…" disabled autocomplete="off" spellcheck="false">
+        <button id="btn-filter-regex" class="pt-filter-col-btn" disabled title="Use regular expression"><i class="bi bi-regex"></i></button>
+        <div class="pt-filter-col-wrap">
+          <button id="btn-filter-col" class="pt-filter-col-btn" disabled title="Search in: Name"><i class="bi bi-funnel"></i></button>
+          <div id="filter-col-popup"></div>
+        </div>
+      </div>
+      <span id="tip-filter-count" class="pt-filter-count" hidden></span>
+    </div>
+    <div class="pt-toolbar-sep"></div>`;
+}
+
+function _tbSectionPanels() {
+  return `
+    <button id="btn-data-table" class="btn btn-sm btn-outline-secondary" disabled title="Data table panel"><i class="bi bi-caret-left"></i><i class="bi bi-layout-sidebar-reverse"></i></button>
+    <button id="btn-rtt" class="btn btn-sm btn-outline-secondary" disabled title="Root-to-tip divergence plot"><i class="bi bi-caret-left"></i><i class="bi bi-graph-up-arrow"></i></button>`;
+}
+
+const _TB_SECTION_BUILDERS = {
+  fileOps:    _tbSectionFileOps,
+  navigation: _tbSectionNavigation,
+  zoom:       _tbSectionZoom,
+  order:      _tbSectionOrder,
+  rotate:     _tbSectionRotate,
+  reroot:     _tbSectionReroot,
+  hideShow:   _tbSectionHideShow,
+  colour:     _tbSectionColour,
+  filter:     _tbSectionFilter,
+  panels:     _tbSectionPanels,
+};
+
+const _ALL_TB_SECTIONS = [
+  'fileOps', 'navigation', 'zoom', 'order', 'rotate',
+  'reroot', 'hideShow', 'colour', 'filter', 'panels',
+];
+
+function _buildToolbar(tbSections) {
+  const keys = (!tbSections || tbSections === 'all') ? _ALL_TB_SECTIONS : tbSections;
+  const left = `
+  <div class="pt-toolbar-left">
+    <button id="btn-palette" class="btn btn-sm btn-outline-secondary" title="Visual options panel (Tab · ⌥Tab for advanced)"><i class="bi bi-sliders"></i><i class="bi bi-caret-right"></i></button>
+    <div class="pt-toolbar-sep"></div>
+    ${keys.includes('fileOps') ? _tbSectionFileOps() : ''}
+  </div>`;
+
+  const centre = `
+  <div class="pt-toolbar-center">
+    <button id="btn-curate-annot" class="btn btn-sm btn-outline-secondary" disabled title="Curate annotations"><i class="bi bi-tags"></i></button>
+    <button id="btn-node-info" class="btn btn-sm btn-outline-secondary" disabled title="Node info (⌘I)"><i class="bi bi-info-circle"></i></button>
+    <div class="pt-toolbar-sep"></div>
+    ${keys.includes('navigation') ? _tbSectionNavigation() : ''}
+    ${keys.includes('zoom')       ? _tbSectionZoom()       : ''}
+    ${keys.includes('order')      ? _tbSectionOrder()      : ''}
+    ${keys.includes('rotate')     ? _tbSectionRotate()     : ''}
+    ${keys.includes('reroot')     ? _tbSectionReroot()     : ''}
+    ${keys.includes('hideShow')   ? _tbSectionHideShow()   : ''}
+    ${keys.includes('colour')     ? _tbSectionColour()     : ''}
+  </div>`;
+
+  const right = `
+  <div class="pt-toolbar-right">
+    <div class="pt-toolbar-sep"></div>
+    ${keys.includes('filter') ? _tbSectionFilter()  : ''}
+    ${keys.includes('panels') ? _tbSectionPanels()  : ''}
+  </div>`;
+
+  return `<nav class="pt-toolbar">${left}${centre}${right}\n</nav>`;
+}
+
+function _buildCanvasContainer() {
+  return `
+<div id="canvas-container">
+  <canvas id="legend2-left-canvas" class="pt-legend-canvas"></canvas>
+  <canvas id="legend-left-canvas" class="pt-legend-canvas"></canvas>
+  <div id="canvas-and-axis-wrapper">
+    <div id="canvas-wrapper">
+      <div id="empty-state">
+        <div style="text-align:center">
+          <img src="img/peartree.png" class="pt-empty-icon" alt="PearTree">
+          <p class="pt-empty-title">No tree loaded</p>
+          <p class="pt-empty-hint" id="empty-state-hint">Drag a NEXUS or Newick file here</p>
+          <p id="empty-state-error" style="display:none;color:var(--pt-red);font-size:0.85rem;margin:0.5rem 1rem 0"></p>
+          <button class="btn btn-sm btn-outline-primary" id="empty-state-open-btn"><i class="bi bi-folder2-open me-1"></i>Open…</button>
+          <button class="btn btn-sm btn-outline-secondary ms-2" id="empty-state-example-btn"><i class="bi bi-tree me-1"></i>Example…</button>
+        </div>
+      </div>
+      <div id="loading" class="hidden"><div class="pt-spinner"></div><p id="loading-msg">Fetching tree file…</p></div>
+      <div id="error"></div>
+      <canvas id="tree-canvas"></canvas>
+      <div id="tooltip"></div>
+    </div>
+    <canvas id="axis-canvas"></canvas>
+  </div>
+  <canvas id="legend-right-canvas" class="pt-legend-canvas right"></canvas>
+  <canvas id="legend2-right-canvas" class="pt-legend-canvas right"></canvas>
+  <div id="data-table-panel">
+    <div id="data-table-resize-handle"></div>
+    <div id="dt-num-col">
+      <div id="dt-num-header">
+        <button id="dt-btn-pin" title="Pin table"><i class="bi bi-pin-angle"></i></button>
+        <button id="dt-btn-close" title="Close table"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div id="dt-num-body"></div>
+    </div>
+    <div id="dt-scroll-area">
+      <div class="dt-header" id="dt-header"></div>
+      <div class="dt-body" id="dt-body"></div>
+    </div>
+  </div>
+  <div id="rtt-panel">
+    <div id="rtt-resize-handle"></div>
+    <div id="rtt-header">
+      <button id="rtt-btn-pin" title="Pin panel open"><i class="bi bi-pin-angle"></i></button>
+      <button id="rtt-btn-close" title="Close"><i class="bi bi-x-lg"></i></button>
+      <span class="rtt-title"></span>
+      <button id="rtt-btn-download" class="btn btn-sm btn-outline-info" title="Download RTT data as CSV"><i class="bi bi-download"></i></button>
+      <button id="rtt-btn-image" class="btn btn-sm btn-outline-warning" title="Export plot as image (SVG or PNG)"><i class="bi bi-image"></i></button>
+      <button id="rtt-btn-stats" class="btn btn-sm btn-outline-secondary active" title="Show/hide statistics box"><i class="bi bi-info-circle"></i></button>
+    </div>
+    <canvas id="rtt-canvas"></canvas>
+  </div>
+</div>`;
+}
+
+function _buildStatusBar() {
+  return `
+<div id="status-bar">
+  <a id="status-brand" href="https://github.com/artic-network/peartree" target="_blank" rel="noopener" title="PearTree on GitHub"><i class="bi bi-tree"></i>PearTree</a>
+  <span id="status-stats"></span>
+  <span id="status-select"></span>
+  <span id="status-message"></span>
+  <button id="btn-theme" title="Toggle light/dark mode"><i class="bi bi-sun"></i></button>
+  <button id="btn-about" title="About PearTree"><i class="bi bi-info-circle"></i></button>
+  <button id="btn-help" title="Help (⌘?)"><i class="bi bi-question-circle"></i></button>
+</div>`;
+}
+
+function _buildModals() {
+  return `
+<div id="open-tree-modal" class="pt-modal-overlay">
+  <div class="pt-modal">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-folder2-open me-2"></i>Open Tree File</h5>
+      <button class="pt-modal-close-btn" id="btn-modal-close" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body">
+      <div class="pt-tabs">
+        <button class="pt-tab-btn active" data-tab="file"><i class="bi bi-folder2-open me-1"></i>File</button>
+        <button class="pt-tab-btn" data-tab="url"><i class="bi bi-link-45deg me-1"></i>URL</button>
+        <button class="pt-tab-btn" data-tab="example"><i class="bi bi-tree me-1"></i>Example</button>
+      </div>
+      <div class="pt-tab-panel active" id="tab-panel-file">
+        <div id="tree-drop-zone" class="pt-drop-zone">
+          <div class="pt-drop-icon"><i class="bi bi-file-earmark-arrow-down"></i></div>
+          <p>Drag and drop your tree file here</p>
+          <p class="text-secondary" style="font-size:0.8rem;margin-bottom:1rem">NEXUS (.nex, .nexus, .tre, .tree, .treefile) &nbsp;or&nbsp; Newick (.nwk, .newick)</p>
+          <input type="file" id="tree-file-input" accept=".nex,.nexus,.tre,.tree,.treefile,.nwk,.newick,.txt" style="position:absolute;width:0;height:0;overflow:hidden;opacity:0;pointer-events:none">
+          <button class="btn btn-sm btn-outline-primary" id="btn-file-choose"><i class="bi bi-folder2-open me-1"></i>Choose File</button>
+        </div>
+      </div>
+      <div class="pt-tab-panel" id="tab-panel-url">
+        <label class="form-label">Tree file URL</label>
+        <input type="url" class="pt-modal-url-input" id="tree-url-input" placeholder="https://example.com/tree.nexus" />
+        <div style="text-align:center">
+          <button class="btn btn-sm btn-outline-primary" id="btn-load-url"><i class="bi bi-cloud-download me-1"></i>Load from URL</button>
+        </div>
+      </div>
+      <div class="pt-tab-panel" id="tab-panel-example">
+        <div class="pt-example-center">
+          <p>Load the example <strong>Ebola virus (EBOV)</strong> phylogenetic tree<br/>from the 2014–2016 West Africa epidemic.</p>
+          <button class="btn btn-sm btn-outline-success" id="btn-load-example"><i class="bi bi-tree me-1"></i>Load Example Data</button>
+        </div>
+      </div>
+      <div class="pt-modal-loading" id="modal-loading" style="display:none"><div class="pt-spinner"></div>Loading&hellip;</div>
+      <div class="pt-modal-error" id="modal-error" style="display:none"></div>
+    </div>
+  </div>
+</div>
+<div id="error-dialog-overlay">
+  <div id="error-dialog">
+    <h6><i class="bi bi-exclamation-triangle-fill"></i>Could not open file</h6>
+    <p id="error-dialog-msg"></p>
+    <button id="error-dialog-ok" class="btn btn-sm btn-primary">OK</button>
+    <div style="clear:both"></div>
+  </div>
+</div>
+<div id="confirm-dialog-overlay">
+  <div id="confirm-dialog">
+    <h6><i class="bi bi-exclamation-triangle"></i><span id="confirm-dialog-title">Warning</span></h6>
+    <p id="confirm-dialog-msg"></p>
+    <div id="confirm-dialog-footer">
+      <button id="confirm-dialog-cancel" class="btn btn-sm btn-outline-secondary">Cancel</button>
+      <button id="confirm-dialog-ok" class="btn btn-sm btn-primary">OK</button>
+    </div>
+  </div>
+</div>
+<div id="curate-annot-overlay" class="pt-modal-overlay">
+  <div class="pt-modal" style="width:800px;max-width:calc(100vw - 24px);min-width:min(760px,calc(100vw - 24px))">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-tags me-2"></i>Annotations</h5>
+      <button class="pt-modal-close-btn" id="curate-annot-close" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body" style="padding:0;display:flex;flex-direction:column">
+      <div class="ca-table-wrap">
+        <table class="ca-table">
+          <thead><tr>
+            <th>Annotation</th><th>Type</th><th>On</th>
+            <th>Observed range</th><th>Scale bounds</th>
+            <th title="Show column in data table panel" style="width:36px;text-align:center"><i class="bi bi-layout-sidebar-reverse" style="font-size:0.8rem"></i></th>
+            <th style="width:32px"></th>
+          </tr></thead>
+          <tbody id="curate-annot-tbody"></tbody>
+        </table>
+      </div>
+      <div id="curate-annot-detail" class="ca-detail">
+        <p class="ca-detail-empty">← Select an annotation row to edit its settings</p>
+      </div>
+    </div>
+    <div class="pt-modal-footer">
+      <button id="curate-annot-parse-tips" class="btn btn-sm btn-outline-secondary me-auto"><i class="bi bi-scissors me-1"></i>Parse Tips</button>
+      <button id="curate-annot-cancel" class="btn btn-sm btn-secondary">Cancel</button>
+      <button id="curate-annot-apply" class="btn btn-sm btn-primary">Apply</button>
+    </div>
+  </div>
+</div>
+<div id="parse-tips-overlay" class="pt-modal-overlay" style="z-index:1060">
+  <div class="pt-modal" style="width:460px;max-width:calc(100vw - 40px)">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-scissors me-2"></i>Parse Tip Names</h5>
+      <button class="pt-modal-close-btn" id="parse-tips-close" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body">
+      <p style="font-size:0.82rem;color:var(--pt-text-subdued);margin-bottom:14px">Extract an annotation from tip names by splitting on a delimiter.</p>
+      <div class="ca-row" style="margin-bottom:10px"><label class="ca-row-lbl" style="width:80px">Name</label><input type="text" id="parse-tips-name" class="ca-num-input" style="flex:1;width:auto" placeholder="annotation name"></div>
+      <div class="ca-row" style="margin-bottom:10px"><label class="ca-row-lbl" style="width:80px">Delimiter</label><input type="text" id="parse-tips-delim" class="ca-num-input" style="width:70px;font-family:monospace" value="|" placeholder="|"><span class="ca-hint" style="margin-left:8px">character(s) used to split tip names</span></div>
+      <div class="ca-row" style="margin-bottom:10px"><label class="ca-row-lbl" style="width:80px">Field</label><input type="number" id="parse-tips-field" class="ca-num-input" style="width:70px" value="1" step="1"><span class="ca-hint" style="margin-left:8px">1 = first · −1 = last</span></div>
+      <div class="ca-row" style="margin-bottom:10px"><label class="ca-row-lbl" style="width:80px">Type</label><select id="parse-tips-type" class="ca-sel"><option value="auto">Auto-detect</option><option value="categorical">Categorical</option><option value="integer">Integer</option><option value="real">Real</option><option value="date">Date</option></select></div>
+      <div class="ca-row" style="margin-bottom:10px"><label class="ca-row-lbl" style="width:80px">Missing</label><input type="text" id="parse-tips-missing" class="ca-num-input" style="width:70px" value="?" placeholder="none"><span class="ca-hint" style="margin-left:8px">field value treated as missing data</span></div>
+      <p id="parse-tips-error" class="ca-warn" style="display:none;margin-top:8px"></p>
+      <div id="parse-tips-examples" style="margin-top:14px;display:none">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--pt-text-muted);margin-bottom:6px">Example tip labels</div>
+        <div id="parse-tips-examples-list" style="font-family:monospace;font-size:0.78rem;color:var(--pt-text-bright);line-height:1.7"></div>
+      </div>
+    </div>
+    <div class="pt-modal-footer">
+      <button id="parse-tips-cancel" class="btn btn-sm btn-secondary">Cancel</button>
+      <button id="parse-tips-ok" class="btn btn-sm btn-primary">Add Annotation</button>
+    </div>
+  </div>
+</div>
+<div id="import-annot-overlay" class="pt-modal-overlay">
+  <div class="pt-modal">
+    <div class="pt-modal-header">
+      <h5 class="modal-title" id="import-annot-title"><i class="bi bi-file-earmark-plus me-2"></i>Import Annotations</h5>
+      <button class="pt-modal-close-btn" id="import-annot-close" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body" id="import-annot-body"></div>
+    <div id="import-annot-footer" class="pt-modal-footer"></div>
+  </div>
+</div>
+<div id="export-tree-overlay" class="pt-modal-overlay">
+  <div class="pt-modal">
+    <div class="pt-modal-header">
+      <h5 class="modal-title" id="export-tree-title"><i class="bi bi-file-earmark-arrow-down me-2"></i>Export Tree</h5>
+      <button class="pt-modal-close-btn" id="export-tree-close" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body" id="export-tree-body"></div>
+    <div id="export-tree-footer" class="pt-modal-footer"></div>
+  </div>
+</div>
+<div id="export-graphic-overlay" class="pt-modal-overlay">
+  <div class="pt-modal">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-image me-2"></i>Export Graphic</h5>
+      <button class="pt-modal-close-btn" id="export-graphic-close" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body" id="export-graphic-body"></div>
+    <div id="export-graphic-footer" class="pt-modal-footer"></div>
+  </div>
+</div>
+<div id="rtt-image-overlay" class="pt-modal-overlay">
+  <div class="pt-modal">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-image me-2"></i>Export Plot Image</h5>
+      <button class="pt-modal-close-btn" id="rtt-image-close" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body" id="rtt-image-body"></div>
+    <div id="rtt-image-footer" class="pt-modal-footer"></div>
+  </div>
+</div>
+<div id="node-info-overlay" class="pt-modal-overlay">
+  <div class="pt-modal">
+    <div class="pt-modal-header">
+      <h5 id="node-info-title" class="modal-title"></h5>
+      <button id="node-info-close" class="pt-modal-close-btn" title="Close">&times;</button>
+    </div>
+    <div id="node-info-body" class="pt-modal-body"></div>
+  </div>
+</div>`;
+}
+
+function _buildHelpAbout() {
+  return `
+<div id="help-panel">
+  <div id="help-panel-header">
+    <h2>PearTree Help</h2>
+    <button id="btn-help-close" title="Close help">&times;</button>
+  </div>
+  <div id="help-panel-body">
+    <div class="help-md" id="help-content"><p style="opacity:0.5">Loading…</p></div>
+  </div>
+</div>
+<div id="about-backdrop"></div>
+<div id="about-panel">
+  <div id="about-panel-header">
+    <h2><i class="bi bi-tree me-2"></i>About PearTree</h2>
+    <button id="btn-about-close" title="Close">&times;</button>
+  </div>
+  <div id="about-panel-body">
+    <div class="help-md" id="about-content"><p style="opacity:0.5">Loading…</p></div>
+  </div>
+</div>`;
+}
+
+const _APP_SECTION_BUILDERS = {
+  toolbar:         null, // handled inline (needs tbSections)
+  canvasContainer: _buildCanvasContainer,
+  statusBar:       _buildStatusBar,
+  modals:          _buildModals,
+  helpAbout:       _buildHelpAbout,
+  palette:         () => '\n<div id="palette-panel-host"></div>',
+};
+
+const _ALL_APP_SECTIONS = ['toolbar', 'canvasContainer', 'statusBar', 'modals', 'helpAbout', 'palette'];
+
+/**
+ * Build the complete PearTree application HTML shell.
+ *
+ * @param {string|string[]} [sections='all']       - App sections to include (see above).
+ * @param {string|string[]} [toolbarSections='all'] - Toolbar sub-sections to include.
+ * @returns {string} HTML string ready for injection into a container element.
+ */
+function buildAppHTML(sections, toolbarSections) {
+  const keys = (!sections || sections === 'all') ? _ALL_APP_SECTIONS : sections;
+  return keys.map(k => {
+    if (k === 'toolbar') return keys.includes('toolbar') ? _buildToolbar(toolbarSections) : '';
+    const fn = _APP_SECTION_BUILDERS[k];
+    return fn ? fn() : '';
+  }).join('\n');
+}
+
+// Auto-inject the full application shell, replacing a <div id="app-html-host">
+// placeholder.  Used by peartree.html (standalone webapp).  The embed path
+// calls buildAppHTML() directly inside _buildHTML() below, so no host
+// placeholder is present in that context.
+// peartreeConfig.toolbarSections / appSections control which sections render.
+(function () {
+  const _appHost = document.getElementById('app-html-host');
+  if (_appHost) {
+    const _appSec = window.peartreeConfig?.appSections || 'all';
+    const _tbSec  = window.peartreeConfig?.toolbarSections || 'all';
+    _appHost.outerHTML = buildAppHTML(_appSec, _tbSec);
+  }
+})();
+
 // Auto-inject the palette panel, replacing a <div id="palette-panel-host">
-// placeholder. In peartree.html the placeholder is static HTML; in the embed
-// context peartree-embed.js writes it into the wrapper via _buildHTML().
+// placeholder. In peartree.html the placeholder is written by the app-host
+// IIFE above; in the embed context peartree-embed.js calls buildAppHTML()
+// which includes the palette-panel-host placeholder.
 // peartreeConfig.paletteSections controls which sections to render (embed only).
 (function () {
   const _host = document.getElementById('palette-panel-host');
