@@ -121,6 +121,7 @@ async function _initCore(root = document) {
     $('btn-rtt')?.classList.add('d-none');
     $('rtt-btn-pin')?.classList.add('d-none');
     $('rtt-btn-close')?.classList.add('d-none');
+    $('rtt-resize-handle')?.classList.add('d-none');
     const _rttW = (window.peartreeConfig || {}).rttWidth ?? 35;
     const _rttPx = typeof _rttW === 'string' && _rttW.endsWith('%') ? _rttW
                  : `${_rttW}%`;

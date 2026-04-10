@@ -228,7 +228,12 @@ PearTreeEmbed.embed({
     // 'off' | 'names' | '<annotation-key>'
     tipLabelShow:              'names',
     tipLabelSpacing:           '3',       // px gap between tip marker and label
-    tipLabelAlign:             'off',     // 'off' | 'on' (right-align all labels)
+    tipLabelAlign:             'off',     // 'off' | 'aligned' | 'dashed' | 'dots' | 'solid'
+                                          //   'off'     — labels positioned at their tip (default)
+                                          //   'aligned' — labels right-aligned to the rightmost tip, no connector
+                                          //   'dashed'  — right-aligned with a dashed connector line
+                                          //   'dots'    — right-aligned with a dotted connector line
+                                          //   'solid'   — right-aligned with a solid connector line
 
     // ── Tree appearance ─────────────────────────────────────────────────────
     canvasBgColor:             '#ffffff',
