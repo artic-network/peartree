@@ -202,5 +202,5 @@ jobs:
           git add -f docs/
           git diff --cached --quiet || git commit -m "chore: deploy ${{ github.ref_name }} to docs/ [skip ci]"
           # Rebase onto whatever the parallel build jobs may have pushed, then push.
-          git pull --rebase "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" main
+          git pull --rebase --autostash "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" main
           git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" HEAD:main
