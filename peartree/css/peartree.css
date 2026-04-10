@@ -1181,7 +1181,11 @@ body.palette-pinned #canvas-and-axis-wrapper {
   row-gap: 6px;
   align-items: center;
 }
-/* .pt-detail.pt-sub-controls shows border only when open (display:none handles hiding) */
+/* When a detail panel is also a sub-controls block, the .pt-sub-controls
+   display:grid overrides .pt-detail display:none. Force hidden when closed. */
+.pt-detail.pt-sub-controls:not(.pt-detail-open) {
+  display: none;
+}
 .pt-palette-color {
   width: 36px;
   height: 22px;

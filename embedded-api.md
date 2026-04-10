@@ -250,7 +250,6 @@ PearTreeEmbed.embed({
     paddingRight:              '20',
     paddingTop:                '20',
     paddingBottom:             '20',
-    clampNegBranches:          'off',     // 'off' | 'on'
     introAnimation:            'x-then-y', // 'y-then-x' | 'x-then-y' | 'simultaneous' | 'from-bottom' | 'from-top' | 'none'
 
     // ── Tip markers ────────────────────────────────────────────────────────

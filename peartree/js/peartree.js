@@ -209,8 +209,6 @@ async function _initCore(root = document) {
   const nodeBarsDetailEl    = $('node-bars-detail');
   const legendDetailEl      = $('legend-detail');
   const axisDetailEl        = $('axis-detail');
-  const clampNegBranchesEl  = $('clamp-neg-branches');
-  const clampNegBranchesRowEl = $('clamp-neg-branches-row');
   const rootStemPctSlider    = $('root-stem-pct-slider');
   const fontFamilyEl        = $('font-family-select');
   const fontTypefaceStyleEl = $('font-typeface-style-select');
@@ -529,7 +527,7 @@ async function _initCore(root = document) {
       sel.appendChild(opt);
     }
     sel.value = [...sel.options].some(o => o.value === stored) ? stored : defPal;
-    row.style.display = 'flex';
+    row.style.display = '';
   }
 
   /**
@@ -863,7 +861,6 @@ async function _initCore(root = document) {
       collapsedCladeFontSize: collapsedCladeFontSizeSlider.value,
       collapsedCladeTypefaceKey:   collapsedCladeTypefaceEl?.value || '',
       collapsedCladeTypefaceStyle: collapsedCladeTypefaceStyleEl?.value || '',
-      clampNegBranches:   clampNegBranchesEl.value,
       rootStemPct:        rootStemPctSlider.value,
       tipLabelShow:       tipLabelShow.value,
       tipLabelAlign:      tipLabelAlignEl.value,
@@ -1126,7 +1123,6 @@ async function _initCore(root = document) {
       collapsedCladeFontSizeSlider.value = s.collapsedCladeFontSize;
       $('collapsed-clade-font-size-value').textContent = s.collapsedCladeFontSize;
     }
-    if (s.clampNegBranches)   clampNegBranchesEl.value = s.clampNegBranches;
     if (s.rootStemPct != null) {
       rootStemPctSlider.value = s.rootStemPct;
       $('root-stem-pct-value').textContent = s.rootStemPct + '%';
@@ -1222,7 +1218,6 @@ async function _initCore(root = document) {
     $('node-bars-width-value').textContent = DEFAULT_SETTINGS.nodeBarsWidth;
     nodeBarsMedianEl.value = DEFAULT_SETTINGS.nodeBarsShowMedian;
     nodeBarsRangeEl.value  = DEFAULT_SETTINGS.nodeBarsShowRange;
-    clampNegBranchesEl.value = DEFAULT_SETTINGS.clampNegBranches ?? 'off';
     rootStemPctSlider.value = DEFAULT_SETTINGS.rootStemPct ?? '0';
     $('root-stem-pct-value').textContent = (DEFAULT_SETTINGS.rootStemPct ?? '0') + '%';
     nodeLabelShowEl.value       = DEFAULT_SETTINGS.nodeLabelAnnotation;
@@ -1300,7 +1295,7 @@ async function _initCore(root = document) {
   /** Options object for computeLayoutFromGraph — centralised so every call site is consistent. */
   function _layoutOptions() {
     return {
-      clampNegativeBranches: clampNegBranchesEl.value === 'on',
+      clampNegativeBranches: false,
       collapsedCladeHeightN: parseInt(collapsedHeightNSlider.value),
     };
   }
@@ -1367,7 +1362,7 @@ async function _initCore(root = document) {
       collapsedCladeFontSize: parseInt(collapsedCladeFontSizeSlider.value),
       collapsedCladeTypefaceKey:   collapsedCladeTypefaceEl?.value   || null,
       collapsedCladeTypefaceStyle: collapsedCladeTypefaceStyleEl?.value || null,
-      clampNegativeBranches: clampNegBranchesEl.value === 'on',
+      clampNegativeBranches: false,
       typefaceKey:        fontFamilyEl.value,
       typefaceStyle:      fontTypefaceStyleEl?.value || TYPEFACES[fontFamilyEl.value]?.defaultStyle || 'Regular',
       tipLabelsOff:       tipLabelShow.value === 'off',
@@ -1411,11 +1406,13 @@ async function _initCore(root = document) {
     _vis(tipLabelShapeDetailEl, tipLabelShapeEl.value       !== 'off');
     const _spacingRow = $('tip-label-shape-spacing-row');
     if (_spacingRow) _spacingRow.style.display = (tipLabelShapeEl.value !== 'off' && tipLabelShapeExtraEls[0].value !== 'off') ? '' : 'none';
-    // Progressive disclosure: extra shape N section shown only when shape N-1 is on.
+    // Progressive disclosure: extra shape N section shown only when shape 1
+    // is on AND shape N-1 is on. If shape 1 is off, hide everything.
+    const _shapeOneOn = tipLabelShapeEl.value !== 'off';
     for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) {
       const prevValue = i === 0 ? tipLabelShapeEl.value : tipLabelShapeExtraEls[i - 1].value;
-      _vis(tipLabelShapeExtraSectionEls[i], prevValue !== 'off');
-      _vis(tipLabelShapeExtraDetailEls[i],  tipLabelShapeExtraEls[i].value !== 'off');
+      _vis(tipLabelShapeExtraSectionEls[i], _shapeOneOn && prevValue !== 'off');
+      _vis(tipLabelShapeExtraDetailEls[i],  _shapeOneOn && tipLabelShapeExtraEls[i].value !== 'off');
     }
     _vis(nodeLabelDetailEl,     nodeLabelShowEl.value       !== '');
     _vis(nodeBarsDetailEl,      nodeBarsShowEl.value        === 'on');
@@ -2457,11 +2454,8 @@ async function _initCore(root = document) {
     getGridLines:   () => rttGridLinesEl.value,
     getAspectRatio: () => rttAspectRatioEl.value,
     onCalibrationChange: () => {
-      axisDateFmtRow.style.display = (calibration.isActive && axisShowEl.value === 'time') ? 'flex' : 'none';
+      axisDateFmtRow.style.display = (calibration.isActive && axisShowEl.value === 'time') ? '' : 'none';
       _updateTimeOption();
-      const _hideClamp = _axisIsTimedTree || calibration.isActive;
-      if (clampNegBranchesRowEl) clampNegBranchesRowEl.style.display = _hideClamp ? 'none' : '';
-      if (calibration.isActive && !_axisIsTimedTree) clampNegBranchesEl.value = 'off';
       _showDateTickRows(calibration.isActive && !!axisDateAnnotEl.value);
       _showRttDateTickRows(calibration.isActive && !!axisDateAnnotEl.value);
       if (renderer) renderer.setCalibration(calibration.isActive ? calibration : null, axisDateFmtEl.value);
@@ -3092,7 +3086,7 @@ async function _initCore(root = document) {
         }
       }
       const _hasDate = axisDateAnnotEl.options.length > 1;
-      axisDateRow.style.display = _hasDate ? 'flex' : 'none';
+      axisDateRow.style.display = _hasDate ? '' : 'none';
       axisDateAnnotEl.disabled  = !_hasDate;
       // Restore the previous selection if it still exists; otherwise auto-select the
       // first available date annotation so the Calibrate control is never left blank
@@ -3445,7 +3439,7 @@ async function _initCore(root = document) {
       }
       // Show the date row whenever a tree is loaded; only hide if no usable annotations exist.
       const _hasDateAnnotations = axisDateAnnotEl.options.length > 1;
-      axisDateRow.style.display = _hasDateAnnotations ? 'flex' : 'none';
+      axisDateRow.style.display = _hasDateAnnotations ? '' : 'none';
       axisDateAnnotEl.disabled  = !_hasDateAnnotations;
 
       // Restore date annotation (file settings take priority over saved prefs).
@@ -5475,8 +5469,19 @@ async function _initCore(root = document) {
 
   // ── Tip-label shape controls ───────────────────────────────────────────────
 
+  /** Reset all extra shape selects at index >= startIdx to 'off' and sync renderer. */
+  function _resetExtraShapesFrom(startIdx) {
+    for (let i = startIdx; i < EXTRA_SHAPE_COUNT; i++) {
+      if (tipLabelShapeExtraEls[i].value !== 'off') {
+        tipLabelShapeExtraEls[i].value = 'off';
+        renderer.setTipLabelShapeExtra(i, 'off');
+      }
+    }
+  }
+
   tipLabelShapeEl.addEventListener('change', () => {
     renderer.setTipLabelShape(tipLabelShapeEl.value);
+    if (tipLabelShapeEl.value === 'off') _resetExtraShapesFrom(0);
     _syncControlVisibility();
     saveSettings(); _markCustomTheme();
   });
@@ -5530,6 +5535,7 @@ async function _initCore(root = document) {
     const _idx = _i;
     tipLabelShapeExtraEls[_idx].addEventListener('change', () => {
       renderer.setTipLabelShapeExtra(_idx, tipLabelShapeExtraEls[_idx].value);
+      if (tipLabelShapeExtraEls[_idx].value === 'off') _resetExtraShapesFrom(_idx + 1);
       _syncControlVisibility();
       saveSettings(); _markCustomTheme();
     });
@@ -5648,7 +5654,7 @@ async function _initCore(root = document) {
       axisRenderer.setDirection(on ? val : 'forward');
     }
     axisRenderer.setVisible(on);
-    axisDateFmtRow.style.display = (val === 'time' && calibration.isActive) ? 'flex' : 'none';
+    axisDateFmtRow.style.display = (val === 'time' && calibration.isActive) ? '' : 'none';
     _showDateTickRows(calibration.isActive && !!axisDateAnnotEl.value);
     _showRttDateTickRows(calibration.isActive && !!axisDateAnnotEl.value);
     // Resize the tree canvas so it fills the remaining space above/below the axis.
@@ -5837,14 +5843,6 @@ async function _initCore(root = document) {
     saveSettings();
   });
 
-  clampNegBranchesEl.addEventListener('change', () => {
-    if (!renderer || !graph) { saveSettings(); return; }
-    renderer.setSettings(_buildRendererSettings());
-    const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId, _layoutOptions());
-    renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
-    saveSettings();
-  });
-
   rootStemPctSlider.addEventListener('input', () => {
     $('root-stem-pct-value').textContent = rootStemPctSlider.value + '%';
     if (!renderer) { saveSettings(); return; }
@@ -5855,7 +5853,7 @@ async function _initCore(root = document) {
   });
 
   function _showDateTickRows(visible) {
-    const d = (visible && axisShowEl.value === 'time') ? 'flex' : 'none';
+    const d = (visible && axisShowEl.value === 'time') ? '' : 'none';
     axisMajorIntervalRow.style.display  = d;
     axisMinorIntervalRow.style.display  = d;
     axisMajorLabelRow.style.display     = d;
@@ -5863,7 +5861,7 @@ async function _initCore(root = document) {
   }
 
   function _showRttDateTickRows(visible) {
-    const d = visible ? 'flex' : 'none';
+    const d = visible ? '' : 'none';
     rttDateFmtRow.style.display       = d;
     rttMajorIntervalRow.style.display = d;
     rttMinorIntervalRow.style.display = d;
@@ -6185,7 +6183,6 @@ async function _initCore(root = document) {
     if (s.axisMajorLabelFormat != null) axisMajorLabelEl.value     = s.axisMajorLabelFormat;
     if (s.axisMinorLabelFormat != null) axisMinorLabelEl.value     = s.axisMinorLabelFormat;
 
-    if (s.clampNegBranches != null && clampNegBranchesEl) clampNegBranchesEl.value = s.clampNegBranches;
     if (s.nodeLabelAnnotation != null && nodeLabelShowEl)  nodeLabelShowEl.value   = s.nodeLabelAnnotation;
     if (s.legendShow      != null && legendShowEl)          legendShowEl.value     = s.legendShow;
     if (s.legendTextColor != null && legendTextColorEl) {

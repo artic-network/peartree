@@ -42,7 +42,6 @@ function _sectionTree() {
       <div class="pt-palette-row"><span class="pt-palette-label">Background</span><input type="color" class="pt-palette-color" id="canvas-bg-color" value="#02292e" /></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Branches</span><input type="color" class="pt-palette-color" id="branch-color" value="#f2f1e6" /></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Thickness</span><input type="range" class="form-range" id="branch-width-slider" min="0.5" max="8" step="0.5" value="1" /><span class="pt-val" id="branch-width-value">1</span></div>
-      <div class="pt-palette-row" id="clamp-neg-branches-row"><span class="pt-palette-label">Neg. BL</span><select class="pt-palette-select" id="clamp-neg-branches"><option value="off">draw as-is</option><option value="on">clamp to zero</option></select></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Root len</span><input type="range" class="form-range" id="root-stem-pct-slider" min="0" max="20" step="1" value="1" /><span class="pt-val" id="root-stem-pct-value" style="width:30px">1%</span></div>
     </div>`;
 }
@@ -95,11 +94,11 @@ function _sectionTipShapes() {
   return `
     <div class="pt-palette-section">
       <h3><i class="bi bi-circle"></i> Tip Shapes</h3>
-      <div class="pt-palette-row"><i class="bi bi-record-circle form-label-sm"></i><input type="range" class="form-range" id="tip-size-slider" min="0" max="24" value="3" /><span class="pt-val" id="tip-size-value">3</span></div>
+      <div class="pt-palette-row"><span class="pt-palette-label">Size</span><input type="range" class="form-range" id="tip-size-slider" min="0" max="24" value="3" /><span class="pt-val" id="tip-size-value">3</span></div>
       <div id="tip-shape-detail" class="pt-detail pt-sub-controls">
         <div class="pt-palette-row"><span class="pt-palette-label">Colour</span><input type="color" class="pt-palette-color" id="tip-shape-color" value="#888888" /></div>
         <div class="pt-palette-row"><span class="pt-palette-label">Halo</span><input type="range" class="form-range" id="tip-halo-slider" min="0" max="8" value="2" /><span class="pt-val" id="tip-halo-value">2</span></div>
-        <div class="pt-palette-row"><span class="pt-palette-label">Halo Colour</span><input type="color" class="pt-palette-color" id="tip-shape-bg-color" value="#02292e" /></div>
+        <div class="pt-palette-row"><span class="pt-palette-label">Halo col.</span><input type="color" class="pt-palette-color" id="tip-shape-bg-color" value="#02292e" /></div>
         <div class="pt-palette-row"><span class="pt-palette-label">Colour by</span><select class="pt-palette-select" id="tip-colour-by" disabled><option value="user_colour">user colour</option></select></div>
         <div class="pt-palette-row" id="tip-palette-row" style="display:none"><span class="pt-palette-label">Palette</span><select class="pt-palette-select" id="tip-palette-select"></select></div>
       </div>
@@ -114,7 +113,7 @@ function _sectionNodeShapes() {
       <div id="node-shape-detail" class="pt-detail pt-sub-controls">
         <div class="pt-palette-row"><span class="pt-palette-label">Colour</span><input type="color" class="pt-palette-color" id="node-shape-color" value="#888888" /></div>
         <div class="pt-palette-row"><span class="pt-palette-label">Halo</span><input type="range" class="form-range" id="node-halo-slider" min="0" max="8" value="2" /><span class="pt-val" id="node-halo-value">2</span></div>
-        <div class="pt-palette-row"><span class="pt-palette-label">Halo Colour</span><input type="color" class="pt-palette-color" id="node-shape-bg-color" value="#02292e" /></div>
+        <div class="pt-palette-row"><span class="pt-palette-label">Halo col.</span><input type="color" class="pt-palette-color" id="node-shape-bg-color" value="#02292e" /></div>
         <div class="pt-palette-row"><span class="pt-palette-label">Colour by</span><select class="pt-palette-select" id="node-colour-by" disabled><option value="user_colour">user colour</option></select></div>
         <div class="pt-palette-row" id="node-palette-row" style="display:none"><span class="pt-palette-label">Palette</span><select class="pt-palette-select" id="node-palette-select"></select></div>
       </div>
@@ -159,8 +158,8 @@ function _sectionCollapsedClades() {
   return `
     <div class="pt-palette-section" id="collapsed-clades-section">
       <h3><i class="bi bi-triangle"></i> Collapsed Clades</h3>
-      <div class="pt-palette-row" title="Fill opacity of collapsed clade triangles"><span class="pt-palette-label">Fill opacity</span><input type="range" class="form-range" id="collapsed-opacity-slider" min="0" max="1" step="0.05" value="0.25" /><span class="pt-val" id="collapsed-opacity-value">0.25</span></div>
-      <div class="pt-palette-row" title="Height of the clade triangle base in tip-row units"><span class="pt-palette-label">Height (rows)</span><input type="range" class="form-range" id="collapsed-height-n-slider" min="1" max="20" step="1" value="3" /><span class="pt-val" id="collapsed-height-n-value">3</span></div>
+      <div class="pt-palette-row" title="Fill opacity of collapsed clade triangles"><span class="pt-palette-label">Opacity</span><input type="range" class="form-range" id="collapsed-opacity-slider" min="0" max="1" step="0.05" value="0.25" /><span class="pt-val" id="collapsed-opacity-value">0.25</span></div>
+      <div class="pt-palette-row" title="Height of the clade triangle base in tip-row units"><span class="pt-palette-label">Height</span><input type="range" class="form-range" id="collapsed-height-n-slider" min="1" max="20" step="1" value="3" /><span class="pt-val" id="collapsed-height-n-value">3</span></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Label size</span><input type="range" class="form-range" id="collapsed-clade-font-size-slider" min="6" max="48" step="1" value="11" /><span class="pt-val" id="collapsed-clade-font-size-value">11</span></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Typeface</span><select class="pt-palette-select" id="collapsed-clade-typeface-select">${_TYPEFACES}</select></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Style</span><select class="pt-palette-select" id="collapsed-clade-typeface-style-select"><option value="">Theme</option></select></div>
@@ -253,7 +252,7 @@ function _sectionRtt() {
   return `
     <div class="pt-palette-section" id="rtt-section">
       <h3><i class="bi bi-graph-up-arrow"></i> Root-to-tip</h3>
-      <div class="pt-palette-row"><span class="pt-palette-label">X-axis origin</span><select class="pt-palette-select" id="rtt-x-origin"><option value="data">data range</option><option value="root">include root age</option></select></div>
+      <div class="pt-palette-row"><span class="pt-palette-label">X-axis origin</span><select class="pt-palette-select" id="rtt-x-origin"><option value="data">data range</option><option value="root">root age</option></select></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Grid lines</span><select class="pt-palette-select" id="rtt-grid-lines"><option value="both">both</option><option value="horizontal">horizontal</option><option value="vertical">vertical</option><option value="off">off</option></select></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Aspect ratio</span><select class="pt-palette-select" id="rtt-aspect-ratio"><option value="fit">fit panel</option><option value="1:1">1 : 1 (square)</option><option value="4:3">4 : 3</option><option value="3:2">3 : 2</option><option value="16:9">16 : 9</option></select></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Colour</span><input type="color" class="pt-palette-color" id="rtt-axis-color" value="#f2f1e6" /></div>

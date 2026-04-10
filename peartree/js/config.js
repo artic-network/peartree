@@ -109,7 +109,6 @@ export const DEFAULT_SETTINGS = {
   nodeBarsShowMedian: 'mean',
   nodeBarsShowRange:  'off',
   // Negative branch lengths
-  clampNegBranches:   'off',
   // Tip label layout
   tipLabelAlign:      'off',
   // Tip label shapes (displayed to the left of label text)
