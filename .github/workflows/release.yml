@@ -179,3 +179,14 @@ jobs:
             -H "Content-Type: application/octet-stream" \
             --data-binary @dist/peartree.bundle.min.js \
             "https://uploads.github.com/repos/${{ github.repository }}/releases/${RELEASE_ID}/assets?name=peartree.bundle.min.js"
+
+      - name: Publish bundle to repo root for GitHub Pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          cp dist/peartree.bundle.min.js peartree.bundle.min.js
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add peartree.bundle.min.js
+          git diff --cached --quiet || git commit -m "chore: update peartree.bundle.min.js for ${{ github.ref_name }} [skip ci]"
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" HEAD:main

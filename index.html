@@ -1,28 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PearTree — Phylogenetic Tree Viewer</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; overflow: hidden; background: #02292e; }
-    iframe {
-      display: block;
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-  </style>
+  <link rel="icon" type="image/png" href="peartree/img/peartree.png" />
 </head>
 <body>
-  <iframe id="app-frame" title="PearTree — Phylogenetic Tree Viewer" allowfullscreen></iframe>
-  <script>
-    (function () {
-      var src = 'peartree/peartree.html';
-      var search = window.location.search;
-      document.getElementById('app-frame').src = search ? src + search : src;
-    })();
-  </script>
+
+<div id="app-html-host"></div>
+
+<script src="peartree.bundle.min.js"></script>
+<script>
+  PearTree.app();
+</script>
 </body>
 </html>
