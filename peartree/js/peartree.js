@@ -1213,7 +1213,7 @@ async function _initCore(root = document) {
     legend4ShowEl.value      = DEFAULT_SETTINGS.legend4Position;
     legend4HeightPctSlider.value = DEFAULT_SETTINGS.legendHeightPct4;
     $('legend4-height-pct-value').textContent = DEFAULT_SETTINGS.legendHeightPct4 + '%';
-    legendTextColorEl.value  = DEFAULT_SETTINGS.legendTextColor;
+    // legendTextColor is set by applyTheme('Artic') above — do not override with a hardcoded default.
     legendFontSizeSlider.value = DEFAULT_SETTINGS.legendFontSize;
     $('legend-font-size-value').textContent = DEFAULT_SETTINGS.legendFontSize;
     legendFontFamilyEl.value = DEFAULT_SETTINGS.legendFontFamily;
@@ -1300,7 +1300,7 @@ async function _initCore(root = document) {
       for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) renderer.setTipLabelShapeExtraColourBy(i, null);
       legendRenderer.setFontSize(parseInt(DEFAULT_SETTINGS.legendFontSize));
       _applyLegendTypeface();
-      legendRenderer.setTextColor(DEFAULT_SETTINGS.legendTextColor);
+      legendRenderer.setTextColor(legendTextColorEl.value);
       _applyAxisTypeface();
       renderer.setMode('nodes');
       renderer.setNodeLabelAnnotation(null);

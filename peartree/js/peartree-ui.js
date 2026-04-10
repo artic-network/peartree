@@ -80,9 +80,9 @@ function _sectionLabelShapes() {
         <div class="pt-palette-row" id="tip-label-shape-spacing-row" style="display:none"><span class="pt-palette-label">Spacing</span><input type="range" class="form-range" id="tip-label-shape-spacing-slider" min="0" max="50" value="3" /><span class="pt-val" id="tip-label-shape-spacing-value">3</span></div>
       </div>
       ${[2,3,4,5,6,7,8,9,10].map(n => `
-      <div id="tip-label-shape-${n}-section" class="pt-detail pt-sub-controls">
+      <div id="tip-label-shape-${n}-section" class="pt-detail">
         <div class="pt-palette-row"><span class="pt-palette-label">Shape ${n}</span><select class="pt-palette-select" id="tip-label-shape-${n}"><option value="off">Off</option><option value="square">Square</option><option value="circle">Circle</option><option value="block">Block</option></select></div>
-        <div id="tip-label-shape-${n}-detail" class="pt-detail">
+        <div id="tip-label-shape-${n}-detail" class="pt-detail pt-sub-controls">
           <div class="pt-palette-row"><span class="pt-palette-label">Colour by</span><select class="pt-palette-select" id="tip-label-shape-${n}-colour-by" disabled><option value="user_colour">user colour</option></select></div>
           <div class="pt-palette-row" id="tip-label-shape-${n}-palette-row" style="display:none"><span class="pt-palette-label">Palette</span><select class="pt-palette-select" id="tip-label-shape-${n}-palette-select"></select></div>
         </div>
@@ -126,7 +126,7 @@ function _sectionNodeLabels() {
       <h3><i class="bi bi-tag-fill"></i> Node Labels</h3>
       <div class="pt-palette-row"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="node-label-show" disabled><option value="">Off</option></select></div>
       <div id="node-label-detail" class="pt-detail pt-sub-controls">
-        <div class="pt-palette-row" id="node-label-dp-row" style="display:none"><span class="pt-palette-label">Decimal places</span><select class="pt-palette-select" id="node-label-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
+        <div class="pt-palette-row" id="node-label-dp-row" style="display:none"><span class="pt-palette-label">d.p.</span><select class="pt-palette-select" id="node-label-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
         <div class="pt-palette-row"><span class="pt-palette-label">Position</span><select class="pt-palette-select" id="node-label-position"><option value="right">Right</option><option value="above-left">Above left</option><option value="below-left">Below left</option></select></div>
         <div class="pt-palette-row"><i class="bi bi-fonts form-label-sm"></i><input type="range" class="form-range" id="node-label-font-size-slider" min="6" max="48" value="9" /><span class="pt-val" id="node-label-font-size-value">9</span></div>
         <div class="pt-palette-row"><span class="pt-palette-label">Typeface</span><select class="pt-palette-select" id="node-label-typeface-select">${_TYPEFACES}</select></div>
@@ -179,21 +179,21 @@ function _sectionLegend() {
         <div class="pt-palette-row"><span class="pt-palette-label">Typeface</span><select class="pt-palette-select" id="legend-font-family-select">${_TYPEFACES}</select></div>
         <div class="pt-palette-row"><span class="pt-palette-label">Style</span><select class="pt-palette-select" id="legend-typeface-style-select"><option value="">Theme</option></select></div>
       </div>
-      <div id="legend2-section" class="pt-detail pt-sub-controls">
+      <div id="legend2-section" class="pt-detail">
         <div class="pt-palette-row"><span class="pt-palette-label">Show 2</span><select class="pt-palette-select" id="legend-annotation-2"><option value="">Off</option></select></div>
         <div id="legend2-detail" class="pt-detail pt-sub-controls">
           <div class="pt-palette-row"><span class="pt-palette-label">Position</span><select class="pt-palette-select" id="legend2-show"><option value="right">Right</option><option value="below">Below</option></select></div>
           <div class="pt-palette-row"><i class="bi bi-arrows-expand form-label-sm" title="Height"></i><input type="range" class="form-range" id="legend2-height-pct-slider" min="10" max="100" step="5" value="50" /><span class="pt-val" id="legend2-height-pct-value">50%</span></div>
         </div>
       </div>
-      <div id="legend3-section" class="pt-detail pt-sub-controls">
+      <div id="legend3-section" class="pt-detail">
         <div class="pt-palette-row"><span class="pt-palette-label">Show 3</span><select class="pt-palette-select" id="legend-annotation-3"><option value="">Off</option></select></div>
         <div id="legend3-detail" class="pt-detail pt-sub-controls">
           <div class="pt-palette-row"><span class="pt-palette-label">Position</span><select class="pt-palette-select" id="legend3-show"><option value="right">Right</option><option value="below">Below</option></select></div>
           <div class="pt-palette-row"><i class="bi bi-arrows-expand form-label-sm" title="Height"></i><input type="range" class="form-range" id="legend3-height-pct-slider" min="10" max="100" step="5" value="50" /><span class="pt-val" id="legend3-height-pct-value">50%</span></div>
         </div>
       </div>
-      <div id="legend4-section" class="pt-detail pt-sub-controls">
+      <div id="legend4-section" class="pt-detail">
         <div class="pt-palette-row"><span class="pt-palette-label">Show 4</span><select class="pt-palette-select" id="legend-annotation-4"><option value="">Off</option></select></div>
         <div id="legend4-detail" class="pt-detail pt-sub-controls">
           <div class="pt-palette-row"><span class="pt-palette-label">Position</span><select class="pt-palette-select" id="legend4-show"><option value="right">Right</option><option value="below">Below</option></select></div>
