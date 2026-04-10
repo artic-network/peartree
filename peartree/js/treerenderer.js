@@ -73,6 +73,7 @@ export class TreeRenderer {
     this._selectedTipIds  = new Set();
     this._mrcaNodeId      = null;
     this._fitLabelsMode   = false;
+    this._labelsWereVisible = null;  // tracks label visibility for horizontal-scale recalc
     this._shiftHeld       = false;   // true while Shift key is held
     this._hypFocusScreenY = null;    // screen-Y focus for hyperbolic-stretch mode (persistent)
     this._hypStrength     = 0;       // 0..1 blend factor (animated)
@@ -355,10 +356,14 @@ export class TreeRenderer {
     // normal animated fit-to-window is fine.
     if (nodes.length > 60000) {
       this._fitLabelsMode = false;
-      this._updateScaleX();          // immediate snap: scaleX/offsetX fitted
       this._updateMinScaleY();       // recomputes this.minScaleY
       const plotH     = this.canvas.clientHeight - this.paddingTop - this.paddingBottom;
       const landingY  = Math.max(this.minScaleY, plotH / 500);  // show ~500 rows
+      // Use landingY for the label-visibility check so scaleX is correct immediately.
+      const _prevScaleY = this.scaleY;
+      this.scaleY = landingY;
+      this._updateScaleX();          // immediate snap: scaleX/offsetX fitted
+      this.scaleY = _prevScaleY;
       const offsetY   = this.paddingTop + landingY * 0.5;
       this._setTarget(offsetY, landingY, /*immediate*/ true);
       this._dirty = true;
@@ -1526,7 +1531,9 @@ export class TreeRenderer {
    *  immediate=true (default) snaps instantly; false animates via _targetScaleX. */
   _updateScaleX(immediate = true) {
     const W = this.canvas.clientWidth;
-    const plotW = W - this.paddingLeft - this.labelRightPad;
+    // Only reserve space for tip labels when they're actually visible at this zoom level.
+    const labelsVisible = this.scaleY >= this.fontSize * 0.5;
+    const plotW = W - this.paddingLeft - (labelsVisible ? this.labelRightPad : 0);
     // Extra world-units needed to the left of the root for node bars / whiskers.
     const barPad = this.nodeBarsEnabled ? this._nodeBarsLeftPad() : 0;
     // Root stem: only applied to the whole-tree view (not subtree navigation).
@@ -1588,8 +1595,13 @@ export class TreeRenderer {
   fitToWindow(immediate = false) {
     if (!this.nodes) return;
     this._fitLabelsMode = false;
-    this._updateScaleX();
     this._updateMinScaleY();
+    // Use minScaleY for the label-visibility check so the horizontal scale is
+    // correct from the start of the animation rather than correcting mid-flight.
+    const _prevScaleY = this.scaleY;
+    this.scaleY = this.minScaleY;
+    this._updateScaleX(immediate);
+    this.scaleY = _prevScaleY;
     const newOffsetY = this.paddingTop + this.minScaleY * 0.5;
     this._setTarget(newOffsetY, this.minScaleY, immediate);
     this._dirty = true;
@@ -2042,6 +2054,16 @@ export class TreeRenderer {
         if (this._rootShiftAlpha >= 1) this.offsetX += dOX * EASE;
       }
       this._dirty = true;
+    }
+
+    // Recalculate horizontal scale smoothly when the user's zoom crosses the
+    // label-visibility threshold (scaleY == fontSize * 0.5).
+    if (this.nodes) {
+      const _labelsNowVisible = this.scaleY >= this.fontSize * 0.5;
+      if (_labelsNowVisible !== this._labelsWereVisible) {
+        this._labelsWereVisible = _labelsNowVisible;
+        this._updateScaleX(false);
+      }
     }
 
     // Animate hyperbolic-stretch blend factor.
