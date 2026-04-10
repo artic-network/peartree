@@ -1055,6 +1055,11 @@ body.palette-pinned #canvas-and-axis-wrapper {
   overflow: hidden;
   padding-top: 8px;
   padding-bottom: 8px;
+  display: grid;
+  grid-template-columns: max-content 1fr auto;
+  column-gap: 8px;
+  row-gap: 6px;
+  align-items: center;
 }
 .pt-palette-section--open > .pt-section-body,
 .pt-palette-section--pinned > .pt-section-body {
@@ -1071,40 +1076,73 @@ body.palette-pinned #canvas-and-axis-wrapper {
   margin: 10px 0 4px;
 }
 .pt-palette-subhead:first-child { margin-top: 0; }
+/* Each row spans its parent grid and inherits column tracks via subgrid.
+   This keeps labels in col 1, controls in col 2, values in col 3,
+   and sizes the label column to the widest label in each section. */
 .pt-palette-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+/* Span rows: no label, own flex layout (e.g., theme button group) */
+.pt-palette-row--span {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px;
+  grid-column: 1 / -1;
 }
-.pt-palette-row .form-range { width: 140px; flex: 1; }
+/* Non-row direct children of any palette grid span all three columns */
+.pt-section-body-inner > :not(.pt-palette-row):not(.pt-palette-row--span),
+.pt-sub-controls > :not(.pt-palette-row):not(.pt-palette-row--span),
+.pt-detail > :not(.pt-palette-row):not(.pt-palette-row--span),
+#node-bars-controls > :not(.pt-palette-row):not(.pt-palette-row--span) {
+  grid-column: 1 / -1;
+}
+.pt-palette-row .form-range { width: 100%; }
+/* Selects span the control + value columns so all dropdowns share the same right edge */
+.pt-palette-row .pt-palette-select { grid-column: 2 / -1; }
 .pt-palette-row .pt-val {
   font-size: 0.75rem;
   color: var(--pt-gold);
-  width: 18px;
+  min-width: 28px;
   text-align: right;
-  flex-shrink: 0;
+  white-space: nowrap;
 }
 .pt-palette-label {
   font-size: 0.75rem;
   color: var(--pt-cream);
-  flex-shrink: 0;
+  text-align: right;
+  white-space: nowrap;
 }
-/* Collapsible detail panels — animated open/close */
+/* Icon labels: right-align within label column */
+.pt-palette-row .form-label-sm {
+  justify-self: end;
+}
+/* Collapsible detail panels — closed: display:none (no ghost row-gap);
+   open: display:grid with @starting-style fade-in */
 .pt-detail {
-  overflow: hidden;
-  max-height: 0;
+  display: none;
   opacity: 0;
+  grid-template-columns: max-content 1fr auto;
+  column-gap: 8px;
+  row-gap: 6px;
+  align-items: center;
   pointer-events: none;
-  transition: max-height 0.22s ease, opacity 0.18s ease;
+  transition: display 0.18s allow-discrete, opacity 0.18s ease;
 }
 .pt-detail.pt-detail-open {
-  max-height: 500px;
+  display: grid;
   opacity: 1;
   pointer-events: auto;
 }
+@starting-style {
+  .pt-detail.pt-detail-open {
+    opacity: 0;
+  }
+}
 .pt-palette-select {
-  flex: 1;
+  width: 100%;
   background: var(--pt-surface-select);
   border: 1px solid var(--pt-border);
   border-radius: 3px;
@@ -1124,17 +1162,26 @@ body.palette-pinned #canvas-and-axis-wrapper {
 }
 /* Sub-controls: the block of detail controls under an on/off toggle */
 .pt-sub-controls {
+  display: grid;
+  grid-template-columns: max-content 1fr auto;
+  column-gap: 8px;
+  row-gap: 6px;
+  align-items: center;
   border-left: 2px solid var(--pt-sub-border);
   margin-left: 2px;
   padding-left: 9px;
   margin-top: 4px;
   border-radius: 0 0 0 2px;
 }
-/* Suppress left-border flicker and margin during .pt-detail collapse animation */
-.pt-detail.pt-sub-controls:not(.pt-detail-open) {
-  border-left-color: transparent;
-  margin-top: 0;
+/* node-bars-controls: plain show/hide div that contains rows */
+#node-bars-controls {
+  display: grid;
+  grid-template-columns: max-content 1fr auto;
+  column-gap: 8px;
+  row-gap: 6px;
+  align-items: center;
 }
+/* .pt-detail.pt-sub-controls shows border only when open (display:none handles hiding) */
 .pt-palette-color {
   width: 36px;
   height: 22px;
@@ -1143,7 +1190,7 @@ body.palette-pinned #canvas-and-axis-wrapper {
   border-radius: 3px;
   cursor: pointer;
   background: none;
-  flex-shrink: 0;
+  justify-self: start;
 }
 /* Panel-toggle buttons — gold when open */
 #btn-palette.active,

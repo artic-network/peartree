@@ -41,9 +41,9 @@ function _sectionTree() {
       <div class="pt-palette-row" id="axis-date-row" style="display:none"><span class="pt-palette-label">Calibrate</span><select class="pt-palette-select" id="axis-date-annotation"><option value="">(none)</option></select></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Background</span><input type="color" class="pt-palette-color" id="canvas-bg-color" value="#02292e" /></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Branches</span><input type="color" class="pt-palette-color" id="branch-color" value="#f2f1e6" /></div>
-      <div class="pt-palette-row"><i class="bi bi-distribute-horizontal form-label-sm" style="display:inline-block;transform:rotate(90deg)"></i><input type="range" class="form-range" id="branch-width-slider" min="0.5" max="8" step="0.5" value="1" /><span class="pt-val" id="branch-width-value">1</span></div>
-      <div class="pt-palette-row" id="clamp-neg-branches-row"><span class="pt-palette-label">Neg. branches</span><select class="pt-palette-select" id="clamp-neg-branches"><option value="off">draw as-is</option><option value="on">clamp to zero</option></select></div>
-      <div class="pt-palette-row"><i class="bi bi-sign-intersection-side form-label-sm" style="display:inline-block;transform:scaleX(-1)" title="Root stem length (% of tree age)"></i><input type="range" class="form-range" id="root-stem-pct-slider" min="0" max="20" step="1" value="1" /><span class="pt-val" id="root-stem-pct-value" style="width:30px">1%</span></div>
+      <div class="pt-palette-row"><span class="pt-palette-label">Thickness</span><input type="range" class="form-range" id="branch-width-slider" min="0.5" max="8" step="0.5" value="1" /><span class="pt-val" id="branch-width-value">1</span></div>
+      <div class="pt-palette-row" id="clamp-neg-branches-row"><span class="pt-palette-label">Neg. BL</span><select class="pt-palette-select" id="clamp-neg-branches"><option value="off">draw as-is</option><option value="on">clamp to zero</option></select></div>
+      <div class="pt-palette-row"><span class="pt-palette-label">Root len</span><input type="range" class="form-range" id="root-stem-pct-slider" min="0" max="20" step="1" value="1" /><span class="pt-val" id="root-stem-pct-value" style="width:30px">1%</span></div>
     </div>`;
 }
 
@@ -53,7 +53,7 @@ function _sectionTipLabels() {
       <h3><i class="bi bi-tag"></i> Tip Labels</h3>
       <div class="pt-palette-row"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="tip-label-show" disabled><option value="off">Off</option><option value="names">names</option></select></div>
       <div id="tip-label-controls" class="pt-sub-controls" style="display:none">
-        <div class="pt-palette-row" id="tip-label-dp-row" style="display:none"><span class="pt-palette-label">Decimal places</span><select class="pt-palette-select" id="tip-label-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
+        <div class="pt-palette-row" id="tip-label-dp-row" style="display:none"><span class="pt-palette-label">d.p.</span><select class="pt-palette-select" id="tip-label-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
         <div class="pt-palette-row"><span class="pt-palette-label">Layout</span><select class="pt-palette-select" id="tip-label-align"><option value="off">Normal</option><option value="aligned">Aligned</option><option value="dots">Aligned + dots</option><option value="dashed">Aligned + dashed</option><option value="solid">Aligned + solid</option></select></div>
         <div class="pt-palette-row"><i class="bi bi-fonts form-label-sm"></i><input type="range" class="form-range" id="font-size-slider" min="1" max="48" value="11" /><span class="pt-val" id="font-size-value">11</span></div>
         <div class="pt-palette-row"><span class="pt-palette-label">Typeface</span><select class="pt-palette-select" id="typeface-select">${_TYPEFACES}</select></div>
@@ -82,7 +82,7 @@ function _sectionLabelShapes() {
       </div>
       ${[2,3,4,5,6,7,8,9,10].map(n => `
       <div id="tip-label-shape-${n}-section" class="pt-detail pt-sub-controls">
-        <div class="pt-palette-row"><span class="pt-palette-label">Label shape ${n}</span><select class="pt-palette-select" id="tip-label-shape-${n}"><option value="off">Off</option><option value="square">Square</option><option value="circle">Circle</option><option value="block">Block</option></select></div>
+        <div class="pt-palette-row"><span class="pt-palette-label">Shape ${n}</span><select class="pt-palette-select" id="tip-label-shape-${n}"><option value="off">Off</option><option value="square">Square</option><option value="circle">Circle</option><option value="block">Block</option></select></div>
         <div id="tip-label-shape-${n}-detail" class="pt-detail">
           <div class="pt-palette-row"><span class="pt-palette-label">Colour by</span><select class="pt-palette-select" id="tip-label-shape-${n}-colour-by" disabled><option value="user_colour">user colour</option></select></div>
           <div class="pt-palette-row" id="tip-label-shape-${n}-palette-row" style="display:none"><span class="pt-palette-label">Palette</span><select class="pt-palette-select" id="tip-label-shape-${n}-palette-select"></select></div>
@@ -278,8 +278,8 @@ function _sectionTheme() {
   return `
     <div class="pt-palette-section">
       <h3><i class="bi bi-palette2"></i> Theme</h3>
-      <div class="pt-palette-row"><select class="pt-palette-select" id="theme-select" style="flex:1"></select></div>
-      <div class="pt-palette-row" style="gap:6px">
+      <div class="pt-palette-row--span"><select class="pt-palette-select" id="theme-select"></select></div>
+      <div class="pt-palette-row--span" style="gap:6px">
         <button id="btn-store-theme" class="pt-theme-btn" style="flex:1" title="Save current settings as a named theme" disabled>Store</button>
         <button id="btn-default-theme" class="pt-theme-btn" style="flex:1" title="Set selected theme as the default" disabled>Default</button>
         <button id="btn-remove-theme" class="pt-theme-btn" style="flex:1" title="Remove this user-saved theme" disabled>Remove</button>
