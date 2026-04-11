@@ -40,6 +40,39 @@ PearTree can be embedded directly inside any HTML page using a single JavaScript
 
 ---
 
+## Single-file Bundle
+
+For the simplest possible integration, build (or download) `peartree.bundle.min.js`. This single file bundles all JavaScript modules, CSS, and icon fonts — no separate stylesheet tags are needed.
+
+```sh
+# Build the bundle from source
+npm run bundle
+# Output: dist/peartree.bundle.min.js
+```
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- Nothing else needed — styles are injected automatically -->
+  <script src="dist/peartree.bundle.min.js"></script>
+</head>
+<body>
+  <div id="my-tree"></div>
+  <script>
+    PearTreeEmbed.embed({
+      container: 'my-tree',
+      treeUrl:   'data/my.tree',
+    });
+  </script>
+</body>
+</html>
+```
+
+The bundle exposes the same `PearTreeEmbed.embed()` and `PearTreeEmbed.embedFrame()` API as the unbundled script. All options, controller methods, and settings work identically.
+
+---
+
 ## API Reference
 
 ### `PearTreeEmbed.embed(options)`
@@ -285,7 +318,6 @@ PearTreeEmbed.embed({
     collapsedCladeFontSize:    '11',
 
     // ── Legend ─────────────────────────────────────────────────────────────
-    legendShow:                'right',   // 'right' | 'left'
     legendAnnotation2:         '',        // second legend annotation key
     legend2Position:           'right',   // 'right' (beside L1) | 'below' (stacked under L1)
     legendTextColor:           '#444444',
@@ -510,6 +542,6 @@ Controllers returned by `embedFrame()` expose the same methods (messages are for
 
 - **No localStorage persistence.** When PearTree is loaded via the embed API, settings are never written to `localStorage`. The viewer always starts with the settings you provide.
 - **Multiple instances.** Multiple independent PearTree instances can be embedded on the same page. Each `embed()` call is fully scoped to its own container element.
-- **Required stylesheets.** The four CSS files listed in the quick start must all be loaded. `peartree-embed.css` adjusts the layout for embedded use (removes the full-page chrome).
+- **Required stylesheets.** When using the unbundled script, the four CSS files listed in the quick start must all be loaded. When using the [single-file bundle](#single-file-bundle) (`peartree.bundle.min.js`), stylesheets are injected automatically — no `<link>` tags are required.
 - **Asset path detection.** The embed script auto-detects the location of PearTree's assets from its own `src` path. If you serve assets from a custom location, pass `base: 'https://example.com/peartree/'` as a top-level option.
 - **Tree formats.** Both Newick (`.nwk`, `.newick`) and NEXUS (`.nex`, `.nexus`, `.tree`, `.tre`, `.treefile`) formats are supported. Supply `filename` when passing an inline `tree` string so PearTree can choose the correct parser.
