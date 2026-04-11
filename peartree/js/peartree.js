@@ -2734,6 +2734,7 @@ async function _initCore(root = document) {
   // triggering a browser download.
   let _exportSaveHandler   = null;
   let _graphicsSaveHandler = null;
+  let _printTrigger        = null; // platform override: fn(layer) → void|Promise
 
   function _openExportDialog() {
     if (!graph) return;
@@ -3156,6 +3157,41 @@ async function _initCore(root = document) {
                       !SYNTHETIC.includes(annotKey) &&
                       ['real', 'integer', 'proportion', 'percentage'].includes(dt);
     rowEl.style.display = isNumeric ? '' : 'none';
+  }
+
+  /**
+   * Print the current tree via the OS print dialog.
+   * On macOS, the print panel has a PDF dropdown with "Save as PDF".
+   * Builds the composite SVG, injects it into a hidden #pt-print-layer, then
+   * calls window.print(). The layer is cleared once the dialog closes.
+   */
+  function _doPrint() {
+    if (!graph) return;
+    const svgStr = buildGraphicSVG(
+      { renderer, legendRenderer, canvas, axisCanvas, legendRightCanvas, legend2RightCanvas, axisRenderer },
+      false, false,
+    );
+    if (!svgStr) return;
+    let layer = document.getElementById('pt-print-layer');
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.id = 'pt-print-layer';
+      document.body.appendChild(layer);
+    }
+    layer.innerHTML = svgStr;
+    // afterprint cleans up; add a fallback timeout for environments where it doesn't fire.
+    const _cleanup = () => { layer.innerHTML = ''; };
+    window.addEventListener('afterprint', _cleanup, { once: true });
+    setTimeout(() => { if (layer.innerHTML) _cleanup(); }, 60_000); // safety net
+    // Wait for two animation frames so the browser paints the SVG before the print
+    // snapshot is taken (critical in WKWebView/Tauri where the snapshot is immediate).
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (_printTrigger) {
+        _printTrigger(layer);
+      } else {
+        window.print();
+      }
+    }));
   }
 
   /** Repopulate annotation dropdowns (tipColourBy, nodeColourBy, legendAnnotEl) after schema change. */
@@ -3809,6 +3845,7 @@ async function _initCore(root = document) {
         commands.setEnabled('curate-annot',    true);
         commands.setEnabled('export-tree',     true);
         commands.setEnabled('export-image',    true);
+        commands.setEnabled('print-graphic',   true);
         commands.setEnabled('copy-tree',       true);
         commands.setEnabled('copy-tips',       true);
         commands.setEnabled('view-zoom-in',    true);
@@ -6394,6 +6431,7 @@ async function _initCore(root = document) {
       cmd.exec = () => $(btnId)?.click();
     }
   }
+  commands.get('print-graphic').exec = _doPrint;
 
   // ── Global keyboard shortcut dispatch (registry-driven) ───────────────────
   if (_cfg.enableKeyboard) window.addEventListener('keydown', e => {
@@ -6534,6 +6572,12 @@ async function _initCore(root = document) {
      *  fn({ content|contentBase64, base64, filename, mimeType, filterName, extensions })
      *  Set to null to restore browser behaviour. */
     setGraphicsSaveHandler:  (fn) => { _graphicsSaveHandler = fn; },
+
+    /** Override the print trigger for the current platform.
+     *  fn(layer: HTMLElement) — called after the SVG is injected; responsible for
+     *  triggering the native print and clearing layer.innerHTML when done.
+     *  Set to null to use window.print(). */
+    setPrintTrigger:         (fn) => { _printTrigger = fn; },
 
     /** Override the RTT plot image-export action for the current platform.
      *  Same signature as setGraphicsSaveHandler. */

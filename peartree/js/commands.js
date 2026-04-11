@@ -27,7 +27,8 @@ const _DEFS = [
   { id: 'import-annot', label: 'Import Annotations…',    shortcut: 'CmdOrCtrl+Shift+A',       group: 'file', enabled: false, buttonId: 'btn-import-annot'   },
   { id: 'curate-annot', label: 'Curate Annotations…',    shortcut: null,                      group: 'file', enabled: false, buttonId: 'btn-curate-annot'   },
   { id: 'export-tree',  label: 'Export Tree…',            shortcut: 'CmdOrCtrl+E',             group: 'file', enabled: false, buttonId: 'btn-export-tree'    },
-  { id: 'export-image', label: 'Export Image…',           shortcut: 'CmdOrCtrl+Shift+E',       group: 'file', enabled: false, buttonId: 'btn-export-graphic' },
+  { id: 'export-image',  label: 'Export Image…',           shortcut: 'CmdOrCtrl+Shift+E',       group: 'file', enabled: false, buttonId: 'btn-export-graphic' },
+  { id: 'print-graphic', label: 'Print…',                  shortcut: 'CmdOrCtrl+P',             group: 'file', enabled: false },
 
   // Edit
   { id: 'paste-tree',    label: 'Paste Tree',           shortcut: 'CmdOrCtrl+V',             group: 'edit', enabled: true  },

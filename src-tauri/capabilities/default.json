@@ -5,6 +5,7 @@
   "permissions": [
     "core:default",
     "core:window:allow-set-title",
+    "core:webview:allow-print",
     "opener:default",
     "dialog:allow-open",
     "dialog:allow-save",

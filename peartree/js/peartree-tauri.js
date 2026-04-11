@@ -101,6 +101,15 @@
   app.setGraphicsSaveHandler(_nativeSave);
   app.setRTTImageSaveHandler(_nativeSave);
 
+  // ── Print: use a Rust command to trigger the native macOS print panel ────
+  // window.print() and getCurrentWindow().print() are unreliable inside
+  // WKWebView; invoking via Rust's WebviewWindow::print() is the reliable path.
+  app.setPrintTrigger(async (layer) => {
+    // Don't clear layer here — the afterprint listener (set up in _doPrint) handles
+    // cleanup once the print dialog closes or is cancelled.
+    await invoke('trigger_print');
+  });
+
   // ── Native menu enabled-state sync ────────────────────────────────────────
   // Subscribe to state changes from the JS command registry. Rust sets the
   // correct initial disabled states at launch; this handles all dynamic

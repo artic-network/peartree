@@ -19,3 +19,11 @@ body {
   font-size: 14px;
 }
 
+/* ── Print support ── */
+#pt-print-layer { display: none; }
+@media print {
+  body > *:not(#pt-print-layer) { display: none !important; }
+  #pt-print-layer { display: block !important; position: fixed; inset: 0; }
+  #pt-print-layer svg { width: 100%; height: auto; }
+}
+
