@@ -329,6 +329,8 @@ async function _initCore(root = document) {
   const btnStoreTheme          = $('btn-store-theme');
   const btnDefaultTheme        = $('btn-default-theme');
   const btnRemoveTheme         = $('btn-remove-theme');
+  const btnExportTheme         = $('btn-export-theme');
+  const btnImportTheme         = $('btn-import-theme');
   const btnFit                 = $('btn-fit');
   const btnResetSettings       = $('btn-reset-settings');
   const btnImportAnnot         = $('btn-import-annot');
@@ -649,7 +651,7 @@ async function _initCore(root = document) {
     saveSettings();
   }
 
-  /** Sync enabled/disabled state of all three theme action buttons. */
+  /** Sync enabled/disabled state of all theme action buttons. */
   function _syncThemeButtons() {
     if (!btnStoreTheme) return;
     const sel       = themeSelect.value;
@@ -659,6 +661,9 @@ async function _initCore(root = document) {
     btnStoreTheme.disabled   = !isCustom;
     btnDefaultTheme.disabled = isCustom || isDefault;
     btnRemoveTheme.disabled  = isCustom || isBuiltIn;
+    // Export is always enabled; disable only when nothing meaningful to name (custom with no name).
+    if (btnExportTheme) btnExportTheme.disabled = false;
+    if (btnImportTheme) btnImportTheme.disabled = false;
   }
 
   /** Persist the currently selected named theme as the default for new windows. */
@@ -690,6 +695,79 @@ async function _initCore(root = document) {
     const fallback = themeSelect.value;
     if (themeRegistry.has(fallback)) applyTheme(fallback);
     _syncThemeButtons();
+  }
+
+  /** Export the current theme as a JSON file the user can save locally. */
+  function exportTheme() {
+    const sel = themeSelect.value;
+    const isCustom = sel === 'custom';
+    const defaultName = isCustom ? '' : sel;
+    const name = prompt('Enter a name for the exported theme:', defaultName)?.trim();
+    if (!name) return;
+    if (name.toLowerCase() === 'custom') {
+      alert('"Custom" is a reserved name — please choose a different name.');
+      return;
+    }
+    const themeData = isCustom ? _snapshotTheme() : (themeRegistry.get(sel) ?? _snapshotTheme());
+    const json = JSON.stringify({ name, theme: themeData }, null, 2);
+    _downloadBlob(json, 'application/json', `${name}.peartree-theme.json`);
+  }
+
+  /** Import a theme from a JSON file, prompting for a name and handling conflicts. */
+  function importTheme() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+    input.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      document.body.removeChild(input);
+      if (!file) return;
+      let data, themeObj;
+      try {
+        const text = await file.text();
+        data = JSON.parse(text);
+        // Accept { name, theme } format or a bare theme object.
+        themeObj = (data.theme && typeof data.theme === 'object') ? data.theme : data;
+        if (typeof themeObj !== 'object' || !themeObj.canvasBgColor) {
+          alert('This does not appear to be a valid PearTree theme file.');
+          return;
+        }
+      } catch {
+        alert('Failed to parse the theme file — please check it is valid JSON.');
+        return;
+      }
+      const fileNameSuggestion = (typeof data.name === 'string' && data.name.trim()) ? data.name.trim() : '';
+      // Ask the user to confirm or change the name.
+      let name = prompt('Name for the imported theme:', fileNameSuggestion)?.trim();
+      if (!name) return;
+      if (name.toLowerCase() === 'custom') {
+        alert('"Custom" is a reserved name — please choose a different name.');
+        return;
+      }
+      // Built-in conflict: must rename.
+      while (THEMES[name]) {
+        const next = prompt(`"${name}" is a built-in theme and cannot be overwritten.\nPlease enter a different name:`, '')?.trim();
+        if (!next) return;
+        name = next;
+        if (name.toLowerCase() === 'custom') {
+          alert('"Custom" is a reserved name — please choose a different name.');
+          return;
+        }
+      }
+      // User theme conflict: ask before overwriting.
+      if (themeRegistry.has(name)) {
+        if (!confirm(`A user theme named \u201c${name}\u201d already exists. Overwrite it?`)) return;
+      }
+      themeRegistry.set(name, themeObj);
+      saveUserThemes();
+      _populateThemeSelect();
+      themeSelect.value = name;
+      applyTheme(name);
+      _syncThemeButtons();
+    });
+    input.click();
   }
 
 
@@ -1560,6 +1638,8 @@ async function _initCore(root = document) {
   btnStoreTheme?.addEventListener('click', storeTheme);
   btnDefaultTheme?.addEventListener('click', setDefaultTheme);
   btnRemoveTheme?.addEventListener('click', removeTheme);
+  btnExportTheme?.addEventListener('click', exportTheme);
+  btnImportTheme?.addEventListener('click', importTheme);
 
   // Bootstrap theme registry and select options before restoring saved state.
   loadUserThemes();

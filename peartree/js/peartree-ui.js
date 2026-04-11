@@ -297,6 +297,10 @@ function _sectionTheme() {
         <button id="btn-default-theme" class="pt-theme-btn" style="flex:1" title="Set selected theme as the default" disabled>Default</button>
         <button id="btn-remove-theme" class="pt-theme-btn" style="flex:1" title="Remove this user-saved theme" disabled>Remove</button>
       </div>
+      <div class="pt-palette-row--span" style="gap:6px">
+        <button id="btn-export-theme" class="pt-theme-btn" style="flex:1" title="Export theme as a JSON file">Export</button>
+        <button id="btn-import-theme" class="pt-theme-btn" style="flex:1" title="Import a theme from a JSON file">Import</button>
+      </div>
       <div class="pt-palette-row"><span class="pt-palette-label">Typeface</span><select class="pt-palette-select" id="font-family-select"><option value="Monospace">Monospace</option><option value="Sans-serif">Sans-serif</option><option value="Serif">Serif</option><option value="Courier New">Courier New</option><option value="Helvetica">Helvetica</option><option value="Helvetica Neue">Helvetica Neue</option><option value="Georgia">Georgia</option><option value="Times New Roman">Times New Roman</option><option value="System UI">System UI</option><option value="Menlo">Menlo</option></select></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Style</span><select class="pt-palette-select" id="font-typeface-style-select"><option value="Regular">Regular</option></select></div>
     </div>`;
