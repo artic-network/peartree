@@ -2609,6 +2609,11 @@ async function _initCore(root = document) {
     // __tips_below__ is excluded — it counts descendants so is only useful on internal nodes.
     const TIP_BUILTINS = new Set(['__divergence__', '__age__', '__branch_length__', '__cal_date__']);
     const tipAnnotKeys = annotKeys.filter(k => schema.get(k)?.onTips || TIP_BUILTINS.has(k));
+    // Numerical annotations present on internal nodes — valid node-label candidates.
+    const numericalNodeKeys = treeAnnotKeys.filter(k => {
+      const def = schema.get(k);
+      return def?.onNodes && isNumericType(def.dataType);
+    });
 
     exportTitleEl.innerHTML = '<i class="bi bi-file-earmark-arrow-down me-2"></i>Export Tree';
 
@@ -2662,6 +2667,17 @@ async function _initCore(root = document) {
                 </label>`;}).join('')
             : '<div style="font-size:0.82rem;color:rgba(255,255,255,0.4);font-style:italic">No tip annotations found</div>'}
         </div>
+      </div>` : ''}
+      ${numericalNodeKeys.length > 0 ? `
+      <div class="exp-section" id="exp-node-label-section">
+        <span class="exp-section-label">Node label</span>
+        <div style="display:flex;align-items:center;gap:0.4rem;margin-top:0.25rem">
+          <span class="pt-palette-label" style="white-space:nowrap">Annotation</span>
+          <select id="exp-node-label-sel" class="pt-palette-select" style="flex:1;min-width:0">
+            <option value="">None</option>
+            ${numericalNodeKeys.map(k => `<option value="${_esc(k)}">${_esc(k)}</option>`).join('')}
+          </select>
+        </div>
       </div>` : ''}`;
 
     exportFooter.innerHTML = `
@@ -2695,23 +2711,27 @@ async function _initCore(root = document) {
 
       const _syncAnnotSection = () => {
         const fmt = root.querySelector('input[name="exp-format"]:checked')?.value;
-        const settingsRow = $('exp-settings-row');
+        const settingsRow    = $('exp-settings-row');
+        const nodeLabelRow   = $('exp-node-label-section');
         $('exp-newick-warn')?.remove();
         if (fmt === 'csv') {
           treeGrid.style.display = 'none';
           csvGrid.style.display  = '';
           csvGrid.querySelectorAll('.exp-annot-cb').forEach(cb => { cb.checked = true; });
-          if (settingsRow) settingsRow.style.display = 'none';
+          if (settingsRow)  settingsRow.style.display  = 'none';
+          if (nodeLabelRow) nodeLabelRow.style.display = 'none';
         } else if (fmt === 'newick') {
           treeGrid.style.display = '';
           csvGrid.style.display  = 'none';
           treeGrid.querySelectorAll('.exp-annot-cb').forEach(cb => { cb.checked = false; });
-          if (settingsRow) settingsRow.style.display = 'none';
+          if (settingsRow)  settingsRow.style.display  = 'none';
+          if (nodeLabelRow) nodeLabelRow.style.display = '';
         } else {
           treeGrid.style.display = '';
           csvGrid.style.display  = 'none';
           treeGrid.querySelectorAll('.exp-annot-cb').forEach(cb => { cb.checked = true; });
-          if (settingsRow) settingsRow.style.display = '';
+          if (settingsRow)  settingsRow.style.display  = '';
+          if (nodeLabelRow) nodeLabelRow.style.display = '';
         }
       };
 
@@ -2753,6 +2773,7 @@ async function _initCore(root = document) {
     const subtreeId   = scope === 'subtree' ? renderer._viewSubtreeRootId : null;
     const gridId      = format === 'csv' ? '#exp-annot-grid-csv' : '#exp-annot-grid-tree';
     const annotKeys   = [...root.querySelectorAll(`${gridId} .exp-annot-cb:checked`)].map(cb => cb.value);
+    const nodeLabelKey = $('exp-node-label-sel')?.value || null;
 
     // ── CSV metadata export ───────────────────────────────────────────────────
     if (format === 'csv') {
@@ -2816,7 +2837,7 @@ async function _initCore(root = document) {
       return;
     }
 
-    const newick = graphToNewick(graph, subtreeId, annotKeys);
+    const newick = graphToNewick(graph, subtreeId, annotKeys, nodeLabelKey);
     if (!newick) return;
 
     let content, ext;

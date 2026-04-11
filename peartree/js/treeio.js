@@ -266,7 +266,7 @@ function branchLen(ci, pi, g) {
  * Recursively serialize the subtree rooted at `nodeIdx` (coming from direction
  * `parentIdx`, which is excluded from children) into a Newick string fragment.
  */
-function newickNode(nodeIdx, parentIdx, g, annotKeys) {
+function newickNode(nodeIdx, parentIdx, g, annotKeys, nodeLabelKey) {
   const node      = g.nodes[nodeIdx];
   const annotStr  = fmtAnnot(node.annotations, annotKeys);
   const safeName  = newickEsc(node.name || node.label || '');
@@ -275,19 +275,24 @@ function newickNode(nodeIdx, parentIdx, g, annotKeys) {
     return `${safeName}${annotStr}`;
   }
   const parts = childIdxs.map(ci => {
-    const cStr   = newickNode(ci, nodeIdx, g, annotKeys);
+    const cStr   = newickNode(ci, nodeIdx, g, annotKeys, nodeLabelKey);
     const len    = branchLen(ci, nodeIdx, g);
     const lenStr = len != null ? `:${fmtLen(len)}` : '';
     return `${cStr}${lenStr}`;
   });
-  return `(${parts.join(',')})${safeName}${annotStr}`;
+  let nodeLabel = safeName;
+  if (nodeLabelKey) {
+    const val = node.annotations?.[nodeLabelKey];
+    if (val != null && val !== '') nodeLabel = String(parseFloat(Number(val).toPrecision(6)));
+  }
+  return `(${parts.join(',')})${nodeLabel}${annotStr}`;
 }
 
 /**
  * Serialize the PhyloGraph `g` (or a subtree rooted at `subtreeRootId`) to
  * a Newick string ended with ';'.
  */
-export function graphToNewick(g, subtreeRootId, annotKeys) {
+export function graphToNewick(g, subtreeRootId, annotKeys, nodeLabelKey = null) {
   const { nodeA, nodeB, lenA } = g.root;
   let body;
   if (subtreeRootId) {
@@ -295,14 +300,14 @@ export function graphToNewick(g, subtreeRootId, annotKeys) {
     if (idx === undefined) return null;
     const node = g.nodes[idx];
     const parentIdx = node.adjacents.length > 0 ? node.adjacents[0] : -1;
-    body = newickNode(idx, parentIdx, g, annotKeys);
+    body = newickNode(idx, parentIdx, g, annotKeys, nodeLabelKey);
   } else if (lenA === 0) {
     // nodeA is the actual root (trifurcating or annotated)
-    body = newickNode(nodeA, -1, g, annotKeys);
+    body = newickNode(nodeA, -1, g, annotKeys, nodeLabelKey);
   } else {
     // Virtual root between nodeA and nodeB
-    const aStr = newickNode(nodeA, nodeB, g, annotKeys);
-    const bStr = newickNode(nodeB, nodeA, g, annotKeys);
+    const aStr = newickNode(nodeA, nodeB, g, annotKeys, nodeLabelKey);
+    const bStr = newickNode(nodeB, nodeA, g, annotKeys, nodeLabelKey);
     const aLen = lenA != null        ? `:${fmtLen(lenA)}`        : '';
     const bLen = g.root.lenB != null ? `:${fmtLen(g.root.lenB)}` : '';
     body = `(${aStr}${aLen},${bStr}${bLen})`;
