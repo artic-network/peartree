@@ -47,6 +47,7 @@ export function createRTTChart({
   getTickOptions,
   getStatsBoxBgColor,
   getStatsBoxTextColor,
+  getStatsBoxFontSize,
   getIsTimedTree,
   getRegressionColor,
   getRegressionWidth,
@@ -453,10 +454,10 @@ export function createRTTChart({
       lines.push(['Res. mean sq.', reg.rms != null ? reg.rms.toExponential(3) : '—']);
       lines.push(['CV',           reg.cv.toFixed(4)]);
 
-      const boxFsz = rtt.fontSize * 0.9;
+      const boxFsz = rtt.statsBoxFontSize * 0.9;
       const lh     = boxFsz * 1.6;
       const pad    = 7;
-      const boxW   = 148;
+      const boxW   = Math.round(148 * (rtt.statsBoxFontSize / 11));
       const boxH   = lines.length * lh + pad;
       const margin = 6;
       const br     = 4;
@@ -641,7 +642,8 @@ export function createRTTChart({
       axisLineWidth: getAxisLineWidth?.() ?? rtt.axisLineWidth,
       // Stats box colours (from the RTT advanced palette section)
       statsBoxBgColor:   getStatsBoxBgColor?.()   ?? rtt.statsBoxBgColor,
-      statsBoxTextColor: getStatsBoxTextColor?.()  ?? rtt.statsBoxTextColor,
+      statsBoxTextColor:  getStatsBoxTextColor?.()  ?? rtt.statsBoxTextColor,
+      statsBoxFontSize:   getStatsBoxFontSize?.()   ?? rtt.statsBoxFontSize,
       // Regression line style
       regressionColor: getRegressionColor?.() ?? rtt.regressionColor,
       regressionWidth: getRegressionWidth?.() ?? rtt.regressionWidth,

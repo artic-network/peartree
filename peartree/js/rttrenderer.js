@@ -91,6 +91,7 @@ export class RTTRenderer {
     // 'solid' | 'bigdash' | 'dash' | 'dots'
     this.regressionStyle       = 'dash';
     this.fontSize              = 11;
+    this.statsBoxFontSize      = 11;
     this.fontFamily            = 'Inter, system-ui, sans-serif';
     this._typefaceKey          = null;
     this._typefaceStyle        = null;
@@ -762,9 +763,10 @@ export class RTTRenderer {
     const d   = this._dpr;
     const cal = this._calibration;
     const fmt = this._dateFormat;
-    const fsz = Math.max(9, Math.round(this.fontSize * 0.9 * d));
+    const fsz = Math.max(9, Math.round(this.statsBoxFontSize * 0.9 * d));
     const lh  = Math.round(fsz * 1.6);
     const pad = Math.round(7 * d);
+    const boxW   = Math.round(148 * (this.statsBoxFontSize / 11) * d);
 
     const lines = [
       ['n',         String(reg.n)],
@@ -778,7 +780,6 @@ export class RTTRenderer {
     lines.push(['Res. mean sq.', reg.rms != null ? reg.rms.toExponential(3) : '—']);
     lines.push(['CV',   reg.cv.toFixed(4)]);
 
-    const boxW   = Math.round(148 * d);
     const boxH   = lines.length * lh + pad;
     const br     = Math.round(4 * d);
     const margin = Math.round(6 * d);
@@ -988,9 +989,10 @@ export class RTTRenderer {
     const sd = Math.sqrt(variance);
     const fmt = v => parseFloat(v.toPrecision(4)).toString();
     const d   = this._dpr;
-    const fsz = Math.max(9, Math.round(this.fontSize * 0.9 * d));
+    const fsz = Math.max(9, Math.round(this.statsBoxFontSize * 0.9 * d));
     const lh  = Math.round(fsz * 1.6);
     const pad = Math.round(7 * d);
+    const boxW   = Math.round(148 * (this.statsBoxFontSize / 11) * d);
     const lines = [
       ['n',        String(n)],
       ['Mean',     fmt(mean)],
@@ -1000,7 +1002,6 @@ export class RTTRenderer {
       ['Min',      fmt(vals[0])],
       ['Max',      fmt(vals[n - 1])],
     ];
-    const boxW   = Math.round(148 * d);
     const boxH   = lines.length * lh + pad;
     const br     = Math.round(4 * d);
     const margin = Math.round(6 * d);

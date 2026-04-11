@@ -61,6 +61,7 @@ export const DEFAULT_SETTINGS = {
   rttAxisColor:     '',
   rttStatsBgColor:   '#081c22',
   rttStatsTextColor: '#f2f1e6',
+  rttStatsFontSize:  '11',
   rttRegressionStyle: 'dash',
   rttRegressionColor: '',
   rttRegressionWidth: '1.5',

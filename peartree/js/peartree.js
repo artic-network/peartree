@@ -309,6 +309,7 @@ async function _initCore(root = document) {
   const rttAxisColorEl         = $('rtt-axis-color');
   const rttStatsBgColorEl      = $('rtt-stats-bg-color');
   const rttStatsTextColorEl    = $('rtt-stats-text-color');
+  const rttStatsFontSizeSlider = $('rtt-stats-font-size-slider');
   const rttRegressionStyleEl   = $('rtt-regression-style');
   const rttRegressionColorEl   = $('rtt-regression-color');
   const rttRegressionWidthSlider = $('rtt-regression-width-slider');
@@ -931,6 +932,7 @@ async function _initCore(root = document) {
       rttAxisColor:       rttAxisColorEl.value,
       rttStatsBgColor:    rttStatsBgColorEl.value,
       rttStatsTextColor:  rttStatsTextColorEl.value,
+      rttStatsFontSize:   rttStatsFontSizeSlider.value,
       rttRegressionStyle: rttRegressionStyleEl.value,
       rttRegressionColor: rttRegressionColorEl.value,
       rttRegressionWidth: rttRegressionWidthSlider.value,
@@ -1311,6 +1313,8 @@ async function _initCore(root = document) {
     $('rtt-regression-width-value').textContent = DEFAULT_SETTINGS.rttRegressionWidth;
     rttAxisFontSizeSlider.value  = DEFAULT_SETTINGS.rttAxisFontSize;
     $('rtt-axis-font-size-value').textContent = DEFAULT_SETTINGS.rttAxisFontSize;
+    rttStatsFontSizeSlider.value = DEFAULT_SETTINGS.rttStatsFontSize;
+    $('rtt-stats-font-size-value').textContent = DEFAULT_SETTINGS.rttStatsFontSize;
     rttAxisFontFamilyEl.value    = DEFAULT_SETTINGS.rttAxisFontFamily;
     _populateStyleSelect(fontFamilyEl.value, rttAxisTypefaceStyleEl, '', true);
     rttAxisLineWidthSlider.value = DEFAULT_SETTINGS.rttAxisLineWidth;
@@ -1864,6 +1868,10 @@ async function _initCore(root = document) {
   if (_saved.rttAxisFontSize != null) {
     rttAxisFontSizeSlider.value = _saved.rttAxisFontSize;
     $('rtt-axis-font-size-value').textContent = _saved.rttAxisFontSize;
+  }
+  if (_saved.rttStatsFontSize != null) {
+    rttStatsFontSizeSlider.value = _saved.rttStatsFontSize;
+    $('rtt-stats-font-size-value').textContent = _saved.rttStatsFontSize;
   }
   if (_saved.rttAxisFontFamily)        rttAxisFontFamilyEl.value     = _saved.rttAxisFontFamily;
   { _populateStyleSelect(rttAxisFontFamilyEl?.value || fontFamilyEl.value, rttAxisTypefaceStyleEl, _saved.rttAxisFontStyle, true); }
@@ -2641,6 +2649,7 @@ async function _initCore(root = document) {
     getAxisColor:      () => rttAxisColorEl.value || axisColorEl.value,
     getStatsBoxBgColor:    () => rttStatsBgColorEl.value,
     getStatsBoxTextColor:  () => rttStatsTextColorEl.value,
+    getStatsBoxFontSize:   () => parseInt(rttStatsFontSizeSlider.value),
     getRegressionStyle: () => rttRegressionStyleEl.value,
     getRegressionColor: () => rttRegressionColorEl.value,
     getRegressionWidth: () => parseFloat(rttRegressionWidthSlider.value),
@@ -6122,6 +6131,11 @@ async function _initCore(root = document) {
   });
   rttAxisFontSizeSlider.addEventListener('input', () => {
     $('rtt-axis-font-size-value').textContent = rttAxisFontSizeSlider.value;
+    rttChart?.notifyStyleChange?.();
+    saveSettings();
+  });
+  rttStatsFontSizeSlider.addEventListener('input', () => {
+    $('rtt-stats-font-size-value').textContent = rttStatsFontSizeSlider.value;
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
