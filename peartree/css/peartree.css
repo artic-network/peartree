@@ -1085,6 +1085,33 @@ body.palette-pinned #canvas-container {
   margin: 10px 0 4px;
 }
 .pt-palette-subhead:first-child { margin-top: 0; }
+/* Clade highlight list items */
+.pt-highlight-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+.pt-highlight-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.pt-highlight-name {
+  font-size: 0.73rem;
+  color: var(--pt-cream);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pt-no-highlights {
+  font-size: 0.68rem;
+  color: rgba(242,241,230,0.35);
+  font-style: italic;
+}
 /* Each row spans its parent grid and inherits column tracks via subgrid.
    This keeps labels in col 1, controls in col 2, values in col 3,
    and sizes the label column to the widest label in each section. */

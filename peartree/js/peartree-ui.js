@@ -262,6 +262,28 @@ function _sectionSelectionHover() {
     </div>`;
 }
 
+function _sectionCladeHighlights() {
+  return `
+    <div class="pt-palette-section" id="clade-highlights-section">
+      <h3><i class="bi bi-highlighter"></i> Clade Highlights</h3>
+      <div class="pt-palette-row"><span class="pt-palette-label">Colour by</span><select class="pt-palette-select" id="clade-highlight-colour-by"><option value="user_colour">User colour</option></select></div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Default colour</span>
+        <input type="color" class="pt-palette-color" id="clade-highlight-default-colour" value="#ffaa00" />
+        <button id="btn-paint-highlight" class="btn btn-sm btn-outline-secondary" style="margin-left:4px" disabled title="Paint colour onto selected highlight"><i class="bi bi-brush"></i></button>
+      </div>
+      <div class="pt-palette-row"><span class="pt-palette-label">Left edge</span><select class="pt-palette-select" id="clade-highlight-left-edge"><option value="hard">Hard line</option><option value="outline">Follow subtree</option></select></div>
+      <div class="pt-palette-row"><span class="pt-palette-label">Right edge</span><select class="pt-palette-select" id="clade-highlight-right-edge"><option value="hardLabels">To label start</option><option value="hardTips">To tips</option><option value="hardAlign">To aligned labels</option><option value="outlineTips">Outline tips</option></select></div>
+      <div class="pt-palette-row"><i class="bi bi-arrows-expand form-label-sm" title="Padding"></i><input type="range" class="form-range" id="clade-highlight-padding" min="0" max="40" step="1" value="6" /><span class="pt-val" id="clade-highlight-padding-value">6</span></div>
+      <div class="pt-palette-row"><i class="bi bi-bounding-box-circles form-label-sm" title="Corner radius"></i><input type="range" class="form-range" id="clade-highlight-radius" min="0" max="24" step="1" value="4" /><span class="pt-val" id="clade-highlight-radius-value">4</span></div>
+      <div class="pt-palette-row"><i class="bi bi-droplet-fill form-label-sm" title="Fill opacity"></i><input type="range" class="form-range" id="clade-highlight-fill-opacity" min="0" max="1" step="0.05" value="0.15" /><span class="pt-val" id="clade-highlight-fill-opacity-value">0.15</span></div>
+      <div class="pt-palette-row"><i class="bi bi-droplet form-label-sm" title="Stroke opacity"></i><input type="range" class="form-range" id="clade-highlight-stroke-opacity" min="0" max="1" step="0.05" value="0.7" /><span class="pt-val" id="clade-highlight-stroke-opacity-value">0.7</span></div>
+      <div class="pt-palette-row"><i class="bi bi-distribute-horizontal form-label-sm" title="Stroke width"></i><input type="range" class="form-range" id="clade-highlight-stroke-width" min="0" max="6" step="0.5" value="1" /><span class="pt-val" id="clade-highlight-stroke-width-value">1</span></div>
+      <div class="pt-palette-subhead">Highlights</div>
+      <div id="clade-highlight-list" style="max-height:160px;overflow-y:auto;margin-bottom:4px"></div>
+    </div>`;
+}
+
 function _sectionRtt() {
   return `
     <div class="pt-palette-section" id="rtt-section">
@@ -319,13 +341,14 @@ const _SECTION_BUILDERS = {
   legend:          _sectionLegend,
   axis:            _sectionAxis,
   selectionHover:  _sectionSelectionHover,
+  cladeHighlights: _sectionCladeHighlights,
   rtt:             _sectionRtt,
   theme:           _sectionTheme,
 };
 
 const _ALL_SECTIONS = [
   'tree', 'tipLabels', 'labelShapes', 'tipShapes', 'nodeShapes', 'nodeLabels',
-  'nodeBars', 'collapsedClades', 'legend', 'axis', 'selectionHover', 'rtt', 'theme',
+  'nodeBars', 'collapsedClades', 'legend', 'axis', 'selectionHover', 'cladeHighlights', 'rtt', 'theme',
 ];
 
 function buildPalettePanel(sections) {
@@ -459,6 +482,14 @@ function _tbSectionHideShow() {
     </div>`;
 }
 
+function _tbSectionHighlightClade() {
+  return `
+    <div class="btn-group" role="group" aria-label="Highlight clade">
+      <button id="btn-highlight-clade" class="btn btn-sm btn-outline-secondary" disabled title="Highlight selected clade"><i class="bi bi-highlighter"></i></button>
+      <button id="btn-remove-highlight" class="btn btn-sm btn-outline-secondary" disabled title="Remove highlight from selected clade"><i class="bi bi-eraser"></i></button>
+      <button id="btn-clear-highlights" class="btn btn-sm btn-outline-secondary" disabled title="Clear all clade highlights"><i class="bi bi-x-circle"></i></button>
+    </div>`;}
+
 function _tbSectionColour() {
   return `
     <div class="pt-colour-pick-wrap" id="colour-pick-wrap">
@@ -519,15 +550,16 @@ const _TB_SECTION_BUILDERS = {
   order:       _tbSectionOrder,
   rotate:      _tbSectionRotate,
   reroot:      _tbSectionReroot,
-  hideShow:    _tbSectionHideShow,
-  colour:      _tbSectionColour,
+  hideShow:        _tbSectionHideShow,
+  highlightClade:  _tbSectionHighlightClade,
+  colour:          _tbSectionColour,
   filter:      _tbSectionFilter,
   panels:      _tbSectionPanels,
 };
 
 const _ALL_TB_SECTIONS = [
   'fileOps', 'annotations', 'nodeInfo', 'navigation', 'zoom', 'order', 'rotate',
-  'reroot', 'hideShow', 'colour', 'filter', 'panels',
+  'reroot', 'hideShow', 'highlightClade', 'colour', 'filter', 'panels',
 ];
 
 function _buildToolbar(tbSections) {

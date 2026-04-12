@@ -326,6 +326,18 @@ async function _initCore(root = document) {
   const rttMinorIntervalRow    = $('rtt-minor-interval-row');
   const rttMajorLabelRow       = $('rtt-major-label-row');
   const rttMinorLabelRow       = $('rtt-minor-label-row');
+  // Clade highlight controls
+  const cladeHighlightColourByEl         = $('clade-highlight-colour-by');
+  const cladeHighlightDefaultColourEl    = $('clade-highlight-default-colour');
+  const btnPaintHighlight                = $('btn-paint-highlight');
+  const cladeHighlightLeftEdgeEl         = $('clade-highlight-left-edge');
+  const cladeHighlightRightEdgeEl        = $('clade-highlight-right-edge');
+  const cladeHighlightPaddingSlider      = $('clade-highlight-padding');
+  const cladeHighlightRadiusSlider       = $('clade-highlight-radius');
+  const cladeHighlightFillOpacitySlider  = $('clade-highlight-fill-opacity');
+  const cladeHighlightStrokeOpacitySlider = $('clade-highlight-stroke-opacity');
+  const cladeHighlightStrokeWidthSlider  = $('clade-highlight-stroke-width');
+  const cladeHighlightListEl             = $('clade-highlight-list');
   const themeSelect            = $('theme-select');
   const btnStoreTheme          = $('btn-store-theme');
   const btnDefaultTheme        = $('btn-default-theme');
@@ -980,6 +992,15 @@ async function _initCore(root = document) {
       mode:             renderer ? renderer._mode : 'nodes',
       rttPinned:           rttChart?.isPinned() ?? false,
       rttStatsBoxCorner:   rttChart?.getStatsBoxCorner() ?? 'tl',
+      cladeHighlightLeftEdge:      cladeHighlightLeftEdgeEl?.value         ?? DEFAULT_SETTINGS.cladeHighlightLeftEdge,
+      cladeHighlightRightEdge:     cladeHighlightRightEdgeEl?.value        ?? DEFAULT_SETTINGS.cladeHighlightRightEdge,
+      cladeHighlightPadding:       cladeHighlightPaddingSlider?.value      ?? DEFAULT_SETTINGS.cladeHighlightPadding,
+      cladeHighlightRadius:        cladeHighlightRadiusSlider?.value       ?? DEFAULT_SETTINGS.cladeHighlightRadius,
+      cladeHighlightStrokeWidth:   cladeHighlightStrokeWidthSlider?.value  ?? DEFAULT_SETTINGS.cladeHighlightStrokeWidth,
+      cladeHighlightFillOpacity:   cladeHighlightFillOpacitySlider?.value  ?? DEFAULT_SETTINGS.cladeHighlightFillOpacity,
+      cladeHighlightStrokeOpacity: cladeHighlightStrokeOpacitySlider?.value ?? DEFAULT_SETTINGS.cladeHighlightStrokeOpacity,
+      cladeHighlightColour:        cladeHighlightDefaultColourEl?.value    ?? DEFAULT_SETTINGS.cladeHighlightColour,
+      cladeHighlights:             renderer?.getCladeHighlightsData() ?? [],
     };
   }
 
@@ -1504,6 +1525,14 @@ async function _initCore(root = document) {
       calCalibration:      calibration?.isActive ? calibration : null,
       calDateFormat:       axisDateFmtEl.value,
       introAnimation:      _saved.introAnimation ?? DEFAULT_SETTINGS.introAnimation,
+      cladeHighlightLeftEdge:      cladeHighlightLeftEdgeEl?.value ?? DEFAULT_SETTINGS.cladeHighlightLeftEdge,
+      cladeHighlightRightEdge:     cladeHighlightRightEdgeEl?.value ?? DEFAULT_SETTINGS.cladeHighlightRightEdge,
+      cladeHighlightPadding:       parseFloat(cladeHighlightPaddingSlider?.value ?? DEFAULT_SETTINGS.cladeHighlightPadding),
+      cladeHighlightRadius:        parseFloat(cladeHighlightRadiusSlider?.value ?? DEFAULT_SETTINGS.cladeHighlightRadius),
+      cladeHighlightStrokeWidth:   parseFloat(cladeHighlightStrokeWidthSlider?.value ?? DEFAULT_SETTINGS.cladeHighlightStrokeWidth),
+      cladeHighlightFillOpacity:   parseFloat(cladeHighlightFillOpacitySlider?.value ?? DEFAULT_SETTINGS.cladeHighlightFillOpacity),
+      cladeHighlightStrokeOpacity: parseFloat(cladeHighlightStrokeOpacitySlider?.value ?? DEFAULT_SETTINGS.cladeHighlightStrokeOpacity),
+      cladeHighlightColour:        cladeHighlightDefaultColourEl?.value ?? DEFAULT_SETTINGS.cladeHighlightColour,
     };
   }
 
@@ -1885,7 +1914,30 @@ async function _initCore(root = document) {
   if (_saved.rttMajorLabelFormat) rttMajorLabelEl.value    = _saved.rttMajorLabelFormat;
   if (_saved.rttMinorLabelFormat) rttMinorLabelEl.value    = _saved.rttMinorLabelFormat;
 
-  // Size canvas to container before creating renderer
+  // Restore clade highlight style controls
+  if (_saved.cladeHighlightColour       && cladeHighlightDefaultColourEl)    cladeHighlightDefaultColourEl.value    = _saved.cladeHighlightColour;
+  if (_saved.cladeHighlightLeftEdge     && cladeHighlightLeftEdgeEl)         cladeHighlightLeftEdgeEl.value         = _saved.cladeHighlightLeftEdge;
+  if (_saved.cladeHighlightRightEdge    && cladeHighlightRightEdgeEl)        cladeHighlightRightEdgeEl.value        = _saved.cladeHighlightRightEdge;
+  if (_saved.cladeHighlightPadding != null && cladeHighlightPaddingSlider) {
+    cladeHighlightPaddingSlider.value = _saved.cladeHighlightPadding;
+    $('clade-highlight-padding-value') && ($('clade-highlight-padding-value').textContent = _saved.cladeHighlightPadding);
+  }
+  if (_saved.cladeHighlightRadius != null && cladeHighlightRadiusSlider) {
+    cladeHighlightRadiusSlider.value = _saved.cladeHighlightRadius;
+    $('clade-highlight-radius-value') && ($('clade-highlight-radius-value').textContent = _saved.cladeHighlightRadius);
+  }
+  if (_saved.cladeHighlightFillOpacity != null && cladeHighlightFillOpacitySlider) {
+    cladeHighlightFillOpacitySlider.value = _saved.cladeHighlightFillOpacity;
+    $('clade-highlight-fill-opacity-value') && ($('clade-highlight-fill-opacity-value').textContent = _saved.cladeHighlightFillOpacity);
+  }
+  if (_saved.cladeHighlightStrokeOpacity != null && cladeHighlightStrokeOpacitySlider) {
+    cladeHighlightStrokeOpacitySlider.value = _saved.cladeHighlightStrokeOpacity;
+    $('clade-highlight-stroke-opacity-value') && ($('clade-highlight-stroke-opacity-value').textContent = _saved.cladeHighlightStrokeOpacity);
+  }
+  if (_saved.cladeHighlightStrokeWidth != null && cladeHighlightStrokeWidthSlider) {
+    cladeHighlightStrokeWidthSlider.value = _saved.cladeHighlightStrokeWidth;
+    $('clade-highlight-stroke-width-value') && ($('clade-highlight-stroke-width-value').textContent = _saved.cladeHighlightStrokeWidth);
+  }
   const container = canvas.parentElement;
   const dpr = window.devicePixelRatio || 1;
   canvas.style.width  = container.clientWidth  + 'px';
@@ -2705,6 +2757,11 @@ async function _initCore(root = document) {
   if (_saved.rttPinned)         rttChart.setPin(true);
   if (_saved.rttStatsBoxCorner) rttChart.setStatsBoxCorner(_saved.rttStatsBoxCorner);
 
+  // Restore saved clade highlights (populated after renderer is created)
+  if (Array.isArray(_saved.cladeHighlights) && _saved.cladeHighlights.length > 0) {
+    renderer.setCladeHighlightsData(_saved.cladeHighlights);
+  }
+
   // Fixed mode: force open + pinned, suppress save/restore interactions.
   if (_cfg.showRTT === 'fixed') {
     rttChart.open();
@@ -3516,6 +3573,7 @@ async function _initCore(root = document) {
       renderer.hiddenNodeIds = graph.hiddenNodeIds;  // keep renderer in sync (same Set reference)
       renderer.graph  = graph;
       currentOrder    = null;
+      renderer.clearCladeHighlights();
 
       // Apply any visual settings embedded in the file immediately, before
       // annotation dropdowns are populated (annotation-dependent settings
@@ -3566,6 +3624,7 @@ async function _initCore(root = document) {
       _populateColourBy(labelColourBy,        'tips');
       _populateColourBy(tipLabelShapeColourBy, 'tips');
       for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++) _populateColourBy(tipLabelShapeExtraColourBys[_i], 'tips');
+      if (cladeHighlightColourByEl) _populateColourBy(cladeHighlightColourByEl, 'tips');
 
       // Tip-label-show: option[0]='off', option[1]='names', then dynamic annotations.
       while (tipLabelShow.options.length > 2) tipLabelShow.remove(2);
@@ -3887,6 +3946,9 @@ async function _initCore(root = document) {
       if (renderer._onBranchSelectChange) renderer._onBranchSelectChange(false);
       if (renderer._onNodeSelectChange)   renderer._onNodeSelectChange(false);
 
+      // Update highlight list (no highlights after fresh load, but keeps the UI consistent).
+      _refreshHighlightListFn?.();
+
       // Sync button active states with restored settings.
       $('btn-order-asc') ?.classList.toggle('active', currentOrder === 'desc');
       $('btn-order-desc')?.classList.toggle('active', currentOrder === 'asc');
@@ -4018,6 +4080,9 @@ async function _initCore(root = document) {
   }
 
   // ── Control bindings (set up once after the first tree loads) ─────────────
+
+  // Hoisted so loadTree can call it after restoring clade highlights.
+  let _refreshHighlightListFn = null;
 
   function bindControls() {
     const btnBack      = $('btn-back');
@@ -4295,6 +4360,10 @@ async function _initCore(root = document) {
       commands.setEnabled('tree-collapse-clade', canCollapse());
       commands.setEnabled('tree-expand-clade',   canExpand());
       commands.setEnabled('tree-paint',       hasSelection);
+      const hasMrca = !!renderer._mrcaNodeId;
+      commands.setEnabled('tree-highlight-clade',  hasMrca);
+      commands.setEnabled('tree-remove-highlight', hasMrca && renderer._cladeHighlights.has(renderer._mrcaNodeId));
+      commands.setEnabled('tree-clear-highlights', renderer._cladeHighlights.size > 0);
       // Update status-bar selection count for canvas-click selections.
       // Filter-driven selections update it directly in _applyTipFilter.
       if (!tipFilterEl?.value?.trim()) {
@@ -4805,6 +4874,161 @@ async function _initCore(root = document) {
 
     commands.get('tree-collapse-clade').exec = () => applyCollapse();
     commands.get('tree-expand-clade').exec   = () => applyExpand();
+
+    // ── Clade Highlights ─────────────────────────────────────────────────────
+
+    function _resolveHighlightColour() {
+      const colourBy = cladeHighlightColourByEl?.value ?? 'user_colour';
+      if (colourBy === 'user_colour') {
+        return cladeHighlightDefaultColourEl?.value ?? DEFAULT_SETTINGS.cladeHighlightColour;
+      }
+      // Attribute-based colour: find most-frequent categorical value among descendant tips.
+      const nodeId = renderer._mrcaNodeId;
+      if (!nodeId || !renderer.nodeMap) return cladeHighlightDefaultColourEl?.value ?? DEFAULT_SETTINGS.cladeHighlightColour;
+      const tipIds = renderer._getDescendantTipIds(nodeId);
+      const freq = new Map();
+      for (const tipId of tipIds) {
+        const node = renderer.nodeMap.get(tipId);
+        const val  = node?.annotations?.[colourBy];
+        if (val != null && val !== '') freq.set(val, (freq.get(val) ?? 0) + 1);
+      }
+      if (freq.size === 0) return cladeHighlightDefaultColourEl?.value ?? DEFAULT_SETTINGS.cladeHighlightColour;
+      const mostCommon = [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0];
+      // Try to find the colour for this value via the renderer's colour scale.
+      const colour = renderer._getAnnotationColour?.(colourBy, mostCommon);
+      return colour ?? cladeHighlightDefaultColourEl?.value ?? DEFAULT_SETTINGS.cladeHighlightColour;
+    }
+
+    function _refreshHighlightList() {
+      if (!cladeHighlightListEl) return;
+      const data = renderer.getCladeHighlightsData();
+      if (data.length === 0) {
+        cladeHighlightListEl.innerHTML = '<span class="pt-no-highlights">No highlights</span>';
+        return;
+      }
+      cladeHighlightListEl.innerHTML = '';
+      for (const { id, colour } of data) {
+        const node = renderer.nodeMap?.get(id);
+        const label = node?.label || node?.name || id;
+        const row = document.createElement('div');
+        row.className = 'pt-highlight-item';
+
+        const swatch = document.createElement('div');
+        swatch.className = 'pt-highlight-swatch';
+        swatch.style.background = colour ?? DEFAULT_SETTINGS.cladeHighlightColour;
+        swatch.title = colour ?? DEFAULT_SETTINGS.cladeHighlightColour;
+
+        const name = document.createElement('span');
+        name.className = 'pt-highlight-name';
+        name.textContent = label;
+
+        const btnRemove = document.createElement('button');
+        btnRemove.className = 'pt-btn-icon';
+        btnRemove.title = 'Remove highlight';
+        btnRemove.innerHTML = '<i class="bi bi-x"></i>';
+        btnRemove.addEventListener('click', () => {
+          renderer.removeCladeHighlight(id);
+          _refreshHighlightList();
+          commands.setEnabled('tree-clear-highlights', renderer._cladeHighlights.size > 0);
+          saveSettings();
+        });
+
+        row.appendChild(swatch);
+        row.appendChild(name);
+        row.appendChild(btnRemove);
+        cladeHighlightListEl.appendChild(row);
+      }
+    }
+    _refreshHighlightListFn = _refreshHighlightList;
+
+    const btnHighlightClade = $('btn-highlight-clade');
+    const btnRemoveHighlight = $('btn-remove-highlight');
+    const btnClearHighlights = $('btn-clear-highlights');
+
+    btnHighlightClade?.addEventListener('click', () => {
+      const nodeId = renderer._mrcaNodeId;
+      if (!nodeId) return;
+      const colour = _resolveHighlightColour();
+      renderer.addCladeHighlight(nodeId, colour);
+      _refreshHighlightList();
+      commands.setEnabled('tree-remove-highlight', true);
+      commands.setEnabled('tree-clear-highlights', true);
+      saveSettings();
+    });
+
+    btnRemoveHighlight?.addEventListener('click', () => {
+      const nodeId = renderer._mrcaNodeId;
+      if (!nodeId) return;
+      renderer.removeCladeHighlight(nodeId);
+      _refreshHighlightList();
+      commands.setEnabled('tree-remove-highlight', false);
+      commands.setEnabled('tree-clear-highlights', renderer._cladeHighlights.size > 0);
+      saveSettings();
+    });
+
+    btnClearHighlights?.addEventListener('click', () => {
+      renderer.clearCladeHighlights();
+      _refreshHighlightList();
+      commands.setEnabled('tree-remove-highlight', false);
+      commands.setEnabled('tree-clear-highlights', false);
+      saveSettings();
+    });
+
+    btnPaintHighlight?.addEventListener('click', () => {
+      const nodeId = renderer._mrcaNodeId;
+      if (!nodeId || !renderer._cladeHighlights.has(nodeId)) return;
+      renderer.setCladeHighlightColour(nodeId, cladeHighlightDefaultColourEl?.value ?? DEFAULT_SETTINGS.cladeHighlightColour);
+      _refreshHighlightList();
+      saveSettings();
+    });
+
+    // Style change listeners
+    cladeHighlightLeftEdgeEl?.addEventListener('change', () => {
+      renderer?.setSettings({ cladeHighlightLeftEdge: cladeHighlightLeftEdgeEl.value });
+      saveSettings();
+    });
+    cladeHighlightRightEdgeEl?.addEventListener('change', () => {
+      renderer?.setSettings({ cladeHighlightRightEdge: cladeHighlightRightEdgeEl.value });
+      saveSettings();
+    });
+    cladeHighlightDefaultColourEl?.addEventListener('input', () => {
+      saveSettings();
+    });
+    cladeHighlightPaddingSlider?.addEventListener('input', () => {
+      const v = cladeHighlightPaddingSlider.value;
+      const valEl = $('clade-highlight-padding-value');
+      if (valEl) valEl.textContent = v;
+      renderer?.setSettings({ cladeHighlightPadding: parseFloat(v) });
+      saveSettings();
+    });
+    cladeHighlightRadiusSlider?.addEventListener('input', () => {
+      const v = cladeHighlightRadiusSlider.value;
+      const valEl = $('clade-highlight-radius-value');
+      if (valEl) valEl.textContent = v;
+      renderer?.setSettings({ cladeHighlightRadius: parseFloat(v) });
+      saveSettings();
+    });
+    cladeHighlightFillOpacitySlider?.addEventListener('input', () => {
+      const v = cladeHighlightFillOpacitySlider.value;
+      const valEl = $('clade-highlight-fill-opacity-value');
+      if (valEl) valEl.textContent = v;
+      renderer?.setSettings({ cladeHighlightFillOpacity: parseFloat(v) });
+      saveSettings();
+    });
+    cladeHighlightStrokeOpacitySlider?.addEventListener('input', () => {
+      const v = cladeHighlightStrokeOpacitySlider.value;
+      const valEl = $('clade-highlight-stroke-opacity-value');
+      if (valEl) valEl.textContent = v;
+      renderer?.setSettings({ cladeHighlightStrokeOpacity: parseFloat(v) });
+      saveSettings();
+    });
+    cladeHighlightStrokeWidthSlider?.addEventListener('input', () => {
+      const v = cladeHighlightStrokeWidthSlider.value;
+      const valEl = $('clade-highlight-stroke-width-value');
+      if (valEl) valEl.textContent = v;
+      renderer?.setSettings({ cladeHighlightStrokeWidth: parseFloat(v) });
+      saveSettings();
+    });
 
     // Mode menu
     const btnModeNodes    = $('btn-mode-nodes');

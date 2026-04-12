@@ -162,6 +162,10 @@ export class TreeRenderer {
     // Legend (drawing delegated to LegendRenderer; registered via setLegendRenderer)
     this._legendRenderer = null;
 
+    // Clade highlights: Map<nodeId, { colour }>.  Per-highlight colour
+    // overrides the shared cladeHighlightColour style property.
+    this._cladeHighlights = new Map();
+
     this._rafId = null;
     this._dirty = true;
 
@@ -323,6 +327,16 @@ export class TreeRenderer {
     this._collapsedCladeFontSize = s.collapsedCladeFontSize != null ? +s.collapsedCladeFontSize : (this._collapsedCladeFontSize ?? 11);
     this._collapsedCladeTypefaceKey   = s.collapsedCladeTypefaceKey   ?? null;  // null = follow main typeface
     this._collapsedCladeTypefaceStyle = s.collapsedCladeTypefaceStyle ?? null;
+
+    // ── Clade highlights ──────────────────────────────────────────────────
+    this.cladeHighlightLeftEdge    = s.cladeHighlightLeftEdge    ?? (this.cladeHighlightLeftEdge    ?? 'hard');
+    this.cladeHighlightRightEdge   = s.cladeHighlightRightEdge   ?? (this.cladeHighlightRightEdge   ?? 'hardLabels');
+    this.cladeHighlightPadding     = s.cladeHighlightPadding     != null ? +s.cladeHighlightPadding     : (this.cladeHighlightPadding     ?? 6);
+    this.cladeHighlightRadius      = s.cladeHighlightRadius      != null ? +s.cladeHighlightRadius      : (this.cladeHighlightRadius      ?? 4);
+    this.cladeHighlightStrokeWidth = s.cladeHighlightStrokeWidth != null ? +s.cladeHighlightStrokeWidth : (this.cladeHighlightStrokeWidth ?? 1);
+    this.cladeHighlightFillOpacity = s.cladeHighlightFillOpacity != null ? +s.cladeHighlightFillOpacity : (this.cladeHighlightFillOpacity ?? 0.15);
+    this.cladeHighlightStrokeOpacity = s.cladeHighlightStrokeOpacity != null ? +s.cladeHighlightStrokeOpacity : (this.cladeHighlightStrokeOpacity ?? 0.70);
+    this.cladeHighlightColour      = s.cladeHighlightColour      ?? (this.cladeHighlightColour      ?? '#ffaa00');
 
     // Propagate bg colour to an attached legend renderer.
     this._legendRenderer?.setBgColor(this.bgColor, this._skipBg);
@@ -2120,6 +2134,7 @@ export class TreeRenderer {
     const yWorldMin = this._worldYfromScreen(-this.fontSize * 2);
     const yWorldMax = this._worldYfromScreen(H + this.fontSize * 2);
 
+    this._drawCladeHighlights(yWorldMin, yWorldMax);
     this._drawNodeBars(yWorldMin, yWorldMax);
     this._drawBranches(yWorldMin, yWorldMax);
     this._drawCollapsedClades(yWorldMin, yWorldMax);
@@ -2149,6 +2164,348 @@ export class TreeRenderer {
    *   – optional range whiskers extending beyond the rectangle
    * Heights are converted to x positions as: worldX = maxX − height.
    */
+
+  // ─── Clade highlights ──────────────────────────────────────────────────────
+
+  /**
+   * Draw translucent filled shapes highlighting specific clades.
+   * Called once per frame, before branches, so the overlay is drawn behind the tree.
+   *
+   * Left-edge modes
+   *   'hard'    – vertical line at clade-root x, padded left by `cladeHighlightPadding` px
+   *   'outline' – hugs the subtree outline (branches & elbows), padded left by the same amount
+   *
+   * Right-edge modes
+   *   'hardTips'    – vertical line at the rightmost tip x + padding
+   *   'hardLabels'  – just left of the start of tip-label text + padding
+   *   'hardAlign'   – just left of the aligned-label column (when align is on), else hardLabels
+   *   'outlineTips' – staircase outline following individual tip x values + padding
+   */
+  _drawCladeHighlights(yWorldMin, yWorldMax) {
+    if (!this._cladeHighlights.size || !this.nodes || !this.nodeMap) return;
+
+    const ctx         = this.ctx;
+    const pad         = this.cladeHighlightPadding;
+    const radius      = this.cladeHighlightRadius;
+    const leftMode    = this.cladeHighlightLeftEdge;
+    const rightMode   = this.cladeHighlightRightEdge;
+    const fillOpacity = this.cladeHighlightFillOpacity;
+    const strokeOpacity = this.cladeHighlightStrokeOpacity;
+    const strokeWidth = this.cladeHighlightStrokeWidth;
+
+    // Right-hand boundary based on global options
+    // labelRightPad already covers from maxX tip to the right edge of labels
+    const tipMaxSX    = this._wx(this.maxX);
+    const tipR        = Math.max(this.tipRadius ?? 3.5, 0);
+    const shapeW      = this._totalLabelShapeWidth?.() ?? 0;
+
+    // Determine global right-edge X (CSS px from canvas left)
+    // 'hardAlign': use the aligned column start (= tipMaxSX + outlineR + labelSpacing)
+    // 'hardLabels': just before label text = tipMaxSX + tipR + labelSpacing + shapeW
+    // 'hardTips':   just right of the rightmost tip circle
+    const outlineR  = tipR + (this.tipHaloSize ?? 1);
+    const lblSpacing = this.tipLabelSpacing ?? 3;
+
+    const _rightX = (tipXmax) => {
+      // tipXmax: largest tip world-x among descendant tips of this highlight
+      const sx = this._wx(tipXmax);
+      switch (rightMode) {
+        case 'hardTips':   return sx + outlineR + pad;
+        case 'hardLabels': return sx + outlineR + lblSpacing + shapeW + pad;
+        case 'hardAlign':  return (this.tipLabelAlign && this.tipLabelAlign !== 'off')
+          ? tipMaxSX + outlineR + lblSpacing + shapeW + pad
+          : sx + outlineR + lblSpacing + shapeW + pad;
+        default:           return sx + outlineR + lblSpacing + shapeW + pad;  // hardLabels
+      }
+    };
+
+    for (const [nodeId, hlData] of this._cladeHighlights) {
+      const rootN = this.nodeMap.get(nodeId);
+      if (!rootN) continue;
+
+      // Collect all (non-collapsed) descendant tips visible in nodeMap
+      const allTipIds = this._getDescendantTipIds(nodeId);
+      // Also include the node itself if it is a tip
+      if (rootN.isTip && !allTipIds.includes(nodeId)) allTipIds.push(nodeId);
+      if (allTipIds.length === 0) continue;
+
+      const colour = hlData.colour ?? this.cladeHighlightColour;
+
+      // Gather y-sorted tip nodes and their world-x values
+      const tipNodes = allTipIds.map(id => this.nodeMap.get(id)).filter(Boolean);
+      tipNodes.sort((a, b) => a.y - b.y);
+
+      const tipYs  = tipNodes.map(n => n.y);
+      const tipXs  = tipNodes.map(n => n.x); // world x for each tip (sorted by y)
+      const minTipY = tipYs[0];
+      const maxTipY = tipYs[tipYs.length - 1];
+      const maxTipX = Math.max(...tipXs);
+
+      // Determine top/bottom screen y with padding.
+      // Gap to the next tip outside the clade: find nearest tips above/below.
+      // We use scaleY (px per row) / 2 as the default half-gap if no neighbour.
+      const halfRowPx  = this.scaleY / 2;
+      let topSY, botSY;
+      {
+        // Find the nearest y-neighbour above and below among all visible tips
+        let prevY = -Infinity, nextY = Infinity;
+        for (const n of this.nodes) {
+          if (!n.isTip) continue;
+          if (allTipIds.includes(n.id)) continue;
+          if (n.y < minTipY && n.y > prevY) prevY = n.y;
+          if (n.y > maxTipY && n.y < nextY) nextY = n.y;
+        }
+        const gapAbove = prevY === -Infinity ? halfRowPx : (minTipY - prevY) * this.scaleY * 0.5;
+        const gapBelow = nextY === Infinity  ? halfRowPx : (nextY - maxTipY) * this.scaleY * 0.5;
+        topSY = this._wy(minTipY) - Math.min(gapAbove, halfRowPx);
+        botSY = this._wy(maxTipY) + Math.min(gapBelow, halfRowPx);
+      }
+
+      // Left boundary
+      const rootSX = this._wx(rootN.x);
+
+      ctx.save();
+      ctx.beginPath();
+
+      if (leftMode === 'outline' && tipNodes.length > 1) {
+        // Build an outline path that hugs the left edges of all branches in the subtree.
+        // Strategy: collect all internal nodes of the subtree, sorted by y.
+        // For each internal node, its left edge is at node.x - pad.
+        // We trace a staircase: go along the top, down the left side, along the bottom.
+        this._buildCladeOutlinePath(ctx, rootN, tipNodes, topSY, botSY, pad, radius);
+        // right side: close with right boundary
+        const rightX = _rightX(maxTipX);
+        if (rightMode === 'outlineTips') {
+          this._addRightOutlinePath(ctx, tipNodes, tipYs, topSY, botSY, pad, radius, outlineR, lblSpacing, shapeW);
+        } else {
+          ctx.lineTo(rightX, botSY);
+          ctx.lineTo(rightX, topSY);
+        }
+        ctx.closePath();
+      } else {
+        // Hard left edge
+        const leftX = rootSX - pad;
+        if (rightMode === 'outlineTips' && tipNodes.length > 1) {
+          // Hard left, right outlines individual tips as staircase
+          ctx.moveTo(leftX, topSY);
+          this._addRightOutlinePath(ctx, tipNodes, tipYs, topSY, botSY, pad, radius, outlineR, lblSpacing, shapeW);
+          ctx.lineTo(leftX, botSY);
+          ctx.closePath();
+        } else {
+          // Simple rounded rectangle
+          const rightX = _rightX(maxTipX);
+          this._roundedRectPath(ctx, leftX, topSY, rightX - leftX, botSY - topSY, radius);
+        }
+      }
+
+      // Fill
+      ctx.globalAlpha = fillOpacity;
+      ctx.fillStyle   = colour;
+      ctx.fill();
+
+      // Stroke
+      if (strokeWidth > 0 && strokeOpacity > 0) {
+        ctx.globalAlpha  = strokeOpacity;
+        ctx.strokeStyle  = colour;
+        ctx.lineWidth    = strokeWidth;
+        ctx.stroke();
+      }
+
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+  }
+
+  /**
+   * Trace a rounded-rectangle path into ctx.
+   * External corners use `r`; path is always closed by the caller.
+   */
+  _roundedRectPath(ctx, x, y, w, h, r) {
+    const br = Math.min(r, w / 2, h / 2);
+    if (br <= 0) {
+      ctx.rect(x, y, w, h);
+      return;
+    }
+    ctx.moveTo(x + br, y);
+    ctx.lineTo(x + w - br, y);
+    ctx.arcTo(x + w, y,     x + w, y + br,     br);
+    ctx.lineTo(x + w, y + h - br);
+    ctx.arcTo(x + w, y + h, x + w - br, y + h, br);
+    ctx.lineTo(x + br, y + h);
+    ctx.arcTo(x, y + h,     x, y + h - br,     br);
+    ctx.lineTo(x, y + br);
+    ctx.arcTo(x, y,         x + br, y,          br);
+    ctx.closePath();
+  }
+
+  /**
+   * Build the staircase outline of the LEFT side of a clade in outline mode.
+   * Walks the subtree left edges depth-first, tracing a concave path on the
+   * left side from topSY to botSY.
+   * After this call the path cursor is at (leftEdge, botSY); the caller
+   * should continue with the right side then closePath().
+   */
+  _buildCladeOutlinePath(ctx, rootNode, tipNodes, topSY, botSY, pad, radius) {
+    // We collect every node in the subtree (including root) and build a
+    // staircase following each node's x position.  For a phylogram the
+    // staircase goes: top → deeper nodes, then back up to root level.
+    //
+    // Simplified approach: collect all unique x values of internal nodes
+    // sorted by depth (ascending x = shallower), and for each segment draw
+    // the step at that y-range.  We still fall back to a simple hard-left line
+    // if the topology is too complex.
+
+    // Collect all nodes in the subtree that are relevant for the outline
+    const allSubIds = new Set();
+    const stack = [rootNode.id];
+    while (stack.length) {
+      const id = stack.pop();
+      allSubIds.add(id);
+      const n = this.nodeMap.get(id);
+      if (n && !n.isTip) for (const cid of n.children) stack.push(cid);
+    }
+
+    // For each tip, trace path from its x up to the rootN.x (left = rootN.x)
+    // We build a minimal outline: go along the top tip row gathering the leftmost
+    // x for each y-strip.
+
+    // Build sorted list of all internal nodes in subtree by y
+    const internals = [];
+    for (const id of allSubIds) {
+      const n = this.nodeMap.get(id);
+      if (n && !n.isTip) internals.push(n);
+    }
+    internals.sort((a, b) => a.y - b.y);
+
+    // For the outline: the left boundary at any Y strip is the leftmost ancestor
+    // of the topmost tip in that strip.
+    // For simplicity: group tips by "segment" (runs of consecutive tips whose
+    // path-to-root includes the same internal nodes at each x level).
+    // We approximate by: for each consecutive pair of tips, find their LCA,
+    // and the left outline at that strip is lca.x - pad.
+
+    // Build staircase segments: {xWorld, fromY, toY}
+    const segments = [];
+    const tips = [...tipNodes]; // already sorted by y
+
+    // Process pairs of consecutive tips to find their LCA, building segments
+    // This gives us the "shelves" of the outline.
+    const getLCA = (id1, id2) => {
+      const ancs = new Set();
+      let c = this.nodeMap.get(id1);
+      while (c) { ancs.add(c.id); c = c.parentId ? this.nodeMap.get(c.parentId) : null; }
+      c = this.nodeMap.get(id2);
+      while (c) {
+        if (ancs.has(c.id)) return c;
+        c = c.parentId ? this.nodeMap.get(c.parentId) : null;
+      }
+      return rootNode;
+    };
+
+    // Each segment: from topSY (first tip) going down
+    let curX = rootNode.x;
+    let curSY = topSY;
+
+    const shelfY = [];
+    const shelfX = [];
+    // The root shelf spans the whole height
+    shelfX.push(rootNode.x);
+    shelfY.push(topSY);  // start y of this shelf
+
+    // For each pair of adjacent tips, find their LCA; the y-position of
+    // the LCA determines where the staircase steps in
+    for (let i = 0; i < tips.length - 1; i++) {
+      const lca = getLCA(tips[i].id, tips[i + 1].id);
+      if (!lca) continue;
+      // The step happens between tips[i] and tips[i+1]
+      const betweenY = (this._wy(tips[i].y) + this._wy(tips[i + 1].y)) / 2;
+      shelfX.push(lca.x);
+      shelfY.push(betweenY);
+    }
+    shelfX.push(rootNode.x);
+    shelfY.push(botSY);
+
+    // Build unique shelves (deduplicate consecutive same-x)
+    // Path: start at topSY at rootX, step in through shelves
+    const rootLeftSX = this._wx(rootNode.x) - pad;
+    ctx.moveTo(rootLeftSX, topSY);
+
+    for (let i = 0; i < shelfX.length - 1; i++) {
+      const x1 = this._wx(shelfX[i])     - pad;
+      const x2 = this._wx(shelfX[i + 1]) - pad;
+      const y1 = shelfY[i];
+      const y2 = shelfY[i + 1];
+      // Vertical step down from shelf i to the next shelf start
+      ctx.lineTo(x1, y2);
+      if (Math.abs(x2 - x1) > 0.5) {
+        // Horizontal step inward/outward
+        ctx.lineTo(x2, y2);
+      }
+    }
+    // Now at (rootLeftSX, botSY) — caller adds right side
+  }
+
+  /**
+   * Add the right-side staircase (outlineTips mode) to the current path.
+   * Path cursor must be at the bottom of the shape; this adds the right
+   * side going UPWARD from botSY to topSY, then the caller closes.
+   */
+  _addRightOutlinePath(ctx, tipNodes, tipYs, topSY, botSY, pad, radius, outlineR, lblSpacing, shapeW) {
+    const tips = [...tipNodes].reverse(); // bottom to top
+    for (let i = 0; i < tips.length; i++) {
+      const tip = tips[i];
+      const sx   = this._wx(tip.x) + outlineR + lblSpacing + shapeW + pad;
+      const midY = i < tips.length - 1
+        ? (this._wy(tips[i].y) + this._wy(tips[i + 1].y)) / 2
+        : topSY;
+      // Go right to this tip's edge (at the midpoint between this and adjacent tip)
+      const prevMidY = i === 0
+        ? botSY
+        : (this._wy(tips[i - 1].y) + this._wy(tips[i].y)) / 2;
+      ctx.lineTo(sx, prevMidY);
+      ctx.lineTo(sx, midY);
+    }
+  }
+
+  /** Add or update a clade highlight.  `colour` is optional (falls back to cladeHighlightColour). */
+  addCladeHighlight(nodeId, colour) {
+    this._cladeHighlights.set(nodeId, { colour: colour ?? null });
+    this._dirty = true;
+  }
+
+  /** Remove the highlight for the given clade root node id. */
+  removeCladeHighlight(nodeId) {
+    this._cladeHighlights.delete(nodeId);
+    this._dirty = true;
+  }
+
+  /** Remove all clade highlights. */
+  clearCladeHighlights() {
+    this._cladeHighlights.clear();
+    this._dirty = true;
+  }
+
+  /** Update the colour of an existing highlight. Returns false if not found. */
+  setCladeHighlightColour(nodeId, colour) {
+    const hl = this._cladeHighlights.get(nodeId);
+    if (!hl) return false;
+    hl.colour = colour;
+    this._dirty = true;
+    return true;
+  }
+
+  /** Serialise all highlights to a plain-object array (for save/restore). */
+  getCladeHighlightsData() {
+    return [...this._cladeHighlights.entries()].map(([id, hl]) => ({ id, colour: hl.colour }));
+  }
+
+  /** Restore highlights from serialised data (e.g. loaded from saved settings). */
+  setCladeHighlightsData(arr) {
+    this._cladeHighlights.clear();
+    for (const { id, colour } of arr) this._cladeHighlights.set(id, { colour: colour ?? null });
+    this._dirty = true;
+  }
+
   _drawNodeBars(yWorldMin, yWorldMax) {
     if (!this.nodeBarsEnabled || !this.nodes) return;
     const schema = this._annotationSchema;

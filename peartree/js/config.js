@@ -145,4 +145,13 @@ export const DEFAULT_SETTINGS = {
   // Intro animation played when a tree is first loaded.
   // Options: 'y-then-x' | 'x-then-y' | 'simultaneous' | 'from-bottom' | 'from-top' | 'none'
   introAnimation:     'x-then-y',
+  // Clade highlights
+  cladeHighlightLeftEdge:      'hard',
+  cladeHighlightRightEdge:     'hardLabels',
+  cladeHighlightPadding:       '6',
+  cladeHighlightRadius:        '4',
+  cladeHighlightStrokeWidth:   '1',
+  cladeHighlightFillOpacity:   '0.15',
+  cladeHighlightStrokeOpacity: '0.7',
+  cladeHighlightColour:        '#ffaa00',
 };

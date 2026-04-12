@@ -68,6 +68,9 @@ const _DEFS = [
   { id: 'tree-expand-clade',         label: 'Expand Clade',             shortcut: null,                group: 'tree', enabled: false, buttonId: 'btn-expand-clade'         },
   { id: 'tree-paint',                label: 'Paint Node',               shortcut: null,                group: 'tree', enabled: false, buttonId: 'btn-apply-user-colour'    },
   { id: 'tree-clear-colours',        label: 'Clear Colours',            shortcut: null,                group: 'tree', enabled: false, buttonId: 'btn-clear-user-colour'    },
+  { id: 'tree-highlight-clade',      label: 'Highlight Clade',          shortcut: null,                group: 'tree', enabled: false, buttonId: 'btn-highlight-clade'      },
+  { id: 'tree-remove-highlight',     label: 'Remove Highlight',         shortcut: null,                group: 'tree', enabled: false, buttonId: 'btn-remove-highlight'     },
+  { id: 'tree-clear-highlights',     label: 'Clear All Highlights',     shortcut: null,                group: 'tree', enabled: false, buttonId: 'btn-clear-highlights'     },
 
   // Help
   { id: 'show-help',         label: 'PearTree Help',      shortcut: 'CmdOrCtrl+?', group: 'help', enabled: true, buttonId: 'btn-help' },
