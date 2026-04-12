@@ -2267,34 +2267,49 @@ export class TreeRenderer {
       ctx.save();
       ctx.beginPath();
 
+      // Padded screen y at the topmost and bottommost tips — used for the
+      // outline corner points so tip-y-padding is consistent with x-padding.
+      const topPadY = this._wy(minTipY) - pad;
+      const botPadY = this._wy(maxTipY) + pad;
+
       if (leftMode === 'outline' && tipNodes.length > 1) {
-        // Build an outline path that hugs the left edges of all branches in the subtree.
-        // Strategy: collect all internal nodes of the subtree, sorted by y.
-        // For each internal node, its left edge is at node.x - pad.
-        // We trace a staircase: go along the top, down the left side, along the bottom.
-        this._buildCladeOutlinePath(ctx, rootN, tipNodes, topSY, botSY, pad, radius);
-        // right side: close with right boundary
+        // Build an outline path that hugs the left edges of all branches.
+        // Top walk ends at (topTip.x − pad, topTip.y − pad).
+        this._buildCladeOutlinePath(ctx, rootN, pad, radius);
+        // Right edge: from topPadY down to botPadY, with convex corners rounded.
         const rightX = _rightX(maxTipX);
         if (rightMode === 'outlineTips') {
-          this._addRightOutlinePath(ctx, tipNodes, tipYs, topSY, botSY, pad, radius, outlineR, lblSpacing, shapeW);
+          this._addRightOutlinePath(ctx, tipNodes, topPadY, botPadY, pad, radius, outlineR, lblSpacing, shapeW);
         } else {
-          ctx.lineTo(rightX, botSY);
-          ctx.lineTo(rightX, topSY);
+          // Two convex corners: top-right (RIGHT→DOWN) and bottom-right (DOWN→LEFT).
+          const cr = radius;
+          ctx.lineTo(rightX - cr, topPadY);
+          ctx.arcTo(rightX, topPadY, rightX, topPadY + cr, cr);   // round top-right
+          ctx.lineTo(rightX, botPadY - cr);
+          ctx.arcTo(rightX, botPadY, rightX - cr, botPadY, cr);   // round bottom-right
         }
+        // Bottom walk: trace from (rightX or last outlineTips sx, botPadY) back to root.
+        this._addBotCladeOutlinePath(ctx, rootN, pad, radius);
         ctx.closePath();
       } else {
         // Hard left edge
         const leftX = rootSX - pad;
+        const cr = Math.min(radius, (botPadY - topPadY) / 2);
         if (rightMode === 'outlineTips' && tipNodes.length > 1) {
-          // Hard left, right outlines individual tips as staircase
-          ctx.moveTo(leftX, topSY);
-          this._addRightOutlinePath(ctx, tipNodes, tipYs, topSY, botSY, pad, radius, outlineR, lblSpacing, shapeW);
-          ctx.lineTo(leftX, botSY);
+          // Hard left, right outlines individual tips as staircase.
+          // Top-left corner (convex): approach from left edge, leave rightward.
+          ctx.moveTo(leftX + cr, topPadY);
+          this._addRightOutlinePath(ctx, tipNodes, topPadY, botPadY, pad, radius, outlineR, lblSpacing, shapeW);
+          // Bottom-left corner (convex): arrive from right, leave upward.
+          ctx.lineTo(leftX + cr, botPadY);
+          ctx.arcTo(leftX, botPadY, leftX, botPadY - cr, cr);
+          ctx.lineTo(leftX, topPadY + cr);
+          ctx.arcTo(leftX, topPadY, leftX + cr, topPadY, cr);
           ctx.closePath();
         } else {
-          // Simple rounded rectangle
+          // Simple rounded rectangle.
           const rightX = _rightX(maxTipX);
-          this._roundedRectPath(ctx, leftX, topSY, rightX - leftX, botSY - topSY, radius);
+          this._roundedRectPath(ctx, leftX, topPadY, rightX - leftX, botPadY - topPadY, radius);
         }
       }
 
@@ -2339,131 +2354,159 @@ export class TreeRenderer {
   }
 
   /**
-   * Build the staircase outline of the LEFT side of a clade in outline mode.
-   * Walks the subtree left edges depth-first, tracing a concave path on the
-   * left side from topSY to botSY.
-   * After this call the path cursor is at (leftEdge, botSY); the caller
-   * should continue with the right side then closePath().
+   * Trace the TOP-LEFT boundary of a clade outline.
+   * Always follows the topmost child at each level (preorder topmost-child spine).
+   *
+   * At each shoulder the path steps:
+   *   1. Vertically to (cur.x − pad, topChild.y − pad)  — corner above the branch
+   *   2. Horizontally to (topChild.x − pad, topChild.y − pad)  — right to child column
+   *
+   * moveTo: (root.x − pad, root.y)
+   * Ends at: (topTip.x − pad, topTip.y − pad)
+   * Caller then appends the right edge and calls _addBotCladeOutlinePath().
    */
-  _buildCladeOutlinePath(ctx, rootNode, tipNodes, topSY, botSY, pad, radius) {
-    // We collect every node in the subtree (including root) and build a
-    // staircase following each node's x position.  For a phylogram the
-    // staircase goes: top → deeper nodes, then back up to root level.
-    //
-    // Simplified approach: collect all unique x values of internal nodes
-    // sorted by depth (ascending x = shallower), and for each segment draw
-    // the step at that y-range.  We still fall back to a simple hard-left line
-    // if the topology is too complex.
-
-    // Collect all nodes in the subtree that are relevant for the outline
-    const allSubIds = new Set();
-    const stack = [rootNode.id];
-    while (stack.length) {
-      const id = stack.pop();
-      allSubIds.add(id);
-      const n = this.nodeMap.get(id);
-      if (n && !n.isTip) for (const cid of n.children) stack.push(cid);
-    }
-
-    // For each tip, trace path from its x up to the rootN.x (left = rootN.x)
-    // We build a minimal outline: go along the top tip row gathering the leftmost
-    // x for each y-strip.
-
-    // Build sorted list of all internal nodes in subtree by y
-    const internals = [];
-    for (const id of allSubIds) {
-      const n = this.nodeMap.get(id);
-      if (n && !n.isTip) internals.push(n);
-    }
-    internals.sort((a, b) => a.y - b.y);
-
-    // For the outline: the left boundary at any Y strip is the leftmost ancestor
-    // of the topmost tip in that strip.
-    // For simplicity: group tips by "segment" (runs of consecutive tips whose
-    // path-to-root includes the same internal nodes at each x level).
-    // We approximate by: for each consecutive pair of tips, find their LCA,
-    // and the left outline at that strip is lca.x - pad.
-
-    // Build staircase segments: {xWorld, fromY, toY}
-    const segments = [];
-    const tips = [...tipNodes]; // already sorted by y
-
-    // Process pairs of consecutive tips to find their LCA, building segments
-    // This gives us the "shelves" of the outline.
-    const getLCA = (id1, id2) => {
-      const ancs = new Set();
-      let c = this.nodeMap.get(id1);
-      while (c) { ancs.add(c.id); c = c.parentId ? this.nodeMap.get(c.parentId) : null; }
-      c = this.nodeMap.get(id2);
-      while (c) {
-        if (ancs.has(c.id)) return c;
-        c = c.parentId ? this.nodeMap.get(c.parentId) : null;
-      }
-      return rootNode;
+  _buildCladeOutlinePath(ctx, rootNode, pad, r) {
+    // Helper: topmost child node of n (min world y), or null if tip.
+    const topChild = n => {
+      if (n.isTip || !n.children?.length) return null;
+      return n.children.map(id => this.nodeMap.get(id)).filter(Boolean)
+        .reduce((best, c) => c.y < best.y ? c : best);
     };
 
-    // Each segment: from topSY (first tip) going down
-    let curX = rootNode.x;
-    let curSY = topSY;
+    ctx.moveTo(this._wx(rootNode.x) - pad, this._wy(rootNode.y));
 
-    const shelfY = [];
-    const shelfX = [];
-    // The root shelf spans the whole height
-    shelfX.push(rootNode.x);
-    shelfY.push(topSY);  // start y of this shelf
-
-    // For each pair of adjacent tips, find their LCA; the y-position of
-    // the LCA determines where the staircase steps in
-    for (let i = 0; i < tips.length - 1; i++) {
-      const lca = getLCA(tips[i].id, tips[i + 1].id);
-      if (!lca) continue;
-      // The step happens between tips[i] and tips[i+1]
-      const betweenY = (this._wy(tips[i].y) + this._wy(tips[i + 1].y)) / 2;
-      shelfX.push(lca.x);
-      shelfY.push(betweenY);
-    }
-    shelfX.push(rootNode.x);
-    shelfY.push(botSY);
-
-    // Build unique shelves (deduplicate consecutive same-x)
-    // Path: start at topSY at rootX, step in through shelves
-    const rootLeftSX = this._wx(rootNode.x) - pad;
-    ctx.moveTo(rootLeftSX, topSY);
-
-    for (let i = 0; i < shelfX.length - 1; i++) {
-      const x1 = this._wx(shelfX[i])     - pad;
-      const x2 = this._wx(shelfX[i + 1]) - pad;
-      const y1 = shelfY[i];
-      const y2 = shelfY[i + 1];
-      // Vertical step down from shelf i to the next shelf start
-      ctx.lineTo(x1, y2);
-      if (Math.abs(x2 - x1) > 0.5) {
-        // Horizontal step inward/outward
-        ctx.lineTo(x2, y2);
+    let cur   = rootNode;
+    let prevY = this._wy(rootNode.y); // y of the last point placed on the path
+    while (true) {
+      const child = topChild(cur);
+      if (!child) break;
+      const cx  = this._wx(cur.x)   - pad;  // convex corner x
+      const cy  = this._wy(child.y) - pad;  // convex corner y (above child row)
+      const nx  = this._wx(child.x) - pad;  // concave corner x
+      // Clamp radius to half the vertical approach and half the horizontal departure.
+      const vd  = prevY - cy;               // > 0: arriving from below
+      const hd  = nx - cx;                  // > 0: leaving rightward
+      const cr  = r > 0 ? Math.min(r, vd > 0 ? vd * 0.45 : r, hd > 0 ? hd * 0.45 : r) : 0;
+      if (cr > 0) {
+        ctx.lineTo(cx, cy + cr);             // approach convex corner from below
+        ctx.arcTo(cx, cy, nx, cy, cr);       // round: UP → RIGHT
+      } else {
+        ctx.lineTo(cx, cy);
       }
+      ctx.lineTo(nx, cy);                   // concave corner — sharp
+      prevY = cy;
+      cur   = child;
     }
-    // Now at (rootLeftSX, botSY) — caller adds right side
+    // Cursor is now at (topTip.x − pad, topTip.y − pad).
   }
 
   /**
-   * Add the right-side staircase (outlineTips mode) to the current path.
-   * Path cursor must be at the bottom of the shape; this adds the right
-   * side going UPWARD from botSY to topSY, then the caller closes.
+   * Trace the BOTTOM-LEFT return path from the bottommost tip back to the
+   * clade root, following the bottommost-child spine in reverse.
+   *
+   * Assumes cursor is at (rightEdge, botTip.y + pad) when called.
+   * At each shoulder the path steps:
+   *   1. Horizontally to (parent.x − pad, child.y + pad)  — corner below the branch
+   *   2. Vertically   to (parent.x − pad, parent.y)       — up to parent row
+   *
+   * Ends at (root.x − pad, root.y).  Caller calls closePath().
    */
-  _addRightOutlinePath(ctx, tipNodes, tipYs, topSY, botSY, pad, radius, outlineR, lblSpacing, shapeW) {
-    const tips = [...tipNodes].reverse(); // bottom to top
+  _addBotCladeOutlinePath(ctx, rootNode, pad, r) {
+    // Helper: bottommost child node of n (max world y), or null if tip.
+    const botChild = n => {
+      if (n.isTip || !n.children?.length) return null;
+      return n.children.map(id => this.nodeMap.get(id)).filter(Boolean)
+        .reduce((best, c) => c.y > best.y ? c : best);
+    };
+
+    // Build the spine root → botTip, then reverse to walk tip → root.
+    const spine = [];
+    let cur = rootNode;
+    while (cur) { spine.push(cur); cur = botChild(cur); }
+    spine.reverse(); // [botTip, ..., root]
+
+    for (let i = 0; i < spine.length - 1; i++) {
+      const child      = spine[i];
+      const parent     = spine[i + 1];
+      const isLastStep = (i === spine.length - 2); // parent is the clade root
+      const cornerX = this._wx(parent.x) - pad;    // convex corner x
+      const cornerY = this._wy(child.y)  + pad;    // convex corner y (below child row)
+      const nextY   = this._wy(parent.y) + (isLastStep ? 0 : pad); // concave corner y
+      // Clamp radius to half the horizontal approach and half the vertical departure.
+      const hd = this._wx(child.x) - this._wx(parent.x); // > 0: arriving from right
+      const vd = cornerY - nextY;                         // > 0: leaving upward
+      const cr = r > 0 ? Math.min(r, hd > 0 ? hd * 0.45 : r, vd > 0 ? vd * 0.45 : r) : 0;
+      if (cr > 0) {
+        ctx.lineTo(cornerX + cr, cornerY);             // approach convex corner from right
+        ctx.arcTo(cornerX, cornerY, cornerX, nextY, cr); // round: LEFT → UP
+      } else {
+        ctx.lineTo(cornerX, cornerY);
+      }
+      ctx.lineTo(cornerX, nextY);                    // concave corner (or root) — sharp
+    }
+    // Cursor is now at (root.x − pad, root.y).
+  }
+
+  /**
+   * Trace the right-side staircase (outlineTips mode) top → bottom.
+   * Cursor must be at the start of the top boundary (startY) when called.
+   * Each tip gets its own right-edge column; the path steps between tips at
+   * their midpoints.  Ends at (botTip.x + …, endY).
+   *
+   * @param {number} startY  Screen y at the top of the first tip (e.g. topTip.y − pad)
+   * @param {number} endY    Screen y at the bottom of the last tip (e.g. botTip.y + pad)
+   */
+  _addRightOutlinePath(ctx, tipNodes, startY, endY, pad, r, outlineR, lblSpacing, shapeW) {
+    const tips = [...tipNodes]; // top to bottom (already sorted by y)
+    // Pre-compute right-edge x for every tip.
+    const sxArr = tips.map(t => this._wx(t.x) + outlineR + lblSpacing + shapeW + pad);
+
     for (let i = 0; i < tips.length; i++) {
-      const tip = tips[i];
-      const sx   = this._wx(tip.x) + outlineR + lblSpacing + shapeW + pad;
-      const midY = i < tips.length - 1
-        ? (this._wy(tips[i].y) + this._wy(tips[i + 1].y)) / 2
-        : topSY;
-      // Go right to this tip's edge (at the midpoint between this and adjacent tip)
+      const sx       = sxArr[i];
+      const prevSX   = i > 0 ? sxArr[i - 1] : null;
+      const nextSX   = i < tips.length - 1 ? sxArr[i + 1] : null;
       const prevMidY = i === 0
-        ? botSY
+        ? startY
         : (this._wy(tips[i - 1].y) + this._wy(tips[i].y)) / 2;
-      ctx.lineTo(sx, prevMidY);
-      ctx.lineTo(sx, midY);
+      const nextMidY = i < tips.length - 1
+        ? (this._wy(tips[i].y) + this._wy(tips[i + 1].y)) / 2
+        : endY;
+      const vd = nextMidY - prevMidY; // vertical span of this step (> 0)
+
+      // ── TOP corner at (sx, prevMidY): horizontal → vertical ──────────────
+      // Convex (RIGHT→DOWN) when arriving from left (sx >= prevSX).
+      // Concave (LEFT→DOWN) when arriving from right — keep sharp.
+      const topConvex = prevSX === null || sx >= prevSX;
+      const cr_top = (r > 0 && topConvex)
+        ? Math.min(r,
+            vd  > 0 ? vd  * 0.45 : r,
+            prevSX !== null ? Math.abs(sx - prevSX) * 0.45 : r)
+        : 0;
+
+      if (cr_top > 0) {
+        ctx.lineTo(sx - cr_top, prevMidY);
+        ctx.arcTo(sx, prevMidY, sx, prevMidY + cr_top, cr_top); // RIGHT → DOWN
+      } else {
+        ctx.lineTo(sx, prevMidY);
+      }
+
+      // ── BOTTOM corner at (sx, nextMidY): vertical → horizontal ───────────
+      // Convex (DOWN→LEFT) when leaving leftward (nextSX < sx) OR at the last tip
+      // (where the path turns left toward _addBotCladeOutlinePath).
+      // Concave (DOWN→RIGHT) when leaving rightward — keep sharp.
+      const botConvex = nextSX === null || nextSX < sx;
+      const cr_bot = (r > 0 && botConvex)
+        ? Math.min(r,
+            vd > 0 ? vd * 0.45 : r,
+            nextSX !== null ? (sx - nextSX) * 0.45 : r)
+        : 0;
+
+      if (cr_bot > 0) {
+        ctx.lineTo(sx, nextMidY - cr_bot);
+        ctx.arcTo(sx, nextMidY, sx - cr_bot, nextMidY, cr_bot); // DOWN → LEFT
+      } else {
+        ctx.lineTo(sx, nextMidY);
+      }
     }
   }
 
@@ -2482,6 +2525,23 @@ export class TreeRenderer {
   /** Remove all clade highlights. */
   clearCladeHighlights() {
     this._cladeHighlights.clear();
+    this._dirty = true;
+  }
+
+  /**
+   * Update one or more clade-highlight style properties without touching any
+   * other renderer settings.  Safe to call with a partial object from a slider
+   * or select-change handler.
+   */
+  setCladeHighlightStyle(s) {
+    if ('cladeHighlightLeftEdge'      in s) this.cladeHighlightLeftEdge      = s.cladeHighlightLeftEdge;
+    if ('cladeHighlightRightEdge'     in s) this.cladeHighlightRightEdge     = s.cladeHighlightRightEdge;
+    if ('cladeHighlightPadding'       in s) this.cladeHighlightPadding       = +s.cladeHighlightPadding;
+    if ('cladeHighlightRadius'        in s) this.cladeHighlightRadius        = +s.cladeHighlightRadius;
+    if ('cladeHighlightStrokeWidth'   in s) this.cladeHighlightStrokeWidth   = +s.cladeHighlightStrokeWidth;
+    if ('cladeHighlightFillOpacity'   in s) this.cladeHighlightFillOpacity   = +s.cladeHighlightFillOpacity;
+    if ('cladeHighlightStrokeOpacity' in s) this.cladeHighlightStrokeOpacity = +s.cladeHighlightStrokeOpacity;
+    if ('cladeHighlightColour'        in s) this.cladeHighlightColour        = s.cladeHighlightColour;
     this._dirty = true;
   }
 

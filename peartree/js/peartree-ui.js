@@ -576,7 +576,7 @@ function _buildToolbar(tbSections) {
   </div>`;
 
   // Centre: annotations + nodeInfo + optional sections, all controllable via toolbarSections
-  const CENTRE_SECTIONS = ['annotations', 'nodeInfo', 'navigation', 'zoom', 'order', 'rotate', 'reroot', 'hideShow', 'colour'];
+  const CENTRE_SECTIONS = ['annotations', 'nodeInfo', 'navigation', 'zoom', 'order', 'rotate', 'reroot', 'hideShow', 'highlightClade', 'colour'];
   const centreParts = CENTRE_SECTIONS
     .filter(k => keys.includes(k))
     .map(k => _TB_SECTION_BUILDERS[k]());

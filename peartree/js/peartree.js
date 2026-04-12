@@ -4984,49 +4984,50 @@ async function _initCore(root = document) {
 
     // Style change listeners
     cladeHighlightLeftEdgeEl?.addEventListener('change', () => {
-      renderer?.setSettings({ cladeHighlightLeftEdge: cladeHighlightLeftEdgeEl.value });
+      renderer?.setCladeHighlightStyle({ cladeHighlightLeftEdge: cladeHighlightLeftEdgeEl.value });
       saveSettings();
     });
     cladeHighlightRightEdgeEl?.addEventListener('change', () => {
-      renderer?.setSettings({ cladeHighlightRightEdge: cladeHighlightRightEdgeEl.value });
+      renderer?.setCladeHighlightStyle({ cladeHighlightRightEdge: cladeHighlightRightEdgeEl.value });
       saveSettings();
     });
     cladeHighlightDefaultColourEl?.addEventListener('input', () => {
+      renderer?.setCladeHighlightStyle({ cladeHighlightColour: cladeHighlightDefaultColourEl.value });
       saveSettings();
     });
     cladeHighlightPaddingSlider?.addEventListener('input', () => {
       const v = cladeHighlightPaddingSlider.value;
       const valEl = $('clade-highlight-padding-value');
       if (valEl) valEl.textContent = v;
-      renderer?.setSettings({ cladeHighlightPadding: parseFloat(v) });
+      renderer?.setCladeHighlightStyle({ cladeHighlightPadding: parseFloat(v) });
       saveSettings();
     });
     cladeHighlightRadiusSlider?.addEventListener('input', () => {
       const v = cladeHighlightRadiusSlider.value;
       const valEl = $('clade-highlight-radius-value');
       if (valEl) valEl.textContent = v;
-      renderer?.setSettings({ cladeHighlightRadius: parseFloat(v) });
+      renderer?.setCladeHighlightStyle({ cladeHighlightRadius: parseFloat(v) });
       saveSettings();
     });
     cladeHighlightFillOpacitySlider?.addEventListener('input', () => {
       const v = cladeHighlightFillOpacitySlider.value;
       const valEl = $('clade-highlight-fill-opacity-value');
       if (valEl) valEl.textContent = v;
-      renderer?.setSettings({ cladeHighlightFillOpacity: parseFloat(v) });
+      renderer?.setCladeHighlightStyle({ cladeHighlightFillOpacity: parseFloat(v) });
       saveSettings();
     });
     cladeHighlightStrokeOpacitySlider?.addEventListener('input', () => {
       const v = cladeHighlightStrokeOpacitySlider.value;
       const valEl = $('clade-highlight-stroke-opacity-value');
       if (valEl) valEl.textContent = v;
-      renderer?.setSettings({ cladeHighlightStrokeOpacity: parseFloat(v) });
+      renderer?.setCladeHighlightStyle({ cladeHighlightStrokeOpacity: parseFloat(v) });
       saveSettings();
     });
     cladeHighlightStrokeWidthSlider?.addEventListener('input', () => {
       const v = cladeHighlightStrokeWidthSlider.value;
       const valEl = $('clade-highlight-stroke-width-value');
       if (valEl) valEl.textContent = v;
-      renderer?.setSettings({ cladeHighlightStrokeWidth: parseFloat(v) });
+      renderer?.setCladeHighlightStyle({ cladeHighlightStrokeWidth: parseFloat(v) });
       saveSettings();
     });
 
