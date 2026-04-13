@@ -2277,7 +2277,7 @@ export class TreeRenderer {
       if (leftMode === 'outline' && tipNodes.length > 1) {
         // Build an outline path that hugs the left edges of all branches.
         // Top walk ends at (topTip.x − pad, topTip.y − pad).
-        this._buildCladeOutlinePath(ctx, rootN, pad, radius, leftPad);
+        this._buildCladeOutlinePath(ctx, rootN, pad, radius, leftPad, topPadY);
         // Right edge: from topPadY down to botPadY, with convex corners rounded.
         const rightX = _rightX(maxTipX);
         if (rightMode === 'outlineTips') {
@@ -2291,7 +2291,7 @@ export class TreeRenderer {
           ctx.arcTo(rightX, botPadY, rightX - cr, botPadY, cr);   // round bottom-right
         }
         // Bottom walk: trace from (rightX or last outlineTips sx, botPadY) back to root.
-        this._addBotCladeOutlinePath(ctx, rootN, pad, radius, leftPad);
+        this._addBotCladeOutlinePath(ctx, rootN, pad, radius, leftPad, botPadY);
         ctx.closePath();
       } else {
         // Hard left edge
@@ -2367,7 +2367,7 @@ export class TreeRenderer {
    * Ends at: (topTip.x − pad, topTip.y − pad)
    * Caller then appends the right edge and calls _addBotCladeOutlinePath().
    */
-  _buildCladeOutlinePath(ctx, rootNode, pad, r, leftPad = pad) {
+  _buildCladeOutlinePath(ctx, rootNode, pad, r, leftPad = pad, topPadY = null) {
     // Helper: topmost child node of n (min world y), or null if tip.
     const topChild = n => {
       if (n.isTip || !n.children?.length) return null;
@@ -2383,12 +2383,17 @@ export class TreeRenderer {
       const child = topChild(cur);
       if (!child) break;
       const cx  = this._wx(cur.x)   - leftPad;  // convex corner x
-      const cy  = this._wy(child.y) - pad;       // convex corner y (above child row)
+      // Clamp shoulder y to topPadY so no horizontal line goes above the top boundary.
+      const cy_raw = this._wy(child.y) - pad;
+      const cy  = topPadY !== null ? Math.max(cy_raw, topPadY) : cy_raw;
       const nx  = this._wx(child.x) - leftPad;  // concave corner x
       // Clamp radius to half the vertical approach and half the horizontal departure.
+      // If the corner was clamped to the boundary, suppress the arc entirely so
+      // the boundary edge stays flat (no protrusion into the shape).
+      const wasClamped = topPadY !== null && cy_raw < topPadY;
       const vd  = prevY - cy;               // > 0: arriving from below
       const hd  = nx - cx;                  // > 0: leaving rightward
-      const cr  = r > 0 ? Math.min(r, vd > 0 ? vd * 0.45 : r, hd > 0 ? hd * 0.45 : r) : 0;
+      const cr  = (wasClamped || r <= 0) ? 0 : Math.min(r, vd > 0 ? vd * 0.45 : r, hd > 0 ? hd * 0.45 : r);
       if (cr > 0) {
         ctx.lineTo(cx, cy + cr);             // approach convex corner from below
         ctx.arcTo(cx, cy, nx, cy, cr);       // round: UP → RIGHT
@@ -2413,7 +2418,7 @@ export class TreeRenderer {
    *
    * Ends at (root.x − pad, root.y).  Caller calls closePath().
    */
-  _addBotCladeOutlinePath(ctx, rootNode, pad, r, leftPad = pad) {
+  _addBotCladeOutlinePath(ctx, rootNode, pad, r, leftPad = pad, botPadY = null) {
     // Helper: bottommost child node of n (max world y), or null if tip.
     const botChild = n => {
       if (n.isTip || !n.children?.length) return null;
@@ -2432,12 +2437,20 @@ export class TreeRenderer {
       const parent     = spine[i + 1];
       const isLastStep = (i === spine.length - 2); // parent is the clade root
       const cornerX = this._wx(parent.x) - leftPad;  // convex corner x
-      const cornerY = this._wy(child.y)  + pad;        // convex corner y (below child row)
-      const nextY   = this._wy(parent.y) + (isLastStep ? 0 : pad); // concave corner y
+      // Clamp shoulder y to botPadY so no horizontal line goes below the bottom boundary.
+      const cornerY_raw = this._wy(child.y) + pad;
+      const cornerY = botPadY !== null ? Math.min(cornerY_raw, botPadY) : cornerY_raw;
+      // Clamp nextY too: for internal steps, parent.y + pad can also fall below botPadY,
+      // which would cause a zig-zag back down below the boundary before recovering.
+      const nextY_raw  = this._wy(parent.y) + (isLastStep ? 0 : pad);
+      const nextY = (!isLastStep && botPadY !== null) ? Math.min(nextY_raw, botPadY) : nextY_raw;
       // Clamp radius to half the horizontal approach and half the vertical departure.
+      // If the corner was clamped to the boundary, suppress the arc entirely so
+      // the boundary edge stays flat (no protrusion into the shape).
+      const wasClamped = botPadY !== null && cornerY_raw > botPadY;
       const hd = this._wx(child.x) - this._wx(parent.x); // > 0: arriving from right
       const vd = cornerY - nextY;                         // > 0: leaving upward
-      const cr = r > 0 ? Math.min(r, hd > 0 ? hd * 0.45 : r, vd > 0 ? vd * 0.45 : r) : 0;
+      const cr = (wasClamped || r <= 0) ? 0 : Math.min(r, hd > 0 ? hd * 0.45 : r, vd > 0 ? vd * 0.45 : r);
       if (cr > 0) {
         ctx.lineTo(cornerX + cr, cornerY);             // approach convex corner from right
         ctx.arcTo(cornerX, cornerY, cornerX, nextY, cr); // round: LEFT → UP
