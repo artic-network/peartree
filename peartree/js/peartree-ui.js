@@ -50,7 +50,7 @@ function _sectionBranches() {
       <h3><i class="bi bi-bezier"></i> Branches</h3>
       <div class="pt-palette-row"><span class="pt-palette-label">Colour</span><input type="color" class="pt-palette-color" id="branch-color" value="#f2f1e6" /></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Width <i class="bi bi-arrows-expand form-label-sm" title="Branch width"></i></span><input type="range" class="form-range" id="branch-width-slider" min="0.5" max="8" step="0.5" value="1" /><span class="pt-val" id="branch-width-value">1</span></div>
-      <div class="pt-palette-row"><span class="pt-palette-label">Elbows <i class="bi bi-bounding-box-circles form-label-sm" title="Corner radius"></i></span><input type="range" class="form-range" id="elbow-radius-slider" min="0" max="20" step="1" value="2" /><span class="pt-val" id="elbow-radius-value">2</span></div>
+      <div class="pt-palette-row"><span class="pt-palette-label">Elbow Radius <i class="bi bi-radar form-label-sm" title="Corner radius"></i></span><input type="range" class="form-range" id="elbow-radius-slider" min="0" max="20" step="1" value="2" /><span class="pt-val" id="elbow-radius-value">2</span></div>
     </div>`;
 }
 
@@ -68,7 +68,7 @@ function _sectionTipLabels() {
         <div class="pt-palette-row"><span class="pt-palette-label">Colour</span><input type="color" class="pt-palette-color" id="label-color" value="#f7eeca" /></div>
         <div class="pt-palette-row"><span class="pt-palette-label">Colour by</span><select class="pt-palette-select" id="label-colour-by" disabled><option value="user_colour">user colour</option></select></div>
         <div class="pt-palette-row" id="label-palette-row" style="display:none"><span class="pt-palette-label">Palette</span><select class="pt-palette-select" id="label-palette-select"></select></div>
-        <div class="pt-palette-row"><span class="pt-palette-label">Spacing</span><input type="range" class="form-range" id="tip-label-spacing-slider" min="0" max="20" step="1" value="3" /><span class="pt-val" id="tip-label-spacing-value">3</span></div>
+        <div class="pt-palette-row"><span class="pt-palette-label">Spacing <i class="bi bi-arrow-bar-right form-label-sm" title="Padding"></i></span><input type="range" class="form-range" id="tip-label-spacing-slider" min="0" max="20" step="1" value="3" /><span class="pt-val" id="tip-label-spacing-value">3</span></div>
       </div>
     </div>`;
 }
@@ -83,8 +83,8 @@ function _sectionLabelShapes() {
         <div class="pt-palette-row"><span class="pt-palette-label">Colour by</span><select class="pt-palette-select" id="tip-label-shape-colour-by" disabled><option value="user_colour">user colour</option></select></div>
         <div class="pt-palette-row" id="tip-label-shape-palette-row" style="display:none"><span class="pt-palette-label">Palette</span><select class="pt-palette-select" id="tip-label-shape-palette-select"></select></div>
         <div class="pt-palette-row"><span class="pt-palette-label">Size</span><input type="range" class="form-range" id="tip-label-shape-size-slider" min="1" max="100" step="1" value="50" /><span class="pt-val" id="tip-label-shape-size-value">50</span></div>
-        <div class="pt-palette-row"><span class="pt-palette-label">Margin left</span><input type="range" class="form-range" id="tip-label-shape-margin-left-slider" min="0" max="100" value="2" /><span class="pt-val" id="tip-label-shape-margin-left-value">2</span></div>
-        <div class="pt-palette-row"><span class="pt-palette-label">Margin right</span><input type="range" class="form-range" id="tip-label-shape-margin-right-slider" min="0" max="100" value="3" /><span class="pt-val" id="tip-label-shape-margin-right-value">3</span></div>
+        <div class="pt-palette-row"><span class="pt-palette-label">Pad left <i class="bi bi-arrow-bar-right form-label-sm" title="Padding"></i></span><input type="range" class="form-range" id="tip-label-shape-margin-left-slider" min="0" max="100" value="2" /><span class="pt-val" id="tip-label-shape-margin-left-value">2</span></div>
+        <div class="pt-palette-row"><span class="pt-palette-label">Pad right <i class="bi bi-arrow-bar-left form-label-sm" title="Padding"></i></span><input type="range" class="form-range" id="tip-label-shape-margin-right-slider" min="0" max="100" value="3" /><span class="pt-val" id="tip-label-shape-margin-right-value">3</span></div>
         <div class="pt-palette-row" id="tip-label-shape-spacing-row" style="display:none"><span class="pt-palette-label">Spacing</span><input type="range" class="form-range" id="tip-label-shape-spacing-slider" min="0" max="50" value="3" /><span class="pt-val" id="tip-label-shape-spacing-value">3</span></div>
       </div>
       ${[2,3,4,5,6,7,8,9,10].map(n => `
@@ -140,7 +140,7 @@ function _sectionNodeLabels() {
         <div class="pt-palette-row"><span class="pt-palette-label">Typeface</span><select class="pt-palette-select" id="node-label-typeface-select">${_TYPEFACES}</select></div>
         <div class="pt-palette-row"><span class="pt-palette-label">Style</span><select class="pt-palette-select" id="node-label-typeface-style-select"><option value="">Theme</option></select></div>
         <div class="pt-palette-row"><span class="pt-palette-label">Colour</span><input type="color" class="pt-palette-color" id="node-label-color" value="#aaaaaa" /></div>
-        <div class="pt-palette-row"><span class="pt-palette-label">Spacing</span><input type="range" class="form-range" id="node-label-spacing-slider" min="0" max="20" step="1" value="4" /><span class="pt-val" id="node-label-spacing-value">4</span></div>
+        <div class="pt-palette-row"><span class="pt-palette-label">Spacing <i class="bi bi-arrow-bar-right form-label-sm" title="Padding"></i></span><input type="range" class="form-range" id="node-label-spacing-slider" min="0" max="20" step="1" value="4" /><span class="pt-val" id="node-label-spacing-value">4</span></div>
       </div>
     </div>`;
 }
@@ -159,6 +159,23 @@ function _sectionNodeBars() {
           <div class="pt-palette-row"><span class="pt-palette-label">Range </span><select class="pt-palette-select" id="node-bars-range"><option value="off">Hide</option><option value="on">Show</option></select></div>
         </div>
       </div>
+    </div>`;
+}
+
+function _sectionCladeHighlights() {
+  return `
+    <div class="pt-palette-section" id="clade-highlights-section">
+      <h3><i class="bi bi-highlighter"></i> Clade Highlights</h3>
+      <div class="pt-palette-row"><span class="pt-palette-label">Colour by </span><select class="pt-palette-select" id="clade-highlight-colour-by"><option value="user_colour">User colour</option></select></div>
+      <div class="pt-palette-row"><span class="pt-palette-label">Left edge </span><select class="pt-palette-select" id="clade-highlight-left-edge"><option value="hard">Hard line</option><option value="outline">Follow subtree</option></select></div>
+      <div class="pt-palette-row"><span class="pt-palette-label">Right edge </span><select class="pt-palette-select" id="clade-highlight-right-edge"><option value="hardLabels">To label start</option><option value="hardTips">To tips</option><option value="hardAlign">To aligned labels</option><option value="outlineTips">Outline tips</option></select></div>
+      <div class="pt-palette-row"><span class="pt-palette-label">Padding <i class="bi bi-arrow-bar-right form-label-sm" title="Padding"></i></span><input type="range" class="form-range" id="clade-highlight-padding" min="0" max="40" step="1" value="6" /><span class="pt-val" id="clade-highlight-padding-value">6</span></div>
+      <div class="pt-palette-row"><span class="pt-palette-label">Corners <i class="bi bi-radar form-label-sm" title="Corner radius"></i></span><input type="range" class="form-range" id="clade-highlight-radius" min="0" max="24" step="1" value="4" /><span class="pt-val" id="clade-highlight-radius-value">4</span></div>
+      <div class="pt-palette-row"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-fill form-label-sm" title="Fill opacity"></i></span><input type="range" class="form-range" id="clade-highlight-fill-opacity" min="0" max="1" step="0.05" value="0.15" /><span class="pt-val" id="clade-highlight-fill-opacity-value">0.15</span></div>
+      <div class="pt-palette-row"><span class="pt-palette-label">Stroke <i class="bi bi-droplet-fill form-label-sm" title="Stroke opacity"></i></span><input type="range" class="form-range" id="clade-highlight-stroke-opacity" min="0" max="1" step="0.05" value="0.7" /><span class="pt-val" id="clade-highlight-stroke-opacity-value">0.7</span></div>
+      <div class="pt-palette-row"><span class="pt-palette-label">Width <i class="bi bi-arrows-expand form-label-sm" title="Stroke width"></i></span><input type="range" class="form-range" id="clade-highlight-stroke-width" min="0" max="6" step="0.5" value="1" /><span class="pt-val" id="clade-highlight-stroke-width-value">1</span></div>
+      <div class="pt-palette-subhead">Highlights</div>
+      <div id="clade-highlight-list" style="max-height:160px;overflow-y:auto;margin-bottom:4px"></div>
     </div>`;
 }
 
@@ -270,23 +287,6 @@ function _sectionSelectionHover() {
     </div>`;
 }
 
-function _sectionCladeHighlights() {
-  return `
-    <div class="pt-palette-section" id="clade-highlights-section">
-      <h3><i class="bi bi-highlighter"></i> Clade Highlights</h3>
-      <div class="pt-palette-row"><span class="pt-palette-label">Colour by</span><select class="pt-palette-select" id="clade-highlight-colour-by"><option value="user_colour">User colour</option></select></div>
-      <div class="pt-palette-row"><span class="pt-palette-label">Left edge</span><select class="pt-palette-select" id="clade-highlight-left-edge"><option value="hard">Hard line</option><option value="outline">Follow subtree</option></select></div>
-      <div class="pt-palette-row"><span class="pt-palette-label">Right edge</span><select class="pt-palette-select" id="clade-highlight-right-edge"><option value="hardLabels">To label start</option><option value="hardTips">To tips</option><option value="hardAlign">To aligned labels</option><option value="outlineTips">Outline tips</option></select></div>
-      <div class="pt-palette-row"><i class="bi bi-arrows-expand form-label-sm" title="Padding"></i><input type="range" class="form-range" id="clade-highlight-padding" min="0" max="40" step="1" value="6" /><span class="pt-val" id="clade-highlight-padding-value">6</span></div>
-      <div class="pt-palette-row"><i class="bi bi-bounding-box-circles form-label-sm" title="Corner radius"></i><input type="range" class="form-range" id="clade-highlight-radius" min="0" max="24" step="1" value="4" /><span class="pt-val" id="clade-highlight-radius-value">4</span></div>
-      <div class="pt-palette-row"><i class="bi bi-droplet-fill form-label-sm" title="Fill opacity"></i><input type="range" class="form-range" id="clade-highlight-fill-opacity" min="0" max="1" step="0.05" value="0.15" /><span class="pt-val" id="clade-highlight-fill-opacity-value">0.15</span></div>
-      <div class="pt-palette-row"><i class="bi bi-droplet form-label-sm" title="Stroke opacity"></i><input type="range" class="form-range" id="clade-highlight-stroke-opacity" min="0" max="1" step="0.05" value="0.7" /><span class="pt-val" id="clade-highlight-stroke-opacity-value">0.7</span></div>
-      <div class="pt-palette-row"><i class="bi bi-distribute-horizontal form-label-sm" title="Stroke width"></i><input type="range" class="form-range" id="clade-highlight-stroke-width" min="0" max="6" step="0.5" value="1" /><span class="pt-val" id="clade-highlight-stroke-width-value">1</span></div>
-      <div class="pt-palette-subhead">Highlights</div>
-      <div id="clade-highlight-list" style="max-height:160px;overflow-y:auto;margin-bottom:4px"></div>
-    </div>`;
-}
-
 function _sectionRtt() {
   return `
     <div class="pt-palette-section" id="rtt-section">
@@ -341,11 +341,11 @@ const _SECTION_BUILDERS = {
   nodeShapes:      _sectionNodeShapes,
   nodeLabels:      _sectionNodeLabels,
   nodeBars:        _sectionNodeBars,
+  cladeHighlights: _sectionCladeHighlights,
   collapsedClades: _sectionCollapsedClades,
   legend:          _sectionLegend,
   axis:            _sectionAxis,
   selectionHover:  _sectionSelectionHover,
-  cladeHighlights: _sectionCladeHighlights,
   rtt:             _sectionRtt,
   theme:           _sectionTheme,
 };
