@@ -37,7 +37,7 @@ const _TYPEFACES = `<option value="">Theme</option>
 function _sectionTree() {
   return `
     <div class="pt-palette-section">
-      <h3><i class="bi bi-diagram-3"></i> Tree</h3>
+      <h3><i class="bi bi-tree"></i> Tree</h3>
       <div class="pt-palette-row" id="axis-date-row" style="display:none"><span class="pt-palette-label">Calibrate <i class="bi bi-calendar3 form-label-sm"></i></span><select class="pt-palette-select" id="axis-date-annotation"><option value="">(none)</option></select></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Background <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="canvas-bg-color" value="#02292e" /></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Root len <i class="bi bi-arrows form-label-sm"></i></span><input type="range" class="form-range" id="root-stem-pct-slider" min="0" max="20" step="1" value="1" /><span class="pt-val" id="root-stem-pct-value" style="width:30px">1%</span></div>
@@ -47,7 +47,7 @@ function _sectionTree() {
 function _sectionBranches() {
   return `
     <div class="pt-palette-section">
-      <h3><i class="bi bi-bezier"></i> Branches</h3>
+      <h3><i class="bi bi-diagram-2-fill" style="display:inline-block;transform:rotate(-90deg)"></i> Branches</h3>
       <div class="pt-palette-row"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="branch-color" value="#f2f1e6" /></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Width <i class="bi bi-arrows-expand form-label-sm"></i></span><input type="range" class="form-range" id="branch-width-slider" min="0.5" max="8" step="0.5" value="1" /><span class="pt-val" id="branch-width-value">1</span></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Elbow Radius <i class="bi bi-radar form-label-sm"></i></span><input type="range" class="form-range" id="elbow-radius-slider" min="0" max="20" step="1" value="2" /><span class="pt-val" id="elbow-radius-value">2</span></div>
@@ -100,7 +100,7 @@ function _sectionLabelShapes() {
 function _sectionTipShapes() {
   return `
     <div class="pt-palette-section">
-      <h3><i class="bi bi-circle"></i> Tip Shapes</h3>
+      <h3><i class="bi bi-circle-fill"></i> Tip Shapes</h3>
       <div class="pt-palette-row"><span class="pt-palette-label">Size <i class="bi bi-arrow-up-right-circle-fill form-label-sm"></i></span><input type="range" class="form-range" id="tip-size-slider" min="0" max="24" value="3" /><span class="pt-val" id="tip-size-value">3</span></div>
       <div id="tip-shape-detail" class="pt-detail pt-sub-controls">
         <div class="pt-palette-row"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="tip-shape-color" value="#888888" /></div>
@@ -147,15 +147,15 @@ function _sectionNodeLabels() {
 function _sectionNodeBars() {
   return `
     <div class="pt-palette-section" id="node-bars-section">
-      <h3><i class="bi bi-bar-chart-steps"></i> Node Bars</h3>
+      <h3><i class="bi bi-bar-chart-steps" style="display:inline-block;transform:rotate(180deg)"></i> Node Bars</h3>
       <div id="node-bars-unavail" style="display:block;font-size:0.78rem;color:var(--pt-text-muted);font-style:italic;padding:2px 0 4px;">Requires BEAST tree with height HPD</div>
       <div id="node-bars-controls" style="display:none">
         <div class="pt-palette-row"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="node-bars-show"><option value="off">Off</option><option value="on">On</option></select></div>
         <div id="node-bars-detail" class="pt-detail pt-sub-controls">
           <div class="pt-palette-row"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="node-bars-color" value="#2aa198" /></div>
           <div class="pt-palette-row" title="Bar height in screen pixels"><span class="pt-palette-label">Size <i class="bi bi-arrows-expand form-label-sm"></i></span><input type="range" class="form-range" id="node-bars-width-slider" min="2" max="30" step="1" value="6" /><span class="pt-val" id="node-bars-width-value">6</span></div>
-          <div class="pt-palette-row"><span class="pt-palette-label">Opacity <i class="bi bi-droplet form-label-sm"></i></span><input type="range" class="form-range" id="node-bars-fill-opacity" min="0" max="1" step="0.05" value="0.22" /><span class="pt-val" id="node-bars-fill-opacity-value">0.22</span></div>
-          <div class="pt-palette-row"><span class="pt-palette-label">Stroke <i class="bi bi-droplet form-label-sm"></i></span><input type="range" class="form-range" id="node-bars-stroke-opacity" min="0" max="1" step="0.05" value="0.55" /><span class="pt-val" id="node-bars-stroke-opacity-value">0.55</span></div>
+          <div class="pt-palette-row"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="node-bars-fill-opacity" min="0" max="1" step="0.05" value="0.22" /><span class="pt-val" id="node-bars-fill-opacity-value">0.22</span></div>
+          <div class="pt-palette-row"><span class="pt-palette-label">Stroke <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="node-bars-stroke-opacity" min="0" max="1" step="0.05" value="0.55" /><span class="pt-val" id="node-bars-stroke-opacity-value">0.55</span></div>
           <div class="pt-palette-row"><span class="pt-palette-label">Line <i class="bi bi-vr form-label-sm"></i></span><select class="pt-palette-select" id="node-bars-median"><option value="none">(none)</option><option value="mean">Mean</option><option value="median">Median</option></select></div>
           <div class="pt-palette-row"><span class="pt-palette-label">Range <i class="bi bi-cursor-text form-label-sm" style="display:inline-block;transform:rotate(90deg)"></i></span><select class="pt-palette-select" id="node-bars-range"><option value="off">Hide</option><option value="on">Show</option></select></div>
         </div>
@@ -173,8 +173,8 @@ function _sectionCladeHighlights() {
       <div class="pt-palette-row"><span class="pt-palette-label">Right edge <i class="bi bi-arrow-right-square form-label-sm"></i></span><select class="pt-palette-select" id="clade-highlight-right-edge"><option value="hardTips">At tip</option><option value="hardAlign">At label left</option><option value="hardRight">At label right</option><option value="outlineTips">Outline tips</option></select></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Padding <i class="bi bi-arrow-bar-right form-label-sm"></i></span><input type="range" class="form-range" id="clade-highlight-padding" min="0" max="40" step="1" value="6" /><span class="pt-val" id="clade-highlight-padding-value">6</span></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Corners <i class="bi bi-radar form-label-sm"></i></span><input type="range" class="form-range" id="clade-highlight-radius" min="0" max="24" step="1" value="4" /><span class="pt-val" id="clade-highlight-radius-value">4</span></div>
-      <div class="pt-palette-row"><span class="pt-palette-label">Opacity <i class="bi bi-droplet form-label-sm"></i></span><input type="range" class="form-range" id="clade-highlight-fill-opacity" min="0" max="1" step="0.05" value="0.15" /><span class="pt-val" id="clade-highlight-fill-opacity-value">0.15</span></div>
-      <div class="pt-palette-row"><span class="pt-palette-label">Stroke <i class="bi bi-droplet form-label-sm"></i></span><input type="range" class="form-range" id="clade-highlight-stroke-opacity" min="0" max="1" step="0.05" value="0.7" /><span class="pt-val" id="clade-highlight-stroke-opacity-value">0.7</span></div>
+      <div class="pt-palette-row"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="clade-highlight-fill-opacity" min="0" max="1" step="0.05" value="0.15" /><span class="pt-val" id="clade-highlight-fill-opacity-value">0.15</span></div>
+      <div class="pt-palette-row"><span class="pt-palette-label">Stroke <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="clade-highlight-stroke-opacity" min="0" max="1" step="0.05" value="0.7" /><span class="pt-val" id="clade-highlight-stroke-opacity-value">0.7</span></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Width <i class="bi bi-border-width form-label-sm"></i></span><input type="range" class="form-range" id="clade-highlight-stroke-width" min="0" max="6" step="0.5" value="1" /><span class="pt-val" id="clade-highlight-stroke-width-value">1</span></div>` +
       // <div class="pt-palette-subhead">Highlights</div>
       // <div id="clade-highlight-list" style="max-height:160px;overflow-y:auto;margin-bottom:4px"></div>
@@ -184,8 +184,8 @@ function _sectionCladeHighlights() {
 function _sectionCollapsedClades() {
   return `
     <div class="pt-palette-section" id="collapsed-clades-section">
-      <h3><i class="bi bi-triangle"></i> Collapsed Clades</h3>
-      <div class="pt-palette-row" title="Fill opacity of collapsed clade triangles"><span class="pt-palette-label">Opacity <i class="bi bi-droplet form-label-sm"></i></span><input type="range" class="form-range" id="collapsed-opacity-slider" min="0" max="1" step="0.05" value="0.25" /><span class="pt-val" id="collapsed-opacity-value">0.25</span></div>
+      <h3><i class="bi bi-triangle" style="display:inline-block;transform:rotate(-90deg)"></i> Collapsed Clades</h3>
+      <div class="pt-palette-row" title="Fill opacity of collapsed clade triangles"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="collapsed-opacity-slider" min="0" max="1" step="0.05" value="0.25" /><span class="pt-val" id="collapsed-opacity-value">0.25</span></div>
       <div class="pt-palette-row" title="Height of the clade triangle base in tip-row units"><span class="pt-palette-label">Span <i class="bi bi-arrows-vertical form-label-sm"></i></span><input type="range" class="form-range" id="collapsed-height-n-slider" min="1" max="20" step="1" value="3" /><span class="pt-val" id="collapsed-height-n-value">3</span></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Label size <i class="bi bi-fonts form-label-sm"></i></span><input type="range" class="form-range" id="collapsed-clade-font-size-slider" min="6" max="48" step="1" value="11" /><span class="pt-val" id="collapsed-clade-font-size-value">11</span></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" id="collapsed-clade-typeface-select">${_TYPEFACES}</select></div>
@@ -233,7 +233,7 @@ function _sectionLegend() {
 function _sectionAxis() {
   return `
     <div class="pt-palette-section">
-      <h3><i class="bi bi-rulers"></i> Axis</h3>
+      <h3><i class="bi bi-rulers" style="display:inline-block;transform:rotate(-90deg)"></i> Axis</h3>
       <div class="pt-palette-row"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="axis-show"><option value="off">Off</option><option value="forward">Forward</option><option value="reverse">Reverse</option><option value="time">Time</option></select></div>
       <div id="axis-detail" class="pt-detail pt-sub-controls">
         <div class="pt-palette-row"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="axis-color" value="#f2f1e6" /></div>
@@ -293,7 +293,7 @@ function _sectionSelectionHover() {
 function _sectionRtt() {
   return `
     <div class="pt-palette-section" id="rtt-section">
-      <h3><i class="bi bi-graph-up-arrow"></i> Root-to-tip</h3>
+      <h3><i class="bi bi-graph-up"></i> Root-to-tip</h3>
       <div class="pt-palette-row"><span class="pt-palette-label">X-axis origin <i class="bi bi-arrow-down-left form-label-sm"></i></span><select class="pt-palette-select" id="rtt-x-origin"><option value="data">data range</option><option value="root">root age</option></select></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Aspect ratio <i class="bi bi-aspect-ratio form-label-sm"></i></span><select class="pt-palette-select" id="rtt-aspect-ratio"><option value="fit">fit panel</option><option value="1:1">1 : 1 (square)</option><option value="4:3">4 : 3</option><option value="3:2">3 : 2</option><option value="16:9">16 : 9</option></select></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Grid lines <i class="bi bi-border-inner form-label-sm"></i></span><select class="pt-palette-select" id="rtt-grid-lines"><option value="both">both</option><option value="horizontal">horizontal</option><option value="vertical">vertical</option><option value="off">off</option></select></div>
