@@ -263,6 +263,9 @@ async function _initCore(root = document) {
   const tipLabelShapeExtraPaletteSelects = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-palette-select`));
   const tipLabelShapeExtraSectionEls    = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-section`));
   const tipLabelShapeExtraDetailEls     = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-detail`));
+  // Per-level cascade memory: stores the last non-'off' value of each extra shape
+  // slot when it was cleared by a parent turning off. Restored when parent turns on.
+  const _cascadeMemory = new Array(EXTRA_SHAPE_COUNT).fill(null);
   const legendAnnotEl         = $('legend-annotation');
   const legendTextColorEl     = $('legend-text-color');
   const legendFontSizeSlider   = $('legend-font-size-slider');
@@ -1163,6 +1166,7 @@ async function _initCore(root = document) {
       // Backward compat: old single-shape-2 setting
       tipLabelShapeExtraEls[0].value = s.tipLabelShape2;
     }
+    _cascadeMemory.fill(null);
     if (Array.isArray(s.tipLabelShapeExtraColourBys)) {
       s.tipLabelShapeExtraColourBys.forEach((v, i) => { if (tipLabelShapeExtraColourBys[i]) tipLabelShapeExtraColourBys[i].value = v; });
     }
@@ -1386,6 +1390,7 @@ async function _initCore(root = document) {
     $('tip-label-shape-size-value').textContent = DEFAULT_SETTINGS.tipLabelShapeSize;
     tipLabelShapeExtraEls.forEach(e => { e.value = 'off'; });
     tipLabelShapeExtraColourBys.forEach(e => { e.value = 'user_colour'; });
+    _cascadeMemory.fill(null);
 
     if (renderer) {
       renderer.setTipColourBy('user_colour');
@@ -1834,6 +1839,7 @@ async function _initCore(root = document) {
   } else if (_saved.tipLabelShape2) {
     tipLabelShapeExtraEls[0].value = _saved.tipLabelShape2;
   }
+  _cascadeMemory.fill(null);
   if (Array.isArray(_saved.tipLabelShapeExtraColourBys)) {
     _saved.tipLabelShapeExtraColourBys.forEach((v, i) => { if (tipLabelShapeExtraColourBys[i]) tipLabelShapeExtraColourBys[i].value = v; });
   }
@@ -6034,12 +6040,24 @@ async function _initCore(root = document) {
 
   // ── Tip-label shape controls ───────────────────────────────────────────────
 
-  /** Reset all extra shape selects at index >= startIdx to 'off' and sync renderer. */
   function _resetExtraShapesFrom(startIdx) {
     for (let i = startIdx; i < EXTRA_SHAPE_COUNT; i++) {
       if (tipLabelShapeExtraEls[i].value !== 'off') {
+        _cascadeMemory[i] = tipLabelShapeExtraEls[i].value;
         tipLabelShapeExtraEls[i].value = 'off';
         renderer.setTipLabelShapeExtra(i, 'off');
+      }
+    }
+  }
+
+  function _restoreExtraShapesFrom(startIdx) {
+    for (let i = startIdx; i < EXTRA_SHAPE_COUNT; i++) {
+      if (_cascadeMemory[i] !== null) {
+        tipLabelShapeExtraEls[i].value = _cascadeMemory[i];
+        renderer.setTipLabelShapeExtra(i, _cascadeMemory[i]);
+        _cascadeMemory[i] = null;
+      } else {
+        break;
       }
     }
   }
@@ -6047,6 +6065,7 @@ async function _initCore(root = document) {
   tipLabelShapeEl.addEventListener('change', () => {
     renderer.setTipLabelShape(tipLabelShapeEl.value);
     if (tipLabelShapeEl.value === 'off') _resetExtraShapesFrom(0);
+    else _restoreExtraShapesFrom(0);
     _syncControlVisibility();
     saveSettings(); _markCustomTheme();
   });
@@ -6094,6 +6113,7 @@ async function _initCore(root = document) {
     tipLabelShapeExtraEls[_idx].addEventListener('change', () => {
       renderer.setTipLabelShapeExtra(_idx, tipLabelShapeExtraEls[_idx].value);
       if (tipLabelShapeExtraEls[_idx].value === 'off') _resetExtraShapesFrom(_idx + 1);
+      else _restoreExtraShapesFrom(_idx + 1);
       _syncControlVisibility();
       saveSettings(); _markCustomTheme();
     });
