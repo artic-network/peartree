@@ -2349,6 +2349,7 @@ async function _initCore(root = document) {
 
     if (e.key === 'Escape') {
       // Close innermost open overlay first.
+      if ($('parse-tips-overlay')?.classList.contains('open'))    { /* handled by annotcurator */ return; }
       if (exportGraphicOverlay.classList.contains('open')) { _closeGraphicsDialog(); return; }
       if (exportOverlay.classList.contains('open'))        { _closeExportDialog();   return; }
       if ($('curate-annot-overlay')?.classList.contains('open')) { annotCurator.close(); return; }

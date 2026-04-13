@@ -63,8 +63,10 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
   document.getElementById('parse-tips-cancel').addEventListener('click', _closeParseTips);
   document.getElementById('parse-tips-ok')    .addEventListener('click', _runParseTips);
   parseTipsOverlay.addEventListener('click', e => { if (e.target === parseTipsOverlay) _closeParseTips(); });
-  // Allow Enter key to submit the sub-dialog
-  parseTipsOverlay.addEventListener('keydown', e => { if (e.key === 'Enter') _runParseTips(); });
+  // Allow Enter key to submit and Escape to cancel the sub-dialog; use capture to
+  // intercept before the parent overlay's key handlers see the event.
+  parseTipsOverlay.addEventListener('keydown', e => { if (e.key === 'Enter') _runParseTips(); }, true);
+  parseTipsOverlay.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); _closeParseTips(); } }, true);
 
   // Close on backdrop click (outside the white modal box).
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
