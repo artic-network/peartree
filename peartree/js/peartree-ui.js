@@ -40,9 +40,17 @@ function _sectionTree() {
       <h3><i class="bi bi-diagram-3"></i> Tree</h3>
       <div class="pt-palette-row" id="axis-date-row" style="display:none"><span class="pt-palette-label">Calibrate</span><select class="pt-palette-select" id="axis-date-annotation"><option value="">(none)</option></select></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Background</span><input type="color" class="pt-palette-color" id="canvas-bg-color" value="#02292e" /></div>
-      <div class="pt-palette-row"><span class="pt-palette-label">Branches</span><input type="color" class="pt-palette-color" id="branch-color" value="#f2f1e6" /></div>
-      <div class="pt-palette-row"><span class="pt-palette-label">Branches <i class="bi bi-arrows-expand form-label-sm" title="Branch width"></i></span><input type="range" class="form-range" id="branch-width-slider" min="0.5" max="8" step="0.5" value="1" /><span class="pt-val" id="branch-width-value">1</span></div>
       <div class="pt-palette-row"><span class="pt-palette-label">Root len</span><input type="range" class="form-range" id="root-stem-pct-slider" min="0" max="20" step="1" value="1" /><span class="pt-val" id="root-stem-pct-value" style="width:30px">1%</span></div>
+    </div>`;
+}
+
+function _sectionBranches() {
+  return `
+    <div class="pt-palette-section">
+      <h3><i class="bi bi-bezier"></i> Branches</h3>
+      <div class="pt-palette-row"><span class="pt-palette-label">Colour</span><input type="color" class="pt-palette-color" id="branch-color" value="#f2f1e6" /></div>
+      <div class="pt-palette-row"><span class="pt-palette-label">Width <i class="bi bi-arrows-expand form-label-sm" title="Branch width"></i></span><input type="range" class="form-range" id="branch-width-slider" min="0.5" max="8" step="0.5" value="1" /><span class="pt-val" id="branch-width-value">1</span></div>
+      <div class="pt-palette-row"><span class="pt-palette-label">Elbows <i class="bi bi-bounding-box-circles form-label-sm" title="Corner radius"></i></span><input type="range" class="form-range" id="elbow-radius-slider" min="0" max="20" step="1" value="2" /><span class="pt-val" id="elbow-radius-value">2</span></div>
     </div>`;
 }
 
@@ -326,6 +334,7 @@ function _sectionTheme() {
 
 const _SECTION_BUILDERS = {
   tree:            _sectionTree,
+  branches:        _sectionBranches,
   tipLabels:       _sectionTipLabels,
   labelShapes:     _sectionLabelShapes,
   tipShapes:       _sectionTipShapes,
@@ -342,7 +351,7 @@ const _SECTION_BUILDERS = {
 };
 
 const _ALL_SECTIONS = [
-  'tree', 'tipLabels', 'labelShapes', 'tipShapes', 'nodeShapes', 'nodeLabels',
+  'tree', 'branches', 'tipLabels', 'labelShapes', 'tipShapes', 'nodeShapes', 'nodeLabels',
   'nodeBars', 'cladeHighlights', 'collapsedClades', 'legend', 'axis', 'selectionHover', 'rtt', 'theme',
 ];
 

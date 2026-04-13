@@ -154,6 +154,7 @@ async function _initCore(root = document) {
   const canvasBgColorEl   = $('canvas-bg-color');
   const branchColorEl     = $('branch-color');
   const branchWidthSlider = $('branch-width-slider');
+  const elbowRadiusSlider = $('elbow-radius-slider');
   const fontSlider        = $('font-size-slider');
   const tipSlider         = $('tip-size-slider');
   const tipHaloSlider      = $('tip-halo-slider');
@@ -619,17 +620,8 @@ async function _initCore(root = document) {
       canvasBgColor:    canvasBgColorEl.value,
       branchColor:      branchColorEl.value,
       branchWidth:      branchWidthSlider.value,
+      elbowRadius:      elbowRadiusSlider?.value ?? DEFAULT_SETTINGS.elbowRadius,
       fontSize:         fontSlider.value,
-      labelColor:       labelColorEl.value,
-      tipSize:          tipSlider.value,
-      tipHaloSize:      tipHaloSlider.value,
-      tipShapeColor:    tipShapeColorEl.value,
-      tipShapeBgColor:  tipShapeBgEl.value,
-      nodeSize:         nodeSlider.value,
-      nodeHaloSize:     nodeHaloSlider.value,
-      nodeShapeColor:    nodeShapeColorEl.value,
-      nodeShapeBgColor:  nodeShapeBgEl.value,
-      tipLabelShapeColor:  tipLabelShapeColorEl.value,
       axisColor:           axisColorEl.value,
       legendTextColor:  legendTextColorEl.value,
       selectedTipStrokeColor:   selectedTipStrokeEl.value,
@@ -860,6 +852,7 @@ async function _initCore(root = document) {
       canvasBgColor:    canvasBgColorEl.value,
       branchColor:      branchColorEl.value,
       branchWidth:      branchWidthSlider.value,
+      elbowRadius:      elbowRadiusSlider?.value ?? DEFAULT_SETTINGS.elbowRadius,
       fontSize:         fontSlider.value,
       typeface:         fontFamilyEl.value,
       typefaceStyle:    fontTypefaceStyleEl?.value || '',
@@ -1438,6 +1431,7 @@ async function _initCore(root = document) {
       bgColor:          canvasBgColorEl.value,
       branchColor:      branchColorEl.value,
       branchWidth:      parseFloat(branchWidthSlider.value),
+      elbowRadius:      parseFloat(elbowRadiusSlider?.value ?? DEFAULT_SETTINGS.elbowRadius),
       fontSize:         parseInt(fontSlider.value),
       tipRadius:        parseInt(tipSlider.value),
       tipHaloSize:      parseInt(tipHaloSlider.value),
@@ -1454,7 +1448,6 @@ async function _initCore(root = document) {
       paddingRight:     parseInt(DEFAULT_SETTINGS.paddingRight),
       paddingTop:       parseInt(DEFAULT_SETTINGS.paddingTop),
       paddingBottom:    parseInt(DEFAULT_SETTINGS.paddingBottom),
-      elbowRadius:      parseFloat(DEFAULT_SETTINGS.elbowRadius),
       rootStubLength:   parseFloat(DEFAULT_SETTINGS.rootStubLength),
       rootStemPct:      parseFloat(rootStemPctSlider.value),
       tipHoverFillColor:      tipHoverFillEl.value,
@@ -1590,6 +1583,10 @@ async function _initCore(root = document) {
     branchColorEl.value     = t.branchColor;
     branchWidthSlider.value = t.branchWidth;
     $('branch-width-value').textContent = t.branchWidth;
+    if (t.elbowRadius != null && elbowRadiusSlider) {
+      elbowRadiusSlider.value = t.elbowRadius;
+      $('elbow-radius-value').textContent = t.elbowRadius;
+    }
     fontSlider.value        = t.fontSize;
     $('font-size-value').textContent    = t.fontSize;
     labelColorEl.value         = t.labelColor;
@@ -1693,6 +1690,10 @@ async function _initCore(root = document) {
   if (_saved.branchWidth    != null) {
     branchWidthSlider.value = _saved.branchWidth;
     $('branch-width-value').textContent = _saved.branchWidth;
+  }
+  if (_saved.elbowRadius != null && elbowRadiusSlider) {
+    elbowRadiusSlider.value = _saved.elbowRadius;
+    $('elbow-radius-value').textContent = _saved.elbowRadius;
   }
   if (_saved.fontSize       != null) {
     fontSlider.value = _saved.fontSize;
@@ -5551,6 +5552,14 @@ async function _initCore(root = document) {
     saveSettings();
   });
 
+  elbowRadiusSlider?.addEventListener('input', () => {
+    _markCustomTheme();
+    $('elbow-radius-value').textContent = elbowRadiusSlider.value;
+    renderer.elbowRadius = parseFloat(elbowRadiusSlider.value);
+    renderer._dirty = true;
+    saveSettings();
+  });
+
   fontSlider.addEventListener('input', () => {
     _markCustomTheme();
     renderer.setFontSize(parseInt(fontSlider.value));
@@ -6749,6 +6758,7 @@ async function _initCore(root = document) {
     if (s.branchColor  != null) branchColorEl.value = s.branchColor;
     if (s.labelColor   != null) labelColorEl.value  = s.labelColor;
     _setSlider(branchWidthSlider, 'branch-width-value', s.branchWidth);
+    _setSlider(elbowRadiusSlider,  'elbow-radius-value',  s.elbowRadius);
     _setSlider(fontSlider,        'font-size-value',    s.fontSize);
     _setSlider(tipSlider,         'tip-size-value',     s.tipSize);
     _setSlider(tipHaloSlider,     'tip-halo-value',     s.tipHaloSize);
