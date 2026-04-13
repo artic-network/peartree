@@ -1350,7 +1350,7 @@ export class TreeRenderer {
     // Seed animation: the node we were rooted at slides from its current screen
     // position to wherever it lives in the full-tree layout.
     if (curRootId) {
-      const restoredNode = nodeMap.get(curRootId);
+      const restoredNode = this.nodeMap.get(curRootId);
       if (restoredNode) {
         this.offsetX = px_cur - restoredNode.x * this.scaleX;
         this.offsetY = py_cur - restoredNode.y * this.scaleY;

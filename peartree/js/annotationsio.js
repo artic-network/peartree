@@ -158,6 +158,38 @@ export function createAnnotImporter({ getGraph, onApply }) {
       `<label><input type="checkbox" class="imp-col-chk" data-idx="${i}" checked> ${esc(h)}</label>`
     ).join('');
 
+    // Build example section: CSV match column values (left) + tip labels (right).
+    // Each pipe-delimited tip-label field is wrapped in a span so _syncExamples()
+    // can highlight the selected field and dim the rest.
+    const graph = getGraph();
+    const tips  = graph
+      ? graph.nodes.filter(n => n.adjacents.length === 1 && n.name != null)
+      : [];
+    const MAX_EX = 3;
+    const exHtml = tips.length > 0
+      ? `<div class="imp-section" id="imp-examples-section">
+          <label class="imp-section-label">Examples</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;align-items:start">
+            <div>
+              <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--pt-text-muted);margin-bottom:4px">CSV: <span id="imp-csv-col-name"></span></div>
+              <div id="imp-csv-examples" style="font-family:monospace;font-size:0.78rem;color:var(--pt-text-bright);line-height:1.7"></div>
+            </div>
+            <div>
+              <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--pt-text-muted);margin-bottom:4px">Tip label</div>
+              <div id="imp-examples-list" style="font-family:monospace;font-size:0.78rem;color:var(--pt-text-bright);line-height:1.7">
+                ${tips.slice(0, MAX_EX).map(n => {
+                  const lbl = n.name.length > 60 ? n.name.slice(0, 57) + '\u2026' : n.name;
+                  const fieldSpans = lbl.split('|').map(f =>
+                    `<span class="imp-ex-field">${esc(f)}</span>`
+                  ).join('<span class="imp-ex-sep">|</span>');
+                  return `<div>${fieldSpans}</div>`;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        </div>`
+      : '';
+
     titleEl.innerHTML = `<i class="bi bi-file-earmark-text me-2"></i>${esc(filename)}`;
     body.innerHTML = `
       <p style="margin:0 0 0.8rem;color:var(--bs-secondary-color)">
@@ -188,6 +220,8 @@ export function createAnnotImporter({ getGraph, onApply }) {
           </label>
         </div>
       </div>
+
+      ${exHtml}
 
       <div class="imp-section">
         <label class="imp-section-label">Columns to import</label>
@@ -220,14 +254,64 @@ export function createAnnotImporter({ getGraph, onApply }) {
         if (isMatch) el.checked = false;
         el.closest('label').style.opacity = isMatch ? '0.4' : '';
       });
+      _syncCsvExamples();
     }
     document.getElementById('imp-match-col').addEventListener('change', _syncMatchColDisabled);
     _syncMatchColDisabled(); // init
 
+    // Re-render CSV column examples when match column changes.
+    function _syncCsvExamples() {
+      const nameEl = document.getElementById('imp-csv-col-name');
+      const listEl = document.getElementById('imp-csv-examples');
+      if (!nameEl || !listEl) return;
+      const matchIdx = parseInt(document.getElementById('imp-match-col').value, 10);
+      const colName  = headers[matchIdx] ?? '';
+      nameEl.textContent = colName;
+      listEl.innerHTML = rows.slice(0, MAX_EX).map(row => {
+        const raw = String(row[colName] ?? '');
+        const lbl = raw.length > 60 ? raw.slice(0, 57) + '\u2026' : raw;
+        return `<div>${esc(lbl)}</div>`;
+      }).join('');
+    }
+
+    // Highlight selected pipe-delimited field in the example labels.
+    function _syncExamples() {
+      const listEl = document.getElementById('imp-examples-list');
+      if (!listEl) return;
+      const isField = document.getElementById('imp-mode-field').checked;
+      const allFields = listEl.querySelectorAll('.imp-ex-field');
+      const allSeps   = listEl.querySelectorAll('.imp-ex-sep');
+      if (!isField) {
+        allFields.forEach(el => { el.style.opacity = ''; el.style.fontWeight = ''; });
+        allSeps.forEach(el   => { el.style.opacity = ''; });
+        return;
+      }
+      const fieldNum = parseInt(document.getElementById('imp-field-num').value, 10) || 1;
+      listEl.querySelectorAll('div').forEach(row => {
+        const fields = row.querySelectorAll('.imp-ex-field');
+        if (!fields.length) return; // "… N more" row
+        const count = fields.length;
+        const idx   = fieldNum > 0
+          ? Math.min(fieldNum - 1, count - 1)
+          : Math.max(0, count + fieldNum);
+        fields.forEach((el, i) => {
+          const active = i === idx;
+          el.style.opacity    = active ? '1'   : '0.2';
+          el.style.fontWeight = active ? '600' : '';
+        });
+        row.querySelectorAll('.imp-ex-sep').forEach(el => { el.style.opacity = '0.2'; });
+      });
+    }
+
     // Clicking the field-number input switches to field mode.
     document.getElementById('imp-field-num').addEventListener('focus', () => {
       document.getElementById('imp-mode-field').checked = true;
+      _syncExamples();
     });
+    document.getElementById('imp-field-num').addEventListener('input', _syncExamples);
+    document.getElementById('imp-mode-full') .addEventListener('change', _syncExamples);
+    document.getElementById('imp-mode-field').addEventListener('change', _syncExamples);
+    _syncExamples(); // init
 
     // Toggle-all button.
     document.getElementById('imp-toggle-all').addEventListener('click', () => {

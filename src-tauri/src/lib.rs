@@ -39,6 +39,19 @@ fn set_menu_item_enabled(
     item.set_enabled(enabled).map_err(|e| e.to_string())
 }
 
+/// Called from JS to update the text label of a menu item by its string id.
+#[tauri::command]
+fn set_menu_item_text(
+    app: tauri::AppHandle,
+    id: &str,
+    text: &str,
+) -> Result<(), String> {
+    let state = app.state::<MenuItems>();
+    let map   = state.0.lock().map_err(|e| e.to_string())?;
+    let item  = map.get(id).ok_or_else(|| format!("unknown menu item: {id}"))?;
+    item.set_text(text).map_err(|e| e.to_string())
+}
+
 /// Opens a native OS file picker filtered to tree file types, reads the
 /// selected file, and returns `{"name": "...", "content": "...", "path": "..."}` to JS.
 /// Returns `null` if the user cancels.
@@ -255,7 +268,7 @@ async fn install_update(app: tauri::AppHandle) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![set_menu_item_enabled, pick_tree_file, pick_annot_file, save_file, read_file_content, new_window, take_pending_file, trigger_print, check_for_updates, install_update])
+        .invoke_handler(tauri::generate_handler![set_menu_item_enabled, set_menu_item_text, pick_tree_file, pick_annot_file, save_file, read_file_content, new_window, take_pending_file, trigger_print, check_for_updates, install_update])
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_deep_link::init())
@@ -323,12 +336,14 @@ pub fn run() {
             let export_tree  = MenuItem::with_id(app, "export-tree",  "Export Tree\u{2026}",          true, Some("CmdOrCtrl+E"))?;
             let export_image = MenuItem::with_id(app, "export-image", "Export Image\u{2026}",         true, Some("CmdOrCtrl+Shift+E"))?;
             let print_graphic = MenuItem::with_id(app, "print-graphic", "Print\u{2026}",             false, Some("CmdOrCtrl+P"))?;
+            let curate_annot = MenuItem::with_id(app, "curate-annot", "Curate Annotations\u{2026}",  false, None::<&str>)?;
 
             let file_menu = Submenu::with_items(app, "File", true, &[
                 &new_win,
                 &PredefinedMenuItem::separator(app)?,
                 &open_file,
                 &import_annot,
+                &curate_annot,
                 &PredefinedMenuItem::separator(app)?,
                 &export_tree,
                 &export_image,
@@ -366,12 +381,21 @@ pub fn run() {
             let view_zoom_out   = MenuItem::with_id(app, "view-zoom-out",   "Zoom Out",   true, Some("CmdOrCtrl+-"))?;
             let view_fit        = MenuItem::with_id(app, "view-fit",        "Fit All",    true, Some("CmdOrCtrl+0"))?;
             let view_fit_labels = MenuItem::with_id(app, "view-fit-labels", "Fit Labels", true, Some("CmdOrCtrl+Shift+0"))?;
+            let view_hyp_up      = MenuItem::with_id(app, "view-hyp-up",      "Widen Lens",       false, Some("CmdOrCtrl+Shift+="))?;
+            let view_hyp_down    = MenuItem::with_id(app, "view-hyp-down",    "Narrow Lens",      false, Some("CmdOrCtrl+Shift+-"))?;
+            let view_scroll_top  = MenuItem::with_id(app, "view-scroll-top",  "Scroll to Top",    false, Some("CmdOrCtrl+Shift+Up"))?;
+            let view_scroll_bottom = MenuItem::with_id(app, "view-scroll-bottom", "Scroll to Bottom", false, Some("CmdOrCtrl+Shift+Down"))?;
             let view_info       = MenuItem::with_id(app, "view-info",       "Get Info...", true, Some("CmdOrCtrl+I"))?;
             let show_devtools   = MenuItem::with_id(app, "show-devtools",   "Developer Tools", true, Some("CmdOrCtrl+Alt+I"))?;
+            let view_show_options = MenuItem::with_id(app, "view-options-panel", "Show Options Panel", true, None::<&str>)?;
+            let view_show_rtt     = MenuItem::with_id(app, "view-rtt-plot",     "Show RTT Plot",      true, None::<&str>)?;
+            let view_show_dt      = MenuItem::with_id(app, "view-data-table",   "Show Data Table",    true, None::<&str>)?;
 
             let view_menu = Submenu::with_items(app, "View", true, &[
                 &view_zoom_in,
                 &view_zoom_out,
+                &view_hyp_up,
+                &view_hyp_down,
                 &PredefinedMenuItem::separator(app)?,
                 &view_fit,
                 &view_fit_labels,
@@ -382,6 +406,13 @@ pub fn run() {
                 &view_drill,
                 &view_climb,
                 &view_home,
+                &PredefinedMenuItem::separator(app)?,
+                &view_scroll_top,
+                &view_scroll_bottom,
+                &PredefinedMenuItem::separator(app)?,
+                &view_show_options,
+                &view_show_rtt,
+                &view_show_dt,
                 &PredefinedMenuItem::separator(app)?,
                 &view_info,
                 &PredefinedMenuItem::separator(app)?,
@@ -401,6 +432,8 @@ pub fn run() {
             let tree_expand_clade   = MenuItem::with_id(app, "tree-expand-clade",   "Expand Clade",   true, None::<&str>)?;
             let tree_paint         = MenuItem::with_id(app, "tree-paint",         "Paint Node",     true, None::<&str>)?;
             let tree_clear_colours = MenuItem::with_id(app, "tree-clear-colours", "Clear Colours",  true, None::<&str>)?;
+            let tree_highlight_clade   = MenuItem::with_id(app, "tree-highlight-clade",   "Highlight Clade",   false, None::<&str>)?;
+            let tree_clear_highlights  = MenuItem::with_id(app, "tree-clear-highlights",  "Remove Highlight",  false, None::<&str>)?;
 
             let tree_menu = Submenu::with_items(app, "Tree", true, &[
                 &tree_order_up,
@@ -417,6 +450,9 @@ pub fn run() {
                 &PredefinedMenuItem::separator(app)?,
                 &tree_collapse_clade,
                 &tree_expand_clade,
+                &PredefinedMenuItem::separator(app)?,
+                &tree_highlight_clade,
+                &tree_clear_highlights,
                 &PredefinedMenuItem::separator(app)?,
                 &tree_paint,
                 &tree_clear_colours,
@@ -455,12 +491,14 @@ pub fn run() {
             // reflects the correct state from the very first frame.
             // The JS command registry (peartree-tauri.js) drives all subsequent
             // changes via set_menu_item_enabled invocations.
-            for item in &[&import_annot, &export_tree, &export_image] {
+            for item in &[&import_annot, &curate_annot, &export_tree, &export_image] {
                 item.set_enabled(false)?;
             }
             for item in &[
                 &view_back, &view_forward, &view_home,
                 &view_drill, &view_climb,
+                &view_hyp_up, &view_hyp_down,
+                &view_scroll_top, &view_scroll_bottom,
                 &view_zoom_in, &view_zoom_out, &view_fit, &view_fit_labels,
                 &view_info,
             ] {
@@ -472,6 +510,7 @@ pub fn run() {
                 &tree_reroot, &tree_midpoint,
                 &tree_hide, &tree_show,
                 &tree_collapse_clade, &tree_expand_clade,
+                &tree_highlight_clade, &tree_clear_highlights,
                 &tree_paint, &tree_clear_colours,
             ] {
                 item.set_enabled(false)?;
@@ -503,6 +542,9 @@ pub fn run() {
                 ("view-fit",         view_fit),
                 ("view-fit-labels",  view_fit_labels),
                 ("view-info",        view_info),
+                ("view-options-panel", view_show_options),
+                ("view-rtt-plot",      view_show_rtt),
+                ("view-data-table",    view_show_dt),
                 ("tree-rotate",      tree_rotate),
                 ("tree-rotate-all",  tree_rotate_all),
                 ("tree-order-up",    tree_order_up),
@@ -513,6 +555,13 @@ pub fn run() {
                 ("tree-show",        tree_show),
                 ("tree-collapse-clade", tree_collapse_clade),
                 ("tree-expand-clade",   tree_expand_clade),
+                ("curate-annot",      curate_annot),
+                ("view-hyp-up",        view_hyp_up),
+                ("view-hyp-down",      view_hyp_down),
+                ("view-scroll-top",    view_scroll_top),
+                ("view-scroll-bottom", view_scroll_bottom),
+                ("tree-highlight-clade",  tree_highlight_clade),
+                ("tree-clear-highlights", tree_clear_highlights),
                 ("tree-paint",       tree_paint),
                 ("tree-clear-colours", tree_clear_colours),
                 ("show-help",           show_help),

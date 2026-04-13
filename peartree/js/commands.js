@@ -74,6 +74,11 @@ const _DEFS = [
   // Help
   { id: 'show-help',         label: 'PearTree Help',      shortcut: 'CmdOrCtrl+?', group: 'help', enabled: true, buttonId: 'btn-help' },
   { id: 'check-for-updates', label: 'Check for Updates…', shortcut: null,          group: 'help', enabled: true },
+
+  // Panel toggles (label flips between Show/Hide at runtime)
+  { id: 'view-options-panel', label: 'Show Options Panel', shortcut: null, group: 'view', enabled: true },
+  { id: 'view-rtt-plot',      label: 'Show RTT Plot',      shortcut: null, group: 'view', enabled: true },
+  { id: 'view-data-table',    label: 'Show Data Table',    shortcut: null, group: 'view', enabled: true },
 ];
 
 // ── Factory ────────────────────────────────────────────────────────────────
@@ -116,6 +121,15 @@ export function createCommands(root) {
     for (const fn of _listeners) fn(id, enabled);
   }
 
+  /** Update the text label of a command and notify listeners with the new label
+   *  as a third argument so platform adapters (e.g. Tauri) can sync native menus. */
+  function setLabel(id, label) {
+    const cmd = _commands.get(id);
+    if (!cmd || cmd.label === label) return;
+    cmd.label = label;
+    for (const fn of _listeners) fn(id, cmd.enabled, label);
+  }
+
   /** Subscribe to command state changes.  (id, enabled) => void.
    *  Pass callNow:true to receive the current state immediately. */
   function onStateChange(fn, { callNow = false } = {}) {
@@ -136,7 +150,7 @@ export function createCommands(root) {
   function get(id)  { return _commands.get(id); }
   function getAll() { return _commands; }
 
-  return { setEnabled, onStateChange, execute, get, getAll, matchesShortcut };
+  return { setEnabled, setLabel, onStateChange, execute, get, getAll, matchesShortcut };
 }
 
 // ── Pure utility (no instance state) ──────────────────────────────────────
