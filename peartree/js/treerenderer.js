@@ -685,6 +685,10 @@ export class TreeRenderer {
 
   setTipLabelSpacing(n) {
     this.tipLabelSpacing = +n;
+    if (this.nodes) {
+      this._measureLabels();
+      this._updateScaleX();
+    }
     this._dirty = true;
   }
 
