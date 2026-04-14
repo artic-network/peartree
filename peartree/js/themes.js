@@ -7,8 +7,8 @@ export const SETTINGS_KEY = 'peartree-settings';
 export const USER_THEMES_KEY = 'peartree-user-themes';
 export const DEFAULT_THEME_KEY = 'peartree-default-theme';
 
-export const THEMES = {
-    "Monochrome": { // fully specified base theme: all keys in REQUIRED_THEME_KEYS are defined here
+export const DEFAULT_THEME = {
+    // acts as the fallback base theme: all keys in REQUIRED_THEME_KEYS must be defined here, and other themes are allowed to be sparse overrides that inherit from this at applyTheme() time
         // Tree
         "canvasBgColor": "#ebe8e2",
         // Branches
@@ -41,6 +41,8 @@ export const THEMES = {
         "nodeBarsWidth": "6",
         "nodeBarsFillOpacity": "0.22",
         "nodeBarsStrokeOpacity": "0.55",
+        // Paint brush / clade-highlight colour picker
+        "paintColour": "#ff8800",
         // Clade Highlights
         "cladeHighlightFillOpacity": "0.15",
         "cladeHighlightStrokeOpacity": "0.7",
@@ -111,8 +113,14 @@ export const THEMES = {
         "nodeHoverStrokeColor": "#f5a700",
         "nodeHoverStrokeWidth": "0.5",
         "nodeHoverStrokeOpacity": "0",
+    };
+
+export const THEMES = {
+    "Monochrome": { 
+        inherit: '',
     },
     "Artic": {
+        inherit: '',
         canvasBgColor: '#02292e',
         branchColor: '#19A699',
         branchWidth: '1',

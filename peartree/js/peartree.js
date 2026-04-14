@@ -5,7 +5,7 @@ import { htmlEsc as _esc, downloadBlob as _downloadBlob, wireDropZone as _wireDr
 import { TreeRenderer, CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY } from './treerenderer.js';
 import { LegendRenderer } from './legendrenderer.js';
 import { AxisRenderer  } from './axisrenderer.js';
-import { THEMES, SETTINGS_KEY, USER_THEMES_KEY, DEFAULT_THEME_KEY } from './themes.js';
+import { THEMES, DEFAULT_THEME, SETTINGS_KEY, USER_THEMES_KEY, DEFAULT_THEME_KEY } from './themes.js';
 import { TYPEFACES, buildFont } from './typefaces.js';
 import { CATEGORICAL_PALETTES, SEQUENTIAL_PALETTES,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE } from './palettes.js';
@@ -369,8 +369,8 @@ async function _initCore(root = document) {
 
   // Toolbar swatch-popup colour picker
   const toolbarColourPicker = createToolbarColourPicker({ root, palettes: CATEGORICAL_PALETTES, $: id => root.querySelector('#' + id) });
-  // Compatibility shim — keeps tipColourPickerEl.value reads working downstream
-  const tipColourPickerEl = {
+  // Shim so the picker's value is readable/writable via a simple .value property.
+  const paintColourPickerEl = {
     get value()  { return toolbarColourPicker?.getValue() ?? '#ff8800'; },
     set value(v) { toolbarColourPicker?.setValue(v); },
   };
@@ -526,7 +526,7 @@ async function _initCore(root = document) {
       canvasBgColor:    canvasBgColorEl.value,
       branchColor:      branchColorEl.value,
       branchWidth:      branchWidthSlider.value,
-      elbowRadius:      elbowRadiusSlider?.value ?? (themeRegistry.get(DEFAULT_SETTINGS.baseTheme)?.elbowRadius ?? '2'),
+      elbowRadius:      elbowRadiusSlider.value,
       fontSize:         fontSlider.value,
       typeface:         fontFamilyEl.value,
       typefaceStyle:    fontTypefaceStyleEl?.value || '',
@@ -696,8 +696,8 @@ async function _initCore(root = document) {
         data = JSON.parse(text);
         // Accept { name, theme } format or a bare theme object.
         themeObj = (data.theme && typeof data.theme === 'object') ? data.theme : data;
-        // Valid if it has canvasBgColor (fully specified) or a recognised inheritTheme.
-        if (typeof themeObj !== 'object' || (!themeObj.canvasBgColor && !(themeObj.inheritTheme && THEMES[themeObj.inheritTheme]))) {
+        // Valid if it has canvasBgColor (fully specified) or a recognised inherit parent.
+        if (typeof themeObj !== 'object' || (!themeObj.canvasBgColor && !(themeObj.inherit && THEMES[themeObj.inherit]))) {
           await showAlertDialog('Invalid file', 'This does not appear to be a valid PearTree theme file.');
           return;
         }
@@ -706,10 +706,10 @@ async function _initCore(root = document) {
         return;
       }
       const fileNameSuggestion = (typeof data.name === 'string' && data.name.trim()) ? data.name.trim() : '';
-      // Warn if inheritTheme is specified but doesn't match a built-in.
-      if (themeObj.inheritTheme && !THEMES[themeObj.inheritTheme]) {
-        if (!await showConfirmDialog('Unknown inheritTheme',
-            `The file specifies inheritTheme "${themeObj.inheritTheme}" which is not a built-in theme. The base theme ("${DEFAULT_SETTINGS.baseTheme}") will be used instead. Continue?`,
+      // Warn if `inherit` is specified but doesn't match a known theme (it will fall back to DEFAULT_THEME).
+      if (themeObj.inherit && !THEMES[themeObj.inherit]) {
+        if (!await showConfirmDialog('Unknown inherit theme',
+            `The file specifies inherit "${themeObj.inherit}" which is not a known theme. DEFAULT_THEME will be used as the base instead. Continue?`,
             { okLabel: 'Continue', cancelLabel: 'Cancel' })) return;
       }
       // Ask the user to confirm or change the name.
@@ -821,7 +821,7 @@ async function _initCore(root = document) {
       canvasBgColor:    canvasBgColorEl.value,
       branchColor:      branchColorEl.value,
       branchWidth:      branchWidthSlider.value,
-      elbowRadius:      elbowRadiusSlider?.value ?? (themeRegistry.get(DEFAULT_SETTINGS.baseTheme)?.elbowRadius ?? '2'),
+      elbowRadius:      elbowRadiusSlider?.value ?? DEFAULT_THEME.elbowRadius,
       fontSize:         fontSlider.value,
       typeface:         fontFamilyEl.value,
       typefaceStyle:    fontTypefaceStyleEl?.value || '',
@@ -969,6 +969,7 @@ async function _initCore(root = document) {
       cladeHighlightStrokeOpacity: cladeHighlightStrokeOpacitySlider?.value ?? '0.7',
       cladeHighlightColour:        cladeHighlightDefaultColourEl?.value    ?? '#ffaa00',
       cladeHighlights:             renderer?.getCladeHighlightsData() ?? [],
+      paintColour:                 paintColourPickerEl.value,
     };
   }
 
@@ -1241,6 +1242,7 @@ async function _initCore(root = document) {
     }
     if (s.tipLabelDecimalPlaces  != null && tipLabelDpEl)  tipLabelDpEl.value  = String(s.tipLabelDecimalPlaces);
     if (s.nodeLabelDecimalPlaces != null && nodeLabelDpEl) nodeLabelDpEl.value = String(s.nodeLabelDecimalPlaces);
+    if (s.paintColour) paintColourPickerEl.value = s.paintColour;
     // Set themeSelect to the stored theme name (or 'custom' if not known).
     const themeName = s.theme && themeRegistry.has(s.theme) ? s.theme : (s.theme === 'custom' ? 'custom' : 'custom');
     if (themeSelect) themeSelect.value = themeName;
@@ -1386,7 +1388,7 @@ async function _initCore(root = document) {
       bgColor:          canvasBgColorEl.value,
       branchColor:      branchColorEl.value,
       branchWidth:      parseFloat(branchWidthSlider.value),
-      elbowRadius:      parseFloat(elbowRadiusSlider?.value ?? (themeRegistry.get(DEFAULT_SETTINGS.baseTheme)?.elbowRadius ?? '2')),
+      elbowRadius:      parseFloat(elbowRadiusSlider?.value ?? DEFAULT_THEME.elbowRadius),
       fontSize:         parseInt(fontSlider.value),
       tipRadius:        parseInt(tipSlider.value),
       tipHaloSize:      parseInt(tipHaloSlider.value),
@@ -1530,14 +1532,31 @@ async function _initCore(root = document) {
   }
 
   /** Apply a named theme: hydrate all visual DOM controls and push to renderer. */
+  /**
+   * Walk the inherit chain for a theme name and return a fully-resolved theme object.
+   * Resolution order: DEFAULT_THEME → ancestor themes → target theme (each layer
+   * overrides the previous).  The chain terminates when `inherit` is absent or ''.
+   */
+  function _resolveTheme(name) {
+    const chain = [];
+    let current = name;
+    const seen = new Set();
+    while (current && !seen.has(current)) {
+      seen.add(current);
+      const t = themeRegistry.get(current);
+      if (!t) break;
+      chain.unshift(t);          // prepend so oldest ancestor ends up first
+      const parent = t.inherit;  // '' or undefined → DEFAULT_THEME is the base; stop
+      if (!parent) break;
+      current = parent;
+    }
+    return Object.assign({}, DEFAULT_THEME, ...chain);
+  }
+
   function applyTheme(name) {
     if (!themeRegistry.has(name)) return;
-    // Merge order: base theme → inheritTheme (if declared) → this theme's own properties.
-    // This ensures every property is always defined, even for sparse themes.
-    const _base = themeRegistry.get(DEFAULT_SETTINGS.baseTheme) ?? themeRegistry.get(Object.keys(THEMES)[0]);
-    const _stored = themeRegistry.get(name);
-    const _inherit = (_stored.inheritTheme && THEMES[_stored.inheritTheme]) ? THEMES[_stored.inheritTheme] : null;
-    const t = { ..._base, ...(_inherit ?? {}), ..._stored };
+    // Resolve full theme by walking the inherit chain from DEFAULT_THEME downward.
+    const t = _resolveTheme(name);
     canvasBgColorEl.value   = t.canvasBgColor;
     _syncCanvasWrapperBg(t.canvasBgColor);
     branchColorEl.value     = t.branchColor;
@@ -1637,6 +1656,8 @@ async function _initCore(root = document) {
     nodeBarsFillOpacitySlider.value   = t.nodeBarsFillOpacity;   $('node-bars-fill-opacity-value').textContent   = t.nodeBarsFillOpacity;
     nodeBarsStrokeOpacitySlider.value = t.nodeBarsStrokeOpacity; $('node-bars-stroke-opacity-value').textContent = t.nodeBarsStrokeOpacity;
     // Clade highlights appearance
+    // Paint brush / toolbar colour picker
+    paintColourPickerEl.value = t.paintColour;
     if (cladeHighlightDefaultColourEl)    cladeHighlightDefaultColourEl.value    = t.cladeHighlightColour;
     if (cladeHighlightStrokeWidthSlider)  { cladeHighlightStrokeWidthSlider.value  = t.cladeHighlightStrokeWidth;  $('clade-highlight-stroke-width-value')  && ($('clade-highlight-stroke-width-value').textContent  = t.cladeHighlightStrokeWidth);  }
     if (cladeHighlightFillOpacitySlider)  { cladeHighlightFillOpacitySlider.value  = t.cladeHighlightFillOpacity;  $('clade-highlight-fill-opacity-value')  && ($('clade-highlight-fill-opacity-value').textContent  = t.cladeHighlightFillOpacity);  }
@@ -1690,15 +1711,10 @@ async function _initCore(root = document) {
   // Guard: if the stored default is no longer in the registry, fall back gracefully.
   // Must run after loadUserThemes() so user-saved themes are present.
   if (!themeRegistry.has(defaultTheme)) defaultTheme = Object.keys(THEMES)[0];
-  // Validate that the base theme (DEFAULT_SETTINGS.baseTheme) is fully specified.
+  // Validate that DEFAULT_THEME is fully specified (all REQUIRED_THEME_KEYS present).
   {
-    const _baseEntry = themeRegistry.get(DEFAULT_SETTINGS.baseTheme);
-    if (!_baseEntry) {
-      console.warn(`PearTree: base theme "${DEFAULT_SETTINGS.baseTheme}" not found in registry. Falling back to first built-in.`);
-    } else {
-      const _missing = REQUIRED_THEME_KEYS.filter(k => !(k in _baseEntry));
-      if (_missing.length) console.warn(`PearTree: base theme "${DEFAULT_SETTINGS.baseTheme}" is missing required keys:`, _missing);
-    }
+    const _missing = REQUIRED_THEME_KEYS.filter(k => !(k in DEFAULT_THEME));
+    if (_missing.length) console.warn('PearTree: DEFAULT_THEME is missing required keys:', _missing);
   }
   _populateThemeSelect();
   _syncThemeButtons();
@@ -2798,7 +2814,7 @@ async function _initCore(root = document) {
     getLegendRenderer:   () => legendRenderer,
     canvas, axisCanvas, legendRightCanvas, legend2RightCanvas,
     axisRenderer,
-    getSettingsSnapshot: () => _buildSettingsSnapshot(),
+    getSettingsSnapshot: () => { const s = _buildSettingsSnapshot(); delete s.paintColour; return s; },
   });
 
   /** Show/hide a decimal-places row based on whether the chosen label annotation is numeric. */
@@ -4481,11 +4497,11 @@ async function _initCore(root = document) {
     function _resolveHighlightColour() {
       const colourBy = cladeHighlightColourByEl?.value ?? 'user_colour';
       if (colourBy === 'user_colour') {
-        return tipColourPickerEl?.value ?? '#ffaa00';
+        return paintColourPickerEl?.value ?? '#ffaa00';
       }
       // Attribute-based colour: find most-frequent categorical value among descendant tips.
       const nodeId = renderer._mrcaNodeId;
-      if (!nodeId || !renderer.nodeMap) return tipColourPickerEl?.value ?? '#ffaa00';
+      if (!nodeId || !renderer.nodeMap) return paintColourPickerEl?.value ?? '#ffaa00';
       const tipIds = renderer._getDescendantTipIds(nodeId);
       const freq = new Map();
       for (const tipId of tipIds) {
@@ -4493,11 +4509,11 @@ async function _initCore(root = document) {
         const val  = node?.annotations?.[colourBy];
         if (val != null && val !== '') freq.set(val, (freq.get(val) ?? 0) + 1);
       }
-      if (freq.size === 0) return tipColourPickerEl?.value ?? '#ffaa00';
+      if (freq.size === 0) return paintColourPickerEl?.value ?? '#ffaa00';
       const mostCommon = [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0];
       // Try to find the colour for this value via the renderer's colour scale.
       const colour = renderer._getAnnotationColour?.(colourBy, mostCommon);
-      return colour ?? tipColourPickerEl?.value ?? '#ffaa00';
+      return colour ?? paintColourPickerEl?.value ?? '#ffaa00';
     }
 
     function _refreshHighlightList() {
@@ -4592,7 +4608,7 @@ async function _initCore(root = document) {
     btnPaintHighlight?.addEventListener('click', () => {
       const nodeId = renderer._mrcaNodeId;
       if (!nodeId || !renderer._cladeHighlights.has(nodeId)) return;
-      renderer.setCladeHighlightColour(nodeId, tipColourPickerEl?.value ?? '#ffaa00');
+      renderer.setCladeHighlightColour(nodeId, paintColourPickerEl?.value ?? '#ffaa00');
       _refreshHighlightList();
       saveSettings();
     });

@@ -29,6 +29,8 @@ export const REQUIRED_THEME_KEYS = [
   'nodeLabelColor', 'nodeLabelSpacing',
   // Node Bars
   'nodeBarsColor', 'nodeBarsWidth', 'nodeBarsFillOpacity', 'nodeBarsStrokeOpacity',
+  // Paint brush / clade-highlight colour picker
+  'paintColour',
   // Clade Highlights
   'cladeHighlightFillOpacity', 'cladeHighlightStrokeOpacity', 'cladeHighlightStrokeWidth',
   'cladeHighlightColour',
