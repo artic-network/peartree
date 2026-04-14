@@ -2724,14 +2724,23 @@ async function _initCore(root = document) {
   const _dtResizeHandle = $('data-table-resize-handle');
   const _dtPanel        = $('data-table-panel');
   if (_dtResizeHandle && _dtPanel) {
+    // Ghost-line pattern: show a 2px line while dragging; commit on mouseup
+    // (same approach as the RTT resize handle — no live canvas resize on every
+    // mousemove event, which avoids expensive forced-layout recalculations).
+    const _dtGhost = document.createElement('div');
+    _dtGhost.id = 'dt-resize-ghost';
+    document.body.appendChild(_dtGhost);
+
     let _dtDragging = false;
     let _dtStartX   = 0;
     let _dtStartW   = 0;
-    let _dtRafId    = null;   // rAF handle for throttled resize
+
     _dtResizeHandle.addEventListener('mousedown', e => {
       _dtDragging = true;
       _dtStartX   = e.clientX;
       _dtStartW   = _dtPanel.offsetWidth;
+      _dtGhost.style.left    = `${e.clientX}px`;
+      _dtGhost.style.display = 'block';
       document.body.style.cursor = 'ew-resize';
       e.preventDefault();
     });
@@ -2739,27 +2748,27 @@ async function _initCore(root = document) {
       if (!_dtDragging) return;
       const delta = _dtStartX - e.clientX;  // dragging left increases width
       const newW  = Math.max(100, Math.min(700, _dtStartW + delta));
-      // Update width + CSS variable immediately (cheap — just a CSS invalidation).
+      // Move the ghost to what will become the panel's left edge.
+      const panelRight = _dtPanel.getBoundingClientRect().right;
+      _dtGhost.style.left = `${panelRight - newW}px`;
+    });
+    window.addEventListener('mouseup', e => {
+      if (!_dtDragging) return;
+      _dtDragging = false;
+      _dtGhost.style.display = 'none';
+      document.body.style.cursor = '';
+      // Commit the resize on release — suppress the CSS transition so the
+      // canvas snaps to the final width immediately.
+      const delta = _dtStartX - e.clientX;
+      const newW  = Math.max(100, Math.min(700, _dtStartW + delta));
+      _dtPanel.style.transition = 'none';
       _dtPanel.style.width = `${newW}px`;
       document.documentElement.style.setProperty('--dt-panel-w', `${newW}px`);
-      // Throttle canvas resize to one call per animation frame.  mousemove
-      // can fire far faster than the browser paints; batching avoids redundant
-      // forced-layout recalculations on every pointer event.
-      if (_dtRafId === null) {
-        _dtRafId = requestAnimationFrame(() => {
-          _dtRafId = null;
-          renderer._resize();
-        });
-      }
-    });
-    window.addEventListener('mouseup', () => {
-      if (_dtDragging) {
-        _dtDragging = false;
-        document.body.style.cursor = '';
-        // Let the table renderer know the user has chosen a custom width so it
-        // won't auto-resize the panel when columns or font size change.
-        if (dataTableRenderer.isPinned()) dataTableRenderer.notifyUserResized();
-      }
+      void _dtPanel.offsetWidth;  // force reflow so clientWidth is correct
+      renderer._resize();
+      // Let the table renderer know the user chose a custom width.
+      if (dataTableRenderer.isPinned()) dataTableRenderer.notifyUserResized();
+      requestAnimationFrame(() => { _dtPanel.style.transition = ''; });
     });
   }
 

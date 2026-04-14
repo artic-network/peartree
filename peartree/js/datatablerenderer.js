@@ -55,7 +55,7 @@ export function createDataTableRenderer({
   let _tips           = [];       // visible tips sorted by node.y ascending
   let _tipsVersion    = 0;        // incremented on setTips(); forces width recompute
   let _colWidths      = [];       // px width per data column slot
-  let _numColW        = 36;       // px width of the frozen number column
+  let _numColW        = 52;       // px width of the frozen number column
   let _rowEls         = new Map(); // nodeId → { rowEl, numEl, cells:Map<key,input> }
   let _open           = false;
   let _pinned         = false;
@@ -295,7 +295,7 @@ export function createDataTableRenderer({
     const maxNum    = _expandedRows.reduceRight(
       (m, r) => r.cumNum != null ? Math.max(m, r.cumNum) : m, _tips.length || 1);
     const numDigits = String(maxNum).length;
-    _numColW = Math.max(36, Math.ceil(ctx.measureText('0'.repeat(numDigits)).width) + 16);
+    _numColW = Math.max(52, Math.ceil(ctx.measureText('0'.repeat(numDigits)).width) + 16);
 
     const MAX_SAMPLE = 500;
     const tips   = _tips;
