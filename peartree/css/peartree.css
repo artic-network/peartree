@@ -1263,6 +1263,63 @@ body.palette-pinned #canvas-container {
   background: none;
   justify-self: start;
 }
+/* ── Panel swatch-popup colour picker ─────────────────────────────────────── */
+/* Trigger button */
+.pt-pcp-trigger {
+  width: 26px;
+  height: 22px;
+  padding: 2px;
+  border: 1px solid var(--pt-border-input);
+  border-radius: 3px;
+  background: var(--pt-surface-input);
+  cursor: pointer;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.pt-pcp-trigger:hover { border-color: var(--pt-border-strong); }
+/* Coloured square inside the trigger */
+.pt-pcp-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  pointer-events: none;
+  display: block;
+}
+/* Shared generic popup (panel pickers) */
+.pt-cp-popup {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  z-index: 800;
+  background: var(--pt-bg-panel);
+  border: 1px solid var(--pt-border);
+  border-radius: 6px;
+  box-shadow: 0 6px 24px var(--pt-shadow-popup);
+  padding: 10px;
+  min-width: 220px;
+}
+.pt-cp-popup.open { display: block; }
+/* Native colour input inside the generic popup */
+.pt-cp-native-input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid var(--pt-border-input);
+  border-radius: 4px;
+  background: var(--pt-surface-input);
+  cursor: pointer;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.pt-cp-native-input::-webkit-color-swatch-wrapper { padding: 2px; }
+.pt-cp-native-input::-webkit-color-swatch { border: none; border-radius: 2px; }
 /* Panel-toggle buttons — gold when open */
 #btn-palette.active,
 #btn-data-table.active,

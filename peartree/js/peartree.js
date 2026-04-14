@@ -17,6 +17,7 @@ import { createRTTChart          } from './rttchart.js';
 import { createCommands } from './commands.js';
 import { createExportController } from './export-controller.js';
 import { EXAMPLE_TREE_PATH, PEARTREE_BASE_URL, DEFAULT_SETTINGS, REQUIRED_THEME_KEYS } from './config.js';
+import { createToolbarColourPicker, upgradeAllPaletteColourPickers } from './colorpicker.js';
 
 /**
  * Fetch a file by relative path, falling back to the absolute GitHub Pages URL
@@ -363,132 +364,20 @@ async function _initCore(root = document) {
   const btnMPR                 = $('btn-midpoint-root');
   const btnTemporalRoot        = $('btn-temporal-root');
   const btnTemporalRootGlobal  = $('btn-temporal-root-global');
-  // Hidden native <input type="color"> — value only, never shown directly
-  const tipColourPickerEl            = $('btn-node-colour');
-  // Colour panel elements
-  const btnColourTrigger             = $('btn-colour-trigger');
-  const btnColourTriggerSwatch       = $('btn-colour-trigger-swatch');
-  const colourPickerPopup            = $('colour-picker-popup');
-  const btnColourNativeOpen          = $('btn-colour-native-open');
-  const colourPickerRecentEl         = $('colour-picker-recent');
-  const colourPickerPalettesEl       = $('colour-picker-palettes');
   const btnApplyUserColour           = $('btn-apply-user-colour');
   const btnClearUserColour           = $('btn-clear-user-colour');
 
-  // Recent colours (persisted) — max 8 entries
-  const RECENT_COLOURS_KEY = 'pt-recent-colours';
-  let _recentColours = (() => {
-    try { return JSON.parse(localStorage.getItem(RECENT_COLOURS_KEY) || '[]'); }
-    catch { return []; }
-  })();
+  // Toolbar swatch-popup colour picker
+  const toolbarColourPicker = createToolbarColourPicker({ root, palettes: CATEGORICAL_PALETTES, $: id => root.querySelector('#' + id) });
+  // Compatibility shim — keeps tipColourPickerEl.value reads working downstream
+  const tipColourPickerEl = {
+    get value()  { return toolbarColourPicker?.getValue() ?? '#ff8800'; },
+    set value(v) { toolbarColourPicker?.setValue(v); },
+  };
+  const _addRecentColour = (hex) => toolbarColourPicker?.addRecent(hex);
 
-  function _saveRecentColours() {
-    try { localStorage.setItem(RECENT_COLOURS_KEY, JSON.stringify(_recentColours)); } catch {}
-  }
-
-  function _addRecentColour(hex) {
-    hex = hex.toLowerCase();
-    _recentColours = [hex, ..._recentColours.filter(c => c !== hex)].slice(0, 8);
-    _saveRecentColours();
-  }
-
-  // Normalise any hex to #rrggbb (e.g. shorthand #rgb)
-  function _normaliseHex(h) {
-    h = h.trim();
-    if (/^#[0-9a-f]{3}$/i.test(h))
-      h = '#' + h[1]+h[1]+h[2]+h[2]+h[3]+h[3];
-    return /^#[0-9a-f]{6}$/i.test(h) ? h.toLowerCase() : null;
-  }
-
-  function _renderColourPanel() {
-    // Recent row
-    colourPickerRecentEl.innerHTML = '';
-    if (_recentColours.length === 0) {
-      const empty = document.createElement('span');
-      empty.style.cssText = 'font-size:0.65rem;color:rgba(242,241,230,0.3);font-style:italic;';
-      empty.textContent = '—';
-      colourPickerRecentEl.appendChild(empty);
-    } else {
-      for (const hex of _recentColours) {
-        colourPickerRecentEl.appendChild(_makeSwatch(hex));
-      }
-    }
-    // Palette rows
-    colourPickerPalettesEl.innerHTML = '';
-    for (const [name, colours] of Object.entries(CATEGORICAL_PALETTES)) {
-      const row = document.createElement('div');
-      row.className = 'pt-cp-row';
-      const label = document.createElement('span');
-      label.className = 'pt-cp-label';
-      label.textContent = name;
-      const swatches = document.createElement('div');
-      swatches.className = 'pt-cp-swatches';
-      for (const hex of colours) swatches.appendChild(_makeSwatch(hex));
-      row.appendChild(label);
-      row.appendChild(swatches);
-      colourPickerPalettesEl.appendChild(row);
-    }
-  }
-
-  function _makeSwatch(hex) {
-    const s = document.createElement('div');
-    s.className = 'pt-cp-swatch';
-    s.style.background = hex;
-    s.title = hex;
-    if (tipColourPickerEl.value.toLowerCase() === hex) s.classList.add('selected');
-    s.addEventListener('click', (e) => {
-      e.stopPropagation();
-      _setColourPickerValue(hex);
-      _closeColourPanel();
-    });
-    return s;
-  }
-
-  function _setColourPickerValue(hex) {
-    tipColourPickerEl.value = hex;
-    btnColourNativeOpen.value = hex;
-    btnColourTriggerSwatch.style.background = hex;
-  }
-
-  function _openColourPanel() {
-    _renderColourPanel();
-    colourPickerPopup?.classList.add('open');
-  }
-
-  function _closeColourPanel() {
-    colourPickerPopup?.classList.remove('open');
-  }
-
-  // Toggle on trigger button
-  btnColourTrigger?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (colourPickerPopup.classList.contains('open')) {
-      _closeColourPanel();
-    } else {
-      _openColourPanel();
-    }
-  });
-
-  // Clicking the native colour input inside the panel
-  btnColourNativeOpen?.addEventListener('input', (e) => {
-    e.stopPropagation();
-    const hex = e.target.value;
-    tipColourPickerEl.value = hex;
-    btnColourTriggerSwatch.style.background = hex;
-  });
-
-  // Close when clicking outside the popup
-  document.addEventListener('click', (e) => {
-    if (!root.contains(e.target)) return;
-    if (colourPickerPopup?.classList.contains('open') &&
-        !colourPickerPopup.contains(e.target) &&
-        e.target !== btnColourTrigger) {
-      _closeColourPanel();
-    }
-  });
-  if (_cfg.enableKeyboard) document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && (root === document || root.contains(document.activeElement))) _closeColourPanel();
-  });
+  // Upgrade all side-panel <input type="color" class="pt-palette-color"> to swatch pickers
+  upgradeAllPaletteColourPickers(root, { palettes: CATEGORICAL_PALETTES });
   const tipFilterEl            = $('tip-filter');
   const btnFilterColEl         = $('btn-filter-col');
   const btnFilterRegexEl       = $('btn-filter-regex');
@@ -3564,7 +3453,7 @@ async function _initCore(root = document) {
         if (tipFilterEl)     tipFilterEl.disabled      = false;
         if (btnFilterColEl)  btnFilterColEl.disabled   = false;
         if (btnFilterRegexEl) btnFilterRegexEl.disabled = false;
-        if (btnColourTrigger) btnColourTrigger.disabled = false;
+        $('btn-colour-trigger')?.removeAttribute('disabled');
         // Buttons with no command equivalent
         const _btnHypUp   = $('btn-hyp-up');
         const _btnHypDown = $('btn-hyp-down');
@@ -5108,7 +4997,7 @@ async function _initCore(root = document) {
     }
 
     btnApplyUserColour?.addEventListener('click', () => {
-      const hex = tipColourPickerEl.value;
+      const hex = toolbarColourPicker?.getValue() ?? '#ff8800';
       _addRecentColour(hex);
       _applyUserColour(hex);
     });
