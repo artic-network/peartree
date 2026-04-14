@@ -37,41 +37,69 @@ export const REQUIRED_THEME_KEYS = [
   'axisColor', 'axisFontSize', 'axisFontFamily', 'axisFontStyle', 'axisLineWidth',
   // Legend
   'legendTextColor', 'legendFontSize', 'legendFontFamily', 'legendFontStyle',
-  // RTT chart
+  // RTT chart colours
   'rttAxisColor', 'rttStatsBgColor', 'rttStatsTextColor', 'rttRegressionColor',
+  // Node labels appearance
+  'nodeLabelFontSize', 'nodeLabelColor', 'nodeLabelSpacing',
+  'nodeLabelTypefaceKey', 'nodeLabelTypefaceStyle',
+  // Node bars appearance
+  'nodeBarsWidth', 'nodeBarsFillOpacity', 'nodeBarsStrokeOpacity',
+  // Clade highlights appearance
+  'cladeHighlightStrokeWidth', 'cladeHighlightFillOpacity',
+  'cladeHighlightStrokeOpacity', 'cladeHighlightColour',
+  // Collapsed clades appearance
+  'collapsedCladeFontSize', 'collapsedCladeTypefaceKey', 'collapsedCladeTypefaceStyle',
+  // RTT chart appearance
+  'rttStatsFontSize', 'rttRegressionStyle', 'rttRegressionWidth',
+  'rttAxisFontSize', 'rttAxisTypefaceKey', 'rttAxisTypefaceStyle', 'rttAxisLineWidth',
 ];
 
 export const DEFAULT_SETTINGS = {
-  // Name of the built-in theme that serves as the fully-specified visual base.
-  // All other themes are merged on top of this at applyTheme() time, so only
-  // this theme needs to define every key in REQUIRED_THEME_KEYS.
-  baseTheme:        'Monochrome',
-  // RTT non-theme settings
-  rttStatsFontSize:  '11',
-  rttRegressionStyle: 'dash',
-  rttRegressionWidth: '1.5',
-  rttAxisFontSize:  '9',
-  rttAxisFontFamily: '',
-  rttAxisFontStyle:  '',
-  rttAxisLineWidth:  '1',
-  rttDateFormat:        'yyyy-MM-dd',
-  rttMajorInterval:     'auto',
-  rttMinorInterval:     'off',
-  rttMajorLabelFormat:  'partial',
-  rttMinorLabelFormat:  'off',
-  // Axis display settings
-  axisShow:           'off',
-  axisDateAnnotation: '',
-  axisDateFormat:     'yyyy-MM-dd',
-  axisMajorInterval:    'auto',
-  axisMinorInterval:    'off',
-  axisMajorLabelFormat: 'partial',
-  axisMinorLabelFormat: 'off',
+  // ── Tree ────────────────────────────────────────────────────────────────────────────
+  rootStemPct:    '1',    // whole-tree root-stem length as % of tree age (0–20)
   // Layout geometry (no DOM controls — passed directly to TreeRenderer)
   paddingLeft:    '20',
   paddingRight:   '20',
   paddingTop:     '20',
   paddingBottom:  '20',
+  // Axis canvas vertical padding (px) — gap above the baseline line
+  axisPaddingTop: '3',
+  rootStubLength: '10',
+  // Intro animation played when a tree is first loaded.
+  // Options: 'y-then-x' | 'x-then-y' | 'simultaneous' | 'from-bottom' | 'from-top' | 'none'
+  introAnimation:  'x-then-y',
+
+  // ── Tip Labels ───────────────────────────────────────────────────────────────────
+  tipLabelAlign:   'names',
+  tipLabelSpacing: '3',
+
+  // ── Label Shapes ────────────────────────────────────────────────────────────────────
+  tipLabelShape:             'off',     // 'off' | 'square' | 'circle' | 'block'
+  tipLabelShapeSize:         '50',      // 1–100: % of scaleY for square/circle; ×0.1 width factor for block
+  tipLabelShapeColor:        '#aaaaaa',
+  tipLabelShapeMarginLeft:   '2',
+  tipLabelShapeSpacing:      '3',
+  // Extra tip label shapes 2–10 (shown immediately to the right of shape 1; share shape 1's size/colour)
+  tipLabelShapesExtra:         ['off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off'],
+  tipLabelShapeExtraColourBys: ['user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour'],
+
+  // ── Node Labels ───────────────────────────────────────────────────────────────────
+  nodeLabelAnnotation: '',
+  nodeLabelPosition:   'right',
+
+  // ── Node Bars ───────────────────────────────────────────────────────────────────────
+  // (only shown when tree has 'height' group from BEAST)
+  nodeBarsEnabled:    'off',
+  nodeBarsShowMedian: 'mean',
+  nodeBarsShowRange:  'off',
+
+  // ── Clade Highlights ────────────────────────────────────────────────────────────────
+  cladeHighlightLeftEdge:  'hard',
+  cladeHighlightRightEdge: 'hardAlign',
+  cladeHighlightPadding:   '6',
+  cladeHighlightRadius:    '4',
+
+  // ── Legend ───────────────────────────────────────────────────────────────────────────
   // Legend canvas internal padding (px) — controls spacing inside the legend panel
   legendPadding:   '12',
   // Legend canvas height as % of the canvas area (1–100, pinned to top)
@@ -88,51 +116,26 @@ export const DEFAULT_SETTINGS = {
   legendAnnotation4: '',
   legend4Position:   'right',
   legendHeightPct4:  '50',
-  // Axis canvas vertical padding (px) — gap above the baseline line
-  axisPaddingTop: '3',
-  rootStubLength: '10',
-  rootStemPct:    '1',    // whole-tree root-stem length as % of tree age (0–20)
-  // Node bars (only shown when tree has 'height' group from BEAST)
-  nodeBarsEnabled:    'off',
-  nodeBarsWidth:      '6',
-  nodeBarsFillOpacity:   '0.22',
-  nodeBarsStrokeOpacity: '0.55',
-  nodeBarsShowMedian: 'mean',
-  nodeBarsShowRange:  'off',
-  // Tip label layout
-  tipLabelAlign:      'off',
-  // Tip label shapes (displayed to the left of label text)
-  tipLabelShape:             'off',     // 'off' | 'square' | 'circle' | 'block'
-  tipLabelShapeSize:         '50',      // 1–100: % of scaleY for square/circle; ×0.1 width factor for block
-  tipLabelShapeColor:        '#aaaaaa',
-  tipLabelShapeMarginLeft:   '2',
-  tipLabelShapeSpacing:      '3',
-  // Extra tip label shapes 2–10 (shown immediately to the right of shape 1; share shape 1's size/colour)
-  tipLabelShapesExtra:       ['off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off'],
-  tipLabelShapeExtraColourBys: ['user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour'],
-  // Collapsed clade label font size (px) — independent of tip-label font size
-  collapsedCladeFontSize:    '11',
-  collapsedCladeTypefaceKey:  '',
-  collapsedCladeTypefaceStyle: '',
-  // Node labels (internal-node annotation labels)
-  nodeLabelAnnotation:     '',
-  nodeLabelPosition:       'right',
-  nodeLabelFontSize:       '9',
-  nodeLabelColor:          '#aaaaaa',
-  nodeLabelSpacing:        '4',
-  nodeLabelTypefaceKey:    '',
-  nodeLabelTypefaceStyle:  '',
-  tipLabelSpacing:     '3',
-  // Intro animation played when a tree is first loaded.
-  // Options: 'y-then-x' | 'x-then-y' | 'simultaneous' | 'from-bottom' | 'from-top' | 'none'
-  introAnimation:     'x-then-y',
-  // Clade highlights
-  cladeHighlightLeftEdge:      'hard',
-  cladeHighlightRightEdge:     'hardAlign',
-  cladeHighlightPadding:       '6',
-  cladeHighlightRadius:        '4',
-  cladeHighlightStrokeWidth:   '1',
-  cladeHighlightFillOpacity:   '0.15',
-  cladeHighlightStrokeOpacity: '0.7',
-  cladeHighlightColour:        '#ffaa00',
+
+  // ── Axis ─────────────────────────────────────────────────────────────────────────────
+  axisShow:             'off',
+  axisDateAnnotation:   '',
+  axisDateFormat:       'yyyy-MM-dd',
+  axisMajorInterval:    'auto',
+  axisMinorInterval:    'off',
+  axisMajorLabelFormat: 'partial',
+  axisMinorLabelFormat: 'off',
+
+  // ── Root-to-tip ──────────────────────────────────────────────────────────────────────
+  rttDateFormat:        'yyyy-MM-dd',
+  rttMajorInterval:     'auto',
+  rttMinorInterval:     'off',
+  rttMajorLabelFormat:  'partial',
+  rttMinorLabelFormat:  'off',
+
+  // ── Theme ───────────────────────────────────────────────────────────────────────────
+  // Name of the built-in theme that serves as the fully-specified visual base.
+  // All other themes are merged on top of this at applyTheme() time, so only
+  // this theme needs to define every key in REQUIRED_THEME_KEYS.
+  baseTheme: 'Monochrome',
 };

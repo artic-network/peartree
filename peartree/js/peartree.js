@@ -1022,8 +1022,8 @@ async function _initCore(root = document) {
       rttRegressionColor: rttRegressionColorEl.value,
       rttRegressionWidth: rttRegressionWidthSlider.value,
       rttAxisFontSize:    rttAxisFontSizeSlider.value,
-      rttAxisFontFamily:  rttAxisFontFamilyEl.value,
-      rttAxisFontStyle:   rttAxisTypefaceStyleEl?.value || '',
+      rttAxisTypefaceKey:    rttAxisFontFamilyEl.value,
+      rttAxisTypefaceStyle: rttAxisTypefaceStyleEl?.value || '',
       rttAxisLineWidth:   rttAxisLineWidthSlider.value,
       rttDateFormat:        rttDateFmtEl.value,
       rttMajorInterval:     rttMajorIntervalEl.value,
@@ -1119,7 +1119,7 @@ async function _initCore(root = document) {
       _populateStyleSelect(axisFontFamilyEl?.value || fontFamilyEl.value, axisTypefaceStyleEl, s.axisFontStyle, true);
     }
     if (rttAxisTypefaceStyleEl) {
-      _populateStyleSelect(rttAxisFontFamilyEl?.value || fontFamilyEl.value, rttAxisTypefaceStyleEl, s.rttAxisFontStyle, true);
+      _populateStyleSelect(rttAxisFontFamilyEl?.value || fontFamilyEl.value, rttAxisTypefaceStyleEl, s.rttAxisTypefaceStyle, true);
     }
     if (s.labelColor)            labelColorEl.value       = s.labelColor;
     if (s.selectedLabelStyle)    selectedLabelStyleEl.value = s.selectedLabelStyle;
@@ -1397,49 +1397,21 @@ async function _initCore(root = document) {
     axisMajorLabelEl.value       = DEFAULT_SETTINGS.axisMajorLabelFormat;
     axisMinorLabelEl.value       = DEFAULT_SETTINGS.axisMinorLabelFormat;
     _updateMinorOptions(DEFAULT_SETTINGS.axisMajorInterval, DEFAULT_SETTINGS.axisMinorInterval);
-    // All RTT colours are set by applyTheme(defaultTheme) above; only reset non-visual RTT controls here.
-    rttRegressionStyleEl.value   = DEFAULT_SETTINGS.rttRegressionStyle;
-    rttRegressionWidthSlider.value = DEFAULT_SETTINGS.rttRegressionWidth;
-    $('rtt-regression-width-value').textContent = DEFAULT_SETTINGS.rttRegressionWidth;
-    rttAxisFontSizeSlider.value  = DEFAULT_SETTINGS.rttAxisFontSize;
-    $('rtt-axis-font-size-value').textContent = DEFAULT_SETTINGS.rttAxisFontSize;
-    rttStatsFontSizeSlider.value = DEFAULT_SETTINGS.rttStatsFontSize;
-    $('rtt-stats-font-size-value').textContent = DEFAULT_SETTINGS.rttStatsFontSize;
-    rttAxisFontFamilyEl.value    = DEFAULT_SETTINGS.rttAxisFontFamily;
-    _populateStyleSelect(fontFamilyEl.value, rttAxisTypefaceStyleEl, '', true);
-    rttAxisLineWidthSlider.value = DEFAULT_SETTINGS.rttAxisLineWidth;
-    $('rtt-axis-line-width-value').textContent = DEFAULT_SETTINGS.rttAxisLineWidth;
+    // RTT date/interval controls — visual RTT appearance is set by applyTheme(defaultTheme) above.
     rttDateFmtEl.value       = DEFAULT_SETTINGS.rttDateFormat;
     rttMajorIntervalEl.value = DEFAULT_SETTINGS.rttMajorInterval;
     _updateRttMinorOptions(DEFAULT_SETTINGS.rttMajorInterval, DEFAULT_SETTINGS.rttMinorInterval);
     rttMajorLabelEl.value    = DEFAULT_SETTINGS.rttMajorLabelFormat;
     rttMinorLabelEl.value    = DEFAULT_SETTINGS.rttMinorLabelFormat;
     nodeBarsShowEl.value  = DEFAULT_SETTINGS.nodeBarsEnabled;
-    nodeBarsWidthSlider.value = DEFAULT_SETTINGS.nodeBarsWidth;
-    $('node-bars-width-value').textContent = DEFAULT_SETTINGS.nodeBarsWidth;
-    nodeBarsFillOpacitySlider.value = DEFAULT_SETTINGS.nodeBarsFillOpacity;
-    $('node-bars-fill-opacity-value').textContent = DEFAULT_SETTINGS.nodeBarsFillOpacity;
-    nodeBarsStrokeOpacitySlider.value = DEFAULT_SETTINGS.nodeBarsStrokeOpacity;
-    $('node-bars-stroke-opacity-value').textContent = DEFAULT_SETTINGS.nodeBarsStrokeOpacity;
     nodeBarsMedianEl.value = DEFAULT_SETTINGS.nodeBarsShowMedian;
     nodeBarsRangeEl.value  = DEFAULT_SETTINGS.nodeBarsShowRange;
     rootStemPctSlider.value = DEFAULT_SETTINGS.rootStemPct ?? '0';
     $('root-stem-pct-value').textContent = (DEFAULT_SETTINGS.rootStemPct ?? '0') + '%';
-    nodeLabelShowEl.value       = DEFAULT_SETTINGS.nodeLabelAnnotation;
-    nodeLabelPositionEl.value   = DEFAULT_SETTINGS.nodeLabelPosition;
-    nodeLabelFontSizeSlider.value = DEFAULT_SETTINGS.nodeLabelFontSize;
-    $('node-label-font-size-value').textContent = DEFAULT_SETTINGS.nodeLabelFontSize;
-    collapsedCladeFontSizeSlider.value = DEFAULT_SETTINGS.collapsedCladeFontSize;
-    $('collapsed-clade-font-size-value').textContent = DEFAULT_SETTINGS.collapsedCladeFontSize;
+    nodeLabelShowEl.value     = DEFAULT_SETTINGS.nodeLabelAnnotation;
+    nodeLabelPositionEl.value = DEFAULT_SETTINGS.nodeLabelPosition;
     if (tipLabelTypefaceEl)            tipLabelTypefaceEl.value = '';
     _populateStyleSelect(fontFamilyEl.value, typefaceStyleEl, '', true);
-    if (collapsedCladeTypefaceEl)      collapsedCladeTypefaceEl.value = '';
-    _populateStyleSelect(fontFamilyEl.value, collapsedCladeTypefaceStyleEl, '', true);
-    if (nodeLabelTypefaceEl)           nodeLabelTypefaceEl.value = '';
-    _populateStyleSelect(fontFamilyEl.value, nodeLabelTypefaceStyleEl, '', true);
-    nodeLabelColorEl.value      = DEFAULT_SETTINGS.nodeLabelColor;
-    nodeLabelSpacingSlider.value = DEFAULT_SETTINGS.nodeLabelSpacing;
-    $('node-label-spacing-value').textContent = DEFAULT_SETTINGS.nodeLabelSpacing;
     tipLabelSpacingSlider.value = DEFAULT_SETTINGS.tipLabelSpacing;
     $('tip-label-spacing-value').textContent = DEFAULT_SETTINGS.tipLabelSpacing;
     if (tipLabelDpEl)    tipLabelDpEl.value    = '';
@@ -1737,16 +1709,42 @@ async function _initCore(root = document) {
     _populateStyleSelect(fontFamilyEl.value, typefaceStyleEl, '', true);
     _populateStyleSelect(legendFontFamilyEl.value || fontFamilyEl.value, legendTypefaceStyleEl, t.legendFontStyle || '', true);
     _populateStyleSelect(axisFontFamilyEl.value   || fontFamilyEl.value, axisTypefaceStyleEl,   t.axisFontStyle   || '', true);
-    _populateStyleSelect(fontFamilyEl.value, rttAxisTypefaceStyleEl, '', true);
-    _populateStyleSelect(fontFamilyEl.value, nodeLabelTypefaceStyleEl, '', true);
-    _populateStyleSelect(fontFamilyEl.value, collapsedCladeTypefaceStyleEl, '', true);
-    // Label shapes fall back to the theme's tip shape colour when not explicitly set.
+    // RTT axis typeface (now a theme property)
+    if (rttAxisFontFamilyEl) rttAxisFontFamilyEl.value = t.rttAxisTypefaceKey || '';
+    _populateStyleSelect(rttAxisFontFamilyEl?.value || fontFamilyEl.value, rttAxisTypefaceStyleEl, t.rttAxisTypefaceStyle || '', true);
+    // Node label typeface (now a theme property)
+    if (nodeLabelTypefaceEl) nodeLabelTypefaceEl.value = t.nodeLabelTypefaceKey || '';
+    _populateStyleSelect(nodeLabelTypefaceEl?.value || fontFamilyEl.value, nodeLabelTypefaceStyleEl, t.nodeLabelTypefaceStyle || '', true);
+    // Collapsed clade typeface (now a theme property)
+    if (collapsedCladeTypefaceEl) collapsedCladeTypefaceEl.value = t.collapsedCladeTypefaceKey || '';
+    _populateStyleSelect(collapsedCladeTypefaceEl?.value || fontFamilyEl.value, collapsedCladeTypefaceStyleEl, t.collapsedCladeTypefaceStyle || '', true);
     tipLabelShapeColorEl.value  = t.tipLabelShapeColor  || t.tipShapeColor;
     // RTT plot colours — rttAxisColor and rttRegressionColor default to '' (inherit)
     if (t.rttAxisColor)       rttAxisColorEl.value       = t.rttAxisColor;
     rttStatsBgColorEl.value    = t.rttStatsBgColor;
     rttStatsTextColorEl.value  = t.rttStatsTextColor;
     if (t.rttRegressionColor) rttRegressionColorEl.value = t.rttRegressionColor;
+    // Node labels appearance
+    nodeLabelFontSizeSlider.value = t.nodeLabelFontSize; $('node-label-font-size-value').textContent = t.nodeLabelFontSize;
+    nodeLabelColorEl.value        = t.nodeLabelColor;
+    nodeLabelSpacingSlider.value  = t.nodeLabelSpacing;  $('node-label-spacing-value').textContent   = t.nodeLabelSpacing;
+    // Node bars appearance
+    nodeBarsWidthSlider.value         = t.nodeBarsWidth;         $('node-bars-width-value').textContent          = t.nodeBarsWidth;
+    nodeBarsFillOpacitySlider.value   = t.nodeBarsFillOpacity;   $('node-bars-fill-opacity-value').textContent   = t.nodeBarsFillOpacity;
+    nodeBarsStrokeOpacitySlider.value = t.nodeBarsStrokeOpacity; $('node-bars-stroke-opacity-value').textContent = t.nodeBarsStrokeOpacity;
+    // Clade highlights appearance
+    if (cladeHighlightDefaultColourEl)    cladeHighlightDefaultColourEl.value    = t.cladeHighlightColour;
+    if (cladeHighlightStrokeWidthSlider)  { cladeHighlightStrokeWidthSlider.value  = t.cladeHighlightStrokeWidth;  $('clade-highlight-stroke-width-value')  && ($('clade-highlight-stroke-width-value').textContent  = t.cladeHighlightStrokeWidth);  }
+    if (cladeHighlightFillOpacitySlider)  { cladeHighlightFillOpacitySlider.value  = t.cladeHighlightFillOpacity;  $('clade-highlight-fill-opacity-value')  && ($('clade-highlight-fill-opacity-value').textContent  = t.cladeHighlightFillOpacity);  }
+    if (cladeHighlightStrokeOpacitySlider){ cladeHighlightStrokeOpacitySlider.value = t.cladeHighlightStrokeOpacity; $('clade-highlight-stroke-opacity-value') && ($('clade-highlight-stroke-opacity-value').textContent = t.cladeHighlightStrokeOpacity); }
+    // Collapsed clades appearance
+    collapsedCladeFontSizeSlider.value  = t.collapsedCladeFontSize;  $('collapsed-clade-font-size-value').textContent = t.collapsedCladeFontSize;
+    // RTT chart appearance
+    rttStatsFontSizeSlider.value       = t.rttStatsFontSize;       $('rtt-stats-font-size-value').textContent     = t.rttStatsFontSize;
+    rttRegressionStyleEl.value         = t.rttRegressionStyle;
+    rttRegressionWidthSlider.value     = t.rttRegressionWidth;     $('rtt-regression-width-value').textContent    = t.rttRegressionWidth;
+    rttAxisFontSizeSlider.value        = t.rttAxisFontSize;        $('rtt-axis-font-size-value').textContent      = t.rttAxisFontSize;
+    rttAxisLineWidthSlider.value       = t.rttAxisLineWidth;       $('rtt-axis-line-width-value').textContent     = t.rttAxisLineWidth;
     if (renderer) {
       renderer.setSettings(_buildRendererSettings());
       axisRenderer.setColor(t.axisColor);
@@ -2023,8 +2021,8 @@ async function _initCore(root = document) {
     rttStatsFontSizeSlider.value = _saved.rttStatsFontSize;
     $('rtt-stats-font-size-value').textContent = _saved.rttStatsFontSize;
   }
-  if (_saved.rttAxisFontFamily)        rttAxisFontFamilyEl.value     = _saved.rttAxisFontFamily;
-  { _populateStyleSelect(rttAxisFontFamilyEl?.value || fontFamilyEl.value, rttAxisTypefaceStyleEl, _saved.rttAxisFontStyle, true); }
+  if (_saved.rttAxisTypefaceKey)        rttAxisFontFamilyEl.value     = _saved.rttAxisTypefaceKey;
+  { _populateStyleSelect(rttAxisFontFamilyEl?.value || fontFamilyEl.value, rttAxisTypefaceStyleEl, _saved.rttAxisTypefaceStyle, true); }
   if (_saved.rttAxisLineWidth != null) {
     rttAxisLineWidthSlider.value = _saved.rttAxisLineWidth;
     $('rtt-axis-line-width-value').textContent = _saved.rttAxisLineWidth;
@@ -2288,6 +2286,7 @@ async function _initCore(root = document) {
     // Custom theme: DOM controls were already hydrated from _saved above; just sync the renderer.
     renderer.setSettings(_buildRendererSettings(), false);
     _syncControlVisibility();
+    _syncThemeButtons();
   }
 
   // Always sync legend/axis font families after renderer init — applyTheme does
