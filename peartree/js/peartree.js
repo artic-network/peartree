@@ -311,7 +311,7 @@ async function _initCore(root = document) {
   const axisMinorLabelRow      = $('axis-minor-label-row');
   const axisColorEl           = $('axis-color');
   const axisFontSizeSlider    = $('axis-font-size-slider');
-  const axisFontFamilyEl      = $('axis-font-family-select');
+  const axisTypefaceEl      = $('axis-font-family-select');
   const axisLineWidthSlider   = $('axis-line-width-slider');
   const rttXOriginEl           = $('rtt-x-origin');
   const rttGridLinesEl          = $('rtt-grid-lines');
@@ -584,7 +584,7 @@ async function _initCore(root = document) {
       // Axis appearance
       axisColor:         axisColorEl.value,
       axisFontSize:      axisFontSizeSlider.value,
-      axisTypefaceKey:   axisFontFamilyEl.value,
+      axisTypefaceKey:   axisTypefaceEl.value,
       axisTypefaceStyle: axisTypefaceStyleEl?.value || '',
       axisLineWidth:     axisLineWidthSlider.value,
       // Legend appearance
@@ -908,7 +908,7 @@ async function _initCore(root = document) {
   /** Apply current axis typeface selection to axisRenderer. */
   function _applyAxisTypeface() {
     if (!axisRenderer) return;
-    const { key, style } = _resolveElementTypeface(axisFontFamilyEl, axisTypefaceStyleEl);
+    const { key, style } = _resolveElementTypeface(axisTypefaceEl, axisTypefaceStyleEl);
     axisRenderer.setTypeface(key, style || null);
   }
 
@@ -962,7 +962,7 @@ async function _initCore(root = document) {
       _populateStyleSelect(legendTypefaceEl?.value || fontFamilyEl.value, legendTypefaceStyleEl, s.legendTypefaceStyle ?? s.legendFontStyle, true);
     }
     if (axisTypefaceStyleEl) {
-      _populateStyleSelect(axisFontFamilyEl?.value || fontFamilyEl.value, axisTypefaceStyleEl, s.axisTypefaceStyle, true);
+      _populateStyleSelect(axisTypefaceEl?.value || fontFamilyEl.value, axisTypefaceStyleEl, s.axisTypefaceStyle, true);
     }
     if (rttAxisTypefaceStyleEl) {
       _populateStyleSelect(rttAxisFontFamilyEl?.value || fontFamilyEl.value, rttAxisTypefaceStyleEl, s.rttAxisTypefaceStyle, true);
@@ -1110,9 +1110,9 @@ async function _initCore(root = document) {
     if (s.axisMajorLabelFormat)  axisMajorLabelEl.value   = s.axisMajorLabelFormat;
     if (s.axisMinorLabelFormat)  axisMinorLabelEl.value   = s.axisMinorLabelFormat;
     if (s.axisColor)             axisColorEl.value        = s.axisColor;
-    if (s.axisTypefaceKey)        axisFontFamilyEl.value   = s.axisTypefaceKey;
+    if (s.axisTypefaceKey)        axisTypefaceEl.value   = s.axisTypefaceKey;
     if (axisTypefaceStyleEl) {
-      _populateStyleSelect(axisFontFamilyEl?.value || fontFamilyEl.value, axisTypefaceStyleEl, s.axisTypefaceStyle, true);
+      _populateStyleSelect(axisTypefaceEl?.value || fontFamilyEl.value, axisTypefaceStyleEl, s.axisTypefaceStyle, true);
     }
     if (s.legendTextColor) legendTextColorEl.value = s.legendTextColor;
     if (s.legendFontSize != null) {
@@ -1568,7 +1568,7 @@ async function _initCore(root = document) {
     axisColorEl.value         = t.axisColor;
     axisFontSizeSlider.value  = t.axisFontSize;  $('axis-font-size-value').textContent  = t.axisFontSize;
     axisLineWidthSlider.value = t.axisLineWidth; $('axis-line-width-value').textContent = t.axisLineWidth;
-    axisFontFamilyEl.value    = t.axisTypefaceKey;
+    axisTypefaceEl.value    = t.axisTypefaceKey;
     // Legend style
     legendFontSizeSlider.value = t.legendFontSize; $('legend-font-size-value').textContent = t.legendFontSize;
     legendTypefaceEl.value   = t.legendTypefaceKey ?? t.legendFontFamily ?? ''; // bwc
@@ -1583,7 +1583,7 @@ async function _initCore(root = document) {
     if (tipLabelTypefaceEl) tipLabelTypefaceEl.value = '';
     _populateStyleSelect(fontFamilyEl.value, typefaceStyleEl, '', true);
     _populateStyleSelect(legendTypefaceEl.value || fontFamilyEl.value, legendTypefaceStyleEl, t.legendTypefaceStyle ?? t.legendFontStyle ?? '', true);
-    _populateStyleSelect(axisFontFamilyEl.value   || fontFamilyEl.value, axisTypefaceStyleEl,   t.axisTypefaceStyle   || '', true);
+    _populateStyleSelect(axisTypefaceEl.value   || fontFamilyEl.value, axisTypefaceStyleEl,   t.axisTypefaceStyle   || '', true);
     // RTT axis typeface (now a theme property)
     if (rttAxisFontFamilyEl) rttAxisFontFamilyEl.value = t.rttAxisTypefaceKey || '';
     _populateStyleSelect(rttAxisFontFamilyEl?.value || fontFamilyEl.value, rttAxisTypefaceStyleEl, t.rttAxisTypefaceStyle || '', true);
@@ -1835,8 +1835,8 @@ async function _initCore(root = document) {
   if (_saved.nodeShapeColor)       nodeShapeColorEl.value   = _saved.nodeShapeColor;
   if (_saved.nodeShapeBgColor)     nodeShapeBgEl.value      = _saved.nodeShapeBgColor;
   if (_saved.axisColor)            axisColorEl.value        = _saved.axisColor;
-  if (_saved.axisTypefaceKey)       axisFontFamilyEl.value   = _saved.axisTypefaceKey;
-  { _populateStyleSelect(axisFontFamilyEl?.value || fontFamilyEl.value, axisTypefaceStyleEl, _saved.axisTypefaceStyle, true); }
+  if (_saved.axisTypefaceKey)       axisTypefaceEl.value   = _saved.axisTypefaceKey;
+  { _populateStyleSelect(axisTypefaceEl?.value || fontFamilyEl.value, axisTypefaceStyleEl, _saved.axisTypefaceStyle, true); }
   if (_saved.axisFontSize != null) {
     axisFontSizeSlider.value = _saved.axisFontSize;
     $('axis-font-size-value').textContent = _saved.axisFontSize;
@@ -2676,12 +2676,12 @@ async function _initCore(root = document) {
     getAxisFontFamily: () => {
       // Returns just the CSS font-family string (used for rtt.fontFamily and SVG export).
       // Weight/style are handled separately via getAxisTypeface → rtt.setTypeface().
-      const key = rttAxisFontFamilyEl.value || axisFontFamilyEl.value || fontFamilyEl.value;
+      const key = rttAxisFontFamilyEl.value || axisTypefaceEl.value || fontFamilyEl.value;
       return TYPEFACES[key]?.family ?? key;
     },
     getAxisTypeface: () => {
       // RTT axis cascades: rtt-axis → axis → main theme
-      const key   = rttAxisFontFamilyEl.value || axisFontFamilyEl.value || fontFamilyEl.value;
+      const key   = rttAxisFontFamilyEl.value || axisTypefaceEl.value || fontFamilyEl.value;
       const style = rttAxisTypefaceStyleEl?.value || axisTypefaceStyleEl?.value || fontTypefaceStyleEl?.value || '';
       return { key, style };
     },
@@ -5144,7 +5144,7 @@ async function _initCore(root = document) {
     _populateStyleSelect(nodeLabelTypefaceEl?.value        || fontFamilyEl.value, nodeLabelTypefaceStyleEl,     '', true);
     _populateStyleSelect(collapsedCladeTypefaceEl?.value   || fontFamilyEl.value, collapsedCladeTypefaceStyleEl,'', true);
     _populateStyleSelect(legendTypefaceEl?.value         || fontFamilyEl.value, legendTypefaceStyleEl,        '', true);
-    _populateStyleSelect(axisFontFamilyEl?.value           || fontFamilyEl.value, axisTypefaceStyleEl,          '', true);
+    _populateStyleSelect(axisTypefaceEl?.value           || fontFamilyEl.value, axisTypefaceStyleEl,          '', true);
     _populateStyleSelect(rttAxisFontFamilyEl?.value        || fontFamilyEl.value, rttAxisTypefaceStyleEl,       '', true);
     renderer.setSettings(_buildRendererSettings());
     applyAxisStyle();
@@ -5159,9 +5159,9 @@ async function _initCore(root = document) {
     saveSettings();
   });
 
-  axisFontFamilyEl.addEventListener('change', () => {
+  axisTypefaceEl.addEventListener('change', () => {
     _markCustomTheme();
-    _populateStyleSelect(axisFontFamilyEl.value || fontFamilyEl.value, axisTypefaceStyleEl, '', true);
+    _populateStyleSelect(axisTypefaceEl.value || fontFamilyEl.value, axisTypefaceStyleEl, '', true);
     applyAxisStyle();
     saveSettings();
   });
