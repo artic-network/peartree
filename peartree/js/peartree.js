@@ -7011,7 +7011,10 @@ export async function app(options = {}) {
 //   height:          string                — CSS height of viewer (default '600px')
 //   theme:           'dark' | 'light'      (default 'dark')
 //   base:            string                — override asset root URL
-//   storageKey:      null                  — always null for embeds (no persistence)
+//   storageKey:      string | null         — localStorage key for settings persistence.
+//                                            null (default) = no persistence.
+//                                            Pass a string to persist; multiple embeds
+//                                            can share a key or use distinct keys.
 //   settings:        object                — initial settings
 //   ui:              object                — feature flags (most off by default)
 //   paletteSections: string | []           — palette sections
@@ -7153,7 +7156,7 @@ export async function embed(options = {}) {
       brand:       ui.brand,
       theme:       _theme,
     },
-    storageKey:       null,  // embeds never persist settings
+    storageKey:       options.storageKey ?? null,  // null by default — embeds don't persist settings
     settings:         options.settings        || {},
     paletteSections:  options.paletteSections || 'all',
     appSections:      options.appSections     || 'all',
