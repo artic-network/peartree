@@ -4155,6 +4155,10 @@ async function _initCore(root = document) {
       const nodeId  = _selectedNodeId();
       const viewSubtreeRootId = renderer._viewSubtreeRootId;
 
+      // Snapshot all currently-hidden entry origIds BEFORE modifying the set,
+      // so we can select the newly-revealed tips after the layout is installed.
+      const prevHidden = new Set(graph.hiddenNodeIds);
+
       if (viewSubtreeRootId) {
         // Subtree view: reveal hidden nodes only within this subtree.
         const startId = nodeId ?? viewSubtreeRootId;
@@ -4190,9 +4194,30 @@ async function _initCore(root = document) {
         }
       }
 
+      // Collect all tip origIds that were transitively hidden under prevHidden entries.
+      // A tip is "was-hidden" if it or any ancestor's origId was in prevHidden.
+      const wasHiddenTipIds = new Set();
+      for (const entryOrigId of prevHidden) {
+        const entryIdx = graph.origIdToIdx.get(entryOrigId);
+        if (entryIdx === undefined) continue;
+        const fromIdx = graph.nodes[entryIdx].adjacents[0] ?? -1;
+        // Walk down from the hidden entry collecting all descendant tips.
+        const stack = [{ ni: entryIdx, fi: fromIdx }];
+        while (stack.length) {
+          const { ni, fi } = stack.pop();
+          const gn = graph.nodes[ni];
+          const children = gn.adjacents.filter(a => a !== fi);
+          if (children.length === 0) {
+            // Leaf node
+            wasHiddenTipIds.add(gn.origId);
+          } else {
+            for (const ci of children) stack.push({ ni: ci, fi: ni });
+          }
+        }
+      }
+
       renderer._selectedTipIds.clear();
       renderer._mrcaNodeId = null;
-      if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(false);
       // Showing nodes changes tip counts so any auto-ordering is no longer meaningful.
       currentOrder = null;
       btnOrderAsc ?.classList.remove('active');
@@ -4208,6 +4233,16 @@ async function _initCore(root = document) {
 
       const layout = computeLayoutFromGraph(graph, renderer._viewSubtreeRootId, _layoutOptions());
       renderer.setDataAnimated(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+
+      // Select the newly-revealed tips so the user can see which were unhidden.
+      for (const node of layout.nodes) {
+        if (node.isTip && wasHiddenTipIds.has(node.id)) {
+          renderer._selectedTipIds.add(node.id);
+        }
+      }
+      renderer._updateMRCA();
+      if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(renderer._selectedTipIds.size > 0);
+
       _seedRootShiftAnimation(oldRoot, oldNodeMap, layout.nodes, 'out');
       _restoreViewAfterLayoutChange(wasInFitLabels, prevMinScaleY, prevTargetScaleY, prevTargetOffsetY);
     }
