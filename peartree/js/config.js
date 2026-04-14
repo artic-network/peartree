@@ -12,46 +12,51 @@ export const PEARTREE_BASE_URL = 'http://peartree.live/';
  * are filled in from the base theme at applyTheme() time.
  */
 export const REQUIRED_THEME_KEYS = [
-  // Core appearance
-  'canvasBgColor', 'branchColor', 'branchWidth', 'elbowRadius',
-  'fontSize', 'typeface', 'typefaceStyle', 'labelColor', 'selectedLabelStyle',
-  // Tip shape / size
-  'tipSize', 'tipHaloSize', 'tipShapeColor', 'tipShapeBgColor',
-  // Node shape / size
-  'nodeSize', 'nodeHaloSize', 'nodeShapeColor', 'nodeShapeBgColor',
-  // Node bars
-  'nodeBarsColor',
-  // Selected tip state (7)
-  'selectedTipStrokeColor', 'selectedTipFillColor', 'selectedTipGrowthFactor',
-  'selectedTipMinSize', 'selectedTipFillOpacity', 'selectedTipStrokeWidth', 'selectedTipStrokeOpacity',
-  // Selected node state (7)
-  'selectedNodeStrokeColor', 'selectedNodeFillColor', 'selectedNodeGrowthFactor',
-  'selectedNodeMinSize', 'selectedNodeFillOpacity', 'selectedNodeStrokeWidth', 'selectedNodeStrokeOpacity',
-  // Tip hover state (7)
-  'tipHoverFillColor', 'tipHoverStrokeColor', 'tipHoverGrowthFactor',
-  'tipHoverMinSize', 'tipHoverFillOpacity', 'tipHoverStrokeWidth', 'tipHoverStrokeOpacity',
-  // Node hover state (7)
-  'nodeHoverFillColor', 'nodeHoverStrokeColor', 'nodeHoverGrowthFactor',
-  'nodeHoverMinSize', 'nodeHoverFillOpacity', 'nodeHoverStrokeWidth', 'nodeHoverStrokeOpacity',
-  // Axis
-  'axisColor', 'axisFontSize', 'axisFontFamily', 'axisFontStyle', 'axisLineWidth',
+  // Tree
+  'canvasBgColor',
+  // Branches
+  'branchColor', 'branchWidth', 'elbowRadius',
+  // Tip Labels
+  'fontSize', 'labelColor',
+  // Tip Shapes
+  'tipSize', 'tipShapeColor', 'tipHaloSize', 'tipShapeBgColor',
+  // Node Shapes
+  'nodeSize', 'nodeShapeColor', 'nodeHaloSize', 'nodeShapeBgColor',
+  // Node Labels
+  'nodeLabelFontSize', 'nodeLabelTypefaceKey', 'nodeLabelTypefaceStyle',
+  'nodeLabelColor', 'nodeLabelSpacing',
+  // Node Bars
+  'nodeBarsColor', 'nodeBarsWidth', 'nodeBarsFillOpacity', 'nodeBarsStrokeOpacity',
+  // Clade Highlights
+  'cladeHighlightFillOpacity', 'cladeHighlightStrokeOpacity', 'cladeHighlightStrokeWidth',
+  'cladeHighlightColour',
+  // Collapsed Clades
+  'collapsedCladeFontSize', 'collapsedCladeTypefaceKey', 'collapsedCladeTypefaceStyle',
   // Legend
   'legendTextColor', 'legendFontSize', 'legendFontFamily', 'legendFontStyle',
-  // RTT chart colours
-  'rttAxisColor', 'rttStatsBgColor', 'rttStatsTextColor', 'rttRegressionColor',
-  // Node labels appearance
-  'nodeLabelFontSize', 'nodeLabelColor', 'nodeLabelSpacing',
-  'nodeLabelTypefaceKey', 'nodeLabelTypefaceStyle',
-  // Node bars appearance
-  'nodeBarsWidth', 'nodeBarsFillOpacity', 'nodeBarsStrokeOpacity',
-  // Clade highlights appearance
-  'cladeHighlightStrokeWidth', 'cladeHighlightFillOpacity',
-  'cladeHighlightStrokeOpacity', 'cladeHighlightColour',
-  // Collapsed clades appearance
-  'collapsedCladeFontSize', 'collapsedCladeTypefaceKey', 'collapsedCladeTypefaceStyle',
-  // RTT chart appearance
-  'rttStatsFontSize', 'rttRegressionStyle', 'rttRegressionWidth',
-  'rttAxisFontSize', 'rttAxisTypefaceKey', 'rttAxisTypefaceStyle', 'rttAxisLineWidth',
+  // Axis
+  'axisColor', 'axisFontSize', 'axisFontFamily', 'axisFontStyle', 'axisLineWidth',
+  // Root-to-tip: regression line
+  'rttRegressionStyle', 'rttRegressionColor', 'rttRegressionWidth',
+  // Root-to-tip: statistics box
+  'rttStatsBgColor', 'rttStatsTextColor', 'rttStatsFontSize',
+  // Root-to-tip: axes
+  'rttAxisColor', 'rttAxisFontSize', 'rttAxisLineWidth', 'rttAxisTypefaceKey', 'rttAxisTypefaceStyle',
+  // Theme (global typeface)
+  'typeface', 'typefaceStyle',
+  // Selection & Hover: selected tips
+  'selectedLabelStyle',
+  'selectedTipGrowthFactor', 'selectedTipFillColor', 'selectedTipMinSize',
+  'selectedTipFillOpacity', 'selectedTipStrokeColor', 'selectedTipStrokeWidth', 'selectedTipStrokeOpacity',
+  // Selection & Hover: MRCA node
+  'selectedNodeGrowthFactor', 'selectedNodeFillColor', 'selectedNodeMinSize',
+  'selectedNodeFillOpacity', 'selectedNodeStrokeColor', 'selectedNodeStrokeWidth', 'selectedNodeStrokeOpacity',
+  // Selection & Hover: tip hover
+  'tipHoverGrowthFactor', 'tipHoverFillColor', 'tipHoverMinSize',
+  'tipHoverFillOpacity', 'tipHoverStrokeColor', 'tipHoverStrokeWidth', 'tipHoverStrokeOpacity',
+  // Selection & Hover: node hover
+  'nodeHoverGrowthFactor', 'nodeHoverFillColor', 'nodeHoverMinSize',
+  'nodeHoverFillOpacity', 'nodeHoverStrokeColor', 'nodeHoverStrokeWidth', 'nodeHoverStrokeOpacity',
 ];
 
 export const DEFAULT_SETTINGS = {
