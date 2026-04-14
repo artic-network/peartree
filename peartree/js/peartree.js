@@ -272,7 +272,7 @@ async function _initCore(root = document) {
   const legendTextColorEl     = $('legend-text-color');
   const legendFontSizeSlider   = $('legend-font-size-slider');
   const legendHeightPctSlider  = $('legend-height-pct-slider');
-  const legendFontFamilyEl     = $('legend-font-family-select');
+  const legendTypefaceEl     = $('legend-font-family-select');
   const legendRightCanvas  = $('legend-right-canvas');
   const legend2RightCanvas = $('legend2-right-canvas');
   const legend3RightCanvas = $('legend3-right-canvas');
@@ -519,14 +519,22 @@ async function _initCore(root = document) {
     themeSelect.value = (themeSelect.querySelector(`option[value="${CSS.escape(current)}"]`) ? current : themeRegistry.keys().next().value);
   }
 
-  /** Snapshot all visual controls into a plain theme object. */
-  function _snapshotTheme() {
-    return {
+  /**
+   * Build a settings snapshot from the current DOM control values.
+   *
+   * @param {object} [opts]
+   * @param {boolean} [opts.themeOnly=false]  When true, return only the visual/theme
+   *   properties (suitable for theme exports). paintColour is intentionally excluded
+   *   from theme snapshots — it is a transient tool colour, not a theme property.
+   */
+  function _buildSnapshot({ themeOnly = false } = {}) {
+    // Visual / theme properties — included in both theme exports and full settings.
+    const themePart = {
       // Core appearance
       canvasBgColor:    canvasBgColorEl.value,
       branchColor:      branchColorEl.value,
       branchWidth:      branchWidthSlider.value,
-      elbowRadius:      elbowRadiusSlider.value,
+      elbowRadius:      elbowRadiusSlider?.value ?? DEFAULT_THEME.elbowRadius,
       fontSize:         fontSlider.value,
       typeface:         fontFamilyEl.value,
       typefaceStyle:    fontTypefaceStyleEl?.value || '',
@@ -541,7 +549,7 @@ async function _initCore(root = document) {
       nodeHaloSize:     nodeHaloSlider.value,
       nodeShapeColor:   nodeShapeColorEl.value,
       nodeShapeBgColor: nodeShapeBgEl.value,
-      // Node bars
+      // Node bars (colour only — width/opacity are in full settings only)
       nodeBarsColor:    nodeBarsColorEl.value,
       // Hover colours
       tipHoverFillColor:         tipHoverFillEl.value,
@@ -573,22 +581,121 @@ async function _initCore(root = document) {
       selectedNodeFillOpacity:   selectedNodeFillOpacitySlider.value,
       selectedNodeStrokeWidth:   selectedNodeStrokeWidthSlider.value,
       selectedNodeStrokeOpacity: selectedNodeStrokeOpacitySlider.value,
-      // Axis
-      axisColor:        axisColorEl.value,
-      axisFontSize:     axisFontSizeSlider.value,
-      axisTypefaceKey:  axisFontFamilyEl.value,
+      // Axis appearance
+      axisColor:         axisColorEl.value,
+      axisFontSize:      axisFontSizeSlider.value,
+      axisTypefaceKey:   axisFontFamilyEl.value,
       axisTypefaceStyle: axisTypefaceStyleEl?.value || '',
-      axisLineWidth:    axisLineWidthSlider.value,
-      // Legend
-      legendTextColor:  legendTextColorEl.value,
-      legendFontSize:   legendFontSizeSlider.value,
-      legendFontFamily: legendFontFamilyEl.value,
-      legendFontStyle:  legendTypefaceStyleEl?.value || '',
-      // RTT chart
+      axisLineWidth:     axisLineWidthSlider.value,
+      // Legend appearance
+      legendTextColor:   legendTextColorEl.value,
+      legendFontSize:    legendFontSizeSlider.value,
+      legendTypefaceKey: legendTypefaceEl.value,
+      legendTypefaceStyle: legendTypefaceStyleEl?.value || '',
+      // RTT chart colours
       rttAxisColor:       rttAxisColorEl.value,
       rttStatsBgColor:    rttStatsBgColorEl.value,
       rttStatsTextColor:  rttStatsTextColorEl.value,
       rttRegressionColor: rttRegressionColorEl.value,
+    };
+
+    if (themeOnly) return themePart;
+
+    // Full settings snapshot — everything above plus state, annotations,
+    // non-visual config, and paintColour (intentionally excluded from themes).
+    return {
+      ...themePart,
+      theme:            themeSelect?.value ?? DEFAULT_SETTINGS.baseTheme,
+      paintColour:      paintColourPickerEl.value,
+      selectedLabelStyle: selectedLabelStyleEl.value,
+      tipLabelTypefaceKey:         tipLabelTypefaceEl?.value  || '',
+      tipLabelTypefaceStyle:       typefaceStyleEl?.value     || '',
+      nodeLabelTypefaceKey:        nodeLabelTypefaceEl?.value || '',
+      nodeLabelTypefaceStyle:      nodeLabelTypefaceStyleEl?.value || '',
+      collapsedCladeTypefaceKey:   collapsedCladeTypefaceEl?.value || '',
+      collapsedCladeTypefaceStyle: collapsedCladeTypefaceStyleEl?.value || '',
+      tipColourBy:      tipColourBy.value,
+      nodeColourBy:     nodeColourBy.value,
+      labelColourBy:    labelColourBy.value,
+      annotationPalettes: Object.fromEntries(annotationPalettes),
+      legendAnnotation:  legendAnnotEl.value,
+      legendAnnotation2: legend2AnnotEl.value,
+      legend2Position:   legend2ShowEl.value,
+      legendHeightPct2:  legend2HeightPctSlider.value,
+      legendAnnotation3: legend3AnnotEl.value,
+      legend3Position:   legend3ShowEl.value,
+      legendHeightPct3:  legend3HeightPctSlider.value,
+      legendAnnotation4: legend4AnnotEl.value,
+      legend4Position:   legend4ShowEl.value,
+      legendHeightPct4:  legend4HeightPctSlider.value,
+      legendHeightPct:   legendHeightPctSlider.value,
+      axisShow:           axisShowEl.value,
+      axisDateAnnotation: axisDateAnnotEl.value,
+      axisDateFormat:     axisDateFmtEl.value,
+      axisMajorInterval:    axisMajorIntervalEl.value,
+      axisMinorInterval:    axisMinorIntervalEl.value,
+      axisMajorLabelFormat: axisMajorLabelEl.value,
+      axisMinorLabelFormat: axisMinorLabelEl.value,
+      rttXOrigin:         rttXOriginEl.value,
+      rttGridLines:       rttGridLinesEl.value,
+      rttAspectRatio:     rttAspectRatioEl.value,
+      rttStatsFontSize:   rttStatsFontSizeSlider.value,
+      rttRegressionStyle: rttRegressionStyleEl.value,
+      rttRegressionWidth: rttRegressionWidthSlider.value,
+      rttAxisFontSize:    rttAxisFontSizeSlider.value,
+      rttAxisTypefaceKey:    rttAxisFontFamilyEl.value,
+      rttAxisTypefaceStyle:  rttAxisTypefaceStyleEl?.value || '',
+      rttAxisLineWidth:   rttAxisLineWidthSlider.value,
+      rttDateFormat:        rttDateFmtEl.value,
+      rttMajorInterval:     rttMajorIntervalEl.value,
+      rttMinorInterval:     rttMinorIntervalEl.value,
+      rttMajorLabelFormat:  rttMajorLabelEl.value,
+      rttMinorLabelFormat:  rttMinorLabelEl.value,
+      nodeBarsEnabled:         nodeBarsShowEl.value,
+      nodeBarsWidth:           nodeBarsWidthSlider.value,
+      nodeBarsFillOpacity:     nodeBarsFillOpacitySlider.value,
+      nodeBarsStrokeOpacity:   nodeBarsStrokeOpacitySlider.value,
+      nodeBarsLine:             nodeBarsLineEl.value,
+      nodeBarsRange:          nodeBarsRangeEl.value,
+      collapsedCladeOpacity:  collapsedOpacitySlider.value,
+      collapsedCladeHeightN:  collapsedHeightNSlider.value,
+      collapsedCladeFontSize: collapsedCladeFontSizeSlider.value,
+      rootStemPct:        rootStemPctSlider.value,
+      tipLabelShow:       tipLabelShow.value,
+      tipLabelAlign:      tipLabelAlignEl.value,
+      tipLabelDecimalPlaces:  tipLabelDpEl.value !== '' ? parseInt(tipLabelDpEl.value) : null,
+      tipLabelShape:      tipLabelShapeEl.value,
+      tipLabelShapeColor: tipLabelShapeColorEl.value,
+      tipLabelShapeColourBy: tipLabelShapeColourBy.value,
+      tipLabelShapeSize:    tipLabelShapeSizeSlider.value,
+      tipLabelShapeMarginLeft:  tipLabelShapeMarginLeftSlider.value,
+      tipLabelShapeSpacing:     tipLabelShapeSpacingSlider.value,
+      tipLabelShapesExtra:        tipLabelShapeExtraEls.map(e => e.value),
+      tipLabelShapeExtraColourBys: tipLabelShapeExtraColourBys.map(e => e.value),
+      nodeLabelAnnotation: nodeLabelShowEl.value,
+      nodeLabelPosition:   nodeLabelPositionEl.value,
+      nodeLabelFontSize:   nodeLabelFontSizeSlider.value,
+      nodeLabelColor:      nodeLabelColorEl.value,
+      nodeLabelSpacing:    nodeLabelSpacingSlider.value,
+      tipLabelSpacing:     tipLabelSpacingSlider.value,
+      nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
+      mode:             renderer ? renderer._mode : 'nodes',
+      dataTableOpen:       dataTableRenderer?.isOpen()   ?? false,
+      dataTablePinned:     dataTableRenderer?.isPinned() ?? false,
+      rttOpen:             rttChart?.isOpen()    ?? false,
+      rttPinned:           rttChart?.isPinned()  ?? false,
+      rttStatsBoxCorner:   rttChart?.getStatsBoxCorner() ?? 'tl',
+      paletteOpen:         !!root.querySelector('#palette-panel')?.classList.contains('open'),
+      palettePinned:       !!root.querySelector('#palette-panel')?.classList.contains('pinned'),
+      cladeHighlightLeftEdge:      cladeHighlightLeftEdgeEl?.value         ?? DEFAULT_SETTINGS.cladeHighlightLeftEdge,
+      cladeHighlightRightEdge:     cladeHighlightRightEdgeEl?.value        ?? DEFAULT_SETTINGS.cladeHighlightRightEdge,
+      cladeHighlightPadding:       cladeHighlightPaddingSlider?.value      ?? DEFAULT_SETTINGS.cladeHighlightPadding,
+      cladeHighlightRadius:        cladeHighlightRadiusSlider?.value       ?? DEFAULT_SETTINGS.cladeHighlightRadius,
+      cladeHighlightStrokeWidth:   cladeHighlightStrokeWidthSlider?.value  ?? '1',
+      cladeHighlightFillOpacity:   cladeHighlightFillOpacitySlider?.value  ?? '0.15',
+      cladeHighlightStrokeOpacity: cladeHighlightStrokeOpacitySlider?.value ?? '0.7',
+      cladeHighlightColour:        cladeHighlightDefaultColourEl?.value    ?? '#ffaa00',
+      cladeHighlights:             renderer?.getCladeHighlightsData() ?? [],
     };
   }
 
@@ -604,7 +711,7 @@ async function _initCore(root = document) {
       await showAlertDialog('Built-in theme', `"${name}" is a built-in theme and cannot be overwritten.`);
       return;
     }
-    themeRegistry.set(name, _snapshotTheme());
+    themeRegistry.set(name, _buildSnapshot({ themeOnly: true }));
     saveUserThemes();
     _populateThemeSelect();
     themeSelect.value = name;
@@ -669,7 +776,7 @@ async function _initCore(root = document) {
       await showAlertDialog('Reserved name', '"Custom" is a reserved name — please choose a different name.');
       return;
     }
-    const themeData = isCustom ? _snapshotTheme() : (themeRegistry.get(sel) ?? _snapshotTheme());
+    const themeData = isCustom ? _buildSnapshot({ themeOnly: true }) : (themeRegistry.get(sel) ?? _buildSnapshot({ themeOnly: true }));
     const json = JSON.stringify({ name, theme: themeData }, null, 2);
     const filename = `${name}.peartree-theme.json`;
     if (_themeSaveHandler) {
@@ -784,7 +891,7 @@ async function _initCore(root = document) {
 
   function saveSettings() {
     if (_cfg.storageKey === null) return;
-    localStorage.setItem(_cfg.storageKey, JSON.stringify(_buildSettingsSnapshot()));
+    localStorage.setItem(_cfg.storageKey, JSON.stringify(_buildSnapshot()));
   }
 
   /**
@@ -808,170 +915,14 @@ async function _initCore(root = document) {
   /** Apply current legend typeface selection to legendRenderer (both legend canvases). */
   function _applyLegendTypeface() {
     if (!legendRenderer) return;
-    const { key, style } = _resolveElementTypeface(legendFontFamilyEl, legendTypefaceStyleEl);
+    const { key, style } = _resolveElementTypeface(legendTypefaceEl, legendTypefaceStyleEl);
     legendRenderer.setTypeface(key, style || null);
     if (typeof legend2Renderer !== 'undefined' && legend2Renderer) {
       legend2Renderer.setTypeface(key, style || null);
     }
   }
 
-  function _buildSettingsSnapshot() {
-    return {
-      theme:            themeSelect?.value ?? DEFAULT_SETTINGS.baseTheme,
-      canvasBgColor:    canvasBgColorEl.value,
-      branchColor:      branchColorEl.value,
-      branchWidth:      branchWidthSlider.value,
-      elbowRadius:      elbowRadiusSlider?.value ?? DEFAULT_THEME.elbowRadius,
-      fontSize:         fontSlider.value,
-      typeface:         fontFamilyEl.value,
-      typefaceStyle:    fontTypefaceStyleEl?.value || '',
-      tipLabelTypefaceKey:         tipLabelTypefaceEl?.value  || '',
-      tipLabelTypefaceStyle:       typefaceStyleEl?.value     || '',
-      nodeLabelTypefaceKey:        nodeLabelTypefaceEl?.value || '',
-      nodeLabelTypefaceStyle:      nodeLabelTypefaceStyleEl?.value || '',
-      collapsedCladeTypefaceKey:   collapsedCladeTypefaceEl?.value || '',
-      collapsedCladeTypefaceStyle: collapsedCladeTypefaceStyleEl?.value || '',
-      labelColor:       labelColorEl.value,
-      selectedLabelStyle: selectedLabelStyleEl.value,
-      selectedTipStrokeColor:  selectedTipStrokeEl.value,
-      selectedNodeStrokeColor:      selectedNodeStrokeEl.value,
-      tipHoverFillColor:      tipHoverFillEl.value,
-      nodeHoverFillColor: nodeHoverFillEl.value,
-      selectedTipFillColor:      selectedTipFillEl.value,
-      selectedTipGrowthFactor:   selectedTipGrowthSlider.value,
-      selectedTipMinSize:        selectedTipMinSizeSlider.value,
-      selectedTipFillOpacity:    selectedTipFillOpacitySlider.value,
-      selectedTipStrokeWidth:    selectedTipStrokeWidthSlider.value,
-      selectedTipStrokeOpacity:  selectedTipStrokeOpacitySlider.value,
-      selectedNodeFillColor:     selectedNodeFillEl.value,
-      selectedNodeGrowthFactor:  selectedNodeGrowthSlider.value,
-      selectedNodeMinSize:       selectedNodeMinSizeSlider.value,
-      selectedNodeFillOpacity:   selectedNodeFillOpacitySlider.value,
-      selectedNodeStrokeWidth:   selectedNodeStrokeWidthSlider.value,
-      selectedNodeStrokeOpacity: selectedNodeStrokeOpacitySlider.value,
-      tipHoverStrokeColor:       tipHoverStrokeEl.value,
-      tipHoverGrowthFactor:      tipHoverGrowthSlider.value,
-      tipHoverMinSize:           tipHoverMinSizeSlider.value,
-      tipHoverFillOpacity:       tipHoverFillOpacitySlider.value,
-      tipHoverStrokeWidth:       tipHoverStrokeWidthSlider.value,
-      tipHoverStrokeOpacity:     tipHoverStrokeOpacitySlider.value,
-      nodeHoverStrokeColor:      nodeHoverStrokeEl.value,
-      nodeHoverGrowthFactor:     nodeHoverGrowthSlider.value,
-      nodeHoverMinSize:          nodeHoverMinSizeSlider.value,
-      nodeHoverFillOpacity:      nodeHoverFillOpacitySlider.value,
-      nodeHoverStrokeWidth:      nodeHoverStrokeWidthSlider.value,
-      nodeHoverStrokeOpacity:    nodeHoverStrokeOpacitySlider.value,
-      tipSize:          tipSlider.value,
-      tipHaloSize:      tipHaloSlider.value,
-      tipShapeColor:    tipShapeColorEl.value,
-      tipShapeBgColor:  tipShapeBgEl.value,
-      nodeSize:         nodeSlider.value,
-      nodeHaloSize:     nodeHaloSlider.value,
-      nodeShapeColor:   nodeShapeColorEl.value,
-      nodeShapeBgColor: nodeShapeBgEl.value,
-      tipColourBy:      tipColourBy.value,
-      nodeColourBy:     nodeColourBy.value,
-      labelColourBy:    labelColourBy.value,
-      annotationPalettes: Object.fromEntries(annotationPalettes),
-      legendAnnotation:  legendAnnotEl.value,
-      legendAnnotation2: legend2AnnotEl.value,
-      legend2Position:   legend2ShowEl.value,
-      legendHeightPct2:  legend2HeightPctSlider.value,
-      legendAnnotation3: legend3AnnotEl.value,
-      legend3Position:   legend3ShowEl.value,
-      legendHeightPct3:  legend3HeightPctSlider.value,
-      legendAnnotation4: legend4AnnotEl.value,
-      legend4Position:   legend4ShowEl.value,
-      legendHeightPct4:  legend4HeightPctSlider.value,
-      legendTextColor:  legendTextColorEl.value,
-      legendFontSize:    legendFontSizeSlider.value,
-      legendHeightPct:   legendHeightPctSlider.value,
-      legendFontFamily:  legendFontFamilyEl.value,
-      legendFontStyle:   legendTypefaceStyleEl?.value || '',
-      axisShow:           axisShowEl.value,
-      axisDateAnnotation: axisDateAnnotEl.value,
-      axisDateFormat:     axisDateFmtEl.value,
-      axisMajorInterval:    axisMajorIntervalEl.value,
-      axisMinorInterval:    axisMinorIntervalEl.value,
-      axisMajorLabelFormat: axisMajorLabelEl.value,
-      axisMinorLabelFormat: axisMinorLabelEl.value,
-      axisColor:          axisColorEl.value,
-      axisFontSize:       axisFontSizeSlider.value,
-      axisTypefaceKey:    axisFontFamilyEl.value,
-      axisTypefaceStyle:  axisTypefaceStyleEl?.value || '',
-      axisLineWidth:      axisLineWidthSlider.value,
-      rttXOrigin:         rttXOriginEl.value,
-      rttGridLines:       rttGridLinesEl.value,
-      rttAspectRatio:     rttAspectRatioEl.value,
-      rttAxisColor:       rttAxisColorEl.value,
-      rttStatsBgColor:    rttStatsBgColorEl.value,
-      rttStatsTextColor:  rttStatsTextColorEl.value,
-      rttStatsFontSize:   rttStatsFontSizeSlider.value,
-      rttRegressionStyle: rttRegressionStyleEl.value,
-      rttRegressionColor: rttRegressionColorEl.value,
-      rttRegressionWidth: rttRegressionWidthSlider.value,
-      rttAxisFontSize:    rttAxisFontSizeSlider.value,
-      rttAxisTypefaceKey:    rttAxisFontFamilyEl.value,
-      rttAxisTypefaceStyle: rttAxisTypefaceStyleEl?.value || '',
-      rttAxisLineWidth:   rttAxisLineWidthSlider.value,
-      rttDateFormat:        rttDateFmtEl.value,
-      rttMajorInterval:     rttMajorIntervalEl.value,
-      rttMinorInterval:     rttMinorIntervalEl.value,
-      rttMajorLabelFormat:  rttMajorLabelEl.value,
-      rttMinorLabelFormat:  rttMinorLabelEl.value,
-      nodeBarsEnabled:         nodeBarsShowEl.value,
-      nodeBarsColor:           nodeBarsColorEl.value,
-      nodeBarsWidth:           nodeBarsWidthSlider.value,
-      nodeBarsFillOpacity:     nodeBarsFillOpacitySlider.value,
-      nodeBarsStrokeOpacity:   nodeBarsStrokeOpacitySlider.value,
-      nodeBarsLine:             nodeBarsLineEl.value,
-      nodeBarsRange:          nodeBarsRangeEl.value,
-      collapsedCladeOpacity:  collapsedOpacitySlider.value,
-      collapsedCladeHeightN:  collapsedHeightNSlider.value,
-      collapsedCladeFontSize: collapsedCladeFontSizeSlider.value,
-      collapsedCladeTypefaceKey:   collapsedCladeTypefaceEl?.value || '',
-      collapsedCladeTypefaceStyle: collapsedCladeTypefaceStyleEl?.value || '',
-      rootStemPct:        rootStemPctSlider.value,
-      tipLabelShow:       tipLabelShow.value,
-      tipLabelAlign:      tipLabelAlignEl.value,
-      tipLabelDecimalPlaces:  tipLabelDpEl.value !== '' ? parseInt(tipLabelDpEl.value) : null,
-      tipLabelShape:      tipLabelShapeEl.value,
-      tipLabelShapeColor: tipLabelShapeColorEl.value,
-      tipLabelShapeColourBy: tipLabelShapeColourBy.value,
-      tipLabelShapeSize:    tipLabelShapeSizeSlider.value,
-      tipLabelShapeMarginLeft:  tipLabelShapeMarginLeftSlider.value,
-      tipLabelShapeSpacing:     tipLabelShapeSpacingSlider.value,
-      tipLabelShapesExtra:        tipLabelShapeExtraEls.map(e => e.value),
-      tipLabelShapeExtraColourBys: tipLabelShapeExtraColourBys.map(e => e.value),
-      nodeLabelAnnotation: nodeLabelShowEl.value,
-      nodeLabelPosition:   nodeLabelPositionEl.value,
-      nodeLabelFontSize:   nodeLabelFontSizeSlider.value,
-      nodeLabelColor:      nodeLabelColorEl.value,
-      nodeLabelSpacing:    nodeLabelSpacingSlider.value,
-      nodeLabelTypefaceKey:   nodeLabelTypefaceEl?.value || '',
-      nodeLabelTypefaceStyle: nodeLabelTypefaceStyleEl?.value || '',
-      tipLabelSpacing:     tipLabelSpacingSlider.value,
-      nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
-      mode:             renderer ? renderer._mode : 'nodes',
-      dataTableOpen:       dataTableRenderer?.isOpen()   ?? false,
-      dataTablePinned:     dataTableRenderer?.isPinned() ?? false,
-      rttOpen:             rttChart?.isOpen()    ?? false,
-      rttPinned:           rttChart?.isPinned()  ?? false,
-      rttStatsBoxCorner:   rttChart?.getStatsBoxCorner() ?? 'tl',
-      paletteOpen:         !!root.querySelector('#palette-panel')?.classList.contains('open'),
-      palettePinned:       !!root.querySelector('#palette-panel')?.classList.contains('pinned'),
-      cladeHighlightLeftEdge:      cladeHighlightLeftEdgeEl?.value         ?? DEFAULT_SETTINGS.cladeHighlightLeftEdge,
-      cladeHighlightRightEdge:     cladeHighlightRightEdgeEl?.value        ?? DEFAULT_SETTINGS.cladeHighlightRightEdge,
-      cladeHighlightPadding:       cladeHighlightPaddingSlider?.value      ?? DEFAULT_SETTINGS.cladeHighlightPadding,
-      cladeHighlightRadius:        cladeHighlightRadiusSlider?.value       ?? DEFAULT_SETTINGS.cladeHighlightRadius,
-      cladeHighlightStrokeWidth:   cladeHighlightStrokeWidthSlider?.value  ?? '1',
-      cladeHighlightFillOpacity:   cladeHighlightFillOpacitySlider?.value  ?? '0.15',
-      cladeHighlightStrokeOpacity: cladeHighlightStrokeOpacitySlider?.value ?? '0.7',
-      cladeHighlightColour:        cladeHighlightDefaultColourEl?.value    ?? '#ffaa00',
-      cladeHighlights:             renderer?.getCladeHighlightsData() ?? [],
-      paintColour:                 paintColourPickerEl.value,
-    };
-  }
+
 
   /**
    * Apply the 13 visual (non-annotation) settings from a plain object directly
@@ -1008,7 +959,7 @@ async function _initCore(root = document) {
       _populateStyleSelect(collapsedCladeTypefaceEl?.value || fontFamilyEl.value, collapsedCladeTypefaceStyleEl, s.collapsedCladeTypefaceStyle, true);
     }
     if (legendTypefaceStyleEl) {
-      _populateStyleSelect(legendFontFamilyEl?.value || fontFamilyEl.value, legendTypefaceStyleEl, s.legendFontStyle, true);
+      _populateStyleSelect(legendTypefaceEl?.value || fontFamilyEl.value, legendTypefaceStyleEl, s.legendTypefaceStyle ?? s.legendFontStyle, true);
     }
     if (axisTypefaceStyleEl) {
       _populateStyleSelect(axisFontFamilyEl?.value || fontFamilyEl.value, axisTypefaceStyleEl, s.axisTypefaceStyle, true);
@@ -1172,9 +1123,10 @@ async function _initCore(root = document) {
       legendHeightPctSlider.value = s.legendHeightPct;
       $('legend-height-pct-value').textContent = s.legendHeightPct + '%';
     }
-    if (s.legendFontFamily)      legendFontFamilyEl.value = s.legendFontFamily;
+    if (s.legendTypefaceKey)     legendTypefaceEl.value = s.legendTypefaceKey;
+    else if (s.legendFontFamily) legendTypefaceEl.value = s.legendFontFamily; // bwc
     if (legendTypefaceStyleEl) {
-      _populateStyleSelect(legendFontFamilyEl?.value || fontFamilyEl.value, legendTypefaceStyleEl, s.legendFontStyle, true);
+      _populateStyleSelect(legendTypefaceEl?.value || fontFamilyEl.value, legendTypefaceStyleEl, s.legendTypefaceStyle ?? s.legendFontStyle, true);
     }
     if (s.legend2Position)        legend2ShowEl.value      = s.legend2Position;
     if (s.legendHeightPct2 != null) {
@@ -1371,7 +1323,7 @@ async function _initCore(root = document) {
   // Hoisted so _buildRendererSettings (called before line 1094) can reference it safely.
   let calibration;
   // Hoisted so applyTheme (called before rttChart/dataTableRenderer are created) can safely
-  // reference them in saveSettings() → _buildSettingsSnapshot() without hitting TDZ.
+  // reference them in saveSettings() → _buildSnapshot() without hitting TDZ.
   let rttChart;
   let dataTableRenderer;
 
@@ -1619,7 +1571,7 @@ async function _initCore(root = document) {
     axisFontFamilyEl.value    = t.axisTypefaceKey;
     // Legend style
     legendFontSizeSlider.value = t.legendFontSize; $('legend-font-size-value').textContent = t.legendFontSize;
-    legendFontFamilyEl.value   = t.legendFontFamily;
+    legendTypefaceEl.value   = t.legendTypefaceKey ?? t.legendFontFamily ?? ''; // bwc
     nodeBarsColorEl.value = t.nodeBarsColor;
     // legendTextColor falls back to labelColor for themes that don't define it explicitly.
     const legendColor = t.legendTextColor || t.labelColor;
@@ -1630,7 +1582,7 @@ async function _initCore(root = document) {
     _populateStyleSelect(fontFamilyEl.value, fontTypefaceStyleEl, _themeStyle);
     if (tipLabelTypefaceEl) tipLabelTypefaceEl.value = '';
     _populateStyleSelect(fontFamilyEl.value, typefaceStyleEl, '', true);
-    _populateStyleSelect(legendFontFamilyEl.value || fontFamilyEl.value, legendTypefaceStyleEl, t.legendFontStyle || '', true);
+    _populateStyleSelect(legendTypefaceEl.value || fontFamilyEl.value, legendTypefaceStyleEl, t.legendTypefaceStyle ?? t.legendFontStyle ?? '', true);
     _populateStyleSelect(axisFontFamilyEl.value   || fontFamilyEl.value, axisTypefaceStyleEl,   t.axisTypefaceStyle   || '', true);
     // RTT axis typeface (now a theme property)
     if (rttAxisFontFamilyEl) rttAxisFontFamilyEl.value = t.rttAxisTypefaceKey || '';
@@ -1902,8 +1854,9 @@ async function _initCore(root = document) {
     legendHeightPctSlider.value = _saved.legendHeightPct;
     $('legend-height-pct-value').textContent = _saved.legendHeightPct + '%';
   }
-  if (_saved.legendFontFamily)     legendFontFamilyEl.value = _saved.legendFontFamily;
-  { _populateStyleSelect(legendFontFamilyEl?.value || fontFamilyEl.value, legendTypefaceStyleEl, _saved.legendFontStyle, true); }
+  if (_saved.legendTypefaceKey)    legendTypefaceEl.value = _saved.legendTypefaceKey;
+  else if (_saved.legendFontFamily) legendTypefaceEl.value = _saved.legendFontFamily; // bwc
+  { _populateStyleSelect(legendTypefaceEl?.value || fontFamilyEl.value, legendTypefaceStyleEl, _saved.legendTypefaceStyle ?? _saved.legendFontStyle, true); }
   if (_saved.tipLabelAlign)        tipLabelAlignEl.value    = _saved.tipLabelAlign;
   if (_saved.nodeLabelPosition)    nodeLabelPositionEl.value = _saved.nodeLabelPosition;
   if (_saved.nodeLabelFontSize != null) {
@@ -2814,7 +2767,7 @@ async function _initCore(root = document) {
     getLegendRenderer:   () => legendRenderer,
     canvas, axisCanvas, legendRightCanvas, legend2RightCanvas,
     axisRenderer,
-    getSettingsSnapshot: () => { const s = _buildSettingsSnapshot(); delete s.paintColour; return s; },
+    getSettingsSnapshot: () => { const s = _buildSnapshot(); delete s.paintColour; return s; },
   });
 
   /** Show/hide a decimal-places row based on whether the chosen label annotation is numeric. */
@@ -5190,7 +5143,7 @@ async function _initCore(root = document) {
     _populateStyleSelect(tipLabelTypefaceEl?.value         || fontFamilyEl.value, typefaceStyleEl,              '', true);
     _populateStyleSelect(nodeLabelTypefaceEl?.value        || fontFamilyEl.value, nodeLabelTypefaceStyleEl,     '', true);
     _populateStyleSelect(collapsedCladeTypefaceEl?.value   || fontFamilyEl.value, collapsedCladeTypefaceStyleEl,'', true);
-    _populateStyleSelect(legendFontFamilyEl?.value         || fontFamilyEl.value, legendTypefaceStyleEl,        '', true);
+    _populateStyleSelect(legendTypefaceEl?.value         || fontFamilyEl.value, legendTypefaceStyleEl,        '', true);
     _populateStyleSelect(axisFontFamilyEl?.value           || fontFamilyEl.value, axisTypefaceStyleEl,          '', true);
     _populateStyleSelect(rttAxisFontFamilyEl?.value        || fontFamilyEl.value, rttAxisTypefaceStyleEl,       '', true);
     renderer.setSettings(_buildRendererSettings());
@@ -5199,9 +5152,9 @@ async function _initCore(root = document) {
     saveSettings();
   });
 
-  legendFontFamilyEl.addEventListener('change', () => {
+  legendTypefaceEl.addEventListener('change', () => {
     _markCustomTheme();
-    _populateStyleSelect(legendFontFamilyEl.value || fontFamilyEl.value, legendTypefaceStyleEl, '', true);
+    _populateStyleSelect(legendTypefaceEl.value || fontFamilyEl.value, legendTypefaceStyleEl, '', true);
     _applyLegendTypeface();
     saveSettings();
   });
@@ -6408,7 +6361,7 @@ async function _initCore(root = document) {
 
   /**
    * Apply a partial settings object at runtime.
-   * Keys correspond to DEFAULT_SETTINGS / _buildSettingsSnapshot() keys.
+   * Keys correspond to DEFAULT_SETTINGS / _buildSnapshot() keys.
    * Only keys present in `s` are applied — everything else is left unchanged.
    *
    * Supported keys (subset of full settings most useful programmatically):
@@ -6558,7 +6511,7 @@ async function _initCore(root = document) {
      * Useful for capturing state from an embedding page or for debugging.
      * @returns {object}
      */
-    getSettings: () => _buildSettingsSnapshot(),
+    getSettings: () => _buildSnapshot(),
 
     /**
      * Apply a named built-in or user theme by name.

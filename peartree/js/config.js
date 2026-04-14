@@ -37,7 +37,7 @@ export const REQUIRED_THEME_KEYS = [
   // Collapsed Clades
   'collapsedCladeFontSize', 'collapsedCladeTypefaceKey', 'collapsedCladeTypefaceStyle',
   // Legend
-  'legendTextColor', 'legendFontSize', 'legendFontFamily', 'legendFontStyle',
+  'legendTextColor', 'legendFontSize', 'legendTypefaceKey', 'legendTypefaceStyle',
   // Axis
   'axisColor', 'axisFontSize', 'axisTypefaceKey', 'axisTypefaceStyle', 'axisLineWidth',
   // Root-to-tip: regression line

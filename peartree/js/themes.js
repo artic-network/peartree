@@ -55,8 +55,8 @@ export const DEFAULT_THEME = {
         // Legend
         "legendTextColor": "#4b4b49",
         "legendFontSize": "11",
-        "legendFontFamily": "",
-        "legendFontStyle": "",
+        "legendTypefaceKey": "",
+        "legendTypefaceStyle": "",
         // Axis
         "axisColor": "#4b4b49",
         "axisFontSize": "9",
