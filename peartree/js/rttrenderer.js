@@ -161,6 +161,7 @@ export class RTTRenderer {
     this._dragStartPx = null;  // CSS pixels
     this._dragEndPx   = null;
     this._cmdHeld     = false;
+    this._altHeld     = false;  // Option key → parallelogram aligned with regression line
 
     // ── Per-render point positions (hit-testing) ───────────────────────────
     /** @type {Array<{id:string, px:number, py:number}>} physical pixels */
@@ -1128,17 +1129,88 @@ export class RTTRenderer {
     const s = this._dragStartPx, e = this._dragEndPx;
     if (!s || !e) return;
     const d = this._dpr;
-    const x = Math.min(s.x, e.x) * d;
-    const y = Math.min(s.y, e.y) * d;
-    const w = Math.abs(e.x - s.x) * d;
-    const h = Math.abs(e.y - s.y) * d;
     ctx.save();
     ctx.strokeStyle = 'rgba(220,200,80,0.85)';
     ctx.fillStyle   = 'rgba(220,200,80,0.10)';
     ctx.lineWidth   = d;
-    ctx.fillRect(x, y, w, h);
-    ctx.strokeRect(x, y, w, h);
+
+    if (this._altHeld) {
+      // Draw a parallelogram aligned with the regression line.
+      // The four corners are computed in _dragParallelogramPts() (physical px).
+      const pts = this._dragParallelogramPts();
+      if (!pts) { ctx.restore(); return; }
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      const x = Math.min(s.x, e.x) * d;
+      const y = Math.min(s.y, e.y) * d;
+      const w = Math.abs(e.x - s.x) * d;
+      const h = Math.abs(e.y - s.y) * d;
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeRect(x, y, w, h);
+    }
     ctx.restore();
+  }
+
+  /**
+   * Compute the four corners of the regression-aligned parallelogram in physical pixels.
+   * The drag defines two residual-parallel edges; the user's start/end X (in screen space)
+   * define the extents along the regression direction.
+   * Returns [{x,y}, {x,y}, {x,y}, {x,y}] in order TL, TR, BR, BL, or null if no regression.
+   */
+  _dragParallelogramPts() {
+    const reg = this._calibration?.regression;
+    if (!reg) return null;  // fall back to axis-aligned if no regression
+    const s = this._dragStartPx, e = this._dragEndPx;
+    if (!s || !e) return null;
+    const d    = this._dpr;
+    const rect = this._plotRect();
+
+    // Regression slope in screen space: Δscreen_y / Δscreen_x for unit Δdata_x
+    // _xToScreen and _yToScreen are linear, so the slope is constant.
+    const xSpan = this._xMax - this._xMin;
+    const ySpan = this._yMax - this._yMin;
+    // A unit step in data-x maps to rect.w/xSpan px (screen-x) and
+    // -reg.a*(rect.h/ySpan) px (screen-y, negated because y increases downward).
+    const slopeX = rect.w / xSpan;                // screen-px per data-x unit (x direction)
+    const slopeY = -reg.a * (rect.h / ySpan);     // screen-px per data-x unit (y direction)
+    const len    = Math.sqrt(slopeX * slopeX + slopeY * slopeY);
+    if (len < 1e-9) return null;
+    // Unit vector along the regression line (screen space)
+    const tx = slopeX / len;
+    const ty = slopeY / len;
+    // Unit vector perpendicular to the regression line (pointing "upward" in residual space)
+    const nx = -ty;  // rotated 90° CCW
+    const ny =  tx;
+
+    // Map drag start/end CSS pixels to physical pixels
+    const sx = s.x * d,  sy = s.y * d;
+    const ex = e.x * d,  ey = e.y * d;
+
+    // Project start and end onto the along-regression axis to get longitudinal extent
+    const projS = sx * tx + sy * ty;
+    const projE = ex * tx + ey * ty;
+
+    // Project both points onto the perpendicular axis to get residual extent
+    const perpS = sx * nx + sy * ny;
+    const perpE = ex * nx + ey * ny;
+    const perpMin = Math.min(perpS, perpE);
+    const perpMax = Math.max(perpS, perpE);
+    const lonMin  = Math.min(projS, projE);
+    const lonMax  = Math.max(projS, projE);
+
+    // Reconstruct the four corners from (lonMin/Max, perpMin/Max) in the rotated frame
+    const ptFrom = (lon, perp) => ({ x: lon * tx + perp * nx, y: lon * ty + perp * ny });
+    return [
+      ptFrom(lonMin, perpMin),  // TL
+      ptFrom(lonMax, perpMin),  // TR
+      ptFrom(lonMax, perpMax),  // BR
+      ptFrom(lonMin, perpMax),  // BL
+    ];
   }
 
   // ─── Hit testing ──────────────────────────────────────────────────────────
@@ -1232,6 +1304,7 @@ export class RTTRenderer {
       }
 
       this._cmdHeld     = e.metaKey || e.ctrlKey;
+      this._altHeld     = e.altKey;   // Option key on Mac → regression-aligned parallelogram
       this._dragActive  = false;
       this._dragStartPx = { x: cssX, y: cssY };
       this._dragEndPx   = { ...this._dragStartPx };
@@ -1328,13 +1401,51 @@ export class RTTRenderer {
   _commitDragSelect(endCssX, endCssY) {
     const s  = this._dragStartPx;
     const d  = this._dpr;
-    const xA = Math.min(s.x, endCssX) * d;
-    const xB = Math.max(s.x, endCssX) * d;
-    const yA = Math.min(s.y, endCssY) * d;
-    const yB = Math.max(s.y, endCssY) * d;
-    const inside = new Set();
-    for (const p of this._renderedPts) {
-      if (p.px >= xA && p.px <= xB && p.py >= yA && p.py <= yB) inside.add(p.id);
+
+    let inside;
+    if (this._altHeld) {
+      // Regression-aligned parallelogram hit test.
+      // A point is inside if its projections onto both the along-regression axis
+      // and the perpendicular axis fall within the dragged extents.
+      const pts = this._dragParallelogramPts();
+      if (pts) {
+        const rect = this._plotRect();
+        const xSpan = this._xMax - this._xMin;
+        const ySpan = this._yMax - this._yMin;
+        const reg    = this._calibration.regression;
+        const slopeX = rect.w / xSpan;
+        const slopeY = -reg.a * (rect.h / ySpan);
+        const len    = Math.sqrt(slopeX * slopeX + slopeY * slopeY);
+        const tx = slopeX / len,  ty = slopeY / len;
+        const nx = -ty,           ny =  tx;
+
+        // Recompute the extents (same as _dragParallelogramPts but in one pass)
+        const sx = s.x * d,  sy = s.y * d;
+        const ex = endCssX * d, ey = endCssY * d;
+        const lonMin = Math.min(sx * tx + sy * ty, ex * tx + ey * ty);
+        const lonMax = Math.max(sx * tx + sy * ty, ex * tx + ey * ty);
+        const perpMin = Math.min(sx * nx + sy * ny, ex * nx + ey * ny);
+        const perpMax = Math.max(sx * nx + sy * ny, ex * nx + ey * ny);
+
+        inside = new Set();
+        for (const p of this._renderedPts) {
+          const lon  = p.px * tx + p.py * ty;
+          const perp = p.px * nx + p.py * ny;
+          if (lon >= lonMin && lon <= lonMax && perp >= perpMin && perp <= perpMax)
+            inside.add(p.id);
+        }
+      } else {
+        inside = new Set();  // no regression — nothing to select
+      }
+    } else {
+      const xA = Math.min(s.x, endCssX) * d;
+      const xB = Math.max(s.x, endCssX) * d;
+      const yA = Math.min(s.y, endCssY) * d;
+      const yB = Math.max(s.y, endCssY) * d;
+      inside = new Set();
+      for (const p of this._renderedPts) {
+        if (p.px >= xA && p.px <= xB && p.py >= yA && p.py <= yB) inside.add(p.id);
+      }
     }
     if (this._cmdHeld) {
       for (const id of inside) {
