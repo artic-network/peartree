@@ -968,7 +968,7 @@ function buildAppHTML(sections, toolbarSections) {
 //  • Each embed instance has independent panel open/close/pin state.
 //  • Palette-pinned scopes to the embed wrapper, not document.body.
 //
-function initPearTreeUIBindings(root) {
+function initPearTreeUIBindings(root, opts = {}) {
   const $ = id => root.querySelector('#' + id);
   // For palette-pinned: scope to the embed wrapper if we're inside one,
   // otherwise fall back to document.body (standalone webapp).
@@ -1003,6 +1003,7 @@ function initPearTreeUIBindings(root) {
     }
     btnPalette.classList.add('active');
     _afterPanelTransition();
+    opts.onPaletteStateChange?.();
   }
   function closePalette() {
     palettePanel.classList.remove('open', 'advanced', 'pinned');
@@ -1010,6 +1011,7 @@ function initPearTreeUIBindings(root) {
     _bodyOrWrap().classList.remove('palette-pinned');
     btnPalette.classList.remove('active');
     _afterPanelTransition();
+    opts.onPaletteStateChange?.();
   }
   function pinPalette() {
     palettePinned = true;
@@ -1022,6 +1024,7 @@ function initPearTreeUIBindings(root) {
     btnPalettePin.innerHTML = '<i class="bi bi-pin-angle-fill"></i>';
     btnPalette.classList.add('active');
     _afterPanelTransition();
+    opts.onPaletteStateChange?.();
   }
   function unpinPalette() {
     palettePinned = false;
@@ -1032,6 +1035,7 @@ function initPearTreeUIBindings(root) {
     btnPalettePin.title = 'Pin panel open';
     btnPalettePin.innerHTML = '<i class="bi bi-pin-angle"></i>';
     _afterPanelTransition();
+    opts.onPaletteStateChange?.();
   }
 
   if (palettePanel && window.peartreeConfig?.ui?.palette !== false) {
@@ -1049,8 +1053,11 @@ function initPearTreeUIBindings(root) {
       else               pinPalette();
     });
 
-    // Restore pinned state from previous session.
-    if (localStorage.getItem(PALETTE_PIN_KEY) === '1') pinPalette();
+    // Restore state: prefer opts (from saved settings) then fall back to legacy localStorage key.
+    const _wasPinned = opts.palettePinned ?? (localStorage.getItem(PALETTE_PIN_KEY) === '1');
+    const _wasOpen   = opts.paletteOpen   ?? false;
+    if (_wasPinned)       pinPalette();
+    else if (_wasOpen)    openPalette();
   }
 
   // ── Slider live value readouts ──────────────────────────────────────────

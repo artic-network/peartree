@@ -109,6 +109,11 @@ export function createDataTableRenderer({
   function open() {
     _open = true;
     panel.classList.add('open');
+    if (_pinned) {
+      panel.classList.add('pinned');
+      _syncPinButton();
+      if (onPinChange) onPinChange(true);
+    }
     const r = getRenderer();
     if (r?.nodes) _tips = r.nodes.filter(n => n.isTip).sort((a, b) => a.y - b.y);
     if (r?._selectedTipIds) _selectedIds = new Set(r._selectedTipIds);
@@ -120,7 +125,11 @@ export function createDataTableRenderer({
 
   function close() {
     _open = false;
-    if (_pinned) _setPin(false);   // unpin first so the canvas can re-expand
+    // Preserve _pinned so reopening restores the pinned layout.
+    if (_pinned) {
+      panel.classList.remove('pinned');
+      if (onPinChange) onPinChange(false);
+    }
     panel.classList.remove('open');
     _clearRows();
     if (onClose) onClose();

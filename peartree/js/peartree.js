@@ -1064,8 +1064,13 @@ async function _initCore(root = document) {
       tipLabelSpacing:     tipLabelSpacingSlider.value,
       nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
       mode:             renderer ? renderer._mode : 'nodes',
-      rttPinned:           rttChart?.isPinned() ?? false,
+      dataTableOpen:       dataTableRenderer?.isOpen()   ?? false,
+      dataTablePinned:     dataTableRenderer?.isPinned() ?? false,
+      rttOpen:             rttChart?.isOpen()    ?? false,
+      rttPinned:           rttChart?.isPinned()  ?? false,
       rttStatsBoxCorner:   rttChart?.getStatsBoxCorner() ?? 'tl',
+      paletteOpen:         !!root.querySelector('#palette-panel')?.classList.contains('open'),
+      palettePinned:       !!root.querySelector('#palette-panel')?.classList.contains('pinned'),
       cladeHighlightLeftEdge:      cladeHighlightLeftEdgeEl?.value         ?? DEFAULT_SETTINGS.cladeHighlightLeftEdge,
       cladeHighlightRightEdge:     cladeHighlightRightEdgeEl?.value        ?? DEFAULT_SETTINGS.cladeHighlightRightEdge,
       cladeHighlightPadding:       cladeHighlightPaddingSlider?.value      ?? DEFAULT_SETTINGS.cladeHighlightPadding,
@@ -1474,8 +1479,10 @@ async function _initCore(root = document) {
    */
   // Hoisted so _buildRendererSettings (called before line 1094) can reference it safely.
   let calibration;
-  // Hoisted so applyTheme (called before rttChart is created) can safely reference it.
+  // Hoisted so applyTheme (called before rttChart/dataTableRenderer are created) can safely
+  // reference them in saveSettings() → _buildSettingsSnapshot() without hitting TDZ.
   let rttChart;
+  let dataTableRenderer;
 
   /** Options object for computeLayoutFromGraph — centralised so every call site is consistent. */
   function _layoutOptions() {
@@ -2302,10 +2309,8 @@ async function _initCore(root = document) {
   _applyLegendTypeface();
   _applyAxisTypeface();
 
-  // Declared here (before renderer._onViewChange) so it is never in TDZ when
-  // the animation loop fires the callback.  Initialised below after the panel
-  // DOM is ready via createDataTableRenderer().
-  let dataTableRenderer;
+  // dataTableRenderer is declared early (see hoist above); initialised below
+  // after the panel DOM is ready via createDataTableRenderer().
 
   renderer._onViewChange = (scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr) => {
     axisRenderer.update(scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr);
@@ -2622,12 +2627,14 @@ async function _initCore(root = document) {
     numBodyEl:    $('dt-num-body'),
     onClose: () => {
       btnDataTable?.classList.remove('active');
+      saveSettings();
     },
     onPinChange: (pinned) => {
       document.body.classList.toggle('dt-pinned', pinned);
       // Drive renderer._resize() through the full transition so the canvas
       // smoothly gains or releases the space the panel occupies.
       _resizeDuringTransition();
+      saveSettings();
     },
     onRowSelect: (selectedIds) => {
       renderer._selectedTipIds = new Set(selectedIds);
@@ -2704,6 +2711,7 @@ async function _initCore(root = document) {
     } else {
       dataTableRenderer.open();
       btnDataTable?.classList.add('active');
+      saveSettings();
       // In overlay mode the canvas doesn't resize on open; in pinned mode the
       // onPinChange callback already drives _resizeDuringTransition.
     }
@@ -2833,6 +2841,7 @@ async function _initCore(root = document) {
     },
     onClose: () => {
       btnRtt?.classList.remove('active');
+      saveSettings();
     },
     onPinChange: (pinned) => {
       document.body.classList.toggle('rtt-pinned', pinned);
@@ -2842,7 +2851,10 @@ async function _initCore(root = document) {
     onStatsBoxCornerChange: () => saveSettings(),
   });
 
-  // Restore persistent RTT UI state
+  // Restore persistent panel state
+  if (_saved.dataTableOpen)     dataTableRenderer.open();
+  if (_saved.dataTablePinned)   dataTableRenderer.pin();
+  if (_saved.rttOpen)           rttChart.open();
   if (_saved.rttPinned)         rttChart.setPin(true);
   if (_saved.rttStatsBoxCorner) rttChart.setStatsBoxCorner(_saved.rttStatsBoxCorner);
 
@@ -2864,9 +2876,11 @@ async function _initCore(root = document) {
     if (rttChart.isOpen()) {
       rttChart.close();
       btnRtt?.classList.remove('active');
+      saveSettings();
     } else {
       rttChart.open();
       btnRtt?.classList.add('active');
+      saveSettings();
     }
   });
 
@@ -6906,7 +6920,11 @@ async function _initCore(root = document) {
   // Wire up UI panel behaviours (palette, help, about, keyboard shortcuts,
   // toolbar height tracking) for this instance.  The function is exposed by
   // peartree-ui.js; it's a no-op when running without the UI script.
-  window.initPearTreeUIBindings?.(root);
+  window.initPearTreeUIBindings?.(root, {
+    palettePinned:        _saved.palettePinned ?? DEFAULT_SETTINGS.palettePinned,
+    paletteOpen:          _saved.paletteOpen   ?? DEFAULT_SETTINGS.paletteOpen,
+    onPaletteStateChange: saveSettings,
+  });
   return window.peartree;
 
 }

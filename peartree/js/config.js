@@ -125,7 +125,7 @@ export const DEFAULT_SETTINGS = {
   legendHeightPct4:  '50',
 
   // ── Axis ─────────────────────────────────────────────────────────────────────────────
-  axisShow:             'off',      // 'off' | 'forward' | 'reverse' | 'time'
+  axisShow:             'forward',  // 'off' | 'forward' | 'reverse' | 'time'
   axisDateAnnotation:   '',         // '' = none | annotation key (used when axisShow = 'time')
   axisDateFormat:       'yyyy-MM-dd',
   axisMajorInterval:    'auto',     // 'auto' | 'millennia' | 'centuries' | 'decades' | 'years' | 'quarters' | 'months' | 'weeks' | 'days'
@@ -139,6 +139,15 @@ export const DEFAULT_SETTINGS = {
   rttMinorInterval:     'off',      // 'off' | same values as rttMajorInterval (populated dynamically)
   rttMajorLabelFormat:  'partial',  // 'component' | 'partial' | 'full' | 'off'
   rttMinorLabelFormat:  'off',      // 'component' | 'partial' | 'full' | 'off'
+
+  // ── Panels ──────────────────────────────────────────────────────────────────────────
+  // Whether each panel is visible (open) and/or pinned (docked) at startup.
+  dataTableOpen:   false,   // true = Data Table panel starts open
+  dataTablePinned: false,   // true = Data Table panel is pinned (docked; implies open)
+  rttOpen:         false,   // true = Root-to-Tip panel starts open
+  rttPinned:       false,   // true = Root-to-Tip panel is pinned (docked; implies open)
+  paletteOpen:     false,   // true = Settings panel starts open
+  palettePinned:   false,   // true = Settings panel is pinned (docked; implies open)
 
   // ── Theme ───────────────────────────────────────────────────────────────────────────
   // Name of the built-in theme that serves as the fully-specified visual base.
