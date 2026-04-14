@@ -328,8 +328,8 @@ export class TreeRenderer {
     this._collapsedCladeTypefaceStyle = s.collapsedCladeTypefaceStyle ?? null;
 
     // ── Clade highlights ──────────────────────────────────────────────────
-    this.cladeHighlightLeftEdge    = s.cladeHighlightLeftEdge    ?? (this.cladeHighlightLeftEdge    ?? 'hard');
-    this.cladeHighlightRightEdge   = s.cladeHighlightRightEdge   ?? (this.cladeHighlightRightEdge   ?? 'hardLabels');
+    this.cladeHighlightLeftEdge    = s.cladeHighlightLeftEdge    ?? (this.cladeHighlightLeftEdge    ?? 'atRoot');
+    this.cladeHighlightRightEdge   = s.cladeHighlightRightEdge   ?? (this.cladeHighlightRightEdge   ?? 'atLabels');
     this.cladeHighlightPadding     = s.cladeHighlightPadding     != null ? +s.cladeHighlightPadding     : (this.cladeHighlightPadding     ?? 6);
     this.cladeHighlightRadius      = s.cladeHighlightRadius      != null ? +s.cladeHighlightRadius      : (this.cladeHighlightRadius      ?? 4);
     this.cladeHighlightStrokeWidth = s.cladeHighlightStrokeWidth != null ? +s.cladeHighlightStrokeWidth : (this.cladeHighlightStrokeWidth ?? 1);
@@ -2172,14 +2172,14 @@ export class TreeRenderer {
    * Called once per frame, before branches, so the overlay is drawn behind the tree.
    *
    * Left-edge modes
-   *   'hard'    – vertical line at clade-root x, padded left by `cladeHighlightPadding` px
-   *   'outline' – hugs the subtree outline (branches & elbows), padded left by the same amount
+   *   'atRoot'       – vertical line at clade-root x, padded left by `cladeHighlightPadding` px
+   *   'outlineNodes' – hugs the subtree outline (branches & elbows), padded left by the same amount
    *
    * Right-edge modes
-   *   'hardTips'    – vertical line at the rightmost tip x + padding
-   *   'hardAlign'   – global aligned-label column left edge + padding
-   *   'hardRight'   – right edge of the canvas minus right padding
-   *   'outlineTips' – staircase outline following individual tip x values + padding
+   *   'atTips'        – vertical line at the rightmost tip x + padding
+   *   'atLabels'      – global aligned-label column left edge + padding
+   *   'atLabelsRight' – right edge of the canvas minus right padding
+   *   'outlineTips'   – staircase outline following individual tip x values + padding
    */
   _drawCladeHighlights(yWorldMin, yWorldMax) {
     if (!this._cladeHighlights.size || !this.nodes || !this.nodeMap) return;
@@ -2200,9 +2200,9 @@ export class TreeRenderer {
     const shapeW      = this._totalLabelShapeWidth?.() ?? 0;
 
     // Determine global right-edge X (CSS px from canvas left)
-    // 'hardTips':   just right of the clade's rightmost tip circle + padding
-    // 'hardAlign':  global aligned-label column left edge + padding
-    // 'hardRight':  canvas right edge minus canvas right padding (no extra pad)
+    // 'atTips':        just right of the clade's rightmost tip circle + padding
+    // 'atLabels':      global aligned-label column left edge + padding
+    // 'atLabelsRight': canvas right edge minus canvas right padding (no extra pad)
     const outlineR  = tipR + (this.tipHaloSize ?? 1);
     const lblSpacing = this.tipLabelSpacing ?? 3;
 
@@ -2210,9 +2210,9 @@ export class TreeRenderer {
       // tipXmax: largest tip world-x among descendant tips of this highlight
       const sx = this._wx(tipXmax);
       switch (rightMode) {
-        case 'hardTips':   return sx + outlineR + pad;
-        case 'hardAlign':  return tipMaxSX + outlineR;
-        case 'hardRight':  return this.canvas.clientWidth - (this.paddingRight ?? 10);
+        case 'atTips':        return sx + outlineR + pad;
+        case 'atLabels':      return tipMaxSX + outlineR;
+        case 'atLabelsRight': return this.canvas.clientWidth - (this.paddingRight ?? 10);
         default:           return tipMaxSX + outlineR + lblSpacing + shapeW + pad;
       }
     };
@@ -2273,7 +2273,7 @@ export class TreeRenderer {
       const topPadY = this._wy(minTipY) - Math.min(pad, this._wy(minTipY) - topSY);
       const botPadY = this._wy(maxTipY) + Math.min(pad, botSY - this._wy(maxTipY));
 
-      if (leftMode === 'outline' && tipNodes.length > 1) {
+      if (leftMode === 'outlineNodes' && tipNodes.length > 1) {
         // Build an outline path that hugs the left edges of all branches.
         // Top walk ends at (topTip.x − pad, topTip.y − pad).
         this._buildCladeOutlinePath(ctx, rootN, pad, radius, leftPad, topPadY);

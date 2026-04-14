@@ -18,6 +18,8 @@ export const REQUIRED_THEME_KEYS = [
   'branchColor', 'branchWidth', 'elbowRadius',
   // Tip Labels
   'fontSize', 'labelColor',
+  // Label Shapes
+  'tipLabelShapeColor',
   // Tip Shapes
   'tipSize', 'tipShapeColor', 'tipHaloSize', 'tipShapeBgColor',
   // Node Shapes
@@ -35,7 +37,7 @@ export const REQUIRED_THEME_KEYS = [
   // Legend
   'legendTextColor', 'legendFontSize', 'legendFontFamily', 'legendFontStyle',
   // Axis
-  'axisColor', 'axisFontSize', 'axisFontFamily', 'axisFontStyle', 'axisLineWidth',
+  'axisColor', 'axisFontSize', 'axisTypefaceKey', 'axisTypefaceStyle', 'axisLineWidth',
   // Root-to-tip: regression line
   'rttRegressionStyle', 'rttRegressionColor', 'rttRegressionWidth',
   // Root-to-tip: statistics box
@@ -75,13 +77,13 @@ export const DEFAULT_SETTINGS = {
   introAnimation:  'x-then-y',
 
   // ── Tip Labels ───────────────────────────────────────────────────────────────────
-  tipLabelAlign:   'names',
+  tipLabelShow:    'names',   // 'off' | 'names' | annotation key
+  tipLabelAlign:   'none',
   tipLabelSpacing: '3',
 
   // ── Label Shapes ────────────────────────────────────────────────────────────────────
   tipLabelShape:             'off',     // 'off' | 'square' | 'circle' | 'block'
   tipLabelShapeSize:         '50',      // 1–100: % of scaleY for square/circle; ×0.1 width factor for block
-  tipLabelShapeColor:        '#aaaaaa',
   tipLabelShapeMarginLeft:   '2',
   tipLabelShapeSpacing:      '3',
   // Extra tip label shapes 2–10 (shown immediately to the right of shape 1; share shape 1's size/colour)
@@ -99,8 +101,8 @@ export const DEFAULT_SETTINGS = {
   nodeBarsShowRange:  'off',
 
   // ── Clade Highlights ────────────────────────────────────────────────────────────────
-  cladeHighlightLeftEdge:  'hard',
-  cladeHighlightRightEdge: 'hardAlign',
+  cladeHighlightLeftEdge:  'outlineNodes', // 'atRoot' | 'outlineNodes'
+  cladeHighlightRightEdge: 'outlineTips',  // 'atTips' | 'atLabels' | 'atLabelsRight' | 'outlineTips'
   cladeHighlightPadding:   '6',
   cladeHighlightRadius:    '4',
 
