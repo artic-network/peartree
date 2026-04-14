@@ -97,8 +97,8 @@ export const DEFAULT_SETTINGS = {
   // ── Node Bars ───────────────────────────────────────────────────────────────────────
   // (only shown when tree has 'height' group from BEAST)
   nodeBarsEnabled:    'off',   // 'off' | 'on'
-  nodeBarsLine: 'off',   // 'off' | 'mean' | 'median'
-  nodeBarsRange:  'off',   // 'off' | 'on'
+  nodeBarsLine:       'off',   // 'off' | 'mean' | 'median'
+  nodeBarsRange:      'off',   // 'off' | 'on'
 
   // ── Clade Highlights ────────────────────────────────────────────────────────────────
   cladeHighlightLeftEdge:  'outlineNodes', // 'atRoot' | 'outlineNodes'
