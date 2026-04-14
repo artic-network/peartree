@@ -604,7 +604,8 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     _svgExtraTotalOff += _svgExtraShSzs[_idx]
       + (_i < _svgActiveExtras.length - 1 ? _svgShSpacing : 0);
   }
-  const _svgTxOff = _svgShOff + _svgExtraTotalOff + chLblSp;  // total x offset from baseX to text
+  const _svgLblSp = renderer.tipLabelSpacing ?? 3;
+  const _svgTxOff = _svgShOff + _svgExtraTotalOff + _svgLblSp;  // total x offset from baseX to text
 
   for (const [, node] of nm) {
     const nx = toSX(node.x), ny = toSY(node.y);
