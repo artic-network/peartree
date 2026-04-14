@@ -58,7 +58,7 @@ function _sectionTipLabels() {
   return `
     <div class="pt-palette-section">
       <h3><i class="bi bi-tag"></i> Tip Labels</h3>
-      <div class="pt-palette-row" title="Show tip labels; choose which annotation to display"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="tip-label-show" disabled><option value="off">Off</option><option value="names">names</option></select></div>
+      <div class="pt-palette-row" title="Show tip labels; choose which annotation to display"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="tip-label-show" disabled><option value="off">Off</option><option value="names" selected>names</option></select></div>
       <div id="tip-label-controls" class="pt-sub-controls" style="display:none">
         <div class="pt-palette-row" id="tip-label-dp-row" style="display:none" title="Decimal places for numeric tip labels"><span class="pt-palette-label">d.p.</span><select class="pt-palette-select" id="tip-label-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
         <div class="pt-palette-row" title="Align tips to a common margin with optional connecting lines"><span class="pt-palette-label">Alignment <i class="bi bi-text-left form-label-sm"></i></span><select class="pt-palette-select" id="tip-label-align"><option value="off">Off</option><option value="aligned">Aligned</option><option value="dots">Aligned + dots</option><option value="dashed">Aligned + dashed</option><option value="solid">Aligned + solid</option></select></div>
