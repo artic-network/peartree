@@ -1070,10 +1070,10 @@ async function _initCore(root = document) {
       cladeHighlightRightEdge:     cladeHighlightRightEdgeEl?.value        ?? DEFAULT_SETTINGS.cladeHighlightRightEdge,
       cladeHighlightPadding:       cladeHighlightPaddingSlider?.value      ?? DEFAULT_SETTINGS.cladeHighlightPadding,
       cladeHighlightRadius:        cladeHighlightRadiusSlider?.value       ?? DEFAULT_SETTINGS.cladeHighlightRadius,
-      cladeHighlightStrokeWidth:   cladeHighlightStrokeWidthSlider?.value  ?? DEFAULT_SETTINGS.cladeHighlightStrokeWidth,
-      cladeHighlightFillOpacity:   cladeHighlightFillOpacitySlider?.value  ?? DEFAULT_SETTINGS.cladeHighlightFillOpacity,
-      cladeHighlightStrokeOpacity: cladeHighlightStrokeOpacitySlider?.value ?? DEFAULT_SETTINGS.cladeHighlightStrokeOpacity,
-      cladeHighlightColour:        cladeHighlightDefaultColourEl?.value    ?? DEFAULT_SETTINGS.cladeHighlightColour,
+      cladeHighlightStrokeWidth:   cladeHighlightStrokeWidthSlider?.value  ?? '1',
+      cladeHighlightFillOpacity:   cladeHighlightFillOpacitySlider?.value  ?? '0.15',
+      cladeHighlightStrokeOpacity: cladeHighlightStrokeOpacitySlider?.value ?? '0.7',
+      cladeHighlightColour:        cladeHighlightDefaultColourEl?.value    ?? '#ffaa00',
       cladeHighlights:             renderer?.getCladeHighlightsData() ?? [],
     };
   }
@@ -1573,10 +1573,10 @@ async function _initCore(root = document) {
       cladeHighlightRightEdge:     cladeHighlightRightEdgeEl?.value ?? DEFAULT_SETTINGS.cladeHighlightRightEdge,
       cladeHighlightPadding:       parseFloat(cladeHighlightPaddingSlider?.value ?? DEFAULT_SETTINGS.cladeHighlightPadding),
       cladeHighlightRadius:        parseFloat(cladeHighlightRadiusSlider?.value ?? DEFAULT_SETTINGS.cladeHighlightRadius),
-      cladeHighlightStrokeWidth:   parseFloat(cladeHighlightStrokeWidthSlider?.value ?? DEFAULT_SETTINGS.cladeHighlightStrokeWidth),
-      cladeHighlightFillOpacity:   parseFloat(cladeHighlightFillOpacitySlider?.value ?? DEFAULT_SETTINGS.cladeHighlightFillOpacity),
-      cladeHighlightStrokeOpacity: parseFloat(cladeHighlightStrokeOpacitySlider?.value ?? DEFAULT_SETTINGS.cladeHighlightStrokeOpacity),
-      cladeHighlightColour:        cladeHighlightDefaultColourEl?.value ?? DEFAULT_SETTINGS.cladeHighlightColour,
+      cladeHighlightStrokeWidth:   parseFloat(cladeHighlightStrokeWidthSlider?.value ?? '1'),
+      cladeHighlightFillOpacity:   parseFloat(cladeHighlightFillOpacitySlider?.value ?? '0.15'),
+      cladeHighlightStrokeOpacity: parseFloat(cladeHighlightStrokeOpacitySlider?.value ?? '0.7'),
+      cladeHighlightColour:        cladeHighlightDefaultColourEl?.value ?? '#ffaa00',
     };
   }
 
@@ -4499,11 +4499,11 @@ async function _initCore(root = document) {
     function _resolveHighlightColour() {
       const colourBy = cladeHighlightColourByEl?.value ?? 'user_colour';
       if (colourBy === 'user_colour') {
-        return tipColourPickerEl?.value ?? DEFAULT_SETTINGS.cladeHighlightColour;
+        return tipColourPickerEl?.value ?? '#ffaa00';
       }
       // Attribute-based colour: find most-frequent categorical value among descendant tips.
       const nodeId = renderer._mrcaNodeId;
-      if (!nodeId || !renderer.nodeMap) return tipColourPickerEl?.value ?? DEFAULT_SETTINGS.cladeHighlightColour;
+      if (!nodeId || !renderer.nodeMap) return tipColourPickerEl?.value ?? '#ffaa00';
       const tipIds = renderer._getDescendantTipIds(nodeId);
       const freq = new Map();
       for (const tipId of tipIds) {
@@ -4511,11 +4511,11 @@ async function _initCore(root = document) {
         const val  = node?.annotations?.[colourBy];
         if (val != null && val !== '') freq.set(val, (freq.get(val) ?? 0) + 1);
       }
-      if (freq.size === 0) return tipColourPickerEl?.value ?? DEFAULT_SETTINGS.cladeHighlightColour;
+      if (freq.size === 0) return tipColourPickerEl?.value ?? '#ffaa00';
       const mostCommon = [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0];
       // Try to find the colour for this value via the renderer's colour scale.
       const colour = renderer._getAnnotationColour?.(colourBy, mostCommon);
-      return colour ?? tipColourPickerEl?.value ?? DEFAULT_SETTINGS.cladeHighlightColour;
+      return colour ?? tipColourPickerEl?.value ?? '#ffaa00';
     }
 
     function _refreshHighlightList() {
@@ -4534,8 +4534,8 @@ async function _initCore(root = document) {
 
         const swatch = document.createElement('div');
         swatch.className = 'pt-highlight-swatch';
-        swatch.style.background = colour ?? DEFAULT_SETTINGS.cladeHighlightColour;
-        swatch.title = colour ?? DEFAULT_SETTINGS.cladeHighlightColour;
+        swatch.style.background = colour ?? '#ffaa00';
+        swatch.title = colour ?? '#ffaa00';
 
         const name = document.createElement('span');
         name.className = 'pt-highlight-name';
@@ -4610,7 +4610,7 @@ async function _initCore(root = document) {
     btnPaintHighlight?.addEventListener('click', () => {
       const nodeId = renderer._mrcaNodeId;
       if (!nodeId || !renderer._cladeHighlights.has(nodeId)) return;
-      renderer.setCladeHighlightColour(nodeId, tipColourPickerEl?.value ?? DEFAULT_SETTINGS.cladeHighlightColour);
+      renderer.setCladeHighlightColour(nodeId, tipColourPickerEl?.value ?? '#ffaa00');
       _refreshHighlightList();
       saveSettings();
     });
