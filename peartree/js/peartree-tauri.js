@@ -100,6 +100,7 @@
   app.setExportSaveHandler(_nativeSave);
   app.setGraphicsSaveHandler(_nativeSave);
   app.setRTTImageSaveHandler(_nativeSave);
+  app.setThemeSaveHandler(_nativeSave);
 
   // ── Print: use a Rust command to trigger the native macOS print panel ────
   // window.print() and getCurrentWindow().print() are unreliable inside

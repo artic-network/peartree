@@ -86,6 +86,12 @@
   --pt-btn-default-text: #19A699;
   --pt-btn-remove-bg:    rgba(220,80,60,0.14);   /* Remove theme: red tint */
   --pt-btn-remove-border: rgba(220,80,60,0.5);
+  --pt-btn-export-bg:     rgba(100,150,220,0.14); /* Export theme: blue tint */
+  --pt-btn-export-border: rgba(100,150,220,0.5);
+  --pt-btn-export-text:   #8ab4f8;
+  --pt-btn-import-bg:     rgba(180,140,60,0.14);  /* Import theme: amber tint */
+  --pt-btn-import-border: rgba(180,140,60,0.5);
+  --pt-btn-import-text:   #d4b050;
 
   /* ── Import/export dialog semantic colours (kept explicit for readability) ── */
   --pt-imp-ok:   #859900;
@@ -1001,6 +1007,18 @@ body.palette-pinned #canvas-container {
   color: var(--pt-brand-hover);
   opacity: 1;
 }
+#btn-export-theme:not(:disabled):hover {
+  background: var(--pt-btn-export-bg);
+  border-color: var(--pt-btn-export-border);
+  color: var(--pt-btn-export-text);
+  opacity: 1;
+}
+#btn-import-theme:not(:disabled):hover {
+  background: var(--pt-btn-import-bg);
+  border-color: var(--pt-btn-import-border);
+  color: var(--pt-btn-import-text);
+  opacity: 1;
+}
 .pt-palette-section {
   margin-bottom: 0;
 }
@@ -1482,6 +1500,46 @@ body.palette-pinned #canvas-container {
   word-break: break-word;
 }
 #confirm-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+/* ── Prompt dialog (like confirm-dialog but with a text input) ── */
+#prompt-dialog-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--pt-shadow-popup);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+#prompt-dialog-overlay.open { display: flex; }
+#prompt-dialog {
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+  max-width: 460px;
+  width: 90%;
+  padding: 1.5rem 1.5rem 1.25rem;
+}
+#prompt-dialog h6 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+#prompt-dialog-msg {
+  font-size: 0.875rem;
+  color: var(--bs-body-color);
+  margin-bottom: 0.75rem;
+  word-break: break-word;
+}
+#prompt-dialog-input {
+  width: 100%;
+  margin-bottom: 1.25rem;
+}
+#prompt-dialog-footer {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;

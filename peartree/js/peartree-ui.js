@@ -742,6 +742,17 @@ function _buildModals() {
     </div>
   </div>
 </div>
+<div id="prompt-dialog-overlay">
+  <div id="prompt-dialog">
+    <h6 id="prompt-dialog-title"></h6>
+    <p id="prompt-dialog-msg"></p>
+    <input type="text" id="prompt-dialog-input" class="pt-modal-url-input" autocomplete="off" spellcheck="false" />
+    <div id="prompt-dialog-footer">
+      <button id="prompt-dialog-cancel" class="btn btn-sm btn-outline-secondary">Cancel</button>
+      <button id="prompt-dialog-ok" class="btn btn-sm btn-primary">OK</button>
+    </div>
+  </div>
+</div>
 <div id="curate-annot-overlay" class="pt-modal-overlay">
   <div class="pt-modal" style="width:800px;max-width:calc(100vw - 24px);min-width:min(760px,calc(100vw - 24px))">
     <div class="pt-modal-header">
@@ -1223,3 +1234,84 @@ function initPearTreeUIBindings(root) {
 
 // Expose so _initCore() can call it once per instance.
 window.initPearTreeUIBindings = initPearTreeUIBindings;
+
+// ── Dialog utility functions ─────────────────────────────────────────────
+// These are plain browser-compatible functions defined at global scope so
+// they can be called from the peartree.js ES module (and by embedders).
+// They use document.getElementById because the dialog IDs are globally unique.
+
+/**
+ * Show a confirm dialog with a custom title, message, and button labels.
+ * Returns a Promise that resolves true (OK) or false (Cancel).
+ * Pressing Escape is treated as Cancel.
+ */
+function showConfirmDialog(title, msg, { okLabel = 'OK', cancelLabel = 'Cancel' } = {}) {
+  return new Promise(resolve => {
+    const overlay   = document.getElementById('confirm-dialog-overlay');
+    document.getElementById('confirm-dialog-title').textContent = title;
+    document.getElementById('confirm-dialog-msg').textContent   = msg;
+    document.getElementById('confirm-dialog-ok').textContent    = okLabel;
+    const cancelBtn = document.getElementById('confirm-dialog-cancel');
+    cancelBtn.textContent = cancelLabel;
+    cancelBtn.style.display = cancelLabel ? '' : 'none';
+    overlay.classList.add('open');
+    const okBtn = document.getElementById('confirm-dialog-ok');
+    function close(result) {
+      overlay.classList.remove('open');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      document.removeEventListener('keydown', onKey, true);
+      resolve(result);
+    }
+    function onOk()     { close(true);  }
+    function onCancel() { close(false); }
+    function onKey(e)   { if (e.key === 'Escape') { e.stopPropagation(); close(false); } }
+    okBtn.addEventListener('click',     onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    document.addEventListener('keydown', onKey, true);
+  });
+}
+
+/**
+ * Convenience wrapper: show a confirm dialog with only an OK button.
+ * Returns a Promise<true> when the user dismisses it.
+ */
+function showAlertDialog(title, msg) {
+  return showConfirmDialog(title, msg, { okLabel: 'OK', cancelLabel: '' });
+}
+
+/**
+ * Show a prompt dialog with an optional default value.
+ * Returns a Promise resolving to the entered string (trimmed) or null if cancelled.
+ * Works in Tauri (WKWebView blocks window.prompt()).
+ */
+function showPromptDialog(title, msg, defaultValue = '') {
+  return new Promise(resolve => {
+    const overlay  = document.getElementById('prompt-dialog-overlay');
+    const input    = document.getElementById('prompt-dialog-input');
+    document.getElementById('prompt-dialog-title').textContent = title;
+    document.getElementById('prompt-dialog-msg').textContent   = msg;
+    input.value = defaultValue;
+    overlay.classList.add('open');
+    // Focus input on next tick so the overlay is visible first
+    setTimeout(() => { input.focus(); input.select(); }, 30);
+    const okBtn     = document.getElementById('prompt-dialog-ok');
+    const cancelBtn = document.getElementById('prompt-dialog-cancel');
+    function close(result) {
+      overlay.classList.remove('open');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      input.removeEventListener('keydown', onInputKey);
+      document.removeEventListener('keydown', onEsc, true);
+      resolve(result);
+    }
+    function onOk()     { close(input.value.trim() || null); }
+    function onCancel() { close(null); }
+    function onInputKey(e) { if (e.key === 'Enter') { e.preventDefault(); onOk(); } }
+    function onEsc(e)   { if (e.key === 'Escape') { e.stopPropagation(); close(null); } }
+    okBtn.addEventListener('click',     onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    input.addEventListener('keydown',   onInputKey);
+    document.addEventListener('keydown', onEsc, true);
+  });
+}

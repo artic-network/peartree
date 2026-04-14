@@ -531,6 +531,14 @@ async function _initCore(root = document) {
   let defaultTheme = localStorage.getItem(DEFAULT_THEME_KEY) || 'Artic';
   // Guard applied after loadUserThemes() so user-saved defaults are recognised.
 
+  /**
+   * Platform-specific save handler for theme export.
+   * Null = use browser download (<a download>). Set by Tauri adapter.
+   * Signature: fn({ content, filename, filterName, extensions }) → Promise
+   */
+  let _themeSaveHandler = null;
+  function setThemeSaveHandler(fn) { _themeSaveHandler = fn; }
+
   /** Per-annotation palette override: annotationKey → palette name string. */
   const annotationPalettes = new Map();
 
@@ -622,37 +630,89 @@ async function _initCore(root = document) {
     themeSelect.value = (themeSelect.querySelector(`option[value="${CSS.escape(current)}"]`) ? current : themeRegistry.keys().next().value);
   }
 
-  /** Snapshot all 13 visual controls into a plain theme object. */
+  /** Snapshot all visual controls into a plain theme object. */
   function _snapshotTheme() {
     return {
+      // Core appearance
       canvasBgColor:    canvasBgColorEl.value,
       branchColor:      branchColorEl.value,
       branchWidth:      branchWidthSlider.value,
       elbowRadius:      elbowRadiusSlider?.value ?? DEFAULT_SETTINGS.elbowRadius,
       fontSize:         fontSlider.value,
-      axisColor:           axisColorEl.value,
+      typeface:         fontFamilyEl.value,
+      typefaceStyle:    fontTypefaceStyleEl?.value || '',
+      labelColor:       labelColorEl.value,
+      // Tip shape/size
+      tipSize:          tipSlider.value,
+      tipHaloSize:      tipHaloSlider.value,
+      tipShapeColor:    tipShapeColorEl.value,
+      tipShapeBgColor:  tipShapeBgEl.value,
+      // Node shape/size
+      nodeSize:         nodeSlider.value,
+      nodeHaloSize:     nodeHaloSlider.value,
+      nodeShapeColor:   nodeShapeColorEl.value,
+      nodeShapeBgColor: nodeShapeBgEl.value,
+      // Node bars
+      nodeBarsColor:    nodeBarsColorEl.value,
+      // Hover colours
+      tipHoverFillColor:         tipHoverFillEl.value,
+      tipHoverStrokeColor:       tipHoverStrokeEl.value,
+      tipHoverGrowthFactor:      tipHoverGrowthSlider.value,
+      tipHoverMinSize:           tipHoverMinSizeSlider.value,
+      tipHoverFillOpacity:       tipHoverFillOpacitySlider.value,
+      tipHoverStrokeWidth:       tipHoverStrokeWidthSlider.value,
+      tipHoverStrokeOpacity:     tipHoverStrokeOpacitySlider.value,
+      nodeHoverFillColor:        nodeHoverFillEl.value,
+      nodeHoverStrokeColor:      nodeHoverStrokeEl.value,
+      nodeHoverGrowthFactor:     nodeHoverGrowthSlider.value,
+      nodeHoverMinSize:          nodeHoverMinSizeSlider.value,
+      nodeHoverFillOpacity:      nodeHoverFillOpacitySlider.value,
+      nodeHoverStrokeWidth:      nodeHoverStrokeWidthSlider.value,
+      nodeHoverStrokeOpacity:    nodeHoverStrokeOpacitySlider.value,
+      // Selected colours
+      selectedTipFillColor:      selectedTipFillEl.value,
+      selectedTipStrokeColor:    selectedTipStrokeEl.value,
+      selectedTipGrowthFactor:   selectedTipGrowthSlider.value,
+      selectedTipMinSize:        selectedTipMinSizeSlider.value,
+      selectedTipFillOpacity:    selectedTipFillOpacitySlider.value,
+      selectedTipStrokeWidth:    selectedTipStrokeWidthSlider.value,
+      selectedTipStrokeOpacity:  selectedTipStrokeOpacitySlider.value,
+      selectedNodeFillColor:     selectedNodeFillEl.value,
+      selectedNodeStrokeColor:   selectedNodeStrokeEl.value,
+      selectedNodeGrowthFactor:  selectedNodeGrowthSlider.value,
+      selectedNodeMinSize:       selectedNodeMinSizeSlider.value,
+      selectedNodeFillOpacity:   selectedNodeFillOpacitySlider.value,
+      selectedNodeStrokeWidth:   selectedNodeStrokeWidthSlider.value,
+      selectedNodeStrokeOpacity: selectedNodeStrokeOpacitySlider.value,
+      // Axis
+      axisColor:        axisColorEl.value,
+      axisFontSize:     axisFontSizeSlider.value,
+      axisFontFamily:   axisFontFamilyEl.value,
+      axisFontStyle:    axisTypefaceStyleEl?.value || '',
+      axisLineWidth:    axisLineWidthSlider.value,
+      // Legend
       legendTextColor:  legendTextColorEl.value,
-      selectedTipStrokeColor:   selectedTipStrokeEl.value,
-      selectedNodeStrokeColor:       selectedNodeStrokeEl.value,
-      tipHoverFillColor:       tipHoverFillEl.value,
-      nodeHoverFillColor:      nodeHoverFillEl.value,
-      selectedTipFillColor:    selectedTipFillEl.value,
-      selectedNodeFillColor:   selectedNodeFillEl.value,
-      tipHoverStrokeColor:     tipHoverStrokeEl.value,
-      nodeHoverStrokeColor:    nodeHoverStrokeEl.value,
+      legendFontSize:   legendFontSizeSlider.value,
+      legendFontFamily: legendFontFamilyEl.value,
+      legendFontStyle:  legendTypefaceStyleEl?.value || '',
+      // RTT chart
+      rttAxisColor:       rttAxisColorEl.value,
+      rttStatsBgColor:    rttStatsBgColorEl.value,
+      rttStatsTextColor:  rttStatsTextColorEl.value,
+      rttRegressionColor: rttRegressionColorEl.value,
     };
   }
 
   /** Prompt for a name and store the current visual settings as a new (or updated) user theme. */
-  function storeTheme() {
-    const name = prompt('Enter a name for this theme:')?.trim();
+  async function storeTheme() {
+    const name = await showPromptDialog('Save Theme', 'Enter a name for this theme:');
     if (!name) return;
     if (name.toLowerCase() === 'custom') {
-      alert('"Custom" is a reserved name — please choose a different name.');
+      await showAlertDialog('Reserved name', '"Custom" is a reserved name — please choose a different name.');
       return;
     }
     if (THEMES[name]) {
-      alert(`"${name}" is a built-in theme and cannot be overwritten.`);
+      await showAlertDialog('Built-in theme', `"${name}" is a built-in theme and cannot be overwritten.`);
       return;
     }
     themeRegistry.set(name, _snapshotTheme());
@@ -691,10 +751,10 @@ async function _initCore(root = document) {
   }
 
   /** Delete a user-saved (non-built-in) theme from the registry and localStorage. */
-  function removeTheme() {
+  async function removeTheme() {
     const name = themeSelect.value;
     if (name === 'custom' || THEMES[name]) return;
-    if (!confirm(`Remove the theme \u201c${name}\u201d?`)) return;
+    if (!await showConfirmDialog('Remove theme', `Remove the theme \u201c${name}\u201d?`, { okLabel: 'Remove', cancelLabel: 'Cancel' })) return;
     // If the removed theme was the default, fall back to the first built-in.
     if (defaultTheme === name) {
       defaultTheme = Object.keys(THEMES)[0];
@@ -710,19 +770,24 @@ async function _initCore(root = document) {
   }
 
   /** Export the current theme as a JSON file the user can save locally. */
-  function exportTheme() {
+  async function exportTheme() {
     const sel = themeSelect.value;
     const isCustom = sel === 'custom';
     const defaultName = isCustom ? '' : sel;
-    const name = prompt('Enter a name for the exported theme:', defaultName)?.trim();
+    const name = await showPromptDialog('Export Theme', 'Enter a name for the exported theme:', defaultName);
     if (!name) return;
     if (name.toLowerCase() === 'custom') {
-      alert('"Custom" is a reserved name — please choose a different name.');
+      await showAlertDialog('Reserved name', '"Custom" is a reserved name — please choose a different name.');
       return;
     }
     const themeData = isCustom ? _snapshotTheme() : (themeRegistry.get(sel) ?? _snapshotTheme());
     const json = JSON.stringify({ name, theme: themeData }, null, 2);
-    _downloadBlob(json, 'application/json', `${name}.peartree-theme.json`);
+    const filename = `${name}.peartree-theme.json`;
+    if (_themeSaveHandler) {
+      await _themeSaveHandler({ content: json, filename, filterName: 'PearTree Theme', extensions: ['json'] });
+    } else {
+      _downloadBlob(json, 'application/json', filename);
+    }
   }
 
   /** Import a theme from a JSON file, prompting for a name and handling conflicts. */
@@ -743,34 +808,34 @@ async function _initCore(root = document) {
         // Accept { name, theme } format or a bare theme object.
         themeObj = (data.theme && typeof data.theme === 'object') ? data.theme : data;
         if (typeof themeObj !== 'object' || !themeObj.canvasBgColor) {
-          alert('This does not appear to be a valid PearTree theme file.');
+          await showAlertDialog('Invalid file', 'This does not appear to be a valid PearTree theme file.');
           return;
         }
       } catch {
-        alert('Failed to parse the theme file — please check it is valid JSON.');
+        await showAlertDialog('Parse error', 'Failed to parse the theme file — please check it is valid JSON.');
         return;
       }
       const fileNameSuggestion = (typeof data.name === 'string' && data.name.trim()) ? data.name.trim() : '';
       // Ask the user to confirm or change the name.
-      let name = prompt('Name for the imported theme:', fileNameSuggestion)?.trim();
+      let name = await showPromptDialog('Import Theme', 'Name for the imported theme:', fileNameSuggestion);
       if (!name) return;
       if (name.toLowerCase() === 'custom') {
-        alert('"Custom" is a reserved name — please choose a different name.');
+        await showAlertDialog('Reserved name', '"Custom" is a reserved name — please choose a different name.');
         return;
       }
       // Built-in conflict: must rename.
       while (THEMES[name]) {
-        const next = prompt(`"${name}" is a built-in theme and cannot be overwritten.\nPlease enter a different name:`, '')?.trim();
+        const next = await showPromptDialog('Built-in theme', `"${name}" is a built-in theme and cannot be overwritten.\nPlease enter a different name:`, '');
         if (!next) return;
         name = next;
         if (name.toLowerCase() === 'custom') {
-          alert('"Custom" is a reserved name — please choose a different name.');
+          await showAlertDialog('Reserved name', '"Custom" is a reserved name — please choose a different name.');
           return;
         }
       }
       // User theme conflict: ask before overwriting.
       if (themeRegistry.has(name)) {
-        if (!confirm(`A user theme named \u201c${name}\u201d already exists. Overwrite it?`)) return;
+        if (!await showConfirmDialog('Overwrite theme', `A user theme named \u201c${name}\u201d already exists. Overwrite it?`, { okLabel: 'Overwrite', cancelLabel: 'Cancel' })) return;
       }
       themeRegistry.set(name, themeObj);
       saveUserThemes();
@@ -1286,8 +1351,8 @@ async function _initCore(root = document) {
     _syncControlVisibility();
   }
 
-  function applyDefaults() {
-    if (!confirm('Reset all visual settings to their defaults?')) return;
+  async function applyDefaults() {
+    if (!await showConfirmDialog('Reset settings', 'Reset all visual settings to their defaults?', { okLabel: 'Reset', cancelLabel: 'Cancel' })) return;
 
     // Apply the default theme (hydrates all visual DOM controls + renderer).
     applyTheme(defaultTheme);
@@ -2291,37 +2356,6 @@ async function _initCore(root = document) {
     $('error-dialog-overlay').classList.remove('open');
   });
 
-  /**
-   * Show a confirm dialog with a custom title, message, and button labels.
-   * Returns a Promise that resolves true (OK) or false (Cancel).
-   * Pressing Escape is treated as Cancel.
-   */
-  function showConfirmDialog(title, msg, { okLabel = 'OK', cancelLabel = 'Cancel' } = {}) {
-    return new Promise(resolve => {
-      const overlay   = $('confirm-dialog-overlay');
-      $('confirm-dialog-title').textContent = title;
-      $('confirm-dialog-msg').textContent   = msg;
-      $('confirm-dialog-ok').textContent     = okLabel;
-      $('confirm-dialog-cancel').textContent = cancelLabel;
-      overlay.classList.add('open');
-      const okBtn     = $('confirm-dialog-ok');
-      const cancelBtn = $('confirm-dialog-cancel');
-      function close(result) {
-        overlay.classList.remove('open');
-        okBtn.removeEventListener('click', onOk);
-        cancelBtn.removeEventListener('click', onCancel);
-        document.removeEventListener('keydown', onKey, true);
-        resolve(result);
-      }
-      function onOk()     { close(true);  }
-      function onCancel() { close(false); }
-      function onKey(e)   { if (e.key === 'Escape') { e.stopPropagation(); close(false); } }
-      okBtn.addEventListener('click',     onOk);
-      cancelBtn.addEventListener('click', onCancel);
-      document.addEventListener('keydown', onKey, true);
-    });
-  }
-
   function setModalLoading(on) {
     $('modal-loading').style.display = on ? 'block' : 'none';
     modal.querySelectorAll('.pt-modal-body button, .pt-tab-btn').forEach(b => {
@@ -3098,10 +3132,11 @@ async function _initCore(root = document) {
           const chosen = _preconfigured
             ? (_preconfigured.trim() || defaultName)
             : (
-              prompt(
-                `This tree has labels on ${labelledNodes.length} internal node(s).\nWhat annotation name should these be stored as?`,
+              (await showPromptDialog(
+                'Node labels',
+                `This tree has labels on ${labelledNodes.length} internal node(s). What annotation name should these be stored as?`,
                 defaultName
-              ) ?? defaultName
+              )) ?? defaultName
             ).trim() || defaultName;
           for (const n of labelledNodes) {
             const raw = n.annotations["_node_label"];
@@ -4524,7 +4559,7 @@ async function _initCore(root = document) {
       const msg = toRemove.length === 1
         ? 'Remove this clade highlight?'
         : `Remove ${toRemove.length} clade highlights?`;
-      if (!confirm(msg)) return;
+      if (!await showConfirmDialog('Remove highlight', msg, { okLabel: 'Remove', cancelLabel: 'Cancel' })) return;
       toRemove.forEach(id => renderer.removeCladeHighlight(id));
       _refreshHighlightList();
       commands.setEnabled('tree-clear-highlights', renderer._cladeHighlights.size > 0);
@@ -4985,7 +5020,7 @@ async function _initCore(root = document) {
       const subtreeRootId = renderer._viewSubtreeRootId ?? null;
 
       // Nothing selected: confirm then clear the visible tree (subtree or whole tree).
-      if (!hasSelection && !confirm('Clear all colours from the visible tree?')) return;
+      if (!hasSelection && !await showConfirmDialog('Clear colours', 'Clear all colours from the visible tree?', { okLabel: 'Clear', cancelLabel: 'Cancel' })) return;
 
       const clearNodeId = id => {
         const idx = graph.origIdToIdx.get(id);
@@ -6383,8 +6418,15 @@ async function _initCore(root = document) {
     /** Show a standalone error dialog with an OK button. */
     showErrorDialog,
 
+    /** Show an alert dialog with only an OK button; returns a Promise<true>. */
+    showAlertDialog,
+
     /** Show a confirm dialog; returns a Promise<boolean>. */
     showConfirmDialog,
+
+    /** Show a prompt dialog for text input; returns a Promise<string|null>.
+     *  Works in Tauri (window.prompt() is blocked in WKWebView). */
+    showPromptDialog,
 
     /** True when a tree is currently loaded in this window. */
     get hasTree() { return treeLoaded; },
@@ -6406,6 +6448,12 @@ async function _initCore(root = document) {
      *  instead of a browser download when the user clicks Export/Download in
      *  the Export Tree dialog.  Set to null to restore browser behaviour. */
     setExportSaveHandler:    exportCtrl.setExportSaveHandler,
+
+    /** Override the theme-export save action for the current platform.
+     *  fn({ content, filename, filterName, extensions }) — called instead of
+     *  a browser download when the user clicks Export in the Theme section.
+     *  Set to null to restore browser behaviour. */
+    setThemeSaveHandler,
 
     /** Override the graphic-export action for the current platform.
      *  fn({ content|contentBase64, base64, filename, mimeType, filterName, extensions })
