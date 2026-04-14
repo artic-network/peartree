@@ -1889,23 +1889,39 @@ body.palette-pinned #canvas-container {
 
 /* Selected row highlight */
 .dt-row-selected { background: var(--pt-selection-bg) !important; }
-.dt-row-selected .dt-name-cell { color: var(--pt-text-bright) !important; }
+.dt-row-selected .dt-name-cell input[type="text"] { color: var(--pt-text-bright); }
 .dt-row-selected .dt-cell input[type="text"] { color: var(--pt-text-bright); }
 
 /* Tip-name column */
 .dt-name-cell {
   flex: none;
-  padding: 0 5px;
-  font-size: var(--dt-font-size, 0.72rem);
-  color: var(--pt-text-subdued);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
   height: 100%;
   display: flex;
   align-items: center;
   border-right: 1px solid var(--pt-divider-micro);
   cursor: pointer;
+  overflow: hidden;
+}
+.dt-name-cell input[type="text"] {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: var(--pt-text-subdued);
+  font-size: var(--dt-font-size, 0.72rem);
+  font-family: var(--dt-cell-font-family, monospace);
+  padding: 0 5px;
+  outline: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;  /* overridden below when not readonly */
+}
+.dt-name-cell input[type="text"]:not([readonly]) { cursor: text; }
+.dt-name-cell input[type="text"]:focus {
+  background: var(--pt-selection-focus);
+  color: var(--pt-text-bright);
+  cursor: text;
 }
 
 /* Data-value columns */
@@ -1927,12 +1943,14 @@ body.palette-pinned #canvas-container {
   font-family: var(--dt-cell-font-family, monospace);
   padding: 0 5px;
   outline: none;
+  cursor: pointer;  /* overridden below when not readonly */
   transition: background 0.1s;
 }
+.dt-cell input[type="text"]:not([readonly]) { cursor: text; }
 .dt-cell input[type="text"]:hover  { background: var(--pt-surface-row); }
 .dt-cell input[type="text"]:focus  {
   background: var(--pt-selection-focus);
-  color: #fff;
+  color: var(--pt-text-bright);
   border-right-color: var(--pt-teal, #2aa198);
 }
 

@@ -285,8 +285,9 @@ export function createDataTableRenderer({
   function _computeColWidths(fontPx, fontFamily) {
     const ctx = _measureCanvas.getContext('2d');
     ctx.font  = `${fontPx}px ${fontFamily}`;
-    const PAD = 14;
-    const MIN = 48;
+    const PAD      = 14;
+    const MIN      = 48;
+    const MAX_NAME = 240;   // cap on the Names column so very long names don't overwhelm the panel
     _colWidths = [];
 
     // Frozen number column: wide enough for the largest cumulative row number
@@ -317,7 +318,7 @@ export function createDataTableRenderer({
           if (nm) w = Math.max(w, ctx.measureText(nm).width);
         }
       }
-      _colWidths.push(Math.max(MIN, Math.ceil(w) + PAD));
+      _colWidths.push(Math.min(MAX_NAME, Math.max(MIN, Math.ceil(w) + PAD)));
     }
 
     for (const col of _columns) {
@@ -552,6 +553,11 @@ export function createDataTableRenderer({
             nameInput.style.opacity = '0.6';
             nameInput.style.cursor  = 'default';
           } else {
+            nameInput.readOnly = true;  // display-only; dblclick to edit
+            nameInput.addEventListener('dblclick', () => {
+              nameInput.readOnly = false;
+              nameInput.select();
+            });
             nameInput.addEventListener('keydown', e => {
               if (e.key === 'Enter') { nameInput.blur(); }
               if (e.key === 'Escape') {
@@ -561,6 +567,7 @@ export function createDataTableRenderer({
               }
             });
             nameInput.addEventListener('blur', () => {
+              nameInput.readOnly = true;
               if (nameInput._cancelBlur) { nameInput._cancelBlur = false; return; }
               const orig = tip.name ?? tip.id ?? '';
               if (nameInput.value !== orig) {
@@ -596,6 +603,11 @@ export function createDataTableRenderer({
           }
 
           if (!forceReadOnly) {
+            input.readOnly = true;  // display-only; dblclick to edit
+            input.addEventListener('dblclick', () => {
+              input.readOnly = false;
+              input.select();
+            });
             input.addEventListener('keydown', e => {
               if (e.key === 'Enter') { input.blur(); }
               if (e.key === 'Escape') {
@@ -606,6 +618,7 @@ export function createDataTableRenderer({
               }
             });
             input.addEventListener('blur', () => {
+              input.readOnly = true;
               if (input._cancelBlur) { input._cancelBlur = false; return; }
               const orig    = tip.annotations?.[col];
               const origStr = orig == null ? '' : String(orig);
@@ -625,7 +638,7 @@ export function createDataTableRenderer({
         if (isSelected) rowEl.classList.add('dt-row-selected');
 
         const handleClick = (e) => {
-          if (e.target.tagName === 'INPUT') return;
+          if (e.target.tagName === 'INPUT' && !e.target.readOnly) return;  // in edit mode: don't deselect
           if (_dragMoved) return;
           const tipIdx = ri;
           const meta   = e.metaKey || e.ctrlKey;
@@ -644,7 +657,7 @@ export function createDataTableRenderer({
           if (onRowSelect) onRowSelect(next);
         };
         const handleMouseDown = (e) => {
-          if (e.target.tagName === 'INPUT') return;
+          if (e.target.tagName === 'INPUT' && !e.target.readOnly) return;  // in edit mode: let browser handle
           e.preventDefault();
           _dragSelectActive   = true;
           _dragSelectStartIdx = ri;

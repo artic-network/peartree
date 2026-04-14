@@ -3434,6 +3434,10 @@ async function _initCore(root = document) {
         _updatePaletteSelect(tipLabelShapeExtraPaletteSelects[_i], tipLabelShapeExtraPaletteRows[_i], tipLabelShapeExtraColourBys[_i].value);
       applyLegend();   // rebuild legend with new data (may clear it)
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+      // setData() does not fire _onLayoutChange (unlike setDataAnimated), so
+      // push the tip list to the data table now so it has data even if the
+      // panel was already open from a restored session.
+      dataTableRenderer?.setTips(layout.nodes.filter(n => n.isTip));
 
       // ── Axis renderer setup ───────────────────────────────────────────────
       // Detect time-scaled tree: presence of 'height' in the annotation schema is the
@@ -6239,12 +6243,16 @@ async function _initCore(root = document) {
    * Ensure `key` appears as a column in the data table.
    * If the key is already present (or the data table isn't ready), this is a no-op.
    * Only adds — never removes — to avoid disrupting the user's column selection.
+   * On the very first add (no columns configured yet), also includes '__names__' so
+   * the table is never left showing only a date column with no tip names.
    */
   function _ensureDateInTable(key) {
     if (!dataTableRenderer || !key) return;
-    const { columns } = dataTableRenderer.getState();
+    const { columns, showNames } = dataTableRenderer.getState();
     if (!columns.includes(key)) {
-      dataTableRenderer.setColumns([...columns, key]);
+      // On first-ever column add, prepend __names__ so names + date appear together.
+      const base = (!showNames && columns.length === 0) ? ['__names__'] : [];
+      dataTableRenderer.setColumns([...base, ...columns, key]);
     }
   }
 
