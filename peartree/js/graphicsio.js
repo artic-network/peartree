@@ -7,12 +7,7 @@ import { isNumericType, TreeCalibration } from './phylograph.js';
 import { getSequentialPalette,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
          MISSING_DATA_COLOUR, buildCategoricalColourMap } from './palettes.js';
-
-/** @private HTML/SVG attribute–safe string escaper. */
-function esc(s) {
-  return String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { htmlEsc as esc } from './utils.js';
 
 /** @private SVG text-content escaper (no quot needed here). */
 function svgTextEsc(s) {

@@ -4,12 +4,7 @@
 
 import { parseDelimited } from './treeio.js';
 import { buildAnnotationSchema } from './phylograph.js';
-
-/** @private HTML-escape a string for safe insertion into HTML. */
-function esc(s) {
-  return String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { htmlEsc as esc, wireDropZone } from './utils.js';
 
 /**
  * Create the annotation import dialog controller.
@@ -104,12 +99,7 @@ export function createAnnotImporter({ getGraph, onApply }) {
       reader.onload = e => _showImportConfig(file.name, e.target.result);
       reader.readAsText(file);
     });
-    annotDropZone.addEventListener('dragover',  e  => { e.preventDefault(); annotDropZone.classList.add('drag-over'); });
-    annotDropZone.addEventListener('dragleave', () => annotDropZone.classList.remove('drag-over'));
-    annotDropZone.addEventListener('drop', e => {
-      e.preventDefault();
-      annotDropZone.classList.remove('drag-over');
-      const file = e.dataTransfer.files[0];
+    wireDropZone(annotDropZone, file => {
       if (!file) return;
       const reader = new FileReader();
       reader.onload = ev => _showImportConfig(file.name, ev.target.result);

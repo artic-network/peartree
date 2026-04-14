@@ -43,3 +43,42 @@ export function overlapsZones(x1, x2, zones) {
   }
   return false;
 }
+
+/**
+ * Convert a Blob to a base-64 encoded string.
+ * Used by Tauri export paths that require base-64 payload instead of a URL download.
+ *
+ * @param {Blob} blob
+ * @returns {Promise<string>}
+ */
+export async function blobToBase64(blob) {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+/**
+ * Wire a drag-and-drop target so that dropping a file calls `onDrop(file)`.
+ * Adds the `drag-over` CSS class while a file is being dragged over the element.
+ *
+ * @param {HTMLElement} el       – drop target
+ * @param {Function}    onDrop   – called with the first dropped File (or null)
+ * @param {Object}     [opts]
+ * @param {boolean}    [opts.checkContains=false] – use relatedTarget containment check on dragleave
+ */
+export function wireDropZone(el, onDrop, { checkContains = false } = {}) {
+  el.addEventListener('dragover', e => {
+    e.preventDefault();
+    el.classList.add('drag-over');
+  });
+  el.addEventListener('dragleave', e => {
+    if (checkContains && el.contains(e.relatedTarget)) return;
+    el.classList.remove('drag-over');
+  });
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    el.classList.remove('drag-over');
+    onDrop(e.dataTransfer.files[0] ?? null);
+  });
+}

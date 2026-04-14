@@ -11,7 +11,7 @@
 
 import { RTTRenderer }      from './rttrenderer.js';
 import { TreeCalibration }  from './phylograph.js';
-import { downloadBlob }     from './utils.js';
+import { downloadBlob, htmlEsc as esc, blobToBase64 } from './utils.js';
 
 /**
  * Create the Root-to-Tip panel controller.
@@ -226,12 +226,8 @@ export function createRTTChart({
       octx.drawImage(rtt._canvas, 0, 0, tw, th);
       oc.convertToBlob({ type: 'image/png' }).then(async blob => {
         if (_imageSaveHandler) {
-          const buf   = await blob.arrayBuffer();
-          const bytes = new Uint8Array(buf);
-          let bin = '';
-          for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
           _imageSaveHandler({
-            contentBase64: btoa(bin), base64: true,
+            contentBase64: await blobToBase64(blob), base64: true,
             filename: `${filename}.png`, mimeType: 'image/png',
             filterName: 'PNG images', extensions: ['png'],
           });
@@ -283,8 +279,6 @@ export function createRTTChart({
       return span === 0 ? rect.y + rect.h / 2 : rect.y + rect.h - (v - yMin) / span * rect.h;
     };
     const f   = (n, dp = 3) => n.toFixed(dp);
-    const esc = s => String(s)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     const stepDp = step =>
       step >= 1 ? 0 : step >= 0.1 ? 1 : step >= 0.01 ? 2 : step >= 0.001 ? 3 : 4;
 

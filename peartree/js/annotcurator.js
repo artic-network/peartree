@@ -6,13 +6,7 @@
 import { makeAnnotationFormatter, buildAnnotationSchema, isNumericType } from './phylograph.js';
 import { CATEGORICAL_PALETTES, SEQUENTIAL_PALETTES,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE } from './palettes.js';
-
-/** @private HTML-escape a value for safe insertion. */
-function esc(s) {
-  return String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { htmlEsc as esc } from './utils.js';
 
 /** @private Format a number compactly for display in table cells. */
 function _fmtNum(v) {
