@@ -2639,6 +2639,14 @@ async function _initCore(root = document) {
     onEditCommit: (nodeId, key, newValue) => {
       const node = renderer?.nodeMap?.get(nodeId);
       if (!node) return;
+
+      // Special case: editing the tip name directly.
+      if (key === '__names__') {
+        node.name = newValue === '' ? null : newValue;
+        renderer._dirty = true;
+        return;
+      }
+
       if (!node.annotations) node.annotations = {};
 
       // Parse the new value based on the annotation's data type

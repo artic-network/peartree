@@ -225,6 +225,7 @@ export function createDataTableRenderer({
   }
 
   function _colLabel(key) {
+    if (key === '__names__') return 'Names';
     const schema = getRenderer()?._annotationSchema;
     return schema?.get(key)?.label ?? key;
   }
@@ -235,6 +236,7 @@ export function createDataTableRenderer({
    * tip.annotations, honouring any schema dataKey redirect.
    */
   function _tipValue(tip, key) {
+    if (key === '__names__') return tip.name ?? tip.id ?? null;
     if (key.startsWith('__')) {
       const r = getRenderer();
       return r?._statValue ? r._statValue(tip, key) : null;
@@ -257,6 +259,7 @@ export function createDataTableRenderer({
   /** Resolve the raw annotation value for a virtual tip `vt` from a full-height
    *  collapsed clade.  Builtin (__) stats are unavailable for virtual tips. */
   function _vtValue(vt, key) {
+    if (key === '__names__') return vt.name ?? null;
     if (key.startsWith('__')) return null;
     const schema    = getRenderer()?._annotationSchema;
     const def       = schema?.get(key);
@@ -521,17 +524,47 @@ export function createDataTableRenderer({
         rowEl.style.height  = `${rowH}px`;
         rowEl.style.width   = '100%';
 
+        const cells = new Map();
+
         if (_showNames) {
-          const nameCell = document.createElement('div');
+          const nameCell  = document.createElement('div');
           nameCell.className = 'dt-name-cell';
           const w = _colWidths[0] ?? 100;
           nameCell.style.cssText = `flex:1 1 ${w}px;min-width:${w}px`;
-          nameCell.textContent = tipLabel;
-          nameCell.title       = tipLabel;
+
+          const nameInput     = document.createElement('input');
+          nameInput.type      = 'text';
+          nameInput.value     = tipLabel;
+          nameInput.title     = tipLabel;
+          nameInput.placeholder = 'Name';
+          const nameReadOnly  = vt != null;  // virtual tips (collapsed clades) are read-only
+          if (nameReadOnly) {
+            nameInput.readOnly      = true;
+            nameInput.style.opacity = '0.6';
+            nameInput.style.cursor  = 'default';
+          } else {
+            nameInput.addEventListener('keydown', e => {
+              if (e.key === 'Enter') { nameInput.blur(); }
+              if (e.key === 'Escape') {
+                nameInput.value = tip.name ?? tip.id ?? '';
+                nameInput._cancelBlur = true;
+                nameInput.blur();
+              }
+            });
+            nameInput.addEventListener('blur', () => {
+              if (nameInput._cancelBlur) { nameInput._cancelBlur = false; return; }
+              const orig = tip.name ?? tip.id ?? '';
+              if (nameInput.value !== orig) {
+                onEditCommit(tip.id, '__names__', nameInput.value);
+                tip.name = nameInput.value;
+              }
+            });
+          }
+          nameCell.appendChild(nameInput);
           rowEl.appendChild(nameCell);
+          cells.set('__names__', nameInput);
         }
 
-        const cells = new Map();
         let wi = _showNames ? 1 : 0;
         for (const col of _columns) {
           const cell = document.createElement('div');

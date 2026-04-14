@@ -72,7 +72,13 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
     _deleted.clear();
     _pendingPalettes.clear();
     // Re-read the current live columns so the checkboxes reflect the actual table state.
-    _tableColumns = new Set([...(getTableColumns ? getTableColumns() : [])].filter(c => c !== '__names__'));
+    // Keep __names__ in the set so the Names row checkbox reflects the current data-table state.
+    _tableColumns = new Set([...(getTableColumns ? getTableColumns() : [])]);
+    // Default the Names column to on the first time the dialog is opened for a tree
+    // (i.e. when no columns have been configured yet).
+    if (!_tableColumns.has('__names__') && _tableColumns.size === 0) {
+      _tableColumns.add('__names__');
+    }
     _savedTableColumns = new Set(_tableColumns);
     _selected = null;
     _renderTable(graph.annotationSchema);
@@ -116,6 +122,24 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
 
   function _renderTable(schema) {
     const rows = [];
+
+    // ── Fixed "Names" row (always first) ──────────────────────────────────────
+    rows.push(`
+      <tr data-name="__names__" class="ca-row-fixed">
+        <td><span class="ca-name">Names</span>
+          <span style="margin-left:5px;font-size:0.68rem;color:var(--pt-text-muted);font-style:italic">tip name</span></td>
+        <td><span style="color:var(--pt-text-dim)">—</span></td>
+        <td class="ca-center" style="color:var(--pt-text-subdued);font-size:0.72rem">T</td>
+        <td><span style="color:var(--pt-text-dim)">—</span></td>
+        <td><span style="color:var(--pt-text-dim)">—</span></td>
+        <td class="ca-center">
+          <input type="checkbox" class="ca-table-chk" data-name="__names__"
+            ${_tableColumns.has('__names__') ? 'checked' : ''}
+            title="Show in data table panel"
+            style="cursor:pointer;accent-color:var(--pt-teal,#2aa198)">
+        </td>
+        <td class="ca-center"><span style="color:var(--pt-text-dim)" title="Cannot be deleted">—</span></td>
+      </tr>`);
 
     for (const [name, def] of schema) {
       if (name === 'user_colour') continue;
