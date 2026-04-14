@@ -340,7 +340,7 @@ export function createDataTableRenderer({
       headerEl.style.minWidth = '120px';
       headerEl.innerHTML =
         '<div class="dt-header-cell dt-header-empty"' +
-        ' style="flex:1;min-width:120px;color:rgba(255,255,255,0.2);' +
+        ' style="flex:1;min-width:120px;color:var(--pt-text-dim,rgba(128,128,128,0.5));' +
         'font-style:italic;text-transform:none;letter-spacing:0">' +
         'No columns selected</div>';
       return;
