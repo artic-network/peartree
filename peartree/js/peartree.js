@@ -2792,6 +2792,17 @@ async function _initCore(root = document) {
     getSettingsSnapshot: () => _buildSettingsSnapshot(),
   });
 
+  /** Show/hide a decimal-places row based on whether the chosen label annotation is numeric. */
+  function _updateLabelDpRow(rowEl, annotKey, schema) {
+    if (!rowEl) return;
+    const SYNTHETIC = [CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY];
+    const dt = schema?.get(annotKey)?.dataType;
+    const isNumeric = annotKey && annotKey !== 'names' && annotKey !== '' &&
+                      !SYNTHETIC.includes(annotKey) &&
+                      ['real', 'integer', 'proportion', 'percentage'].includes(dt);
+    rowEl.style.display = isNumeric ? '' : 'none';
+  }
+
   /** Repopulate annotation dropdowns (tipColourBy, nodeColourBy, legendAnnotEl) after schema change. */
   function _refreshAnnotationUIs(schema, { autoSelectDate = true } = {}) {
     // Re-inject built-in geometric stats so they reflect the current tree and
