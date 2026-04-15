@@ -2406,7 +2406,7 @@ export class TreeRenderer {
         // Right edge: from topPadY down to botPadY, with convex corners rounded.
         const rightX = _rightX(maxTipX);
         if (rightMode === 'outlineTips') {
-          this._addRightOutlinePath(ctx, tipNodes, topPadY, botPadY, pad, radius, outlineR, lblSpacing, shapeW);
+          this._addRightOutlinePath(ctx, tipNodes, topPadY, botPadY, pad, radius, outlineR);
         } else {
           // Two convex corners: top-right (RIGHT→DOWN) and bottom-right (DOWN→LEFT).
           const cr = radius;
@@ -2426,7 +2426,7 @@ export class TreeRenderer {
           // Hard left, right outlines individual tips as staircase.
           // Top-left corner (convex): approach from left edge, leave rightward.
           ctx.moveTo(leftX + cr, topPadY);
-          this._addRightOutlinePath(ctx, tipNodes, topPadY, botPadY, pad, radius, outlineR, lblSpacing, shapeW);
+          this._addRightOutlinePath(ctx, tipNodes, topPadY, botPadY, pad, radius, outlineR);
           // Bottom-left corner (convex): arrive from right, leave upward.
           ctx.lineTo(leftX + cr, botPadY);
           ctx.arcTo(leftX, botPadY, leftX, botPadY - cr, cr);
@@ -2596,10 +2596,10 @@ export class TreeRenderer {
    * @param {number} startY  Screen y at the top of the first tip (e.g. topTip.y − pad)
    * @param {number} endY    Screen y at the bottom of the last tip (e.g. botTip.y + pad)
    */
-  _addRightOutlinePath(ctx, tipNodes, startY, endY, pad, r, outlineR, lblSpacing, shapeW) {
+  _addRightOutlinePath(ctx, tipNodes, startY, endY, pad, r, outlineR) {
     const tips = [...tipNodes]; // top to bottom (already sorted by y)
     // Pre-compute right-edge x for every tip.
-    const sxArr = tips.map(t => this._wx(t.x) + outlineR + lblSpacing + shapeW + pad);
+    const sxArr = tips.map(t => this._wx(t.x) + pad);
 
     for (let i = 0; i < tips.length; i++) {
       const sx       = sxArr[i];

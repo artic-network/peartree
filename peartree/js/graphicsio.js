@@ -377,7 +377,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     }
 
     function _chRightPath(p, tipNodes, startY_, endY_) {
-      const sxArr = tipNodes.map(t => toSX(t.x) + chOutR + chLblSp + chShpW + chPad);
+      const sxArr = tipNodes.map(t => toSX(t.x) + chPad);
       for (let i = 0; i < tipNodes.length; i++) {
         const sx       = sxArr[i];
         const prevSX_  = i > 0 ? sxArr[i - 1] : null;
