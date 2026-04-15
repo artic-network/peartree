@@ -1289,12 +1289,10 @@ body.palette-pinned #canvas-container {
   pointer-events: none;
   display: block;
 }
-/* Shared generic popup (panel pickers) */
+/* Shared generic popup (panel pickers) — appended to document.body at runtime */
 .pt-cp-popup {
   display: none;
-  position: absolute;
-  bottom: calc(100% + 4px);
-  left: 0;
+  position: fixed;
   z-index: 800;
   background: var(--pt-bg-panel);
   border: 1px solid var(--pt-border);

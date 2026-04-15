@@ -334,9 +334,9 @@ export function createPaletteColourPicker(inputEl, { palettes }) {
   });
 
   popup.className += ' pt-pcp-popup';
-  // Position popup relative to the trigger button's parent row
-  btn.style.position = 'relative';
-  btn.appendChild(popup);
+  // Append to document.body so the popup escapes any overflow:hidden ancestor
+  // (e.g. the palette panel and its scroll body).  Position is set in open().
+  document.body.appendChild(popup);
 
   function getValue() { return inputEl.value; }
 
@@ -347,6 +347,19 @@ export function createPaletteColourPicker(inputEl, { palettes }) {
 
   function open() {
     render();
+    // Position with fixed coordinates so the popup escapes overflow:hidden parents.
+    const rect = btn.getBoundingClientRect();
+    const estH = 280; // conservative height estimate
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceAbove >= estH || spaceAbove > spaceBelow) {
+      popup.style.top    = 'auto';
+      popup.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+    } else {
+      popup.style.top    = (rect.bottom + 4) + 'px';
+      popup.style.bottom = 'auto';
+    }
+    popup.style.left = rect.left + 'px';
     popup.classList.add('open');
     _openPopups.add(entry);
   }
