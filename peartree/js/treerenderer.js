@@ -102,6 +102,9 @@ export class TreeRenderer {
     this._onViewChange         = null;   // callback(scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr)
     this._onLayoutChange       = null;   // callback(maxX, viewSubtreeRootId) – fired on navigate into/out of subtree
     this._globalHeightMap      = new Map(); // id → (fullMaxX - node.x) from most recent full-tree layout
+    this._rttResidualsMap      = null;       // id → residual (from regression or mean) — set by peartree.js
+    this._rttZScoresMap        = null;       // id → raw z-score
+    this._rttOutliersMap       = null;       // id → outlier z-score (0 if |z|<=2)
     this._lastViewHash         = '';
 
     // animation targets (lerp toward these each frame)
@@ -4232,6 +4235,9 @@ export class TreeRenderer {
         return parent != null ? node.x - parent.x : null;
       }
       case '__tips_below__':    return this._tipsBelowMap?.get(node.id) ?? null;
+      case '__temporal_residual__': return this._rttResidualsMap?.get(node.id) ?? null;
+      case '__temporal_zscore__':   return this._rttZScoresMap?.get(node.id)   ?? null;
+      case '__temporal_outlier__':  return this._rttOutliersMap?.get(node.id)  ?? null;
       case '__cal_date__':
         if (!this._calCalibration?.isActive) return null;
         return this._calCalibration.heightToDecYear(

@@ -404,6 +404,9 @@ export const BUILTIN_STAT_KEYS = new Set([
   '__tips_below__',
   '__branch_length__',
   '__cal_date__',
+  '__temporal_residual__',
+  '__temporal_zscore__',
+  '__temporal_outlier__',
 ]);
 
 /**
@@ -412,13 +415,14 @@ export const BUILTIN_STAT_KEYS = new Set([
  * Must be called after layout is computed (needs maxX, node array for bounds)
  * and after calibration is resolved (needs cal.isActive for __cal_date__).
  *
- * @param {Map}                  schema  – annotation schema to mutate in-place
- * @param {Array}                nodes   – layout LayoutNode[] for computing bounds
- * @param {number}               maxX    – full-tree maximum divergence
- * @param {number}               maxY    – total visible tip count
- * @param {TreeCalibration|null} cal     – calibration object, or null
+ * @param {Map}                  schema        – annotation schema to mutate in-place
+ * @param {Array}                nodes         – layout LayoutNode[] for computing bounds
+ * @param {number}               maxX          – full-tree maximum divergence
+ * @param {number}               maxY          – total visible tip count
+ * @param {TreeCalibration|null} cal           – calibration object, or null
+ * @param {object|null}          [residualData] – result of computeTemporalResiduals(), or null
  */
-export function injectBuiltinStats(schema, nodes, maxX, maxY, cal) {
+export function injectBuiltinStats(schema, nodes, maxX, maxY, cal, residualData = null) {
   // Remove any previously injected builtin entries.
   for (const k of BUILTIN_STAT_KEYS) schema.delete(k);
   if (!nodes || !nodes.length) return;
@@ -520,6 +524,121 @@ export function injectBuiltinStats(schema, nodes, maxX, maxY, cal) {
     attachFmt(def);
     schema.set('__cal_date__', def);
   }
+
+  // ── __temporal_residual__, __temporal_zscore__, __temporal_outlier__ ──────────
+  // Always injected (tips only); bounds come from precomputed residualData when
+  // available, otherwise both are 0 (will be updated on next calibration pass).
+  {
+    const minR = residualData?.minResidual ?? 0;
+    const maxR = residualData?.maxResidual ?? 0;
+    const rd = {
+      name: '__temporal_residual__', label: 'Temporal Residual',
+      dataType: 'real', min: minR, max: maxR,
+      observedMin: minR, observedMax: maxR,
+      onTips: true, onNodes: false, builtin: true,
+    };
+    attachFmt(rd);
+    schema.set('__temporal_residual__', rd);
+  }
+  {
+    const minZ = residualData?.minZscore ?? 0;
+    const maxZ = residualData?.maxZscore ?? 0;
+    const rz = {
+      name: '__temporal_zscore__', label: 'Temporal Z-score',
+      dataType: 'real', min: minZ, max: maxZ,
+      observedMin: minZ, observedMax: maxZ,
+      onTips: true, onNodes: false, builtin: true,
+    };
+    attachFmt(rz);
+    schema.set('__temporal_zscore__', rz);
+  }
+  {
+    const minO = residualData?.minOutlier ?? 0;
+    const maxO = residualData?.maxOutlier ?? 0;
+    const ro = {
+      name: '__temporal_outlier__', label: 'Temporal Outlier',
+      dataType: 'real', min: minO, max: maxO,
+      observedMin: minO, observedMax: maxO,
+      onTips: true, onNodes: false, builtin: true,
+    };
+    attachFmt(ro);
+    schema.set('__temporal_outlier__', ro);
+  }
+}
+
+/**
+ * Compute per-tip temporal residuals from the RTT regression when calibration is
+ * active, or from mean divergence for homochronous / undated trees.
+ *
+ * Regression mode  (cal.isActive && cal.regression && dateKey):
+ *   residual = divergence − (a·date + b)
+ *   z-score  = residual / rmse
+ *
+ * Mean mode  (no active calibration or no date key):
+ *   residual = divergence − mean(divergence)
+ *   z-score  = residual / stdev(divergence)
+ *
+ * Outlier value = z-score when |z| > 2 (i.e., more than 2 stdevs away from the
+ * regression/mean line), otherwise 0.
+ *
+ * @param {Array}            nodes   – layout node array (tips only are used)
+ * @param {TreeCalibration|null} cal – calibration object, or null
+ * @param {string|null}    dateKey   – annotation key containing tip dates
+ * @returns {{ residualMap: Map, outlierMap: Map,
+ *             minResidual: number, maxResidual: number,
+ *             minOutlier:  number, maxOutlier:  number }}
+ */
+export function computeTemporalResiduals(nodes, cal, dateKey) {
+  const tips = nodes ? nodes.filter(n => n.isTip) : [];
+  const residualMap = new Map();
+  const outlierMap  = new Map();
+  const empty = { residualMap, outlierMap, minResidual: 0, maxResidual: 0, minOutlier: 0, maxOutlier: 0 };
+  if (!tips.length) return empty;
+
+  const reg = (cal?.isActive && cal.regression) ? cal.regression : null;
+
+  if (reg && dateKey) {
+    // ── Regression mode ────────────────────────────────────────────────────
+    for (const tip of tips) {
+      const raw = tip.annotations?.[dateKey];
+      const x   = (raw != null) ? TreeCalibration.parseDateToDecYear(String(raw)) : null;
+      if (x == null) { residualMap.set(tip.id, null); outlierMap.set(tip.id, null); continue; }
+      residualMap.set(tip.id, tip.x - (reg.a * x + reg.b));
+    }
+    const rmse = reg.rmse ?? 0;
+    for (const [id, r] of residualMap) {
+      if (r == null) { outlierMap.set(id, null); continue; }
+      const z = rmse > 0 ? r / rmse : 0;
+      outlierMap.set(id, Math.abs(z) > 2 ? z : 0);
+    }
+  } else {
+    // ── Mean mode (homochronous / no calibration) ──────────────────────────
+    const divs = tips.map(n => n.x);
+    const mean  = divs.reduce((s, v) => s + v, 0) / divs.length;
+    const stdev = Math.sqrt(divs.reduce((s, v) => s + (v - mean) ** 2, 0) / divs.length);
+    for (const tip of tips) {
+      const r = tip.x - mean;
+      residualMap.set(tip.id, r);
+      const z = stdev > 0 ? r / stdev : 0;
+      outlierMap.set(tip.id, Math.abs(z) > 2 ? z : 0);
+    }
+  }
+
+  let minResidual = Infinity, maxResidual = -Infinity;
+  for (const v of residualMap.values()) {
+    if (v == null) continue;
+    if (v < minResidual) minResidual = v;
+    if (v > maxResidual) maxResidual = v;
+  }
+  let minOutlier = Infinity, maxOutlier = -Infinity;
+  for (const v of outlierMap.values()) {
+    if (v == null) continue;
+    if (v < minOutlier) minOutlier = v;
+    if (v > maxOutlier) maxOutlier = v;
+  }
+  if (!isFinite(minResidual)) { minResidual = 0; maxResidual = 0; }
+  if (!isFinite(minOutlier))  { minOutlier  = 0; maxOutlier  = 0; }
+  return { residualMap, outlierMap, minResidual, maxResidual, minOutlier, maxOutlier };
 }
 
 /**

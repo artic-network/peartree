@@ -1,6 +1,6 @@
 import { parseNexus, parseNewick, graphToNewick, parseDelimited } from './treeio.js';
 import { computeLayoutFromGraph, graphVisibleTipCount, graphSubtreeHasHidden } from './treeutils.js';
-import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointRootGraph, temporalRootGraph, optimiseRootEdge, buildAnnotationSchema, injectBuiltinStats, isNumericType, TreeCalibration } from './phylograph.js';
+import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointRootGraph, temporalRootGraph, optimiseRootEdge, buildAnnotationSchema, injectBuiltinStats, isNumericType, TreeCalibration, computeTemporalResiduals } from './phylograph.js';
 import { htmlEsc as _esc, downloadBlob as _downloadBlob, wireDropZone as _wireDropZone } from './utils.js';
 import { TreeRenderer, CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY } from './treerenderer.js';
 import { LegendRenderer } from './legendrenderer.js';
@@ -2826,8 +2826,20 @@ async function _initCore(root = document) {
     // Re-inject built-in geometric stats so they reflect the current tree and
     // calibration state.  This is idempotent — removes old entries first.
     if (renderer?.nodes?.length) {
+      // Compute temporal residuals (regression mode when cal is active, mean mode
+      // for homochronous / undated trees) and store on the renderer so _statValue
+      // can serve them without re-computation.
+      const dateKey = (!axisDateAnnotEl.disabled && axisDateAnnotEl.value) ? axisDateAnnotEl.value : null;
+      const residualData = computeTemporalResiduals(
+        renderer.nodes,
+        calibration?.isActive ? calibration : null,
+        dateKey,
+      );
+      renderer._rttResidualsMap = residualData.residualMap;
+      renderer._rttZScoresMap   = residualData.zscoreMap;
+      renderer._rttOutliersMap  = residualData.outlierMap;
       injectBuiltinStats(schema, renderer.nodes, renderer.maxX, renderer.maxY,
-                         calibration?.isActive ? calibration : null);
+                         calibration?.isActive ? calibration : null, residualData);
       renderer.setAnnotationSchema(schema);
     }
     // filter: 'tips' → onTips, 'nodes' → onNodes, 'all' → no filter
