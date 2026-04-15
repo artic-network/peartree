@@ -2951,7 +2951,8 @@ async function _initCore(root = document) {
                          calibration?.isActive ? calibration : null, residualData);
       renderer.setAnnotationSchema(schema);
     }
-    // filter: 'tips' → onTips, 'nodes' → onNodes, 'all' → no filter
+    // filter: 'tips' → onTips, 'nodes' → onNodes, 'all' → no filter,
+    //         'nodesAndTipAvg' → node annotations first, then tip-only labelled '(tip avg)'
     function repopulate(sel, { isLegend = false, filter = 'all' } = {}) {
       const prev = sel.value;
       // Remove everything after the first static option (user colour / (none)).
@@ -2962,9 +2963,22 @@ async function _initCore(root = document) {
         if (def.groupMember) continue; // BEAST sub-annotation (median/HPD/range)
         if (filter === 'tips'  && !def.onTips)  continue;
         if (filter === 'nodes' && !def.onNodes) continue;
+        if (filter === 'nodesAndTipAvg' && !def.onNodes) continue; // tip-avgs appended below
         const opt = document.createElement('option');
         opt.value = name; opt.textContent = def.label ?? name;
         sel.appendChild(opt);
+      }
+      if (filter === 'nodesAndTipAvg') {
+        for (const [name, def] of schema) {
+          if (name === 'user_colour') continue;
+          if (def.dataType === 'list') continue;
+          if (def.groupMember) continue;
+          if (def.onNodes) continue;
+          if (!def.onTips) continue;
+          const opt = document.createElement('option');
+          opt.value = name; opt.textContent = (def.label ?? name) + ' (tip avg)';
+          sel.appendChild(opt);
+        }
       }
       sel.disabled = false;
       // Restore previous selection if still available; legend falls back to '' (none), colour-by to user_colour.
@@ -2972,8 +2986,10 @@ async function _initCore(root = document) {
                   : (isLegend ? '' : 'user_colour');
     }
     repopulate(tipColourBy,          { filter: 'tips'  });
-    repopulate(nodeColourBy,         { filter: 'nodes' });
+    repopulate(nodeColourBy,         { filter: 'nodesAndTipAvg' });
     repopulate(labelColourBy,        { filter: 'tips'  });
+    if (cladeHighlightColourByEl)  repopulate(cladeHighlightColourByEl,  { filter: 'nodesAndTipAvg' });
+    if (collapsedCladeColourByEl)  repopulate(collapsedCladeColourByEl,  { filter: 'nodesAndTipAvg' });
     // Rebuild filter-column popup: 'Name' first, then categorical/ordinal/date tip annotations only.
     {
       const items = [{ value: '__name__', label: 'Name' }];
@@ -3298,15 +3314,28 @@ async function _initCore(root = document) {
           if (def.groupMember) continue; // BEAST sub-annotation (median/HPD/range)
           if (filter === 'tips'  && !def.onTips)  continue;
           if (filter === 'nodes' && !def.onNodes) continue;
+          if (filter === 'nodesAndTipAvg' && !def.onNodes) continue; // tip-avgs appended below
           const opt = document.createElement('option');
           opt.value = name; opt.textContent = def.label ?? name;
           sel.appendChild(opt);
+        }
+        if (filter === 'nodesAndTipAvg') {
+          for (const [name, def] of schema) {
+            if (name === 'user_colour') continue;
+            if (def.dataType === 'list') continue;
+            if (def.groupMember) continue;
+            if (def.onNodes) continue;
+            if (!def.onTips) continue;
+            const opt = document.createElement('option');
+            opt.value = name; opt.textContent = (def.label ?? name) + ' (tip avg)';
+            sel.appendChild(opt);
+          }
         }
         sel.disabled = false;
         sel.value = 'user_colour';
       }
       _populateColourBy(tipColourBy,          'tips');
-      _populateColourBy(nodeColourBy,         'nodes');
+      _populateColourBy(nodeColourBy,         'nodesAndTipAvg');
       _populateColourBy(labelColourBy,        'tips');
       _populateColourBy(tipLabelShapeColourBy, 'tips');
       for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++) _populateColourBy(tipLabelShapeExtraColourBys[_i], 'tips');
@@ -3325,7 +3354,7 @@ async function _initCore(root = document) {
           opt.value = name; opt.textContent = def.label ?? name;
           cladeHighlightColourByEl.appendChild(opt);
         }
-        // Then tip-only annotations (not on nodes)
+        // Then tip-only annotations (not on nodes), labelled as '(tip avg)'
         for (const [name, def] of schema) {
           if (name === 'user_colour') continue;
           if (def.dataType === 'list') continue;
@@ -3333,7 +3362,7 @@ async function _initCore(root = document) {
           if (def.onNodes) continue;
           if (!def.onTips) continue;
           const opt = document.createElement('option');
-          opt.value = name; opt.textContent = def.label ?? name;
+          opt.value = name; opt.textContent = (def.label ?? name) + ' (tip avg)';
           cladeHighlightColourByEl.appendChild(opt);
         }
         cladeHighlightColourByEl.disabled = false;
@@ -3355,7 +3384,7 @@ async function _initCore(root = document) {
           opt.value = name; opt.textContent = def.label ?? name;
           collapsedCladeColourByEl.appendChild(opt);
         }
-        // Then tip-only annotations (not on nodes)
+        // Then tip-only annotations (not on nodes), labelled as '(tip avg)'
         for (const [name, def] of schema) {
           if (name === 'user_colour') continue;
           if (def.dataType === 'list') continue;
@@ -3363,7 +3392,7 @@ async function _initCore(root = document) {
           if (def.onNodes) continue;
           if (!def.onTips) continue;
           const opt = document.createElement('option');
-          opt.value = name; opt.textContent = def.label ?? name;
+          opt.value = name; opt.textContent = (def.label ?? name) + ' (tip avg)';
           collapsedCladeColourByEl.appendChild(opt);
         }
         collapsedCladeColourByEl.disabled = false;
@@ -4695,17 +4724,15 @@ async function _initCore(root = document) {
         return paintColourPickerEl?.value ?? '#ffaa00';
       }
       const fallback = paintColourPickerEl?.value ?? '#ffaa00';
-      const schema = renderer?._annotationSchema;
-      const def    = schema?.get(colourBy);
+      const def    = renderer?._annotationSchema?.get(colourBy);
       if (!nodeId || !renderer.nodeMap) return fallback;
 
-      // Build colour scale using current palette/scale-mode overrides.
       const scale = renderer._buildColourScale?.(colourBy);
       if (!scale || scale.size === 0) return fallback;
 
       let resolvedValue = null;
 
-      // For node annotations: try the MRCA node's own value first.
+      // For node annotations: try the root node's own value first.
       if (def?.onNodes) {
         const node = renderer.nodeMap.get(nodeId);
         const nVal = renderer._statValue?.(node, colourBy);
@@ -4714,25 +4741,9 @@ async function _initCore(root = document) {
 
       // Fall back to aggregating descendant tip values.
       if (resolvedValue == null) {
-        const tipIds = renderer._getDescendantTipIds?.(nodeId) ?? [];
-        const vals = [];
-        for (const tipId of tipIds) {
-          const n = renderer.nodeMap.get(tipId);
-          const v = renderer._statValue?.(n, colourBy) ?? n?.annotations?.[colourBy];
-          if (v != null && v !== '') vals.push(v);
-        }
-        if (vals.length === 0) return fallback;
-        if (def && isNumericType(def.dataType)) {
-          // Mean for numeric annotations.
-          const nums = vals.map(Number).filter(v => !isNaN(v));
-          if (nums.length === 0) return fallback;
-          resolvedValue = nums.reduce((a, b) => a + b, 0) / nums.length;
-        } else {
-          // Modal value for categorical/other annotations.
-          const freq = new Map();
-          for (const v of vals) freq.set(v, (freq.get(v) ?? 0) + 1);
-          resolvedValue = [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0];
-        }
+        const node = renderer.nodeMap.get(nodeId);
+        resolvedValue = renderer._aggregateTipValue?.(node, colourBy) ?? null;
+        if (resolvedValue == null) return fallback;
       }
 
       const colour = renderer._colourFromScale?.(resolvedValue, scale);
@@ -4752,9 +4763,8 @@ async function _initCore(root = document) {
     function _resolveCollapsedColour(nodeId) {
       const colourBy = collapsedCladeColourByEl?.value ?? 'user_colour';
       if (colourBy === 'user_colour') return null; // null → renderer uses tipShapeColor
-      const schema = renderer?._annotationSchema;
-      const def    = schema?.get(colourBy);
-      const node   = renderer.nodeMap?.get(nodeId);
+      const def  = renderer?._annotationSchema?.get(colourBy);
+      const node = renderer.nodeMap?.get(nodeId);
       if (!node) return null;
 
       const scale = renderer._buildColourScale?.(colourBy);
@@ -4768,25 +4778,10 @@ async function _initCore(root = document) {
         if (nVal != null && nVal !== '') resolvedValue = nVal;
       }
 
-      // Fall back to aggregating tip values from collapsedTipNames.
+      // Fall back to aggregating descendant tip values.
       if (resolvedValue == null) {
-        const lookupKey = def?.dataKey ?? colourBy;
-        const tipEntries = node.collapsedTipNames ?? [];
-        const vals = [];
-        for (const tip of tipEntries) {
-          const v = tip.annotations?.[lookupKey];
-          if (v != null && v !== '') vals.push(v);
-        }
-        if (vals.length === 0) return null;
-        if (def && isNumericType(def.dataType)) {
-          const nums = vals.map(Number).filter(v => !isNaN(v));
-          if (nums.length === 0) return null;
-          resolvedValue = nums.reduce((a, b) => a + b, 0) / nums.length;
-        } else {
-          const freq = new Map();
-          for (const v of vals) freq.set(v, (freq.get(v) ?? 0) + 1);
-          resolvedValue = [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0];
-        }
+        resolvedValue = renderer._aggregateTipValue?.(node, colourBy) ?? null;
+        if (resolvedValue == null) return null;
       }
 
       return renderer._colourFromScale?.(resolvedValue, scale) ?? null;

@@ -1274,6 +1274,30 @@ export class TreeRenderer {
   _tipLabelShapeColourForValue(value)   { return this._colourFromScale(value, this._tipLabelShapeColourScale); }
   _tipLabelShapeExtraColourForValue(i, value) { return this._colourFromScale(value, this._tipLabelShapeExtraColourScales[i]); }
 
+  /**
+   * Aggregate descendant tip annotation values for an internal node.
+   * Returns the mean (numeric) or modal (categorical) value, or null if none.
+   */
+  _aggregateTipValue(node, key) {
+    const def    = this._annotationSchema?.get(key);
+    const tipIds = this._getDescendantTipIds(node.id);
+    const vals   = [];
+    for (const id of tipIds) {
+      const t = this.nodeMap.get(id);
+      const v = this._statValue(t, key) ?? t?.annotations?.[key];
+      if (v != null && v !== '') vals.push(v);
+    }
+    if (vals.length === 0) return null;
+    if (def && isNumericType(def.dataType)) {
+      const nums = vals.map(Number).filter(v => !isNaN(v));
+      if (nums.length === 0) return null;
+      return nums.reduce((a, b) => a + b, 0) / nums.length;
+    }
+    const freq = new Map();
+    for (const v of vals) freq.set(v, (freq.get(v) ?? 0) + 1);
+    return [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  }
+
   /** Pixel size of tip-label shape swatches, relative to the current inter-tip spacing (scaleY).
    *  square / circle: sizePercent 1–100 maps to 1–100 % of scaleY.
    *  block: sizePercent 1–100 maps to 0.1×–10× scaleY (width only; height is always scaleY). */
@@ -3068,11 +3092,15 @@ export class TreeRenderer {
     }
     if (nodeR > 0) {
       if (this._nodeColourBy && this._nodeColourScale) {
-        const key = this._nodeColourBy;
+        const key    = this._nodeColourBy;
+        const def    = this._annotationSchema?.get(key);
+        const tipOnly = def && !def.onNodes && def.onTips;
         for (const node of this.nodes) {
           if (node.isTip && !node.isCollapsed) continue;
           if (node.y < yWorldMin || node.y > yWorldMax) continue;
-          const val = this._statValue(node, key);
+          const val = tipOnly
+            ? this._aggregateTipValue(node, key)
+            : this._statValue(node, key);
           ctx.fillStyle = this._nodeColourForValue(val) ?? this.nodeShapeColor;
           ctx.beginPath();
           ctx.arc(this._wx(node.x), this._wy(node.y), nodeR, 0, Math.PI * 2);
