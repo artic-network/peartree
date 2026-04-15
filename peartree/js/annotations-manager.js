@@ -26,7 +26,7 @@ function _fmtNum(v) {
  *                                    renderer.setAnnotationSchema(schema).
  * @returns {{ open: Function, close: Function }}
  */
-export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, getTableColumns, getAnnotationPalette, onPaletteChange }) {
+export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, getTableColumns, getAnnotationPalette, onPaletteChange, getAnnotationScaleMode, onScaleModeChange }) {
   const overlay  = document.getElementById('curate-annot-overlay');
   const tbody    = document.getElementById('curate-annot-tbody');
   const detail   = document.getElementById('curate-annot-detail');
@@ -34,10 +34,11 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
 
   // Pending edits per annotation name, cleared on each open().
   // Map<name, { dataType?, min?, max?, fixedBounds?, _boundsMode? }>
-  let _pending         = new Map();
-  let _deleted         = new Set();  // names marked for deletion, applied at Apply time
-  let _selected        = null;   // name of currently selected row
-  let _pendingPalettes = new Map(); // name → paletteName — committed on Apply only
+  let _pending          = new Map();
+  let _deleted          = new Set();  // names marked for deletion, applied at Apply time
+  let _selected         = null;   // name of currently selected row
+  let _pendingPalettes  = new Map(); // name → paletteName — committed on Apply only
+  let _pendingScaleModes = new Map(); // name → scaleMode — committed on Apply only
   let _savedTableColumns = new Set(); // snapshot of _tableColumns at open() for cancel
 
   // Columns currently shown in the data table panel.
@@ -71,6 +72,7 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
     _pending.clear();
     _deleted.clear();
     _pendingPalettes.clear();
+    _pendingScaleModes.clear();
     // Re-read the current live columns so the checkboxes reflect the actual table state.
     // Keep __names__ in the set so the Names row checkbox reflects the current data-table state.
     _tableColumns = new Set([...(getTableColumns ? getTableColumns() : [])]);
@@ -87,8 +89,9 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
   }
 
   function close() {
-    // Abandon uncommitted palette and column-toggle changes
+    // Abandon uncommitted palette, scale-mode and column-toggle changes
     _pendingPalettes.clear();
+    _pendingScaleModes.clear();
     _tableColumns = new Set(_savedTableColumns);
     overlay.classList.remove('open');
   }
@@ -112,6 +115,10 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
     // Commit palette changes
     for (const [key, paletteName] of _pendingPalettes) {
       if (onPaletteChange) onPaletteChange(key, paletteName);
+    }
+    // Commit scale mode changes
+    for (const [key, mode] of _pendingScaleModes) {
+      if (onScaleModeChange) onScaleModeChange(key, mode);
     }
     onApply(schema);
     graph.annotationSchema = schema;
@@ -326,7 +333,7 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
       const opts = Object.keys(palettes)
         .map(p => `<option value="${esc(p)}"${p === stored ? ' selected' : ''}>${esc(p)}</option>`)
         .join('');
-      detail.innerHTML =
+      let bHtml =
           `<div class="ca-detail-header"><i class="bi bi-tag me-1"></i>${displayName}</div>`
         + `<div class="ca-row" style="color:var(--pt-text-subdued);font-size:0.78rem;margin-top:4px">`
         + `<i class="bi bi-lock-fill me-2" style="opacity:0.45"></i>Computed attribute — read-only</div>`
@@ -334,8 +341,21 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
         + `<div class="ca-row"><label class="ca-row-lbl">Colour scheme</label>`
         + `<select id="cd-palette" class="ca-sel" style="width:auto">${opts}</select>`
         + `</div>`;
+      if (!isCat) {
+        const storedMode = _pendingScaleModes.get(name) ?? (getAnnotationScaleMode ? getAnnotationScaleMode(name) : '') ?? '';
+        const scaleModeOpts = [
+          ['', 'Auto (min → max)'], ['symmetric-zero', 'Symmetric ±0'],
+          ['zero-positive', 'From zero'], ['zero-one', '0 → 1'],
+        ].map(([v, l]) => `<option value="${v}"${v === storedMode ? ' selected' : ''}>${l}</option>`).join('');
+        bHtml += `<div class="ca-row" style="margin-top:6px"><label class="ca-row-lbl">Scale</label>`
+               + `<select id="cd-scale-mode" class="ca-sel" style="width:auto">${scaleModeOpts}</select></div>`;
+      }
+      detail.innerHTML = bHtml;
       document.getElementById('cd-palette')?.addEventListener('change', e => {
         _pendingPalettes.set(name, e.target.value);
+      });
+      document.getElementById('cd-scale-mode')?.addEventListener('change', e => {
+        _pendingScaleModes.set(name, e.target.value);
       });
       return;
     }
@@ -495,6 +515,15 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
             + `<div class="ca-row"><label class="ca-row-lbl">Colour scheme</label>`
             + `<select id="cd-palette" class="ca-sel" style="width:auto">${opts}</select>`
             + `</div>`;
+      if (!isCat && currentType !== 'date') {
+        const storedMode = _pendingScaleModes.get(name) ?? (getAnnotationScaleMode ? getAnnotationScaleMode(name) : '') ?? '';
+        const scaleModeOpts = [
+          ['', 'Auto (min → max)'], ['symmetric-zero', 'Symmetric ±0'],
+          ['zero-positive', 'From zero'], ['zero-one', '0 → 1'],
+        ].map(([v, l]) => `<option value="${v}"${v === storedMode ? ' selected' : ''}>${l}</option>`).join('');
+        html += `<div class="ca-row" style="margin-top:6px"><label class="ca-row-lbl">Scale</label>`
+              + `<select id="cd-scale-mode" class="ca-sel" style="width:auto">${scaleModeOpts}</select></div>`;
+      }
     }
 
     detail.innerHTML = html;
@@ -533,6 +562,11 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
     // Palette
     document.getElementById('cd-palette')?.addEventListener('change', e => {
       _pendingPalettes.set(name, e.target.value);
+    });
+
+    // Scale mode
+    document.getElementById('cd-scale-mode')?.addEventListener('change', e => {
+      _pendingScaleModes.set(name, e.target.value);
     });
 
     // Branch-annotation toggle
