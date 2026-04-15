@@ -1684,6 +1684,14 @@ body.palette-pinned #canvas-container {
 .imp-ok  { color: var(--pt-imp-ok); }
 .imp-warn{ color: var(--pt-imp-warn); }
 .imp-err { color: var(--pt-imp-err); }
+.pt-code-tag {
+  background: var(--pt-surface-code);
+  color: var(--pt-text-bright);
+  padding: 0 3px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.85em;
+}
 /* ── Export Tree dialog ── */
 .exp-section { margin-bottom: 0.85rem; }
 .exp-section-label {

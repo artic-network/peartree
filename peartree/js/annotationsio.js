@@ -205,7 +205,8 @@ export function createAnnotImporter({ getGraph, onApply }) {
             <input type="radio" name="imp-mode" id="imp-mode-field" value="field">
             Pipe-delimited field:&nbsp;
             <input type="number" id="imp-field-num" min="1" value="1"
-              style="width:52px;background:#02292e;color:var(--bs-body-color);border:1px solid #235b62;border-radius:0.25rem;padding:0.1rem 0.3rem;font-size:0.82rem;"
+              class="ca-num-input"
+              style="width:52px;padding:0.1rem 0.3rem;font-size:0.82rem;"
               title="Which |-delimited field (1 = first)">
           </label>
         </div>
@@ -418,7 +419,7 @@ export function createAnnotImporter({ getGraph, onApply }) {
         <span class="imp-result-icon ${tipCls}">
           <i class="bi bi-${unmatchedTips > 0 ? 'exclamation-triangle-fill' : 'check-circle-fill'}"></i>
         </span>
-        <span><strong>${unmatchedTips}</strong> tip${unmatchedTips !== 1 ? 's' : ''} unmatched${unmatchedTips > 0 && unmatchedTipExamples.length > 0 ? ` <span style="color:var(--bs-secondary-color);font-size:0.78rem">(e.g. ${unmatchedTipExamples.map(n => `<code style="background:#02292e;padding:0 3px;border-radius:3px">${esc(n)}</code>`).join(', ')}${unmatchedTips > unmatchedTipExamples.length ? ', …' : ''})</span>` : ''}</span>
+        <span><strong>${unmatchedTips}</strong> tip${unmatchedTips !== 1 ? 's' : ''} unmatched${unmatchedTips > 0 && unmatchedTipExamples.length > 0 ? ` <span style="color:var(--bs-secondary-color);font-size:0.78rem">(e.g. ${unmatchedTipExamples.map(n => `<code class="pt-code-tag">${esc(n)}</code>`).join(', ')}${unmatchedTips > unmatchedTipExamples.length ? ', …' : ''})</span>` : ''}</span>
       </div>
       <div class="imp-result-row">
         <span class="imp-result-icon ${rowCls}">
@@ -427,9 +428,9 @@ export function createAnnotImporter({ getGraph, onApply }) {
         <span><strong>${unmatchedRows}</strong> annotation row${unmatchedRows !== 1 ? 's' : ''} unmatched</span>
       </div>
       ${importCols.length > 0 ? `
-      <div style="margin-top:0.75rem;padding-top:0.6rem;border-top:1px solid #235b62;">
+      <div style="margin-top:0.75rem;padding-top:0.6rem;border-top:1px solid var(--pt-divider);">
         <span style="color:var(--bs-secondary-color)">Annotations imported:</span>
-        ${importCols.map(c => `<code style="background:#02292e;padding:0 3px;border-radius:3px;margin:0 2px">${esc(c)}</code>`).join('')}
+        ${importCols.map(c => `<code class="pt-code-tag" style="margin:0 2px">${esc(c)}</code>`).join('')}
       </div>` : ''}`;
     footer.innerHTML = `<button id="imp-close-btn" class="btn btn-sm btn-primary">Close</button>`;
     document.getElementById('imp-close-btn').addEventListener('click', close);
