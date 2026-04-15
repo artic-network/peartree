@@ -1275,18 +1275,28 @@ export class TreeRenderer {
   _tipLabelShapeExtraColourForValue(i, value) { return this._colourFromScale(value, this._tipLabelShapeExtraColourScales[i]); }
 
   /**
-   * Aggregate descendant tip annotation values for an internal node.
+   * Aggregate descendant tip annotation values for a node (internal or collapsed).
    * Returns the mean (numeric) or modal (categorical) value, or null if none.
    */
   _aggregateTipValue(node, key) {
-    const def    = this._annotationSchema?.get(key);
-    const tipIds = this._getDescendantTipIds(node.id);
-    const vals   = [];
-    for (const id of tipIds) {
-      const t = this.nodeMap.get(id);
-      const v = this._statValue(t, key) ?? t?.annotations?.[key];
-      if (v != null && v !== '') vals.push(v);
+    const def  = this._annotationSchema?.get(key);
+    const vals = [];
+
+    if (node.isCollapsed && node.collapsedTipNames) {
+      // Collapsed node: use the stored tip objects directly.
+      for (const tip of node.collapsedTipNames) {
+        const v = this._statValue(tip, key) ?? tip?.annotations?.[key];
+        if (v != null && v !== '') vals.push(v);
+      }
+    } else {
+      const tipIds = this._getDescendantTipIds(node.id);
+      for (const id of tipIds) {
+        const t = this.nodeMap.get(id);
+        const v = this._statValue(t, key) ?? t?.annotations?.[key];
+        if (v != null && v !== '') vals.push(v);
+      }
     }
+
     if (vals.length === 0) return null;
     if (def && isNumericType(def.dataType)) {
       const nums = vals.map(Number).filter(v => !isNaN(v));
