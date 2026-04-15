@@ -2911,43 +2911,66 @@ async function _initCore(root = document) {
       if (!tooltipEl || !node) return;
       const isTip    = node.isTip;
       const schema   = graph?.annotationSchema;
+      const shapeIdx = renderer._hoveredShapeIdx;
 
       let html = '';
       // Node name / label header
       const headerText = node.name || node.id || '';
       if (headerText) html += `<div class="pt-tt-name">${headerText}</div>`;
 
-      // Config-defined fields
-      for (const field of NODE_TOOLTIP_FIELDS) {
-        if (isTip  && field.onTips  === false) continue;
-        if (!isTip && field.onNodes === false) continue;
-        const def = schema?.get(field.key);
-        const raw = renderer._statValue(node, field.key);
-        if (raw == null) continue;
-        // Use _labelText for consistent formatting (handles dates, HPD, fmt functions, etc.)
-        const displayed = renderer._labelText(node, field.key, null, null) ?? _fmt(raw, def);
-        if (displayed == null) continue;
-        html += `<div class="pt-tt-row"><span class="pt-tt-label">${field.label}</span><span class="pt-tt-value">${displayed}</span></div>`;
-      }
-
-      // Active colour-by value + swatch
-      const colourByKey = isTip ? renderer._tipColourBy : renderer._nodeColourBy;
-      if (colourByKey && colourByKey !== 'user_colour') {
-        const def  = schema?.get(colourByKey);
-        const raw  = renderer._statValue(node, colourByKey);
-        const colour = isTip
-          ? renderer._tipColourForValue(raw)
-          : renderer._nodeColourForValue(raw);
-        const displayed = _fmt(raw, def);
-        const label = def?.label ?? colourByKey;
-        if (displayed != null) {
-          const swatch = colour ? `<span class="pt-tt-colour-swatch" style="background:${colour}"></span>` : '';
-          html += `<div class="pt-tt-row"><span class="pt-tt-label">${label}</span><span class="pt-tt-value">${swatch}${displayed}</span></div>`;
+      // ── Shape-specific tooltip: just the shape's colour-by trait ──────────
+      if (shapeIdx !== null && isTip) {
+        const colourByKey = shapeIdx === 0
+          ? renderer._tipLabelShapeColourBy
+          : renderer._tipLabelShapeExtraColourBys?.[shapeIdx - 1] ?? null;
+        if (colourByKey) {
+          const def  = schema?.get(colourByKey);
+          const raw  = renderer._statValue(node, colourByKey);
+          const colour = shapeIdx === 0
+            ? renderer._tipLabelShapeColourForValue(raw)
+            : renderer._tipLabelShapeExtraColourForValue(shapeIdx - 1, raw);
+          const displayed = _fmt(raw, def);
+          const label = def?.label ?? colourByKey;
+          if (displayed != null) {
+            const swatch = colour ? `<span class="pt-tt-colour-swatch" style="background:${colour}"></span>` : '';
+            html += `<div class="pt-tt-row"><span class="pt-tt-label">${label}</span><span class="pt-tt-value">${swatch}${displayed}</span></div>`;
+          }
         }
-      }
+        if (!html || html === `<div class="pt-tt-name">${headerText}</div>`) return;
+        tooltipEl.innerHTML = html;
+      } else {
+        // ── Full tooltip: config-defined fields + active colour-by ─────────
+        for (const field of NODE_TOOLTIP_FIELDS) {
+          if (isTip  && field.onTips  === false) continue;
+          if (!isTip && field.onNodes === false) continue;
+          const def = schema?.get(field.key);
+          const raw = renderer._statValue(node, field.key);
+          if (raw == null) continue;
+          // Use _labelText for consistent formatting (handles dates, HPD, fmt functions, etc.)
+          const displayed = renderer._labelText(node, field.key, null, null) ?? _fmt(raw, def);
+          if (displayed == null) continue;
+          html += `<div class="pt-tt-row"><span class="pt-tt-label">${field.label}</span><span class="pt-tt-value">${displayed}</span></div>`;
+        }
 
-      if (!html) return;
-      tooltipEl.innerHTML = html;
+        // Active colour-by value + swatch
+        const colourByKey = isTip ? renderer._tipColourBy : renderer._nodeColourBy;
+        if (colourByKey && colourByKey !== 'user_colour') {
+          const def  = schema?.get(colourByKey);
+          const raw  = renderer._statValue(node, colourByKey);
+          const colour = isTip
+            ? renderer._tipColourForValue(raw)
+            : renderer._nodeColourForValue(raw);
+          const displayed = _fmt(raw, def);
+          const label = def?.label ?? colourByKey;
+          if (displayed != null) {
+            const swatch = colour ? `<span class="pt-tt-colour-swatch" style="background:${colour}"></span>` : '';
+            html += `<div class="pt-tt-row"><span class="pt-tt-label">${label}</span><span class="pt-tt-value">${swatch}${displayed}</span></div>`;
+          }
+        }
+
+        if (!html) return;
+        tooltipEl.innerHTML = html;
+      }
 
       // Position: 14px right/below cursor, flip left/up if near edge
       const OFFSET = 14;

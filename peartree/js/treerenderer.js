@@ -70,6 +70,7 @@ export class TreeRenderer {
     this._dragSelStartY   = null;
     this._suppressNextClick = false;
     this._hoveredNodeId   = null;
+    this._hoveredShapeIdx = null;    // index of hovered label shape (0=main, 1-8=extras) or null
     this._selectedTipIds  = new Set();
     this._mrcaNodeId      = null;
     this._fitLabelsMode   = false;
@@ -612,6 +613,7 @@ export class TreeRenderer {
     this._selectedTipIds.clear();
     this._mrcaNodeId      = null;
     this._hoveredNodeId   = null;
+    this._hoveredShapeIdx = null;
     this._branchHoverNode = null;
     this._branchHoverX    = null;
     this._branchSelectNode = null;
@@ -3883,6 +3885,65 @@ export class TreeRenderer {
   }
 
   /**
+   * Detect whether (mx, my) is over a tip label shape.
+   * Returns { nodeId, shapeIdx } (0 = main shape, 1-8 = extra shapes) or null.
+   * Only checks visible, non-collapsed tips.
+   */
+  _findLabelShapeAtScreen(mx, my) {
+    if (!this.nodes) return null;
+    const _shape = this._tipLabelShape;
+    if (_shape === 'off') return null;
+
+    // Build list of active extra shapes (terminate at first 'off').
+    const _activeXShapes = [];
+    for (const s of this._tipLabelShapesExtra) { if (s === 'off') break; _activeXShapes.push(s); }
+
+    if (_shape === 'off' && _activeXShapes.length === 0) return null;
+
+    const r          = this.tipRadius;
+    const outlineR   = Math.max(r + this.tipHaloSize, 5);
+    const _align     = this.tipLabelAlign;
+    const isAligned  = _align && _align !== 'off';
+    const alignLabelX = isAligned ? this._wx(this.maxX) + outlineR : null;
+
+    const _shSz      = _shape !== 'off' ? this._shapeSize(this._tipLabelShapeSize, _shape) : 0;
+    const _shML      = _shape !== 'off' ? this._tipLabelShapeMarginLeft  : 0;
+    const _shSpacing = _shape !== 'off' ? this._tipLabelShapeSpacing     : 0;
+    const _shOffset  = _shML + _shSz + (_activeXShapes.length > 0 ? _shSpacing : 0);
+
+    // Pre-compute x-offsets and widths for all shapes (0 = main, 1-N = extras).
+    const shapeOffsets = [_shML];
+    const shapeWidths  = [_shSz];
+    let extraOff = _shOffset;
+    for (let i = 0; i < _activeXShapes.length; i++) {
+      const sz = this._shapeSize(this._tipLabelShapeSize, _activeXShapes[i]);
+      shapeOffsets.push(extraOff);
+      shapeWidths.push(sz);
+      extraOff += sz + (i < _activeXShapes.length - 1 ? _shSpacing : 0);
+    }
+
+    const H         = this.canvas.clientHeight;
+    const yWorldMin = this._worldYfromScreen(-this.tipRadius * 4);
+    const yWorldMax = this._worldYfromScreen(H + this.tipRadius * 4);
+    const halfH     = Math.max(this.scaleY / 2, this.fontSize / 2 + 2);
+
+    for (const node of this.nodes) {
+      if (!node.isTip || node.isCollapsed) continue;
+      if (node.y < yWorldMin || node.y > yWorldMax) continue;
+      const sy = this._wy(node.y);
+      if (my < sy - halfH || my > sy + halfH) continue;
+      const baseX = alignLabelX ?? (this._wx(node.x) + outlineR);
+      for (let i = 0; i < shapeOffsets.length; i++) {
+        const sx = baseX + shapeOffsets[i];
+        if (mx >= sx && mx <= sx + shapeWidths[i]) {
+          return { nodeId: node.id, shapeIdx: i };
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
    * In branches mode: find the horizontal branch segment under (mx, my).
    * Returns { node, worldX } or null.
    * The horizontal segment of a branch runs from parent.x to node.x at y = node.y.
@@ -4168,10 +4229,14 @@ export class TreeRenderer {
             this._dirty = true;
           }
         } else {
-          const hovered = this._findNodeAtScreen(mx, my);
-          const newId   = hovered ? hovered.id : null;
-          if (newId !== this._hoveredNodeId) {
-            this._hoveredNodeId = newId;
+          const hovered   = this._findNodeAtScreen(mx, my);
+          const shapeHit  = this._findLabelShapeAtScreen(mx, my);
+          // Shape hit takes priority for node id (and adds shape index).
+          const newId       = shapeHit ? shapeHit.nodeId : (hovered ? hovered.id : null);
+          const newShapeIdx = shapeHit ? shapeHit.shapeIdx : null;
+          if (newId !== this._hoveredNodeId || newShapeIdx !== this._hoveredShapeIdx) {
+            this._hoveredNodeId   = newId;
+            this._hoveredShapeIdx = newShapeIdx;
             this.canvas.style.cursor = newId
               ? (this._spaceDown ? 'grab' : 'pointer')
               : (this._spaceDown ? 'grab' : 'default');
@@ -4209,7 +4274,9 @@ export class TreeRenderer {
     this.canvas.addEventListener('mouseleave', () => {
       let dirty = false;
       if (this._hoveredNodeId !== null)  {
-        this._hoveredNodeId = null;  dirty = true;
+        this._hoveredNodeId   = null;
+        this._hoveredShapeIdx = null;
+        dirty = true;
         if (this._onHoverChange) this._onHoverChange(null);
       }
       if (this._branchHoverNode !== null) { this._branchHoverNode = null; this._branchHoverX = null; dirty = true; }
