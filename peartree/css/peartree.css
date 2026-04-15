@@ -102,6 +102,17 @@
   --pt-bg-dark:   var(--pt-bg-panel);
   --pt-off-white: var(--pt-cream);
   --pt-primary:   var(--pt-gold);
+
+  /* ── Get Info box table colours ── */
+  --pt-info-label:       rgba(230,213,149,0.7);   /* key column */
+  --pt-info-value:       rgba(242,241,230,0.88);  /* value column */
+  --pt-info-sublabel:    rgba(230,213,149,0.42);  /* indented sub-key */
+  --pt-info-subvalue:    rgba(242,241,230,0.55);  /* indented sub-value */
+  --pt-info-divider:     rgba(230,213,149,0.5);   /* divider text */
+  --pt-info-divider-line: rgba(230,213,149,0.2);  /* divider rule */
+  --pt-info-input-bg:    rgba(255,255,255,0.08);
+  --pt-info-input-border: rgba(230,213,149,0.3);
+  --pt-info-input-text:  rgba(242,241,230,0.88);
 }
 
 /* ── Toolbar ── */
@@ -873,6 +884,17 @@ canvas.grabbing   { cursor: grabbing; }
   --bs-secondary-bg-rgb:  238, 232, 213;
   --bs-border-color:      rgba(0,0,0,0.18);
   --bs-emphasis-color:    #002b36;
+
+  /* ── Get Info box table colours (light mode overrides) ── */
+  --pt-info-label:       rgba(0,43,54,0.65);
+  --pt-info-value:       rgba(0,43,54,0.88);
+  --pt-info-sublabel:    rgba(0,43,54,0.42);
+  --pt-info-subvalue:    rgba(0,43,54,0.55);
+  --pt-info-divider:     rgba(0,43,54,0.45);
+  --pt-info-divider-line: rgba(0,43,54,0.18);
+  --pt-info-input-bg:    rgba(0,0,0,0.05);
+  --pt-info-input-border: rgba(0,43,54,0.25);
+  --pt-info-input-text:  rgba(0,43,54,0.88);
 }
 
 /* ── Tool palette (slides in from left) ── */

@@ -4933,14 +4933,14 @@ async function _initCore(root = document) {
             td.colSpan = 2;
             td.style.cssText = 'padding:6px 0 2px;';
             const div = document.createElement('div');
-            div.style.cssText = 'display:flex;align-items:center;gap:6px;color:rgba(230,213,149,0.5);font-size:0.72rem;letter-spacing:0.05em;text-transform:uppercase;';
-            div.innerHTML = `<span style="flex:0 0 auto">${value}</span><span style="flex:1;border-top:1px solid rgba(230,213,149,0.2);display:inline-block"></span>`;
+            div.style.cssText = 'display:flex;align-items:center;gap:6px;color:var(--pt-info-divider);font-size:0.72rem;letter-spacing:0.05em;text-transform:uppercase;';
+            div.innerHTML = `<span style="flex:0 0 auto">${value}</span><span style="flex:1;border-top:1px solid var(--pt-info-divider-line);display:inline-block"></span>`;
             td.appendChild(div);
           } else {
             const td1 = tr.insertCell();
             const td2 = tr.insertCell();
-            td1.style.cssText = 'color:rgba(230,213,149,0.7);padding:2px 14px 2px 0;white-space:nowrap;vertical-align:top;';
-            td2.style.cssText = 'color:rgba(242,241,230,0.88);padding:2px 0;word-break:break-all;';
+            td1.style.cssText = 'color:var(--pt-info-label);padding:2px 14px 2px 0;white-space:nowrap;vertical-align:top;';
+            td2.style.cssText = 'color:var(--pt-info-value);padding:2px 0;word-break:break-all;';
             td1.textContent = label;
             td2.textContent = value;
           }
@@ -5077,30 +5077,30 @@ async function _initCore(root = document) {
           td.colSpan = 2;
           td.style.cssText = 'padding:6px 0 2px;';
           const div = document.createElement('div');
-          div.style.cssText = 'display:flex;align-items:center;gap:6px;color:rgba(230,213,149,0.5);font-size:0.72rem;letter-spacing:0.05em;text-transform:uppercase;';
-          div.innerHTML = '<span style="flex:0 0 auto">Annotations</span><span style="flex:1;border-top:1px solid rgba(230,213,149,0.2);display:inline-block"></span>';
+          div.style.cssText = 'display:flex;align-items:center;gap:6px;color:var(--pt-info-divider);font-size:0.72rem;letter-spacing:0.05em;text-transform:uppercase;';
+          div.innerHTML = '<span style="flex:0 0 auto">Annotations</span><span style="flex:1;border-top:1px solid var(--pt-info-divider-line);display:inline-block"></span>';
           td.appendChild(div);
         } else if (label === '__sub__') {
           // Indented sub-row for grouped BEAST annotations (median / HPD / range)
           const [subLabel, subValue] = value;
           const td1 = tr.insertCell();
           const td2 = tr.insertCell();
-          td1.style.cssText = 'color:rgba(230,213,149,0.42);padding:1px 14px 1px 18px;white-space:nowrap;vertical-align:top;font-size:0.85em;';
-          td2.style.cssText = 'color:rgba(242,241,230,0.55);padding:1px 0;word-break:break-all;font-size:0.85em;';
+          td1.style.cssText = 'color:var(--pt-info-sublabel);padding:1px 14px 1px 18px;white-space:nowrap;vertical-align:top;font-size:0.85em;';
+          td2.style.cssText = 'color:var(--pt-info-subvalue);padding:1px 0;word-break:break-all;font-size:0.85em;';
           td1.textContent = subLabel;
           td2.textContent = subValue;
         } else if (label === '__name_edit__') {
           // Editable Name annotation field — shown at the top for internal nodes.
           const td1 = tr.insertCell();
           const td2 = tr.insertCell();
-          td1.style.cssText = 'color:rgba(230,213,149,0.7);padding:2px 14px 2px 0;white-space:nowrap;vertical-align:middle;';
+          td1.style.cssText = 'color:var(--pt-info-label);padding:2px 14px 2px 0;white-space:nowrap;vertical-align:middle;';
           td2.style.cssText = 'padding:2px 0;';
           td1.textContent = 'Name';
           const input = document.createElement('input');
           input.type = 'text';
           input.value = value;
           input.placeholder = '(unnamed)';
-          input.style.cssText = 'background:rgba(255,255,255,0.08);border:1px solid rgba(230,213,149,0.3);border-radius:3px;color:rgba(242,241,230,0.88);padding:1px 5px;width:100%;font-size:inherit;font-family:inherit;box-sizing:border-box;';
+          input.style.cssText = 'background:var(--pt-info-input-bg);border:1px solid var(--pt-info-input-border);border-radius:3px;color:var(--pt-info-input-text);padding:1px 5px;width:100%;font-size:inherit;font-family:inherit;box-sizing:border-box;';
           input.addEventListener('change', () => {
             const newName = input.value.trim();
             if (!node.annotations) node.annotations = {};
@@ -5120,8 +5120,8 @@ async function _initCore(root = document) {
         } else {
           const td1 = tr.insertCell();
           const td2 = tr.insertCell();
-          td1.style.cssText = 'color:rgba(230,213,149,0.7);padding:2px 14px 2px 0;white-space:nowrap;vertical-align:top;';
-          td2.style.cssText = 'color:rgba(242,241,230,0.88);padding:2px 0;word-break:break-all;';
+          td1.style.cssText = 'color:var(--pt-info-label);padding:2px 14px 2px 0;white-space:nowrap;vertical-align:top;';
+          td2.style.cssText = 'color:var(--pt-info-value);padding:2px 0;word-break:break-all;';
           td1.textContent = label;
           td2.textContent = value;
         }
