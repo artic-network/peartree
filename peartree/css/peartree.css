@@ -2171,3 +2171,54 @@ body.palette-pinned #canvas-container {
 #rtt-btn-pin.active   { color: var(--pt-gold, #b5890a); opacity: 1; }
 /* Canvas fills the remaining panel */
 #rtt-canvas { flex: 1; display: block; min-height: 0; min-width: 0; }
+
+/* ── Alt/Option hover node tooltip ─────────────────────────────────────────── */
+#pt-node-tooltip {
+  position: fixed;
+  z-index: 9000;
+  pointer-events: none;
+  display: none;
+  background: var(--pt-bg-panel);
+  border: 1px solid var(--pt-divider);
+  border-radius: 5px;
+  padding: 7px 10px;
+  min-width: 140px;
+  max-width: 260px;
+  box-shadow: 0 6px 20px var(--pt-shadow-popup);
+  font-size: 0.8rem;
+  color: var(--pt-text);
+  line-height: 1.5;
+}
+#pt-node-tooltip.visible { display: block; }
+.pt-tt-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--pt-text-bright);
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--pt-divider);
+  padding-bottom: 3px;
+  word-break: break-word;
+}
+.pt-tt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+.pt-tt-label {
+  color: var(--bs-secondary-color);
+  white-space: nowrap;
+}
+.pt-tt-value {
+  text-align: right;
+  word-break: break-word;
+}
+.pt-tt-colour-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid rgba(255,255,255,0.2);
+  vertical-align: middle;
+  margin-right: 3px;
+  flex-shrink: 0;
+}

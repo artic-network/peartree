@@ -16,7 +16,7 @@ import { createDataTableRenderer } from './datatablerenderer.js';
 import { createRTTChart          } from './rttchart.js';
 import { createCommands } from './commands.js';
 import { createExportController } from './export-controller.js';
-import { EXAMPLE_TREE_PATH, EXAMPLE_DATASETS, PEARTREE_BASE_URL, DEFAULT_SETTINGS, REQUIRED_THEME_KEYS } from './config.js';
+import { EXAMPLE_TREE_PATH, EXAMPLE_DATASETS, PEARTREE_BASE_URL, DEFAULT_SETTINGS, REQUIRED_THEME_KEYS, NODE_TOOLTIP_FIELDS } from './config.js';
 import { createToolbarColourPicker, upgradeAllPaletteColourPickers } from './colorpicker.js';
 
 /**
@@ -2889,6 +2889,114 @@ async function _initCore(root = document) {
 
   // Tree hover → RTT hover
   renderer._onHoverChange = id => rttChart.notifyHoverChange(id);
+
+  // ── Alt/Option hover tooltip ───────────────────────────────────────────────
+  {
+    const tooltipEl = $('pt-node-tooltip');
+
+    function _fmt(val, def) {
+      if (val == null) return null;
+      if (typeof val === 'number') {
+        if (def?.fmtValue) return def.fmtValue(val);
+        if (def?.fmt)      return def.fmt(val);
+        // Auto: show 4 significant figures for small numbers, integers as-is
+        if (Number.isInteger(val)) return String(val);
+        return val.toPrecision(4).replace(/\.?0+$/, '');
+      }
+      if (Array.isArray(val)) return val.join(', ');
+      return String(val);
+    }
+
+    function _showTooltip(node, cx, cy) {
+      if (!tooltipEl || !node) return;
+      const isTip    = node.isTip;
+      const schema   = graph?.annotationSchema;
+
+      let html = '';
+      // Node name / label header
+      const headerText = node.name || node.id || '';
+      if (headerText) html += `<div class="pt-tt-name">${headerText}</div>`;
+
+      // Config-defined fields
+      for (const field of NODE_TOOLTIP_FIELDS) {
+        if (isTip  && field.onTips  === false) continue;
+        if (!isTip && field.onNodes === false) continue;
+        const def = schema?.get(field.key);
+        const raw = renderer._statValue(node, field.key);
+        if (raw == null) continue;
+        // Use _labelText for consistent formatting (handles dates, HPD, fmt functions, etc.)
+        const displayed = renderer._labelText(node, field.key, null, null) ?? _fmt(raw, def);
+        if (displayed == null) continue;
+        html += `<div class="pt-tt-row"><span class="pt-tt-label">${field.label}</span><span class="pt-tt-value">${displayed}</span></div>`;
+      }
+
+      // Active colour-by value + swatch
+      const colourByKey = isTip ? renderer._tipColourBy : renderer._nodeColourBy;
+      if (colourByKey && colourByKey !== 'user_colour') {
+        const def  = schema?.get(colourByKey);
+        const raw  = renderer._statValue(node, colourByKey);
+        const colour = isTip
+          ? renderer._tipColourForValue(raw)
+          : renderer._nodeColourForValue(raw);
+        const displayed = _fmt(raw, def);
+        const label = def?.label ?? colourByKey;
+        if (displayed != null) {
+          const swatch = colour ? `<span class="pt-tt-colour-swatch" style="background:${colour}"></span>` : '';
+          html += `<div class="pt-tt-row"><span class="pt-tt-label">${label}</span><span class="pt-tt-value">${swatch}${displayed}</span></div>`;
+        }
+      }
+
+      if (!html) return;
+      tooltipEl.innerHTML = html;
+
+      // Position: 14px right/below cursor, flip left/up if near edge
+      const OFFSET = 14;
+      const tw = tooltipEl.offsetWidth  || 200;
+      const th = tooltipEl.offsetHeight || 80;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      let tx = cx + OFFSET;
+      let ty = cy + OFFSET;
+      if (tx + tw > vw - 8) tx = cx - tw - OFFSET;
+      if (ty + th > vh - 8) ty = cy - th - OFFSET;
+      tooltipEl.style.left = `${Math.max(4, tx)}px`;
+      tooltipEl.style.top  = `${Math.max(4, ty)}px`;
+      tooltipEl.classList.add('visible');
+    }
+
+    function _hideTooltip() {
+      tooltipEl?.classList.remove('visible');
+    }
+
+    // Track mouse position for repositioning on alt-down
+    let _ttMouseX = 0, _ttMouseY = 0;
+    window.addEventListener('mousemove', e => {
+      _ttMouseX = e.clientX;
+      _ttMouseY = e.clientY;
+      if (renderer._altHeld && renderer._hoveredNodeId) {
+        const node = renderer.nodeMap?.get(renderer._hoveredNodeId);
+        if (node) _showTooltip(node, _ttMouseX, _ttMouseY);
+      }
+    });
+
+    renderer._onAltChange = (down) => {
+      if (down && renderer._hoveredNodeId) {
+        const node = renderer.nodeMap?.get(renderer._hoveredNodeId);
+        if (node) _showTooltip(node, _ttMouseX, _ttMouseY);
+      } else {
+        _hideTooltip();
+      }
+    };
+
+    // Hide on hover change too (re-shown by mousemove)
+    const _origOnHoverChange = renderer._onHoverChange;
+    renderer._onHoverChange = id => {
+      _origOnHoverChange?.(id);
+      if (!id || !renderer._altHeld) { _hideTooltip(); return; }
+      const node = renderer.nodeMap?.get(id);
+      if (node) _showTooltip(node, _ttMouseX, _ttMouseY);
+    };
+  }
 
   btnRtt?.addEventListener('click', () => {
     if (rttChart.isOpen()) {

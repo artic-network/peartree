@@ -3,6 +3,32 @@
 export const EXAMPLE_TREE_PATH = 'data/ebov.tree';
 
 /**
+ * Fields shown in the Alt/Option-hover node tooltip, in order from top to bottom.
+ *
+ * Each entry is an object with:
+ *   key     {string}   Annotation key (or built-in sentinel):
+ *                        '__divergence__'         – distance from root
+ *                        '__age__'                – height from root (time-trees)
+ *                        '__branch_length__'      – length of the branch above
+ *                        '__tips_below__'         – number of descendant tips
+ *                        '__cal_date__'           – calibrated calendar date
+ *                        Any annotation key from the tree (e.g. 'bootstrap', 'location')
+ *   label   {string}   Display label shown to the left of the value.
+ *   onTips  {boolean}  Show this row for tip nodes.          (default: true)
+ *   onNodes {boolean}  Show this row for internal nodes.     (default: true)
+ *
+ * Additionally, the active "Colour by" annotation value is always appended
+ * automatically (for tips: tip colour-by; for nodes: node colour-by).
+ */
+export const NODE_TOOLTIP_FIELDS = [
+  { key: '__divergence__',    label: 'Divergence',   onTips: true,  onNodes: true  },
+  { key: '__age__',           label: 'Age',          onTips: true,  onNodes: true  },
+  { key: '__cal_date__',      label: 'Date',         onTips: true,  onNodes: true  },
+  { key: '__branch_length__', label: 'Branch',       onTips: true,  onNodes: true  },
+  { key: '__tips_below__',    label: 'Tips below',   onTips: false, onNodes: true  },
+];
+
+/**
  * Example datasets shown in the "Example" tab of the Open Tree dialog.
  * Each entry has:
  *   title   {string}  Short name shown on the load button.

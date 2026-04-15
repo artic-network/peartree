@@ -871,7 +871,8 @@ function _buildModals() {
     </div>
     <div id="node-info-body" class="pt-modal-body"></div>
   </div>
-</div>`;
+</div>
+<div id="pt-node-tooltip"></div>`;
 }
 
 function _buildHelpAbout() {

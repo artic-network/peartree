@@ -75,6 +75,7 @@ export class TreeRenderer {
     this._fitLabelsMode   = false;
     this._labelsWereVisible = null;  // tracks label visibility for horizontal-scale recalc
     this._shiftHeld       = false;   // true while Shift key is held
+    this._altHeld         = false;   // true while Alt/Option key is held (tooltip trigger)
     this._hypFocusScreenY = null;    // screen-Y focus for hyperbolic-stretch mode (persistent)
     this._hypStrength     = 0;       // 0..1 blend factor (animated)
     this._hypTarget       = 0;       // animation target: 0 = off, 1 = full
@@ -4310,6 +4311,16 @@ export class TreeRenderer {
         this._shiftHeld = true;
       }
 
+      // Track Alt/Option — used to trigger the node info tooltip.
+      if (e.code === 'AltLeft' || e.code === 'AltRight') {
+        if (!this._altHeld) {
+          this._altHeld = true;
+          if (this._onAltChange) this._onAltChange(true);
+        }
+        // Prevent AltGr / browser menu bar on some platforms.
+        e.preventDefault();
+      }
+
       if (!this.nodes) return;
 
       const H        = canvas.clientHeight;
@@ -4348,6 +4359,12 @@ export class TreeRenderer {
         // Focus persists — just restore the normal cursor hint.
         if (!this._spaceDown) {
           this.canvas.style.cursor = this._hoveredNodeId ? 'pointer' : 'default';
+        }
+      }
+      if (e.code === 'AltLeft' || e.code === 'AltRight') {
+        if (this._altHeld) {
+          this._altHeld = false;
+          if (this._onAltChange) this._onAltChange(false);
         }
       }
     });
