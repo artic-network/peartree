@@ -148,7 +148,7 @@ https://artic-network.github.io/peartree/docs/data/ebov.csv
 
 After selecting the file a configuration step appears. Choose which column in the metadata file identifies each tip:
 
-{% ptImportConfig %}
+{% ptFigure "/manual/images/import_config.png", "", "Import Annotations dialog.", "50%"  %}
 
 Import configuration: choose the column that matches tip labels, and toggle which columns to import.
 
@@ -158,13 +158,16 @@ PearTree can match the entire tip label string, or just one pipe-delimited (`|`)
 
 After clicking **Import**, a summary reports how many tips were matched.
 
-{% ptFigure "/manual/images/fig11c.png", "#002b36", "Import summary confirming all 1610 tips matched.", "320px" %}
+
+{% ptFigure "/manual/images/import_results.png", "", "Import summary confirming all 1610 tips matched.", "50%"  %}
 
 After import the new annotation keys appear in all *Colour by* dropdowns, the legend selector, and the Node Info dialog.
 
 ### The Annotation Manager
 
 Open the Annotation Manager from the toolbar (tags button) to review every annotation key currently loaded.
+
+{% ptFigure "/manual/images/annotation_manager_2.png", "", "The Annotations Manager dialog.", "80%"  %}
 
 For each key you can:
 
@@ -200,9 +203,9 @@ Toolbar zoom buttons:
 | <img src="/manual/images/show_all_button.png" style="width:28px;"/> | **⌘0** | Fit entire tree to window |
 | <img src="/manual/images/show_labels_button.png" style="width:28px;"/> | **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
 
-> **Automatic horizontal scaling:** When zoomed out so far that tip labels are hidden, PearTree expands the tree branches to fill the full canvas width. When you zoom back in enough for labels to become readable, the horizontal scale contracts to make room for them again. This maximises screen use at every zoom level.
+{% ptFigure "/manual/images/full_tree.png", "#EAE8E1", "EBOV tree zoomed out to show entire tree. Tip labels are hidden.", "90%" %}
 
-{% ptFigure "/manual/images/fig4.png", "#ffffff", "EBOV tree zoomed in to show individual tip labels.", "70%" %}
+{% ptFigure "/manual/images/zoomed_tree.png", "#EAE8E1", "EBOV tree zoomed in to show individual tip labels.", "90%" %}
 
 Press **⌘0** to return to the full view at any time.
 

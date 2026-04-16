@@ -18,5 +18,8 @@
     "esbuild": "^0.27.4",
     "markdown-it": "^14.1.0",
     "markdown-it-anchor": "^8.6.7"
+  },
+  "dependencies": {
+    "eleventy": "^2.0.1"
   }
 }

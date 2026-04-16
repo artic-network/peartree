@@ -303,71 +303,31 @@
 </blockquote>
 <h4 id="match-configuration" tabindex="-1">Match Configuration</h4>
 <p>After selecting the file a configuration step appears. Choose which column in the metadata file identifies each tip:</p>
-<div class="pt-ui-demo pt-ui-demo--dialog">
-  <div class="pt-modal pt-modal--demo">
-    <div class="pt-modal-header">
-      <h5 class="modal-title"><i class="bi bi-file-earmark-text me-2"></i>ebov.csv</h5>
-      <button class="pt-modal-close-btn" tabindex="-1">&times;</button>
-    </div>
-    <div class="pt-modal-body">
-      <p style="margin:0 0 0.8rem;color:var(--bs-secondary-color)">65&nbsp;rows, 5&nbsp;columns</p>
-<p><div class="imp-section">
-<label class="imp-section-label">Match column</label>
-<div class="imp-row">
-<select class="imp-select" tabindex="-1"><option value="0" selected>taxon</option><option value="1">date</option><option value="2">country</option><option value="3">location</option><option value="4">host</option></select>
-</div>
-</div></p>
-<p><div class="imp-section">
-<label class="imp-section-label">Match mode</label>
-<div style="display:flex;flex-direction:column;gap:0.3rem;">
-<label class="imp-row" style="cursor:default">
-<input type="radio" name="imp-mode-demo" checked tabindex="-1">
-Full taxon label
-</label>
-<label class="imp-row" style="cursor:default">
-<input type="radio" name="imp-mode-demo" tabindex="-1">
-Pipe-delimited field: 
-<input type="number" class="ca-num-input" value="1"
-              style="width:52px;padding:0.1rem 0.3rem;font-size:0.82rem;" tabindex="-1">
-</label>
-</div>
-</div></p>
-<p><div class="imp-section">
-<label class="imp-section-label">Columns to import</label>
-<div class="imp-col-grid"><label style="opacity:0.4"><input type="checkbox" class="imp-col-chk" disabled> taxon</label><label style=""><input type="checkbox" class="imp-col-chk" checked> date</label><label style=""><input type="checkbox" class="imp-col-chk" checked> country</label><label style=""><input type="checkbox" class="imp-col-chk" checked> location</label><label style=""><input type="checkbox" class="imp-col-chk" checked> host</label></div>
-<button class="btn btn-sm btn-outline-secondary"
-          style="margin-top:0.4rem;font-size:0.75rem;padding:0.1rem 0.5rem" tabindex="-1">Deselect all</button>
-</div></p>
-<p><div class="imp-section">
-<label class="imp-row" style="cursor:default;gap:0.4rem;align-items:flex-start">
-<input type="checkbox" style="margin-top:0.1rem;flex-shrink:0" tabindex="-1">
-<span>Replace existing annotations with the same name
-<span style="display:block;color:var(--bs-secondary-color);font-size:0.75rem">
-Clears matching annotation keys from all nodes before applying new values.
-</span>
-</span>
-</label>
-</div>
-</div>
-<div class="pt-modal-footer">
-<button class="btn btn-sm btn-outline-secondary" tabindex="-1">Cancel</button>
-<button class="btn btn-sm btn-primary" tabindex="-1">Import →</button>
-</div></p>
+<figure class="pt-figure" style="max-width:50%;">
+  <div class="pt-figure-panel" style="background:var(--pt-bg-panel,#002b36);">
+    <img src="/manual/images/import_config.png" alt="Import Annotations dialog." loading="lazy">
   </div>
-</div>
+  <figcaption>Import Annotations dialog.</figcaption>
+</figure>
 <p>Import configuration: choose the column that matches tip labels, and toggle which columns to import.</p>
 <p>PearTree can match the entire tip label string, or just one pipe-delimited (<code>|</code>) field within it. For the EBOV example, select field 2 (<code>lab-id</code>) to match the second segment of each label.</p>
 <h4 id="import-summary" tabindex="-1">Import Summary</h4>
 <p>After clicking <strong>Import</strong>, a summary reports how many tips were matched.</p>
-<figure class="pt-figure" style="max-width:320px;">
-  <div class="pt-figure-panel" style="background:#002b36;">
-    <img src="/manual/images/fig11c.png" alt="Import summary confirming all 1610 tips matched." loading="lazy">
+<figure class="pt-figure" style="max-width:50%;">
+  <div class="pt-figure-panel" style="background:var(--pt-bg-panel,#002b36);">
+    <img src="/manual/images/import_results.png" alt="Import summary confirming all 1610 tips matched." loading="lazy">
   </div>
   <figcaption>Import summary confirming all 1610 tips matched.</figcaption>
 </figure>
 <p>After import the new annotation keys appear in all <em>Colour by</em> dropdowns, the legend selector, and the Node Info dialog.</p>
 <h3 id="the-annotation-manager" tabindex="-1">The Annotation Manager</h3>
 <p>Open the Annotation Manager from the toolbar (tags button) to review every annotation key currently loaded.</p>
+<figure class="pt-figure" style="max-width:80%;">
+  <div class="pt-figure-panel" style="background:var(--pt-bg-panel,#002b36);">
+    <img src="/manual/images/annotation_manager_2.png" alt="The Annotations Manager dialog." loading="lazy">
+  </div>
+  <figcaption>The Annotations Manager dialog.</figcaption>
+</figure>
 <p>For each key you can:</p>
 <table>
 <thead>
@@ -463,12 +423,15 @@ Clears matching annotation keys from all nodes before applying new values.
 </tr>
 </tbody>
 </table>
-<blockquote>
-<p><strong>Automatic horizontal scaling:</strong> When zoomed out so far that tip labels are hidden, PearTree expands the tree branches to fill the full canvas width. When you zoom back in enough for labels to become readable, the horizontal scale contracts to make room for them again. This maximises screen use at every zoom level.</p>
-</blockquote>
-<figure class="pt-figure" style="max-width:70%;">
-  <div class="pt-figure-panel" style="background:#ffffff;">
-    <img src="/manual/images/fig4.png" alt="EBOV tree zoomed in to show individual tip labels." loading="lazy">
+<figure class="pt-figure" style="max-width:90%;">
+  <div class="pt-figure-panel" style="background:#EAE8E1;">
+    <img src="/manual/images/full_tree.png" alt="EBOV tree zoomed out to show entire tree. Tip labels are hidden." loading="lazy">
+  </div>
+  <figcaption>EBOV tree zoomed out to show entire tree. Tip labels are hidden.</figcaption>
+</figure>
+<figure class="pt-figure" style="max-width:90%;">
+  <div class="pt-figure-panel" style="background:#EAE8E1;">
+    <img src="/manual/images/zoomed_tree.png" alt="EBOV tree zoomed in to show individual tip labels." loading="lazy">
   </div>
   <figcaption>EBOV tree zoomed in to show individual tip labels.</figcaption>
 </figure>
