@@ -1,0 +1,32 @@
+/*
+ * peartree-embed.css — styles for PearTree embedded directly in a report page.
+ * Included by demo_embed.html alongside peartree.css.
+ * Provides a container-level flex layout that replaces the html/body
+ * full-page layout found in peartree-webapp.css.
+ */
+
+/* ── Embedded container layout ── */
+/* Wrap the toolbar + canvas-container + status-bar in a div.pt-embed-wrap.
+   Set a fixed height on the element, e.g. style="height: 600px". */
+.pt-embed-wrap {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--pt-bg-deepest);
+  color: var(--pt-off-white);
+  font-family: var(--bs-body-font-family);
+  font-size: 14px;
+  position: relative; /* positioning context for absolutely-placed panels */
+}
+
+/* Palette and help panels normally use position:fixed, anchored to the
+   viewport via --pt-toolbar-h / --pt-statusbar-h CSS vars.
+   In the embed we switch to position:absolute so they are clipped to the
+   container.  The top/bottom values from the base rules still apply because
+   those vars are absolute pixel values measured from the embed wrap's own
+   top/bottom edges. */
+.pt-embed-wrap #palette-panel,
+.pt-embed-wrap #help-panel,
+.pt-embed-wrap #about-panel {
+  position: absolute;
+}

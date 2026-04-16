@@ -1,0 +1,29 @@
+/*
+ * peartree-webapp.css — styles for the full-page standalone web app.
+ * Included by peartree.html alongside peartree.css.
+ * Not needed when PearTree is embedded directly in a report page
+ * (use peartree-embed.css instead).
+ */
+
+/* ── Layout ── */
+html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+/* Prevents white flash before CSS/JS loads — matches the default canvas bg */
+html { background: var(--pt-bg-deepest); }
+body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--pt-bg-deepest);
+  color: var(--pt-off-white);
+  font-family: var(--bs-body-font-family);
+  font-size: 14px;
+}
+
+/* ── Print support ── */
+#pt-print-layer { display: none; }
+@media print {
+  body > *:not(#pt-print-layer) { display: none !important; }
+  #pt-print-layer { display: block !important; position: fixed; inset: 0; }
+  #pt-print-layer svg { width: 100%; height: auto; }
+}
+

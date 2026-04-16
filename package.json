@@ -8,10 +8,14 @@
     "dev": "tauri dev",
     "build": "tauri build",
     "icon": "tauri icon",
-    "bundle": "node scripts/build-bundle.mjs"
+    "bundle": "node scripts/build-bundle.mjs",
+    "docs:dev": "eleventy --serve --input=peartree/manual --output=_site"
   },
   "devDependencies": {
+    "@11ty/eleventy": "^2.0.1",
     "@tauri-apps/cli": "^2.0.0",
-    "esbuild": "^0.27.4"
+    "esbuild": "^0.27.4",
+    "markdown-it": "^14.1.0",
+    "markdown-it-anchor": "^8.6.7"
   }
 }

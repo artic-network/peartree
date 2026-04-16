@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title }} — PearTree</title>
+  <link rel="icon" type="image/svg+xml" href="/img/peartree.svg" />
+  <link rel="shortcut icon" href="/img/peartree.png" />
+  <link rel="stylesheet" href="/css/bootstrap.min-artic.css" />
+  <style>
+    body { padding-top: 3.5rem; }
+    .pt-page-content { max-width: 900px; }
+    .pt-page-content img { max-width: 100%; height: auto; }
+    .pt-page-content table { width: 100%; margin-bottom: 1rem; border-collapse: collapse; }
+    .pt-page-content table th,
+    .pt-page-content table td { padding: 0.4rem 0.75rem; border: 1px solid var(--bs-border-color); }
+    .pt-page-content table thead th { background: var(--bs-gray-800); }
+    .pt-page-content blockquote {
+      border-left: 3px solid var(--bs-primary);
+      padding: 0.5rem 1rem;
+      margin: 1rem 0;
+      opacity: 0.9;
+    }
+    .pt-page-content pre { background: var(--bs-gray-900); padding: 1rem; border-radius: 0.375rem; overflow-x: auto; }
+    .pt-page-content code { font-size: 0.875em; }
+    .pt-page-content h2 { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--bs-border-color); }
+    .pt-page-content h3 { margin-top: 1.75rem; }
+    [id] { scroll-margin-top: 4.5rem; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-md fixed-top" style="background:var(--bs-gray-900); border-bottom:1px solid var(--bs-border-color);">
+    <div class="container">
+      <a class="navbar-brand fw-semibold d-flex align-items-center gap-2" href="/">
+        <img src="/img/peartree.svg" height="24" alt="" />PearTree
+      </a>
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="/manual/">Manual</a></li>
+      </ul>
+    </div>
+  </nav>
+  <main class="container pt-page-content py-4">
+    {{ content | safe }}
+  </main>
+  <footer class="border-top mt-5 py-3 text-center" style="font-size:0.8rem;opacity:0.55;">
+    &copy; 2026 Andrew Rambaut &mdash;
+    <a href="https://github.com/artic-network/peartree">GitHub</a>
+  </footer>
+</body>
+</html>

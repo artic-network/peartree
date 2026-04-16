@@ -1,0 +1,1890 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PearTree Manual — PearTree</title>
+  <link rel="icon" type="image/svg+xml" href="/img/peartree.svg" />
+  <link rel="shortcut icon" href="/img/peartree.png" />
+  <link rel="stylesheet" href="/css/bootstrap.min-artic.css" />
+  <style>
+    body { padding-top: 3.5rem; }
+    .pt-page-content { max-width: 900px; }
+    .pt-page-content img { max-width: 100%; height: auto; }
+    .pt-page-content table { width: 100%; margin-bottom: 1rem; border-collapse: collapse; }
+    .pt-page-content table th,
+    .pt-page-content table td { padding: 0.4rem 0.75rem; border: 1px solid var(--bs-border-color); }
+    .pt-page-content table thead th { background: var(--bs-gray-800); }
+    .pt-page-content blockquote {
+      border-left: 3px solid var(--bs-primary);
+      padding: 0.5rem 1rem;
+      margin: 1rem 0;
+      opacity: 0.9;
+    }
+    .pt-page-content pre { background: var(--bs-gray-900); padding: 1rem; border-radius: 0.375rem; overflow-x: auto; }
+    .pt-page-content code { font-size: 0.875em; }
+    .pt-page-content h2 { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--bs-border-color); }
+    .pt-page-content h3 { margin-top: 1.75rem; }
+    [id] { scroll-margin-top: 4.5rem; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-md fixed-top" style="background:var(--bs-gray-900); border-bottom:1px solid var(--bs-border-color);">
+    <div class="container">
+      <a class="navbar-brand fw-semibold d-flex align-items-center gap-2" href="/">
+        <img src="/img/peartree.svg" height="24" alt="" />PearTree
+      </a>
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="/manual/">Manual</a></li>
+      </ul>
+    </div>
+  </nav>
+  <main class="container pt-page-content py-4">
+    <p align="center">
+  <img src="/logo/peartree.svg" alt="PearTree logo" style="width:220px;" />
+</p>
+<h1 id="peartree-manual" tabindex="-1">PearTree Manual</h1>
+<p>PearTree is a phylogenetic tree viewer that runs entirely in the browser or as a desktop application. No data is ever uploaded to any server — all processing is local to your machine.</p>
+<p>This manual covers the full feature set of PearTree, organised by topic. Each chapter can be read independently. The <a href="#appendix-a-keyboard-shortcuts">Quick-Reference</a> appendix at the end lists all keyboard shortcuts.</p>
+<blockquote>
+<p><strong>Where to get PearTree</strong></p>
+<ul>
+<li><strong>Web application:</strong> <a href="https://peartree.live">https://peartree.live</a> (Chrome, Firefox, Safari, Edge)</li>
+<li><strong>Desktop app:</strong> <a href="https://github.com/artic-network/peartree/releases">https://github.com/artic-network/peartree/releases</a> (macOS, Windows, Linux)</li>
+</ul>
+<p>All features described in this manual work in both versions unless noted.</p>
+</blockquote>
+<hr>
+<h2 id="contents" tabindex="-1">Contents</h2>
+<ol>
+<li><a href="#chapter-1-the-interface-at-a-glance">The Interface at a Glance</a></li>
+<li><a href="#chapter-2-loading-trees">Loading Trees</a></li>
+<li><a href="#chapter-3-importing-annotations">Importing Annotations</a></li>
+<li><a href="#chapter-4-navigating-the-tree">Navigating the Tree</a></li>
+<li><a href="#chapter-5-the-hyperbolic-lens">The Hyperbolic Lens</a></li>
+<li><a href="#chapter-6-organising-the-tree">Organising the Tree</a></li>
+<li><a href="#chapter-7-selecting-and-filtering">Selecting and Filtering</a></li>
+<li><a href="#chapter-8-decorating-the-tree">Decorating the Tree</a></li>
+<li><a href="#chapter-9-the-time-axis">The Time Axis</a></li>
+<li><a href="#chapter-10-rooting">Rooting</a></li>
+<li><a href="#chapter-11-the-root-to-tip-panel">The Root-to-Tip Panel</a></li>
+<li><a href="#chapter-12-the-data-table-panel">The Data Table Panel</a></li>
+<li><a href="#chapter-13-exporting">Exporting</a></li>
+<li><a href="#chapter-14-settings-and-persistence">Settings and Persistence</a></li>
+<li><a href="#appendix-a-keyboard-shortcuts">Appendix A: Keyboard Shortcuts</a></li>
+<li><a href="#appendix-b-visual-options-reference">Appendix B: Visual Options Reference</a></li>
+<li><a href="#appendix-c-bootstrap-values-branch-annotations-and-rerooting">Appendix C: Bootstrap Values and Branch Annotations</a></li>
+<li><a href="#appendix-d-url-parameters-and-sharing">Appendix D: URL Parameters and Sharing</a></li>
+</ol>
+<hr>
+<h2 id="chapter-1-the-interface-at-a-glance" tabindex="-1">Chapter 1: The Interface at a Glance</h2>
+<p>When a tree is loaded the interface has four main areas:</p>
+<blockquote>
+<img src="/manual/images/fig2a.png" style="width:550px;"/>
+<p>EBOV example tree loaded. The toolbar runs along the top, the canvas fills the centre, and the status bar sits at the bottom. The Visual Options palette is shown toggled open on the right.</p>
+</blockquote>
+<h3 id="toolbar" tabindex="-1">Toolbar</h3>
+<p>Runs along the top of the window. Contains buttons grouped by function:</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>What it contains</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>File</strong></td>
+<td>Open tree, import annotations, annotation curator, export tree, export graphic</td>
+</tr>
+<tr>
+<td><strong>Navigation</strong></td>
+<td>Back, forward, climb, drill-down, home</td>
+</tr>
+<tr>
+<td><strong>Zoom</strong></td>
+<td>Zoom in, zoom out, fit all, fit labels</td>
+</tr>
+<tr>
+<td><strong>Order</strong></td>
+<td>Sort clades ascending / descending</td>
+</tr>
+<tr>
+<td><strong>Rotate</strong></td>
+<td>Rotate node, rotate clade</td>
+</tr>
+<tr>
+<td><strong>Select</strong></td>
+<td>Node / branch mode toggle, reroot, midpoint root, temporal root</td>
+</tr>
+<tr>
+<td><strong>Hide/Show</strong></td>
+<td>Hide selected, unhide</td>
+</tr>
+<tr>
+<td><strong>Collapse</strong></td>
+<td>Collapse clade to triangle, expand</td>
+</tr>
+<tr>
+<td><strong>Colour</strong></td>
+<td>Colour picker swatch, apply colour, clear colour</td>
+</tr>
+<tr>
+<td><strong>Filter</strong></td>
+<td>Search/filter text box</td>
+</tr>
+<tr>
+<td><strong>Panels</strong></td>
+<td>Root-to-tip toggle, data table toggle</td>
+</tr>
+</tbody>
+</table>
+<h3 id="canvas" tabindex="-1">Canvas</h3>
+<p>The tree drawing. Fills all available space between the toolbar and status bar. Zoom and scroll with the mouse or trackpad. The tree scales horizontally to fill the available width at all times, using the label area for additional tree width when tip labels are not readable at the current zoom level.</p>
+<h3 id="visual-options-palette" tabindex="-1">Visual Options Palette</h3>
+<p>Slides in from the right. Toggle with the sliders button in the status bar or press <strong>Tab</strong>. Contains all display controls organised into collapsible sections. Sections are locked until a tree is loaded, then unlock automatically.</p>
+<h3 id="status-bar" tabindex="-1">Status Bar</h3>
+<p>Runs along the bottom. Shows live annotation values for the tip or node under the cursor. Also displays mode messages such as <em>Lens mode active – press Esc to cancel</em>.</p>
+<hr>
+<h2 id="chapter-2-loading-trees" tabindex="-1">Chapter 2: Loading Trees</h2>
+<h3 id="supported-formats" tabindex="-1">Supported Formats</h3>
+<p>PearTree reads <strong>NEXUS</strong> (<code>.nex</code>, <code>.nexus</code>, <code>.tre</code>, <code>.tree</code>, <code>.treefile</code>) and <strong>Newick</strong> (<code>.nwk</code>, <code>.newick</code>) files. Tree data stored in NEXUS metacomments (e.g. BEAST output) is fully supported.</p>
+<h3 id="opening-a-file" tabindex="-1">Opening a File</h3>
+<p>Click the <strong>open</strong> button <img src="/manual/images/open_button.png" style="width:28px;"/> in the toolbar, or press <strong>⌘O</strong>, to open the <em>Open Tree File</em> dialog.</p>
+<p>Three tabs are available:</p>
+<p><strong>File tab</strong> — drag a file onto the drop zone or click <em>Choose file</em> to browse.</p>
+<blockquote>
+<img src="/manual/images/fig1c.png" style="width:320px;"/>
+<p><em>Open Tree File</em> dialog, File tab. The file stays on your computer — nothing is uploaded.</p>
+</blockquote>
+<blockquote>
+<p><strong>Desktop app note:</strong> In the desktop application, <strong>⌘O</strong> opens the system file chooser directly rather than this dialog.</p>
+</blockquote>
+<p><strong>URL tab</strong> — paste a public URL to a remote tree file and click <em>Load from URL</em>. The remote server must allow cross-origin requests (CORS). GitHub raw URLs (<code>raw.githubusercontent.com/…</code>) work out of the box.</p>
+<blockquote>
+<img src="/manual/images/fig1d.png" style="width:320px;"/>
+<p><em>Open Tree File</em> dialog, URL tab.</p>
+</blockquote>
+<p><strong>Example tab</strong> — loads the built-in Ebola virus (EBOV) dataset immediately. Use this to follow the examples throughout this manual.</p>
+<blockquote>
+<img src="/manual/images/fig1b.png" style="width:320px;"/>
+<p><em>Open Tree File</em> dialog, Example tab.</p>
+</blockquote>
+<h3 id="the-startup-screen" tabindex="-1">The Startup Screen</h3>
+<p>When no tree is loaded, the canvas shows the startup screen with direct <strong>Open…</strong> and <strong>Example…</strong> buttons.</p>
+<blockquote>
+<img src="/manual/images/fig1a.png" style="width:220px;"/>
+<p>Startup screen.</p>
+</blockquote>
+<blockquote>
+<p>[!TIP]
+You can share a link that opens a remote tree automatically. Append <code>?treeUrl=&lt;URL&gt;</code> to the PearTree web address — anyone who follows the link has the tree loaded immediately with no upload required. See <a href="#appendix-d-url-parameters-and-sharing">Appendix D</a> for details.</p>
+</blockquote>
+<h3 id="opening-a-nexus-file-with-embedded-settings" tabindex="-1">Opening a NEXUS File with Embedded Settings</h3>
+<p>If a NEXUS file was exported from PearTree with <strong>Embed settings</strong> ticked (see <a href="#chapter-13-exporting">Chapter 13</a>), opening it restores the full visual appearance automatically — theme, palette choices, colouring, legends, and axis configuration.</p>
+<hr>
+<h2 id="chapter-3-importing-annotations" tabindex="-1">Chapter 3: Importing Annotations</h2>
+<p>Tree files embed per-tip metadata written by the inference tool (e.g. BEAST posterior values, HPD intervals). You can also add your own metadata from an external table at any time.</p>
+<h3 id="importing-a-csv-or-tsv-file" tabindex="-1">Importing a CSV or TSV File</h3>
+<p>Click the annotation-import button <img src="/manual/images/load_annotations_button.png" style="width:28px;"/> in the toolbar or press <strong>⌘⇧A</strong>.</p>
+<blockquote>
+<img src="/manual/images/fig11a.png" style="width:320px;"/>
+<p>Import Annotations dialog.</p>
+</blockquote>
+<p>Drag a CSV or TSV file onto the drop zone, or click <em>Choose file</em> to browse. In the web app you can also switch to the <em>URL</em> tab and paste a public URL directly — for example the EBOV annotation file used in this manual:</p>
+<pre><code>https://artic-network.github.io/peartree/docs/data/ebov.csv
+</code></pre>
+<blockquote>
+<p><strong>Desktop app note:</strong> A system file chooser appears instead of the URL tab. The EBOV annotation file can be downloaded from the URL above and then selected in the file chooser.</p>
+</blockquote>
+<h4 id="match-configuration" tabindex="-1">Match Configuration</h4>
+<p>After selecting the file a configuration step appears. Choose which column in the metadata file identifies each tip:</p>
+<blockquote>
+<img src="/manual/images/fig11b.png" style="width:320px;"/>
+<p>Import configuration: choose the column that matches tip labels, and toggle which columns to import.</p>
+</blockquote>
+<p>PearTree can match the entire tip label string, or just one pipe-delimited (<code>|</code>) field within it. For the EBOV example, select field 2 (<code>lab-id</code>) to match the second segment of each label.</p>
+<h4 id="import-summary" tabindex="-1">Import Summary</h4>
+<p>After clicking <strong>Import</strong>, a summary reports how many tips were matched.</p>
+<blockquote>
+<img src="/manual/images/fig11c.png" style="width:320px;"/>
+<p>Import summary confirming all 1610 tips matched.</p>
+</blockquote>
+<p>After import the new annotation keys appear in all <em>Colour by</em> dropdowns, the legend selector, and the Node Info dialog.</p>
+<h3 id="the-annotation-curator" tabindex="-1">The Annotation Curator</h3>
+<p>Open the Annotation Curator from the toolbar (tags button) to review every annotation key currently loaded.</p>
+<p>For each key you can:</p>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Rename</strong></td>
+<td>Give a key a more readable display label</td>
+</tr>
+<tr>
+<td><strong>Change type</strong></td>
+<td>Switch between <em>categorical</em> and <em>real</em> (continuous numeric)</td>
+</tr>
+<tr>
+<td><strong>Branch annotation</strong></td>
+<td>Mark a key as belonging to branches rather than nodes — affects how values move when rerooting (see <a href="#appendix-c-bootstrap-values-branch-annotations-and-rerooting">Appendix C</a>)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>[!TIP]
+If your tree uses a non-standard name for bootstrap values (e.g. <code>UFBoot</code> from IQ-TREE), open the Curator and tick <strong>Branch annotation</strong> for that key so PearTree handles it correctly when rerooting.</p>
+</blockquote>
+<hr>
+<h2 id="chapter-4-navigating-the-tree" tabindex="-1">Chapter 4: Navigating the Tree</h2>
+<p><em>The examples in this chapter use the EBOV example tree (1610 tips). For navigation in very large trees, try loading <code>data/SARS-CoV-2_15K.tree</code> (15,000 tips).</em></p>
+<h3 id="scrolling-and-zooming" tabindex="-1">Scrolling and Zooming</h3>
+<table>
+<thead>
+<tr>
+<th>Gesture / key</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Scroll wheel</strong> / two-finger drag</td>
+<td>Pan vertically</td>
+</tr>
+<tr>
+<td><strong>⇧ + scroll</strong></td>
+<td>Zoom in/out, anchored at the cursor position</td>
+</tr>
+<tr>
+<td><strong>Pinch</strong> (trackpad)</td>
+<td>Zoom in/out</td>
+</tr>
+<tr>
+<td><strong>↑ / ↓</strong></td>
+<td>Scroll one row</td>
+</tr>
+<tr>
+<td><strong>⌘↑ / ⌘↓</strong></td>
+<td>Scroll one page</td>
+</tr>
+<tr>
+<td><strong>⌘⇧↑ / ⌘⇧↓</strong></td>
+<td>Jump to the top or bottom of the tree</td>
+</tr>
+</tbody>
+</table>
+<p>Toolbar zoom buttons:</p>
+<table>
+<thead>
+<tr>
+<th>Button</th>
+<th>Shortcut</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="/manual/images/zoom_in_button.png" style="width:28px;"/></td>
+<td><strong>⌘=</strong></td>
+<td>Zoom in ×1.5</td>
+</tr>
+<tr>
+<td><img src="/manual/images/zoom_out_button.png" style="width:28px;"/></td>
+<td><strong>⌘−</strong></td>
+<td>Zoom out ×1.5</td>
+</tr>
+<tr>
+<td><img src="/manual/images/show_all_button.png" style="width:28px;"/></td>
+<td><strong>⌘0</strong></td>
+<td>Fit entire tree to window</td>
+</tr>
+<tr>
+<td><img src="/manual/images/show_labels_button.png" style="width:28px;"/></td>
+<td><strong>⌘⇧0</strong></td>
+<td>Fit Labels — zoom so no tip labels overlap</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Automatic horizontal scaling:</strong> When zoomed out so far that tip labels are hidden, PearTree expands the tree branches to fill the full canvas width. When you zoom back in enough for labels to become readable, the horizontal scale contracts to make room for them again. This maximises screen use at every zoom level.</p>
+</blockquote>
+<blockquote>
+<img src="/manual/images/fig4.png" style="width:440px;"/>
+<p>EBOV tree zoomed in to show individual tip labels.</p>
+</blockquote>
+<p>Press <strong>⌘0</strong> to return to the full view at any time.</p>
+<h3 id="subtree-navigation" tabindex="-1">Subtree Navigation</h3>
+<p><strong>Double-click</strong> any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node, scaled to fill the full window.</p>
+<p>Alternatively, select an internal node and click the drill-down button <img src="/manual/images/drill_down_button.png" style="width:28px;"/> or press <strong>⌘⇧.</strong>.</p>
+<blockquote>
+<img src="/manual/images/fig7a.png" style="width:440px;"/>
+<img src="/manual/images/fig7b.png" style="width:440px;"/>
+<p>A subclade before and after drilling down.</p>
+</blockquote>
+<p>PearTree maintains a full navigation history:</p>
+<table>
+<thead>
+<tr>
+<th>Button</th>
+<th>Shortcut</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="/manual/images/back_button.png" style="width:28px;"/></td>
+<td><strong>⌘[</strong></td>
+<td>Go back to the previous view</td>
+</tr>
+<tr>
+<td><img src="/manual/images/forward_button.png" style="width:28px;"/></td>
+<td><strong>⌘]</strong></td>
+<td>Go forward in history</td>
+</tr>
+<tr>
+<td><img src="/manual/images/climb_up_button.png" style="width:28px;"/></td>
+<td><strong>⌘⇧,</strong></td>
+<td>Step up one level toward the root</td>
+</tr>
+<tr>
+<td><img src="/manual/images/home_button.png" style="width:28px;"/></td>
+<td><strong>⌘\</strong></td>
+<td>Return to the full-tree root view</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>[!TIP]
+Navigate history like a web browser. Drill down into several different clades in sequence, then press <strong>⌘[</strong> to step back through each view. <strong>⌘]</strong> goes forward again. This makes it easy to compare distant parts of a large tree without re-navigating each time.</p>
+</blockquote>
+<hr>
+<h2 id="chapter-5-the-hyperbolic-lens" tabindex="-1">Chapter 5: The Hyperbolic Lens</h2>
+<p>The hyperbolic lens expands a region of the tree to label-readable spacing without losing the surrounding context — the rest of the tree compresses but remains fully visible.</p>
+<h3 id="activating-the-lens" tabindex="-1">Activating the Lens</h3>
+<p>Hold <strong>~</strong> (tilde/backtick) and move the cursor over the canvas. The tree distorts around the cursor's vertical position.</p>
+<blockquote>
+<img src="/manual/images/fig5.png" style="width:440px;"/>
+<p>Lens active: tips near the cursor are spread apart and readable; tips further away are compressed but still visible.</p>
+</blockquote>
+<p>The lens <strong>persists</strong> after you release <strong>~</strong> — the focus locks in place so you can click, select, or inspect the expanded region normally. Re-hold <strong>~</strong> and move to reposition the focus. Press <strong>Escape</strong> to dismiss.</p>
+<p>While the lens is active a reminder appears in the status bar: <em>Lens mode active – press Esc to cancel</em>.</p>
+<h3 id="adjusting-the-lens-width" tabindex="-1">Adjusting the Lens Width</h3>
+<p>The <strong>Lens</strong> ⊕/⊖ buttons in the toolbar (or <strong>⌘⇧=</strong> / <strong>⌘⇧−</strong>) control how many tip rows wide the uniformly-expanded flat centre zone is:</p>
+<ul>
+<li><strong>⊕</strong> — add one row of spacing to the flat zone</li>
+<li><strong>⊖</strong> — remove one row</li>
+<li>At zero (default) the lens is a pure hyperbolic falloff from the focus point</li>
+</ul>
+<p>Peak magnification caps at the <em>Fit Labels</em> spacing level, so labels in the expanded zone never overlap.</p>
+<blockquote>
+<p>[!TIP]
+The hyperbolic lens is ideal for large trees where fully zooming in would hide the context. Hold <strong>~</strong>, move to the region of interest, release to lock the focus, then interact with the expanded section. Press <strong>Escape</strong> when done.</p>
+</blockquote>
+<hr>
+<h2 id="chapter-6-organising-the-tree" tabindex="-1">Chapter 6: Organising the Tree</h2>
+<h3 id="branch-ordering" tabindex="-1">Branch Ordering</h3>
+<p>The <strong>Order</strong> buttons sort all clades by descendant count, giving a ladder-like layout:</p>
+<table>
+<thead>
+<tr>
+<th>Button</th>
+<th>Shortcut</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="/manual/images/order_up_button.png" style="width:28px;"/></td>
+<td><strong>⌘U</strong></td>
+<td>Larger clades toward the top</td>
+</tr>
+<tr>
+<td><img src="/manual/images/order_down_button.png" style="width:28px;"/></td>
+<td><strong>⌘D</strong></td>
+<td>Larger clades toward the bottom</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<img src="/manual/images/fig3.png" style="width:440px;"/>
+<p>EBOV tree with ascending (larger clades upward) order applied.</p>
+</blockquote>
+<blockquote>
+<p>[!NOTE]
+Once ordered, the original clade order is lost. You can switch between ascending and descending ordering, or rotate individual nodes manually (see below). Hiding a node (see below) also clears the branch ordering since the tip counts have changed.</p>
+</blockquote>
+<h3 id="rotating-nodes" tabindex="-1">Rotating Nodes</h3>
+<p>'Rotating' swaps the order of a node's direct children (or recursively all children in a clade). This is a purely cosmetic change — the topology and branch lengths are unchanged.</p>
+<p>Select an internal node, then use the Rotate buttons:</p>
+<table>
+<thead>
+<tr>
+<th>Button</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="/manual/images/rotate_branch_button.png" style="width:28px;"/></td>
+<td>Reverse the direct children of the selected node only</td>
+</tr>
+<tr>
+<td><img src="/manual/images/rotate_clade_button.png" style="width:28px;"/></td>
+<td>Recursively reverse children at every level within the selected subtree</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<img src="/manual/images/fig8a.png" style="width:440px;"/>
+<img src="/manual/images/fig8b.png" style="width:440px;"/>
+<img src="/manual/images/fig8c.png" style="width:440px;"/>
+<p>Before and after rotating a single node (middle), and after rotating the entire clade (bottom).</p>
+</blockquote>
+<h3 id="hiding-nodes-and-subtrees" tabindex="-1">Hiding Nodes and Subtrees</h3>
+<p>Hiding removes a tip or entire subtree from the display without deleting it from the underlying tree. The remaining tree reflows to fill the space.</p>
+<ol>
+<li>Select a tip or internal node.</li>
+<li>Click the <strong>Hide</strong> button (eye-slash icon) in the toolbar.</li>
+</ol>
+<blockquote>
+<img src="/manual/images/fig9a.png" style="width:440px;"/>
+<img src="/manual/images/fig9b.png" style="width:440px;"/>
+<p>A single tip before and after hiding.</p>
+</blockquote>
+<blockquote>
+<img src="/manual/images/fig9c.png" style="width:440px;"/>
+<img src="/manual/images/fig9d.png" style="width:440px;"/>
+<p>A subtree selected (top) and after hiding all descendants (bottom).</p>
+</blockquote>
+<p><strong>Showing hidden nodes:</strong> when any hidden nodes exist in the current view, the <strong>Unhide</strong> button <img src="/manual/images/unhide_button.png" style="width:28px;"/> becomes active.</p>
+<ul>
+<li><strong>With a node selected</strong> — click Unhide to restore the hidden descendants of that node.</li>
+<li><strong>With nothing selected</strong> — click Unhide to restore all hidden nodes at once.</li>
+</ul>
+<blockquote>
+<p>[!TIP]
+To isolate a subset of tips: type a keyword into the filter box to select all matching tips, press <strong>⌘⇧I</strong> to invert the selection, then click Hide. Everything except your subset disappears. Click Unhide (with nothing selected) when done.</p>
+</blockquote>
+<h3 id="collapsing-clades" tabindex="-1">Collapsing Clades</h3>
+<p>Collapsing replaces a subtree with a filled triangle symbol. Unlike hiding, collapsed clades remain visible as a compact summary with a tip-count label.</p>
+<ol>
+<li>Select an internal node.</li>
+<li>Click the <strong>Collapse</strong> button in the toolbar.</li>
+</ol>
+<p>The subtree becomes a filled triangle labelled with the clade name and enclosed tip count.</p>
+<p>To expand: click the triangle to select it and click <strong>Expand</strong>, or <strong>double-click the triangle</strong> directly.</p>
+<p><strong>Changing a triangle's colour:</strong> with a triangle selected, use the colour picker in the toolbar to assign a custom fill colour. The eraser button resets to the theme default.</p>
+<p>In the <strong>Visual Options palette</strong>, the <strong>Collapsed Clades</strong> section (visible once any clade has been collapsed) provides:</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Fill opacity</strong></td>
+<td>Translucency of the triangle (0 = transparent, 1 = solid)</td>
+</tr>
+<tr>
+<td><strong>Height (rows)</strong></td>
+<td>Height of the triangle base in tip-row units (1–20)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>[!TIP]
+Collapse the uninteresting parts of a large tree into triangles so the important regions fill the canvas with readable labels. Double-click any triangle to re-expand it when needed. Collapsed clades can also be individually coloured to categorise groups at a glance.</p>
+</blockquote>
+<hr>
+<h2 id="chapter-7-selecting-and-filtering" tabindex="-1">Chapter 7: Selecting and Filtering</h2>
+<h3 id="selection-modes" tabindex="-1">Selection Modes</h3>
+<p>PearTree has two selection modes. The active mode is shown by which toolbar button is pressed.</p>
+<p><strong>Nodes mode</strong> (default)</p>
+<ul>
+<li><strong>Click a tip</strong> — selects that tip; the status bar shows its name and divergence</li>
+<li><strong>Click an internal node</strong> — selects all descendant tips; a teal MRCA ring marks the node</li>
+<li><strong>⌘-click</strong> — add to or remove from the current selection</li>
+<li><strong>Click and drag</strong> — drag-select all tips within a rectangular area</li>
+<li><strong>⌘A</strong> — select all visible tips</li>
+<li><strong>⌘⇧I</strong> — invert the selection</li>
+<li><strong>Click empty canvas</strong> — clear the selection</li>
+</ul>
+<blockquote>
+<img src="/manual/images/fig6.png" style="width:440px;"/>
+<p>A group of tips selected (highlighted) with MRCA ring visible on their most recent common ancestral node.</p>
+</blockquote>
+<p><strong>Branches mode (⌘B)</strong></p>
+<p>Press <strong>⌘B</strong> or click the branch-mode button to switch. Click anywhere along a horizontal branch to place a precise positional marker. This mode enables exact-position rerooting (see <a href="#chapter-10-rooting">Chapter 10</a>).</p>
+<blockquote>
+<p>[!TIP]
+Branches mode is mainly used for precise rerooting. The example EBOV tree is an explicitly-rooted BEAST tree, so rerooting is disabled for it. Use <code>data/varv_rooted.nwk</code> or <code>data/large_tree.tree</code> to practise rerooting.</p>
+</blockquote>
+<p>Press <strong>⌘B</strong> again to return to Nodes mode.</p>
+<h3 id="filtering-tips" tabindex="-1">Filtering Tips</h3>
+<p>The filter box in the toolbar instantly selects all visible tips whose labels contain the typed string.</p>
+<blockquote>
+<img src="/manual/images/filter_box.png" style="width:200px;"/>
+</blockquote>
+<p>For example, type <code>SLE</code> to select all Sierra Leone EBOV tips:</p>
+<blockquote>
+<img src="/manual/images/filter_box_SLE.png" style="width:200px;"/>
+</blockquote>
+<p>Press <strong>Escape</strong> or clear the box to remove the filter (the tip selection remains).</p>
+<h3 id="node-info" tabindex="-1">Node Info</h3>
+<p>Select any node or tip, then press <strong>⌘I</strong> or click the <img src="/manual/images/get_info_button.png" style="width:28px;"/> button. The Node Info dialog lists every annotation on that node — name, divergence, branch length, posterior support, date, and any imported custom fields.</p>
+<blockquote>
+<img src="/manual/images/fig10.png" style="width:400px;"/>
+<p>Node Info dialog for a selected EBOV tip.</p>
+</blockquote>
+<h3 id="applying-user-colours" tabindex="-1">Applying User Colours</h3>
+<ol>
+<li>Pick a colour using the colour swatch in the toolbar.</li>
+<li>Select one or more tips.</li>
+<li>Click the <strong>Apply</strong> button <img src="/manual/images/paint_button.png" style="width:28px;"/>.</li>
+</ol>
+<blockquote>
+<img src="/manual/images/fig14.png" style="width:440px;"/>
+<p>Tips dated from July–September 2015 highlighted in orange.</p>
+</blockquote>
+<p>User colours are stored as a <code>user_colour</code> annotation and are available in all <em>Colour by</em> dropdowns. When a NEXUS file is exported they travel with it.</p>
+<p>To remove: click the <strong>Clear</strong> button <img src="/manual/images/eraser_button.png" style="width:28px;"/>. With tips selected, clears only those tips; with nothing selected, clears all user colours in the current view.</p>
+<blockquote>
+<p>[!TIP]
+Click a colour swatch in a categorical legend to instantly select all tips with that annotation value, wherever they appear in the tree. <strong>⌘-click</strong> additional swatches to add them to the selection. Then apply a user colour, hide, or export that group.</p>
+</blockquote>
+<hr>
+<h2 id="chapter-8-decorating-the-tree" tabindex="-1">Chapter 8: Decorating the Tree</h2>
+<p>All visual controls live in the <strong>Visual Options palette</strong>. Open it with the sliders button in the status bar or press <strong>Tab</strong>. Controls are organised into collapsible sections.</p>
+<p><em>This chapter uses the EBOV example tree with the <code>ebov.csv</code> annotations imported (see <a href="#chapter-3-importing-annotations">Chapter 3</a>).</em></p>
+<h3 id="themes" tabindex="-1">Themes</h3>
+<p>The <strong>Theme</strong> section at the top of the palette provides pre-built visual presets.</p>
+<blockquote>
+<img src="/manual/images/fig16.png" style="width:280px;"/>
+<p>The Theme section with the <em>MCM</em> theme applied.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Theme selector</td>
+<td>Switch to a built-in or user-saved theme</td>
+</tr>
+<tr>
+<td><strong>Store</strong></td>
+<td>Save the current settings as a named personal theme</td>
+</tr>
+<tr>
+<td><strong>Default</strong></td>
+<td>Make this theme the starting point for new windows</td>
+</tr>
+<tr>
+<td><strong>Remove</strong></td>
+<td>Delete a user-saved theme</td>
+</tr>
+</tbody>
+</table>
+<p>Changing any individual setting switches the selector to <em>Custom</em>. Click <strong>Reset to defaults</strong> at the bottom of the palette to revert to the Artic theme.</p>
+<h3 id="tree-appearance" tabindex="-1">Tree Appearance</h3>
+<p>The <strong>Tree</strong> section controls the canvas background, branch colour and width, and the typeface used for all labels.</p>
+<blockquote>
+<img src="/manual/images/controls_tree.png" style="width:260px;"/>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Background</td>
+<td>Canvas fill colour</td>
+</tr>
+<tr>
+<td>Branches</td>
+<td>Branch line colour</td>
+</tr>
+<tr>
+<td>Branch width</td>
+<td>Stroke thickness (0.5–8 px)</td>
+</tr>
+<tr>
+<td>Typeface</td>
+<td>Font family for all labels</td>
+</tr>
+<tr>
+<td>Neg. branches</td>
+<td><em>Draw</em> (as-is) or <em>Clamp to zero</em></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><img src="/manual/images/negative_branch.png" style="width:180px;"/>   <img src="/manual/images/negative_clamped.png" style="width:180px;"/></p>
+<p>Negative branch drawn as-is (left) vs. clamped to zero (right).</p>
+</blockquote>
+<h3 id="tip-labels" tabindex="-1">Tip Labels</h3>
+<blockquote>
+<img src="/manual/images/controls_tip_labels.png" style="width:260px;"/>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Show</td>
+<td><em>Off</em> — hide all labels; <em>Names</em> — show tip name; or select an annotation key to display its values instead</td>
+</tr>
+<tr>
+<td>Layout</td>
+<td><em>Normal</em> (labels float at each tip) or aligned options (<em>Aligned</em>, <em>Dashed</em>, <em>Dots</em>, <em>Solid</em>) — labels line up at the rightmost tip with optional connector lines</td>
+</tr>
+<tr>
+<td>Size</td>
+<td>Font size (1–20 pt)</td>
+</tr>
+<tr>
+<td>Colour</td>
+<td>Default label colour</td>
+</tr>
+<tr>
+<td>Colour by</td>
+<td>Use an annotation key for per-tip label colour</td>
+</tr>
+<tr>
+<td>Palette</td>
+<td>Colour scheme when <em>Colour by</em> is active</td>
+</tr>
+<tr>
+<td>Spacing</td>
+<td>Gap between the tip marker and the label text (px)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="label-shapes" tabindex="-1">Label Shapes</h3>
+<p>Coloured shapes can be drawn to the left of each tip label text, providing annotation colour swatches alongside each name.</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Shape</td>
+<td><em>Off</em> / <em>Square</em> / <em>Circle</em> / <em>Block</em></td>
+</tr>
+<tr>
+<td>Size</td>
+<td>Shape height as % of row height</td>
+</tr>
+<tr>
+<td>Colour</td>
+<td>Default fill colour</td>
+</tr>
+<tr>
+<td>Colour by</td>
+<td>Use an annotation key for shape colour</td>
+</tr>
+<tr>
+<td>Margin left/right</td>
+<td>Gap on each side of the shape (px)</td>
+</tr>
+</tbody>
+</table>
+<p>Multiple independent shape slots (up to 10) can be added to show several annotation dimensions simultaneously.</p>
+<blockquote>
+<p><strong>Screenshot placeholder</strong> — EBOV tip labels with two shape slots: <code>country</code> squares and <code>location</code> circles, demonstrating dual-annotation labelling.</p>
+</blockquote>
+<h3 id="tip-shapes" tabindex="-1">Tip Shapes</h3>
+<blockquote>
+<img src="/manual/images/controls_tip_shapes.png" style="width:260px;"/>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Size</td>
+<td>Tip circle radius (0 = hidden)</td>
+</tr>
+<tr>
+<td>Colour</td>
+<td>Stroke/fill colour</td>
+</tr>
+<tr>
+<td>Background</td>
+<td>Halo fill colour</td>
+</tr>
+<tr>
+<td>Halo</td>
+<td>Halo ring radius (0 = hidden)</td>
+</tr>
+<tr>
+<td>Colour by</td>
+<td>Use an annotation key for tip colours</td>
+</tr>
+<tr>
+<td>Palette</td>
+<td>Colour scheme when <em>Colour by</em> is active</td>
+</tr>
+</tbody>
+</table>
+<p>Set <strong>Colour by</strong> to <code>country</code> to colour each tip by sampling country:</p>
+<blockquote>
+<img src="/manual/images/fig12a.png" style="width:260px;"/>
+<p>Tip Shapes controls with <strong>Colour by</strong> set to <code>country</code>.</p>
+</blockquote>
+<blockquote>
+<img src="/manual/images/fig12b.png" style="width:440px;"/>
+<p>EBOV tips coloured by <code>country</code>.</p>
+</blockquote>
+<h3 id="node-shapes" tabindex="-1">Node Shapes</h3>
+<blockquote>
+<img src="/manual/images/controls_node_shapes.png" style="width:260px;"/>
+</blockquote>
+<p>Internal nodes can show circles coloured by a node-level annotation — useful for displaying posterior support values.</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Size</td>
+<td>Node circle radius (0 = hidden)</td>
+</tr>
+<tr>
+<td>Colour by</td>
+<td>Use an annotation key (e.g. <code>posterior</code>)</td>
+</tr>
+<tr>
+<td>Palette</td>
+<td>For continuous support values, a diverging palette such as <em>Blue-Black-Red</em> works well: red = high support, blue = low</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<img src="/manual/images/fig12c.png" style="width:260px;"/>
+<p>Node Shapes controls with size set to 3 and <strong>Colour by</strong> set to <code>posterior</code>.</p>
+</blockquote>
+<blockquote>
+<img src="/manual/images/fig12d.png" style="width:440px;"/>
+<p>EBOV tree with node shapes coloured by <code>posterior</code> support.</p>
+</blockquote>
+<h3 id="node-labels" tabindex="-1">Node Labels</h3>
+<p>Annotation values can be displayed as text labels on internal nodes — useful for bootstrap values, clade names, or any node-level string annotation.</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Annotation</td>
+<td>Which annotation key to display</td>
+</tr>
+<tr>
+<td>Position</td>
+<td><em>Right</em>, <em>Above left</em>, or <em>Below left</em></td>
+</tr>
+<tr>
+<td>Font size</td>
+<td>Label text size</td>
+</tr>
+<tr>
+<td>Colour</td>
+<td>Label text colour</td>
+</tr>
+<tr>
+<td>Spacing</td>
+<td>Gap between node and label text</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Screenshot placeholder</strong> — EBOV tree with <code>posterior</code> node labels positioned to the right of each internal node.</p>
+</blockquote>
+<h3 id="node-bars" tabindex="-1">Node Bars</h3>
+<p><em>Available for trees with node-height HPD annotations — illustrated using <code>data/measles_genome_tree.nexus</code>.</em></p>
+<p>When a BEAST tree carries HPD height annotations (e.g. <code>height_95%_HPD</code>), the <strong>Node Bars</strong> section appears in the palette:</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Show</td>
+<td>Toggle bars on/off</td>
+</tr>
+<tr>
+<td>Colour</td>
+<td>Bar colour</td>
+</tr>
+<tr>
+<td>Bar height</td>
+<td>Vertical thickness of each bar (px)</td>
+</tr>
+<tr>
+<td>Line</td>
+<td>Show a line at the node <em>Mean</em>, <em>Median</em>, or neither</td>
+</tr>
+<tr>
+<td>Range whiskers</td>
+<td>Show or hide the outer extent whiskers</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Screenshot placeholder</strong> — Measles genome tree (<code>data/measles_genome_tree.nexus</code>) with node bars showing 95% HPD height intervals.</p>
+</blockquote>
+<h3 id="legends" tabindex="-1">Legends</h3>
+<p>Legends provide a colour key for any annotation used to colour tips, nodes, or labels. PearTree supports up to four independent legend strips simultaneously, all docked to the right side of the canvas.</p>
+<p>In the <strong>Legend</strong> section of the palette:</p>
+<ol>
+<li>Set <strong>Annotation</strong> to an annotation key (e.g. <code>country</code>).</li>
+<li>Adjust <strong>Height %</strong>, <strong>Colour</strong>, and <strong>Font size</strong> as desired.</li>
+</ol>
+<p>For categorical annotations a swatch-and-label key is drawn. For continuous numeric annotations a colour ramp with min/max labels is shown.</p>
+<blockquote>
+<img src="/manual/images/fig13.png" style="width:440px;"/>
+<p>EBOV tree with <code>country</code> legend docked to the right.</p>
+</blockquote>
+<p><strong>Legend 2–4:</strong> additional legends can be configured below Legend 1. Set each legend's <strong>Position</strong> to <em>Right</em> (shown in the same panel as Legend 1) or <em>Below</em> (stacked vertically).</p>
+<p>Use <strong>Height %</strong> to control what fraction of the panel height each legend occupies.</p>
+<blockquote>
+<p>[!TIP]
+Use Legend 1 for a categorical annotation (e.g. country) and Legend 2 with <strong>Position: Below</strong> for a continuous annotation (e.g. posterior support) to display both keys simultaneously in a single neatly stacked column.</p>
+</blockquote>
+<hr>
+<h2 id="chapter-9-the-time-axis" tabindex="-1">Chapter 9: The Time Axis</h2>
+<p>The axis adds a scale bar along the bottom of the canvas. Load the EBOV example tree to follow along — it carries a <code>date</code> annotation on each tip.</p>
+<p>In the <strong>Axis</strong> section of the palette, set <strong>Show</strong> to one of four modes:</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Axis type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Off</strong></td>
+<td>No axis</td>
+</tr>
+<tr>
+<td><strong>Forward</strong></td>
+<td>Divergence from root (0 at root, increases toward tips)</td>
+</tr>
+<tr>
+<td><strong>Reverse</strong></td>
+<td>Distance from the most-divergent tip toward the root</td>
+</tr>
+<tr>
+<td><strong>Time</strong></td>
+<td>Calendar-date axis (requires a date calibration — see below)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="divergence-axes" tabindex="-1">Divergence Axes</h3>
+<p>Select <strong>Forward</strong> or <strong>Reverse</strong> to draw a plain numeric scale immediately — no calibration needed. Use these when branch lengths represent substitutions-per-site or similar units.</p>
+<h3 id="time-calibrated-axis" tabindex="-1">Time-Calibrated Axis</h3>
+<h4 id="step-1-calibrate" tabindex="-1">Step 1 — Calibrate</h4>
+<p>In the <strong>Tree</strong> section of the palette (above the Axis section), a <strong>Calibrate</strong> dropdown appears when the loaded tree has at least one annotation that PearTree recognises as a date type. Select that annotation key (e.g. <code>date</code> or <code>collection_date</code>).</p>
+<p>Once selected, a <strong>Format</strong> row appears:</p>
+<table>
+<thead>
+<tr>
+<th>Format code</th>
+<th>Example output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>yyyy-MM-dd</code></td>
+<td><code>2014-09-12</code></td>
+</tr>
+<tr>
+<td><code>yyyy-MMM-dd</code></td>
+<td><code>2014-Sep-12</code></td>
+</tr>
+<tr>
+<td><code>dd MMM yyyy</code></td>
+<td><code>12 Sep 2014</code></td>
+</tr>
+<tr>
+<td><code>dd MMMM yyyy</code></td>
+<td><code>12 September 2014</code></td>
+</tr>
+<tr>
+<td><code>MMM dd, yyyy</code></td>
+<td><code>Sep 12, 2014</code></td>
+</tr>
+<tr>
+<td><code>MMMM dd, yyyy</code></td>
+<td><code>September 12, 2014</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="step-2-set-the-axis-to-time" tabindex="-1">Step 2 — Set the axis to Time</h4>
+<p>In <strong>Axis → Show</strong>, select <code>Time</code>. The axis now displays calendar dates derived from the calibration.</p>
+<h4 id="step-3-configure-tick-intervals" tabindex="-1">Step 3 — Configure tick intervals</h4>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Options</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Major ticks</strong></td>
+<td>Auto / Decades / Years / Quarters / Months / Weeks / Days</td>
+<td><em>Auto</em> gives ~5–8 ticks across the current view</td>
+</tr>
+<tr>
+<td><strong>Minor ticks</strong></td>
+<td>Off / (finer intervals)</td>
+<td>Off by default</td>
+</tr>
+<tr>
+<td><strong>Major labels</strong></td>
+<td>Partial / Full / Component / Off</td>
+<td>See below</td>
+</tr>
+<tr>
+<td><strong>Minor labels</strong></td>
+<td>Off / Component / Partial / Full</td>
+<td>Off by default</td>
+</tr>
+</tbody>
+</table>
+<h4 id="label-modes" tabindex="-1">Label modes</h4>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Year tick</th>
+<th>Month tick</th>
+<th>Day tick</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Partial</strong></td>
+<td><code>2014</code></td>
+<td><code>2014-09</code></td>
+<td><code>2014-09-12</code></td>
+</tr>
+<tr>
+<td><strong>Full</strong></td>
+<td>(full chosen format)</td>
+<td>(full chosen format)</td>
+<td>(full chosen format)</td>
+</tr>
+<tr>
+<td><strong>Component</strong></td>
+<td><code>2014</code></td>
+<td><code>Sep</code></td>
+<td><code>12</code></td>
+</tr>
+<tr>
+<td><strong>Off</strong></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>For Weeks ticks: <em>Component</em> shows <code>W01</code>–<code>W53</code>; <em>Full</em> and <em>Partial</em> both show <code>2014-W37</code>.</p>
+<blockquote>
+<img src="/manual/images/fig15.png" style="width:280px;"/>
+<p>EBOV tree with time axis. Major ticks = Years, labels = Partial.</p>
+</blockquote>
+<hr>
+<h2 id="chapter-10-rooting" tabindex="-1">Chapter 10: Rooting</h2>
+<p>Rerooting is available for trees that are not explicitly rooted (e.g. raw IQ-TREE or RAxML output). For explicitly-rooted trees such as BEAST timed trees, rerooting is disabled.</p>
+<p><em>Use <code>data/varv_rooted.nwk</code> or <code>data/large_tree.tree</code> for the examples in this chapter.</em></p>
+<h3 id="midpoint-root-m" tabindex="-1">Midpoint Root (⌘M)</h3>
+<p>Press <strong>⌘M</strong> or click <strong>Midpoint</strong> in the toolbar. The tree is rooted at the midpoint of the longest tip-to-tip path — a common exploratory starting point when no outgroup is available.</p>
+<blockquote>
+<p><strong>Screenshot placeholder</strong> — <code>data/large_tree.tree</code> before and after midpoint rerooting, with root repositioned.</p>
+</blockquote>
+<h3 id="rerooting-at-a-selected-node" tabindex="-1">Rerooting at a Selected Node</h3>
+<ol>
+<li>Select one or more tips (their MRCA defines the branch to root on).</li>
+<li>Click the <strong>Reroot</strong> button in the toolbar.</li>
+</ol>
+<p>The root is placed at the midpoint of the branch above the MRCA node.</p>
+<h3 id="rerooting-at-an-exact-branch-position" tabindex="-1">Rerooting at an Exact Branch Position</h3>
+<ol>
+<li>Press <strong>⌘B</strong> to enter <strong>Branches</strong> mode.</li>
+<li>Click exactly where you want the new root along any branch.</li>
+<li>Click <strong>Reroot</strong>.</li>
+</ol>
+<blockquote>
+<p><strong>Screenshot placeholder</strong> — Branch position marker on <code>data/varv_rooted.nwk</code>, and the resulting tree after rerooting.</p>
+</blockquote>
+<h3 id="temporal-root" tabindex="-1">Temporal Root</h3>
+<p>If your tree has tip dates, PearTree can find the root position that best linearises the root-to-tip regression (least-squares RTT regression).</p>
+<p>Click <strong>Temporal Root</strong> in the toolbar or press <strong>⌘⇧M</strong>. Two modes are available:</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Local</strong> (default)</td>
+<td>Optimises root position only along the current root branch</td>
+</tr>
+<tr>
+<td><strong>Global</strong></td>
+<td>Searches every branch for the best regression fit</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>[!TIP]
+Use <strong>Global</strong> temporal root on a fresh unrooted tree to find the best root de novo. Use <strong>Local</strong> to fine-tune the position on a branch you have already identified as correct.</p>
+</blockquote>
+<blockquote>
+<p><strong>Screenshot placeholder</strong> — RTT plot for <code>data/ebov.tree</code> before and after temporal rooting, showing improvement in the linear relationship.</p>
+</blockquote>
+<h3 id="bootstrap-values-and-rerooting" tabindex="-1">Bootstrap Values and Rerooting</h3>
+<p>When you reroot a tree, bootstrap support values (and other branch annotations) are correctly relocated to follow their branches. See <a href="#appendix-c-bootstrap-values-branch-annotations-and-rerooting">Appendix C</a> for a full explanation of how this works.</p>
+<hr>
+<h2 id="chapter-11-the-root-to-tip-panel" tabindex="-1">Chapter 11: The Root-to-Tip Panel</h2>
+<p>The Root-to-Tip (RTT) panel plots each tip's root-to-tip divergence against a tip-date annotation, with a linear regression overlay. It is the standard visual tool for assessing clock-like signal in a timed phylogeny and identifying outlier sequences.</p>
+<p><em>Load <code>data/ebov.tree</code> and import <code>data/ebov.csv</code> to follow along.</em></p>
+<p>Click the <strong>RTT</strong> button in the toolbar to open the panel.</p>
+<blockquote>
+<p><strong>Screenshot placeholder</strong> — EBOV RTT panel showing a strong linear clock signal. Points are colour-coded by country.</p>
+</blockquote>
+<h3 id="panel-layout-modes" tabindex="-1">Panel Layout Modes</h3>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Floating</strong></td>
+<td>Panel overlays the right side of the canvas; close with ×</td>
+</tr>
+<tr>
+<td><strong>Fixed</strong></td>
+<td>Panel is pinned open alongside the canvas at a configurable width; drag the resize handle to adjust</td>
+</tr>
+</tbody>
+</table>
+<p>Click the pin button in the panel header to toggle. In fixed mode the canvas and RTT panel share the full window width.</p>
+<h3 id="reading-the-plot" tabindex="-1">Reading the Plot</h3>
+<ul>
+<li>Each point is a visible tip; x = sampling date, y = root-to-tip divergence.</li>
+<li>The <strong>regression line</strong> shows the best-fit linear relationship.</li>
+<li>The <strong>slope</strong> (substitution rate) and <strong>R²</strong> are displayed in the panel.</li>
+<li><strong>Outliers</strong> — tips that fall far from the regression line — may indicate sequencing errors, mislabelled dates, or recombination.</li>
+</ul>
+<h3 id="interacting-with-the-plot" tabindex="-1">Interacting with the Plot</h3>
+<ul>
+<li><strong>Click a point</strong> — selects the corresponding tip in the tree and highlights its row in the data table.</li>
+<li><strong>Select a tip in the tree</strong> — its point is highlighted in the RTT plot.</li>
+</ul>
+<h3 id="rtt-visual-options" tabindex="-1">RTT Visual Options</h3>
+<p>In the <strong>RTT</strong> section of the Visual Options palette:</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Axis colour</td>
+<td>Colour of RTT axis lines and labels</td>
+</tr>
+<tr>
+<td>Font size</td>
+<td>Tick-label font size</td>
+</tr>
+<tr>
+<td>Regression style</td>
+<td><em>Solid</em> or <em>Dashed</em> regression line</td>
+</tr>
+<tr>
+<td>Regression colour</td>
+<td>Line colour (defaults to branch colour)</td>
+</tr>
+<tr>
+<td>Major / minor ticks</td>
+<td>Interval configuration, same options as the main time axis</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>[!TIP]
+Select outlier tips in the RTT plot (click their points), then click <strong>Hide</strong> in the main toolbar to remove them from the tree without editing the file. This is the fastest way to clean a dataset for clock analysis.</p>
+</blockquote>
+<hr>
+<h2 id="chapter-12-the-data-table-panel" tabindex="-1">Chapter 12: The Data Table Panel</h2>
+<p>The Data Table panel lists all visible tips in tree order, with one column per annotation. Open it with the table button in the toolbar.</p>
+<blockquote>
+<p><strong>Screenshot placeholder</strong> — Data Table panel pinned alongside the EBOV tree, showing tip names and imported annotation columns.</p>
+</blockquote>
+<h3 id="panel-layout-modes-1" tabindex="-1">Panel Layout Modes</h3>
+<p>Like the RTT panel, the Data Table can be floating or pinned fixed. Click the pin button in the panel header to toggle. Drag the resize handle (the border between tree and table) to adjust the width.</p>
+<h3 id="synchronisation-with-the-canvas" tabindex="-1">Synchronisation with the Canvas</h3>
+<p>The Data Table is fully synchronised with the tree in both directions:</p>
+<ul>
+<li>Selecting a tip or node in the tree highlights the corresponding row(s).</li>
+<li>Clicking any row selects that tip in the tree and scrolls the canvas to its position.</li>
+<li>Collapsing, hiding, or filtering tree nodes updates the table instantly.</li>
+</ul>
+<h3 id="collapsed-clades-in-the-table" tabindex="-1">Collapsed Clades in the Table</h3>
+<p>Collapsed clades appear as either one row per enclosed tip or a single placeholder row, allowing you to browse and select tips within a collapsed clade without expanding it.</p>
+<h3 id="restricting-columns" tabindex="-1">Restricting Columns</h3>
+<p>By default all annotation columns are shown. Rename keys in the Annotation Curator for cleaner column headers. When using the <a href="embedded-api.md">embed API</a>, pass <code>dataTableColumns</code> to show only specific columns in a fixed order.</p>
+<blockquote>
+<p>[!TIP]
+The Data Table is the fastest way to find a specific tip by name in a large tree. Open the panel, scan the sorted list or use your browser's in-page find (Ctrl/Cmd+F), click the row — the canvas scrolls and selects the tip automatically.</p>
+</blockquote>
+<hr>
+<h2 id="chapter-13-exporting" tabindex="-1">Chapter 13: Exporting</h2>
+<h3 id="exporting-the-tree-file" tabindex="-1">Exporting the Tree File</h3>
+<p>Click the <strong>export tree</strong> button (or press <strong>⌘S</strong>) to save the tree.</p>
+<blockquote>
+<img src="/manual/images/fig17.png" style="width:360px;"/>
+<p>Export Tree dialog.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Values</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Format</strong></td>
+<td>NEXUS / Newick</td>
+<td>NEXUS supports annotations and embedded settings; Newick is the most portable format</td>
+</tr>
+<tr>
+<td><strong>Scope</strong></td>
+<td>Entire tree / Current subtree view</td>
+<td>Exports only the nodes currently on screen when <em>Current subtree view</em> is chosen</td>
+</tr>
+<tr>
+<td><strong>Annotations</strong></td>
+<td>Checkboxes per annotation key</td>
+<td>Deselect any keys you do not want to include</td>
+</tr>
+<tr>
+<td><strong>Embed settings</strong></td>
+<td>Checkbox (NEXUS only)</td>
+<td>Writes all current visual settings into the file</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>[!TIP]
+Always tick <strong>Embed settings</strong> when exporting NEXUS files for sharing or archival. The recipient's PearTree will automatically restore the full appearance — colours, legends, axis, theme — when they open the file.</p>
+</blockquote>
+<h3 id="exporting-a-graphic" tabindex="-1">Exporting a Graphic</h3>
+<p>Click the <strong>export graphic</strong> button (or press <strong>⌘⇧E</strong>) to download an image.</p>
+<blockquote>
+<img src="/manual/images/fig18.png" style="width:360px;"/>
+<p>Export Graphic dialog.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Values</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Format</strong></td>
+<td>SVG / PNG</td>
+<td>SVG is vector and infinitely scalable; PNG is raster at 2× screen resolution</td>
+</tr>
+<tr>
+<td><strong>View</strong></td>
+<td>Current view / Full tree</td>
+<td><em>Full tree</em> exports the complete vertical extent of the tree, not just the visible viewport</td>
+</tr>
+<tr>
+<td><strong>Transparent background</strong></td>
+<td>Checkbox</td>
+<td>Omits the background fill (useful for compositing over a coloured page)</td>
+</tr>
+</tbody>
+</table>
+<p>SVG exports include branches, labels, shapes, legend strips, and the axis as true vector elements — ideal for publication figures.</p>
+<hr>
+<h2 id="chapter-14-settings-and-persistence" tabindex="-1">Chapter 14: Settings and Persistence</h2>
+<h3 id="automatic-saving" tabindex="-1">Automatic Saving</h3>
+<p>PearTree automatically saves all visual settings to browser <strong>localStorage</strong> (web app) or a local settings file (desktop app). Settings are restored on the next visit or launch, including theme, palette values, colour-by choices, legend and axis configuration, and branch order.</p>
+<h3 id="resetting-to-defaults" tabindex="-1">Resetting to Defaults</h3>
+<p>Click <strong>Reset to defaults</strong> at the bottom of the Visual Options palette to restore the Artic theme and all factory default values.</p>
+<h3 id="embedding-settings-in-a-nexus-file" tabindex="-1">Embedding Settings in a NEXUS File</h3>
+<p>Export a NEXUS file with <strong>Embed settings</strong> ticked (see <a href="#chapter-13-exporting">Chapter 13</a>) to bundle all current visual settings with the tree data. Opening that file in PearTree on any machine restores the full appearance, making this the recommended way to share a tree with its visual configuration.</p>
+<h3 id="opening-a-file-from-the-command-line-desktop-app" tabindex="-1">Opening a File from the Command Line (Desktop App)</h3>
+<p>On macOS you can open a tree file directly in PearTree from Terminal:</p>
+<pre><code class="language-bash">open -a PearTree /path/to/my.nwk
+</code></pre>
+<p>If PearTree is already running, the file opens in a new window. On Windows, drag the file onto the PearTree icon in the taskbar, or use <strong>Open With</strong> from the Explorer context menu.</p>
+<hr>
+<h2 id="appendix-a-keyboard-shortcuts" tabindex="-1">Appendix A: Keyboard Shortcuts</h2>
+<blockquote>
+<p>On Windows and Linux replace <strong>⌘</strong> with <strong>Ctrl</strong>.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Shortcut</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>⌘O</strong></td>
+<td>Open system file picker (desktop) or Open Tree dialog (web)</td>
+</tr>
+<tr>
+<td><strong>⌘⇧O</strong></td>
+<td>Open Tree dialog</td>
+</tr>
+<tr>
+<td><strong>⌘⇧A</strong></td>
+<td>Import annotations</td>
+</tr>
+<tr>
+<td><strong>⌘S</strong></td>
+<td>Export tree</td>
+</tr>
+<tr>
+<td><strong>⌘⇧E</strong></td>
+<td>Export graphic</td>
+</tr>
+<tr>
+<td><strong>Tab</strong></td>
+<td>Toggle Visual Options palette</td>
+</tr>
+<tr>
+<td><strong>⌘=</strong> / <strong>⌘+</strong></td>
+<td>Zoom in</td>
+</tr>
+<tr>
+<td><strong>⌘−</strong></td>
+<td>Zoom out</td>
+</tr>
+<tr>
+<td><strong>⌘0</strong></td>
+<td>Fit all</td>
+</tr>
+<tr>
+<td><strong>⌘⇧0</strong></td>
+<td>Fit labels</td>
+</tr>
+<tr>
+<td><strong>⌘A</strong></td>
+<td>Select all visible tips</td>
+</tr>
+<tr>
+<td><strong>⌘⇧I</strong></td>
+<td>Invert selection</td>
+</tr>
+<tr>
+<td><strong>⌘B</strong></td>
+<td>Toggle Nodes / Branches mode</td>
+</tr>
+<tr>
+<td><strong>⌘D</strong></td>
+<td>Order: larger clades toward bottom</td>
+</tr>
+<tr>
+<td><strong>⌘U</strong></td>
+<td>Order: larger clades toward top</td>
+</tr>
+<tr>
+<td><strong>⌘M</strong></td>
+<td>Midpoint root</td>
+</tr>
+<tr>
+<td><strong>⌘⇧M</strong></td>
+<td>Temporal root</td>
+</tr>
+<tr>
+<td><strong>⌘I</strong></td>
+<td>Node info</td>
+</tr>
+<tr>
+<td><strong>⌘[</strong></td>
+<td>Navigate back</td>
+</tr>
+<tr>
+<td><strong>⌘]</strong></td>
+<td>Navigate forward</td>
+</tr>
+<tr>
+<td><strong>⌘\</strong></td>
+<td>Home (return to full tree view)</td>
+</tr>
+<tr>
+<td><strong>⌘⇧,</strong></td>
+<td>Climb up one level</td>
+</tr>
+<tr>
+<td><strong>⌘⇧.</strong></td>
+<td>Drill down into selected subtree</td>
+</tr>
+<tr>
+<td><strong>⌘↑ / ⌘↓</strong></td>
+<td>Scroll one page up / down</td>
+</tr>
+<tr>
+<td><strong>⌘⇧↑ / ⌘⇧↓</strong></td>
+<td>Jump to top / bottom of tree</td>
+</tr>
+<tr>
+<td><strong>~</strong> (hold)</td>
+<td>Activate hyperbolic lens at cursor</td>
+</tr>
+<tr>
+<td><strong>⌘⇧=</strong></td>
+<td>Expand lens flat zone</td>
+</tr>
+<tr>
+<td><strong>⌘⇧−</strong></td>
+<td>Contract lens flat zone</td>
+</tr>
+<tr>
+<td><strong>Escape</strong></td>
+<td>Dismiss lens / close dialog / clear selection</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="appendix-b-visual-options-reference" tabindex="-1">Appendix B: Visual Options Reference</h2>
+<h3 id="theme" tabindex="-1">Theme</h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Theme selector</td>
+<td>Choose a built-in or personal preset</td>
+</tr>
+<tr>
+<td><strong>Store</strong></td>
+<td>Save the current settings as a named theme</td>
+</tr>
+<tr>
+<td><strong>Default</strong></td>
+<td>Set selected theme as the default for new windows</td>
+</tr>
+<tr>
+<td><strong>Remove</strong></td>
+<td>Delete a user-saved theme</td>
+</tr>
+</tbody>
+</table>
+<img src="/manual/images/controls_themes.png" style="width:250px;"/>
+<h3 id="tree" tabindex="-1">Tree</h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Calibrate</td>
+<td>Annotation key holding tip dates for time axis calibration</td>
+</tr>
+<tr>
+<td>Format</td>
+<td>Display format for calibrated axis labels</td>
+</tr>
+<tr>
+<td>Background</td>
+<td>Canvas background colour</td>
+</tr>
+<tr>
+<td>Branches</td>
+<td>Branch line colour</td>
+</tr>
+<tr>
+<td>Branch width</td>
+<td>Stroke thickness (0.5–8 px)</td>
+</tr>
+<tr>
+<td>Typeface</td>
+<td>Font family for all labels</td>
+</tr>
+<tr>
+<td>Typeface style</td>
+<td>Regular / Bold / Italic / Bold Italic</td>
+</tr>
+<tr>
+<td>Neg. branches</td>
+<td><em>Draw</em> (as-is) or <em>Clamp to zero</em></td>
+</tr>
+<tr>
+<td>Elbow radius</td>
+<td>Branch corner rounding (px)</td>
+</tr>
+<tr>
+<td>Root stub</td>
+<td>Length of the root stem line (px)</td>
+</tr>
+<tr>
+<td>Root stem %</td>
+<td>Root stem as % of total tree age (0–20)</td>
+</tr>
+<tr>
+<td>Padding</td>
+<td>Canvas margins: top, bottom, left, right (px)</td>
+</tr>
+</tbody>
+</table>
+<img src="/manual/images/controls_tree.png" style="width:250px;"/>
+<h3 id="tip-labels-1" tabindex="-1">Tip Labels</h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Show</td>
+<td><em>Off</em> / <em>Names</em> / annotation key</td>
+</tr>
+<tr>
+<td>Layout</td>
+<td><em>Normal</em> / <em>Aligned</em> / <em>Dashed</em> / <em>Dots</em> / <em>Solid</em></td>
+</tr>
+<tr>
+<td>Size</td>
+<td>Font size (1–20 pt)</td>
+</tr>
+<tr>
+<td>Colour</td>
+<td>Default label colour</td>
+</tr>
+<tr>
+<td>Colour by</td>
+<td>Annotation key for per-tip label colour</td>
+</tr>
+<tr>
+<td>Palette</td>
+<td>Colour scheme</td>
+</tr>
+<tr>
+<td>Spacing</td>
+<td>Gap after tip marker (px)</td>
+</tr>
+<tr>
+<td>Selected style</td>
+<td><em>Normal</em> / <em>Bold</em> / <em>Italic</em> / <em>Bold Italic</em> for selected tips</td>
+</tr>
+</tbody>
+</table>
+<img src="/manual/images/controls_tip_labels.png" style="width:250px;"/>
+<h3 id="label-shapes-1" tabindex="-1">Label Shapes</h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Shape</td>
+<td><em>Off</em> / <em>Square</em> / <em>Circle</em> / <em>Block</em></td>
+</tr>
+<tr>
+<td>Size</td>
+<td>% of row height</td>
+</tr>
+<tr>
+<td>Colour</td>
+<td>Default fill</td>
+</tr>
+<tr>
+<td>Colour by</td>
+<td>Annotation key</td>
+</tr>
+<tr>
+<td>Margin left/right</td>
+<td>Gap on each side (px)</td>
+</tr>
+<tr>
+<td>Spacing</td>
+<td>Gap between multiple shape slots (px)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tip-shapes-1" tabindex="-1">Tip Shapes</h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Size</td>
+<td>Radius (0 = hidden)</td>
+</tr>
+<tr>
+<td>Colour</td>
+<td>Stroke/fill colour</td>
+</tr>
+<tr>
+<td>Background</td>
+<td>Halo fill colour</td>
+</tr>
+<tr>
+<td>Halo</td>
+<td>Halo ring radius</td>
+</tr>
+<tr>
+<td>Colour by</td>
+<td>Annotation key</td>
+</tr>
+<tr>
+<td>Palette</td>
+<td>Colour scheme</td>
+</tr>
+</tbody>
+</table>
+<img src="/manual/images/controls_tip_shapes.png" style="width:250px;"/>
+<h3 id="node-shapes-1" tabindex="-1">Node Shapes</h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Size</td>
+<td>Radius (0 = hidden)</td>
+</tr>
+<tr>
+<td>Colour</td>
+<td>Default shape colour</td>
+</tr>
+<tr>
+<td>Background</td>
+<td>Halo fill</td>
+</tr>
+<tr>
+<td>Colour by</td>
+<td>Annotation key</td>
+</tr>
+<tr>
+<td>Palette</td>
+<td>Colour scheme</td>
+</tr>
+</tbody>
+</table>
+<img src="/manual/images/controls_node_shapes.png" style="width:250px;"/>
+<h3 id="node-labels-1" tabindex="-1">Node Labels</h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Annotation</td>
+<td>Key to display as text on internal nodes</td>
+</tr>
+<tr>
+<td>Position</td>
+<td><em>Right</em> / <em>Above left</em> / <em>Below left</em></td>
+</tr>
+<tr>
+<td>Font size</td>
+<td>Text size (pt)</td>
+</tr>
+<tr>
+<td>Colour</td>
+<td>Text colour</td>
+</tr>
+<tr>
+<td>Spacing</td>
+<td>Gap between node and label (px)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="node-bars-beast-trees-only" tabindex="-1">Node Bars <em>(BEAST trees only)</em></h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Show</td>
+<td>On / Off</td>
+</tr>
+<tr>
+<td>Colour</td>
+<td>Bar colour</td>
+</tr>
+<tr>
+<td>Bar height</td>
+<td>Vertical thickness (px)</td>
+</tr>
+<tr>
+<td>Line</td>
+<td><em>Mean</em> / <em>Median</em> / <em>Off</em></td>
+</tr>
+<tr>
+<td>Range whiskers</td>
+<td>Show outer extent whiskers</td>
+</tr>
+</tbody>
+</table>
+<h3 id="collapsed-clades" tabindex="-1">Collapsed Clades</h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fill opacity</td>
+<td>0 (transparent) – 1 (solid)</td>
+</tr>
+<tr>
+<td>Height (rows)</td>
+<td>Triangle base height in tip-row units</td>
+</tr>
+</tbody>
+</table>
+<h3 id="legend" tabindex="-1">Legend</h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Annotation</td>
+<td>Annotation key to show as a colour key</td>
+</tr>
+<tr>
+<td>Colour</td>
+<td>Legend text and label colour</td>
+</tr>
+<tr>
+<td>Font size</td>
+<td>Legend font size (pt)</td>
+</tr>
+<tr>
+<td>Height %</td>
+<td>Fraction of canvas height this legend occupies</td>
+</tr>
+</tbody>
+</table>
+<img src="/manual/images/controls_legend.png" style="width:250px;"/>
+<h3 id="axis" tabindex="-1">Axis</h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Show</td>
+<td><em>Off</em> / <em>Forward</em> / <em>Reverse</em> / <em>Time</em></td>
+</tr>
+<tr>
+<td>Colour</td>
+<td>Axis line and label colour</td>
+</tr>
+<tr>
+<td>Font size</td>
+<td>Tick-label font size</td>
+</tr>
+<tr>
+<td>Line width</td>
+<td>Axis stroke thickness</td>
+</tr>
+<tr>
+<td>Major ticks</td>
+<td>Auto / Decades / Years / Quarters / Months / Weeks / Days</td>
+</tr>
+<tr>
+<td>Minor ticks</td>
+<td>Off / (finer intervals)</td>
+</tr>
+<tr>
+<td>Major labels</td>
+<td><em>Partial</em> / <em>Full</em> / <em>Component</em> / <em>Off</em></td>
+</tr>
+<tr>
+<td>Minor labels</td>
+<td><em>Off</em> / <em>Component</em> / <em>Partial</em> / <em>Full</em></td>
+</tr>
+</tbody>
+</table>
+<img src="/manual/images/controls_axis.png" style="width:250px;"/>
+<h3 id="rtt" tabindex="-1">RTT</h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Axis colour</td>
+<td>Plot axis, tick, and label colour</td>
+</tr>
+<tr>
+<td>Font size</td>
+<td>Tick-label font size</td>
+</tr>
+<tr>
+<td>Regression style</td>
+<td><em>Solid</em> or <em>Dashed</em> line</td>
+</tr>
+<tr>
+<td>Regression colour</td>
+<td>Line colour (defaults to branch colour)</td>
+</tr>
+<tr>
+<td>Major / minor ticks</td>
+<td>Same interval options as the main time axis</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="appendix-c-bootstrap-values-branch-annotations-and-rerooting" tabindex="-1">Appendix C: Bootstrap Values, Branch Annotations, and Rerooting</h2>
+<h3 id="node-annotations-vs-branch-annotations" tabindex="-1">Node Annotations vs. Branch Annotations</h3>
+<p>Every internal node can carry two conceptually distinct kinds of data:</p>
+<ul>
+<li><strong>Node annotations</strong> — properties of the <em>node itself</em> (e.g. Bayesian posterior probability, inferred node height in time). These belong to the node regardless of where the root sits.</li>
+<li><strong>Branch annotations</strong> — properties of the <em>branch leading from the node to its parent</em> (e.g. bootstrap support). These belong to the branch, not the node, and must travel with it when the tree is rerooted.</li>
+</ul>
+<h3 id="bootstrap-values-in-tree-files" tabindex="-1">Bootstrap Values in Tree Files</h3>
+<p>Bootstrap support values are conventionally written as internal node labels in Newick format:</p>
+<pre><code>((A:0.1,B:0.1)95:0.01,(C:0.1,(D:0.1,E:0.1)72:0.2)80:0.3);
+</code></pre>
+<p>Here <code>95</code>, <code>72</code>, and <code>80</code> are bootstrap values. They are stored <em>at</em> the node in the file format, but they describe the <em>branch leading from that node to its parent</em>. PearTree automatically marks these well-known keys as branch annotations: <code>bootstrap</code>, <code>support</code>, <code>label</code>, <code>posterior</code>, <code>posterior_probability</code>, <code>prob</code>, <code>probability</code>.</p>
+<p>For non-standard key names (e.g. <code>UFBoot</code> from IQ-TREE), open the <strong>Annotation Curator</strong> and tick <strong>Branch annotation</strong> manually.</p>
+<h3 id="how-rerooting-moves-branch-annotations" tabindex="-1">How Rerooting Moves Branch Annotations</h3>
+<p>When you reroot on a new branch, PearTree updates all branch annotation values along the path between old and new root:</p>
+<ul>
+<li>Each node on the path <em>receives</em> the value that was on the branch above it (toward the old root), because after rerooting that is the branch entering that node from its new parent.</li>
+<li>The node adjacent to the old root, whose branch is split to create the two new root branches, loses its value — there is no meaningful bootstrap for a newly created root edge.</li>
+<li>All nodes <em>not</em> on the path are unaffected.</li>
+</ul>
+<p>Multiple sequential reroots are handled correctly. BEAST trees carry posterior as a <strong>node</strong> annotation (not a branch annotation), and rerooting is disabled for them in any case.</p>
+<hr>
+<h2 id="appendix-d-url-parameters-and-sharing" tabindex="-1">Appendix D: URL Parameters and Sharing</h2>
+<p>When using the PearTree web application, you can construct a URL that pre-loads a tree and applies settings automatically.</p>
+<h3 id="basic-tree-link" tabindex="-1">Basic Tree Link</h3>
+<pre><code>https://peartree.live/?treeUrl=https://example.com/my.tree
+</code></pre>
+<p>The remote server must send <code>Access-Control-Allow-Origin: *</code>. GitHub raw file URLs work without any configuration:</p>
+<pre><code>https://peartree.live/?treeUrl=https://raw.githubusercontent.com/artic-network/peartree/main/data/ebov.tree
+</code></pre>
+<p>Anyone who follows the link sees the tree immediately — no download or upload required.</p>
+<h3 id="available-parameters" tabindex="-1">Available Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>treeUrl</code></td>
+<td>URL of a remote Newick or NEXUS file to load on startup</td>
+</tr>
+<tr>
+<td><code>tree</code></td>
+<td>URL-encoded inline Newick or NEXUS string</td>
+</tr>
+<tr>
+<td><code>filename</code></td>
+<td>Filename hint for format detection (e.g. <code>my.nwk</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Settings embedded in a NEXUS file opened via <code>treeUrl</code> are applied automatically. A single URL can therefore deliver both the tree data and its complete visual configuration to any recipient with no setup required.</p>
+
+  </main>
+  <footer class="border-top mt-5 py-3 text-center" style="font-size:0.8rem;opacity:0.55;">
+    &copy; 2026 Andrew Rambaut &mdash;
+    <a href="https://github.com/artic-network/peartree">GitHub</a>
+  </footer>
+</body>
+</html>
