@@ -21,8 +21,6 @@ This manual covers the full feature set of PearTree, organised by topic. Each ch
 >
 > All features described in this manual work in both versions unless noted.
 
----
-
 ## Contents
 
 1. [The Interface at a Glance](#chapter-1-the-interface-at-a-glance)
@@ -44,8 +42,6 @@ This manual covers the full feature set of PearTree, organised by topic. Each ch
 17. [Appendix C: Bootstrap Values and Branch Annotations](#appendix-c-bootstrap-values-branch-annotations-and-rerooting)
 18. [Appendix D: URL Parameters and Sharing](#appendix-d-url-parameters-and-sharing)
 
----
-
 ## Chapter 1: The Interface at a Glance
 
 When a tree is loaded the interface has four main areas:
@@ -58,19 +54,19 @@ When a tree is loaded the interface has four main areas:
 
 Runs along the top of the window. Contains buttons grouped by function:
 
-| Group | What it contains |
-|---|---|
-| **File** | Open tree, import annotations, annotation curator, export tree, export graphic |
-| **Navigation** | Back, forward, climb, drill-down, home |
-| **Zoom** | Zoom in, zoom out, fit all, fit labels |
-| **Order** | Sort clades ascending / descending |
-| **Rotate** | Rotate node, rotate clade |
-| **Select** | Node / branch mode toggle, reroot, midpoint root, temporal root |
-| **Hide/Show** | Hide selected, unhide |
-| **Collapse** | Collapse clade to triangle, expand |
-| **Colour** | Colour picker swatch, apply colour, clear colour |
-| **Filter** | Search/filter text box |
-| **Panels** | Root-to-tip toggle, data table toggle |
+| Group | Buttons &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  | Description |
+|---|---|---|
+| **File** | {% ptBtn "bi-folder2-open", "Open tree file (⌘O)", "", "", "primary" %} {% ptBtn "bi-table", "Import annotations (⌘⇧O)", "", "", "success" %} {% ptBtn "bi-file-earmark-arrow-down", "Export tree", "", "", "info" %} {% ptBtn "bi-image", "Export graphic", "", "", "warning" %} {% ptBtn "bi-tags", "Annotation curator" %} | Open and save tree files; import metadata from CSV/TSV; export the tree or a publication-ready graphic |
+| **Navigation** | {% ptBtn "bi-chevron-left", "Navigate back (⌘[)" %} {% ptBtn "bi-chevron-right", "Navigate forward (⌘])" %} {% ptBtn "bi-box-arrow-in-right", "Drill into subtree (⌘⇧>)" %} {% ptBtn "bi-box-arrow-left", "Climb out one level (⌘⇧<)" %} {% ptBtn "bi-house", "Navigate to root (⌘\\)" %} | Move through subtree navigation history; drill into or climb out of a subtree; return to the full tree |
+| **Zoom** | {% ptBtn "bi-zoom-in", "Zoom in (⌘+)" %} {% ptBtn "bi-zoom-out", "Zoom out (⌘−)" %} {% ptBtn "bi-arrows-fullscreen", "Fit all (⌘0)" %} {% ptBtn "bi-type", "Fit labels (⌘⇧0)" %} | Zoom the tree in or out; fit the entire tree to the window; zoom to the level where tip labels just stop overlapping |
+| **Order** | {% ptBtn "bi-sort-up", "Order ascending (⌘U)" %} {% ptBtn "bi-sort-up", "Order descending (⌘D)" %} | Sort all clades by descendant count, placing larger clades toward the top or bottom |
+| **Rotate** | {% ptBtn "bi-repeat", "Rotate selected node", "", "rotate(90deg)" %} {% ptBtn "bi-symmetry-horizontal", "Rotate entire subtree", "", "scaleX(-1)" %} | Swap the order of a node's direct children, or recursively reverse every level of the selected subtree |
+| **Mode** | {% ptBtn "bi-circle", "Nodes mode", "", "rotate(-90deg)" %} {% ptBtn "bi-dash-lg", "Branches mode (⌘B)" %} | Switch between *Nodes* mode (select tips and clades) and *Branches* mode (click along a branch for precise rerooting) |
+| **Rooting** | {% ptBtn "bi-arrow-return-left", "Reroot at selection" %} {% ptBtn "bi-chevron-bar-contract", "Midpoint root (⌘M)", "", "rotate(90deg)" %} {% ptBtn "bi-clock", "Global temporal root (⌘R)" %} {% ptBtn "bi-clock-history", "Local temporal root (⇧⌘R)" %} | Reroot on the selected branch; place root at the midpoint of the longest path; find the root that best linearises a root-to-tip regression |
+| **Hide/Show** | {% ptBtn "bi-node-minus", "Hide selected subtree" %} {% ptBtn "bi-node-plus", "Unhide" %} {% ptBtn "bi-arrows-collapse", "Collapse clade to triangle" %} {% ptBtn "bi-arrows-expand", "Expand collapsed triangle" %} | Hide selected tips or subtrees from view; collapse a subtree to a compact triangle summary; restore hidden or collapsed nodes |
+| **Colour** | {% ptBtn "bi-brush", "Apply colour to selection" %} {% ptBtn "bi-eraser", "Clear user colours" %} {% ptBtn "bi-highlighter", "Highlight clade" %} {% ptBtn "bi-eraser", "Clear highlights" %} | Apply a user-chosen colour to selected tips; highlight a clade with a background fill; remove colours or highlights |
+| **Filter** | *(search box)* | Instantly select all visible tips whose labels contain the typed string |
+| **Panels** | {% ptBtn "bi-info-circle", "Node info (⌘I)" %} {% ptBtn "bi-layout-sidebar-reverse", "Data table panel" %} {% ptBtn "bi-graph-up-arrow", "Root-to-tip plot" %} | Open the node info dialog for the selected node; toggle the data table panel; toggle the root-to-tip divergence plot |
 
 ### Canvas
 
@@ -84,8 +80,6 @@ Slides in from the right. Toggle with the sliders button in the status bar or pr
 
 Runs along the bottom. Shows live annotation values for the tip or node under the cursor. Also displays mode messages such as *Lens mode active – press Esc to cancel*.
 
----
-
 ## Chapter 2: Loading Trees
 
 ### Supported Formats
@@ -94,46 +88,41 @@ PearTree reads **NEXUS** (`.nex`, `.nexus`, `.tre`, `.tree`, `.treefile`) and **
 
 ### Opening a File
 
-Click the **open** button <img src="/manual/images/open_button.png" style="width:28px;"/> in the toolbar, or press **⌘O**, to open the *Open Tree File* dialog.
+Click the **open** button {% ptBtn "bi-folder2-open", "Open tree file (⌘O)", "", "", "primary" %} in the toolbar, or press **⌘O**, to open the *Open Tree File* dialog.
 
 Three tabs are available:
 
 **File tab** — drag a file onto the drop zone or click *Choose file* to browse.
 
-> <img src="/manual/images/fig1c.png" style="width:320px;"/>
->
-> *Open Tree File* dialog, File tab. The file stays on your computer — nothing is uploaded.
+{% ptOpenTree "file" %}
+
+*Open Tree File* dialog, File tab.
 
 > **Desktop app note:** In the desktop application, **⌘O** opens the system file chooser directly rather than this dialog.
 
 **URL tab** — paste a public URL to a remote tree file and click *Load from URL*. The remote server must allow cross-origin requests (CORS). GitHub raw URLs (`raw.githubusercontent.com/…`) work out of the box.
 
-> <img src="/manual/images/fig1d.png" style="width:320px;"/>
->
-> *Open Tree File* dialog, URL tab.
+{% ptOpenTree "url" %}
+
+*Open Tree File* dialog, URL tab.
 
 **Example tab** — loads the built-in Ebola virus (EBOV) dataset immediately. Use this to follow the examples throughout this manual.
 
-> <img src="/manual/images/fig1b.png" style="width:320px;"/>
->
-> *Open Tree File* dialog, Example tab.
+{% ptOpenTree "example" %}
+
+*Open Tree File* dialog, Example tab.
 
 ### The Startup Screen
 
 When no tree is loaded, the canvas shows the startup screen with direct **Open…** and **Example…** buttons.
 
-> <img src="/manual/images/fig1a.png" style="width:220px;"/>
->
-> Startup screen.
+{% ptFigure "/manual/images/startup.png", "#02292E", "The startup screen.", "25%"  %}
 
-> [!TIP]
-> You can share a link that opens a remote tree automatically. Append `?treeUrl=<URL>` to the PearTree web address — anyone who follows the link has the tree loaded immediately with no upload required. See [Appendix D](#appendix-d-url-parameters-and-sharing) for details.
+> **Tip:** You can share a link that opens a remote tree automatically. Append `?treeUrl=<URL>` to the PearTree web address — anyone who follows the link has the tree loaded immediately with no upload required. See [Appendix D](#appendix-d-url-parameters-and-sharing) for details.
 
 ### Opening a NEXUS File with Embedded Settings
 
 If a NEXUS file was exported from PearTree with **Embed settings** ticked (see [Chapter 13](#chapter-13-exporting)), opening it restores the full visual appearance automatically — theme, palette choices, colouring, legends, and axis configuration.
-
----
 
 ## Chapter 3: Importing Annotations
 
@@ -141,11 +130,11 @@ Tree files embed per-tip metadata written by the inference tool (e.g. BEAST post
 
 ### Importing a CSV or TSV File
 
-Click the annotation-import button <img src="/manual/images/load_annotations_button.png" style="width:28px;"/> in the toolbar or press **⌘⇧A**.
+Click the annotation-import button {% ptBtn "bi-table", "Import annotations (⌘⇧O)", "", "", "success" %} in the toolbar or press **⌘⇧A**.
 
-> <img src="/manual/images/fig11a.png" style="width:320px;"/>
->
-> Import Annotations dialog.
+{% ptImportAnnotations %}
+
+Import Annotations dialog.
 
 Drag a CSV or TSV file onto the drop zone, or click *Choose file* to browse. In the web app you can also switch to the *URL* tab and paste a public URL directly — for example the EBOV annotation file used in this manual:
 
@@ -159,9 +148,9 @@ https://artic-network.github.io/peartree/docs/data/ebov.csv
 
 After selecting the file a configuration step appears. Choose which column in the metadata file identifies each tip:
 
-> <img src="/manual/images/fig11b.png" style="width:320px;"/>
->
-> Import configuration: choose the column that matches tip labels, and toggle which columns to import.
+{% ptImportConfig %}
+
+Import configuration: choose the column that matches tip labels, and toggle which columns to import.
 
 PearTree can match the entire tip label string, or just one pipe-delimited (`|`) field within it. For the EBOV example, select field 2 (`lab-id`) to match the second segment of each label.
 
@@ -169,15 +158,13 @@ PearTree can match the entire tip label string, or just one pipe-delimited (`|`)
 
 After clicking **Import**, a summary reports how many tips were matched.
 
-> <img src="/manual/images/fig11c.png" style="width:320px;"/>
->
-> Import summary confirming all 1610 tips matched.
+{% ptFigure "/manual/images/fig11c.png", "#002b36", "Import summary confirming all 1610 tips matched.", "320px" %}
 
 After import the new annotation keys appear in all *Colour by* dropdowns, the legend selector, and the Node Info dialog.
 
-### The Annotation Curator
+### The Annotation Manager
 
-Open the Annotation Curator from the toolbar (tags button) to review every annotation key currently loaded.
+Open the Annotation Manager from the toolbar (tags button) to review every annotation key currently loaded.
 
 For each key you can:
 
@@ -187,10 +174,7 @@ For each key you can:
 | **Change type** | Switch between *categorical* and *real* (continuous numeric) |
 | **Branch annotation** | Mark a key as belonging to branches rather than nodes — affects how values move when rerooting (see [Appendix C](#appendix-c-bootstrap-values-branch-annotations-and-rerooting)) |
 
-> [!TIP]
-> If your tree uses a non-standard name for bootstrap values (e.g. `UFBoot` from IQ-TREE), open the Curator and tick **Branch annotation** for that key so PearTree handles it correctly when rerooting.
-
----
+> **Tip:** If your tree uses a non-standard name for bootstrap values (e.g. `UFBoot` from IQ-TREE), open the Curator and tick **Branch annotation** for that key so PearTree handles it correctly when rerooting.
 
 ## Chapter 4: Navigating the Tree
 
@@ -218,37 +202,31 @@ Toolbar zoom buttons:
 
 > **Automatic horizontal scaling:** When zoomed out so far that tip labels are hidden, PearTree expands the tree branches to fill the full canvas width. When you zoom back in enough for labels to become readable, the horizontal scale contracts to make room for them again. This maximises screen use at every zoom level.
 
-> <img src="/manual/images/fig4.png" style="width:440px;"/>
->
-> EBOV tree zoomed in to show individual tip labels.
+{% ptFigure "/manual/images/fig4.png", "#ffffff", "EBOV tree zoomed in to show individual tip labels.", "70%" %}
 
 Press **⌘0** to return to the full view at any time.
 
 ### Subtree Navigation
 
 **Double-click** any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node, scaled to fill the full window.
+ 
+Alternatively, select an internal node and click the drill-down button {% ptBtn "bi-box-arrow-in-right", "Drill into subtree (⌘⇧>)" %} or press **⌘⇧.**.
 
-Alternatively, select an internal node and click the drill-down button <img src="/manual/images/drill_down_button.png" style="width:28px;"/> or press **⌘⇧.**.
+{% ptFigure "/manual/images/fig7a.png", "#ffffff", "", "70%" %}
+{% ptFigure "/manual/images/fig7b.png", "#ffffff", "A subclade before and after drilling down.", "70%" %}
 
-> <img src="/manual/images/fig7a.png" style="width:440px;"/>
->
-> <img src="/manual/images/fig7b.png" style="width:440px;"/>
->
-> A subclade before and after drilling down.
 
 PearTree maintains a full navigation history:
 
 | Button | Shortcut | Effect |
 |---|---|---|
-| <img src="/manual/images/back_button.png" style="width:28px;"/> | **⌘[** | Go back to the previous view |
-| <img src="/manual/images/forward_button.png" style="width:28px;"/> | **⌘]** | Go forward in history |
-| <img src="/manual/images/climb_up_button.png" style="width:28px;"/> | **⌘⇧,** | Step up one level toward the root |
-| <img src="/manual/images/home_button.png" style="width:28px;"/> | **⌘\\** | Return to the full-tree root view |
+| {% ptBtn "bi-chevron-left", "Navigate back (⌘[)" %} | **⌘[** | Go back to the previous view |
+| {% ptBtn "bi-chevron-right", "Navigate forward (⌘])" %} | **⌘]** | Go forward in history |
+| {% ptBtn "bi-box-arrow-in-right", "Drill into subtree (⌘⇧>)" %} | **⌘]** | Go forward in history |
+| {% ptBtn "bi-box-arrow-left", "Climb out one level (⌘⇧<)" %} | **⌘⇧,** | Step up one level toward the root |
+| {% ptBtn "bi-house", "Navigate to root (⌘\\)" %} | **⌘\\** | Return to the full-tree root view |
 
-> [!TIP]
-> Navigate history like a web browser. Drill down into several different clades in sequence, then press **⌘[** to step back through each view. **⌘]** goes forward again. This makes it easy to compare distant parts of a large tree without re-navigating each time.
-
----
+> **Tip:** Navigate history like a web browser. Drill down into several different clades in sequence, then press **⌘[** to step back through each view. **⌘]** goes forward again. This makes it easy to compare distant parts of a large tree without re-navigating each time.
 
 ## Chapter 5: The Hyperbolic Lens
 
@@ -258,28 +236,15 @@ The hyperbolic lens expands a region of the tree to label-readable spacing witho
 
 Hold **~** (tilde/backtick) and move the cursor over the canvas. The tree distorts around the cursor's vertical position.
 
-> <img src="/manual/images/fig5.png" style="width:440px;"/>
->
-> Lens active: tips near the cursor are spread apart and readable; tips further away are compressed but still visible.
+{% ptFigure "/manual/images/fig5.png", "#ffffff", "Lens active: tips near the cursor are spread apart and readable; tips further away are compressed but still visible.", "70%" %}
 
 The lens **persists** after you release **~** — the focus locks in place so you can click, select, or inspect the expanded region normally. Re-hold **~** and move to reposition the focus. Press **Escape** to dismiss.
 
 While the lens is active a reminder appears in the status bar: *Lens mode active – press Esc to cancel*.
 
-### Adjusting the Lens Width
-
-The **Lens** ⊕/⊖ buttons in the toolbar (or **⌘⇧=** / **⌘⇧−**) control how many tip rows wide the uniformly-expanded flat centre zone is:
-
-- **⊕** — add one row of spacing to the flat zone
-- **⊖** — remove one row
-- At zero (default) the lens is a pure hyperbolic falloff from the focus point
-
 Peak magnification caps at the *Fit Labels* spacing level, so labels in the expanded zone never overlap.
 
-> [!TIP]
-> The hyperbolic lens is ideal for large trees where fully zooming in would hide the context. Hold **~**, move to the region of interest, release to lock the focus, then interact with the expanded section. Press **Escape** when done.
-
----
+> **Tip:** The hyperbolic lens is ideal for large trees where fully zooming in would hide the context. Hold **~**, move to the region of interest, release to lock the focus, then interact with the expanded section. Press **Escape** when done.
 
 ## Chapter 6: Organising the Tree
 
@@ -289,15 +254,12 @@ The **Order** buttons sort all clades by descendant count, giving a ladder-like 
 
 | Button | Shortcut | Effect |
 |---|---|---|
-| <img src="/manual/images/order_up_button.png" style="width:28px;"/> | **⌘U** | Larger clades toward the top |
-| <img src="/manual/images/order_down_button.png" style="width:28px;"/> | **⌘D** | Larger clades toward the bottom |
+| {% ptBtn "bi-sort-up", "Order ascending (⌘U)" %} | **⌘U** | Larger clades toward the top |
+| {% ptBtn "bi-sort-up", "Order descending (⌘D)" %} | **⌘D** | Larger clades toward the bottom |
 
-> <img src="/manual/images/fig3.png" style="width:440px;"/>
->
-> EBOV tree with ascending (larger clades upward) order applied.
+{% ptFigure "/manual/images/fig3.png", "#ffffff", "EBOV tree with ascending (larger clades upward) order applied.", "70%"  %}
 
-> [!NOTE]
-> Once ordered, the original clade order is lost. You can switch between ascending and descending ordering, or rotate individual nodes manually (see below). Hiding a node (see below) also clears the branch ordering since the tip counts have changed.
+> **Note:** Once ordered, the original clade order is lost. You can switch between ascending and descending ordering, or rotate individual nodes manually (see below). Hiding a node (see below) also clears the branch ordering since the tip counts have changed.
 
 ### Rotating Nodes
 
@@ -307,16 +269,12 @@ Select an internal node, then use the Rotate buttons:
 
 | Button | Effect |
 |---|---|
-| <img src="/manual/images/rotate_branch_button.png" style="width:28px;"/> | Reverse the direct children of the selected node only |
-| <img src="/manual/images/rotate_clade_button.png" style="width:28px;"/> | Recursively reverse children at every level within the selected subtree |
+| {% ptBtn "bi-repeat", "Rotate selected node", "", "rotate(90deg)" %} | Reverse the direct children of the selected node only |
+| {% ptBtn "bi-symmetry-horizontal", "Rotate entire subtree", "", "scaleX(-1)" %} | Recursively reverse children at every level within the selected subtree |
 
-> <img src="/manual/images/fig8a.png" style="width:440px;"/>
->
-> <img src="/manual/images/fig8b.png" style="width:440px;"/>
->
-> <img src="/manual/images/fig8c.png" style="width:440px;"/>
->
-> Before and after rotating a single node (middle), and after rotating the entire clade (bottom).
+{% ptFigure "/manual/images/fig8a.png", "#ffffff", "" , "70%" %}
+{% ptFigure "/manual/images/fig8b.png", "#ffffff", "" , "70%" %}
+{% ptFigure "/manual/images/fig8c.png", "#ffffff", "Before and after rotating a single node (middle), and after rotating the entire clade (bottom).", "70%"  %}
 
 ### Hiding Nodes and Subtrees
 
@@ -325,17 +283,11 @@ Hiding removes a tip or entire subtree from the display without deleting it from
 1. Select a tip or internal node.
 2. Click the **Hide** button (eye-slash icon) in the toolbar.
 
-> <img src="/manual/images/fig9a.png" style="width:440px;"/>
->
-> <img src="/manual/images/fig9b.png" style="width:440px;"/>
->
-> A single tip before and after hiding.
+{% ptFigure "/manual/images/fig9a.png", "#ffffff", "" , "70%" %}
+{% ptFigure "/manual/images/fig8c.png", "#ffffff", "A single tip before and after hiding." , "70%" %}
 
-> <img src="/manual/images/fig9c.png" style="width:440px;"/>
->
-> <img src="/manual/images/fig9d.png" style="width:440px;"/>
->
-> A subtree selected (top) and after hiding all descendants (bottom).
+{% ptFigure "/manual/images/fig9c.png", "#ffffff", "" , "70%" %}
+{% ptFigure "/manual/images/fig9d.png", "#ffffff", "A subtree selected (top) and after hiding all descendants (bottom)." , "70%" %}
 
 **Showing hidden nodes:** when any hidden nodes exist in the current view, the **Unhide** button <img src="/manual/images/unhide_button.png" style="width:28px;"/> becomes active.
 

@@ -52,7 +52,7 @@ jobs:
 
       - name: Assemble site
         run: |
-          mkdir -p _site/data _site/img _site/logo _site/manual/images
+          mkdir -p _site/data _site/img _site/logo
           cp peartree/index.html                     _site/index.html
           cp CNAME                                   _site/CNAME
           cp dist/peartree.bundle.min.js             _site/peartree.bundle.min.js
@@ -65,10 +65,9 @@ jobs:
           cp peartree/data/large_tree.tree           _site/data/large_tree.tree
           cp peartree/data/SARS-CoV-2_15K.tree       _site/data/SARS-CoV-2_15K.tree
           cp peartree/data/ebov.csv                  _site/data/ebov.csv
-          cp peartree/about.md                       _site/about.md
-          cp peartree/help.md                        _site/help.md
-          cp peartree/manual/manual.md               _site/manual/manual.md
-          cp -r peartree/manual/images/.             _site/manual/images/
+
+      - name: Build documentation with Eleventy
+        run: npm run eleventy
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

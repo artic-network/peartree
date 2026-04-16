@@ -7,6 +7,9 @@ dist/
 # GitHub Pages deploy directory (written by CI; do not hand-edit)
 docs/
 
+# Eleventy local build output
+_site/
+
 # Tauri / Rust build artefacts
 src-tauri/target/
 src-tauri/gen/
@@ -16,4 +19,6 @@ src-tauri/gen/
 
 # Editor directories
 .idea/
-.vscode/
+.vscode/*
+!.vscode/tasks.json
+!.vscode/settings.json

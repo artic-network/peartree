@@ -9,6 +9,7 @@
     "build": "tauri build",
     "icon": "tauri icon",
     "bundle": "node scripts/build-bundle.mjs",
+    "eleventy": "eleventy",
     "docs:dev": "eleventy --serve --input=peartree/manual --output=_site"
   },
   "devDependencies": {

@@ -7,6 +7,9 @@
   <link rel="icon" type="image/svg+xml" href="/img/peartree.svg" />
   <link rel="shortcut icon" href="/img/peartree.png" />
   <link rel="stylesheet" href="/css/bootstrap.min-artic.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="/css/peartree.css" />
+  <link rel="stylesheet" href="/manual/ui-preview.css" />
   <style>
     body { padding-top: 3.5rem; }
     .pt-page-content { max-width: 900px; }
@@ -54,7 +57,6 @@
 </ul>
 <p>All features described in this manual work in both versions unless noted.</p>
 </blockquote>
-<hr>
 <h2 id="contents" tabindex="-1">Contents</h2>
 <ol>
 <li><a href="#chapter-1-the-interface-at-a-glance">The Interface at a Glance</a></li>
@@ -76,7 +78,6 @@
 <li><a href="#appendix-c-bootstrap-values-branch-annotations-and-rerooting">Appendix C: Bootstrap Values and Branch Annotations</a></li>
 <li><a href="#appendix-d-url-parameters-and-sharing">Appendix D: URL Parameters and Sharing</a></li>
 </ol>
-<hr>
 <h2 id="chapter-1-the-interface-at-a-glance" tabindex="-1">Chapter 1: The Interface at a Glance</h2>
 <p>When a tree is loaded the interface has four main areas:</p>
 <blockquote>
@@ -89,53 +90,65 @@
 <thead>
 <tr>
 <th>Group</th>
-<th>What it contains</th>
+<th>Buttons                                                                        </th>
+<th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>File</strong></td>
-<td>Open tree, import annotations, annotation curator, export tree, export graphic</td>
+<td><button class="btn btn-sm btn-outline-primary" title="Open tree file (⌘O)"><i class="bi bi-folder2-open"></i></button> <button class="btn btn-sm btn-outline-success" title="Import annotations (⌘⇧O)"><i class="bi bi-table"></i></button> <button class="btn btn-sm btn-outline-info" title="Export tree"><i class="bi bi-file-earmark-arrow-down"></i></button> <button class="btn btn-sm btn-outline-warning" title="Export graphic"><i class="bi bi-image"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Annotation curator"><i class="bi bi-tags"></i></button></td>
+<td>Open and save tree files; import metadata from CSV/TSV; export the tree or a publication-ready graphic</td>
 </tr>
 <tr>
 <td><strong>Navigation</strong></td>
-<td>Back, forward, climb, drill-down, home</td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Navigate back (⌘[)"><i class="bi bi-chevron-left"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Navigate forward (⌘])"><i class="bi bi-chevron-right"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Drill into subtree (⌘⇧>)"><i class="bi bi-box-arrow-in-right"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Climb out one level (⌘⇧<)"><i class="bi bi-box-arrow-left"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Navigate to root (⌘\)"><i class="bi bi-house"></i></button></td>
+<td>Move through subtree navigation history; drill into or climb out of a subtree; return to the full tree</td>
 </tr>
 <tr>
 <td><strong>Zoom</strong></td>
-<td>Zoom in, zoom out, fit all, fit labels</td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Zoom in (⌘+)"><i class="bi bi-zoom-in"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Zoom out (⌘−)"><i class="bi bi-zoom-out"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Fit all (⌘0)"><i class="bi bi-arrows-fullscreen"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Fit labels (⌘⇧0)"><i class="bi bi-type"></i></button></td>
+<td>Zoom the tree in or out; fit the entire tree to the window; zoom to the level where tip labels just stop overlapping</td>
 </tr>
 <tr>
 <td><strong>Order</strong></td>
-<td>Sort clades ascending / descending</td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Order ascending (⌘U)"><i class="bi bi-sort-up"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Order descending (⌘D)"><i class="bi bi-sort-up"></i></button></td>
+<td>Sort all clades by descendant count, placing larger clades toward the top or bottom</td>
 </tr>
 <tr>
 <td><strong>Rotate</strong></td>
-<td>Rotate node, rotate clade</td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Rotate selected node"><i class="bi bi-repeat" style="display:inline-block;transform:rotate(90deg)"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Rotate entire subtree"><i class="bi bi-symmetry-horizontal" style="display:inline-block;transform:scaleX(-1)"></i></button></td>
+<td>Swap the order of a node's direct children, or recursively reverse every level of the selected subtree</td>
 </tr>
 <tr>
-<td><strong>Select</strong></td>
-<td>Node / branch mode toggle, reroot, midpoint root, temporal root</td>
+<td><strong>Mode</strong></td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Nodes mode"><i class="bi bi-circle" style="display:inline-block;transform:rotate(-90deg)"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Branches mode (⌘B)"><i class="bi bi-dash-lg"></i></button></td>
+<td>Switch between <em>Nodes</em> mode (select tips and clades) and <em>Branches</em> mode (click along a branch for precise rerooting)</td>
+</tr>
+<tr>
+<td><strong>Rooting</strong></td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Reroot at selection"><i class="bi bi-arrow-return-left"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Midpoint root (⌘M)"><i class="bi bi-chevron-bar-contract" style="display:inline-block;transform:rotate(90deg)"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Global temporal root (⌘R)"><i class="bi bi-clock"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Local temporal root (⇧⌘R)"><i class="bi bi-clock-history"></i></button></td>
+<td>Reroot on the selected branch; place root at the midpoint of the longest path; find the root that best linearises a root-to-tip regression</td>
 </tr>
 <tr>
 <td><strong>Hide/Show</strong></td>
-<td>Hide selected, unhide</td>
-</tr>
-<tr>
-<td><strong>Collapse</strong></td>
-<td>Collapse clade to triangle, expand</td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Hide selected subtree"><i class="bi bi-node-minus"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Unhide"><i class="bi bi-node-plus"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Collapse clade to triangle"><i class="bi bi-arrows-collapse"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Expand collapsed triangle"><i class="bi bi-arrows-expand"></i></button></td>
+<td>Hide selected tips or subtrees from view; collapse a subtree to a compact triangle summary; restore hidden or collapsed nodes</td>
 </tr>
 <tr>
 <td><strong>Colour</strong></td>
-<td>Colour picker swatch, apply colour, clear colour</td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Apply colour to selection"><i class="bi bi-brush"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Clear user colours"><i class="bi bi-eraser"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Highlight clade"><i class="bi bi-highlighter"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Clear highlights"><i class="bi bi-eraser"></i></button></td>
+<td>Apply a user-chosen colour to selected tips; highlight a clade with a background fill; remove colours or highlights</td>
 </tr>
 <tr>
 <td><strong>Filter</strong></td>
-<td>Search/filter text box</td>
+<td><em>(search box)</em></td>
+<td>Instantly select all visible tips whose labels contain the typed string</td>
 </tr>
 <tr>
 <td><strong>Panels</strong></td>
-<td>Root-to-tip toggle, data table toggle</td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Node info (⌘I)"><i class="bi bi-info-circle"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Data table panel"><i class="bi bi-layout-sidebar-reverse"></i></button> <button class="btn btn-sm btn-outline-secondary" title="Root-to-tip plot"><i class="bi bi-graph-up-arrow"></i></button></td>
+<td>Open the node info dialog for the selected node; toggle the data table panel; toggle the root-to-tip divergence plot</td>
 </tr>
 </tbody>
 </table>
@@ -145,52 +158,143 @@
 <p>Slides in from the right. Toggle with the sliders button in the status bar or press <strong>Tab</strong>. Contains all display controls organised into collapsible sections. Sections are locked until a tree is loaded, then unlock automatically.</p>
 <h3 id="status-bar" tabindex="-1">Status Bar</h3>
 <p>Runs along the bottom. Shows live annotation values for the tip or node under the cursor. Also displays mode messages such as <em>Lens mode active – press Esc to cancel</em>.</p>
-<hr>
 <h2 id="chapter-2-loading-trees" tabindex="-1">Chapter 2: Loading Trees</h2>
 <h3 id="supported-formats" tabindex="-1">Supported Formats</h3>
 <p>PearTree reads <strong>NEXUS</strong> (<code>.nex</code>, <code>.nexus</code>, <code>.tre</code>, <code>.tree</code>, <code>.treefile</code>) and <strong>Newick</strong> (<code>.nwk</code>, <code>.newick</code>) files. Tree data stored in NEXUS metacomments (e.g. BEAST output) is fully supported.</p>
 <h3 id="opening-a-file" tabindex="-1">Opening a File</h3>
-<p>Click the <strong>open</strong> button <img src="/manual/images/open_button.png" style="width:28px;"/> in the toolbar, or press <strong>⌘O</strong>, to open the <em>Open Tree File</em> dialog.</p>
+<p>Click the <strong>open</strong> button <button class="btn btn-sm btn-outline-primary" title="Open tree file (⌘O)"><i class="bi bi-folder2-open"></i></button> in the toolbar, or press <strong>⌘O</strong>, to open the <em>Open Tree File</em> dialog.</p>
 <p>Three tabs are available:</p>
 <p><strong>File tab</strong> — drag a file onto the drop zone or click <em>Choose file</em> to browse.</p>
-<blockquote>
-<img src="/manual/images/fig1c.png" style="width:320px;"/>
-<p><em>Open Tree File</em> dialog, File tab. The file stays on your computer — nothing is uploaded.</p>
-</blockquote>
+<div class="pt-ui-demo pt-ui-demo--dialog">
+  <div class="pt-modal pt-modal--demo">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-folder2-open me-2"></i>Open Tree File</h5>
+      <button class="pt-modal-close-btn" tabindex="-1">&times;</button>
+    </div>
+    <div class="pt-modal-body">
+      <div class="pt-tabs">
+        <button class="pt-tab-btn active" tabindex="-1"><i class="bi bi-folder2-open me-1"></i>File</button>
+        <button class="pt-tab-btn" tabindex="-1"><i class="bi bi-link-45deg me-1"></i>URL</button>
+        <button class="pt-tab-btn" tabindex="-1"><i class="bi bi-tree me-1"></i>Example</button>
+      </div>
+      <div class="pt-tab-panel active">
+      <div class="pt-drop-zone">
+        <div class="pt-drop-icon"><i class="bi bi-file-earmark-arrow-down"></i></div>
+        <p>Drag and drop your tree file here</p>
+        <p class="text-secondary" style="font-size:0.8rem;margin-bottom:1rem">NEXUS (.nex, .nexus, .tre, .tree, .treefile) &nbsp;or&nbsp; Newick (.nwk, .newick)</p>
+        <button class="btn btn-sm btn-outline-primary" tabindex="-1"><i class="bi bi-folder2-open me-1"></i>Choose File</button>
+      </div></div>
+      <div class="pt-tab-panel"></div>
+      <div class="pt-tab-panel"></div>
+    </div>
+  </div>
+</div>
+<p><em>Open Tree File</em> dialog, File tab.</p>
 <blockquote>
 <p><strong>Desktop app note:</strong> In the desktop application, <strong>⌘O</strong> opens the system file chooser directly rather than this dialog.</p>
 </blockquote>
 <p><strong>URL tab</strong> — paste a public URL to a remote tree file and click <em>Load from URL</em>. The remote server must allow cross-origin requests (CORS). GitHub raw URLs (<code>raw.githubusercontent.com/…</code>) work out of the box.</p>
-<blockquote>
-<img src="/manual/images/fig1d.png" style="width:320px;"/>
+<div class="pt-ui-demo pt-ui-demo--dialog">
+  <div class="pt-modal pt-modal--demo">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-folder2-open me-2"></i>Open Tree File</h5>
+      <button class="pt-modal-close-btn" tabindex="-1">&times;</button>
+    </div>
+    <div class="pt-modal-body">
+      <div class="pt-tabs">
+        <button class="pt-tab-btn" tabindex="-1"><i class="bi bi-folder2-open me-1"></i>File</button>
+        <button class="pt-tab-btn active" tabindex="-1"><i class="bi bi-link-45deg me-1"></i>URL</button>
+        <button class="pt-tab-btn" tabindex="-1"><i class="bi bi-tree me-1"></i>Example</button>
+      </div>
+      <div class="pt-tab-panel"></div>
+      <div class="pt-tab-panel active">
+      <label class="form-label">Tree file URL</label>
+      <input type="url" class="pt-modal-url-input" placeholder="https://example.com/tree.nexus" tabindex="-1" />
+      <div style="text-align:center">
+        <button class="btn btn-sm btn-outline-primary" tabindex="-1"><i class="bi bi-cloud-download me-1"></i>Load from URL</button>
+      </div></div>
+      <div class="pt-tab-panel"></div>
+    </div>
+  </div>
+</div>
 <p><em>Open Tree File</em> dialog, URL tab.</p>
-</blockquote>
 <p><strong>Example tab</strong> — loads the built-in Ebola virus (EBOV) dataset immediately. Use this to follow the examples throughout this manual.</p>
-<blockquote>
-<img src="/manual/images/fig1b.png" style="width:320px;"/>
+<div class="pt-ui-demo pt-ui-demo--dialog">
+  <div class="pt-modal pt-modal--demo">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-folder2-open me-2"></i>Open Tree File</h5>
+      <button class="pt-modal-close-btn" tabindex="-1">&times;</button>
+    </div>
+    <div class="pt-modal-body">
+      <div class="pt-tabs">
+        <button class="pt-tab-btn" tabindex="-1"><i class="bi bi-folder2-open me-1"></i>File</button>
+        <button class="pt-tab-btn" tabindex="-1"><i class="bi bi-link-45deg me-1"></i>URL</button>
+        <button class="pt-tab-btn active" tabindex="-1"><i class="bi bi-tree me-1"></i>Example</button>
+      </div>
+      <div class="pt-tab-panel"></div>
+      <div class="pt-tab-panel"></div>
+      <div class="pt-tab-panel active">
+      <div class="pt-example-list">
+        <div class="pt-example-item">
+          <div class="pt-example-desc"><strong>Ebola virus (EBOV)</strong>Phylogenetic tree from the 2014–2016 West Africa epidemic.</div>
+          <button class="btn btn-sm btn-outline-success flex-shrink-0" tabindex="-1"><i class="bi bi-tree me-1"></i>Load</button>
+        </div>
+        <div class="pt-example-item">
+          <div class="pt-example-desc"><strong>SARS-CoV-2 (15K)</strong>Large SARS-CoV-2 tree with ~15,000 sequences.</div>
+          <button class="btn btn-sm btn-outline-success flex-shrink-0" tabindex="-1"><i class="bi bi-tree me-1"></i>Load</button>
+        </div>
+        <div class="pt-example-item">
+          <div class="pt-example-desc"><strong>Variola virus (VARV)</strong>Smallpox virus (variola) phylogeny.</div>
+          <button class="btn btn-sm btn-outline-success flex-shrink-0" tabindex="-1"><i class="bi bi-tree me-1"></i>Load</button>
+        </div>
+      </div></div>
+    </div>
+  </div>
+</div>
 <p><em>Open Tree File</em> dialog, Example tab.</p>
-</blockquote>
 <h3 id="the-startup-screen" tabindex="-1">The Startup Screen</h3>
 <p>When no tree is loaded, the canvas shows the startup screen with direct <strong>Open…</strong> and <strong>Example…</strong> buttons.</p>
+<figure class="pt-figure" style="max-width:25%;">
+  <div class="pt-figure-panel" style="background:#02292E;">
+    <img src="/manual/images/startup.png" alt="The startup screen." loading="lazy">
+  </div>
+  <figcaption>The startup screen.</figcaption>
+</figure>
 <blockquote>
-<img src="/manual/images/fig1a.png" style="width:220px;"/>
-<p>Startup screen.</p>
-</blockquote>
-<blockquote>
-<p>[!TIP]
-You can share a link that opens a remote tree automatically. Append <code>?treeUrl=&lt;URL&gt;</code> to the PearTree web address — anyone who follows the link has the tree loaded immediately with no upload required. See <a href="#appendix-d-url-parameters-and-sharing">Appendix D</a> for details.</p>
+<p><strong>Tip:</strong> You can share a link that opens a remote tree automatically. Append <code>?treeUrl=&lt;URL&gt;</code> to the PearTree web address — anyone who follows the link has the tree loaded immediately with no upload required. See <a href="#appendix-d-url-parameters-and-sharing">Appendix D</a> for details.</p>
 </blockquote>
 <h3 id="opening-a-nexus-file-with-embedded-settings" tabindex="-1">Opening a NEXUS File with Embedded Settings</h3>
 <p>If a NEXUS file was exported from PearTree with <strong>Embed settings</strong> ticked (see <a href="#chapter-13-exporting">Chapter 13</a>), opening it restores the full visual appearance automatically — theme, palette choices, colouring, legends, and axis configuration.</p>
-<hr>
 <h2 id="chapter-3-importing-annotations" tabindex="-1">Chapter 3: Importing Annotations</h2>
 <p>Tree files embed per-tip metadata written by the inference tool (e.g. BEAST posterior values, HPD intervals). You can also add your own metadata from an external table at any time.</p>
 <h3 id="importing-a-csv-or-tsv-file" tabindex="-1">Importing a CSV or TSV File</h3>
-<p>Click the annotation-import button <img src="/manual/images/load_annotations_button.png" style="width:28px;"/> in the toolbar or press <strong>⌘⇧A</strong>.</p>
-<blockquote>
-<img src="/manual/images/fig11a.png" style="width:320px;"/>
+<p>Click the annotation-import button <button class="btn btn-sm btn-outline-success" title="Import annotations (⌘⇧O)"><i class="bi bi-table"></i></button> in the toolbar or press <strong>⌘⇧A</strong>.</p>
+<div class="pt-ui-demo pt-ui-demo--dialog">
+  <div class="pt-modal pt-modal--demo">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-file-earmark-plus me-2"></i>Import Annotations</h5>
+      <button class="pt-modal-close-btn" tabindex="-1">&times;</button>
+    </div>
+    <div class="pt-modal-body">
+      <div class="pt-tabs">
+        <button class="pt-tab-btn active" tabindex="-1"><i class="bi bi-folder2-open me-1"></i>File</button>
+        <button class="pt-tab-btn" tabindex="-1"><i class="bi bi-link-45deg me-1"></i>URL</button>
+      </div>
+      <div class="pt-tab-panel active">
+        <div class="pt-drop-zone">
+          <div class="pt-drop-icon"><i class="bi bi-file-earmark-arrow-down"></i></div>
+          <p>Drag and drop your annotation file here</p>
+          <p class="text-secondary" style="font-size:0.8rem;margin-bottom:1rem">CSV (.csv) &nbsp;or&nbsp; Tab-separated (.tsv)</p>
+          <button class="btn btn-sm btn-outline-primary" tabindex="-1"><i class="bi bi-folder2-open me-1"></i>Choose File</button>
+        </div>
+      </div>
+    </div>
+    <div class="pt-modal-footer">
+      <button class="btn btn-sm btn-secondary" tabindex="-1">Cancel</button>
+    </div>
+  </div>
+</div>
 <p>Import Annotations dialog.</p>
-</blockquote>
 <p>Drag a CSV or TSV file onto the drop zone, or click <em>Choose file</em> to browse. In the web app you can also switch to the <em>URL</em> tab and paste a public URL directly — for example the EBOV annotation file used in this manual:</p>
 <pre><code>https://artic-network.github.io/peartree/docs/data/ebov.csv
 </code></pre>
@@ -199,20 +303,71 @@ You can share a link that opens a remote tree automatically. Append <code>?treeU
 </blockquote>
 <h4 id="match-configuration" tabindex="-1">Match Configuration</h4>
 <p>After selecting the file a configuration step appears. Choose which column in the metadata file identifies each tip:</p>
-<blockquote>
-<img src="/manual/images/fig11b.png" style="width:320px;"/>
+<div class="pt-ui-demo pt-ui-demo--dialog">
+  <div class="pt-modal pt-modal--demo">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-file-earmark-text me-2"></i>ebov.csv</h5>
+      <button class="pt-modal-close-btn" tabindex="-1">&times;</button>
+    </div>
+    <div class="pt-modal-body">
+      <p style="margin:0 0 0.8rem;color:var(--bs-secondary-color)">65&nbsp;rows, 5&nbsp;columns</p>
+<p><div class="imp-section">
+<label class="imp-section-label">Match column</label>
+<div class="imp-row">
+<select class="imp-select" tabindex="-1"><option value="0" selected>taxon</option><option value="1">date</option><option value="2">country</option><option value="3">location</option><option value="4">host</option></select>
+</div>
+</div></p>
+<p><div class="imp-section">
+<label class="imp-section-label">Match mode</label>
+<div style="display:flex;flex-direction:column;gap:0.3rem;">
+<label class="imp-row" style="cursor:default">
+<input type="radio" name="imp-mode-demo" checked tabindex="-1">
+Full taxon label
+</label>
+<label class="imp-row" style="cursor:default">
+<input type="radio" name="imp-mode-demo" tabindex="-1">
+Pipe-delimited field: 
+<input type="number" class="ca-num-input" value="1"
+              style="width:52px;padding:0.1rem 0.3rem;font-size:0.82rem;" tabindex="-1">
+</label>
+</div>
+</div></p>
+<p><div class="imp-section">
+<label class="imp-section-label">Columns to import</label>
+<div class="imp-col-grid"><label style="opacity:0.4"><input type="checkbox" class="imp-col-chk" disabled> taxon</label><label style=""><input type="checkbox" class="imp-col-chk" checked> date</label><label style=""><input type="checkbox" class="imp-col-chk" checked> country</label><label style=""><input type="checkbox" class="imp-col-chk" checked> location</label><label style=""><input type="checkbox" class="imp-col-chk" checked> host</label></div>
+<button class="btn btn-sm btn-outline-secondary"
+          style="margin-top:0.4rem;font-size:0.75rem;padding:0.1rem 0.5rem" tabindex="-1">Deselect all</button>
+</div></p>
+<p><div class="imp-section">
+<label class="imp-row" style="cursor:default;gap:0.4rem;align-items:flex-start">
+<input type="checkbox" style="margin-top:0.1rem;flex-shrink:0" tabindex="-1">
+<span>Replace existing annotations with the same name
+<span style="display:block;color:var(--bs-secondary-color);font-size:0.75rem">
+Clears matching annotation keys from all nodes before applying new values.
+</span>
+</span>
+</label>
+</div>
+</div>
+<div class="pt-modal-footer">
+<button class="btn btn-sm btn-outline-secondary" tabindex="-1">Cancel</button>
+<button class="btn btn-sm btn-primary" tabindex="-1">Import →</button>
+</div></p>
+  </div>
+</div>
 <p>Import configuration: choose the column that matches tip labels, and toggle which columns to import.</p>
-</blockquote>
 <p>PearTree can match the entire tip label string, or just one pipe-delimited (<code>|</code>) field within it. For the EBOV example, select field 2 (<code>lab-id</code>) to match the second segment of each label.</p>
 <h4 id="import-summary" tabindex="-1">Import Summary</h4>
 <p>After clicking <strong>Import</strong>, a summary reports how many tips were matched.</p>
-<blockquote>
-<img src="/manual/images/fig11c.png" style="width:320px;"/>
-<p>Import summary confirming all 1610 tips matched.</p>
-</blockquote>
+<figure class="pt-figure" style="max-width:320px;">
+  <div class="pt-figure-panel" style="background:#002b36;">
+    <img src="/manual/images/fig11c.png" alt="Import summary confirming all 1610 tips matched." loading="lazy">
+  </div>
+  <figcaption>Import summary confirming all 1610 tips matched.</figcaption>
+</figure>
 <p>After import the new annotation keys appear in all <em>Colour by</em> dropdowns, the legend selector, and the Node Info dialog.</p>
-<h3 id="the-annotation-curator" tabindex="-1">The Annotation Curator</h3>
-<p>Open the Annotation Curator from the toolbar (tags button) to review every annotation key currently loaded.</p>
+<h3 id="the-annotation-manager" tabindex="-1">The Annotation Manager</h3>
+<p>Open the Annotation Manager from the toolbar (tags button) to review every annotation key currently loaded.</p>
 <p>For each key you can:</p>
 <table>
 <thead>
@@ -237,10 +392,8 @@ You can share a link that opens a remote tree automatically. Append <code>?treeU
 </tbody>
 </table>
 <blockquote>
-<p>[!TIP]
-If your tree uses a non-standard name for bootstrap values (e.g. <code>UFBoot</code> from IQ-TREE), open the Curator and tick <strong>Branch annotation</strong> for that key so PearTree handles it correctly when rerooting.</p>
+<p><strong>Tip:</strong> If your tree uses a non-standard name for bootstrap values (e.g. <code>UFBoot</code> from IQ-TREE), open the Curator and tick <strong>Branch annotation</strong> for that key so PearTree handles it correctly when rerooting.</p>
 </blockquote>
-<hr>
 <h2 id="chapter-4-navigating-the-tree" tabindex="-1">Chapter 4: Navigating the Tree</h2>
 <p><em>The examples in this chapter use the EBOV example tree (1610 tips). For navigation in very large trees, try loading <code>data/SARS-CoV-2_15K.tree</code> (15,000 tips).</em></p>
 <h3 id="scrolling-and-zooming" tabindex="-1">Scrolling and Zooming</h3>
@@ -313,19 +466,27 @@ If your tree uses a non-standard name for bootstrap values (e.g. <code>UFBoot</c
 <blockquote>
 <p><strong>Automatic horizontal scaling:</strong> When zoomed out so far that tip labels are hidden, PearTree expands the tree branches to fill the full canvas width. When you zoom back in enough for labels to become readable, the horizontal scale contracts to make room for them again. This maximises screen use at every zoom level.</p>
 </blockquote>
-<blockquote>
-<img src="/manual/images/fig4.png" style="width:440px;"/>
-<p>EBOV tree zoomed in to show individual tip labels.</p>
-</blockquote>
+<figure class="pt-figure" style="max-width:70%;">
+  <div class="pt-figure-panel" style="background:#ffffff;">
+    <img src="/manual/images/fig4.png" alt="EBOV tree zoomed in to show individual tip labels." loading="lazy">
+  </div>
+  <figcaption>EBOV tree zoomed in to show individual tip labels.</figcaption>
+</figure>
 <p>Press <strong>⌘0</strong> to return to the full view at any time.</p>
 <h3 id="subtree-navigation" tabindex="-1">Subtree Navigation</h3>
 <p><strong>Double-click</strong> any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node, scaled to fill the full window.</p>
-<p>Alternatively, select an internal node and click the drill-down button <img src="/manual/images/drill_down_button.png" style="width:28px;"/> or press <strong>⌘⇧.</strong>.</p>
-<blockquote>
-<img src="/manual/images/fig7a.png" style="width:440px;"/>
-<img src="/manual/images/fig7b.png" style="width:440px;"/>
-<p>A subclade before and after drilling down.</p>
-</blockquote>
+<p>Alternatively, select an internal node and click the drill-down button <button class="btn btn-sm btn-outline-secondary" title="Drill into subtree (⌘⇧>)"><i class="bi bi-box-arrow-in-right"></i></button> or press <strong>⌘⇧.</strong>.</p>
+<figure class="pt-figure" style="max-width:70%;">
+  <div class="pt-figure-panel" style="background:#ffffff;">
+    <img src="/manual/images/fig7a.png" alt="" loading="lazy">
+  </div>
+</figure>
+<figure class="pt-figure" style="max-width:70%;">
+  <div class="pt-figure-panel" style="background:#ffffff;">
+    <img src="/manual/images/fig7b.png" alt="A subclade before and after drilling down." loading="lazy">
+  </div>
+  <figcaption>A subclade before and after drilling down.</figcaption>
+</figure>
 <p>PearTree maintains a full navigation history:</p>
 <table>
 <thead>
@@ -337,55 +498,51 @@ If your tree uses a non-standard name for bootstrap values (e.g. <code>UFBoot</c
 </thead>
 <tbody>
 <tr>
-<td><img src="/manual/images/back_button.png" style="width:28px;"/></td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Navigate back (⌘[)"><i class="bi bi-chevron-left"></i></button></td>
 <td><strong>⌘[</strong></td>
 <td>Go back to the previous view</td>
 </tr>
 <tr>
-<td><img src="/manual/images/forward_button.png" style="width:28px;"/></td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Navigate forward (⌘])"><i class="bi bi-chevron-right"></i></button></td>
 <td><strong>⌘]</strong></td>
 <td>Go forward in history</td>
 </tr>
 <tr>
-<td><img src="/manual/images/climb_up_button.png" style="width:28px;"/></td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Drill into subtree (⌘⇧>)"><i class="bi bi-box-arrow-in-right"></i></button></td>
+<td><strong>⌘]</strong></td>
+<td>Go forward in history</td>
+</tr>
+<tr>
+<td><button class="btn btn-sm btn-outline-secondary" title="Climb out one level (⌘⇧<)"><i class="bi bi-box-arrow-left"></i></button></td>
 <td><strong>⌘⇧,</strong></td>
 <td>Step up one level toward the root</td>
 </tr>
 <tr>
-<td><img src="/manual/images/home_button.png" style="width:28px;"/></td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Navigate to root (⌘\)"><i class="bi bi-house"></i></button></td>
 <td><strong>⌘\</strong></td>
 <td>Return to the full-tree root view</td>
 </tr>
 </tbody>
 </table>
 <blockquote>
-<p>[!TIP]
-Navigate history like a web browser. Drill down into several different clades in sequence, then press <strong>⌘[</strong> to step back through each view. <strong>⌘]</strong> goes forward again. This makes it easy to compare distant parts of a large tree without re-navigating each time.</p>
+<p><strong>Tip:</strong> Navigate history like a web browser. Drill down into several different clades in sequence, then press <strong>⌘[</strong> to step back through each view. <strong>⌘]</strong> goes forward again. This makes it easy to compare distant parts of a large tree without re-navigating each time.</p>
 </blockquote>
-<hr>
 <h2 id="chapter-5-the-hyperbolic-lens" tabindex="-1">Chapter 5: The Hyperbolic Lens</h2>
 <p>The hyperbolic lens expands a region of the tree to label-readable spacing without losing the surrounding context — the rest of the tree compresses but remains fully visible.</p>
 <h3 id="activating-the-lens" tabindex="-1">Activating the Lens</h3>
 <p>Hold <strong>~</strong> (tilde/backtick) and move the cursor over the canvas. The tree distorts around the cursor's vertical position.</p>
-<blockquote>
-<img src="/manual/images/fig5.png" style="width:440px;"/>
-<p>Lens active: tips near the cursor are spread apart and readable; tips further away are compressed but still visible.</p>
-</blockquote>
+<figure class="pt-figure" style="max-width:70%;">
+  <div class="pt-figure-panel" style="background:#ffffff;">
+    <img src="/manual/images/fig5.png" alt="Lens active: tips near the cursor are spread apart and readable; tips further away are compressed but still visible." loading="lazy">
+  </div>
+  <figcaption>Lens active: tips near the cursor are spread apart and readable; tips further away are compressed but still visible.</figcaption>
+</figure>
 <p>The lens <strong>persists</strong> after you release <strong>~</strong> — the focus locks in place so you can click, select, or inspect the expanded region normally. Re-hold <strong>~</strong> and move to reposition the focus. Press <strong>Escape</strong> to dismiss.</p>
 <p>While the lens is active a reminder appears in the status bar: <em>Lens mode active – press Esc to cancel</em>.</p>
-<h3 id="adjusting-the-lens-width" tabindex="-1">Adjusting the Lens Width</h3>
-<p>The <strong>Lens</strong> ⊕/⊖ buttons in the toolbar (or <strong>⌘⇧=</strong> / <strong>⌘⇧−</strong>) control how many tip rows wide the uniformly-expanded flat centre zone is:</p>
-<ul>
-<li><strong>⊕</strong> — add one row of spacing to the flat zone</li>
-<li><strong>⊖</strong> — remove one row</li>
-<li>At zero (default) the lens is a pure hyperbolic falloff from the focus point</li>
-</ul>
 <p>Peak magnification caps at the <em>Fit Labels</em> spacing level, so labels in the expanded zone never overlap.</p>
 <blockquote>
-<p>[!TIP]
-The hyperbolic lens is ideal for large trees where fully zooming in would hide the context. Hold <strong>~</strong>, move to the region of interest, release to lock the focus, then interact with the expanded section. Press <strong>Escape</strong> when done.</p>
+<p><strong>Tip:</strong> The hyperbolic lens is ideal for large trees where fully zooming in would hide the context. Hold <strong>~</strong>, move to the region of interest, release to lock the focus, then interact with the expanded section. Press <strong>Escape</strong> when done.</p>
 </blockquote>
-<hr>
 <h2 id="chapter-6-organising-the-tree" tabindex="-1">Chapter 6: Organising the Tree</h2>
 <h3 id="branch-ordering" tabindex="-1">Branch Ordering</h3>
 <p>The <strong>Order</strong> buttons sort all clades by descendant count, giving a ladder-like layout:</p>
@@ -399,24 +556,25 @@ The hyperbolic lens is ideal for large trees where fully zooming in would hide t
 </thead>
 <tbody>
 <tr>
-<td><img src="/manual/images/order_up_button.png" style="width:28px;"/></td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Order ascending (⌘U)"><i class="bi bi-sort-up"></i></button></td>
 <td><strong>⌘U</strong></td>
 <td>Larger clades toward the top</td>
 </tr>
 <tr>
-<td><img src="/manual/images/order_down_button.png" style="width:28px;"/></td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Order descending (⌘D)"><i class="bi bi-sort-up"></i></button></td>
 <td><strong>⌘D</strong></td>
 <td>Larger clades toward the bottom</td>
 </tr>
 </tbody>
 </table>
+<figure class="pt-figure" style="max-width:70%;">
+  <div class="pt-figure-panel" style="background:#ffffff;">
+    <img src="/manual/images/fig3.png" alt="EBOV tree with ascending (larger clades upward) order applied." loading="lazy">
+  </div>
+  <figcaption>EBOV tree with ascending (larger clades upward) order applied.</figcaption>
+</figure>
 <blockquote>
-<img src="/manual/images/fig3.png" style="width:440px;"/>
-<p>EBOV tree with ascending (larger clades upward) order applied.</p>
-</blockquote>
-<blockquote>
-<p>[!NOTE]
-Once ordered, the original clade order is lost. You can switch between ascending and descending ordering, or rotate individual nodes manually (see below). Hiding a node (see below) also clears the branch ordering since the tip counts have changed.</p>
+<p><strong>Note:</strong> Once ordered, the original clade order is lost. You can switch between ascending and descending ordering, or rotate individual nodes manually (see below). Hiding a node (see below) also clears the branch ordering since the tip counts have changed.</p>
 </blockquote>
 <h3 id="rotating-nodes" tabindex="-1">Rotating Nodes</h3>
 <p>'Rotating' swaps the order of a node's direct children (or recursively all children in a clade). This is a purely cosmetic change — the topology and branch lengths are unchanged.</p>
@@ -430,37 +588,59 @@ Once ordered, the original clade order is lost. You can switch between ascending
 </thead>
 <tbody>
 <tr>
-<td><img src="/manual/images/rotate_branch_button.png" style="width:28px;"/></td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Rotate selected node"><i class="bi bi-repeat" style="display:inline-block;transform:rotate(90deg)"></i></button></td>
 <td>Reverse the direct children of the selected node only</td>
 </tr>
 <tr>
-<td><img src="/manual/images/rotate_clade_button.png" style="width:28px;"/></td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Rotate entire subtree"><i class="bi bi-symmetry-horizontal" style="display:inline-block;transform:scaleX(-1)"></i></button></td>
 <td>Recursively reverse children at every level within the selected subtree</td>
 </tr>
 </tbody>
 </table>
-<blockquote>
-<img src="/manual/images/fig8a.png" style="width:440px;"/>
-<img src="/manual/images/fig8b.png" style="width:440px;"/>
-<img src="/manual/images/fig8c.png" style="width:440px;"/>
-<p>Before and after rotating a single node (middle), and after rotating the entire clade (bottom).</p>
-</blockquote>
+<figure class="pt-figure" style="max-width:70%;">
+  <div class="pt-figure-panel" style="background:#ffffff;">
+    <img src="/manual/images/fig8a.png" alt="" loading="lazy">
+  </div>
+</figure>
+<figure class="pt-figure" style="max-width:70%;">
+  <div class="pt-figure-panel" style="background:#ffffff;">
+    <img src="/manual/images/fig8b.png" alt="" loading="lazy">
+  </div>
+</figure>
+<figure class="pt-figure" style="max-width:70%;">
+  <div class="pt-figure-panel" style="background:#ffffff;">
+    <img src="/manual/images/fig8c.png" alt="Before and after rotating a single node (middle), and after rotating the entire clade (bottom)." loading="lazy">
+  </div>
+  <figcaption>Before and after rotating a single node (middle), and after rotating the entire clade (bottom).</figcaption>
+</figure>
 <h3 id="hiding-nodes-and-subtrees" tabindex="-1">Hiding Nodes and Subtrees</h3>
 <p>Hiding removes a tip or entire subtree from the display without deleting it from the underlying tree. The remaining tree reflows to fill the space.</p>
 <ol>
 <li>Select a tip or internal node.</li>
 <li>Click the <strong>Hide</strong> button (eye-slash icon) in the toolbar.</li>
 </ol>
-<blockquote>
-<img src="/manual/images/fig9a.png" style="width:440px;"/>
-<img src="/manual/images/fig9b.png" style="width:440px;"/>
-<p>A single tip before and after hiding.</p>
-</blockquote>
-<blockquote>
-<img src="/manual/images/fig9c.png" style="width:440px;"/>
-<img src="/manual/images/fig9d.png" style="width:440px;"/>
-<p>A subtree selected (top) and after hiding all descendants (bottom).</p>
-</blockquote>
+<figure class="pt-figure" style="max-width:70%;">
+  <div class="pt-figure-panel" style="background:#ffffff;">
+    <img src="/manual/images/fig9a.png" alt="" loading="lazy">
+  </div>
+</figure>
+<figure class="pt-figure" style="max-width:70%;">
+  <div class="pt-figure-panel" style="background:#ffffff;">
+    <img src="/manual/images/fig8c.png" alt="A single tip before and after hiding." loading="lazy">
+  </div>
+  <figcaption>A single tip before and after hiding.</figcaption>
+</figure>
+<figure class="pt-figure" style="max-width:70%;">
+  <div class="pt-figure-panel" style="background:#ffffff;">
+    <img src="/manual/images/fig9c.png" alt="" loading="lazy">
+  </div>
+</figure>
+<figure class="pt-figure" style="max-width:70%;">
+  <div class="pt-figure-panel" style="background:#ffffff;">
+    <img src="/manual/images/fig9d.png" alt="A subtree selected (top) and after hiding all descendants (bottom)." loading="lazy">
+  </div>
+  <figcaption>A subtree selected (top) and after hiding all descendants (bottom).</figcaption>
+</figure>
 <p><strong>Showing hidden nodes:</strong> when any hidden nodes exist in the current view, the <strong>Unhide</strong> button <img src="/manual/images/unhide_button.png" style="width:28px;"/> becomes active.</p>
 <ul>
 <li><strong>With a node selected</strong> — click Unhide to restore the hidden descendants of that node.</li>
