@@ -485,6 +485,7 @@ function _tbSectionRotate() {
 
 function _tbSectionReroot() {
   return `
+    <button id="btn-invert-selection" class="btn btn-sm btn-outline-secondary" disabled title="Invert selection (⌘⇧I)"><i class="bi bi-arrow-left-right"></i></button>
     <div id="reroot-controls">
       <div class="btn-group" role="group" aria-label="Selection mode">
         <button id="btn-mode-nodes" class="btn btn-sm btn-outline-secondary active" disabled title="Select nodes mode"><i class="bi bi-circle" style="display:inline-block;transform:rotate(-90deg)"></i></button>

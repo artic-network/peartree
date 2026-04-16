@@ -3899,6 +3899,7 @@ async function _initCore(root = document) {
         if (_btnHypDown) _btnHypDown.disabled = false;
         $('btn-mode-nodes')   ?.removeAttribute('disabled');
         $('btn-mode-branches')?.removeAttribute('disabled');
+        $('btn-invert-selection')?.removeAttribute('disabled');
         if (btnDataTable) btnDataTable.disabled = false;
         // On fresh tree load, default the Names column so the table is never blank.
         if (dataTableRenderer && !_cfg.dataTableColumns) {
@@ -4684,6 +4685,8 @@ async function _initCore(root = document) {
       _seedRootShiftAnimation(oldRoot, oldNodeMap, layout.nodes, 'out');
       _restoreViewAfterLayoutChange(wasInFitLabels, prevMinScaleY, prevTargetScaleY, prevTargetOffsetY);
     }
+
+    $('btn-invert-selection')?.addEventListener('click', () => commands.execute('select-invert'));
 
     btnHide?.addEventListener('click', () => applyHide());
     btnShow?.addEventListener('click', () => applyShow());

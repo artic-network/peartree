@@ -68,7 +68,7 @@ Runs along the top of the window. Contains buttons grouped by function:
 | **Zoom** | Zoom in, zoom out, fit all, fit labels |
 | **Order** | Sort clades ascending / descending |
 | **Rotate** | Rotate selected node, rotate entire subtree |
-| **Rooting** | Node / branch mode toggle; reroot, midpoint root, global temporal root, local temporal root |
+| **Rooting** | Node / branch mode toggle, invert selection; reroot, midpoint root, global temporal root, local temporal root |
 | **Hide / Show** | Hide selected subtree, unhide |
 | **Collapse** | Collapse clade to triangle, expand triangle |
 | **Colour** | Colour picker swatch, apply colour, clear user colours, highlight clade, clear highlights |
@@ -394,7 +394,7 @@ PearTree has two selection modes. The active mode is shown by which toolbar butt
 - **⌘-click** — add to or remove from the current selection
 - **Click and drag** — drag-select all tips within a rectangular area
 - **⌘A** — select all visible tips
-- **⌘⇧I** — invert the selection
+- **⌘⇧I** — invert the selection (also available as the ⇄ toolbar button)
 - **Click empty canvas** — clear the selection
 
 > <img src="images/fig6.png" style="width:440px;"/>
