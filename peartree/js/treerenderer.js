@@ -1445,7 +1445,7 @@ export class TreeRenderer {
     //   place the new layout's root at that node's old screen position.
     let seeded = false;
     if (curRootId) {
-      const restoredNode = nodeMap.get(curRootId);
+      const restoredNode = this.nodeMap.get(curRootId);
       if (restoredNode) {
         this.offsetX = px_cur - restoredNode.x * this.scaleX;
         this.offsetY = py_cur - restoredNode.y * this.scaleY;
@@ -1459,7 +1459,7 @@ export class TreeRenderer {
         const px_sub = oldOffsetX + subtreeInOld.x * oldScaleX;
         const py_sub = oldOffsetY + subtreeInOld.y * oldScaleY;
         // The new layout's root sits at world x = 0, so offsetX = px_sub.
-        const newRoot = nodes.find(n => !n.parentId);
+        const newRoot = this.nodes.find(n => !n.parentId);
         this.offsetX = px_sub;
         this.offsetY = newRoot ? py_sub - newRoot.y * this.scaleY : py_sub;
       }
@@ -1583,7 +1583,7 @@ export class TreeRenderer {
 
     // Seed animation: old root slides rightward to its natural x in the new layout.
     if (curRootId) {
-      const restoredNode = nodeMap.get(curRootId);
+      const restoredNode = this.nodeMap.get(curRootId);
       if (restoredNode) {
         // x: start displaced so old root still appears at paddingLeft, animate to paddingLeft
         this._rootShiftFromX = this.paddingLeft - restoredNode.x * this.scaleX;
@@ -4046,9 +4046,9 @@ export class TreeRenderer {
         return;
       }
       if (node.isTip) return;
-      // Double-clicking the current root while inside a subtree navigates back.
-      if (!node.parentId && this._navStack.length > 0) {
-        this.navigateBack();
+      // Double-clicking the current root while inside a subtree climbs one level up.
+      if (!node.parentId && this._viewSubtreeRootId) {
+        this.navigateClimb();
       } else {
         this.navigateInto(node.id);
       }
