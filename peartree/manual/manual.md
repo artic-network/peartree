@@ -158,7 +158,6 @@ PearTree can match the entire tip label string, or just one pipe-delimited (`|`)
 
 After clicking **Import**, a summary reports how many tips were matched.
 
-
 {% ptFigure "/manual/images/import_results.png", "", "Import summary confirming all 1610 tips matched.", "50%"  %}
 
 After import the new annotation keys appear in all *Colour by* dropdowns, the legend selector, and the Node Info dialog.
@@ -198,14 +197,16 @@ Toolbar zoom buttons:
 
 | Button | Shortcut | Action |
 |---|---|---|
-| <img src="/manual/images/zoom_in_button.png" style="width:28px;"/> | **⌘=** | Zoom in ×1.5 |
-| <img src="/manual/images/zoom_out_button.png" style="width:28px;"/> | **⌘−** | Zoom out ×1.5 |
-| <img src="/manual/images/show_all_button.png" style="width:28px;"/> | **⌘0** | Fit entire tree to window |
-| <img src="/manual/images/show_labels_button.png" style="width:28px;"/> | **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
+| {% ptBtn "bi-zoom-in", "Zoom in (⌘+)" %} | **⌘=** | Zoom in ×1.5 |
+| {% ptBtn "bi-zoom-out", "Zoom out (⌘−)" %} | **⌘−** | Zoom out ×1.5 |
+| {% ptBtn "bi-arrows-fullscreen", "Fit all (⌘0)" %} | **⌘0** | Fit entire tree to window |
+| {% ptBtn "bi-type", "Fit labels (⌘⇧0)" %} | **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
 
-{% ptFigure "/manual/images/full_tree.png", "#EAE8E1", "EBOV tree zoomed out to show entire tree. Tip labels are hidden.", "90%" %}
+{% ptFigure "/manual/images/full_tree.png", "#EAE8E1", "EBOV tree zoomed out to show entire tree. Tip labels are hidden.", "70%" %}
 
-{% ptFigure "/manual/images/zoomed_tree.png", "#EAE8E1", "EBOV tree zoomed in to show individual tip labels.", "90%" %}
+Press **⌘⇧0** or {% ptBtn "bi-type", "Fit labels (⌘⇧0)" %} to zoom in to the tree sufficiently that the tip labels can be shown without overlapping. 
+
+{% ptFigure "/manual/images/zoomed_tree.png", "#EAE8E1", "EBOV tree zoomed in to show individual tip labels. Only the top portion of the tree can be seen but can be scrolled down.", "70%" %}
 
 Press **⌘0** to return to the full view at any time.
 
@@ -213,41 +214,44 @@ Press **⌘0** to return to the full view at any time.
 
 **Double-click** any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node, scaled to fill the full window.
  
-Alternatively, select an internal node and click the drill-down button {% ptBtn "bi-box-arrow-in-right", "Drill into subtree (⌘⇧>)" %} or press **⌘⇧.**.
+Alternatively, select an internal node and click the drill-down button {% ptBtn "bi-box-arrow-in-right", "Drill into subtree (⌘⇧>)" %} or press **⌘⇧>**.
 
-{% ptFigure "/manual/images/fig7a.png", "#ffffff", "", "70%" %}
-{% ptFigure "/manual/images/fig7b.png", "#ffffff", "A subclade before and after drilling down.", "70%" %}
+{% ptFigure "/manual/images/select_clade.png", "#EAE8E1", "A clade selected in the full tree.", "70%" %}
 
+PearTree will drill-down to only show that clade zoomed to fit the space. Further actions will generally only operate on that clade.
 
-PearTree maintains a full navigation history:
+{% ptFigure "/manual/images/drilldown_clade.png", "#EAE8E1", "The clade after drilling down (double clicking the root of the clade).", "70%" %}
 
+PearTree maintains a full navigation history allowing you to drill-down into a clade and then quickly move back out to the previous view (and then forward again to the sub-clade). You can also just climb out one level using {% ptBtn "bi-box-arrow-left", "Climb out one level (⌘⇧<)" %} or **⌘⇧<** key (you can also double click the root node of the clade being viewed).
+
+Summary of navigation controls:
 | Button | Shortcut | Effect |
 |---|---|---|
 | {% ptBtn "bi-chevron-left", "Navigate back (⌘[)" %} | **⌘[** | Go back to the previous view |
 | {% ptBtn "bi-chevron-right", "Navigate forward (⌘])" %} | **⌘]** | Go forward in history |
-| {% ptBtn "bi-box-arrow-in-right", "Drill into subtree (⌘⇧>)" %} | **⌘]** | Go forward in history |
-| {% ptBtn "bi-box-arrow-left", "Climb out one level (⌘⇧<)" %} | **⌘⇧,** | Step up one level toward the root |
+| {% ptBtn "bi-box-arrow-in-right", "Drill into subtree (⌘⇧>)" %} | **⌘⇧>** | Drill into subtree |
+| {% ptBtn "bi-box-arrow-left", "Climb out one level (⌘⇧<)" %} | **⌘⇧<** | Step up one level toward the root |
 | {% ptBtn "bi-house", "Navigate to root (⌘\\)" %} | **⌘\\** | Return to the full-tree root view |
 
-> **Tip:** Navigate history like a web browser. Drill down into several different clades in sequence, then press **⌘[** to step back through each view. **⌘]** goes forward again. This makes it easy to compare distant parts of a large tree without re-navigating each time.
+> **Tip:** Navigation history works like a web browser. Drill down into several different clades in sequence and you can then use **⌘[** to step back through each view. Pressing **⌘]** goes forward again. 
 
 ## Chapter 5: The Hyperbolic Lens
 
-The hyperbolic lens expands a region of the tree to label-readable spacing without losing the surrounding context — the rest of the tree compresses but remains fully visible.
+The hyperbolic lens expands a region of the tree to label-readable spacing without losing the surrounding context — the rest of the tree compresses but remains visible.
 
 ### Activating the Lens
 
-Hold **~** (tilde/backtick) and move the cursor over the canvas. The tree distorts around the cursor's vertical position.
+Hold the **\`** (backtick) key and move the cursor over the canvas. The tree distorts around the cursor's vertical position.
 
-{% ptFigure "/manual/images/fig5.png", "#ffffff", "Lens active: tips near the cursor are spread apart and readable; tips further away are compressed but still visible.", "70%" %}
+{% ptFigure "/manual/images/lens_view.png", "#EAE8E1", "Lens active: tips near the cursor are spread apart and readable; tips further away are compressed but still visible.", "70%" %}
 
-The lens **persists** after you release **~** — the focus locks in place so you can click, select, or inspect the expanded region normally. Re-hold **~** and move to reposition the focus. Press **Escape** to dismiss.
+The lens **persists** after you release **\`** — the focus locks in place so you can click, select, or inspect the expanded region normally. Re-hold **\`** and move to reposition the focus. Press **Escape** to dismiss.
 
 While the lens is active a reminder appears in the status bar: *Lens mode active – press Esc to cancel*.
 
 Peak magnification caps at the *Fit Labels* spacing level, so labels in the expanded zone never overlap.
 
-> **Tip:** The hyperbolic lens is ideal for large trees where fully zooming in would hide the context. Hold **~**, move to the region of interest, release to lock the focus, then interact with the expanded section. Press **Escape** when done.
+> **Tip:** The hyperbolic lens is ideal for large trees where fully zooming in would hide the context. Hold **\`**, move to the region of interest, release to lock the focus, then interact with the expanded section. Press **Escape** when done.
 
 ## Chapter 6: Organising the Tree
 
@@ -260,7 +264,8 @@ The **Order** buttons sort all clades by descendant count, giving a ladder-like 
 | {% ptBtn "bi-sort-up", "Order ascending (⌘U)" %} | **⌘U** | Larger clades toward the top |
 | {% ptBtn "bi-sort-up", "Order descending (⌘D)" %} | **⌘D** | Larger clades toward the bottom |
 
-{% ptFigure "/manual/images/fig3.png", "#ffffff", "EBOV tree with ascending (larger clades upward) order applied.", "70%"  %}
+{% ptFigure "/manual/images/sort_up.png", "#EAE8E1", "Tree with ascending order (larger clades at the top) applied.", "50%"  %}
+{% ptFigure "/manual/images/sort_down.png", "#EAE8E1", "Tree with descending order (larger clades at the bottom) applied.", "50%"  %}
 
 > **Note:** Once ordered, the original clade order is lost. You can switch between ascending and descending ordering, or rotate individual nodes manually (see below). Hiding a node (see below) also clears the branch ordering since the tip counts have changed.
 
@@ -275,41 +280,43 @@ Select an internal node, then use the Rotate buttons:
 | {% ptBtn "bi-repeat", "Rotate selected node", "", "rotate(90deg)" %} | Reverse the direct children of the selected node only |
 | {% ptBtn "bi-symmetry-horizontal", "Rotate entire subtree", "", "scaleX(-1)" %} | Recursively reverse children at every level within the selected subtree |
 
-{% ptFigure "/manual/images/fig8a.png", "#ffffff", "" , "70%" %}
-{% ptFigure "/manual/images/fig8b.png", "#ffffff", "" , "70%" %}
-{% ptFigure "/manual/images/fig8c.png", "#ffffff", "Before and after rotating a single node (middle), and after rotating the entire clade (bottom).", "70%"  %}
+{% ptFigure "/manual/images/clade_selected.png", "#EAE8E1", "A clade is selected" , "70%" %}
+{% ptFigure "/manual/images/node_rotated.png", "#EAE8E1", "The node at the root of the clade is rotated" , "70%" %}
+{% ptFigure "/manual/images/clade_rotated.png", "#EAE8E1", "The entire clade rotated" , "70%" %}
 
 ### Hiding Nodes and Subtrees
 
 Hiding removes a tip or entire subtree from the display without deleting it from the underlying tree. The remaining tree reflows to fill the space.
-
+ 
 1. Select a tip or internal node.
-2. Click the **Hide** button (eye-slash icon) in the toolbar.
+2. Click the **Hide** {% ptBtn "bi-node-minus", "Hide selected subtree" %} button in the toolbar.
 
-{% ptFigure "/manual/images/fig9a.png", "#ffffff", "" , "70%" %}
-{% ptFigure "/manual/images/fig8c.png", "#ffffff", "A single tip before and after hiding." , "70%" %}
+{% ptFigure "/manual/images/tip_selected.png", "#EAE8E1", "A single tip is selected." , "70%" %}
+{% ptFigure "/manual/images/tip_hidden.png", "#EAE8E1", "The selected tip is then hidden." , "70%" %}
 
-{% ptFigure "/manual/images/fig9c.png", "#ffffff", "" , "70%" %}
-{% ptFigure "/manual/images/fig9d.png", "#ffffff", "A subtree selected (top) and after hiding all descendants (bottom)." , "70%" %}
+{% ptFigure "/manual/images/clade_selected.png", "#EAE8E1", "The whole clade is selected." , "70%" %}
+{% ptFigure "/manual/images/clade_hidden.png", "#EAE8E1", "The selected clade has been hidden." , "70%" %}
 
-**Showing hidden nodes:** when any hidden nodes exist in the current view, the **Unhide** button <img src="/manual/images/unhide_button.png" style="width:28px;"/> becomes active.
+**Showing hidden nodes:** when any hidden nodes exist in the current view, the **Unhide** {% ptBtn "bi-node-plus", "Unhide" %} button becomes active.
 
-- **With a node selected** — click Unhide to restore the hidden descendants of that node.
-- **With nothing selected** — click Unhide to restore all hidden nodes at once.
+- **With a node selected** — click Unhide {% ptBtn "bi-node-plus", "Unhide" %} to restore the hidden descendants of that node.
+- **With nothing selected** — click Unhide {% ptBtn "bi-node-plus", "Unhide" %} to restore all hidden nodes at once.
 
-> [!TIP]
-> To isolate a subset of tips: type a keyword into the filter box to select all matching tips, press **⌘⇧I** to invert the selection, then click Hide. Everything except your subset disappears. Click Unhide (with nothing selected) when done.
+> **Tip:** To hide everything but a subset of tips select the tips you want remain unhidden, press **⌘⇧I** to invert the selection, then click Hide. Everything except your subset disappears. Click Unhide (with nothing selected) to reverse this.
 
 ### Collapsing Clades
+
+{% ptBtn "bi-arrows-collapse", "Collapse clade to triangle" %} 
+{% ptBtn "bi-arrows-expand", "Expand collapsed triangle" %}
 
 Collapsing replaces a subtree with a filled triangle symbol. Unlike hiding, collapsed clades remain visible as a compact summary with a tip-count label.
 
 1. Select an internal node.
-2. Click the **Collapse** button in the toolbar.
+2. Click the **Collapse** {% ptBtn "bi-arrows-collapse", "Collapse clade to triangle" %} button in the toolbar.
 
 The subtree becomes a filled triangle labelled with the clade name and enclosed tip count.
 
-To expand: click the triangle to select it and click **Expand**, or **double-click the triangle** directly.
+To expand: click the triangle to select it and click **Expand** {% ptBtn "bi-arrows-expand", "Expand collapsed triangle" %}.
 
 **Changing a triangle's colour:** with a triangle selected, use the colour picker in the toolbar to assign a custom fill colour. The eraser button resets to the theme default.
 
@@ -319,9 +326,6 @@ In the **Visual Options palette**, the **Collapsed Clades** section (visible onc
 |---|---|
 | **Fill opacity** | Translucency of the triangle (0 = transparent, 1 = solid) |
 | **Height (rows)** | Height of the triangle base in tip-row units (1–20) |
-
-> [!TIP]
-> Collapse the uninteresting parts of a large tree into triangles so the important regions fill the canvas with readable labels. Double-click any triangle to re-expand it when needed. Collapsed clades can also be individually coloured to categorise groups at a glance.
 
 ---
 
@@ -347,12 +351,9 @@ PearTree has two selection modes. The active mode is shown by which toolbar butt
 
 **Branches mode (⌘B)**
 
-Press **⌘B** or click the branch-mode button to switch. Click anywhere along a horizontal branch to place a precise positional marker. This mode enables exact-position rerooting (see [Chapter 10](#chapter-10-rooting)).
+Press **⌘B** or click the branch-mode button {% ptBtn "bi-dash-lg", "Branches mode (⌘B)" %} to switch. Click anywhere along a horizontal branch to place a precise positional marker. This mode enables exact-position rerooting (see [Chapter 10](#chapter-10-rooting)).
 
-> [!TIP]
-> Branches mode is mainly used for precise rerooting. The example EBOV tree is an explicitly-rooted BEAST tree, so rerooting is disabled for it. Use `data/varv_rooted.nwk` or `data/large_tree.tree` to practise rerooting.
-
-Press **⌘B** again to return to Nodes mode.
+Press **⌘B** again or click {% ptBtn "bi-circle", "Nodes mode", "", "rotate(-90deg)" %} to return to Nodes mode.
 
 ### Filtering Tips
 
@@ -391,7 +392,6 @@ To remove: click the **Clear** button <img src="/manual/images/eraser_button.png
 > [!TIP]
 > Click a colour swatch in a categorical legend to instantly select all tips with that annotation value, wherever they appear in the tree. **⌘-click** additional swatches to add them to the selection. Then apply a user colour, hide, or export that group.
 
----
 
 ## Chapter 8: Decorating the Tree
 

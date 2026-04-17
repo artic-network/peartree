@@ -28,7 +28,7 @@
 }
 
 .pt-figure figcaption {
-  margin-top: 0.6rem;
+  margin-top: 0.3rem;
   font-size: 0.9rem;
   color: var(--bs-secondary-color, rgba(255,255,255,0.55));
   line-height: 1.5;

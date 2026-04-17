@@ -402,55 +402,59 @@
 </thead>
 <tbody>
 <tr>
-<td><img src="/manual/images/zoom_in_button.png" style="width:28px;"/></td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Zoom in (⌘+)"><i class="bi bi-zoom-in"></i></button></td>
 <td><strong>⌘=</strong></td>
 <td>Zoom in ×1.5</td>
 </tr>
 <tr>
-<td><img src="/manual/images/zoom_out_button.png" style="width:28px;"/></td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Zoom out (⌘−)"><i class="bi bi-zoom-out"></i></button></td>
 <td><strong>⌘−</strong></td>
 <td>Zoom out ×1.5</td>
 </tr>
 <tr>
-<td><img src="/manual/images/show_all_button.png" style="width:28px;"/></td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Fit all (⌘0)"><i class="bi bi-arrows-fullscreen"></i></button></td>
 <td><strong>⌘0</strong></td>
 <td>Fit entire tree to window</td>
 </tr>
 <tr>
-<td><img src="/manual/images/show_labels_button.png" style="width:28px;"/></td>
+<td><button class="btn btn-sm btn-outline-secondary" title="Fit labels (⌘⇧0)"><i class="bi bi-type"></i></button></td>
 <td><strong>⌘⇧0</strong></td>
 <td>Fit Labels — zoom so no tip labels overlap</td>
 </tr>
 </tbody>
 </table>
-<figure class="pt-figure" style="max-width:90%;">
+<figure class="pt-figure" style="max-width:70%;">
   <div class="pt-figure-panel" style="background:#EAE8E1;">
     <img src="/manual/images/full_tree.png" alt="EBOV tree zoomed out to show entire tree. Tip labels are hidden." loading="lazy">
   </div>
   <figcaption>EBOV tree zoomed out to show entire tree. Tip labels are hidden.</figcaption>
 </figure>
-<figure class="pt-figure" style="max-width:90%;">
+<p>Press <strong>⌘⇧0</strong> or <button class="btn btn-sm btn-outline-secondary" title="Fit labels (⌘⇧0)"><i class="bi bi-type"></i></button> to zoom in to the tree sufficiently that the tip labels can be shown without overlapping.</p>
+<figure class="pt-figure" style="max-width:70%;">
   <div class="pt-figure-panel" style="background:#EAE8E1;">
-    <img src="/manual/images/zoomed_tree.png" alt="EBOV tree zoomed in to show individual tip labels." loading="lazy">
+    <img src="/manual/images/zoomed_tree.png" alt="EBOV tree zoomed in to show individual tip labels. Only the top portion of the tree can be seen but can be scrolled down." loading="lazy">
   </div>
-  <figcaption>EBOV tree zoomed in to show individual tip labels.</figcaption>
+  <figcaption>EBOV tree zoomed in to show individual tip labels. Only the top portion of the tree can be seen but can be scrolled down.</figcaption>
 </figure>
 <p>Press <strong>⌘0</strong> to return to the full view at any time.</p>
 <h3 id="subtree-navigation" tabindex="-1">Subtree Navigation</h3>
 <p><strong>Double-click</strong> any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node, scaled to fill the full window.</p>
-<p>Alternatively, select an internal node and click the drill-down button <button class="btn btn-sm btn-outline-secondary" title="Drill into subtree (⌘⇧>)"><i class="bi bi-box-arrow-in-right"></i></button> or press <strong>⌘⇧.</strong>.</p>
+<p>Alternatively, select an internal node and click the drill-down button <button class="btn btn-sm btn-outline-secondary" title="Drill into subtree (⌘⇧>)"><i class="bi bi-box-arrow-in-right"></i></button> or press <strong>⌘⇧&gt;</strong>.</p>
 <figure class="pt-figure" style="max-width:70%;">
-  <div class="pt-figure-panel" style="background:#ffffff;">
-    <img src="/manual/images/fig7a.png" alt="" loading="lazy">
+  <div class="pt-figure-panel" style="background:#EAE8E1;">
+    <img src="/manual/images/select_clade.png" alt="A clade selected in the full tree." loading="lazy">
   </div>
+  <figcaption>A clade selected in the full tree.</figcaption>
 </figure>
+<p>PearTree will drill-down to only show that clade zoomed to fit the space. Further actions will generally only operate on that clade.</p>
 <figure class="pt-figure" style="max-width:70%;">
-  <div class="pt-figure-panel" style="background:#ffffff;">
-    <img src="/manual/images/fig7b.png" alt="A subclade before and after drilling down." loading="lazy">
+  <div class="pt-figure-panel" style="background:#EAE8E1;">
+    <img src="/manual/images/drilldown_clade.png" alt="The clade after drilling down (double clicking the root of the clade)." loading="lazy">
   </div>
-  <figcaption>A subclade before and after drilling down.</figcaption>
+  <figcaption>The clade after drilling down (double clicking the root of the clade).</figcaption>
 </figure>
-<p>PearTree maintains a full navigation history:</p>
+<p>PearTree maintains a full navigation history allowing you to drill-down into a clade and then quickly move back out to the previous view (and then forward again to the sub-clade). You can also just climb out one level using <button class="btn btn-sm btn-outline-secondary" title="Climb out one level (⌘⇧<)"><i class="bi bi-box-arrow-left"></i></button> or <strong>⌘⇧&lt;</strong> key (you can also double click the root node of the clade being viewed).</p>
+<p>Summary of navigation controls:</p>
 <table>
 <thead>
 <tr>
@@ -472,12 +476,12 @@
 </tr>
 <tr>
 <td><button class="btn btn-sm btn-outline-secondary" title="Drill into subtree (⌘⇧>)"><i class="bi bi-box-arrow-in-right"></i></button></td>
-<td><strong>⌘]</strong></td>
-<td>Go forward in history</td>
+<td><strong>⌘⇧&gt;</strong></td>
+<td>Drill into subtree</td>
 </tr>
 <tr>
 <td><button class="btn btn-sm btn-outline-secondary" title="Climb out one level (⌘⇧<)"><i class="bi bi-box-arrow-left"></i></button></td>
-<td><strong>⌘⇧,</strong></td>
+<td><strong>⌘⇧&lt;</strong></td>
 <td>Step up one level toward the root</td>
 </tr>
 <tr>
@@ -488,23 +492,23 @@
 </tbody>
 </table>
 <blockquote>
-<p><strong>Tip:</strong> Navigate history like a web browser. Drill down into several different clades in sequence, then press <strong>⌘[</strong> to step back through each view. <strong>⌘]</strong> goes forward again. This makes it easy to compare distant parts of a large tree without re-navigating each time.</p>
+<p><strong>Tip:</strong> Navigation history works like a web browser. Drill down into several different clades in sequence and you can then use <strong>⌘[</strong> to step back through each view. Pressing <strong>⌘]</strong> goes forward again.</p>
 </blockquote>
 <h2 id="chapter-5-the-hyperbolic-lens" tabindex="-1">Chapter 5: The Hyperbolic Lens</h2>
-<p>The hyperbolic lens expands a region of the tree to label-readable spacing without losing the surrounding context — the rest of the tree compresses but remains fully visible.</p>
+<p>The hyperbolic lens expands a region of the tree to label-readable spacing without losing the surrounding context — the rest of the tree compresses but remains visible.</p>
 <h3 id="activating-the-lens" tabindex="-1">Activating the Lens</h3>
-<p>Hold <strong>~</strong> (tilde/backtick) and move the cursor over the canvas. The tree distorts around the cursor's vertical position.</p>
+<p>Hold the <strong>`</strong> (backtick) key and move the cursor over the canvas. The tree distorts around the cursor's vertical position.</p>
 <figure class="pt-figure" style="max-width:70%;">
-  <div class="pt-figure-panel" style="background:#ffffff;">
-    <img src="/manual/images/fig5.png" alt="Lens active: tips near the cursor are spread apart and readable; tips further away are compressed but still visible." loading="lazy">
+  <div class="pt-figure-panel" style="background:#EAE8E1;">
+    <img src="/manual/images/lens_view.png" alt="Lens active: tips near the cursor are spread apart and readable; tips further away are compressed but still visible." loading="lazy">
   </div>
   <figcaption>Lens active: tips near the cursor are spread apart and readable; tips further away are compressed but still visible.</figcaption>
 </figure>
-<p>The lens <strong>persists</strong> after you release <strong>~</strong> — the focus locks in place so you can click, select, or inspect the expanded region normally. Re-hold <strong>~</strong> and move to reposition the focus. Press <strong>Escape</strong> to dismiss.</p>
+<p>The lens <strong>persists</strong> after you release <strong>`</strong> — the focus locks in place so you can click, select, or inspect the expanded region normally. Re-hold <strong>`</strong> and move to reposition the focus. Press <strong>Escape</strong> to dismiss.</p>
 <p>While the lens is active a reminder appears in the status bar: <em>Lens mode active – press Esc to cancel</em>.</p>
 <p>Peak magnification caps at the <em>Fit Labels</em> spacing level, so labels in the expanded zone never overlap.</p>
 <blockquote>
-<p><strong>Tip:</strong> The hyperbolic lens is ideal for large trees where fully zooming in would hide the context. Hold <strong>~</strong>, move to the region of interest, release to lock the focus, then interact with the expanded section. Press <strong>Escape</strong> when done.</p>
+<p><strong>Tip:</strong> The hyperbolic lens is ideal for large trees where fully zooming in would hide the context. Hold <strong>`</strong>, move to the region of interest, release to lock the focus, then interact with the expanded section. Press <strong>Escape</strong> when done.</p>
 </blockquote>
 <h2 id="chapter-6-organising-the-tree" tabindex="-1">Chapter 6: Organising the Tree</h2>
 <h3 id="branch-ordering" tabindex="-1">Branch Ordering</h3>
@@ -530,11 +534,17 @@
 </tr>
 </tbody>
 </table>
-<figure class="pt-figure" style="max-width:70%;">
-  <div class="pt-figure-panel" style="background:#ffffff;">
-    <img src="/manual/images/fig3.png" alt="EBOV tree with ascending (larger clades upward) order applied." loading="lazy">
+<figure class="pt-figure" style="max-width:50%;">
+  <div class="pt-figure-panel" style="background:#EAE8E1;">
+    <img src="/manual/images/sort_up.png" alt="Tree with ascending order (larger clades at the top) applied." loading="lazy">
   </div>
-  <figcaption>EBOV tree with ascending (larger clades upward) order applied.</figcaption>
+  <figcaption>Tree with ascending order (larger clades at the top) applied.</figcaption>
+</figure>
+<figure class="pt-figure" style="max-width:50%;">
+  <div class="pt-figure-panel" style="background:#EAE8E1;">
+    <img src="/manual/images/sort_down.png" alt="Tree with descending order (larger clades at the bottom) applied." loading="lazy">
+  </div>
+  <figcaption>Tree with descending order (larger clades at the bottom) applied.</figcaption>
 </figure>
 <blockquote>
 <p><strong>Note:</strong> Once ordered, the original clade order is lost. You can switch between ascending and descending ordering, or rotate individual nodes manually (see below). Hiding a node (see below) also clears the branch ordering since the tip counts have changed.</p>
@@ -561,66 +571,71 @@
 </tbody>
 </table>
 <figure class="pt-figure" style="max-width:70%;">
-  <div class="pt-figure-panel" style="background:#ffffff;">
-    <img src="/manual/images/fig8a.png" alt="" loading="lazy">
+  <div class="pt-figure-panel" style="background:#EAE8E1;">
+    <img src="/manual/images/clade_selected.png" alt="A clade is selected" loading="lazy">
   </div>
+  <figcaption>A clade is selected</figcaption>
 </figure>
 <figure class="pt-figure" style="max-width:70%;">
-  <div class="pt-figure-panel" style="background:#ffffff;">
-    <img src="/manual/images/fig8b.png" alt="" loading="lazy">
+  <div class="pt-figure-panel" style="background:#EAE8E1;">
+    <img src="/manual/images/node_rotated.png" alt="The node at the root of the clade is rotated" loading="lazy">
   </div>
+  <figcaption>The node at the root of the clade is rotated</figcaption>
 </figure>
 <figure class="pt-figure" style="max-width:70%;">
-  <div class="pt-figure-panel" style="background:#ffffff;">
-    <img src="/manual/images/fig8c.png" alt="Before and after rotating a single node (middle), and after rotating the entire clade (bottom)." loading="lazy">
+  <div class="pt-figure-panel" style="background:#EAE8E1;">
+    <img src="/manual/images/clade_rotated.png" alt="The entire clade rotated" loading="lazy">
   </div>
-  <figcaption>Before and after rotating a single node (middle), and after rotating the entire clade (bottom).</figcaption>
+  <figcaption>The entire clade rotated</figcaption>
 </figure>
 <h3 id="hiding-nodes-and-subtrees" tabindex="-1">Hiding Nodes and Subtrees</h3>
 <p>Hiding removes a tip or entire subtree from the display without deleting it from the underlying tree. The remaining tree reflows to fill the space.</p>
 <ol>
 <li>Select a tip or internal node.</li>
-<li>Click the <strong>Hide</strong> button (eye-slash icon) in the toolbar.</li>
+<li>Click the <strong>Hide</strong> <button class="btn btn-sm btn-outline-secondary" title="Hide selected subtree"><i class="bi bi-node-minus"></i></button> button in the toolbar.</li>
 </ol>
 <figure class="pt-figure" style="max-width:70%;">
-  <div class="pt-figure-panel" style="background:#ffffff;">
-    <img src="/manual/images/fig9a.png" alt="" loading="lazy">
+  <div class="pt-figure-panel" style="background:#EAE8E1;">
+    <img src="/manual/images/tip_selected.png" alt="A single tip is selected." loading="lazy">
   </div>
+  <figcaption>A single tip is selected.</figcaption>
 </figure>
 <figure class="pt-figure" style="max-width:70%;">
-  <div class="pt-figure-panel" style="background:#ffffff;">
-    <img src="/manual/images/fig8c.png" alt="A single tip before and after hiding." loading="lazy">
+  <div class="pt-figure-panel" style="background:#EAE8E1;">
+    <img src="/manual/images/tip_hidden.png" alt="The selected tip is then hidden." loading="lazy">
   </div>
-  <figcaption>A single tip before and after hiding.</figcaption>
+  <figcaption>The selected tip is then hidden.</figcaption>
 </figure>
 <figure class="pt-figure" style="max-width:70%;">
-  <div class="pt-figure-panel" style="background:#ffffff;">
-    <img src="/manual/images/fig9c.png" alt="" loading="lazy">
+  <div class="pt-figure-panel" style="background:#EAE8E1;">
+    <img src="/manual/images/clade_selected.png" alt="The whole clade is selected." loading="lazy">
   </div>
+  <figcaption>The whole clade is selected.</figcaption>
 </figure>
 <figure class="pt-figure" style="max-width:70%;">
-  <div class="pt-figure-panel" style="background:#ffffff;">
-    <img src="/manual/images/fig9d.png" alt="A subtree selected (top) and after hiding all descendants (bottom)." loading="lazy">
+  <div class="pt-figure-panel" style="background:#EAE8E1;">
+    <img src="/manual/images/clade_hidden.png" alt="The selected clade has been hidden." loading="lazy">
   </div>
-  <figcaption>A subtree selected (top) and after hiding all descendants (bottom).</figcaption>
+  <figcaption>The selected clade has been hidden.</figcaption>
 </figure>
-<p><strong>Showing hidden nodes:</strong> when any hidden nodes exist in the current view, the <strong>Unhide</strong> button <img src="/manual/images/unhide_button.png" style="width:28px;"/> becomes active.</p>
+<p><strong>Showing hidden nodes:</strong> when any hidden nodes exist in the current view, the <strong>Unhide</strong> <button class="btn btn-sm btn-outline-secondary" title="Unhide"><i class="bi bi-node-plus"></i></button> button becomes active.</p>
 <ul>
-<li><strong>With a node selected</strong> — click Unhide to restore the hidden descendants of that node.</li>
-<li><strong>With nothing selected</strong> — click Unhide to restore all hidden nodes at once.</li>
+<li><strong>With a node selected</strong> — click Unhide <button class="btn btn-sm btn-outline-secondary" title="Unhide"><i class="bi bi-node-plus"></i></button> to restore the hidden descendants of that node.</li>
+<li><strong>With nothing selected</strong> — click Unhide <button class="btn btn-sm btn-outline-secondary" title="Unhide"><i class="bi bi-node-plus"></i></button> to restore all hidden nodes at once.</li>
 </ul>
 <blockquote>
-<p>[!TIP]
-To isolate a subset of tips: type a keyword into the filter box to select all matching tips, press <strong>⌘⇧I</strong> to invert the selection, then click Hide. Everything except your subset disappears. Click Unhide (with nothing selected) when done.</p>
+<p><strong>Tip:</strong> To hide everything but a subset of tips select the tips you want remain unhidden, press <strong>⌘⇧I</strong> to invert the selection, then click Hide. Everything except your subset disappears. Click Unhide (with nothing selected) to reverse this.</p>
 </blockquote>
 <h3 id="collapsing-clades" tabindex="-1">Collapsing Clades</h3>
+<p><button class="btn btn-sm btn-outline-secondary" title="Collapse clade to triangle"><i class="bi bi-arrows-collapse"></i></button>
+<button class="btn btn-sm btn-outline-secondary" title="Expand collapsed triangle"><i class="bi bi-arrows-expand"></i></button></p>
 <p>Collapsing replaces a subtree with a filled triangle symbol. Unlike hiding, collapsed clades remain visible as a compact summary with a tip-count label.</p>
 <ol>
 <li>Select an internal node.</li>
-<li>Click the <strong>Collapse</strong> button in the toolbar.</li>
+<li>Click the <strong>Collapse</strong> <button class="btn btn-sm btn-outline-secondary" title="Collapse clade to triangle"><i class="bi bi-arrows-collapse"></i></button> button in the toolbar.</li>
 </ol>
 <p>The subtree becomes a filled triangle labelled with the clade name and enclosed tip count.</p>
-<p>To expand: click the triangle to select it and click <strong>Expand</strong>, or <strong>double-click the triangle</strong> directly.</p>
+<p>To expand: click the triangle to select it and click <strong>Expand</strong> <button class="btn btn-sm btn-outline-secondary" title="Expand collapsed triangle"><i class="bi bi-arrows-expand"></i></button>.</p>
 <p><strong>Changing a triangle's colour:</strong> with a triangle selected, use the colour picker in the toolbar to assign a custom fill colour. The eraser button resets to the theme default.</p>
 <p>In the <strong>Visual Options palette</strong>, the <strong>Collapsed Clades</strong> section (visible once any clade has been collapsed) provides:</p>
 <table>
@@ -641,10 +656,6 @@ To isolate a subset of tips: type a keyword into the filter box to select all ma
 </tr>
 </tbody>
 </table>
-<blockquote>
-<p>[!TIP]
-Collapse the uninteresting parts of a large tree into triangles so the important regions fill the canvas with readable labels. Double-click any triangle to re-expand it when needed. Collapsed clades can also be individually coloured to categorise groups at a glance.</p>
-</blockquote>
 <hr>
 <h2 id="chapter-7-selecting-and-filtering" tabindex="-1">Chapter 7: Selecting and Filtering</h2>
 <h3 id="selection-modes" tabindex="-1">Selection Modes</h3>
@@ -664,12 +675,8 @@ Collapse the uninteresting parts of a large tree into triangles so the important
 <p>A group of tips selected (highlighted) with MRCA ring visible on their most recent common ancestral node.</p>
 </blockquote>
 <p><strong>Branches mode (⌘B)</strong></p>
-<p>Press <strong>⌘B</strong> or click the branch-mode button to switch. Click anywhere along a horizontal branch to place a precise positional marker. This mode enables exact-position rerooting (see <a href="#chapter-10-rooting">Chapter 10</a>).</p>
-<blockquote>
-<p>[!TIP]
-Branches mode is mainly used for precise rerooting. The example EBOV tree is an explicitly-rooted BEAST tree, so rerooting is disabled for it. Use <code>data/varv_rooted.nwk</code> or <code>data/large_tree.tree</code> to practise rerooting.</p>
-</blockquote>
-<p>Press <strong>⌘B</strong> again to return to Nodes mode.</p>
+<p>Press <strong>⌘B</strong> or click the branch-mode button <button class="btn btn-sm btn-outline-secondary" title="Branches mode (⌘B)"><i class="bi bi-dash-lg"></i></button> to switch. Click anywhere along a horizontal branch to place a precise positional marker. This mode enables exact-position rerooting (see <a href="#chapter-10-rooting">Chapter 10</a>).</p>
+<p>Press <strong>⌘B</strong> again or click <button class="btn btn-sm btn-outline-secondary" title="Nodes mode"><i class="bi bi-circle" style="display:inline-block;transform:rotate(-90deg)"></i></button> to return to Nodes mode.</p>
 <h3 id="filtering-tips" tabindex="-1">Filtering Tips</h3>
 <p>The filter box in the toolbar instantly selects all visible tips whose labels contain the typed string.</p>
 <blockquote>
@@ -702,7 +709,6 @@ Branches mode is mainly used for precise rerooting. The example EBOV tree is an 
 <p>[!TIP]
 Click a colour swatch in a categorical legend to instantly select all tips with that annotation value, wherever they appear in the tree. <strong>⌘-click</strong> additional swatches to add them to the selection. Then apply a user colour, hide, or export that group.</p>
 </blockquote>
-<hr>
 <h2 id="chapter-8-decorating-the-tree" tabindex="-1">Chapter 8: Decorating the Tree</h2>
 <p>All visual controls live in the <strong>Visual Options palette</strong>. Open it with the sliders button in the status bar or press <strong>Tab</strong>. Controls are organised into collapsible sections.</p>
 <p><em>This chapter uses the EBOV example tree with the <code>ebov.csv</code> annotations imported (see <a href="#chapter-3-importing-annotations">Chapter 3</a>).</em></p>
