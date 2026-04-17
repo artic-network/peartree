@@ -87,7 +87,8 @@ export const REQUIRED_THEME_KEYS = [
   'cladeHighlightFillOpacity', 'cladeHighlightStrokeOpacity', 'cladeHighlightStrokeWidth',
   'cladeHighlightColour',
   // Collapsed Clades
-  'collapsedCladeFontSize', 'collapsedCladeTypefaceKey', 'collapsedCladeTypefaceStyle',
+  'collapsedCladeFontSize', 'collapsedCladeStrokeWidth', 'collapsedCladeStrokeOpacity',
+  'collapsedCladeTypefaceKey', 'collapsedCladeTypefaceStyle',
   // Legend
   'legendTextColor', 'legendFontSize', 'legendTypefaceKey', 'legendTypefaceStyle',
   // Axis

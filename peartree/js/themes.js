@@ -44,11 +44,13 @@ export const DEFAULT_THEME = {
         "paintColour": "#ff8800",
         // Clade Highlights
         "cladeHighlightFillOpacity": "0.15",
-        "cladeHighlightStrokeOpacity": "0.7",
         "cladeHighlightStrokeWidth": "1",
+        "cladeHighlightStrokeOpacity": "0.7",
         "cladeHighlightColour": "#ffaa00",
         // Collapsed Clades
         "collapsedCladeFontSize": "11",
+        "collapsedCladeStrokeWidth": "1",
+        "collapsedCladeStrokeOpacity": "0.7",
         "collapsedCladeTypefaceKey": "",
         "collapsedCladeTypefaceStyle": "",
         // Legend

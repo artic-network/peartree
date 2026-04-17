@@ -206,6 +206,8 @@ async function _initCore(root = document) {
   const nodeBarsControlsEl  = $('node-bars-controls');
   const nodeBarsUnavailEl   = $('node-bars-unavail');
   const collapsedOpacitySlider = $('collapsed-opacity-slider');
+  const collapsedStrokeWidthSlider = $('collapsed-stroke-width-slider');
+  const collapsedStrokeOpacitySlider = $('collapsed-stroke-opacity-slider');
   const collapsedHeightNSlider = $('collapsed-height-n-slider');
   const collapsedCladeFontSizeSlider = $('collapsed-clade-font-size-slider');
   const collapsedCladeColourByEl   = $('collapsed-clade-colour-by');
@@ -740,6 +742,8 @@ async function _initCore(root = document) {
       nodeBarsLine:             nodeBarsLineEl.value,
       nodeBarsRange:          nodeBarsRangeEl.value,
       collapsedCladeOpacity:  collapsedOpacitySlider.value,
+      collapsedCladeStrokeWidth: collapsedStrokeWidthSlider.value,
+      collapsedCladeStrokeOpacity: collapsedStrokeOpacitySlider.value,
       collapsedCladeHeightN:  collapsedHeightNSlider.value,
       collapsedCladeFontSize: collapsedCladeFontSizeSlider.value,
       rootStemPct:        rootStemPctSlider.value,
@@ -1246,6 +1250,14 @@ async function _initCore(root = document) {
       collapsedOpacitySlider.value = s.collapsedCladeOpacity;
       $('collapsed-opacity-value').textContent = s.collapsedCladeOpacity;
     }
+    if (s.collapsedCladeStrokeWidth != null) {
+      collapsedStrokeWidthSlider.value = s.collapsedCladeStrokeWidth;
+      $('collapsed-stroke-width-value').textContent = s.collapsedCladeStrokeWidth;
+    }
+    if (s.collapsedCladeStrokeOpacity != null) {
+      collapsedStrokeOpacitySlider.value = s.collapsedCladeStrokeOpacity;
+      $('collapsed-stroke-opacity-value').textContent = s.collapsedCladeStrokeOpacity;
+    }
     if (s.collapsedCladeHeightN != null) {
       collapsedHeightNSlider.value = s.collapsedCladeHeightN;
       $('collapsed-height-n-value').textContent = s.collapsedCladeHeightN;
@@ -1478,6 +1490,8 @@ async function _initCore(root = document) {
       nodeBarsLine: nodeBarsLineEl.value,
       nodeBarsRange:  nodeBarsRangeEl.value  === 'on',
       collapsedCladeOpacity:  parseFloat(collapsedOpacitySlider.value),
+      collapsedCladeStrokeWidth: parseFloat(collapsedStrokeWidthSlider.value),
+      collapsedCladeStrokeOpacity: parseFloat(collapsedStrokeOpacitySlider.value),
       collapsedCladeHeightN:  parseInt(collapsedHeightNSlider.value),
       collapsedCladeFontSize: parseInt(collapsedCladeFontSizeSlider.value),
       collapsedCladeTypefaceKey:   collapsedCladeTypefaceEl?.value   || null,
@@ -1700,6 +1714,8 @@ async function _initCore(root = document) {
     if (cladeHighlightStrokeOpacitySlider){ cladeHighlightStrokeOpacitySlider.value = t.cladeHighlightStrokeOpacity; $('clade-highlight-stroke-opacity-value') && ($('clade-highlight-stroke-opacity-value').textContent = t.cladeHighlightStrokeOpacity); }
     // Collapsed clades appearance
     collapsedCladeFontSizeSlider.value  = t.collapsedCladeFontSize;  $('collapsed-clade-font-size-value').textContent = t.collapsedCladeFontSize;
+    if (collapsedStrokeWidthSlider && t.collapsedCladeStrokeWidth != null)   { collapsedStrokeWidthSlider.value   = t.collapsedCladeStrokeWidth;   $('collapsed-stroke-width-value')   && ($('collapsed-stroke-width-value').textContent   = t.collapsedCladeStrokeWidth);   }
+    if (collapsedStrokeOpacitySlider && t.collapsedCladeStrokeOpacity != null){ collapsedStrokeOpacitySlider.value = t.collapsedCladeStrokeOpacity; $('collapsed-stroke-opacity-value') && ($('collapsed-stroke-opacity-value').textContent = t.collapsedCladeStrokeOpacity); }
     // RTT chart appearance
     rttStatsFontSizeSlider.value       = t.rttStatsFontSize;       $('rtt-stats-font-size-value').textContent     = t.rttStatsFontSize;
     rttRegressionStyleEl.value         = t.rttRegressionStyle;
@@ -6705,6 +6721,16 @@ async function _initCore(root = document) {
 
   collapsedOpacitySlider.addEventListener('input', () => {
     $('collapsed-opacity-value').textContent = collapsedOpacitySlider.value;
+    if (renderer) { renderer.setSettings(_buildRendererSettings()); renderer._dirty = true; }
+    saveSettings();
+  });
+  collapsedStrokeWidthSlider.addEventListener('input', () => {
+    $('collapsed-stroke-width-value').textContent = collapsedStrokeWidthSlider.value;
+    if (renderer) { renderer.setSettings(_buildRendererSettings()); renderer._dirty = true; }
+    saveSettings();
+  });
+  collapsedStrokeOpacitySlider.addEventListener('input', () => {
+    $('collapsed-stroke-opacity-value').textContent = collapsedStrokeOpacitySlider.value;
     if (renderer) { renderer.setSettings(_buildRendererSettings()); renderer._dirty = true; }
     saveSettings();
   });

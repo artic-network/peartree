@@ -749,7 +749,9 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
 
       const colour = node.collapsedColour ?? renderer.tipShapeColor;
       const pts    = `${f(apexSX)},${f(apexSY)} ${f(baseSX)},${f(tSY)} ${f(baseSX)},${f(bSY)}`;
-      collapsedCladeParts.push(`<polygon points="${pts}" fill="${esc(colour)}" fill-opacity="${ccOpacity}" stroke="${esc(colour)}" stroke-width="${bw}"/>`);
+      const ccStrokeW = renderer._collapsedCladeStrokeWidth ?? 1;
+      const ccStrokeOp = renderer._collapsedCladeStrokeOpacity ?? 1;
+      collapsedCladeParts.push(`<polygon points="${pts}" fill="${esc(colour)}" fill-opacity="${ccOpacity}" stroke="${esc(colour)}" stroke-width="${ccStrokeW}" stroke-opacity="${ccStrokeOp}"/>`);
 
       // Labels — skip if triangle is too small to show text.
       const pixH = node.collapsedTipCount * sy;

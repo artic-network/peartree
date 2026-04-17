@@ -327,7 +327,9 @@ export class TreeRenderer {
     if (s.introAnimation !== undefined) this._introAnimationStyle = s.introAnimation;
 
     // ── Collapsed clades ─────────────────────────────────────────────────
-    this._collapsedCladeOpacity  = s.collapsedCladeOpacity  != null ? +s.collapsedCladeOpacity  : (this._collapsedCladeOpacity  ?? 0.25);
+    this._collapsedCladeOpacity      = s.collapsedCladeOpacity      != null ? +s.collapsedCladeOpacity      : (this._collapsedCladeOpacity      ?? 0.25);
+    this._collapsedCladeStrokeWidth  = s.collapsedCladeStrokeWidth  != null ? +s.collapsedCladeStrokeWidth  : (this._collapsedCladeStrokeWidth  ?? 1);
+    this._collapsedCladeStrokeOpacity = s.collapsedCladeStrokeOpacity != null ? +s.collapsedCladeStrokeOpacity : (this._collapsedCladeStrokeOpacity ?? 1);
     this._collapsedCladeHeightN  = s.collapsedCladeHeightN  != null ? +s.collapsedCladeHeightN  : (this._collapsedCladeHeightN  ?? 3);
     this._collapsedCladeFontSize = s.collapsedCladeFontSize != null ? +s.collapsedCladeFontSize : (this._collapsedCladeFontSize ?? 11);
     this._collapsedCladeTypefaceKey   = s.collapsedCladeTypefaceKey   ?? null;  // null = follow main typeface
@@ -3085,10 +3087,15 @@ export class TreeRenderer {
       ctx.fillStyle   = colour;
       ctx.fill();
       ctx.globalAlpha = 1;
-      // Thin outline in the clade colour (matches branch width).
-      ctx.strokeStyle = colour;
-      ctx.lineWidth   = this.branchWidth;
-      ctx.stroke();
+      // Outline in the clade colour, using the configured stroke width and opacity.
+      const sw = this._collapsedCladeStrokeWidth ?? 1;
+      if (sw > 0) {
+        ctx.globalAlpha = this._collapsedCladeStrokeOpacity ?? 1;
+        ctx.strokeStyle = colour;
+        ctx.lineWidth   = sw;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
     }
   }
 
