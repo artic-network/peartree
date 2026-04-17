@@ -35,6 +35,12 @@ export const DEFAULT_THEME = {
         "nodeLabelTypefaceStyle": "",
         "nodeLabelColor": "#aaaaaa",
         "nodeLabelSpacing": "4",
+        // Branch Labels
+        "branchLabelFontSize": "9",
+        "branchLabelTypefaceKey": "",
+        "branchLabelTypefaceStyle": "",
+        "branchLabelColor": "#aaaaaa",
+        "branchLabelSpacing": "4",
         // Node Bars
         "nodeBarsColor": "#333231",
         "nodeBarsWidth": "6",

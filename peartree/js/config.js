@@ -79,6 +79,9 @@ export const REQUIRED_THEME_KEYS = [
   // Node Labels
   'nodeLabelFontSize', 'nodeLabelTypefaceKey', 'nodeLabelTypefaceStyle',
   'nodeLabelColor', 'nodeLabelSpacing',
+  // Branch Labels
+  'branchLabelFontSize', 'branchLabelTypefaceKey', 'branchLabelTypefaceStyle',
+  'branchLabelColor', 'branchLabelSpacing',
   // Node Bars
   'nodeBarsColor', 'nodeBarsWidth', 'nodeBarsFillOpacity', 'nodeBarsStrokeOpacity',
   // Paint brush / clade-highlight colour picker
@@ -150,6 +153,10 @@ export const DEFAULT_SETTINGS = {
   // ── Node Labels ───────────────────────────────────────────────────────────────────
   nodeLabelAnnotation: '',          // '' = off | annotation key
   nodeLabelPosition:   'right',     // 'right' | 'above-left' | 'below-left'
+
+  // ── Branch Labels ─────────────────────────────────────────────────────────────────
+  branchLabelAnnotation: '',        // '' = off | annotation key
+  branchLabelPosition:   'above',   // 'above' | 'below'
 
   // ── Node Bars ───────────────────────────────────────────────────────────────────────
   // (only shown when tree has 'height' group from BEAST)

@@ -9,7 +9,9 @@
 //
 // Section keys:
 //   'tree'            Tree
+//   'branches'        Branches
 //   'tipLabels'       Tip Labels
+//   'branchLabels'    Branch Labels
 //   'labelShapes'     Label Shapes
 //   'tipShapes'       Tip Shapes
 //   'nodeShapes'      Node Shapes
@@ -132,8 +134,26 @@ function _sectionNodeShapes() {
     </div>`;
 }
 
-function _sectionNodeLabels() {
+function _sectionBranchLabels() {
   return `
+    <div class="pt-palette-section">
+      <h3><i class="bi bi-tag"></i> Branch Labels</h3>
+      <div class="pt-palette-row" title="Show labels at the midpoint of each branch; choose which annotation to display"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="branch-label-show" disabled><option value="">Off</option></select></div>
+      <div id="branch-label-detail" class="pt-detail pt-sub-controls">
+        <div class="pt-palette-row" id="branch-label-dp-row" style="display:none" title="Decimal places for numeric branch labels"><span class="pt-palette-label">d.p. <i class="bi bi-three-dots form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
+        <div class="pt-palette-row" title="Position of branch labels relative to the branch midpoint"><span class="pt-palette-label">Position <i class="bi bi-justify-left form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-position"><option value="above">Above</option><option value="below">Below</option></select></div>
+        <div class="pt-palette-row" title="Font size of branch labels"><span class="pt-palette-label">Size <i class="bi bi-fonts form-label-sm"></i></span><input type="range" class="form-range" id="branch-label-font-size-slider" min="6" max="48" value="9" /><span class="pt-val" id="branch-label-font-size-value">9</span></div>
+        <div class="pt-palette-row" title="Typeface for branch labels"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-typeface-select">${_TYPEFACES}</select></div>
+        <div class="pt-palette-row" title="Font style for branch labels"><span class="pt-palette-label">Style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-typeface-style-select"><option value="">Theme</option></select></div>
+        <div class="pt-palette-row" title="Branch label text colour"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="branch-label-color" value="#aaaaaa" /></div>
+        <div class="pt-palette-row" title="Colour branch labels by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-palette2 form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-colour-by" disabled><option value="user_colour">user colour</option></select></div>
+        <div class="pt-palette-row" id="branch-label-palette-row" style="display:none" title="Colour palette for annotation-based branch label colouring"><span class="pt-palette-label">Palette <i class="bi bi-rainbow form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-palette-select"></select></div>
+        <div class="pt-palette-row" title="Vertical offset of branch labels from the branch midpoint"><span class="pt-palette-label">Spacing <i class="bi bi-arrow-bar-up form-label-sm"></i></span><input type="range" class="form-range" id="branch-label-spacing-slider" min="0" max="20" step="1" value="4" /><span class="pt-val" id="branch-label-spacing-value">4</span></div>
+      </div>
+    </div>`;
+}
+
+function _sectionNodeLabels() {  return `
     <div class="pt-palette-section">
       <h3><i class="bi bi-tag-fill"></i> Node Labels</h3>
       <div class="pt-palette-row" title="Show labels at internal nodes; choose which annotation to display"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="node-label-show" disabled><option value="">Off</option></select></div>
@@ -144,6 +164,8 @@ function _sectionNodeLabels() {
         <div class="pt-palette-row" title="Typeface for node labels"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" id="node-label-typeface-select">${_TYPEFACES}</select></div>
         <div class="pt-palette-row" title="Font style for node labels"><span class="pt-palette-label">Style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" id="node-label-typeface-style-select"><option value="">Theme</option></select></div>
         <div class="pt-palette-row" title="Node label text colour"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="node-label-color" value="#aaaaaa" /></div>
+        <div class="pt-palette-row" title="Colour node labels by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-palette2 form-label-sm"></i></span><select class="pt-palette-select" id="node-label-colour-by" disabled><option value="user_colour">user colour</option></select></div>
+        <div class="pt-palette-row" id="node-label-palette-row" style="display:none" title="Colour palette for annotation-based node label colouring"><span class="pt-palette-label">Palette <i class="bi bi-rainbow form-label-sm"></i></span><select class="pt-palette-select" id="node-label-palette-select"></select></div>
         <div class="pt-palette-row" title="Horizontal offset of node labels from the node point"><span class="pt-palette-label">Spacing <i class="bi bi-arrow-bar-right form-label-sm"></i></span><input type="range" class="form-range" id="node-label-spacing-slider" min="0" max="20" step="1" value="4" /><span class="pt-val" id="node-label-spacing-value">4</span></div>
       </div>
     </div>`;
@@ -361,6 +383,7 @@ const _SECTION_BUILDERS = {
   tree:            _sectionTree,
   branches:        _sectionBranches,
   tipLabels:       _sectionTipLabels,
+  branchLabels:    _sectionBranchLabels,
   labelShapes:     _sectionLabelShapes,
   tipShapes:       _sectionTipShapes,
   nodeShapes:      _sectionNodeShapes,
@@ -376,7 +399,7 @@ const _SECTION_BUILDERS = {
 };
 
 const _ALL_SECTIONS = [
-  'tree', 'branches', 'tipLabels', 'labelShapes', 'tipShapes', 'nodeShapes', 'nodeLabels',
+  'tree', 'branches', 'tipLabels', 'branchLabels', 'nodeLabels', 'labelShapes', 'tipShapes', 'nodeShapes',
   'nodeBars', 'cladeHighlights', 'collapsedClades', 'legend', 'axis', 'rtt', 'theme',
   'selectionHover', 
 ];

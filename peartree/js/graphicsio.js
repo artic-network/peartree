@@ -731,6 +731,29 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     }
   }
 
+  // ── Branch labels ────────────────────────────────────────────────────
+  if (renderer.branchLabelAnnotation && renderer.nodes && renderer.nodeMap) {
+    const blfs    = renderer.branchLabelFontSize ?? Math.round(fs * 0.85);
+    const blc     = renderer.branchLabelColor ?? lc;
+    const spacing = renderer.branchLabelSpacing ?? 4;
+    const above   = renderer.branchLabelPosition !== 'below';
+    const baseline  = above ? 'auto'    : 'hanging';
+    const anchor    = 'middle';
+    for (const node of renderer.nodes) {
+      if (!node.parentId) continue;
+      const parent = renderer.nodeMap.get(node.parentId);
+      if (!parent) continue;
+      const branchLabel = renderer._branchLabelText ? renderer._branchLabelText(node) : null;
+      if (!branchLabel) continue;
+      const nx = toSX(node.x);
+      const ny = toSY(node.y);
+      if (!fullTree && (ny < -MARGIN || ny > ttH_eff + MARGIN)) continue;
+      const mx  = (toSX(parent.x) + nx) / 2;
+      const ty  = above ? ny - spacing : ny + spacing;
+      labelParts.push(`<text x="${f(mx)}" y="${f(ty)}" dominant-baseline="${baseline}" text-anchor="${anchor}" font-family="monospace" font-size="${blfs}px" fill="${esc(blc)}">${svgTextEsc(branchLabel)}</text>`);
+    }
+  }
+
   // ── Collapsed clade triangles and labels ──────────────────────────────
   const collapsedCladeParts = [];
   if (renderer.nodes) {

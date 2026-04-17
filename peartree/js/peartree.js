@@ -249,6 +249,22 @@ async function _initCore(root = document) {
   const tipLabelDpEl             = $('tip-label-decimal-places');
   const nodeLabelDpRowEl         = $('node-label-dp-row');
   const nodeLabelDpEl            = $('node-label-decimal-places');
+  const nodeLabelColourBy        = $('node-label-colour-by');
+  const nodeLabelPaletteSelect   = $('node-label-palette-select');
+  const nodeLabelPaletteRow      = $('node-label-palette-row');
+  const branchLabelDetailEl       = $('branch-label-detail');
+  const branchLabelTypefaceEl      = $('branch-label-typeface-select');
+  const branchLabelTypefaceStyleEl = $('branch-label-typeface-style-select');
+  const branchLabelShowEl          = $('branch-label-show');
+  const branchLabelPositionEl      = $('branch-label-position');
+  const branchLabelFontSizeSlider  = $('branch-label-font-size-slider');
+  const branchLabelColorEl         = $('branch-label-color');
+  const branchLabelSpacingSlider   = $('branch-label-spacing-slider');
+  const branchLabelDpRowEl         = $('branch-label-dp-row');
+  const branchLabelDpEl            = $('branch-label-decimal-places');
+  const branchLabelColourBy        = $('branch-label-colour-by');
+  const branchLabelPaletteSelect   = $('branch-label-palette-select');
+  const branchLabelPaletteRow      = $('branch-label-palette-row');
   const tipPaletteSelect   = $('tip-palette-select');
   const tipPaletteRow      = $('tip-palette-row');
   const nodePaletteSelect  = $('node-palette-select');
@@ -547,6 +563,8 @@ async function _initCore(root = document) {
       ...tipLabelShapeExtraColourBys.map((cb, i) => [cb, tipLabelShapeExtraPaletteSelects[i]]),
       [cladeHighlightColourByEl, cladeHighlightPaletteSelect],
       [collapsedCladeColourByEl, collapsedCladePaletteSelect],
+      [nodeLabelColourBy,      nodeLabelPaletteSelect],
+      [branchLabelColourBy,    branchLabelPaletteSelect],
     ];
     for (const [colourBy, sel] of pairs()) {
       if (!colourBy || !sel) continue;
@@ -691,6 +709,8 @@ async function _initCore(root = document) {
       tipLabelTypefaceStyle:       typefaceStyleEl?.value     || '',
       nodeLabelTypefaceKey:        nodeLabelTypefaceEl?.value || '',
       nodeLabelTypefaceStyle:      nodeLabelTypefaceStyleEl?.value || '',
+      branchLabelTypefaceKey:      branchLabelTypefaceEl?.value || '',
+      branchLabelTypefaceStyle:    branchLabelTypefaceStyleEl?.value || '',
       collapsedCladeTypefaceKey:   collapsedCladeTypefaceEl?.value || '',
       collapsedCladeTypefaceStyle: collapsedCladeTypefaceStyleEl?.value || '',
       tipColourBy:      tipColourBy.value,
@@ -763,8 +783,16 @@ async function _initCore(root = document) {
       nodeLabelFontSize:   nodeLabelFontSizeSlider.value,
       nodeLabelColor:      nodeLabelColorEl.value,
       nodeLabelSpacing:    nodeLabelSpacingSlider.value,
+      nodeLabelColourBy:   nodeLabelColourBy.value,
       tipLabelSpacing:     tipLabelSpacingSlider.value,
       nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
+      branchLabelAnnotation: branchLabelShowEl.value,
+      branchLabelPosition:   branchLabelPositionEl.value,
+      branchLabelFontSize:   branchLabelFontSizeSlider.value,
+      branchLabelColor:      branchLabelColorEl.value,
+      branchLabelSpacing:    branchLabelSpacingSlider.value,
+      branchLabelColourBy:   branchLabelColourBy.value,
+      branchLabelDecimalPlaces: branchLabelDpEl.value !== '' ? parseInt(branchLabelDpEl.value) : null,
       mode:             renderer ? renderer._mode : 'nodes',
       dataTableOpen:       dataTableRenderer?.isOpen()   ?? false,
       dataTablePinned:     dataTableRenderer?.isPinned() ?? false,
@@ -1039,6 +1067,10 @@ async function _initCore(root = document) {
     if (nodeLabelTypefaceStyleEl) {
       _populateStyleSelect(nodeLabelTypefaceEl?.value || fontFamilyEl.value, nodeLabelTypefaceStyleEl, s.nodeLabelTypefaceStyle, true);
     }
+    if (branchLabelTypefaceEl && s.branchLabelTypefaceKey) branchLabelTypefaceEl.value = s.branchLabelTypefaceKey;
+    if (branchLabelTypefaceStyleEl) {
+      _populateStyleSelect(branchLabelTypefaceEl?.value || fontFamilyEl.value, branchLabelTypefaceStyleEl, s.branchLabelTypefaceStyle, true);
+    }
     if (collapsedCladeTypefaceEl && s.collapsedCladeTypefaceKey) collapsedCladeTypefaceEl.value = s.collapsedCladeTypefaceKey;
     if (collapsedCladeTypefaceStyleEl) {
       _populateStyleSelect(collapsedCladeTypefaceEl?.value || fontFamilyEl.value, collapsedCladeTypefaceStyleEl, s.collapsedCladeTypefaceStyle, true);
@@ -1287,6 +1319,17 @@ async function _initCore(root = document) {
     }
     if (s.tipLabelDecimalPlaces  != null && tipLabelDpEl)  tipLabelDpEl.value  = String(s.tipLabelDecimalPlaces);
     if (s.nodeLabelDecimalPlaces != null && nodeLabelDpEl) nodeLabelDpEl.value = String(s.nodeLabelDecimalPlaces);
+    if (s.branchLabelPosition)    branchLabelPositionEl.value   = s.branchLabelPosition;
+    if (s.branchLabelFontSize != null) {
+      branchLabelFontSizeSlider.value = s.branchLabelFontSize;
+      $('branch-label-font-size-value').textContent = s.branchLabelFontSize;
+    }
+    if (s.branchLabelColor)     branchLabelColorEl.value      = s.branchLabelColor;
+    if (s.branchLabelSpacing != null) {
+      branchLabelSpacingSlider.value = s.branchLabelSpacing;
+      $('branch-label-spacing-value').textContent = s.branchLabelSpacing;
+    }
+    if (s.branchLabelDecimalPlaces != null && branchLabelDpEl) branchLabelDpEl.value = String(s.branchLabelDecimalPlaces);
     if (s.paintColour) paintColourPickerEl.value = s.paintColour;
     // Set themeSelect to the stored theme name (or 'custom' if not known).
     const themeName = s.theme && themeRegistry.has(s.theme) ? s.theme : (s.theme === 'custom' ? 'custom' : 'custom');
@@ -1361,6 +1404,9 @@ async function _initCore(root = document) {
     rootStemPctSlider.value = DEFAULT_SETTINGS.rootStemPct ?? '0';
     $('root-stem-pct-value').textContent = (DEFAULT_SETTINGS.rootStemPct ?? '0') + '%';
     nodeLabelShowEl.value     = DEFAULT_SETTINGS.nodeLabelAnnotation;
+    branchLabelShowEl.value   = DEFAULT_SETTINGS.branchLabelAnnotation;
+    if (nodeLabelColourBy)   nodeLabelColourBy.value   = 'user_colour';
+    if (branchLabelColourBy) branchLabelColourBy.value = 'user_colour';
     nodeLabelPositionEl.value = DEFAULT_SETTINGS.nodeLabelPosition;
     if (tipLabelTypefaceEl)            tipLabelTypefaceEl.value = '';
     _populateStyleSelect(fontFamilyEl.value, typefaceStyleEl, '', true);
@@ -1386,6 +1432,8 @@ async function _initCore(root = document) {
       renderer.setNodeColourBy('user_colour');
       renderer.setLabelColourBy('user_colour');
       renderer.setTipLabelShapeColourBy('user_colour');
+      renderer.setNodeLabelColourBy(null);
+      renderer.setBranchLabelColourBy(null);
       for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) renderer.setTipLabelShapeExtraColourBy(i, null);
       _applyLegendTypeface();
       legendRenderer.setTextColor(legendTextColorEl.value);
@@ -1522,6 +1570,14 @@ async function _initCore(root = document) {
       nodeLabelTypefaceStyle: nodeLabelTypefaceStyleEl?.value || null,
       tipLabelSpacing:     parseInt(tipLabelSpacingSlider.value),
       nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
+      branchLabelAnnotation: branchLabelShowEl.value || null,
+      branchLabelPosition:   branchLabelPositionEl.value,
+      branchLabelFontSize:   parseInt(branchLabelFontSizeSlider.value),
+      branchLabelColor:      branchLabelColorEl.value,
+      branchLabelSpacing:    parseInt(branchLabelSpacingSlider.value),
+      branchLabelTypefaceKey:   branchLabelTypefaceEl?.value   || null,
+      branchLabelTypefaceStyle: branchLabelTypefaceStyleEl?.value || null,
+      branchLabelDecimalPlaces: branchLabelDpEl.value !== '' ? parseInt(branchLabelDpEl.value) : null,
       calCalibration:      calibration?.isActive ? calibration : null,
       calDateFormat:       axisDateFmtEl.value,
       introAnimation:      _saved.introAnimation ?? DEFAULT_SETTINGS.introAnimation,
@@ -1556,6 +1612,7 @@ async function _initCore(root = document) {
       _vis(tipLabelShapeExtraDetailEls[i],  _shapeOneOn && tipLabelShapeExtraEls[i].value !== 'off');
     }
     _vis(nodeLabelDetailEl,     nodeLabelShowEl.value       !== '');
+    _vis(branchLabelDetailEl,   branchLabelShowEl.value     !== '');
     _vis(nodeBarsDetailEl,      nodeBarsShowEl.value        === 'on');
     _vis(legendDetailEl,        legendAnnotEl.value         !== '');
     _vis(legend2SectionEl,      legendAnnotEl.value         !== '');
@@ -1701,6 +1758,12 @@ async function _initCore(root = document) {
     nodeLabelFontSizeSlider.value = t.nodeLabelFontSize; $('node-label-font-size-value').textContent = t.nodeLabelFontSize;
     nodeLabelColorEl.value        = t.nodeLabelColor;
     nodeLabelSpacingSlider.value  = t.nodeLabelSpacing;  $('node-label-spacing-value').textContent   = t.nodeLabelSpacing;
+    // Branch labels appearance
+    if (branchLabelTypefaceEl) branchLabelTypefaceEl.value = t.branchLabelTypefaceKey || '';
+    _populateStyleSelect(branchLabelTypefaceEl?.value || fontFamilyEl.value, branchLabelTypefaceStyleEl, t.branchLabelTypefaceStyle || '', true);
+    branchLabelFontSizeSlider.value = t.branchLabelFontSize; $('branch-label-font-size-value').textContent = t.branchLabelFontSize;
+    branchLabelColorEl.value        = t.branchLabelColor;
+    branchLabelSpacingSlider.value  = t.branchLabelSpacing;  $('branch-label-spacing-value').textContent   = t.branchLabelSpacing;
     // Node bars appearance
     nodeBarsWidthSlider.value         = t.nodeBarsWidth;         $('node-bars-width-value').textContent          = t.nodeBarsWidth;
     nodeBarsFillOpacitySlider.value   = t.nodeBarsFillOpacity;   $('node-bars-fill-opacity-value').textContent   = t.nodeBarsFillOpacity;
@@ -3157,6 +3220,8 @@ async function _initCore(root = document) {
     repopulate(labelColourBy,        { filter: 'tips'  });
     if (cladeHighlightColourByEl)  repopulate(cladeHighlightColourByEl,  { filter: 'nodesAndTipAvg' });
     if (collapsedCladeColourByEl)  repopulate(collapsedCladeColourByEl,  { filter: 'nodesAndTipAvg' });
+    if (nodeLabelColourBy)   repopulate(nodeLabelColourBy,   { filter: 'nodesAndTipAvg' });
+    if (branchLabelColourBy) repopulate(branchLabelColourBy, { filter: 'nodesAndTipAvg' });
     // Rebuild filter-column popup: 'Name' first, then categorical/ordinal/date tip annotations only.
     {
       const items = [{ value: '__name__', label: 'Name' }];
@@ -3246,6 +3311,22 @@ async function _initCore(root = document) {
       nodeLabelShowEl.value = [...nodeLabelShowEl.options].some(o => o.value === prev) ? prev : '';
       if (renderer) renderer.setNodeLabelAnnotation(nodeLabelShowEl.value || null);
     }
+    // Branch label show: first option is '' (none); then all annotations (tips + nodes).
+    {
+      const prev = branchLabelShowEl.value;
+      while (branchLabelShowEl.options.length > 1) branchLabelShowEl.remove(1);
+      for (const [name, def] of schema) {
+        if (def.dataType === 'list') continue;
+        if (def.groupMember) continue;
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = def.label ?? name;
+        branchLabelShowEl.appendChild(opt);
+      }
+      branchLabelShowEl.disabled = false;
+      branchLabelShowEl.value = [...branchLabelShowEl.options].some(o => o.value === prev) ? prev : '';
+      _updateLabelDpRow(branchLabelDpRowEl, branchLabelShowEl.value, schema);
+      if (renderer) renderer.setBranchLabelAnnotation(branchLabelShowEl.value || null);
+    }
     _syncControlVisibility();
     // Refresh palette selects to match current colour-by selections after annotation schema changes.
     _updatePaletteSelect(tipPaletteSelect,            tipPaletteRow,            tipColourBy.value);
@@ -3257,6 +3338,8 @@ async function _initCore(root = document) {
     }
     _updatePaletteSelect(cladeHighlightPaletteSelect, cladeHighlightPaletteRow, cladeHighlightColourByEl?.value ?? 'user_colour');
     _updatePaletteSelect(collapsedCladePaletteSelect, collapsedCladePaletteRow, collapsedCladeColourByEl?.value ?? 'user_colour');
+    if (nodeLabelColourBy)   _updatePaletteSelect(nodeLabelPaletteSelect,   nodeLabelPaletteRow,   nodeLabelColourBy.value);
+    if (branchLabelColourBy) _updatePaletteSelect(branchLabelPaletteSelect, branchLabelPaletteRow, branchLabelColourBy.value);
     // Sync clear-user-colour button: enabled only when at least one node has been coloured.
     if (btnClearUserColour) {
       commands.setEnabled('tree-clear-colours', schema.has('user_colour'));
@@ -3271,8 +3354,9 @@ async function _initCore(root = document) {
       if (renderer) { renderer.setSettings(_buildRendererSettings()); renderer._dirty = true; }
     }
     // Show decimal-places row only when a numeric annotation is selected.
-    _updateLabelDpRow(tipLabelDpRowEl,  tipLabelShow.value,    schema);
-    _updateLabelDpRow(nodeLabelDpRowEl, nodeLabelShowEl.value, schema);
+    _updateLabelDpRow(tipLabelDpRowEl,    tipLabelShow.value,      schema);
+    _updateLabelDpRow(nodeLabelDpRowEl,   nodeLabelShowEl.value,   schema);
+    _updateLabelDpRow(branchLabelDpRowEl, branchLabelShowEl.value, schema);
 
     // ── Calibrate (date annotation) dropdown ────────────────────────────────
     // Keep the dropdown in sync whenever the annotation schema changes (e.g.
@@ -3557,6 +3641,8 @@ async function _initCore(root = document) {
       _populateColourBy(labelColourBy,        'tips');
       _populateColourBy(tipLabelShapeColourBy, 'tips');
       for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++) _populateColourBy(tipLabelShapeExtraColourBys[_i], 'tips');
+      if (nodeLabelColourBy)   _populateColourBy(nodeLabelColourBy,   'nodesAndTipAvg');
+      if (branchLabelColourBy) _populateColourBy(branchLabelColourBy, 'nodesAndTipAvg');
       if (cladeHighlightColourByEl) {
         while (cladeHighlightColourByEl.options.length > 0) cladeHighlightColourByEl.remove(0);
         const _chUc = document.createElement('option');
@@ -3644,6 +3730,18 @@ async function _initCore(root = document) {
       }
       nodeLabelShowEl.disabled = false;
 
+      // Branch-label-show: first option is '' (none); then all annotations.
+      while (branchLabelShowEl.options.length > 1) branchLabelShowEl.remove(1);
+      for (const [name, def] of schema) {
+        if (name === 'user_colour') continue;
+        if (def.dataType === 'list') continue;
+        if (def.groupMember) continue;
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = def.label ?? name;
+        branchLabelShowEl.appendChild(opt);
+      }
+      branchLabelShowEl.disabled = false;
+
       // Legend select: blank "(none)" first, then annotations (no user_colour).
       while (legendAnnotEl.options.length > 1) legendAnnotEl.remove(1);
       for (const [name, def] of schema) {
@@ -3723,6 +3821,9 @@ async function _initCore(root = document) {
       tipLabelShow.value  = _hasOpt(tipLabelShow,  _eff.tipLabelShow)     ? _eff.tipLabelShow     : 'names';
       tipLabelControlsEl.style.display = tipLabelShow.value === 'off' ? 'none' : '';
       nodeLabelShowEl.value = _hasOpt(nodeLabelShowEl, _eff.nodeLabelAnnotation) ? _eff.nodeLabelAnnotation : '';
+      branchLabelShowEl.value = _hasOpt(branchLabelShowEl, _eff.branchLabelAnnotation) ? _eff.branchLabelAnnotation : '';
+      if (nodeLabelColourBy)   nodeLabelColourBy.value   = _hasOpt(nodeLabelColourBy,   _eff.nodeLabelColourBy)   ? _eff.nodeLabelColourBy   : 'user_colour';
+      if (branchLabelColourBy) branchLabelColourBy.value = _hasOpt(branchLabelColourBy, _eff.branchLabelColourBy) ? _eff.branchLabelColourBy : 'user_colour';
       // Restore node order — only from file-embedded settings, not from saved prefs
       // (order is a per-tree choice and should not persist across different trees).
       if (_fileSettings?.nodeOrder === 'asc' || _fileSettings?.nodeOrder === 'desc') {
@@ -3769,6 +3870,9 @@ async function _initCore(root = document) {
       renderer.setTipLabelsOff(tipLabelShow.value === 'off');
       if (tipLabelShow.value !== 'off') renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
       renderer.setNodeLabelAnnotation(nodeLabelShowEl.value || null);
+      renderer.setBranchLabelAnnotation(branchLabelShowEl.value || null);
+      if (nodeLabelColourBy)   renderer.setNodeLabelColourBy(nodeLabelColourBy.value || null);
+      if (branchLabelColourBy) renderer.setBranchLabelColourBy(branchLabelColourBy.value || null);
       // Show palette and scale-mode selects for active colour-by annotations.
       _updatePaletteSelect(tipPaletteSelect,            tipPaletteRow,            tipColourBy.value);
       _updatePaletteSelect(nodePaletteSelect,           nodePaletteRow,           nodeColourBy.value);
@@ -3776,6 +3880,8 @@ async function _initCore(root = document) {
       _updatePaletteSelect(tipLabelShapePaletteSelect,  tipLabelShapePaletteRow,  tipLabelShapeColourBy.value);
       for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++)
         _updatePaletteSelect(tipLabelShapeExtraPaletteSelects[_i], tipLabelShapeExtraPaletteRows[_i], tipLabelShapeExtraColourBys[_i].value);
+      if (nodeLabelColourBy)   _updatePaletteSelect(nodeLabelPaletteSelect,   nodeLabelPaletteRow,   nodeLabelColourBy.value);
+      if (branchLabelColourBy) _updatePaletteSelect(branchLabelPaletteSelect, branchLabelPaletteRow, branchLabelColourBy.value);
       _updateScaleModeSelect(tipScaleModeSelect,           tipScaleModeRow,           tipColourBy.value);
       _updateScaleModeSelect(nodeScaleModeSelect,          nodeScaleModeRow,          nodeColourBy.value);
       _updateScaleModeSelect(labelScaleModeSelect,         labelScaleModeRow,         labelColourBy.value);
@@ -6147,6 +6253,54 @@ async function _initCore(root = document) {
     saveSettings(); _markCustomTheme();
   });
 
+  branchLabelDpEl.addEventListener('change', () => {
+    renderer?.setSettings(_buildRendererSettings());
+    saveSettings(); _markCustomTheme();
+  });
+
+  branchLabelShowEl.addEventListener('change', () => {
+    const schema = renderer?._annotationSchema ?? new Map();
+    _updateLabelDpRow(branchLabelDpRowEl, branchLabelShowEl.value, schema);
+    renderer?.setBranchLabelAnnotation(branchLabelShowEl.value || null);
+    saveSettings(); _markCustomTheme();
+    _syncControlVisibility();
+  });
+
+  branchLabelPositionEl.addEventListener('change', () => {
+    renderer?.setBranchLabelPosition(branchLabelPositionEl.value);
+    saveSettings(); _markCustomTheme();
+  });
+
+  branchLabelFontSizeSlider.addEventListener('input', () => {
+    const v = parseInt(branchLabelFontSizeSlider.value);
+    $('branch-label-font-size-value').textContent = v;
+    renderer?.setBranchLabelFontSize(v);
+    saveSettings(); _markCustomTheme();
+  });
+
+  branchLabelColorEl.addEventListener('input', () => {
+    renderer?.setBranchLabelColor(branchLabelColorEl.value);
+    saveSettings(); _markCustomTheme();
+  });
+
+  branchLabelSpacingSlider.addEventListener('input', () => {
+    const v = parseInt(branchLabelSpacingSlider.value);
+    $('branch-label-spacing-value').textContent = v;
+    renderer?.setBranchLabelSpacing(v);
+    saveSettings(); _markCustomTheme();
+  });
+
+  branchLabelTypefaceEl?.addEventListener('change', () => {
+    _populateStyleSelect(branchLabelTypefaceEl.value || fontFamilyEl.value, branchLabelTypefaceStyleEl, '', true);
+    renderer?.setSettings(_buildRendererSettings());
+    saveSettings(); _markCustomTheme();
+  });
+
+  branchLabelTypefaceStyleEl?.addEventListener('change', () => {
+    renderer?.setSettings(_buildRendererSettings());
+    saveSettings(); _markCustomTheme();
+  });
+
   nodeLabelShowEl.addEventListener('change', () => {
     const schema = renderer?._annotationSchema ?? new Map();
     _updateLabelDpRow(nodeLabelDpRowEl, nodeLabelShowEl.value, schema);
@@ -6177,6 +6331,38 @@ async function _initCore(root = document) {
     $('node-label-spacing-value').textContent = v;
     renderer?.setNodeLabelSpacing(v);
     saveSettings(); _markCustomTheme();
+  });
+
+  nodeLabelColourBy?.addEventListener('change', () => {
+    renderer?.setNodeLabelColourBy(nodeLabelColourBy.value || null);
+    _updatePaletteSelect(nodeLabelPaletteSelect, nodeLabelPaletteRow, nodeLabelColourBy.value);
+    saveSettings();
+  });
+
+  branchLabelColourBy?.addEventListener('change', () => {
+    renderer?.setBranchLabelColourBy(branchLabelColourBy.value || null);
+    _updatePaletteSelect(branchLabelPaletteSelect, branchLabelPaletteRow, branchLabelColourBy.value);
+    saveSettings();
+  });
+
+  nodeLabelPaletteSelect?.addEventListener('change', () => {
+    const key = nodeLabelColourBy?.value;
+    if (key && key !== 'user_colour') {
+      annotationPalettes.set(key, nodeLabelPaletteSelect.value);
+      _syncPaletteSelects(key, nodeLabelPaletteSelect.value);
+      renderer?.setAnnotationPalette(key, nodeLabelPaletteSelect.value);
+      saveSettings();
+    }
+  });
+
+  branchLabelPaletteSelect?.addEventListener('change', () => {
+    const key = branchLabelColourBy?.value;
+    if (key && key !== 'user_colour') {
+      annotationPalettes.set(key, branchLabelPaletteSelect.value);
+      _syncPaletteSelects(key, branchLabelPaletteSelect.value);
+      renderer?.setAnnotationPalette(key, branchLabelPaletteSelect.value);
+      saveSettings();
+    }
   });
 
   tipLabelSpacingSlider.addEventListener('input', () => {
@@ -7111,6 +7297,9 @@ async function _initCore(root = document) {
     if (s.axisMinorLabelFormat != null) axisMinorLabelEl.value     = s.axisMinorLabelFormat;
 
     if (s.nodeLabelAnnotation != null && nodeLabelShowEl)  nodeLabelShowEl.value   = s.nodeLabelAnnotation;
+    if (s.branchLabelAnnotation != null && branchLabelShowEl) branchLabelShowEl.value = s.branchLabelAnnotation;
+    if (s.nodeLabelColourBy   != null && nodeLabelColourBy)   { nodeLabelColourBy.value   = s.nodeLabelColourBy;   renderer?.setNodeLabelColourBy(s.nodeLabelColourBy || null); }
+    if (s.branchLabelColourBy != null && branchLabelColourBy) { branchLabelColourBy.value = s.branchLabelColourBy; renderer?.setBranchLabelColourBy(s.branchLabelColourBy || null); }
     if (s.legendTextColor != null && legendTextColorEl) {
       legendTextColorEl.value = s.legendTextColor;
       legendRenderer?.setTextColor?.(s.legendTextColor);

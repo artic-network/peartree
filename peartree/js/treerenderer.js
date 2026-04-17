@@ -151,6 +151,10 @@ export class TreeRenderer {
     this._nodeColourScale  = null;   // Map<value, CSS colour> | null
     this._labelColourBy    = null;   // annotation key for tip labels, or null
     this._labelColourScale = null;   // Map<value, CSS colour> | null
+    this._nodeLabelColourBy    = null;   // annotation key for node label colouring, or null
+    this._nodeLabelColourScale = null;   // Map<value, CSS colour> | null
+    this._branchLabelColourBy    = null;   // annotation key for branch label colouring, or null
+    this._branchLabelColourScale = null;   // Map<value, CSS colour> | null
     this._tipLabelShapeColourBy    = null;   // annotation key for tip-label shapes, or null
     this._tipLabelShapeColourScale = null;   // Map<value, CSS colour> | null
     this._tipLabelShape            = 'off';  // 'off' | 'square' | 'circle' | 'block'
@@ -315,6 +319,17 @@ export class TreeRenderer {
     this.nodeLabelSpacing    = s.nodeLabelSpacing    != null ? +s.nodeLabelSpacing  : 4;
     this._nodeLabelTypefaceKey   = s.nodeLabelTypefaceKey   ?? null;  // null = follow main typeface
     this._nodeLabelTypefaceStyle = s.nodeLabelTypefaceStyle ?? null;
+
+    // ── Branch labels (annotation labels at the midpoint of each branch) ──
+    this.branchLabelAnnotation      = s.branchLabelAnnotation || null;
+    this._branchLabelDecimalPlaces  = s.branchLabelDecimalPlaces ?? null;  // null = auto
+    this.branchLabelPosition        = s.branchLabelPosition   ?? 'above';  // 'above' | 'below'
+    this.branchLabelFontSize        = s.branchLabelFontSize   != null ? +s.branchLabelFontSize : 9;
+    this.branchLabelColor           = s.branchLabelColor      ?? '#aaaaaa';
+    this.branchLabelSpacing         = s.branchLabelSpacing    != null ? +s.branchLabelSpacing  : 4;
+    this._branchLabelTypefaceKey    = s.branchLabelTypefaceKey   ?? null;  // null = follow main typeface
+    this._branchLabelTypefaceStyle  = s.branchLabelTypefaceStyle ?? null;
+
     this.tipLabelSpacing     = s.tipLabelSpacing     != null ? +s.tipLabelSpacing   : 3;
 
     // ── Aligned tip labels ────────────────────────────────────────────────
@@ -696,6 +711,31 @@ export class TreeRenderer {
     this._dirty = true;
   }
 
+  setBranchLabelAnnotation(key) {
+    this.branchLabelAnnotation = key || null;
+    this._dirty = true;
+  }
+
+  setBranchLabelPosition(pos) {
+    this.branchLabelPosition = pos;
+    this._dirty = true;
+  }
+
+  setBranchLabelFontSize(sz) {
+    this.branchLabelFontSize = +sz;
+    this._dirty = true;
+  }
+
+  setBranchLabelColor(c) {
+    this.branchLabelColor = c;
+    this._dirty = true;
+  }
+
+  setBranchLabelSpacing(n) {
+    this.branchLabelSpacing = +n;
+    this._dirty = true;
+  }
+
   setTipLabelSpacing(n) {
     this.tipLabelSpacing = +n;
     if (this.nodes) {
@@ -970,6 +1010,8 @@ export class TreeRenderer {
     if (this._tipColourBy)            this._tipColourScale            = this._buildColourScale(this._tipColourBy);
     if (this._nodeColourBy)           this._nodeColourScale           = this._buildColourScale(this._nodeColourBy);
     if (this._labelColourBy)          this._labelColourScale          = this._buildColourScale(this._labelColourBy);
+    if (this._nodeLabelColourBy)      this._nodeLabelColourScale      = this._buildColourScale(this._nodeLabelColourBy);
+    if (this._branchLabelColourBy)    this._branchLabelColourScale    = this._buildColourScale(this._branchLabelColourBy);
     if (this._tipLabelShapeColourBy)  this._tipLabelShapeColourScale  = this._buildColourScale(this._tipLabelShapeColourBy);
     for (let i = 0; i < this._tipLabelShapeExtraColourBys.length; i++) {
       if (this._tipLabelShapeExtraColourBys[i])
@@ -1004,6 +1046,20 @@ export class TreeRenderer {
   setLabelColourBy(key) {
     this._labelColourBy    = key || null;
     this._labelColourScale = this._labelColourBy ? this._buildColourScale(this._labelColourBy) : null;
+    this._aggregateTipValueCache?.clear();
+    this._dirty = true;
+  }
+
+  setNodeLabelColourBy(key) {
+    this._nodeLabelColourBy    = key || null;
+    this._nodeLabelColourScale = this._nodeLabelColourBy ? this._buildColourScale(this._nodeLabelColourBy) : null;
+    this._aggregateTipValueCache?.clear();
+    this._dirty = true;
+  }
+
+  setBranchLabelColourBy(key) {
+    this._branchLabelColourBy    = key || null;
+    this._branchLabelColourScale = this._branchLabelColourBy ? this._buildColourScale(this._branchLabelColourBy) : null;
     this._aggregateTipValueCache?.clear();
     this._dirty = true;
   }
@@ -1096,6 +1152,8 @@ export class TreeRenderer {
     if (this._tipColourBy            === key) this._tipColourScale            = this._buildColourScale(key);
     if (this._nodeColourBy           === key) this._nodeColourScale           = this._buildColourScale(key);
     if (this._labelColourBy          === key) this._labelColourScale          = this._buildColourScale(key);
+    if (this._nodeLabelColourBy      === key) this._nodeLabelColourScale      = this._buildColourScale(key);
+    if (this._branchLabelColourBy    === key) this._branchLabelColourScale    = this._buildColourScale(key);
     if (this._tipLabelShapeColourBy  === key) this._tipLabelShapeColourScale  = this._buildColourScale(key);
     for (let i = 0; i < this._tipLabelShapeExtraColourBys.length; i++) {
       if (this._tipLabelShapeExtraColourBys[i] === key)
@@ -1122,6 +1180,8 @@ export class TreeRenderer {
     if (this._tipColourBy            === key) this._tipColourScale            = this._buildColourScale(key);
     if (this._nodeColourBy           === key) this._nodeColourScale           = this._buildColourScale(key);
     if (this._labelColourBy          === key) this._labelColourScale          = this._buildColourScale(key);
+    if (this._nodeLabelColourBy      === key) this._nodeLabelColourScale      = this._buildColourScale(key);
+    if (this._branchLabelColourBy    === key) this._branchLabelColourScale    = this._buildColourScale(key);
     if (this._tipLabelShapeColourBy  === key) this._tipLabelShapeColourScale  = this._buildColourScale(key);
     for (let i = 0; i < this._tipLabelShapeExtraColourBys.length; i++) {
       if (this._tipLabelShapeExtraColourBys[i] === key)
@@ -1227,6 +1287,8 @@ export class TreeRenderer {
     this._tipColourScale   = rebuild(this._tipColourBy,   this._tipColourScale);
     this._nodeColourScale  = rebuild(this._nodeColourBy,  this._nodeColourScale);
     this._labelColourScale = rebuild(this._labelColourBy, this._labelColourScale);
+    this._nodeLabelColourScale   = rebuild(this._nodeLabelColourBy,   this._nodeLabelColourScale);
+    this._branchLabelColourScale = rebuild(this._branchLabelColourBy, this._branchLabelColourScale);
     this._tipLabelShapeColourScale = rebuild(this._tipLabelShapeColourBy, this._tipLabelShapeColourScale);
     for (let i = 0; i < this._tipLabelShapeExtraColourBys.length; i++) {
       this._tipLabelShapeExtraColourScales[i] =
@@ -1249,6 +1311,8 @@ export class TreeRenderer {
     addRange(this._tipColourBy,           this._tipColourScale);
     addRange(this._nodeColourBy,          this._nodeColourScale);
     addRange(this._labelColourBy,         this._labelColourScale);
+    addRange(this._nodeLabelColourBy,     this._nodeLabelColourScale);
+    addRange(this._branchLabelColourBy,   this._branchLabelColourScale);
     addRange(this._tipLabelShapeColourBy, this._tipLabelShapeColourScale);
     for (let i = 0; i < this._tipLabelShapeExtraColourBys.length; i++) {
       addRange(this._tipLabelShapeExtraColourBys[i], this._tipLabelShapeExtraColourScales[i]);
@@ -1281,6 +1345,8 @@ export class TreeRenderer {
   _tipColourForValue(value)             { return this._colourFromScale(value, this._tipColourScale);   }
   _nodeColourForValue(value)            { return this._colourFromScale(value, this._nodeColourScale);  }
   _labelColourForValue(value)           { return this._colourFromScale(value, this._labelColourScale); }
+  _nodeLabelColourForValue(value)       { return this._colourFromScale(value, this._nodeLabelColourScale); }
+  _branchLabelColourForValue(value)     { return this._colourFromScale(value, this._branchLabelColourScale); }
   _tipLabelShapeColourForValue(value)   { return this._colourFromScale(value, this._tipLabelShapeColourScale); }
   _tipLabelShapeExtraColourForValue(i, value) { return this._colourFromScale(value, this._tipLabelShapeExtraColourScales[i]); }
 
@@ -1684,6 +1750,14 @@ export class TreeRenderer {
    */
   _nodeLabelText(node) {
     return this._labelText(node, this.nodeLabelAnnotation, this._nodeLabelDecimalPlaces, null);
+  }
+
+  /**
+   * Returns the display text for a branch label.
+   * Uses branchLabelAnnotation to look up the annotation value on the child node.
+   */
+  _branchLabelText(node) {
+    return this._labelText(node, this.branchLabelAnnotation, this._branchLabelDecimalPlaces, null);
   }
 
   _measureLabels() {
@@ -2340,6 +2414,7 @@ export class TreeRenderer {
     this._drawNodesAndLabels(yWorldMin, yWorldMax);
     this._drawSelectionAndHover(yWorldMin, yWorldMax);
     this._drawNodeLabels(yWorldMin, yWorldMax);  // drawn on top
+    this._drawBranchLabels(yWorldMin, yWorldMax); // drawn on top
 
     // ── Cross-fade overlay: draw old snapshot fading out ──
     if (this._crossfadeSnapshot && this._crossfadeAlpha > 0) {
@@ -3737,9 +3812,18 @@ export class TreeRenderer {
       ctx.textAlign    = 'right';
     }
 
+    const _nlcBy = this._nodeLabelColourBy && this._nodeLabelColourScale;
+    const _nlDef = _nlcBy ? this._annotationSchema?.get(this._nodeLabelColourBy) : null;
+    const _nlTipOnly = _nlDef && !_nlDef.onNodes && _nlDef.onTips && this._nodeLabelColourBy !== 'user_colour';
     for (const node of this._vInner) {
       const label = this._nodeLabelText(node);
       if (!label) continue;
+      if (_nlcBy) {
+        const val = _nlTipOnly
+          ? this._aggregateTipValue(node, this._nodeLabelColourBy)
+          : this._statValue(node, this._nodeLabelColourBy);
+        ctx.fillStyle = this._nodeLabelColourForValue(val) ?? this.nodeLabelColor;
+      }
       const nx = this._wx(node.x);
       const ny = this._wy(node.y);
       let tx, ty;
@@ -3754,6 +3838,53 @@ export class TreeRenderer {
         ty = ny - spacing;
       }
       ctx.fillText(label, tx, ty);
+    }
+    ctx.restore();
+  }
+
+  /**
+   * Draw annotation labels at the midpoint of each branch.
+   * Drawn on top of everything, controlled by branchLabelAnnotation.
+   * Positions: 'above' = above the branch; 'below' = below the branch.
+   */
+  _drawBranchLabels(yWorldMin, yWorldMax) {
+    if (!this.branchLabelAnnotation || !this.nodes) return;
+    const minScale = this.branchLabelFontSize * 0.5;
+    if (this.scaleY < minScale) return;
+
+    const ctx     = this.ctx;
+    const spacing = this.branchLabelSpacing;
+    const above   = this.branchLabelPosition !== 'below';
+
+    ctx.save();
+    ctx.font      = this._font(this.branchLabelFontSize, this._branchLabelTypefaceKey, this._branchLabelTypefaceStyle);
+    ctx.fillStyle = this.branchLabelColor;
+    ctx.textAlign = 'center';
+    if (above) {
+      ctx.textBaseline = 'bottom';
+    } else {
+      ctx.textBaseline = 'top';
+    }
+
+    const _blcBy = this._branchLabelColourBy && this._branchLabelColourScale;
+    const _blDef = _blcBy ? this._annotationSchema?.get(this._branchLabelColourBy) : null;
+    const _blTipOnly = _blDef && !_blDef.onNodes && _blDef.onTips && this._branchLabelColourBy !== 'user_colour';
+    for (const node of this._vAll) {
+      if (!node.parentId) continue;  // skip root
+      const label = this._branchLabelText(node);
+      if (!label) continue;
+      const parent = this.nodeMap.get(node.parentId);
+      if (!parent) continue;
+      if (_blcBy) {
+        const val = (node.isTip || !_blTipOnly)
+          ? this._statValue(node, this._branchLabelColourBy)
+          : this._aggregateTipValue(node, this._branchLabelColourBy);
+        ctx.fillStyle = this._branchLabelColourForValue(val) ?? this.branchLabelColor;
+      }
+      const mx = (this._wx(parent.x) + this._wx(node.x)) / 2;
+      const my = this._wy(node.y);
+      const ty = above ? my - spacing : my + spacing;
+      ctx.fillText(label, mx, ty);
     }
     ctx.restore();
   }
