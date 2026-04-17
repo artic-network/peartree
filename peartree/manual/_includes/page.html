@@ -12,7 +12,67 @@
   <link rel="stylesheet" href="/manual/ui-preview.css" />
   <style>
     body { padding-top: 3.5rem; }
-    .pt-page-content { max-width: 900px; }
+
+    /* ── Two-column layout ── */
+    .pt-manual-layout {
+      display: flex;
+      align-items: flex-start;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+
+    /* ── Sticky TOC sidebar ── */
+    .pt-toc-sidebar {
+      position: sticky;
+      top: 4.25rem;
+      width: 210px;
+      min-width: 210px;
+      max-height: calc(100vh - 5rem);
+      overflow-y: auto;
+      padding: 1.25rem 1rem 1.25rem 0;
+      flex-shrink: 0;
+      scrollbar-width: thin;
+    }
+    .pt-toc-sidebar h6 {
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.45;
+      margin-bottom: 0.6rem;
+    }
+    .pt-toc-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .pt-toc-list li { line-height: 1.35; }
+    .pt-toc-list li + li { margin-top: 0.25rem; }
+    .pt-toc-list a {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--bs-secondary-color, rgba(255,255,255,0.55));
+      text-decoration: none;
+      padding: 0.15rem 0.4rem;
+      border-left: 2px solid transparent;
+      border-radius: 0 3px 3px 0;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .pt-toc-list a:hover { color: var(--bs-body-color); }
+    .pt-toc-list a.pt-toc-active {
+      color: var(--bs-body-color);
+      border-left-color: var(--bs-primary);
+    }
+    .pt-toc-h3 a { padding-left: 1rem; font-size: 0.75rem; }
+
+    /* Hide sidebar on narrow viewports */
+    @media (max-width: 900px) {
+      .pt-toc-sidebar { display: none; }
+      .pt-manual-layout { display: block; }
+    }
+
+    /* ── Page content ── */
+    .pt-page-content { flex: 1; min-width: 0; max-width: 900px; padding-left: 2rem; }
     .pt-page-content img { max-width: 100%; height: auto; }
     .pt-page-content table { width: 100%; margin-bottom: 1rem; border-collapse: collapse; }
     .pt-page-content table th,
@@ -29,6 +89,83 @@
     .pt-page-content h2 { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--bs-border-color); }
     .pt-page-content h3 { margin-top: 1.75rem; }
     [id] { scroll-margin-top: 4.5rem; }
+
+    /* ── Print styles ── */
+    @media print {
+      /* Reset dark theme to plain black-on-white */
+      html, body {
+        background: #fff !important;
+        color: #000 !important;
+        padding-top: 0 !important;
+        font-size: 11pt;
+      }
+
+      /* Hide chrome */
+      .navbar, .pt-toc-sidebar, footer { display: none !important; }
+
+      /* Full-width single column */
+      .pt-manual-layout { display: block; padding: 0; }
+      .pt-page-content  { padding: 0; max-width: 100%; }
+
+      /* Sensible page breaks */
+      h2 { break-before: page; margin-top: 0; padding-top: 0.5rem; }
+      h2:first-of-type { break-before: avoid; }
+      h3, h4 { break-after: avoid; }
+      figure, table, pre, blockquote, .pt-figure, .pt-ui-demo { break-inside: avoid; }
+
+      /* Clean up headings */
+      .pt-page-content h2 {
+        border-top: 1pt solid #999;
+        color: #000;
+        padding-top: 0.5rem;
+      }
+      .pt-page-content h3 { color: #000; }
+
+      /* Tables: visible borders in B&W */
+      .pt-page-content table th,
+      .pt-page-content table td { border-color: #999 !important; }
+      .pt-page-content table thead th { background: #e8e8e8 !important; color: #000 !important; }
+
+      /* Code blocks */
+      .pt-page-content pre {
+        background: #f4f4f4 !important;
+        color: #000 !important;
+        border: 1pt solid #ccc;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .pt-page-content code { color: #000 !important; }
+
+      /* Blockquotes */
+      .pt-page-content blockquote {
+        border-left-color: #999;
+        opacity: 1;
+        color: #333;
+      }
+
+      /* Figures */
+      .pt-figure { margin: 0.75rem 0; }
+      .pt-figure-panel {
+        background: #f8f8f8 !important;
+        border-color: #ccc !important;
+      }
+      .pt-figure figcaption { color: #444; }
+
+      /* UI demo mockups: remove dark chrome, keep layout */
+      .pt-ui-demo {
+        background: #f0f0f0 !important;
+        border-color: #bbb !important;
+        color: #000 !important;
+      }
+
+      /* Don't print href expansions for internal links */
+      a[href^="#"]::after { content: none !important; }
+      /* But do print external URLs */
+      a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 9pt; color: #555; }
+
+      /* Images: never overflow the page */
+      img { max-width: 100% !important; height: auto !important; }
+    }
   </style>
 </head>
 <body>
@@ -42,12 +179,52 @@
       </ul>
     </div>
   </nav>
-  <main class="container pt-page-content py-4">
-    {{ content | safe }}
-  </main>
+  <div class="pt-manual-layout">
+    <aside class="pt-toc-sidebar" aria-label="Page contents">
+      <h6>Contents</h6>
+      <nav><ul id="pt-toc-list" class="pt-toc-list"></ul></nav>
+    </aside>
+    <main class="pt-page-content py-4">
+      {{ content | safe }}
+    </main>
+  </div>
   <footer class="border-top mt-5 py-3 text-center" style="font-size:0.8rem;opacity:0.55;">
     &copy; 2026 Andrew Rambaut &mdash;
     <a href="https://github.com/artic-network/peartree">GitHub</a>
   </footer>
+  <script>
+    (function () {
+      const list    = document.getElementById('pt-toc-list');
+      const content = document.querySelector('.pt-page-content');
+      if (!list || !content) return;
+
+      const headings = Array.from(content.querySelectorAll('h2[id], h3[id]'))
+        .filter(h => h.id !== 'contents'); // skip the inline Contents heading
+
+      if (!headings.length) return;
+
+      headings.forEach(h => {
+        const li = document.createElement('li');
+        li.className = h.tagName === 'H3' ? 'pt-toc-h3' : 'pt-toc-h2';
+        const a = document.createElement('a');
+        a.href = '#' + h.id;
+        // Strip leading "Chapter N: " or "Appendix X: " for brevity
+        a.textContent = h.textContent.replace(/^(Chapter \d+|Appendix [A-Z]):\s*/i, '');
+        li.appendChild(a);
+        list.appendChild(li);
+      });
+
+      // Highlight the active section while scrolling
+      const links = list.querySelectorAll('a');
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          const link = list.querySelector('a[href="#' + entry.target.id + '"]');
+          if (link) link.classList.toggle('pt-toc-active', entry.isIntersecting);
+        });
+      }, { rootMargin: '-5% 0px -80% 0px', threshold: 0 });
+
+      headings.forEach(h => observer.observe(h));
+    })();
+  </script>
 </body>
 </html>
