@@ -68,9 +68,8 @@ function _sectionTipLabels() {
         <div class="pt-palette-row" title="Typeface for tip labels"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" id="typeface-select">${_TYPEFACES}</select></div>
         <div class="pt-palette-row" title="Font style for tip labels"><span class="pt-palette-label">Style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" id="typeface-style-select"><option value="">Theme</option></select></div>
         <div class="pt-palette-row" title="Tip label text colour"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="label-color" value="#f7eeca" /></div>
-        <div class="pt-palette-row" title="Colour tip labels by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-palette2 form-label-sm"></i></span><select class="pt-palette-select" id="label-colour-by" disabled><option value="user_colour">user colour</option></select></div>
-        <div class="pt-palette-row" id="label-palette-row" style="display:none" title="Colour palette for annotation-based tip label colouring"><span class="pt-palette-label">Palette <i class="bi bi-rainbow form-label-sm"></i></span><select class="pt-palette-select" id="label-palette-select"></select></div>
-        <div class="pt-palette-row" id="label-scale-mode-row" style="display:none" title="How the numeric colour range is mapped"><span class="pt-palette-label">Scale <i class="bi bi-rulers form-label-sm"></i></span><select class="pt-palette-select" id="label-scale-mode-select"><option value="">Auto (min → max)</option><option value="symmetric-zero">Symmetric ±0</option><option value="zero-positive">From zero</option><option value="zero-one">0 → 1</option></select></div>
+        <div class="pt-palette-row" title="Colour tip labels by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="label-colour-by" disabled><option value="user_colour">user colour</option></select></div>
+        <div class="pt-palette-row" id="label-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="label-configure-btn">Configure</button></div>
         <div class="pt-palette-row" title="Horizontal gap between the tip node and its label"><span class="pt-palette-label">Spacing <i class="bi bi-arrow-bar-right form-label-sm"></i></span><input type="range" class="form-range" id="tip-label-spacing-slider" min="0" max="100" step="1" value="3" /><span class="pt-val" id="tip-label-spacing-value">3</span></div>
       </div>
     </div>`;
@@ -83,9 +82,8 @@ function _sectionLabelShapes() {
       <div class="pt-palette-row" title="Shape drawn alongside each tip label"><span class="pt-palette-label">Shape</span><select class="pt-palette-select" id="tip-label-shape"><option value="off">Off</option><option value="square">Square</option><option value="circle">Circle</option><option value="block">Block</option></select></div>
       <div id="tip-label-shape-detail" class="pt-detail pt-sub-controls">
         <div class="pt-palette-row" title="Fill colour of the tip label shape"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="tip-label-shape-color" value="#aaaaaa" /></div>
-        <div class="pt-palette-row" title="Colour tip label shapes by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-palette2 form-label-sm"></i></span><select class="pt-palette-select" id="tip-label-shape-colour-by" disabled><option value="user_colour">user colour</option></select></div>
-        <div class="pt-palette-row" id="tip-label-shape-palette-row" style="display:none" title="Colour palette for annotation-based label shape colouring"><span class="pt-palette-label">Palette <i class="bi bi-rainbow form-label-sm"></i></span><select class="pt-palette-select" id="tip-label-shape-palette-select"></select></div>
-        <div class="pt-palette-row" id="tip-label-shape-scale-mode-row" style="display:none" title="How the numeric colour range is mapped"><span class="pt-palette-label">Scale <i class="bi bi-rulers form-label-sm"></i></span><select class="pt-palette-select" id="tip-label-shape-scale-mode-select"><option value="">Auto (min → max)</option><option value="symmetric-zero">Symmetric ±0</option><option value="zero-positive">From zero</option><option value="zero-one">0 → 1</option></select></div>
+        <div class="pt-palette-row" title="Colour tip label shapes by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="tip-label-shape-colour-by" disabled><option value="user_colour">user colour</option></select></div>
+        <div class="pt-palette-row" id="tip-label-shape-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="tip-label-shape-configure-btn">Configure</button></div>
         <div class="pt-palette-row" title="Size of the label shape as a percentage of tip spacing"><span class="pt-palette-label">Size <i class="bi bi-box-arrow-up-right form-label-sm"></i></span><input type="range" class="form-range" id="tip-label-shape-size-slider" min="1" max="100" step="1" value="50" /><span class="pt-val" id="tip-label-shape-size-value">50</span></div>
         <div class="pt-palette-row" title="Left padding between the tip node and the shape"><span class="pt-palette-label">Pad left <i class="bi bi-arrow-bar-right form-label-sm"></i></span><input type="range" class="form-range" id="tip-label-shape-margin-left-slider" min="0" max="100" value="2" /><span class="pt-val" id="tip-label-shape-margin-left-value">2</span></div>
         <div class="pt-palette-row" id="tip-label-shape-spacing-row" style="display:none" title="Spacing between shapes in block layout mode"><span class="pt-palette-label">Spacing <i class="bi bi-arrows form-label-sm"></i></span><input type="range" class="form-range" id="tip-label-shape-spacing-slider" min="0" max="50" value="3" /><span class="pt-val" id="tip-label-shape-spacing-value">3</span></div>
@@ -94,9 +92,8 @@ function _sectionLabelShapes() {
       <div id="tip-label-shape-${n}-section" class="pt-detail">
         <div class="pt-palette-row" title="Additional shape column ${n} for tip labels"><span class="pt-palette-label">Shape ${n}</span><select class="pt-palette-select" id="tip-label-shape-${n}"><option value="off">Off</option><option value="square">Square</option><option value="circle">Circle</option><option value="block">Block</option></select></div>
         <div id="tip-label-shape-${n}-detail" class="pt-detail pt-sub-controls">
-          <div class="pt-palette-row" title="Colour shape ${n} by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-palette2 form-label-sm"></i></span><select class="pt-palette-select" id="tip-label-shape-${n}-colour-by" disabled><option value="user_colour">user colour</option></select></div>
-          <div class="pt-palette-row" id="tip-label-shape-${n}-palette-row" style="display:none" title="Colour palette for shape ${n}"><span class="pt-palette-label">Palette <i class="bi bi-rainbow form-label-sm"></i></span><select class="pt-palette-select" id="tip-label-shape-${n}-palette-select"></select></div>
-          <div class="pt-palette-row" id="tip-label-shape-${n}-scale-mode-row" style="display:none" title="How the numeric colour range is mapped"><span class="pt-palette-label">Scale <i class="bi bi-rulers form-label-sm"></i></span><select class="pt-palette-select" id="tip-label-shape-${n}-scale-mode-select"><option value="">Auto (min → max)</option><option value="symmetric-zero">Symmetric ±0</option><option value="zero-positive">From zero</option><option value="zero-one">0 → 1</option></select></div>
+          <div class="pt-palette-row" title="Colour shape ${n} by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="tip-label-shape-${n}-colour-by" disabled><option value="user_colour">user colour</option></select></div>
+          <div class="pt-palette-row" id="tip-label-shape-${n}-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="tip-label-shape-${n}-configure-btn">Configure</button></div>
         </div>
       </div>`).join('')}
     </div>`;
@@ -111,9 +108,8 @@ function _sectionTipShapes() {
         <div class="pt-palette-row" title="Fill colour of tip node circles"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="tip-shape-color" value="#888888" /></div>
         <div class="pt-palette-row" title="Background halo width around each tip circle"><span class="pt-palette-label">Halo <i class="bi bi-arrow-up-right-circle form-label-sm"></i></span><input type="range" class="form-range" id="tip-halo-slider" min="0" max="8" value="2" /><span class="pt-val" id="tip-halo-value">2</span></div>
         <div class="pt-palette-row" title="Halo colour behind each tip circle"><span class="pt-palette-label">Halo col. <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="tip-shape-bg-color" value="#02292e" /></div>
-        <div class="pt-palette-row" title="Colour tip circles by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-palette2 form-label-sm"></i></span><select class="pt-palette-select" id="tip-colour-by" disabled><option value="user_colour">user colour</option></select></div>
-        <div class="pt-palette-row" id="tip-palette-row" style="display:none" title="Colour palette for annotation-based tip circle colouring"><span class="pt-palette-label">Palette <i class="bi bi-rainbow form-label-sm"></i></span><select class="pt-palette-select" id="tip-palette-select"></select></div>
-        <div class="pt-palette-row" id="tip-scale-mode-row" style="display:none" title="How the numeric colour range is mapped"><span class="pt-palette-label">Scale <i class="bi bi-rulers form-label-sm"></i></span><select class="pt-palette-select" id="tip-scale-mode-select"><option value="">Auto (min → max)</option><option value="symmetric-zero">Symmetric ±0</option><option value="zero-positive">From zero</option><option value="zero-one">0 → 1</option></select></div>
+        <div class="pt-palette-row" title="Colour tip circles by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="tip-colour-by" disabled><option value="user_colour">user colour</option></select></div>
+        <div class="pt-palette-row" id="tip-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="tip-configure-btn">Configure</button></div>
       </div>
     </div>`;
 }
@@ -127,9 +123,8 @@ function _sectionNodeShapes() {
         <div class="pt-palette-row" title="Fill colour of internal node circles"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="node-shape-color" value="#888888" /></div>
         <div class="pt-palette-row" title="Background halo width around each node circle"><span class="pt-palette-label">Halo <i class="bi bi-arrow-up-right-circle form-label-sm"></i></span><input type="range" class="form-range" id="node-halo-slider" min="0" max="8" value="2" /><span class="pt-val" id="node-halo-value">2</span></div>
         <div class="pt-palette-row" title="Halo colour behind each node circle"><span class="pt-palette-label">Halo col. <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="node-shape-bg-color" value="#02292e" /></div>
-        <div class="pt-palette-row" title="Colour node circles by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-palette2 form-label-sm"></i></span><select class="pt-palette-select" id="node-colour-by" disabled><option value="user_colour">user colour</option></select></div>
-        <div class="pt-palette-row" id="node-palette-row" style="display:none" title="Colour palette for annotation-based node circle colouring"><span class="pt-palette-label">Palette <i class="bi bi-rainbow form-label-sm"></i></span><select class="pt-palette-select" id="node-palette-select"></select></div>
-        <div class="pt-palette-row" id="node-scale-mode-row" style="display:none" title="How the numeric colour range is mapped"><span class="pt-palette-label">Scale <i class="bi bi-rulers form-label-sm"></i></span><select class="pt-palette-select" id="node-scale-mode-select"><option value="">Auto (min → max)</option><option value="symmetric-zero">Symmetric ±0</option><option value="zero-positive">From zero</option><option value="zero-one">0 → 1</option></select></div>
+        <div class="pt-palette-row" title="Colour node circles by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="node-colour-by" disabled><option value="user_colour">user colour</option></select></div>
+        <div class="pt-palette-row" id="node-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="node-configure-btn">Configure</button></div>
       </div>
     </div>`;
 }
@@ -146,8 +141,8 @@ function _sectionBranchLabels() {
         <div class="pt-palette-row" title="Typeface for branch labels"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-typeface-select">${_TYPEFACES}</select></div>
         <div class="pt-palette-row" title="Font style for branch labels"><span class="pt-palette-label">Style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-typeface-style-select"><option value="">Theme</option></select></div>
         <div class="pt-palette-row" title="Branch label text colour"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="branch-label-color" value="#aaaaaa" /></div>
-        <div class="pt-palette-row" title="Colour branch labels by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-palette2 form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-colour-by" disabled><option value="user_colour">user colour</option></select></div>
-        <div class="pt-palette-row" id="branch-label-palette-row" style="display:none" title="Colour palette for annotation-based branch label colouring"><span class="pt-palette-label">Palette <i class="bi bi-rainbow form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-palette-select"></select></div>
+        <div class="pt-palette-row" title="Colour branch labels by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-colour-by" disabled><option value="user_colour">user colour</option></select></div>
+        <div class="pt-palette-row" id="branch-label-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="branch-label-configure-btn">Configure</button></div>
         <div class="pt-palette-row" title="Vertical offset of branch labels from the branch midpoint"><span class="pt-palette-label">Spacing <i class="bi bi-arrow-bar-up form-label-sm"></i></span><input type="range" class="form-range" id="branch-label-spacing-slider" min="0" max="20" step="1" value="4" /><span class="pt-val" id="branch-label-spacing-value">4</span></div>
       </div>
     </div>`;
@@ -164,8 +159,8 @@ function _sectionNodeLabels() {  return `
         <div class="pt-palette-row" title="Typeface for node labels"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" id="node-label-typeface-select">${_TYPEFACES}</select></div>
         <div class="pt-palette-row" title="Font style for node labels"><span class="pt-palette-label">Style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" id="node-label-typeface-style-select"><option value="">Theme</option></select></div>
         <div class="pt-palette-row" title="Node label text colour"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="node-label-color" value="#aaaaaa" /></div>
-        <div class="pt-palette-row" title="Colour node labels by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-palette2 form-label-sm"></i></span><select class="pt-palette-select" id="node-label-colour-by" disabled><option value="user_colour">user colour</option></select></div>
-        <div class="pt-palette-row" id="node-label-palette-row" style="display:none" title="Colour palette for annotation-based node label colouring"><span class="pt-palette-label">Palette <i class="bi bi-rainbow form-label-sm"></i></span><select class="pt-palette-select" id="node-label-palette-select"></select></div>
+        <div class="pt-palette-row" title="Colour node labels by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="node-label-colour-by" disabled><option value="user_colour">user colour</option></select></div>
+        <div class="pt-palette-row" id="node-label-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="node-label-configure-btn">Configure</button></div>
         <div class="pt-palette-row" title="Horizontal offset of node labels from the node point"><span class="pt-palette-label">Spacing <i class="bi bi-arrow-bar-right form-label-sm"></i></span><input type="range" class="form-range" id="node-label-spacing-slider" min="0" max="20" step="1" value="4" /><span class="pt-val" id="node-label-spacing-value">4</span></div>
       </div>
     </div>`;
@@ -195,9 +190,8 @@ function _sectionCladeHighlights() {
     <div class="pt-palette-section" id="clade-highlights-section">
 
       <h3><i class="bi bi-highlighter"></i> Clade Highlights</h3>
-      <div class="pt-palette-row" title="Colour clade highlights by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-palette2 form-label-sm"></i></span><select class="pt-palette-select" id="clade-highlight-colour-by"><option value="user_colour">User colour</option></select></div>
-      <div class="pt-palette-row" id="clade-highlight-palette-row" style="display:none" title="Colour palette for annotation-based highlight colouring"><span class="pt-palette-label">Palette <i class="bi bi-palette form-label-sm"></i></span><select class="pt-palette-select" id="clade-highlight-palette-select"></select></div>
-      <div class="pt-palette-row" id="clade-highlight-scale-mode-row" style="display:none" title="How the numeric colour scale range is mapped"><span class="pt-palette-label">Scale <i class="bi bi-rulers form-label-sm"></i></span><select class="pt-palette-select" id="clade-highlight-scale-mode-select"><option value="">Auto (min→max)</option><option value="symmetric-zero">Symmetric ±0</option><option value="zero-positive">From zero</option><option value="zero-one">0 → 1</option></select></div>
+      <div class="pt-palette-row" title="Colour clade highlights by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="clade-highlight-colour-by"><option value="user_colour">User colour</option></select></div>
+      <div class="pt-palette-row" id="clade-highlight-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="clade-highlight-configure-btn">Configure</button></div>
       <div class="pt-palette-row" title="Shape of the left edge of clade highlight boxes"><span class="pt-palette-label">Left edge <i class="bi bi-arrow-left-square form-label-sm"></i></span><select class="pt-palette-select" id="clade-highlight-left-edge"><option value="atRoot">Rectangle</option><option value="outlineNodes">Outline subtree</option></select></div>
       <div class="pt-palette-row" title="Extent of the right edge of clade highlight boxes"><span class="pt-palette-label">Right edge <i class="bi bi-arrow-right-square form-label-sm"></i></span><select class="pt-palette-select" id="clade-highlight-right-edge"><option value="atTips">At tip</option><option value="atLabels">At label left</option><option value="atLabelsRight">At label right</option><option value="outlineTips">Outline tips</option></select></div>
       <div class="pt-palette-row" title="Padding around each highlighted clade in pixels"><span class="pt-palette-label">Padding <i class="bi bi-arrow-bar-right form-label-sm"></i></span><input type="range" class="form-range" id="clade-highlight-padding" min="0" max="40" step="1" value="4" /><span class="pt-val" id="clade-highlight-padding-value">4</span></div>
@@ -214,9 +208,8 @@ function _sectionCollapsedClades() {
   return `
     <div class="pt-palette-section" id="collapsed-clades-section">
       <h3><i class="bi bi-triangle bi-rotate-270"></i> Collapsed Clades</h3>
-      <div class="pt-palette-row" title="Colour collapsed clade triangles by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-palette2 form-label-sm"></i></span><select class="pt-palette-select" id="collapsed-clade-colour-by"><option value="user_colour">User colour</option></select></div>
-      <div class="pt-palette-row" id="collapsed-clade-palette-row" style="display:none" title="Colour palette for annotation-based clade colouring"><span class="pt-palette-label">Palette <i class="bi bi-palette form-label-sm"></i></span><select class="pt-palette-select" id="collapsed-clade-palette-select"></select></div>
-      <div class="pt-palette-row" id="collapsed-clade-scale-mode-row" style="display:none" title="How the numeric colour scale range is mapped"><span class="pt-palette-label">Scale <i class="bi bi-rulers form-label-sm"></i></span><select class="pt-palette-select" id="collapsed-clade-scale-mode-select"><option value="">Auto (min→max)</option><option value="symmetric-zero">Symmetric ±0</option><option value="zero-positive">From zero</option><option value="zero-one">0 → 1</option></select></div>
+      <div class="pt-palette-row" title="Colour collapsed clade triangles by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="collapsed-clade-colour-by"><option value="user_colour">User colour</option></select></div>
+      <div class="pt-palette-row" id="collapsed-clade-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="collapsed-clade-configure-btn">Configure</button></div>
       <div class="pt-palette-row" title="Fill opacity of collapsed clade triangles"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="collapsed-opacity-slider" min="0" max="1" step="0.05" value="0.25" /><span class="pt-val" id="collapsed-opacity-value">0.25</span></div>
       <div class="pt-palette-row" title="Stroke width of collapsed clade triangle outline"><span class="pt-palette-label">Stroke <i class="bi bi-border-width form-label-sm"></i></span><input type="range" class="form-range" id="collapsed-stroke-width-slider" min="0" max="6" step="0.5" value="1" /><span class="pt-val" id="collapsed-stroke-width-value">1</span></div>
       <div class="pt-palette-row" title="Stroke opacity of collapsed clade triangle outline"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="collapsed-stroke-opacity-slider" min="0" max="1" step="0.05" value="1" /><span class="pt-val" id="collapsed-stroke-opacity-value">1</span></div>
@@ -899,6 +892,33 @@ function _buildModals() {
       </div>
     </div>
     <div id="node-info-body" class="pt-modal-body"></div>
+  </div>
+</div>
+<div id="annot-config-overlay" class="pt-modal-overlay">
+  <div class="pt-modal" style="width:320px;max-width:calc(100vw - 24px)">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-palette2 me-2"></i>Colour settings: <span id="annot-config-title" style="font-style:italic"></span></h5>
+      <button class="pt-modal-close-btn" id="annot-config-close" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body">
+      <div id="annot-config-info" style="margin-bottom:8px;font-size:0.82rem;color:var(--pt-text-muted);line-height:1.5"></div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Palette <i class="bi bi-rainbow form-label-sm"></i></span>
+        <select class="pt-palette-select" id="annot-config-palette-select"></select>
+      </div>
+      <div class="pt-palette-row" id="annot-config-scale-row">
+        <span class="pt-palette-label">Scale <i class="bi bi-rulers form-label-sm"></i></span>
+        <select class="pt-palette-select" id="annot-config-scale-select">
+          <option value="">Auto (min → max)</option>
+          <option value="symmetric-zero">Symmetric ±0</option>
+          <option value="zero-positive">From zero</option>
+          <option value="zero-one">0 → 1</option>
+        </select>
+      </div>
+    </div>
+    <div class="pt-modal-footer">
+      <button id="annot-config-done" class="btn btn-sm btn-primary">Done</button>
+    </div>
   </div>
 </div>
 <div id="pt-node-tooltip"></div>`;

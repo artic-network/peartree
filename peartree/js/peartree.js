@@ -210,11 +210,8 @@ async function _initCore(root = document) {
   const collapsedStrokeOpacitySlider = $('collapsed-stroke-opacity-slider');
   const collapsedHeightNSlider = $('collapsed-height-n-slider');
   const collapsedCladeFontSizeSlider = $('collapsed-clade-font-size-slider');
-  const collapsedCladeColourByEl   = $('collapsed-clade-colour-by');
-  const collapsedCladePaletteSelect = $('collapsed-clade-palette-select');
-  const collapsedCladePaletteRow   = $('collapsed-clade-palette-row');
-  const collapsedCladeScaleModeSelect = $('collapsed-clade-scale-mode-select');
-  const collapsedCladeScaleModeRow = $('collapsed-clade-scale-mode-row');
+  const collapsedCladeColourByEl     = $('collapsed-clade-colour-by');
+  const collapsedCladeConfigureRow   = $('collapsed-clade-configure-row');
   const tipShapeDetailEl    = $('tip-shape-detail');
   const nodeShapeDetailEl   = $('node-shape-detail');
   const nodeLabelDetailEl   = $('node-label-detail');
@@ -250,8 +247,7 @@ async function _initCore(root = document) {
   const nodeLabelDpRowEl         = $('node-label-dp-row');
   const nodeLabelDpEl            = $('node-label-decimal-places');
   const nodeLabelColourBy        = $('node-label-colour-by');
-  const nodeLabelPaletteSelect   = $('node-label-palette-select');
-  const nodeLabelPaletteRow      = $('node-label-palette-row');
+  const nodeLabelConfigureRow    = $('node-label-configure-row');
   const branchLabelDetailEl       = $('branch-label-detail');
   const branchLabelTypefaceEl      = $('branch-label-typeface-select');
   const branchLabelTypefaceStyleEl = $('branch-label-typeface-style-select');
@@ -263,19 +259,14 @@ async function _initCore(root = document) {
   const branchLabelDpRowEl         = $('branch-label-dp-row');
   const branchLabelDpEl            = $('branch-label-decimal-places');
   const branchLabelColourBy        = $('branch-label-colour-by');
-  const branchLabelPaletteSelect   = $('branch-label-palette-select');
-  const branchLabelPaletteRow      = $('branch-label-palette-row');
-  const tipPaletteSelect   = $('tip-palette-select');
-  const tipPaletteRow      = $('tip-palette-row');
-  const nodePaletteSelect  = $('node-palette-select');
-  const nodePaletteRow     = $('node-palette-row');
-  const labelPaletteSelect = $('label-palette-select');
-  const labelPaletteRow    = $('label-palette-row');
+  const branchLabelConfigureRow    = $('branch-label-configure-row');
+  const tipConfigureRow    = $('tip-configure-row');
+  const nodeConfigureRow   = $('node-configure-row');
+  const labelConfigureRow  = $('label-configure-row');
   const tipLabelShapeEl              = $('tip-label-shape');
   const tipLabelShapeColorEl         = $('tip-label-shape-color');
   const tipLabelShapeColourBy        = $('tip-label-shape-colour-by');
-  const tipLabelShapePaletteRow      = $('tip-label-shape-palette-row');
-  const tipLabelShapePaletteSelect   = $('tip-label-shape-palette-select');
+  const tipLabelShapeConfigureRow    = $('tip-label-shape-configure-row');
   const tipLabelShapeMarginLeftSlider  = $('tip-label-shape-margin-left-slider');
   const tipLabelShapeSpacingSlider     = $('tip-label-shape-spacing-slider');
   const tipLabelShapeSizeSlider        = $('tip-label-shape-size-slider');
@@ -284,18 +275,15 @@ async function _initCore(root = document) {
   const EXTRA_SHAPE_COUNT = 9;
   const tipLabelShapeExtraEls           = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}`));
   const tipLabelShapeExtraColourBys     = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-colour-by`));
-  const tipLabelShapeExtraPaletteRows   = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-palette-row`));
-  const tipLabelShapeExtraPaletteSelects = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-palette-select`));
-  const tipScaleModeSelect   = $('tip-scale-mode-select');
-  const tipScaleModeRow      = $('tip-scale-mode-row');
-  const nodeScaleModeSelect  = $('node-scale-mode-select');
-  const nodeScaleModeRow     = $('node-scale-mode-row');
-  const labelScaleModeSelect = $('label-scale-mode-select');
-  const labelScaleModeRow    = $('label-scale-mode-row');
-  const tipLabelShapeScaleModeRow    = $('tip-label-shape-scale-mode-row');
-  const tipLabelShapeScaleModeSelect = $('tip-label-shape-scale-mode-select');
-  const tipLabelShapeExtraScaleModeRows    = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-scale-mode-row`));
-  const tipLabelShapeExtraScaleModeSelects = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-scale-mode-select`));
+  const tipLabelShapeExtraConfigureRows  = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-configure-row`));
+  const tipLabelShapeExtraConfigureBtns  = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-configure-btn`));
+  // Annotation colour config modal
+  const annotConfigOverlay       = $('annot-config-overlay');
+  const annotConfigTitle         = $('annot-config-title');
+  const annotConfigInfo          = $('annot-config-info');
+  const annotConfigPaletteSelect = $('annot-config-palette-select');
+  const annotConfigScaleRow      = $('annot-config-scale-row');
+  const annotConfigScaleSelect   = $('annot-config-scale-select');
   const tipLabelShapeExtraSectionEls    = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-section`));
   const tipLabelShapeExtraDetailEls     = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-detail`));
   // Per-level cascade memory: stores the last non-'off' value of each extra shape
@@ -377,10 +365,7 @@ async function _initCore(root = document) {
   const rttMinorLabelRow       = $('rtt-minor-label-row');
   // Clade highlight controls
   const cladeHighlightColourByEl         = $('clade-highlight-colour-by');
-  const cladeHighlightPaletteSelect      = $('clade-highlight-palette-select');
-  const cladeHighlightPaletteRow         = $('clade-highlight-palette-row');
-  const cladeHighlightScaleModeSelect    = $('clade-highlight-scale-mode-select');
-  const cladeHighlightScaleModeRow       = $('clade-highlight-scale-mode-row');
+  const cladeHighlightConfigureRow       = $('clade-highlight-configure-row');
   const cladeHighlightDefaultColourEl    = $('clade-highlight-default-colour');
   const btnPaintHighlight                = $('btn-paint-highlight');
   const cladeHighlightLeftEdgeEl         = $('clade-highlight-left-edge');
@@ -477,100 +462,88 @@ async function _initCore(root = document) {
   /** Per-annotation scale mode: annotationKey → 'symmetric-zero'|'zero-positive'|'' */
   const annotationScaleModes = new Map();
 
-  /**
-   * Populate a scale-mode <select> for the given annotation key and show/hide its row.
-   * Only shown for numeric annotation types.
-   * @param {HTMLSelectElement} sel
-   * @param {HTMLElement}       row
-   * @param {string|null}       annotKey
-   */
-  function _updateScaleModeSelect(sel, row, annotKey) {
-    const schema = renderer?._annotationSchema;
-    if (!annotKey || annotKey === 'user_colour' || !schema || !row) {
-      if (row) row.style.display = 'none';
-      return;
-    }
-    const def = schema.get(annotKey);
-    if (!def || !isNumericType(def.dataType)) { row.style.display = 'none'; return; }
-    const stored = annotationScaleModes.get(annotKey) ?? '';
-    sel.value = [...sel.options].some(o => o.value === stored) ? stored : '';
-    row.style.display = '';
+  /** Tracks which annotation key the annot-config modal is currently open for. */
+  let _annotConfigKey = null;
+
+  /** Show/hide a configure-button row based on whether a real annotation key is selected. */
+  function _updateConfigureBtn(row, annotKey) {
+    if (!row) return;
+    row.style.display = (annotKey && annotKey !== 'user_colour') ? '' : 'none';
   }
 
-  /**
-   * After storing a scale mode change for `key`, sync every other scale-mode <select>
-   * bound to the same annotation so they all show the same value.
-   */
-  function _syncScaleModeSelects(key, mode) {
-    const pairs = () => [
-      [tipColourBy,            tipScaleModeSelect],
-      [nodeColourBy,           nodeScaleModeSelect],
-      [labelColourBy,          labelScaleModeSelect],
-      [tipLabelShapeColourBy,  tipLabelShapeScaleModeSelect],
-      ...tipLabelShapeExtraColourBys.map((cb, i) => [cb, tipLabelShapeExtraScaleModeSelects[i]]),
-      [cladeHighlightColourByEl, cladeHighlightScaleModeSelect],
-      [collapsedCladeColourByEl, collapsedCladeScaleModeSelect],
-    ];
-    for (const [colourBy, sel] of pairs()) {
-      if (!colourBy || !sel) continue;
-      if (colourBy.value === key && sel.value !== mode) {
-        if ([...sel.options].some(o => o.value === mode)) sel.value = mode;
+  /** Open the annotation colour-config modal for the given annotation key. */
+  function openAnnotConfig(key) {
+    if (!key || key === 'user_colour') return;
+    _annotConfigKey = key;
+    const schema = renderer?._annotationSchema;
+    const def = schema?.get(key);
+    if (annotConfigTitle) annotConfigTitle.textContent = def?.label ?? key;
+    // Populate annotation info
+    if (annotConfigInfo) {
+      const lines = [];
+      if (def) {
+        const typeLabels = { real: 'Continuous', integer: 'Integer', proportion: 'Proportion', percentage: 'Percentage', categorical: 'Categorical', ordinal: 'Ordinal', date: 'Date' };
+        const typeLabel = typeLabels[def.dataType] ?? def.dataType ?? 'Unknown';
+        lines.push(`<strong>Type:</strong> ${typeLabel}`);
+        const isCatLike = def.dataType === 'categorical' || def.dataType === 'ordinal';
+        if (isCatLike && def.values?.length) {
+          lines.push(`<strong>Categories:</strong> ${def.values.length}`);
+        } else if (isNumericType(def.dataType)) {
+          const lo = def.observedMin ?? def.min;
+          const hi = def.observedMax ?? def.max;
+          if (lo != null && hi != null) {
+            const fmt = (v) => Number.isInteger(v) ? v : +v.toPrecision(4);
+            lines.push(`<strong>Range:</strong> ${fmt(lo)} → ${fmt(hi)}`);
+          }
+        }
+      }
+      annotConfigInfo.innerHTML = lines.join('<br>');
+    }
+    // Populate palette select
+    if (annotConfigPaletteSelect) {
+      const isCat = def?.dataType === 'categorical' || def?.dataType === 'ordinal';
+      const palettes = isCat ? CATEGORICAL_PALETTES : SEQUENTIAL_PALETTES;
+      const defPal   = isCat ? DEFAULT_CATEGORICAL_PALETTE : DEFAULT_SEQUENTIAL_PALETTE;
+      const stored   = annotationPalettes.get(key) ?? defPal;
+      annotConfigPaletteSelect.innerHTML = '';
+      for (const name of Object.keys(palettes)) {
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        annotConfigPaletteSelect.appendChild(opt);
+      }
+      annotConfigPaletteSelect.value = [...annotConfigPaletteSelect.options].some(o => o.value === stored) ? stored : defPal;
+    }
+    // Show/populate scale mode row only for numeric annotations
+    if (annotConfigScaleRow && annotConfigScaleSelect) {
+      const isNumeric = def && isNumericType(def.dataType);
+      annotConfigScaleRow.style.display = isNumeric ? '' : 'none';
+      if (isNumeric) {
+        const sm = annotationScaleModes.get(key) ?? '';
+        annotConfigScaleSelect.value = [...annotConfigScaleSelect.options].some(o => o.value === sm) ? sm : '';
       }
     }
-  }
-
-
-  /**
-   * Populate a palette <select> for the given annotation key and show/hide its row.
-   * Restores stored value from annotationPalettes; falls back to the type default.
-   * @param {HTMLSelectElement} sel
-   * @param {HTMLElement}       row
-   * @param {string|null}       annotKey
-   */
-  function _updatePaletteSelect(sel, row, annotKey) {
-    const schema = renderer?._annotationSchema;
-    if (!annotKey || annotKey === 'user_colour' || !schema) {
-      row.style.display = 'none';
-      return;
-    }
-    const def = schema.get(annotKey);
-    if (!def) { row.style.display = 'none'; return; }
-    const isCat    = def.dataType === 'categorical' || def.dataType === 'ordinal';
-    const palettes = isCat ? CATEGORICAL_PALETTES : SEQUENTIAL_PALETTES;
-    const defPal   = isCat ? DEFAULT_CATEGORICAL_PALETTE : DEFAULT_SEQUENTIAL_PALETTE;
-    const stored   = annotationPalettes.get(annotKey) ?? defPal;
-    sel.innerHTML = '';
-    for (const name of Object.keys(palettes)) {
-      const opt = document.createElement('option');
-      opt.value = name; opt.textContent = name;
-      sel.appendChild(opt);
-    }
-    sel.value = [...sel.options].some(o => o.value === stored) ? stored : defPal;
-    row.style.display = '';
+    annotConfigOverlay?.classList.add('open');
   }
 
   /**
-   * After storing a palette change for `key`, sync every other palette <select>
-   * that is currently bound to the same annotation so they all show the same value.
+   * If the annot-config modal is open for `key`, sync its palette select to `paletteName`.
+   * Called when the annotation curator changes a palette.
    */
   function _syncPaletteSelects(key, paletteName) {
-    // Pairs of [colourByEl, paletteSelectEl] – declared further down but accessible via closure.
-    const pairs = () => [
-      [tipColourBy,            tipPaletteSelect],
-      [nodeColourBy,           nodePaletteSelect],
-      [labelColourBy,          labelPaletteSelect],
-      [tipLabelShapeColourBy,  tipLabelShapePaletteSelect],
-      ...tipLabelShapeExtraColourBys.map((cb, i) => [cb, tipLabelShapeExtraPaletteSelects[i]]),
-      [cladeHighlightColourByEl, cladeHighlightPaletteSelect],
-      [collapsedCladeColourByEl, collapsedCladePaletteSelect],
-      [nodeLabelColourBy,      nodeLabelPaletteSelect],
-      [branchLabelColourBy,    branchLabelPaletteSelect],
-    ];
-    for (const [colourBy, sel] of pairs()) {
-      if (!colourBy || !sel) continue;
-      if (colourBy.value === key && sel.value !== paletteName) {
-        if ([...sel.options].some(o => o.value === paletteName)) sel.value = paletteName;
-      }
+    if (_annotConfigKey === key && annotConfigPaletteSelect) {
+      if ([...annotConfigPaletteSelect.options].some(o => o.value === paletteName))
+        annotConfigPaletteSelect.value = paletteName;
+    }
+  }
+
+  /**
+   * If the annot-config modal is open for `key`, sync its scale select to `mode`.
+   * Called when the annotation curator changes a scale mode.
+   */
+  function _syncScaleModeSelects(key, mode) {
+    if (_annotConfigKey === key && annotConfigScaleSelect) {
+      if ([...annotConfigScaleSelect.options].some(o => o.value === mode))
+        annotConfigScaleSelect.value = mode;
     }
   }
 
@@ -2488,6 +2461,7 @@ async function _initCore(root = document) {
       if ($('export-graphic-overlay')?.classList.contains('open')) { exportCtrl.closeGraphicsDialog(); return; }
       if ($('export-tree-overlay')?.classList.contains('open'))    { exportCtrl.closeExportDialog();   return; }
       if ($('curate-annot-overlay')?.classList.contains('open')) { annotCurator.close(); return; }
+      if (annotConfigOverlay?.classList.contains('open')) { annotConfigOverlay.classList.remove('open'); return; }
       if ($('import-annot-overlay')?.classList.contains('open'))  { annotImporter.close(); return; }
       const nodeInfoOv = $('node-info-overlay');
       if (nodeInfoOv && nodeInfoOv.classList.contains('open')) { nodeInfoOv.classList.remove('open'); return; }
@@ -2688,6 +2662,7 @@ async function _initCore(root = document) {
       _syncScaleModeSelects(key, mode);
       renderer._dirty = true;
     },
+    onConfigureClick: (key) => openAnnotConfig(key),
   });
   btnCurateAnnot?.addEventListener('click', () => commands.execute('curate-annot'));
 
@@ -3328,18 +3303,18 @@ async function _initCore(root = document) {
       if (renderer) renderer.setBranchLabelAnnotation(branchLabelShowEl.value || null);
     }
     _syncControlVisibility();
-    // Refresh palette selects to match current colour-by selections after annotation schema changes.
-    _updatePaletteSelect(tipPaletteSelect,            tipPaletteRow,            tipColourBy.value);
-    _updatePaletteSelect(nodePaletteSelect,           nodePaletteRow,           nodeColourBy.value);
-    _updatePaletteSelect(labelPaletteSelect,          labelPaletteRow,          labelColourBy.value);
-    _updatePaletteSelect(tipLabelShapePaletteSelect,  tipLabelShapePaletteRow,  tipLabelShapeColourBy.value);
+    // Refresh configure-button visibility to match current colour-by selections.
+    _updateConfigureBtn(tipConfigureRow,                tipColourBy.value);
+    _updateConfigureBtn(nodeConfigureRow,               nodeColourBy.value);
+    _updateConfigureBtn(labelConfigureRow,              labelColourBy.value);
+    _updateConfigureBtn(tipLabelShapeConfigureRow,      tipLabelShapeColourBy.value);
     for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) {
-      _updatePaletteSelect(tipLabelShapeExtraPaletteSelects[i], tipLabelShapeExtraPaletteRows[i], tipLabelShapeExtraColourBys[i].value);
+      _updateConfigureBtn(tipLabelShapeExtraConfigureRows[i], tipLabelShapeExtraColourBys[i].value);
     }
-    _updatePaletteSelect(cladeHighlightPaletteSelect, cladeHighlightPaletteRow, cladeHighlightColourByEl?.value ?? 'user_colour');
-    _updatePaletteSelect(collapsedCladePaletteSelect, collapsedCladePaletteRow, collapsedCladeColourByEl?.value ?? 'user_colour');
-    if (nodeLabelColourBy)   _updatePaletteSelect(nodeLabelPaletteSelect,   nodeLabelPaletteRow,   nodeLabelColourBy.value);
-    if (branchLabelColourBy) _updatePaletteSelect(branchLabelPaletteSelect, branchLabelPaletteRow, branchLabelColourBy.value);
+    _updateConfigureBtn(cladeHighlightConfigureRow, cladeHighlightColourByEl?.value ?? 'user_colour');
+    _updateConfigureBtn(collapsedCladeConfigureRow, collapsedCladeColourByEl?.value ?? 'user_colour');
+    if (nodeLabelColourBy)   _updateConfigureBtn(nodeLabelConfigureRow,   nodeLabelColourBy.value);
+    if (branchLabelColourBy) _updateConfigureBtn(branchLabelConfigureRow, branchLabelColourBy.value);
     // Sync clear-user-colour button: enabled only when at least one node has been coloured.
     if (btnClearUserColour) {
       commands.setEnabled('tree-clear-colours', schema.has('user_colour'));
@@ -3873,23 +3848,17 @@ async function _initCore(root = document) {
       renderer.setBranchLabelAnnotation(branchLabelShowEl.value || null);
       if (nodeLabelColourBy)   renderer.setNodeLabelColourBy(nodeLabelColourBy.value || null);
       if (branchLabelColourBy) renderer.setBranchLabelColourBy(branchLabelColourBy.value || null);
-      // Show palette and scale-mode selects for active colour-by annotations.
-      _updatePaletteSelect(tipPaletteSelect,            tipPaletteRow,            tipColourBy.value);
-      _updatePaletteSelect(nodePaletteSelect,           nodePaletteRow,           nodeColourBy.value);
-      _updatePaletteSelect(labelPaletteSelect,          labelPaletteRow,          labelColourBy.value);
-      _updatePaletteSelect(tipLabelShapePaletteSelect,  tipLabelShapePaletteRow,  tipLabelShapeColourBy.value);
+      // Show/hide configure buttons for active colour-by annotations.
+      _updateConfigureBtn(tipConfigureRow,                tipColourBy.value);
+      _updateConfigureBtn(nodeConfigureRow,               nodeColourBy.value);
+      _updateConfigureBtn(labelConfigureRow,              labelColourBy.value);
+      _updateConfigureBtn(tipLabelShapeConfigureRow,      tipLabelShapeColourBy.value);
       for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++)
-        _updatePaletteSelect(tipLabelShapeExtraPaletteSelects[_i], tipLabelShapeExtraPaletteRows[_i], tipLabelShapeExtraColourBys[_i].value);
-      if (nodeLabelColourBy)   _updatePaletteSelect(nodeLabelPaletteSelect,   nodeLabelPaletteRow,   nodeLabelColourBy.value);
-      if (branchLabelColourBy) _updatePaletteSelect(branchLabelPaletteSelect, branchLabelPaletteRow, branchLabelColourBy.value);
-      _updateScaleModeSelect(tipScaleModeSelect,           tipScaleModeRow,           tipColourBy.value);
-      _updateScaleModeSelect(nodeScaleModeSelect,          nodeScaleModeRow,          nodeColourBy.value);
-      _updateScaleModeSelect(labelScaleModeSelect,         labelScaleModeRow,         labelColourBy.value);
-      _updateScaleModeSelect(tipLabelShapeScaleModeSelect, tipLabelShapeScaleModeRow, tipLabelShapeColourBy.value);
-      for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++)
-        _updateScaleModeSelect(tipLabelShapeExtraScaleModeSelects[_i], tipLabelShapeExtraScaleModeRows[_i], tipLabelShapeExtraColourBys[_i].value);
-      _updateScaleModeSelect(cladeHighlightScaleModeSelect, cladeHighlightScaleModeRow, cladeHighlightColourByEl?.value ?? 'user_colour');
-      _updateScaleModeSelect(collapsedCladeScaleModeSelect, collapsedCladeScaleModeRow, collapsedCladeColourByEl?.value ?? 'user_colour');
+        _updateConfigureBtn(tipLabelShapeExtraConfigureRows[_i], tipLabelShapeExtraColourBys[_i].value);
+      if (nodeLabelColourBy)   _updateConfigureBtn(nodeLabelConfigureRow,   nodeLabelColourBy.value);
+      if (branchLabelColourBy) _updateConfigureBtn(branchLabelConfigureRow, branchLabelColourBy.value);
+      _updateConfigureBtn(cladeHighlightConfigureRow, cladeHighlightColourByEl?.value ?? 'user_colour');
+      _updateConfigureBtn(collapsedCladeConfigureRow, collapsedCladeColourByEl?.value ?? 'user_colour');
       applyLegend();   // rebuild legend with new data (may clear it)
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
       // setData() does not fire _onLayoutChange (unlike setDataAnimated), so
@@ -5269,45 +5238,21 @@ async function _initCore(root = document) {
     });
 
     cladeHighlightColourByEl?.addEventListener('change', () => {
-      _updatePaletteSelect(cladeHighlightPaletteSelect, cladeHighlightPaletteRow, cladeHighlightColourByEl.value);
-      _updateScaleModeSelect(cladeHighlightScaleModeSelect, cladeHighlightScaleModeRow, cladeHighlightColourByEl.value);
+      _updateConfigureBtn(cladeHighlightConfigureRow, cladeHighlightColourByEl.value);
       _recolourAllHighlights();
     });
 
-    cladeHighlightPaletteSelect?.addEventListener('change', () => {
-      const key = cladeHighlightColourByEl?.value;
-      if (key && key !== 'user_colour') {
-        annotationPalettes.set(key, cladeHighlightPaletteSelect.value);
-        _syncPaletteSelects(key, cladeHighlightPaletteSelect.value);
-        renderer.setAnnotationPalette(key, cladeHighlightPaletteSelect.value);
-        _recolourAllHighlights();
-      }
-    });
-
-    cladeHighlightScaleModeSelect?.addEventListener('change', () => {
-      _handleScaleModeChange(cladeHighlightColourByEl?.value, cladeHighlightScaleModeSelect.value);
-      _recolourAllHighlights();
+    $('clade-highlight-configure-btn')?.addEventListener('click', () => {
+      openAnnotConfig(cladeHighlightColourByEl?.value);
     });
 
     collapsedCladeColourByEl?.addEventListener('change', () => {
-      _updatePaletteSelect(collapsedCladePaletteSelect, collapsedCladePaletteRow, collapsedCladeColourByEl.value);
-      _updateScaleModeSelect(collapsedCladeScaleModeSelect, collapsedCladeScaleModeRow, collapsedCladeColourByEl.value);
+      _updateConfigureBtn(collapsedCladeConfigureRow, collapsedCladeColourByEl.value);
       _recolourAllCollapsed();
     });
 
-    collapsedCladePaletteSelect?.addEventListener('change', () => {
-      const key = collapsedCladeColourByEl?.value;
-      if (key && key !== 'user_colour') {
-        annotationPalettes.set(key, collapsedCladePaletteSelect.value);
-        _syncPaletteSelects(key, collapsedCladePaletteSelect.value);
-        renderer.setAnnotationPalette(key, collapsedCladePaletteSelect.value);
-        _recolourAllCollapsed();
-      }
-    });
-
-    collapsedCladeScaleModeSelect?.addEventListener('change', () => {
-      _handleScaleModeChange(collapsedCladeColourByEl?.value, collapsedCladeScaleModeSelect.value);
-      _recolourAllCollapsed();
+    $('collapsed-clade-configure-btn')?.addEventListener('click', () => {
+      openAnnotConfig(collapsedCladeColourByEl?.value);
     });
 
     // Mode menu
@@ -6208,25 +6153,28 @@ async function _initCore(root = document) {
 
   nodeColourBy.addEventListener('change', () => {
     renderer.setNodeColourBy(nodeColourBy.value || null);
-    _updatePaletteSelect(nodePaletteSelect, nodePaletteRow, nodeColourBy.value);
-    _updateScaleModeSelect(nodeScaleModeSelect, nodeScaleModeRow, nodeColourBy.value);
+    _updateConfigureBtn(nodeConfigureRow, nodeColourBy.value);
     saveSettings();
   });
 
+  $('node-configure-btn')?.addEventListener('click', () => openAnnotConfig(nodeColourBy.value));
+
   tipColourBy.addEventListener('change', () => {
     renderer.setTipColourBy(tipColourBy.value || null);
-    _updatePaletteSelect(tipPaletteSelect, tipPaletteRow, tipColourBy.value);
-    _updateScaleModeSelect(tipScaleModeSelect, tipScaleModeRow, tipColourBy.value);
+    _updateConfigureBtn(tipConfigureRow, tipColourBy.value);
     saveSettings();
     rttChart?.notifyStyleChange?.();
   });
 
+  $('tip-configure-btn')?.addEventListener('click', () => openAnnotConfig(tipColourBy.value));
+
   labelColourBy.addEventListener('change', () => {
     renderer.setLabelColourBy(labelColourBy.value || null);
-    _updatePaletteSelect(labelPaletteSelect, labelPaletteRow, labelColourBy.value);
-    _updateScaleModeSelect(labelScaleModeSelect, labelScaleModeRow, labelColourBy.value);
+    _updateConfigureBtn(labelConfigureRow, labelColourBy.value);
     saveSettings();
   });
+
+  $('label-configure-btn')?.addEventListener('click', () => openAnnotConfig(labelColourBy.value));
 
   tipLabelShow.addEventListener('change', () => {
     const isOff = tipLabelShow.value === 'off';
@@ -6335,35 +6283,19 @@ async function _initCore(root = document) {
 
   nodeLabelColourBy?.addEventListener('change', () => {
     renderer?.setNodeLabelColourBy(nodeLabelColourBy.value || null);
-    _updatePaletteSelect(nodeLabelPaletteSelect, nodeLabelPaletteRow, nodeLabelColourBy.value);
+    _updateConfigureBtn(nodeLabelConfigureRow, nodeLabelColourBy.value);
     saveSettings();
   });
+
+  $('node-label-configure-btn')?.addEventListener('click', () => openAnnotConfig(nodeLabelColourBy?.value));
 
   branchLabelColourBy?.addEventListener('change', () => {
     renderer?.setBranchLabelColourBy(branchLabelColourBy.value || null);
-    _updatePaletteSelect(branchLabelPaletteSelect, branchLabelPaletteRow, branchLabelColourBy.value);
+    _updateConfigureBtn(branchLabelConfigureRow, branchLabelColourBy.value);
     saveSettings();
   });
 
-  nodeLabelPaletteSelect?.addEventListener('change', () => {
-    const key = nodeLabelColourBy?.value;
-    if (key && key !== 'user_colour') {
-      annotationPalettes.set(key, nodeLabelPaletteSelect.value);
-      _syncPaletteSelects(key, nodeLabelPaletteSelect.value);
-      renderer?.setAnnotationPalette(key, nodeLabelPaletteSelect.value);
-      saveSettings();
-    }
-  });
-
-  branchLabelPaletteSelect?.addEventListener('change', () => {
-    const key = branchLabelColourBy?.value;
-    if (key && key !== 'user_colour') {
-      annotationPalettes.set(key, branchLabelPaletteSelect.value);
-      _syncPaletteSelects(key, branchLabelPaletteSelect.value);
-      renderer?.setAnnotationPalette(key, branchLabelPaletteSelect.value);
-      saveSettings();
-    }
-  });
+  $('branch-label-configure-btn')?.addEventListener('click', () => openAnnotConfig(branchLabelColourBy?.value));
 
   tipLabelSpacingSlider.addEventListener('input', () => {
     const v = parseInt(tipLabelSpacingSlider.value);
@@ -6372,41 +6304,7 @@ async function _initCore(root = document) {
     saveSettings(); _markCustomTheme();
   });
 
-  tipPaletteSelect.addEventListener('change', () => {
-    const key = tipColourBy.value;
-    if (key && key !== 'user_colour') {
-      annotationPalettes.set(key, tipPaletteSelect.value);
-      _syncPaletteSelects(key, tipPaletteSelect.value);
-      renderer.setAnnotationPalette(key, tipPaletteSelect.value);
-      legendRenderer.draw();
-      saveSettings();
-      rttChart?.notifyStyleChange?.();
-    }
-  });
-
-  nodePaletteSelect.addEventListener('change', () => {
-    const key = nodeColourBy.value;
-    if (key && key !== 'user_colour') {
-      annotationPalettes.set(key, nodePaletteSelect.value);
-      _syncPaletteSelects(key, nodePaletteSelect.value);
-      renderer.setAnnotationPalette(key, nodePaletteSelect.value);
-      legendRenderer.draw();
-      saveSettings();
-    }
-  });
-
-  labelPaletteSelect.addEventListener('change', () => {
-    const key = labelColourBy.value;
-    if (key && key !== 'user_colour') {
-      annotationPalettes.set(key, labelPaletteSelect.value);
-      _syncPaletteSelects(key, labelPaletteSelect.value);
-      renderer.setAnnotationPalette(key, labelPaletteSelect.value);
-      legendRenderer.draw();
-      saveSettings();
-    }
-  });
-
-  // ── Scale mode change handlers ─────────────────────────────────────────────
+  // ── Scale mode change helpers ──────────────────────────────────────────────
 
   function _handleScaleModeChange(key, mode) {
     if (!key || key === 'user_colour') return;
@@ -6418,19 +6316,24 @@ async function _initCore(root = document) {
     saveSettings();
   }
 
-  tipScaleModeSelect.addEventListener('change', () => {
-    _handleScaleModeChange(tipColourBy.value, tipScaleModeSelect.value);
+  // ── Annotation colour-config modal listeners ──────────────────────────────
+
+  annotConfigPaletteSelect?.addEventListener('change', () => {
+    if (!_annotConfigKey || _annotConfigKey === 'user_colour') return;
+    annotationPalettes.set(_annotConfigKey, annotConfigPaletteSelect.value);
+    renderer?.setAnnotationPalette(_annotConfigKey, annotConfigPaletteSelect.value);
+    legendRenderer?.draw();
+    saveSettings();
     rttChart?.notifyStyleChange?.();
   });
-  nodeScaleModeSelect.addEventListener('change', () => {
-    _handleScaleModeChange(nodeColourBy.value, nodeScaleModeSelect.value);
+
+  annotConfigScaleSelect?.addEventListener('change', () => {
+    if (!_annotConfigKey || _annotConfigKey === 'user_colour') return;
+    _handleScaleModeChange(_annotConfigKey, annotConfigScaleSelect.value);
   });
-  labelScaleModeSelect.addEventListener('change', () => {
-    _handleScaleModeChange(labelColourBy.value, labelScaleModeSelect.value);
-  });
-  tipLabelShapeScaleModeSelect.addEventListener('change', () => {
-    _handleScaleModeChange(tipLabelShapeColourBy.value, tipLabelShapeScaleModeSelect.value);
-  });
+
+  $('annot-config-close')?.addEventListener('click', () => annotConfigOverlay?.classList.remove('open'));
+  $('annot-config-done')?.addEventListener('click',  () => annotConfigOverlay?.classList.remove('open'));
 
   // ── Tip-label shape controls ───────────────────────────────────────────────
 
@@ -6471,10 +6374,11 @@ async function _initCore(root = document) {
 
   tipLabelShapeColourBy.addEventListener('change', () => {
     renderer.setTipLabelShapeColourBy(tipLabelShapeColourBy.value || null);
-    _updatePaletteSelect(tipLabelShapePaletteSelect, tipLabelShapePaletteRow, tipLabelShapeColourBy.value);
-    _updateScaleModeSelect(tipLabelShapeScaleModeSelect, tipLabelShapeScaleModeRow, tipLabelShapeColourBy.value);
+    _updateConfigureBtn(tipLabelShapeConfigureRow, tipLabelShapeColourBy.value);
     saveSettings();
   });
+
+  $('tip-label-shape-configure-btn')?.addEventListener('click', () => openAnnotConfig(tipLabelShapeColourBy.value));
 
   tipLabelShapeMarginLeftSlider.addEventListener('input', () => {
     const v = parseInt(tipLabelShapeMarginLeftSlider.value);
@@ -6490,17 +6394,6 @@ async function _initCore(root = document) {
     saveSettings(); _markCustomTheme();
   });
 
-  tipLabelShapePaletteSelect.addEventListener('change', () => {
-    const key = tipLabelShapeColourBy.value;
-    if (key && key !== 'user_colour') {
-      annotationPalettes.set(key, tipLabelShapePaletteSelect.value);
-      _syncPaletteSelects(key, tipLabelShapePaletteSelect.value);
-      renderer.setAnnotationPalette(key, tipLabelShapePaletteSelect.value);
-      legendRenderer.draw();
-      saveSettings();
-    }
-  });
-
   // ── Tip-label shape extra controls (shapes 2–10) ─────────────────────────
 
   for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++) {
@@ -6514,22 +6407,11 @@ async function _initCore(root = document) {
     });
     tipLabelShapeExtraColourBys[_idx].addEventListener('change', () => {
       renderer.setTipLabelShapeExtraColourBy(_idx, tipLabelShapeExtraColourBys[_idx].value || null);
-      _updatePaletteSelect(tipLabelShapeExtraPaletteSelects[_idx], tipLabelShapeExtraPaletteRows[_idx], tipLabelShapeExtraColourBys[_idx].value);
-      _updateScaleModeSelect(tipLabelShapeExtraScaleModeSelects[_idx], tipLabelShapeExtraScaleModeRows[_idx], tipLabelShapeExtraColourBys[_idx].value);
+      _updateConfigureBtn(tipLabelShapeExtraConfigureRows[_idx], tipLabelShapeExtraColourBys[_idx].value);
       saveSettings();
     });
-    tipLabelShapeExtraPaletteSelects[_idx].addEventListener('change', () => {
-      const key = tipLabelShapeExtraColourBys[_idx].value;
-      if (key && key !== 'user_colour') {
-        annotationPalettes.set(key, tipLabelShapeExtraPaletteSelects[_idx].value);
-        _syncPaletteSelects(key, tipLabelShapeExtraPaletteSelects[_idx].value);
-        renderer.setAnnotationPalette(key, tipLabelShapeExtraPaletteSelects[_idx].value);
-        legendRenderer.draw();
-        saveSettings();
-      }
-    });
-    tipLabelShapeExtraScaleModeSelects[_idx].addEventListener('change', () => {
-      _handleScaleModeChange(tipLabelShapeExtraColourBys[_idx].value, tipLabelShapeExtraScaleModeSelects[_idx].value);
+    tipLabelShapeExtraConfigureBtns[_idx]?.addEventListener('click', () => {
+      openAnnotConfig(tipLabelShapeExtraColourBys[_idx].value);
     });
   }
 

@@ -26,7 +26,7 @@ function _fmtNum(v) {
  *                                    renderer.setAnnotationSchema(schema).
  * @returns {{ open: Function, close: Function }}
  */
-export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, getTableColumns, getAnnotationPalette, onPaletteChange, getAnnotationScaleMode, onScaleModeChange }) {
+export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, getTableColumns, getAnnotationPalette, onPaletteChange, getAnnotationScaleMode, onScaleModeChange, onConfigureClick }) {
   const overlay  = document.getElementById('curate-annot-overlay');
   const tbody    = document.getElementById('curate-annot-tbody');
   const detail   = document.getElementById('curate-annot-detail');
@@ -337,25 +337,12 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
           `<div class="ca-detail-header"><i class="bi bi-tag me-1"></i>${displayName}</div>`
         + `<div class="ca-row" style="color:var(--pt-text-subdued);font-size:0.78rem;margin-top:4px">`
         + `<i class="bi bi-lock-fill me-2" style="opacity:0.45"></i>Computed attribute — read-only</div>`
-        + `<div class="ca-section-lbl" style="margin-top:10px">Palette</div>`
-        + `<div class="ca-row"><label class="ca-row-lbl">Colour scheme</label>`
-        + `<select id="cd-palette" class="ca-sel" style="width:auto">${opts}</select>`
+        + `<div class="ca-row" style="margin-top:10px">`
+        + `<button id="cd-configure-btn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-palette2 me-1"></i>Configure colours…</button>`
         + `</div>`;
-      if (!isCat) {
-        const storedMode = _pendingScaleModes.get(name) ?? (getAnnotationScaleMode ? getAnnotationScaleMode(name) : '') ?? '';
-        const scaleModeOpts = [
-          ['', 'Auto (min → max)'], ['symmetric-zero', 'Symmetric ±0'],
-          ['zero-positive', 'From zero'], ['zero-one', '0 → 1'],
-        ].map(([v, l]) => `<option value="${v}"${v === storedMode ? ' selected' : ''}>${l}</option>`).join('');
-        bHtml += `<div class="ca-row" style="margin-top:6px"><label class="ca-row-lbl">Scale</label>`
-               + `<select id="cd-scale-mode" class="ca-sel" style="width:auto">${scaleModeOpts}</select></div>`;
-      }
       detail.innerHTML = bHtml;
-      document.getElementById('cd-palette')?.addEventListener('change', e => {
-        _pendingPalettes.set(name, e.target.value);
-      });
-      document.getElementById('cd-scale-mode')?.addEventListener('change', e => {
-        _pendingScaleModes.set(name, e.target.value);
+      document.getElementById('cd-configure-btn')?.addEventListener('click', () => {
+        if (onConfigureClick) onConfigureClick(name);
       });
       return;
     }
@@ -502,33 +489,18 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
           + ` <span class="ca-hint">(stored on descendant; describes the branch above it — transferred on reroot)</span>`
           + `</label></div>`;
 
-    // Palette picker — for all colourable (non-list) types
+    // Configure colours button — opens centralized annotation colour-config modal
     {
-      const isCat    = currentType === 'categorical' || currentType === 'ordinal';
-      const palettes = isCat ? CATEGORICAL_PALETTES : SEQUENTIAL_PALETTES;
-      const defPal   = isCat ? DEFAULT_CATEGORICAL_PALETTE : DEFAULT_SEQUENTIAL_PALETTE;
-      const stored   = _pendingPalettes.get(name) ?? (getAnnotationPalette ? getAnnotationPalette(name) : null) ?? defPal;
-      const opts = Object.keys(palettes)
-        .map(p => `<option value="${esc(p)}"${p === stored ? ' selected' : ''}>${esc(p)}</option>`)
-        .join('');
-      html += `<div class="ca-section-lbl" style="margin-top:10px">Palette</div>`
-            + `<div class="ca-row"><label class="ca-row-lbl">Colour scheme</label>`
-            + `<select id="cd-palette" class="ca-sel" style="width:auto">${opts}</select>`
-            + `</div>`;
-      if (!isCat && currentType !== 'date') {
-        const storedMode = _pendingScaleModes.get(name) ?? (getAnnotationScaleMode ? getAnnotationScaleMode(name) : '') ?? '';
-        const scaleModeOpts = [
-          ['', 'Auto (min → max)'], ['symmetric-zero', 'Symmetric ±0'],
-          ['zero-positive', 'From zero'], ['zero-one', '0 → 1'],
-        ].map(([v, l]) => `<option value="${v}"${v === storedMode ? ' selected' : ''}>${l}</option>`).join('');
-        html += `<div class="ca-row" style="margin-top:6px"><label class="ca-row-lbl">Scale</label>`
-              + `<select id="cd-scale-mode" class="ca-sel" style="width:auto">${scaleModeOpts}</select></div>`;
-      }
+      html += `<div class="ca-section-lbl" style="margin-top:10px">Colours</div>`
+            + `<div class="ca-row"><button id="cd-configure-btn" class="btn btn-sm btn-outline-secondary">`
+            + `<i class="bi bi-palette2 me-1"></i>Configure colours…</button></div>`;
     }
 
     detail.innerHTML = html;
 
-    // ── Wire controls ───────────────────────────────────────────────────────
+    document.getElementById('cd-configure-btn')?.addEventListener('click', () => {
+      if (onConfigureClick) onConfigureClick(name);
+    });
 
     // Type
     document.getElementById('cd-type')?.addEventListener('change', e => {
