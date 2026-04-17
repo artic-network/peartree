@@ -17,3 +17,4 @@ src-tauri/gen/
 # Editor directories
 .idea/
 .vscode/
+_site/
