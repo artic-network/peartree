@@ -1,8 +1,8 @@
 /*
- * peartree-embed.css — styles for PearTree embedded directly in a report page.
- * Included by demo_embed.html alongside peartree.css.
+ * pearcore-embed.css — layout for a pearcore app embedded in a host page.
+ * Included by embed entry points alongside pearcore.css.
  * Provides a container-level flex layout that replaces the html/body
- * full-page layout found in peartree-webapp.css.
+ * full-page layout found in pearcore-webapp.css.
  */
 
 /* ── Embedded container layout ── */

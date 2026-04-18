@@ -1,7 +1,7 @@
 // themes.js — built-in theme presets and application defaults
 // ─────────────────────────────────────────────────────────────────────────────
 
-export { TYPEFACES, buildFont } from './typefaces.js';
+export { TYPEFACES, buildFont } from '../../pearcore/js/typefaces.js';
 
 export const SETTINGS_KEY = 'peartree-settings';
 export const USER_THEMES_KEY = 'peartree-user-themes';

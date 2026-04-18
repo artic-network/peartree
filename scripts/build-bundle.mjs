@@ -83,10 +83,13 @@ const cssInjector = [
 
 // ── Step D: read vendor files that are loaded dynamically at runtime ─────
 // They're concatenated ahead of the IIFE so they're already evaluated when
-// the guards in peartree.js check typeof window.marked / window.buildAppHTML.
+// the guards in peartree.js check typeof window.marked / window.buildStandardDialogsHTML / window.buildAppHTML.
 console.log('Reading vendor files…');
 const markedCode  = readFileSync(
-  resolve(root, 'peartree', 'vendor', 'marked.min.js'), 'utf8'
+  resolve(root, 'pearcore', 'vendor', 'marked.min.js'), 'utf8'
+).trimEnd();
+const coreUiCode = readFileSync(
+  resolve(root, 'pearcore', 'js', 'pearcore-ui.js'), 'utf8'
 ).trimEnd();
 const uiCode = readFileSync(
   resolve(root, 'peartree', 'js', 'peartree-ui.js'), 'utf8'
@@ -108,13 +111,14 @@ const shimCode = [
 
 // ── Step F: concatenate and write ────────────────────────────────────────
 // Order matters:
-//   1. cssInjector — styles available before any UI is built
-//   2. marked      — window.marked set before peartree.js IIFE runs
-//   3. peartree-ui — window.buildAppHTML set before embed() is called
-//   4. JS IIFE     — PearTree.embed / PearTree.app / etc.
-//   5. PearTreeEmbed shim
+//   1. cssInjector  — styles available before any UI is built
+//   2. marked       — window.marked set before peartree.js IIFE runs
+//   3. pearcore-ui  — generic dialog/panel/toolbar builders
+//   4. peartree-ui  — window.buildAppHTML set before embed() is called
+//   5. JS IIFE      — PearTree.embed / PearTree.app / etc.
+//   6. PearTreeEmbed shim
 const banner = `/* PearTree ${process.env.PEARTREE_VERSION_TAG || 'dev'} — single-file bundle */\n`;
-const parts  = [banner, cssInjector, '\n', markedCode, '\n', uiCode, '\n', jsCode, '\n', shimCode, '\n'];
+const parts  = [banner, cssInjector, '\n', markedCode, '\n', coreUiCode, '\n', uiCode, '\n', jsCode, '\n', shimCode, '\n'];
 const output = parts.join('');
 
 writeFileSync(outfile, output, 'utf8');

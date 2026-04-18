@@ -21,7 +21,8 @@ PearTree can be embedded directly inside any HTML page using a single JavaScript
   <!-- 2. A container element -->
   <div id="my-tree"></div>
 
-  <!-- 3. Load the embed script -->
+  <!-- 3. Load the embed scripts -->
+  <script src="pearcore/js/pearcore-embed.js"></script>
   <script src="peartree/js/peartree-embed.js"></script>
 
   <!-- 4. Initialise -->
@@ -502,6 +503,7 @@ Controllers returned by `embedFrame()` expose the same methods (messages are for
     <div id="report-tree"></div>
   </div>
 
+  <script src="pearcore/js/pearcore-embed.js"></script>
   <script src="peartree/js/peartree-embed.js"></script>
   <script>
     PearTreeEmbed.embed({

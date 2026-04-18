@@ -2,8 +2,9 @@
    esbuild resolves these @imports, inlines the bootstrap-icons font as a
    base64 data URI, and emits a single minified CSS string. */
 
-@import "../peartree/css/bootstrap.min-artic.css";
-@import "../peartree/vendor/bootstrap-icons/bootstrap-icons.css";
+@import "../pearcore/vendor/bootstrap.min-artic.css";
+@import "../pearcore/vendor/bootstrap-icons/bootstrap-icons.css";
+@import "../pearcore/css/pearcore.css";
 @import "../peartree/css/peartree.css";
-@import "../peartree/css/peartree-embed.css";
-@import "../peartree/css/peartree-webapp.css";
+@import "../pearcore/css/pearcore-embed.css";
+@import "../pearcore/css/pearcore-webapp.css";

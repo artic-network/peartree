@@ -2,6 +2,9 @@
 // NEXUS / Newick parser  (adapted from src/tree.js – no npm deps required)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Re-export parseDelimited from pearcore so existing consumers continue to work.
+export { parseDelimited } from '../../pearcore/js/annotation-utils.js';
+
 /**
  * Parse a Newick string into a lightweight nested node object.
  * Returns the root node { name, length, label, annotations, children }
@@ -313,44 +316,4 @@ export function graphToNewick(g, subtreeRootId, annotKeys, nodeLabelKey = null) 
     body = `(${aStr}${aLen},${bStr}${bLen})`;
   }
   return body + ';';
-}
-
-/**
- * Parse a CSV or TSV string into { headers, rows[] }.
- * Auto-detects delimiter by comparing tab vs comma count in the first line.
- */
-export function parseDelimited(text) {
-  const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
-  if (lines.length === 0) return { headers: [], rows: [] };
-
-  const firstLine  = lines[0];
-  const tabCount   = (firstLine.match(/\t/g)  || []).length;
-  const commaCount = (firstLine.match(/,/g)   || []).length;
-  const delimiter  = tabCount >= commaCount ? '\t' : ',';
-
-  function parseLine(line) {
-    if (delimiter === '\t') return line.split('\t').map(v => v.trim());
-    const result = []; let cur = '', inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"') {
-        if (inQ && line[i + 1] === '"') { cur += '"'; i++; } else inQ = !inQ;
-      } else if (ch === ',' && !inQ) {
-        result.push(cur.trim()); cur = '';
-      } else { cur += ch; }
-    }
-    result.push(cur.trim());
-    return result;
-  }
-
-  const headers = parseLine(lines[0]);
-  const rows = [];
-  for (let i = 1; i < lines.length; i++) {
-    const vals = parseLine(lines[i]);
-    if (vals.every(v => !v)) continue;
-    const obj = {};
-    headers.forEach((h, j) => { obj[h] = vals[j] ?? ''; });
-    rows.push(obj);
-  }
-  return { headers, rows };
 }

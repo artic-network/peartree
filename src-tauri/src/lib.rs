@@ -432,7 +432,7 @@ fn new_window(app: tauri::AppHandle, file_path: Option<String>) -> Result<(), St
     let win = tauri::WebviewWindowBuilder::new(
         &app,
         &label,
-        tauri::WebviewUrl::App("peartree-tauri.html".into()),
+        tauri::WebviewUrl::App("peartree/peartree-tauri.html".into()),
     )
     .title("PearTree \u{2014} Phylogenetic Tree Viewer")
     .inner_size(1400.0, 900.0)
@@ -573,7 +573,7 @@ pub fn run() {
             let main_win = tauri::WebviewWindowBuilder::new(
                 app.handle(),
                 "main",
-                tauri::WebviewUrl::App("peartree-tauri.html".into()),
+                tauri::WebviewUrl::App("peartree/peartree-tauri.html".into()),
             )
             .title("PearTree \u{2014} Phylogenetic Tree Viewer")
             .inner_size(1400.0, 900.0)

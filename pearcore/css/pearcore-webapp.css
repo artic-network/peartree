@@ -1,8 +1,8 @@
 /*
- * peartree-webapp.css — styles for the full-page standalone web app.
- * Included by peartree.html alongside peartree.css.
- * Not needed when PearTree is embedded directly in a report page
- * (use peartree-embed.css instead).
+ * pearcore-webapp.css — layout for a full-page standalone web app.
+ * Included by any pearcore-based app's main HTML alongside pearcore.css.
+ * Not needed when the app is embedded directly in a report page
+ * (use pearcore-embed.css instead).
  */
 
 /* ── Layout ── */

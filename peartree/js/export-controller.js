@@ -2,7 +2,7 @@
 // Extracted from peartree.js to keep the app controller focused.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { htmlEsc as esc, downloadBlob, blobToBase64 } from './utils.js';
+import { htmlEsc as esc, downloadBlob, blobToBase64 } from '../../pearcore/js/utils.js';
 import { isNumericType } from './phylograph.js';
 import { graphToNewick } from './treeio.js';
 import { viewportDims, compositeViewPng, buildGraphicSVG } from './graphicsio.js';

@@ -1,17 +1,18 @@
 /**
- * peartree-tauri.js — Tauri platform adapter for peartree.
+ * peartree-tauri.js — Tree-specific Tauri platform adapter.
  *
- * Wires window.peartree.commands (the central registry) to Tauri's native
- * backend features:
- *   • Native file-open dialog         (pick_tree_file command)
- *   • New window creation             (new_window command, Cmd+N)
- *   • File open via drag / dbl-click  (open-file event, routes to focused window)
- *   • Native menu → command dispatch  (menu-event event, routed by Rust)
- *   • Native menu enabled-state sync  (set_menu_item_enabled, re-synced on focus)
+ * Extends the generic pearcore Tauri adapter with:
+ *   • Native tree file picker     (pick_tree_file command)
+ *   • Open-tree command override  (bypasses modal, uses native picker)
+ *   • Import annotations override (pick_annot_file + config step)
+ *   • Pending file load           (new window opened for a specific file)
+ *   • File-open event handler     (drag/dbl-click/file association → loadTree)
  *
- * Loaded unconditionally from peartree.html; self-guards on window.__TAURI__
- * so it is silently inert when running in a plain browser.
+ * Loaded unconditionally from peartree-tauri.html; self-guards on
+ * window.__TAURI__ so it is silently inert in a plain browser.
  */
+
+import { setupTauriAdapter } from '../../pearcore/js/pearcore-tauri.js';
 
 (async () => {
   if (!window.__TAURI__) return;
@@ -22,22 +23,16 @@
     window.addEventListener('peartree-ready', resolve, { once: true });
   });
 
-  const { invoke }        = window.__TAURI__.core;
-  const { listen }         = window.__TAURI__.event;
-  const { getCurrentWindow } = window.__TAURI__.window;
-  const currentWindow      = getCurrentWindow();
-  const app                = window.peartree;
-  const registry           = app.commands;
+  const app      = window.peartree;
+  const registry = app.commands;
 
-  const setWindowTitle = (name) =>
-    getCurrentWindow().setTitle(`PearTree — ${name}`).catch(() => {});
-
-  // Keep the native window title in sync with the loaded filename.
-  // loadTree() in peartree.js calls this via the onTitleChange hook for every load path.
-  app.onTitleChange(name => name
-    ? setWindowTitle(name)
-    : getCurrentWindow().setTitle('PearTree — Phylogenetic Tree Viewer').catch(() => {})
-  );
+  // ── Generic Tauri adapter: save dialogs, print, menu sync, updates ─────
+  const { invoke, currentWindow } = await setupTauriAdapter({
+    app,
+    registry,
+    appTitle: 'PearTree — Phylogenetic Tree Viewer',
+    appName:  'PearTree',
+  });
 
   // ── File picker: native Tauri dialog ───────────────────────────────────
   // WKWebView blocks <input type="file"> clicks from async contexts, so we
@@ -60,11 +55,6 @@
     }
   };
 
-  // ── New window ─────────────────────────────────────────────────────────
-  registry.get('new-window').exec = () => {
-    invoke('new_window', { filePath: null }).catch(err => console.error('new_window failed:', err));
-  };
-
   // ── In Tauri, "Open Tree File" button bypasses the modal and goes straight
   //    to the native file picker (same as Cmd+O).
   registry.get('open-tree').exec = () => app.pickFile();
@@ -80,60 +70,6 @@
       app.showErrorDialog(err.message ?? String(err));
     }
   };
-
-  // ── In Tauri, Export Tree / Export Graphic show native save-file dialogs
-  //    instead of triggering browser downloads.  The modal dialogs still appear
-  //    so the user can choose format, scope, etc. — only the final save step
-  //    is replaced.
-  const _nativeSave = async ({ content, contentBase64, base64 = false, filename, filterName, extensions }) => {
-    try {
-      await invoke('save_file', {
-        filename,
-        content:    base64 ? contentBase64 : content,
-        base64,
-        filterName,
-        extensions,
-      });
-    } catch (err) {
-      app.showErrorDialog(err.message ?? String(err));
-    }
-  };
-  app.setExportSaveHandler(_nativeSave);
-  app.setGraphicsSaveHandler(_nativeSave);
-  app.setRTTImageSaveHandler(_nativeSave);
-  app.setThemeSaveHandler(_nativeSave);
-
-  // ── Print: use a Rust command to trigger the native macOS print panel ────
-  // window.print() and getCurrentWindow().print() are unreliable inside
-  // WKWebView; invoking via Rust's WebviewWindow::print() is the reliable path.
-  app.setPrintTrigger(async (layer) => {
-    // Don't clear layer here — the afterprint listener (set up in _doPrint) handles
-    // cleanup once the print dialog closes or is cancelled.
-    await invoke('trigger_print');
-  });
-
-  // ── Native menu enabled-state sync ────────────────────────────────────────
-  // Subscribe to state changes from the JS command registry. Rust sets the
-  // correct initial disabled states at launch; this handles all dynamic
-  // changes thereafter (tree loaded, selection changed, etc.).
-  registry.onStateChange((id, enabled, label) => {
-    invoke('set_menu_item_enabled', { id, enabled })
-      .catch(err => console.error('[tauri] set_menu_item_enabled failed', id, err));
-    if (label !== undefined) {
-      invoke('set_menu_item_text', { id, text: label }).catch(() => {});
-    }
-  });
-
-  // ── Re-sync menu when this window gains focus ────────────────────────
-  // On macOS there is one global app menu.  Re-sync item states whenever
-  // this window gains OS focus so the menu reflects the active window.
-  await currentWindow.onFocusChanged(({ payload: focused }) => {
-    if (!focused) return;
-    for (const cmd of registry.getAll().values()) {
-      invoke('set_menu_item_enabled', { id: cmd.id, enabled: cmd.enabled }).catch(() => {});
-      if (cmd.label) invoke('set_menu_item_text', { id: cmd.id, text: cmd.label }).catch(() => {});
-    }
-  });
 
   // ─── Pending file (new window opened for a specific file) ───────────────
   // When Rust creates a new window to open a file it stores the path
@@ -170,7 +106,7 @@
   // ── File opened via drag-to-icon / double-click / file association ─────
   // Rust emits this only to the focused window. Use getCurrentWindow().listen
   // so each window only handles events targeted at it (not all windows).
-  await getCurrentWindow().listen('open-file', async (event) => {
+  await currentWindow.listen('open-file', async (event) => {
     const filePath = event.payload;
     if (!filePath) return;
 
@@ -196,46 +132,4 @@
       app.showErrorDialog(err.message ?? String(err));
     }
   });
-
-  // ── Native menu → command dispatch ───────────────────────────────────────
-  // Rust emits a per-window event name so only this window ever receives it,
-  // regardless of Tauri's broadcast semantics for the global listen().
-  await listen(`menu-event-${currentWindow.label}`, ({ payload: id }) => {
-    registry.execute(id);
-  });
-
-  // ── Check for Updates ─────────────────────────────────────────────────────
-  registry.get('check-for-updates').exec = async () => {
-    try {
-      const update = await invoke('check_for_updates');
-      if (!update) {
-        app.showErrorDialog('PearTree is up to date.');
-        return;
-      }
-      const notes     = update.body ? `\n\nRelease notes:\n${update.body}` : '';
-      const msg       = `PearTree v${update.version} is available (you have v${update.current}).${notes}`;
-      const confirmed = await app.showConfirmDialog('Update Available', msg, { okLabel: 'Install', cancelLabel: 'Later' });
-      if (!confirmed) return;
-      await invoke('install_update');
-    } catch (err) {
-      app.showErrorDialog(`Update check failed: ${err.message ?? String(err)}`);
-    }
-  };
-
-  // ── Background update check on startup ───────────────────────────────────
-  // Fire-and-forget: don't await, so startup is never delayed.
-  // Silently ignores network errors (offline, no release yet, etc.).
-  (async () => {
-    try {
-      const update = await invoke('check_for_updates');
-      if (!update) return;
-      const notes     = update.body ? `\n\nRelease notes:\n${update.body}` : '';
-      const msg       = `PearTree v${update.version} is available (you have v${update.current}).${notes}`;
-      const confirmed = await app.showConfirmDialog('Update Available', msg, { okLabel: 'Install', cancelLabel: 'Later' });
-      if (!confirmed) return;
-      await invoke('install_update');
-    } catch {
-      // Silently ignore — background check should never surface errors to the user.
-    }
-  })();
 })();

@@ -709,16 +709,12 @@ function _buildStatusBar() {
   const showTheme  = _ui.themeToggle  !== false;
   const showAbout  = _ui.about        !== false;
   const showHelp   = _ui.help         !== false;
-  return `
-<div id="status-bar">
-  ${showBrand ? `<a id="status-brand" href="https://github.com/artic-network/peartree" target="_blank" rel="noopener" title="PearTree on GitHub"><img src="img/peartree.svg" class="pt-brand-logo" alt="">PearTree</a>` : ''}
-  <span id="status-stats"></span>
-  <span id="status-select"></span>
-  <span id="status-message"></span>
-  ${showTheme ? `<button id="btn-theme" title="Toggle light/dark mode"><i class="bi bi-sun"></i></button>` : ''}
-  ${showAbout ? `<button id="btn-about" title="About PearTree"><i class="bi bi-info-circle"></i></button>` : ''}
-  ${showHelp  ? `<button id="btn-help" title="Help (⌘?)"><i class="bi bi-question-circle"></i></button>` : ''}
-</div>`;
+  return buildStatusBarHTML({
+    brandHTML: showBrand ? `<a id="status-brand" href="https://github.com/artic-network/peartree" target="_blank" rel="noopener" title="PearTree on GitHub"><img src="img/peartree.svg" class="pt-brand-logo" alt="">PearTree</a>` : undefined,
+    themeToggle: showTheme,
+    about: showAbout,
+    help: showHelp,
+  });
 }
 
 function _buildModals() {
@@ -759,35 +755,7 @@ function _buildModals() {
     </div>
   </div>
 </div>
-<div id="error-dialog-overlay">
-  <div id="error-dialog">
-    <h6><i class="bi bi-exclamation-triangle-fill"></i>Could not open file</h6>
-    <p id="error-dialog-msg"></p>
-    <button id="error-dialog-ok" class="btn btn-sm btn-primary">OK</button>
-    <div style="clear:both"></div>
-  </div>
-</div>
-<div id="confirm-dialog-overlay">
-  <div id="confirm-dialog">
-    <h6><i class="bi bi-exclamation-triangle"></i><span id="confirm-dialog-title">Warning</span></h6>
-    <p id="confirm-dialog-msg"></p>
-    <div id="confirm-dialog-footer">
-      <button id="confirm-dialog-cancel" class="btn btn-sm btn-outline-secondary">Cancel</button>
-      <button id="confirm-dialog-ok" class="btn btn-sm btn-primary">OK</button>
-    </div>
-  </div>
-</div>
-<div id="prompt-dialog-overlay">
-  <div id="prompt-dialog">
-    <h6 id="prompt-dialog-title"></h6>
-    <p id="prompt-dialog-msg"></p>
-    <input type="text" id="prompt-dialog-input" class="pt-modal-url-input" autocomplete="off" spellcheck="false" />
-    <div id="prompt-dialog-footer">
-      <button id="prompt-dialog-cancel" class="btn btn-sm btn-outline-secondary">Cancel</button>
-      <button id="prompt-dialog-ok" class="btn btn-sm btn-primary">OK</button>
-    </div>
-  </div>
-</div>
+` + buildStandardDialogsHTML() + `
 <div id="curate-annot-overlay" class="pt-modal-overlay">
   <div class="pt-modal" style="width:800px;max-width:calc(100vw - 24px);min-width:min(760px,calc(100vw - 24px))">
     <div class="pt-modal-header">
@@ -928,27 +896,13 @@ function _buildHelpAbout() {
   const _ui = window.peartreeConfig?.ui || {};
   const showHelp  = _ui.help  !== false;
   const showAbout = _ui.about !== false;
-  if (!showHelp && !showAbout) return '';
-  return (showHelp ? `
-<div id="help-panel">
-  <div id="help-panel-header">
-    <h2>PearTree Help</h2>
-    <button id="btn-help-close" title="Close help">&times;</button>
-  </div>
-  <div id="help-panel-body">
-    <div class="help-md" id="help-content"><p style="opacity:0.5">Loading…</p></div>
-  </div>
-</div>` : '') + (showAbout ? `
-<div id="about-backdrop"></div>
-<div id="about-panel">
-  <div id="about-panel-header">
-    <h2><img src="img/peartree.svg" class="pt-brand-logo me-2" alt="">About PearTree</h2>
-    <button id="btn-about-close" title="Close">&times;</button>
-  </div>
-  <div id="about-panel-body">
-    <div class="help-md" id="about-content"><p style="opacity:0.5">Loading…</p></div>
-  </div>
-</div>` : '');
+  return buildHelpAboutHTML({
+    help: showHelp,
+    about: showAbout,
+    helpTitle: 'PearTree Help',
+    aboutTitle: 'About PearTree',
+    aboutLogo: '<img src="img/peartree.svg" class="pt-brand-logo me-2" alt="">',
+  });
 }
 
 const _APP_SECTION_BUILDERS = {
@@ -1036,106 +990,29 @@ function buildAppHTML(sections, toolbarSections) {
 //
 function initPearTreeUIBindings(root, opts = {}) {
   const $ = id => root.querySelector('#' + id);
-  // For palette-pinned: scope to the embed wrapper if we're inside one,
-  // otherwise fall back to document.body (standalone webapp).
-  const _bodyOrWrap = () => root.closest?.('.pt-embed-wrap') ?? document.body;
 
-  // ── Tool palette panel ──────────────────────────────────────────────────
-  const palettePanel    = $('palette-panel');
-  const btnPalette      = $('btn-palette');
-  const btnPaletteClose = $('btn-palette-close');
-  const btnPalettePin   = $('btn-palette-pin');
-  const PALETTE_PIN_KEY = 'peartree-palette-pinned';
-  let   palettePinned   = false;
-  let   _paletteOnChange = null;
-  palettePanel.inert = true;  // off-screen by default; inert removes from tab order
+  // Delegate generic UI bindings (palette panel, help/about, dark mode,
+  // keyboard shortcuts, toolbar height) to pearcore-ui.js.
+  const _cfg = window.peartreeConfig ?? {};
+  const _ui  = _cfg.ui ?? {};
 
-  function _notifyPaletteChange() {
-    _paletteOnChange?.(palettePanel.classList.contains('open'), palettePinned);
-  }
+  const noStorage = Object.prototype.hasOwnProperty.call(_cfg, 'storageKey')
+                    && _cfg.storageKey === null;
 
-  function _afterPanelTransition() {
-    const DURATION = 250;
-    const start = performance.now();
-    function pump(now) {
-      window.dispatchEvent(new Event('resize'));
-      if (now - start < DURATION) requestAnimationFrame(pump);
-    }
-    requestAnimationFrame(pump);
-  }
+  const { palette, helpAbout } = initCoreUIBindings(root, {
+    palettePinned:        opts.palettePinned,
+    paletteOpen:          opts.paletteOpen,
+    paletteEnabled:       _ui.palette !== false,
+    onPaletteStateChange: opts.onPaletteStateChange,
+    fetchContent:         (file) => window.peartree.fetchWithFallback(file),
+    helpFile:             'help.md',
+    aboutFile:            'about.md',
+    theme:                _ui.theme,
+    noStorage:            noStorage,
+    keyboardEnabled:      _ui.keyboard !== false,
+  });
 
-  function openPalette(advanced = false) {
-    palettePanel.classList.add('open');
-    palettePanel.inert = false;
-    palettePanel.classList.toggle('advanced', advanced);
-    if (palettePinned) {
-      palettePanel.classList.add('pinned');
-      _bodyOrWrap().classList.add('palette-pinned');
-    }
-    btnPalette.classList.add('active');
-    _afterPanelTransition();
-    _notifyPaletteChange();
-    opts.onPaletteStateChange?.();
-  }
-  function closePalette() {
-    palettePanel.classList.remove('open', 'advanced', 'pinned');
-    palettePanel.inert = true;
-    _bodyOrWrap().classList.remove('palette-pinned');
-    btnPalette.classList.remove('active');
-    _afterPanelTransition();
-    _notifyPaletteChange();
-    opts.onPaletteStateChange?.();
-  }
-  function pinPalette() {
-    palettePinned = true;
-    localStorage.setItem(PALETTE_PIN_KEY, '1');
-    palettePanel.classList.add('open', 'pinned');
-    palettePanel.inert = false;
-    _bodyOrWrap().classList.add('palette-pinned');
-    btnPalettePin.classList.add('active');
-    btnPalettePin.title = 'Unpin panel';
-    btnPalettePin.innerHTML = '<i class="bi bi-pin-angle-fill"></i>';
-    btnPalette.classList.add('active');
-    _afterPanelTransition();
-    _notifyPaletteChange();
-    opts.onPaletteStateChange?.();
-  }
-  function unpinPalette() {
-    palettePinned = false;
-    localStorage.removeItem(PALETTE_PIN_KEY);
-    palettePanel.classList.remove('pinned');
-    _bodyOrWrap().classList.remove('palette-pinned');
-    btnPalettePin.classList.remove('active');
-    btnPalettePin.title = 'Pin panel open';
-    btnPalettePin.innerHTML = '<i class="bi bi-pin-angle"></i>';
-    _afterPanelTransition();
-    _notifyPaletteChange();
-    opts.onPaletteStateChange?.();
-  }
-
-  if (palettePanel && window.peartreeConfig?.ui?.palette !== false) {
-    btnPalette.addEventListener('click', e => {
-      e.stopPropagation();
-      if (palettePanel.classList.contains('open')) {
-        closePalette();
-      } else {
-        openPalette(e.altKey);
-      }
-    });
-    btnPaletteClose.addEventListener('click', closePalette);
-    btnPalettePin.addEventListener('click', () => {
-      if (palettePinned) unpinPalette();
-      else               pinPalette();
-    });
-
-    // Restore state: prefer opts (from saved settings) then fall back to legacy localStorage key.
-    const _wasPinned = opts.palettePinned ?? (localStorage.getItem(PALETTE_PIN_KEY) === '1');
-    const _wasOpen   = opts.paletteOpen   ?? false;
-    if (_wasPinned)       pinPalette();
-    else if (_wasOpen)    openPalette();
-  }
-
-  // ── Slider live value readouts ──────────────────────────────────────────
+  // ── Slider live value readouts (tree-specific) ──────────────────────────
   const fontSliderEl = $('font-size-slider');
   const tipSliderEl  = $('tip-size-slider');
   const nodeSliderEl = $('node-size-slider');
@@ -1146,183 +1023,23 @@ function initPearTreeUIBindings(root, opts = {}) {
   tipSliderEl?.addEventListener('input',   () => { tipValEl.textContent   = tipSliderEl.value; });
   nodeSliderEl?.addEventListener('input',  () => { nodeValEl.textContent  = nodeSliderEl.value; });
 
-  // ── Help panel ──────────────────────────────────────────────────────────
-  const helpPanel   = $('help-panel');
-  const helpContent = $('help-content');
-  const btnHelp     = $('btn-help');
-  const btnHelpClose = $('btn-help-close');
-  let helpLoaded = false;
-  if (helpPanel) helpPanel.inert = true;  // off-screen by default; inert removes from tab order
-
-  async function openHelp() {
-    if (!helpPanel) return;
-    if (!helpLoaded) {
-      try {
-        const md = await window.peartree.fetchWithFallback('help.md');
-        helpContent.innerHTML = marked.parse(md);
-        helpLoaded = true;
-      } catch (err) {
-        helpContent.innerHTML = `<p style="color:var(--pt-red)">Could not load help.md: ${err.message}</p>`;
-      }
-    }
-    closeAbout();
-    helpPanel.classList.add('open');
-    helpPanel.inert = false;
-    btnHelp?.classList.add('active');
-  }
-
-  function closeHelp() {
-    if (!helpPanel) return;
-    helpPanel.classList.remove('open');
-    helpPanel.inert = true;
-    btnHelp?.classList.remove('active');
-  }
-
-  if (btnHelp) {
-    btnHelp.addEventListener('click', e => {
-      e.stopPropagation();
-      helpPanel?.classList.contains('open') ? closeHelp() : openHelp();
-    });
-  }
-  if (btnHelpClose) btnHelpClose.addEventListener('click', closeHelp);
-
-  // ── About modal ─────────────────────────────────────────────────────────
-  const aboutPanel    = $('about-panel');
-  const aboutBackdrop = $('about-backdrop');
-  const aboutContent  = $('about-content');
-  const btnAbout      = $('btn-about');
-  const btnAboutClose = $('btn-about-close');
-  let aboutLoaded = false;
-  if (aboutPanel) aboutPanel.inert = true;  // off-screen by default; inert removes from tab order
-
-  /* ── Light / dark mode toggle ── */
-  (function () {
-    const STORAGE_KEY = 'pt-theme';
-    const btnTheme = $('btn-theme');
-    if (!btnTheme) return;
-    const icon = btnTheme.querySelector('i');
-
-    const noStorage = Object.prototype.hasOwnProperty.call(window.peartreeConfig ?? {}, 'storageKey')
-                      && window.peartreeConfig.storageKey === null;
-
-    // In embed mode scope the theme attribute to the .pt-embed-wrap element.
-    const themeRoot = noStorage
-      ? (btnTheme.closest('.pt-embed-wrap') ?? document.documentElement)
-      : document.documentElement;
-
-    function applyTheme(mode) {
-      if (mode === 'light') {
-        themeRoot.setAttribute('data-bs-theme', 'light');
-        icon.className = 'bi bi-moon-stars';
-        btnTheme.title = 'Switch to dark mode';
-      } else {
-        themeRoot.setAttribute('data-bs-theme', 'dark');
-        icon.className = 'bi bi-sun';
-        btnTheme.title = 'Switch to light mode';
-      }
-    }
-
-    const urlMode = new URLSearchParams(window.location.search).get('mode');
-    const cfgTheme = window.peartreeConfig?.ui?.theme;
-    const saved = (urlMode === 'dark' || urlMode === 'light') ? urlMode
-                : (cfgTheme === 'dark' || cfgTheme === 'light') ? cfgTheme
-                : (!noStorage ? localStorage.getItem(STORAGE_KEY) : null);
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    applyTheme(saved ?? (prefersDark ? 'dark' : 'light'));
-
-    btnTheme.addEventListener('click', () => {
-      const next = themeRoot.getAttribute('data-bs-theme') === 'light' ? 'dark' : 'light';
-      applyTheme(next);
-      if (!noStorage) localStorage.setItem(STORAGE_KEY, next);
-    });
-  })();
-
-  async function openAbout() {
-    if (!aboutPanel) return;
-    if (!aboutLoaded) {
-      try {
-        const md = await window.peartree.fetchWithFallback('about.md');
-        aboutContent.innerHTML = marked.parse(md);
-        aboutLoaded = true;
-      } catch (err) {
-        aboutContent.innerHTML = `<p style="color:var(--pt-red)">Could not load about.md: ${err.message}</p>`;
-      }
-    }
-    closeHelp();
-    aboutPanel.classList.add('open');
-    aboutPanel.inert = false;
-    aboutBackdrop?.classList.add('open');
-    btnAbout?.classList.add('active');
-  }
-
-  function closeAbout() {
-    if (!aboutPanel) return;
-    aboutPanel.classList.remove('open');
-    aboutPanel.inert = true;
-    aboutBackdrop?.classList.remove('open');
-    btnAbout?.classList.remove('active');
-  }
-
-  if (btnAbout) {
-    btnAbout.addEventListener('click', e => {
-      e.stopPropagation();
-      aboutPanel?.classList.contains('open') ? closeAbout() : openAbout();
-    });
-  }
-  if (btnAboutClose) btnAboutClose.addEventListener('click', closeAbout);
-  if (aboutBackdrop) aboutBackdrop.addEventListener('click', closeAbout);
-
   // Clicking the tree canvas closes any open panel immediately (unless pinned).
-  $('tree-canvas').addEventListener('pointerdown', () => {
-    if (!palettePinned) closePalette();
-    closeHelp();
-    closeAbout();
+  $('tree-canvas')?.addEventListener('pointerdown', () => {
+    if (!palette.isPinned()) palette.close();
+    helpAbout.closeHelp();
+    helpAbout.closeAbout();
   });
-
-  // Tab / ⌥Tab toggles palette; Alt held opens in advanced mode.
-  // Guarded: only act when focus is within this instance's root.
-  if (palettePanel && window.peartreeConfig?.ui?.palette !== false && window.peartreeConfig?.ui?.keyboard !== false) {
-    document.addEventListener('keydown', e => {
-      if (!(root === document || root.contains(document.activeElement))) return;
-      if (e.key === 'Tab' && !e.metaKey && !e.ctrlKey) {
-        const tag = document.activeElement && document.activeElement.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-        e.preventDefault();
-        if (palettePinned) return;
-        palettePanel.classList.contains('open') ? closePalette() : openPalette(e.altKey);
-      }
-    });
-  }
-
-  // Close help + palette on Escape when this instance has focus.
-  if (window.peartreeConfig?.ui?.keyboard !== false) {
-    document.addEventListener('keydown', e => {
-      if (!(root === document || root.contains(document.activeElement))) return;
-      if (e.key === 'Escape') { closeHelp(); if (!palettePinned) closePalette(); closeAbout(); }
-    });
-  }
-
-  // ── Keep panels below toolbar ───────────────────────────────────────────
-  const _toolbar = root.querySelector('.pt-toolbar');
-  if (_toolbar) {
-    const _docRoot = root === document ? document.documentElement : root;
-    function _updateToolbarH() {
-      _docRoot.style.setProperty('--pt-toolbar-h', _toolbar.offsetHeight + 'px');
-    }
-    _updateToolbarH();
-    new ResizeObserver(_updateToolbarH).observe(_toolbar);
-  }
 
   // Return a palette controller so peartree.js can drive and observe the panel.
   return {
     palette: {
-      open:     openPalette,
-      close:    closePalette,
-      pin:      pinPalette,
-      unpin:    unpinPalette,
-      isOpen:   () => palettePanel.classList.contains('open'),
-      isPinned: () => palettePinned,
-      onChange: (fn) => { _paletteOnChange = fn; },
+      open:     palette.open,
+      close:    palette.close,
+      pin:      palette.pin,
+      unpin:    palette.unpin,
+      isOpen:   palette.isOpen,
+      isPinned: palette.isPinned,
+      onChange: palette.onChange,
     },
   };
 }
@@ -1331,82 +1048,6 @@ function initPearTreeUIBindings(root, opts = {}) {
 window.initPearTreeUIBindings = initPearTreeUIBindings;
 
 // ── Dialog utility functions ─────────────────────────────────────────────
-// These are plain browser-compatible functions defined at global scope so
-// they can be called from the peartree.js ES module (and by embedders).
-// They use document.getElementById because the dialog IDs are globally unique.
-
-/**
- * Show a confirm dialog with a custom title, message, and button labels.
- * Returns a Promise that resolves true (OK) or false (Cancel).
- * Pressing Escape is treated as Cancel.
- */
-function showConfirmDialog(title, msg, { okLabel = 'OK', cancelLabel = 'Cancel' } = {}) {
-  return new Promise(resolve => {
-    const overlay   = document.getElementById('confirm-dialog-overlay');
-    document.getElementById('confirm-dialog-title').textContent = title;
-    document.getElementById('confirm-dialog-msg').textContent   = msg;
-    document.getElementById('confirm-dialog-ok').textContent    = okLabel;
-    const cancelBtn = document.getElementById('confirm-dialog-cancel');
-    cancelBtn.textContent = cancelLabel;
-    cancelBtn.style.display = cancelLabel ? '' : 'none';
-    overlay.classList.add('open');
-    const okBtn = document.getElementById('confirm-dialog-ok');
-    function close(result) {
-      overlay.classList.remove('open');
-      okBtn.removeEventListener('click', onOk);
-      cancelBtn.removeEventListener('click', onCancel);
-      document.removeEventListener('keydown', onKey, true);
-      resolve(result);
-    }
-    function onOk()     { close(true);  }
-    function onCancel() { close(false); }
-    function onKey(e)   { if (e.key === 'Escape') { e.stopPropagation(); close(false); } }
-    okBtn.addEventListener('click',     onOk);
-    cancelBtn.addEventListener('click', onCancel);
-    document.addEventListener('keydown', onKey, true);
-  });
-}
-
-/**
- * Convenience wrapper: show a confirm dialog with only an OK button.
- * Returns a Promise<true> when the user dismisses it.
- */
-function showAlertDialog(title, msg) {
-  return showConfirmDialog(title, msg, { okLabel: 'OK', cancelLabel: '' });
-}
-
-/**
- * Show a prompt dialog with an optional default value.
- * Returns a Promise resolving to the entered string (trimmed) or null if cancelled.
- * Works in Tauri (WKWebView blocks window.prompt()).
- */
-function showPromptDialog(title, msg, defaultValue = '') {
-  return new Promise(resolve => {
-    const overlay  = document.getElementById('prompt-dialog-overlay');
-    const input    = document.getElementById('prompt-dialog-input');
-    document.getElementById('prompt-dialog-title').textContent = title;
-    document.getElementById('prompt-dialog-msg').textContent   = msg;
-    input.value = defaultValue;
-    overlay.classList.add('open');
-    // Focus input on next tick so the overlay is visible first
-    setTimeout(() => { input.focus(); input.select(); }, 30);
-    const okBtn     = document.getElementById('prompt-dialog-ok');
-    const cancelBtn = document.getElementById('prompt-dialog-cancel');
-    function close(result) {
-      overlay.classList.remove('open');
-      okBtn.removeEventListener('click', onOk);
-      cancelBtn.removeEventListener('click', onCancel);
-      input.removeEventListener('keydown', onInputKey);
-      document.removeEventListener('keydown', onEsc, true);
-      resolve(result);
-    }
-    function onOk()     { close(input.value.trim() || null); }
-    function onCancel() { close(null); }
-    function onInputKey(e) { if (e.key === 'Enter') { e.preventDefault(); onOk(); } }
-    function onEsc(e)   { if (e.key === 'Escape') { e.stopPropagation(); close(null); } }
-    okBtn.addEventListener('click',     onOk);
-    cancelBtn.addEventListener('click', onCancel);
-    input.addEventListener('keydown',   onInputKey);
-    document.addEventListener('keydown', onEsc, true);
-  });
-}
+// showConfirmDialog, showAlertDialog, showPromptDialog are now provided by
+// pearcore/js/pearcore-ui.js (loaded before this script).  They remain
+// accessible as globals — no changes needed in consuming code.

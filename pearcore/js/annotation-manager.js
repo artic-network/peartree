@@ -1,9 +1,10 @@
-// annotations-manager.js — Annotation curation dialog.
-// Lets the user inspect, retype and adjust scale bounds for annotations
-// to annotations loaded from a tree file or imported from CSV/TSV.
+// annotation-manager.js — Annotation curation dialog.
+// Lets the user inspect, retype and adjust scale bounds for annotations.
+// Generic module — works with any data model that provides items with
+// `.annotations` and `.name` properties plus an `isTip` classifier.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { makeAnnotationFormatter, buildAnnotationSchema, isNumericType } from './phylograph.js';
+import { makeAnnotationFormatter, buildAnnotationSchema, isNumericType } from './annotation-utils.js';
 import { CATEGORICAL_PALETTES, SEQUENTIAL_PALETTES,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE } from './palettes.js';
 import { htmlEsc as esc } from './utils.js';
@@ -26,7 +27,7 @@ function _fmtNum(v) {
  *                                    renderer.setAnnotationSchema(schema).
  * @returns {{ open: Function, close: Function }}
  */
-export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, getTableColumns, getAnnotationPalette, onPaletteChange, getAnnotationScaleMode, onScaleModeChange, onConfigureClick }) {
+export function createAnnotCurator({ getGraph, onApply, isTip, onTableColumnsChange, getTableColumns, getAnnotationPalette, onPaletteChange, getAnnotationScaleMode, onScaleModeChange, onConfigureClick }) {
   const overlay  = document.getElementById('curate-annot-overlay');
   const tbody    = document.getElementById('curate-annot-tbody');
   const detail   = document.getElementById('curate-annot-detail');
@@ -569,7 +570,7 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
     const examplesWrap = document.getElementById('parse-tips-examples');
     const examplesList = document.getElementById('parse-tips-examples-list');
     const tips = graph
-      ? graph.nodes.filter(n => n.adjacents.length === 1 && n.name != null)
+      ? graph.nodes.filter(n => isTip(n) && n.name != null)
       : [];
     if (tips.length > 0) {
       const MAX = 5;
@@ -620,8 +621,8 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
       if (!await showConfirmDialog('Overwrite annotation', `An annotation named "${annotName}" already exists. Overwrite it?`, { okLabel: 'Overwrite', cancelLabel: 'Cancel' })) return;
     }
 
-    // Collect tip nodes (exactly one adjacent = parent only)
-    const tips = graph.nodes.filter(n => n.adjacents.length === 1 && n.name != null);
+    // Collect tip items
+    const tips = graph.nodes.filter(n => isTip(n) && n.name != null);
     if (tips.length === 0) { _showParseError('No tip nodes with names found.'); return; }
 
     // Extract the requested field from each tip name
@@ -676,7 +677,7 @@ export function createAnnotCurator({ getGraph, onApply, onTableColumnsChange, ge
     }
 
     // Rebuild schema from all nodes
-    const newSchema = buildAnnotationSchema(graph.nodes);
+    const newSchema = buildAnnotationSchema(graph.nodes, { isTip });
 
     // If user forced a type that differs from auto-detected, coerce the def
     if (typeHint !== 'auto' && newSchema.has(annotName)) {

@@ -19,9 +19,9 @@
  */
 import { getSequentialPalette,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
-         MISSING_DATA_COLOUR, buildCategoricalColourMap } from './palettes.js';
+         MISSING_DATA_COLOUR, buildCategoricalColourMap } from '../../pearcore/js/palettes.js';
 import { dateToDecimalYear, isNumericType } from './phylograph.js';
-import { buildFont, TYPEFACES } from './typefaces.js';
+import { buildFont, TYPEFACES } from '../../pearcore/js/typefaces.js';
 
 export class LegendRenderer {
   /**

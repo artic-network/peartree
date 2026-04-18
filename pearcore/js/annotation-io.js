@@ -1,22 +1,23 @@
-// annotimport.js — Annotation import dialog management.
-// Extracted from peartree.js to keep the app controller focused.
+// annotation-io.js — Annotation import dialog management.
+// Generic annotation importer — works with any data model that provides
+// items with `.annotations` and `.name` properties.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { parseDelimited } from './treeio.js';
-import { buildAnnotationSchema } from './phylograph.js';
+import { parseDelimited } from './annotation-utils.js';
+import { buildAnnotationSchema } from './annotation-utils.js';
 import { htmlEsc as esc, wireDropZone } from './utils.js';
 
 /**
  * Create the annotation import dialog controller.
  *
- * @param {Object} options
- * @param {Function} options.getGraph   – () => current PhyloGraph (may change per tree load)
- * @param {Function} options.onApply    – (graph) called after annotations are written onto graph
- *                                        and graph.annotationSchema has been rebuilt.
- *                                        Caller should refresh renderer + legend.
- * @returns {{ open: Function, close: Function }}
+ * @param {Object}   options
+ * @param {Function} options.getGraph   – () => data container (must have .nodes, .annotationSchema)
+ * @param {Function} options.onApply    – (graph, importCols) called after annotations are written
+ *                                        and annotationSchema has been rebuilt.
+ * @param {Function} options.isTip      – (node) => boolean; classifies items as tips vs internal.
+ * @returns {{ open: Function, close: Function, loadFile: Function }}
  */
-export function createAnnotImporter({ getGraph, onApply }) {
+export function createAnnotImporter({ getGraph, onApply, isTip }) {
   const overlay = document.getElementById('import-annot-overlay');
   const body    = document.getElementById('import-annot-body');
   const footer  = document.getElementById('import-annot-footer');
@@ -153,7 +154,7 @@ export function createAnnotImporter({ getGraph, onApply }) {
     // can highlight the selected field and dim the rest.
     const graph = getGraph();
     const tips  = graph
-      ? graph.nodes.filter(n => n.adjacents.length === 1 && n.name != null)
+      ? graph.nodes.filter(n => isTip(n) && n.name != null)
       : [];
     const MAX_EX = 3;
     const exHtml = tips.length > 0
@@ -342,7 +343,7 @@ export function createAnnotImporter({ getGraph, onApply }) {
   /** Write parsed annotations onto graph nodes, rebuild schema, call onApply. */
   function _applyAnnotations({ rows, matchCol, matchMode, fieldIndex, importCols, doReplace, filename }) {
     const graph = getGraph();
-    const tips  = graph.nodes.filter(n => n.adjacents.length === 1);
+    const tips  = graph.nodes.filter(n => isTip(n));
 
     // Build lookup: matchValue → first matching row
     const rowLookup = new Map();
@@ -396,7 +397,7 @@ export function createAnnotImporter({ getGraph, onApply }) {
     const unmatchedRows = rowLookup.size - matchedRowKeys.size;
 
     // Rebuild schema then hand off to the caller for UI/renderer refresh.
-    graph.annotationSchema = buildAnnotationSchema(graph.nodes);
+    graph.annotationSchema = buildAnnotationSchema(graph.nodes, { isTip });
     onApply(graph, importCols);
 
     _showImportResults({ matched, unmatchedTips, unmatchedRows, unmatchedTipExamples,

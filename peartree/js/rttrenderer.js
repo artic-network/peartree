@@ -10,9 +10,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { TreeCalibration } from './phylograph.js';
-import { ciHalfWidth, tQuantile } from './regression.js';
-import { overlapsZones }   from './utils.js';
-import { buildFont, TYPEFACES } from './typefaces.js';
+import { ciHalfWidth, tQuantile } from '../../pearcore/js/regression.js';
+import { overlapsZones }   from '../../pearcore/js/utils.js';
+import { buildFont, TYPEFACES } from '../../pearcore/js/typefaces.js';
 
 // ─── Tick helpers ─────────────────────────────────────────────────────────────
 

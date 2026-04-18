@@ -1,23 +1,26 @@
 import { parseNexus, parseNewick, graphToNewick, parseDelimited } from './treeio.js';
 import { computeLayoutFromGraph, graphVisibleTipCount, graphSubtreeHasHidden } from './treeutils.js';
 import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointRootGraph, temporalRootGraph, optimiseRootEdge, buildAnnotationSchema, injectBuiltinStats, isNumericType, TreeCalibration, computeTemporalResiduals } from './phylograph.js';
-import { htmlEsc as _esc, downloadBlob as _downloadBlob, wireDropZone as _wireDropZone } from './utils.js';
+import { htmlEsc as _esc, downloadBlob as _downloadBlob, wireDropZone as _wireDropZone } from '../../pearcore/js/utils.js';
 import { TreeRenderer, CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY } from './treerenderer.js';
 import { LegendRenderer } from './legendrenderer.js';
 import { AxisRenderer  } from './axisrenderer.js';
 import { THEMES, DEFAULT_THEME, SETTINGS_KEY, USER_THEMES_KEY } from './themes.js';
-import { TYPEFACES, buildFont } from './typefaces.js';
+import { TYPEFACES, buildFont } from '../../pearcore/js/typefaces.js';
 import { CATEGORICAL_PALETTES, SEQUENTIAL_PALETTES,
-         DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE } from './palettes.js';
+         DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE } from '../../pearcore/js/palettes.js';
 import { viewportDims, compositeViewPng, buildGraphicSVG } from './graphicsio.js';
-import { createAnnotImporter } from './annotationsio.js';
-import { createAnnotCurator  } from './annotations-manager.js';
+import { createAnnotImporter } from '../../pearcore/js/annotation-io.js';
+import { createAnnotCurator  } from '../../pearcore/js/annotation-manager.js';
 import { createDataTableRenderer } from './datatablerenderer.js';
 import { createRTTChart          } from './rttchart.js';
-import { createCommands } from './commands.js';
+import { createCommands } from '../../pearcore/js/commands.js';
+import { COMMAND_DEFS } from './peartree-commands.js';
 import { createExportController } from './export-controller.js';
 import { EXAMPLE_TREE_PATH, EXAMPLE_DATASETS, PEARTREE_BASE_URL, DEFAULT_SETTINGS, REQUIRED_THEME_KEYS, NODE_TOOLTIP_FIELDS } from './config.js';
-import { createToolbarColourPicker, upgradeAllPaletteColourPickers } from './colorpicker.js';
+import { createToolbarColourPicker, upgradeAllPaletteColourPickers } from '../../pearcore/js/colorpicker.js';
+import { createThemeManager, resolveEmbedConfig, initSectionAccordion,
+         ensureStylesheet, loadScript, resolveAssetBases } from '../../pearcore/js/pearcore-app.js';
 
 /**
  * Fetch a file by relative path, falling back to the absolute GitHub Pages URL
@@ -44,7 +47,7 @@ async function _initCore(root = document) {
   const $ = id => root.querySelector('#' + id);
   // Per-instance command registry — each embed gets its own scoped registry so
   // commands.exec and button enabled-state never bleed across instances.
-  const commands = createCommands(root);
+  const commands = createCommands(root, COMMAND_DEFS);
   // ── Embed configuration ───────────────────────────────────────────────────
   // Supports window.peartreeConfig (same-page / iframe embedding) and URL
   // search params as a lower-priority alternative.  window.peartreeConfig
@@ -67,48 +70,32 @@ async function _initCore(root = document) {
   //   palette=0, rtt=0, dt=0, import=0, export=0, statusbar=0
   //   nostore=1             — same as storageKey: null
   //   storageKey=my-key     — custom storage key
-  const _cfg = (() => {
-    const _p  = new URLSearchParams(window.location.search);
-    const _wc = window.peartreeConfig || {};
-    const _ui = _wc.ui || {};
-    /** Resolve a boolean flag: explicit window.peartreeConfig value > URL param > default (true). */
-    const _flag = (uiVal, param) => uiVal !== undefined ? Boolean(uiVal) : _p.get(param) !== '0';
-    // Like _flag but also preserves the string value 'fixed'.
-    const _flagEx = (uiVal, param) => {
-      if (uiVal === 'fixed') return 'fixed';
-      if (uiVal !== undefined) return Boolean(uiVal);
-      return _p.get(param) !== '0';
-    };
-    const _sk = _wc.storageKey !== undefined
-      ? _wc.storageKey
-      : _p.get('storageKey') ?? (_p.get('nostore') === '1' ? null : SETTINGS_KEY);
-    return {
-      showPalette:        _flag(_ui.palette,      'palette'),
-      showToolbar:        _flag(_ui.toolbar,      'toolbar'),
-      showRTT:            _flagEx(_ui.rtt,         'rtt'),
-      showRTTHeader:      _flag(_ui.rttHeader,     'rttheader'),
-      showDataTable:      _flagEx(_ui.dataTable,   'dt'),
-      showDataTableHeader:_flag(_ui.dataTableHeader,'dtheader'),
-      showImport:         _flag(_ui.import,        'import'),
-      showExport:         _flag(_ui.export,        'export'),
-      showStatusBar:  _flag(_ui.statusBar,    'statusbar'),
-      showHelp:        _flag(_ui.help,         'help'),
-      showAbout:       _flag(_ui.about,        'about'),
-      showThemeToggle: _flag(_ui.themeToggle,  'themetoggle'),
-      showBrand:       _flag(_ui.brand,        'brand'),
-      enableKeyboard: _ui.keyboard !== undefined ? Boolean(_ui.keyboard) : _p.get('keyboard') !== '0',
-      storageKey:    _sk,
-      dataTableColumns: Array.isArray(_wc.dataTableColumns) ? _wc.dataTableColumns : null,
-      initSettings:  (() => {
-        // URL ?settings=<base64-JSON> provides initial settings for embedFrame() iframes.
-        // window.peartreeConfig.settings always wins over URL params.
-        const _urlSettings = (() => {
-          try { const v = _p.get('settings'); return v ? JSON.parse(atob(v)) : {}; } catch { return {}; }
-        })();
-        return Object.assign(_urlSettings, _wc.settings || _wc.initSettings || {});
-      })(),
-    };
-  })();
+  const _cfg = resolveEmbedConfig({
+    configKey: 'peartreeConfig',
+    settingsKeyDefault: SETTINGS_KEY,
+    flagDefs: [
+      { name: 'showPalette',         uiKey: 'palette',          param: 'palette' },
+      { name: 'showToolbar',         uiKey: 'toolbar',          param: 'toolbar' },
+      { name: 'showRTT',             uiKey: 'rtt',              param: 'rtt',        extended: true },
+      { name: 'showRTTHeader',       uiKey: 'rttHeader',        param: 'rttheader' },
+      { name: 'showDataTable',       uiKey: 'dataTable',        param: 'dt',         extended: true },
+      { name: 'showDataTableHeader', uiKey: 'dataTableHeader',  param: 'dtheader' },
+      { name: 'showImport',          uiKey: 'import',           param: 'import' },
+      { name: 'showExport',          uiKey: 'export',           param: 'export' },
+      { name: 'showStatusBar',       uiKey: 'statusBar',        param: 'statusbar' },
+      { name: 'showHelp',            uiKey: 'help',             param: 'help' },
+      { name: 'showAbout',           uiKey: 'about',            param: 'about' },
+      { name: 'showThemeToggle',     uiKey: 'themeToggle',      param: 'themetoggle' },
+      { name: 'showBrand',           uiKey: 'brand',            param: 'brand' },
+    ],
+    extras: (wc, _p) => ({
+      dataTableColumns: Array.isArray(wc.dataTableColumns) ? wc.dataTableColumns : null,
+      initSettings: Object.assign(
+        (() => { try { const v = _p.get('settings'); return v ? JSON.parse(atob(v)) : {}; } catch { return {}; } })(),
+        wc.settings || wc.initSettings || {},
+      ),
+    }),
+  });
   // Apply UI restrictions immediately so hidden elements never flash visible.
   if (!_cfg.showPalette)   $('btn-palette')        ?.classList.add('d-none');
   if (!_cfg.showToolbar)   root.querySelector('.pt-toolbar')          ?.classList.add('d-none');
@@ -441,20 +428,9 @@ async function _initCore(root = document) {
   let _axisIsTimedTree   = false;
   let treeLoaded         = false; // declared early — referenced by _syncCanvasWrapperBg before modal init
 
-  // Live theme registry: built-ins first, then any user-saved themes added on top.
-  const themeRegistry = new Map(Object.entries(THEMES));
-
-  /** The user-set default theme for new windows (persisted in localStorage). */
-  let defaultTheme = DEFAULT_SETTINGS.defaultTheme;  // restored from _saved.defaultTheme in the init block below
-  // Guard applied after loadUserThemes() so user-saved defaults are recognised.
-
-  /**
-   * Platform-specific save handler for theme export.
-   * Null = use browser download (<a download>). Set by Tauri adapter.
-   * Signature: fn({ content, filename, filterName, extensions }) → Promise
-   */
-  let _themeSaveHandler = null;
-  function setThemeSaveHandler(fn) { _themeSaveHandler = fn; }
+  // Theme manager created later (needs saveSettings which needs _buildSnapshot).
+  // Forward-declared; assigned after _buildSnapshot and applyTheme are defined.
+  let themeManager = null;
 
   /** Per-annotation palette override: annotationKey → palette name string. */
   const annotationPalettes = new Map();
@@ -547,44 +523,7 @@ async function _initCore(root = document) {
     }
   }
 
-  /** Persist only user-defined (non-built-in) themes to localStorage. */
-  function saveUserThemes() {
-    const userObj = {};
-    for (const [name, theme] of themeRegistry) {
-      if (!THEMES[name]) userObj[name] = theme;
-    }
-    localStorage.setItem(USER_THEMES_KEY, JSON.stringify(userObj));
-  }
-
-  /** Load user themes from localStorage into themeRegistry. */
-  function loadUserThemes() {
-    try {
-      const stored = JSON.parse(localStorage.getItem(USER_THEMES_KEY) || '{}');
-      for (const [name, theme] of Object.entries(stored)) {
-        themeRegistry.set(name, theme);
-      }
-    } catch { /* ignore */ }
-  }
-
-  /** Rebuild the theme <select> options from themeRegistry plus the fixed "Custom" entry. */
-  function _populateThemeSelect() {
-    if (!themeSelect) return;
-    const current = themeSelect.value;
-    themeSelect.innerHTML = '';
-    for (const name of themeRegistry.keys()) {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name + (name === defaultTheme ? ' ★' : '');
-      themeSelect.appendChild(opt);
-    }
-    const customOpt = document.createElement('option');
-    customOpt.value = 'custom';
-    customOpt.textContent = 'Custom';
-    customOpt.style.fontStyle = 'italic';
-    themeSelect.appendChild(customOpt);
-    // Restore selection if still valid, otherwise fall back to first option.
-    themeSelect.value = (themeSelect.querySelector(`option[value="${CSS.escape(current)}"]`) ? current : themeRegistry.keys().next().value);
-  }
+  // Theme helper functions are provided by the themeManager (created later).
 
   /**
    * Build a settings snapshot from the current DOM control values.
@@ -675,7 +614,7 @@ async function _initCore(root = document) {
     return {
       ...themePart,
       selectedTheme:     themeSelect?.value ?? DEFAULT_SETTINGS.selectedTheme,
-      defaultTheme:     defaultTheme,
+      defaultTheme:     themeManager?.defaultTheme ?? DEFAULT_SETTINGS.defaultTheme,
       paintColour:      paintColourPickerEl.value,
       selectedLabelStyle: selectedLabelStyleEl.value,
       tipLabelTypefaceKey:         tipLabelTypefaceEl?.value  || '',
@@ -786,156 +725,14 @@ async function _initCore(root = document) {
     };
   }
 
-  /** Prompt for a name and store the current visual settings as a new (or updated) user theme. */
-  async function storeTheme() {
-    const name = await showPromptDialog('Save Theme', 'Enter a name for this theme:');
-    if (!name) return;
-    if (name.toLowerCase() === 'custom') {
-      await showAlertDialog('Reserved name', '"Custom" is a reserved name — please choose a different name.');
-      return;
-    }
-    if (THEMES[name]) {
-      await showAlertDialog('Built-in theme', `"${name}" is a built-in theme and cannot be overwritten.`);
-      return;
-    }
-    themeRegistry.set(name, _buildSnapshot({ themeOnly: true }));
-    saveUserThemes();
-    _populateThemeSelect();
-    themeSelect.value = name;
-    _syncThemeButtons();
-    saveSettings();
-  }
-
-  /** Sync enabled/disabled state of all theme action buttons. */
-  function _syncThemeButtons() {
-    if (!btnStoreTheme) return;
-    const sel       = themeSelect.value;
-    const isCustom  = sel === 'custom';
-    const isBuiltIn = !!THEMES[sel];
-    const isDefault = sel === defaultTheme;
-    btnStoreTheme.disabled   = !isCustom;
-    btnDefaultTheme.disabled = isCustom || isDefault;
-    btnRemoveTheme.disabled  = isCustom || isBuiltIn;
-    // Export is always enabled; disable only when nothing meaningful to name (custom with no name).
-    if (btnExportTheme) btnExportTheme.disabled = false;
-    if (btnImportTheme) btnImportTheme.disabled = false;
-  }
-
-  /** Persist the currently selected named theme as the default for new windows. */
-  function setDefaultTheme() {
-    const name = themeSelect.value;
-    if (name === 'custom' || !themeRegistry.has(name)) return;
-    defaultTheme = name;
-    saveSettings();
-    // Repopulate select to refresh the ★ marker, then restore selection.
-    _populateThemeSelect();
-    themeSelect.value = name;
-    _syncThemeButtons();
-  }
-
-  /** Delete a user-saved (non-built-in) theme from the registry and localStorage. */
-  async function removeTheme() {
-    const name = themeSelect.value;
-    if (name === 'custom' || THEMES[name]) return;
-    if (!await showConfirmDialog('Remove theme', `Remove the theme \u201c${name}\u201d?`, { okLabel: 'Remove', cancelLabel: 'Cancel' })) return;
-    // If the removed theme was the default, fall back to the first built-in.
-    if (defaultTheme === name) {
-      defaultTheme = Object.keys(THEMES)[0];
-    }
-    themeRegistry.delete(name);
-    saveUserThemes();
-    _populateThemeSelect();
-    // Apply whichever theme the select fell back to.
-    const fallback = themeSelect.value;
-    if (themeRegistry.has(fallback)) applyTheme(fallback);
-    _syncThemeButtons();
-  }
-
-  /** Export the current theme as a JSON file the user can save locally. */
-  async function exportTheme() {
-    const sel = themeSelect.value;
-    const isCustom = sel === 'custom';
-    const defaultName = isCustom ? '' : sel;
-    const name = await showPromptDialog('Export Theme', 'Enter a name for the exported theme:', defaultName);
-    if (!name) return;
-    if (name.toLowerCase() === 'custom') {
-      await showAlertDialog('Reserved name', '"Custom" is a reserved name — please choose a different name.');
-      return;
-    }
-    const themeData = isCustom ? _buildSnapshot({ themeOnly: true }) : (themeRegistry.get(sel) ?? _buildSnapshot({ themeOnly: true }));
-    const json = JSON.stringify({ name, theme: themeData }, null, 2);
-    const filename = `${name}.peartree-theme.json`;
-    if (_themeSaveHandler) {
-      await _themeSaveHandler({ content: json, filename, filterName: 'PearTree Theme', extensions: ['json'] });
-    } else {
-      _downloadBlob(json, 'application/json', filename);
-    }
-  }
-
-  /** Import a theme from a JSON file, prompting for a name and handling conflicts. */
-  function importTheme() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json,application/json';
-    input.style.display = 'none';
-    document.body.appendChild(input);
-    input.addEventListener('change', async () => {
-      const file = input.files?.[0];
-      document.body.removeChild(input);
-      if (!file) return;
-      let data, themeObj;
-      try {
-        const text = await file.text();
-        data = JSON.parse(text);
-        // Accept { name, theme } format or a bare theme object.
-        themeObj = (data.theme && typeof data.theme === 'object') ? data.theme : data;
-        // Valid if it has canvasBgColor (fully specified) or a recognised inherit parent.
-        if (typeof themeObj !== 'object' || (!themeObj.canvasBgColor && !(themeObj.inherit && THEMES[themeObj.inherit]))) {
-          await showAlertDialog('Invalid file', 'This does not appear to be a valid PearTree theme file.');
-          return;
-        }
-      } catch {
-        await showAlertDialog('Parse error', 'Failed to parse the theme file — please check it is valid JSON.');
-        return;
-      }
-      const fileNameSuggestion = (typeof data.name === 'string' && data.name.trim()) ? data.name.trim() : '';
-      // Warn if `inherit` is specified but doesn't match a known theme (it will fall back to DEFAULT_THEME).
-      if (themeObj.inherit && !THEMES[themeObj.inherit]) {
-        if (!await showConfirmDialog('Unknown inherit theme',
-            `The file specifies inherit "${themeObj.inherit}" which is not a known theme. DEFAULT_THEME will be used as the base instead. Continue?`,
-            { okLabel: 'Continue', cancelLabel: 'Cancel' })) return;
-      }
-      // Ask the user to confirm or change the name.
-      let name = await showPromptDialog('Import Theme', 'Name for the imported theme:', fileNameSuggestion);
-      if (!name) return;
-      if (name.toLowerCase() === 'custom') {
-        await showAlertDialog('Reserved name', '"Custom" is a reserved name — please choose a different name.');
-        return;
-      }
-      // Built-in conflict: must rename.
-      while (THEMES[name]) {
-        const next = await showPromptDialog('Built-in theme', `"${name}" is a built-in theme and cannot be overwritten.\nPlease enter a different name:`, '');
-        if (!next) return;
-        name = next;
-        if (name.toLowerCase() === 'custom') {
-          await showAlertDialog('Reserved name', '"Custom" is a reserved name — please choose a different name.');
-          return;
-        }
-      }
-      // User theme conflict: ask before overwriting.
-      if (themeRegistry.has(name)) {
-        if (!await showConfirmDialog('Overwrite theme', `A user theme named \u201c${name}\u201d already exists. Overwrite it?`, { okLabel: 'Overwrite', cancelLabel: 'Cancel' })) return;
-      }
-      themeRegistry.set(name, themeObj);
-      saveUserThemes();
-      _populateThemeSelect();
-      themeSelect.value = name;
-      applyTheme(name);
-      _syncThemeButtons();
-    });
-    input.click();
-  }
-
+  // ── Theme CRUD: delegated to themeManager (created after applyTheme is defined) ──
+  // These thin wrappers keep existing call-sites unchanged.
+  function storeTheme()      { themeManager?.storeTheme(); }
+  function setDefaultTheme() { themeManager?.setDefaultTheme(); }
+  function removeTheme()     { themeManager?.removeTheme(); }
+  function exportTheme()     { themeManager?.exportTheme(); }
+  function importTheme()     { themeManager?.importTheme(); }
+  function _syncThemeButtons() { themeManager?.syncButtons(); }
 
   function loadSettings() {
     if (_cfg.storageKey === null) return {};
@@ -1305,7 +1102,7 @@ async function _initCore(root = document) {
     if (s.branchLabelDecimalPlaces != null && branchLabelDpEl) branchLabelDpEl.value = String(s.branchLabelDecimalPlaces);
     if (s.paintColour) paintColourPickerEl.value = s.paintColour;
     // Set themeSelect to the stored theme name (or 'custom' if not known).
-    const themeName = s.theme && themeRegistry.has(s.theme) ? s.theme : (s.theme === 'custom' ? 'custom' : 'custom');
+    const themeName = s.theme && themeManager.registry.has(s.theme) ? s.theme : (s.theme === 'custom' ? 'custom' : 'custom');
     if (themeSelect) themeSelect.value = themeName;
     _syncThemeButtons();
     if (renderer) {
@@ -1319,7 +1116,7 @@ async function _initCore(root = document) {
     if (!await showConfirmDialog('Reset settings', 'Reset all visual settings to their defaults?', { okLabel: 'Reset', cancelLabel: 'Cancel' })) return;
 
     // Apply the default theme (hydrates all visual DOM controls + renderer).
-    applyTheme(defaultTheme);
+    applyTheme(themeManager.defaultTheme);
 
     // Reset colour-by dropdowns, legend, and axis controls.
     tipColourBy.value        = 'user_colour';
@@ -1618,23 +1415,11 @@ async function _initCore(root = document) {
    * overrides the previous).  The chain terminates when `inherit` is absent or ''.
    */
   function _resolveTheme(name) {
-    const chain = [];
-    let current = name;
-    const seen = new Set();
-    while (current && !seen.has(current)) {
-      seen.add(current);
-      const t = themeRegistry.get(current);
-      if (!t) break;
-      chain.unshift(t);          // prepend so oldest ancestor ends up first
-      const parent = t.inherit;  // '' or undefined → DEFAULT_THEME is the base; stop
-      if (!parent) break;
-      current = parent;
-    }
-    return Object.assign({}, DEFAULT_THEME, ...chain);
+    return themeManager.resolveTheme(name);
   }
 
   function applyTheme(name) {
-    if (!themeRegistry.has(name)) return;
+    if (!themeManager.registry.has(name)) return;
     // Resolve full theme by walking the inherit chain from DEFAULT_THEME downward.
     const t = _resolveTheme(name);
     canvasBgColorEl.value   = t.canvasBgColor;
@@ -1785,11 +1570,7 @@ async function _initCore(root = document) {
 
   /** Mark the theme selector as Custom when the user manually edits any visual control. */
   function _markCustomTheme() {
-    if (themeSelect && themeSelect.value !== 'custom') {
-      themeSelect.value = 'custom';
-      saveSettings();
-    }
-    _syncThemeButtons();
+    themeManager?.markCustom();
   }
 
   btnResetSettings?.addEventListener('click', applyDefaults);
@@ -1800,20 +1581,29 @@ async function _initCore(root = document) {
   btnImportTheme?.addEventListener('click', importTheme);
 
   // Bootstrap theme registry and select options before restoring saved state.
-  loadUserThemes();
+  // Create the theme manager now that applyTheme, _buildSnapshot, saveSettings are defined.
+  themeManager = createThemeManager({
+    builtInThemes: THEMES,
+    defaultThemeData: DEFAULT_THEME,
+    requiredThemeKeys: REQUIRED_THEME_KEYS,
+    userThemesKey: USER_THEMES_KEY,
+    themeSelectEl: themeSelect,
+    buttons: { store: btnStoreTheme, setDefault: btnDefaultTheme, remove: btnRemoveTheme, export: btnExportTheme, import: btnImportTheme },
+    buildThemeSnapshot: () => _buildSnapshot({ themeOnly: true }),
+    applyTheme,
+    saveSettings,
+    showAlertDialog,
+    showConfirmDialog,
+    showPromptDialog,
+    downloadBlob: _downloadBlob,
+    appName: 'PearTree',
+  });
+
   // Restore the per-instance default theme from saved settings.
-  // Must run after loadUserThemes() so user-saved themes are recognised.
   const _preSaved = loadSettings();
-  if (_preSaved.defaultTheme && themeRegistry.has(_preSaved.defaultTheme)) defaultTheme = _preSaved.defaultTheme;
-  // Guard: if the stored default is no longer in the registry, fall back gracefully.
-  if (!themeRegistry.has(defaultTheme)) defaultTheme = Object.keys(THEMES)[0];
-  // Validate that DEFAULT_THEME is fully specified (all REQUIRED_THEME_KEYS present).
-  {
-    const _missing = REQUIRED_THEME_KEYS.filter(k => !(k in DEFAULT_THEME));
-    if (_missing.length) console.warn('PearTree: DEFAULT_THEME is missing required keys:', _missing);
+  if (_preSaved.defaultTheme && themeManager.registry.has(_preSaved.defaultTheme)) {
+    themeManager.defaultTheme = _preSaved.defaultTheme;
   }
-  _populateThemeSelect();
-  _syncThemeButtons();
 
   // Load stored settings, then merge any embed-time initSettings on top so
   // window.peartreeConfig.settings always wins over persisted values.
@@ -2023,7 +1813,7 @@ async function _initCore(root = document) {
   }
   // Restore saved theme name; fall back to defaultTheme if no saved settings.
   // selectedTheme is the theme in use; defaultTheme is the starred/preferred one.
-  if (themeSelect) themeSelect.value = _saved.selectedTheme ?? _saved.theme /* bwc */ ?? defaultTheme;
+  if (themeSelect) themeSelect.value = _saved.selectedTheme ?? _saved.theme /* bwc */ ?? themeManager.defaultTheme;
   if (_saved.rttXOrigin)    rttXOriginEl.value    = _saved.rttXOrigin;
   if (_saved.rttGridLines)  rttGridLinesEl.value  = _saved.rttGridLines;
   if (_saved.rttAspectRatio) rttAspectRatioEl.value = _saved.rttAspectRatio;
@@ -2314,9 +2104,9 @@ async function _initCore(root = document) {
       applyTheme(_st);
     } else {
       // No saved theme, or saved theme was 'custom' — fall back to defaultTheme.
-      applyTheme(defaultTheme);
+      applyTheme(themeManager.defaultTheme);
       // Also update the in-memory snapshot so saveSettings() below records the correct name.
-      if (themeSelect) themeSelect.value = defaultTheme;
+      if (themeSelect) themeSelect.value = themeManager.defaultTheme;
     }
   }
 
@@ -2457,7 +2247,7 @@ async function _initCore(root = document) {
 
     if (e.key === 'Escape') {
       // Close innermost open overlay first.
-      if ($('parse-tips-overlay')?.classList.contains('open'))    { /* handled by annotations-manager */ return; }
+      if ($('parse-tips-overlay')?.classList.contains('open'))    { /* handled by annotation-manager */ return; }
       if ($('export-graphic-overlay')?.classList.contains('open')) { exportCtrl.closeGraphicsDialog(); return; }
       if ($('export-tree-overlay')?.classList.contains('open'))    { exportCtrl.closeExportDialog();   return; }
       if (annotConfigOverlay?.classList.contains('open')) { annotConfigOverlay.classList.remove('open'); return; }
@@ -2601,6 +2391,7 @@ async function _initCore(root = document) {
   // ── Import Annotations ──────────────────────────────────────────────────
   const annotImporter = createAnnotImporter({
     getGraph: () => graph,
+    isTip: n => n.adjacents.length === 1,
     onApply: (g, importedCols = []) => {
       _refreshAnnotationUIs(g.annotationSchema);
       renderer.setAnnotationSchema(g.annotationSchema);
@@ -2628,6 +2419,7 @@ async function _initCore(root = document) {
   // ── Curate Annotations ───────────────────────────────────────────────────
   const annotCurator = createAnnotCurator({
     getGraph: () => graph,
+    isTip: n => n.adjacents.length === 1,
     onApply: (schema) => {
       _refreshAnnotationUIs(schema);
       renderer.setAnnotationSchema(schema);
@@ -3976,7 +3768,7 @@ async function _initCore(root = document) {
       if (!treeLoaded) {
         treeLoaded = true;
         // Unlock palette sections and restore pinned state (or open TREE section by default).
-        _sectionAccordionUnlock?.();
+        _sectionAccordion.unlock();
         // Now that a tree is loaded, stamp the theme background onto the canvas wrappers.
         _syncCanvasWrapperBg(canvasBgColorEl.value);
         if (tipFilterEl)     tipFilterEl.disabled      = false;
@@ -7237,7 +7029,7 @@ async function _initCore(root = document) {
      *  fn({ content, filename, filterName, extensions }) — called instead of
      *  a browser download when the user clicks Export in the Theme section.
      *  Set to null to restore browser behaviour. */
-    setThemeSaveHandler,
+    setThemeSaveHandler: (fn) => { themeManager.setThemeSaveHandler(fn); },
 
     /** Override the graphic-export action for the current platform.
      *  fn({ content|contentBase64, base64, filename, mimeType, filterName, extensions })
@@ -7459,160 +7251,13 @@ async function _initCore(root = document) {
   // ── Section accordion ──────────────────────────────────────────────────────
   // Each .pt-palette-section h3 toggles its section open/closed.
   // A section can be "pinned" open — pinned sections are unaffected by the
-  // one-open-at-a-time rule.  Only one non-pinned section may be open at once.
-  // State is persisted to localStorage.
-  // Sections are locked (closed, non-interactive) until the first tree is loaded.
-  let _sectionAccordionUnlock = null;
-  (function _initSectionAccordion() {
-    const STORE_KEY = 'peartree-section-state';
-    let _sectionsUnlocked = false;
-
-    function _loadSt() {
-      try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; }
-    }
-    function _saveSt(st) {
-      try { localStorage.setItem(STORE_KEY, JSON.stringify(st)); } catch {}
-    }
-    function _allSec() {
-      return Array.from(root.querySelectorAll('.pt-palette-section[data-sec-id]'));
-    }
-
-    function _openSec(sec) {
-      sec.classList.add('pt-palette-section--open');
-      const st = _loadSt();
-      st[sec.dataset.secId] = { ...(st[sec.dataset.secId] || {}), open: true };
-      _saveSt(st);
-    }
-    function _closeSec(sec) {
-      sec.classList.remove('pt-palette-section--open');
-      const st = _loadSt();
-      st[sec.dataset.secId] = { ...(st[sec.dataset.secId] || {}), open: false };
-      _saveSt(st);
-    }
-
-    function _toggleSec(sec) {
-      if (!_sectionsUnlocked) return;
-      if (sec.classList.contains('pt-palette-section--pinned')) return;
-      if (sec.classList.contains('pt-palette-section--open')) {
-        _closeSec(sec);
-      } else {
-        // Close current non-pinned open section first
-        _allSec().forEach(s => {
-          if (s !== sec && s.classList.contains('pt-palette-section--open') && !s.classList.contains('pt-palette-section--pinned'))
-            _closeSec(s);
-        });
-        _openSec(sec);
-      }
-    }
-
-    function _togglePin(sec) {
-      if (!_sectionsUnlocked) return;
-      const isPinned = sec.classList.contains('pt-palette-section--pinned');
-      const pinIcon  = sec.querySelector(':scope > h3 .pt-sec-pin i');
-      const st       = _loadSt();
-      if (isPinned) {
-        // Unpin: becomes the active non-pinned open section; close any other non-pinned open
-        sec.classList.remove('pt-palette-section--pinned');
-        if (pinIcon) pinIcon.className = 'bi bi-pin';
-        _allSec().forEach(s => {
-          if (s !== sec && s.classList.contains('pt-palette-section--open') && !s.classList.contains('pt-palette-section--pinned'))
-            _closeSec(s);
-        });
-        sec.classList.add('pt-palette-section--open');
-        st[sec.dataset.secId] = { open: true, pinned: false };
-      } else {
-        // Pin it (opens too)
-        sec.classList.add('pt-palette-section--open', 'pt-palette-section--pinned');
-        if (pinIcon) pinIcon.className = 'bi bi-pin-fill';
-        st[sec.dataset.secId] = { open: true, pinned: true };
-      }
-      _saveSt(st);
-    }
-
-    const savedState = _loadSt();
-    const palBody = root.querySelector('#palette-panel-body');
-
-    root.querySelectorAll('.pt-palette-section').forEach(sec => {
-      const h3 = sec.querySelector(':scope > h3');
-      if (!h3) return;
-
-      // Stable ID from heading text (e.g. "tip-labels")
-      const secId = h3.textContent.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/, '');
-      sec.dataset.secId = secId;
-
-      // Inject pin button + chevron into h3
-      h3.insertAdjacentHTML('beforeend',
-        '<span class="pt-sec-actions">' +
-          '<button class="pt-sec-pin" title="Pin open"><i class="bi bi-pin"></i></button>' +
-          '<i class="bi bi-chevron-right pt-sec-chevron"></i>' +
-        '</span>');
-
-      // Wrap all content after h3 in .pt-section-body > .pt-section-body-inner
-      const inner = document.createElement('div');
-      inner.className = 'pt-section-body-inner';
-      while (h3.nextSibling) inner.appendChild(h3.nextSibling);
-      const body = document.createElement('div');
-      body.className = 'pt-section-body';
-      body.appendChild(inner);
-      sec.appendChild(body);
-
-      // Sections start closed and locked until the first tree is loaded.
-      // (pinned/open state from savedState is restored by _sectionAccordionUnlock)
-
-      // Event: click h3 to toggle (not when clicking the pin button)
-      h3.addEventListener('click', e => { if (!e.target.closest('.pt-sec-pin')) _toggleSec(sec); });
-      h3.tabIndex = 0;
-      h3.addEventListener('keydown', e => {
-        if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('.pt-sec-pin')) {
-          e.preventDefault(); _toggleSec(sec);
-        }
-      });
-
-      // Event: pin button click
-      h3.querySelector('.pt-sec-pin').addEventListener('click', e => {
-        e.stopPropagation(); _togglePin(sec);
-      });
-    });
-
-    // Mark sections as locked until the first tree loads.
-    if (palBody) palBody.classList.add('pt-sections-locked');
-
-    // Called once when the first tree is loaded.  Unlocks interactions, then
-    // restores pinned sections from saved state (or opens the TREE section as default).
-    _sectionAccordionUnlock = function () {
-      if (_sectionsUnlocked) return;
-      _sectionsUnlocked = true;
-      if (palBody) palBody.classList.remove('pt-sections-locked');
-
-      const noTrans = [];
-      let anyPinned = false;
-      _allSec().forEach(sec => {
-        const saved = savedState[sec.dataset.secId] || {};
-        if (saved.pinned) {
-          anyPinned = true;
-          const body = sec.querySelector(':scope > .pt-section-body');
-          if (body) { body.style.transition = 'none'; noTrans.push(body); }
-          sec.classList.add('pt-palette-section--open', 'pt-palette-section--pinned');
-          const pi = sec.querySelector(':scope > h3 .pt-sec-pin i');
-          if (pi) pi.className = 'bi bi-pin-fill';
-        }
-      });
-
-      if (!anyPinned) {
-        // Default: open the TREE section
-        const treeSec = root.querySelector('.pt-palette-section[data-sec-id="tree"]');
-        if (treeSec) {
-          const body = treeSec.querySelector(':scope > .pt-section-body');
-          if (body) { body.style.transition = 'none'; noTrans.push(body); }
-          treeSec.classList.add('pt-palette-section--open');
-        }
-      }
-
-      if (noTrans.length) {
-        requestAnimationFrame(() => requestAnimationFrame(() => noTrans.forEach(b => { b.style.transition = ''; })));
-      }
-    };
-  })();
+  // Section accordion: one-open-at-a-time rule with pin support.
+  // Sections are locked until the first tree is loaded, then unlock() restores
+  // pinned/open state from localStorage.
+  const _sectionAccordion = initSectionAccordion(root, {
+    storageKey: 'peartree-section-state',
+    defaultSectionId: 'tree',
+  });
 
   window.dispatchEvent(new CustomEvent('peartree-ready'));
   // Wire up UI panel behaviours (palette, help, about, keyboard shortcuts,
@@ -7681,46 +7326,15 @@ async function _initCore(root = document) {
 
 // ── Script / stylesheet loaders ───────────────────────────────────────────
 // Used by embed() to dynamically inject assets into the host page.
+// Delegated to pearcore-app.js; the local _ensureStylesheet adds the bundle guard.
 
 function _ensureStylesheet(href) {
-  // When running from the single-file bundle the CSS is already injected.
   if (window.__PEARTREE_CSS_BUNDLED__) return;
-  const a = document.createElement('a');
-  a.href = href;
-  const abs = a.href;
-  const existing = document.querySelectorAll('link[rel="stylesheet"]');
-  for (let i = 0; i < existing.length; i++) {
-    if (existing[i].href === abs) return;
-  }
-  const link = document.createElement('link');
-  link.rel  = 'stylesheet';
-  link.href = abs;
-  document.head.appendChild(link);
-}
-
-function _loadScript(src, isModule) {
-  return new Promise((resolve, reject) => {
-    // Check if already loaded (avoid duplicate module loads which are silently no-ops)
-    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
-    const el = document.createElement('script');
-    if (isModule) el.type = 'module';
-    el.src = src;
-    el.onload  = resolve;
-    el.onerror = () => reject(new Error('PearTree: failed to load ' + src));
-    document.head.appendChild(el);
-  });
+  ensureStylesheet(href);
 }
 
 // Auto-detect our own asset root from import.meta.url.
-// Convention: this file lives at <root>/js/peartree.js so the root is one
-// directory up from the directory that contains this file.
-const _selfBase = (() => {
-  try {
-    const u = new URL(import.meta.url);
-    const dir = u.href.substring(0, u.href.lastIndexOf('/') + 1); // …/js/
-    return dir + '../';  // …/  (root)
-  } catch (_) { return ''; }
-})();
+const { appBase: _selfBase, coreBase: _coreBase } = resolveAssetBases(import.meta.url);
 
 // ── app(options) ──────────────────────────────────────────────────────────
 //
@@ -7932,9 +7546,13 @@ export async function embed(options = {}) {
     dataTableColumns: _dataTableCols,
   };
 
+  // Resolve core base path (may be overridden via options.coreBase).
+  const coreBase = typeof options.coreBase === 'string' ? options.coreBase : _coreBase;
+
   // Inject styles immediately so the page doesn't flash unstyled.
+  _ensureStylesheet(coreBase + 'css/pearcore.css');
   _ensureStylesheet(base + 'css/peartree.css');
-  _ensureStylesheet(base + 'css/peartree-embed.css');
+  _ensureStylesheet(coreBase + 'css/pearcore-embed.css');
 
   // Create the wrapper with an app-host placeholder.  On first load,
   // peartree-ui.js's IIFE finds #app-html-host and replaces it with the full
@@ -7951,8 +7569,9 @@ export async function embed(options = {}) {
 
   // Load dependencies in order, then initialise.
   // Both are skipped when already present (bundled or loaded externally).
-  if (typeof window.marked === 'undefined') await _loadScript(base + 'vendor/marked.min.js', false);
-  if (typeof window.buildAppHTML !== 'function') await _loadScript(base + 'js/peartree-ui.js', false);
+  if (typeof window.marked === 'undefined') await loadScript(coreBase + 'vendor/marked.min.js', false);
+  if (typeof window.buildStandardDialogsHTML !== 'function') await loadScript(coreBase + 'js/pearcore-ui.js', false);
+  if (typeof window.buildAppHTML !== 'function') await loadScript(base + 'js/peartree-ui.js', false);
 
   // If peartree-ui.js was already loaded its IIFEs won't re-fire, so the
   // #app-html-host placeholder is still present.  Inject HTML directly.

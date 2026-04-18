@@ -6,8 +6,8 @@ import { AxisRenderer } from './axisrenderer.js';
 import { isNumericType, TreeCalibration } from './phylograph.js';
 import { getSequentialPalette,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
-         MISSING_DATA_COLOUR, buildCategoricalColourMap } from './palettes.js';
-import { htmlEsc as esc } from './utils.js';
+         MISSING_DATA_COLOUR, buildCategoricalColourMap } from '../../pearcore/js/palettes.js';
+import { htmlEsc as esc } from '../../pearcore/js/utils.js';
 
 /** @private SVG text-content escaper (no quot needed here). */
 function svgTextEsc(s) {
