@@ -12,6 +12,7 @@ import { CATEGORICAL_PALETTES, SEQUENTIAL_PALETTES,
 import { viewportDims, compositeViewPng, buildGraphicSVG } from './graphics-io.js';
 import { createAnnotImporter } from './annotation-io.js';
 import { createAnnotCurator  } from './annotation-manager.js';
+import { createFilterControl } from './filter-control.js';
 import { createFilterManager } from './filter-manager.js';
 import { createDataTableRenderer } from './datatablerenderer.js';
 import { createRTTChart          } from './rttchart.js';
@@ -415,25 +416,7 @@ async function _initCore(root = document) {
 
   // Upgrade all side-panel <input type="color" class="pt-palette-color"> to swatch pickers
   upgradeAllPaletteColourPickers(root, { palettes: CATEGORICAL_PALETTES });
-  const tipFilterEl            = $('tip-filter');
-  const btnFilterColEl         = $('btn-filter-col');
-  const btnFilterRegexEl       = $('btn-filter-regex');
-  const filterColPopupEl       = $('filter-col-popup');
-  let   _filterCol             = '__name__';  // currently active filter column
-  let   _filterRegex           = false;       // regex mode toggle
-
-  // Close filter-column popup on outside click or Escape
-  document.addEventListener('click', (e) => {
-    if (!root.contains(e.target)) return;
-    if (filterColPopupEl?.classList.contains('open') &&
-        !filterColPopupEl.contains(e.target) &&
-        e.target !== btnFilterColEl) {
-      filterColPopupEl.classList.remove('open');
-    }
-  });
-  if (_cfg.enableKeyboard) document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && (root === document || root.contains(document.activeElement))) filterColPopupEl?.classList.remove('open');
-  });
+  let filterControl = null;  // managed by filter-control.js; set in bindControls()
 
   // ── Settings persistence ──────────────────────────────────────────────────
   // SETTINGS_KEY, USER_THEMES_KEY, THEMES, DEFAULT_SETTINGS imported from ./themes.js
@@ -2750,10 +2733,13 @@ async function _initCore(root = document) {
       else sel.value = '';
       sel.disabled = filterMap.size === 0;
     }
+    filterControl?.setNamedFilters(filterMap);
   }
 
   // Wire filter dropdown change events
   function _onFilterSelectChange() { _applyFilterSelects(); saveSettings(); }
+
+
   nodeBarsFilterEl?.addEventListener('change',     _onFilterSelectChange);
   nodeLabelsFilterEl?.addEventListener('change',   _onFilterSelectChange);
   branchLabelsFilterEl?.addEventListener('change', _onFilterSelectChange);
@@ -3298,29 +3284,7 @@ async function _initCore(root = document) {
     if (collapsedCladeColourByEl)  repopulate(collapsedCladeColourByEl,  { filter: 'nodesAndTipAvg' });
     if (nodeLabelColourBy)   repopulate(nodeLabelColourBy,   { filter: 'nodesAndTipAvg' });
     if (branchLabelColourBy) repopulate(branchLabelColourBy, { filter: 'nodesAndTipAvg' });
-    // Rebuild filter-column popup: 'Name' first, then categorical/ordinal/date tip annotations only.
-    {
-      const items = [{ value: '__name__', label: 'Name' }];
-      for (const [name, def] of schema) {
-        if (!def.onTips) continue;
-        if (def.groupMember) continue;
-        const dt = def.dataType;
-        if (dt !== 'categorical' && dt !== 'ordinal' && dt !== 'date') continue;
-        items.push({ value: name, label: def.label ?? name });
-      }
-      if (!items.some(i => i.value === _filterCol)) _filterCol = '__name__';
-      if (filterColPopupEl) {
-        filterColPopupEl.innerHTML = '';
-        for (const { value, label } of items) {
-          const btn = document.createElement('button');
-          btn.className = 'pt-fcp-item' + (value === _filterCol ? ' active' : '');
-          btn.textContent = label;
-          btn.dataset.value = value;
-          filterColPopupEl.appendChild(btn);
-        }
-      }
-      if (btnFilterColEl) btnFilterColEl.title = `Search in: ${items.find(i => i.value === _filterCol)?.label ?? 'Name'}`;
-    }
+    filterControl?.setSchema(schema);
     repopulate(tipLabelShapeColourBy, { filter: 'tips' });
     for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) {
       repopulate(tipLabelShapeExtraColourBys[i], { filter: 'tips' });
@@ -4058,21 +4022,8 @@ async function _initCore(root = document) {
       renderer._mrcaNodeId       = null;
 
       // Reset tip filter for each tree load
-      if (tipFilterEl) tipFilterEl.value   = '';
-      if (tipFilterEl) tipFilterEl.placeholder = 'Filter tips…';
+      filterControl?.reset();
       _updateStatusSelect(0);
-      _filterCol   = '__name__';
-      _filterRegex = false;
-      btnFilterRegexEl?.classList.remove('active');
-      tipFilterEl?.closest('.pt-filter-group')?.classList.remove('regex-error');
-      // Seed the popup with Name immediately so it is never blank before _refreshAnnotationUIs runs.
-      if (filterColPopupEl && !filterColPopupEl.hasChildNodes()) {
-        const _seed = document.createElement('button');
-        _seed.className = 'pt-fcp-item active';
-        _seed.textContent = 'Name';
-        _seed.dataset.value = '__name__';
-        filterColPopupEl.appendChild(_seed);
-      }
 
       if (!treeLoaded) {
         treeLoaded = true;
@@ -4080,9 +4031,6 @@ async function _initCore(root = document) {
         _sectionAccordionUnlock?.();
         // Now that a tree is loaded, stamp the theme background onto the canvas wrappers.
         _syncCanvasWrapperBg(canvasBgColorEl.value);
-        if (tipFilterEl)     tipFilterEl.disabled      = false;
-        if (btnFilterColEl)  btnFilterColEl.disabled   = false;
-        if (btnFilterRegexEl) btnFilterRegexEl.disabled = false;
         $('btn-colour-trigger')?.removeAttribute('disabled');
         // Buttons with no command equivalent
         const _btnHypUp   = $('btn-hyp-up');
@@ -4138,6 +4086,11 @@ async function _initCore(root = document) {
       if (!controlsBound) {
         bindControls();
         controlsBound = true;
+        filterControl?.enable();  // first load — enable after control is created
+        // setSchema / setNamedFilters were called before filterControl existed; replay them now.
+        const _schema = renderer?._annotationSchema ?? graph?.annotationSchema;
+        if (_schema) filterControl?.setSchema(_schema);
+        filterControl?.setNamedFilters(filterManager?.getAll() ?? new Map());
       }
 
       // Sync button states through callbacks now that bindControls() is guaranteed to have run.
@@ -4299,107 +4252,37 @@ async function _initCore(root = document) {
     const btnNodeInfo     = $('btn-node-info');
 
     // ── Tip filter ────────────────────────────────────────────────────────────
-    let _filterTimer = null;
-
-    function _applyTipFilter() {
-      clearTimeout(_filterTimer);
-      _filterTimer = null;
-      const raw = tipFilterEl.value.trim();
-      const col = _filterCol; // '__name__' or an annotation key
-      const filterGroup = tipFilterEl.closest('.pt-filter-group');
-
-      if (!raw) {
-        filterGroup?.classList.remove('regex-error');
-        renderer._selectedTipIds.clear();
-        renderer._mrcaNodeId = null;
-        if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(false);
-        _updateStatusSelect(0);
-        renderer._dirty = true;
-        return;
-      }
-
-      // Build matcher — regex or plain substring
-      let matcher;
-      if (_filterRegex) {
-        try {
-          const re = new RegExp(raw, 'i');
-          matcher = s => re.test(s);
-          filterGroup?.classList.remove('regex-error');
-        } catch {
-          filterGroup?.classList.add('regex-error');
-          return; // invalid pattern — don't update selection
-        }
-      } else {
-        const q = raw.toLowerCase();
-        matcher = s => s.toLowerCase().includes(q);
-        filterGroup?.classList.remove('regex-error');
-      }
-
-      const matches = [];
-      if (renderer.nodeMap) {
-        for (const [id, n] of renderer.nodeMap) {
-          if (!n.isTip) continue;
-          let label;
-          if (col === '__name__') {
-            label = n.name ?? '';
-          } else {
-            const v = n.annotations?.[col];
-            label = v == null ? '' : String(v);
+    filterControl = createFilterControl($('tip-filter-mount'), {
+      getNodeMap:        () => renderer?.nodeMap,
+      passesNamedFilter: (id, node) => renderer?._passesFilter(id, node),
+      onMatchChange: (matches) => {
+        if (matches === null) {
+          renderer._selectedTipIds.clear();
+          renderer._mrcaNodeId = null;
+          if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(false);
+          _updateStatusSelect(0);
+          renderer._dirty = true;
+        } else {
+          renderer._selectedTipIds = new Set(matches.map(n => n.id));
+          renderer._mrcaNodeId = null;
+          if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(matches.length > 0);
+          _updateStatusSelect(matches.length);
+          renderer._dirty = true;
+          if (matches.length > 0 && renderer._targetScaleY > renderer.minScaleY * 1.01) {
+            const top = matches.reduce((a, b) => a.y < b.y ? a : b);
+            const newOffsetY = renderer.paddingTop + 10 - top.y * renderer._targetScaleY;
+            renderer._setTarget(newOffsetY, renderer._targetScaleY, false);
           }
-          if (matcher(label)) matches.push(n);
         }
-      }
-
-      renderer._selectedTipIds = new Set(matches.map(n => n.id));
-      renderer._mrcaNodeId = null;
-      if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(matches.length > 0);
-      _updateStatusSelect(matches.length);
-      renderer._dirty = true;
-
-      // Scroll topmost matching tip into view when tree is zoomed
-      if (matches.length > 0 && renderer._targetScaleY > renderer.minScaleY * 1.01) {
-        const top = matches.reduce((a, b) => a.y < b.y ? a : b);
-        const newOffsetY = renderer.paddingTop + 10 - top.y * renderer._targetScaleY;
-        renderer._setTarget(newOffsetY, renderer._targetScaleY, false);
-      }
-    }
-
-    tipFilterEl?.addEventListener('input', () => {
-      clearTimeout(_filterTimer);
-      _filterTimer = setTimeout(_applyTipFilter, 300);
-    });
-    tipFilterEl?.addEventListener('blur', () => {
-      clearTimeout(_filterTimer);
-      _applyTipFilter();
-    });
-    // Native clear button in <input type="search"> fires 'search' event
-    tipFilterEl?.addEventListener('search', _applyTipFilter);
-
-    // Regex toggle
-    btnFilterRegexEl?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      _filterRegex = !_filterRegex;
-      btnFilterRegexEl.classList.toggle('active', _filterRegex);
-      tipFilterEl.placeholder = _filterRegex ? 'Regex filter…' : 'Filter tips…';
-      _applyTipFilter();
-    });
-
-    // ── Filter column popup ──────────────────────────────────────────────────────
-    btnFilterColEl?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      filterColPopupEl.classList.toggle('open');
-    });
-    filterColPopupEl?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const item = e.target.closest('.pt-fcp-item');
-      if (!item) return;
-      _filterCol = item.dataset.value;
-      for (const el of filterColPopupEl.querySelectorAll('.pt-fcp-item')) {
-        el.classList.toggle('active', el === item);
-      }
-      btnFilterColEl.title = `Search in: ${item.textContent}`;
-      filterColPopupEl.classList.remove('open');
-      if (tipFilterEl.value.trim()) _applyTipFilter();
+      },
+      onSaveFilter: (_filter, all) => {
+        renderer?.setFilterDefinitions(all);
+        _refreshFilterUIs(all);
+        saveSettings();
+      },
+      showPrompt:       (t, m) => showPromptDialog(t, m),
+      getFilterManager: () => filterManager,
+      enableKeyboard:   _cfg.enableKeyboard !== false,
     });
 
     // ── Hide/Show helpers ─────────────────────────────────────────────────────
@@ -4563,8 +4446,8 @@ async function _initCore(root = document) {
       commands.setEnabled('tree-highlight-clade',  hasMrca);
       commands.setEnabled('tree-clear-highlights', renderer._cladeHighlights.size > 0);
       // Update status-bar selection count for canvas-click selections.
-      // Filter-driven selections update it directly in _applyTipFilter.
-      if (!tipFilterEl?.value?.trim()) {
+      // Filter-driven selections update it directly via onMatchChange.
+      if (!filterControl?.getInputValue()?.trim()) {
         _updateStatusSelect(hasSelection ? renderer._selectedTipIds.size : 0);
       }
       // Keep the data table in sync with the canvas selection

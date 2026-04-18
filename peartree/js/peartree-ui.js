@@ -566,18 +566,7 @@ function _tbSectionColour() {
 }
 
 function _tbSectionFilter() {
-  return `
-    <div class="pt-filter-wrap">
-      <div class="pt-filter-group">
-        <input type="search" id="tip-filter" class="pt-filter-input" placeholder="Filter tips…" disabled autocomplete="off" spellcheck="false">
-        <button id="btn-filter-regex" class="pt-filter-col-btn" disabled title="Use regular expression"><i class="bi bi-regex"></i></button>
-        <div class="pt-filter-col-wrap">
-          <button id="btn-filter-col" class="pt-filter-col-btn" disabled title="Search in: Name"><i class="bi bi-funnel"></i></button>
-          <div id="filter-col-popup"></div>
-        </div>
-      </div>
-      <span id="tip-filter-count" class="pt-filter-count" hidden></span>
-    </div>`;
+  return `<div id="tip-filter-mount"></div>`;
 }
 
 function _tbSectionAnnotations() {
