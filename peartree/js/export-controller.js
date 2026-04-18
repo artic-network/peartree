@@ -4,8 +4,8 @@
 
 import { htmlEsc as esc, downloadBlob, blobToBase64 } from './utils.js';
 import { isNumericType } from './phylograph.js';
-import { graphToNewick } from './treeio.js';
-import { viewportDims, compositeViewPng, buildGraphicSVG } from './graphicsio.js';
+import { graphToNewick } from './tree-io.js';
+import { viewportDims, compositeViewPng, buildGraphicSVG } from './graphics-io.js';
 import { CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY } from './treerenderer.js';
 
 /**

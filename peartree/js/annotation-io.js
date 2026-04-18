@@ -2,7 +2,7 @@
 // Extracted from peartree.js to keep the app controller focused.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { parseDelimited } from './treeio.js';
+import { parseDelimited } from './tree-io.js';
 import { buildAnnotationSchema } from './phylograph.js';
 import { htmlEsc as esc, wireDropZone } from './utils.js';
 

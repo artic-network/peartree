@@ -61,6 +61,7 @@ function _sectionTipLabels() {
     <div class="pt-palette-section">
       <h3><i class="bi bi-tag"></i> Tip Labels</h3>
       <div class="pt-palette-row" title="Show tip labels; choose which annotation to display"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="tip-label-show" disabled><option value="off">Off</option><option value="names" selected>names</option></select></div>
+      <div class="pt-palette-row" title="Only draw tip labels on tips that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="tip-labels-filter" disabled><option value="">— always —</option></select></div>
       <div id="tip-label-controls" class="pt-sub-controls" style="display:none">
         <div class="pt-palette-row" id="tip-label-dp-row" style="display:none" title="Decimal places for numeric tip labels"><span class="pt-palette-label">d.p.</span><select class="pt-palette-select" id="tip-label-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
         <div class="pt-palette-row" title="Align tips to a common margin with optional connecting lines"><span class="pt-palette-label">Alignment <i class="bi bi-text-left form-label-sm"></i></span><select class="pt-palette-select" id="tip-label-align"><option value="off">Off</option><option value="aligned">Aligned</option><option value="dots">Aligned + dots</option><option value="dashed">Aligned + dashed</option><option value="solid">Aligned + solid</option></select></div>
@@ -80,6 +81,7 @@ function _sectionBranchLabels() {
     <div class="pt-palette-section">
       <h3><i class="bi bi-tag"></i> Branch Labels</h3>
       <div class="pt-palette-row" title="Show labels at the midpoint of each branch; choose which annotation to display"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="branch-label-show" disabled><option value="">Off</option></select></div>
+      <div class="pt-palette-row" title="Only draw branch labels on nodes that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="branch-labels-filter" disabled><option value="">— always —</option></select></div>
       <div id="branch-label-detail" class="pt-detail pt-sub-controls">
         <div class="pt-palette-row" id="branch-label-dp-row" style="display:none" title="Decimal places for numeric branch labels"><span class="pt-palette-label">d.p. <i class="bi bi-three-dots form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
         <div class="pt-palette-row" title="Position of branch labels relative to the branch midpoint"><span class="pt-palette-label">Position <i class="bi bi-justify-left form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-position"><option value="above">Above</option><option value="below">Below</option></select></div>
@@ -98,6 +100,7 @@ function _sectionNodeLabels() {  return `
     <div class="pt-palette-section">
       <h3><i class="bi bi-tag-fill"></i> Node Labels</h3>
       <div class="pt-palette-row" title="Show labels at internal nodes; choose which annotation to display"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="node-label-show" disabled><option value="">Off</option></select></div>
+      <div class="pt-palette-row" title="Only draw node labels on nodes that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="node-labels-filter" disabled><option value="">— always —</option></select></div>
       <div id="node-label-detail" class="pt-detail pt-sub-controls">
         <div class="pt-palette-row" id="node-label-dp-row" style="display:none" title="Decimal places for numeric node labels"><span class="pt-palette-label">d.p. <i class="bi bi-three-dots form-label-sm"></i></span><select class="pt-palette-select" id="node-label-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
         <div class="pt-palette-row" title="Position of node labels relative to the node point"><span class="pt-palette-label">Position <i class="bi bi-diagram-2-fill form-label-sm bi-rotate-90"></i></span><select class="pt-palette-select" id="node-label-position"><option value="right">Right</option><option value="above-left">Above left</option><option value="below-left">Below left</option></select></div>
@@ -141,6 +144,7 @@ function _sectionTipShapes() {
     <div class="pt-palette-section">
       <h3><i class="bi bi-circle-fill"></i> Tip Shapes</h3>
       <div class="pt-palette-row" title="Radius of the circle drawn at each tip node"><span class="pt-palette-label">Size <i class="bi bi-arrow-up-right-circle-fill form-label-sm"></i></span><input type="range" class="form-range" id="tip-size-slider" min="0" max="24" value="3" /><span class="pt-val" id="tip-size-value">3</span></div>
+      <div class="pt-palette-row" title="Only draw tip shapes on tips that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="tip-shapes-filter" disabled><option value="">— always —</option></select></div>
       <div id="tip-shape-detail" class="pt-detail pt-sub-controls">
         <div class="pt-palette-row" title="Fill colour of tip node circles"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="tip-shape-color" value="#888888" /></div>
         <div class="pt-palette-row" title="Colour tip circles by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="tip-colour-by" disabled><option value="user_colour">user colour</option></select></div>
@@ -156,6 +160,7 @@ function _sectionNodeShapes() {
     <div class="pt-palette-section">
       <h3><i class="bi bi-record-circle"></i> Node Shapes</h3>
       <div class="pt-palette-row" title="Radius of the circle drawn at each internal node"><span class="pt-palette-label">Size <i class="bi bi-arrow-up-right-circle-fill form-label-sm"></i></span><input type="range" class="form-range" id="node-size-slider" min="0" max="24" value="0" /><span class="pt-val" id="node-size-value">0</span></div>
+      <div class="pt-palette-row" title="Only draw node shapes on nodes that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="node-shapes-filter" disabled><option value="">— always —</option></select></div>
       <div id="node-shape-detail" class="pt-detail pt-sub-controls">
         <div class="pt-palette-row" title="Fill colour of internal node circles"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="node-shape-color" value="#888888" /></div>
         <div class="pt-palette-row" title="Colour node circles by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="node-colour-by" disabled><option value="user_colour">user colour</option></select></div>
@@ -173,6 +178,7 @@ function _sectionNodeBars() {
       <div id="node-bars-unavail" style="display:block;font-size:0.78rem;color:var(--pt-text-muted);font-style:italic;padding:2px 0 4px;">Requires BEAST tree with height HPD</div>
       <div id="node-bars-controls" style="display:none">
         <div class="pt-palette-row" title="Show confidence interval bars (e.g. 95% HPD) on nodes"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="node-bars-show"><option value="off">Off</option><option value="on">On</option></select></div>
+        <div class="pt-palette-row" title="Only draw bars on nodes that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="node-bars-filter" disabled><option value="">— always —</option></select></div>
         <div id="node-bars-detail" class="pt-detail pt-sub-controls">
           <div class="pt-palette-row" title="Draw a vertical line at the mean or median of each bar"><span class="pt-palette-label">Line <i class="bi bi-vr form-label-sm"></i></span><select class="pt-palette-select" id="node-bars-median"><option value="off">(none)</option><option value="mean">Mean</option><option value="median">Median</option></select></div>
           <div class="pt-palette-row" title="Show or hide range values as text labels on each bar"><span class="pt-palette-label">Range <i class="bi bi-cursor-text form-label-sm bi-rotate-90"></i></span><select class="pt-palette-select" id="node-bars-range"><option value="off">Hide</option><option value="on">Show</option></select></div>
@@ -576,7 +582,8 @@ function _tbSectionFilter() {
 
 function _tbSectionAnnotations() {
   return `
-    <button id="btn-curate-annot" class="btn btn-sm btn-outline-secondary" disabled title="Curate annotations"><i class="bi bi-tags"></i></button>`;}
+    <button id="btn-curate-annot" class="btn btn-sm btn-outline-secondary" disabled title="Curate annotations"><i class="bi bi-tags"></i></button>
+    <button id="btn-manage-filters" class="btn btn-sm btn-outline-secondary" disabled title="Manage filters"><i class="bi bi-funnel"></i></button>`;}
 
 function _tbSectionNodeInfo() {
   return `
@@ -921,7 +928,30 @@ function _buildModals() {
     </div>
   </div>
 </div>
-<div id="pt-node-tooltip"></div>`;
+<div id="pt-node-tooltip"></div>
+<div id="manage-filters-overlay" class="pt-modal-overlay">
+  <div class="pt-modal fm-modal" style="width:820px;max-width:calc(100vw - 24px);min-width:min(700px,calc(100vw - 24px))">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-funnel me-2"></i>Filters</h5>
+      <button class="pt-modal-close-btn" id="manage-filters-close" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body fm-modal-body" style="padding:0;display:flex;overflow:hidden">
+      <div class="fm-list-pane">
+        <div class="fm-list-header">
+          <span class="fm-list-title">Filters</span>
+          <button id="filter-new-btn" class="btn btn-xs btn-primary"><i class="bi bi-plus me-1"></i>New Filter</button>
+        </div>
+        <div id="filter-list" class="fm-list"></div>
+      </div>
+      <div id="filter-editor" class="fm-editor-pane"></div>
+    </div>
+    <div class="pt-modal-footer">
+      <button id="filter-import-btn" class="btn btn-sm btn-outline-secondary me-1"><i class="bi bi-upload me-1"></i>Import</button>
+      <button id="filter-export-btn" class="btn btn-sm btn-outline-secondary me-auto"><i class="bi bi-download me-1"></i>Export All</button>
+      <button id="manage-filters-close-footer" class="btn btn-sm btn-secondary">Close</button>
+    </div>
+  </div>
+</div>`;
 }
 
 function _buildHelpAbout() {

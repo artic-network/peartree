@@ -2,7 +2,7 @@
 // Canvas renderer
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { computeLayoutFromGraph } from './treeutils.js';
+import { computeLayoutFromGraph } from './tree-utils.js';
 import { dateToDecimalYear, isNumericType, TreeCalibration } from './phylograph.js';
 import { getSequentialPalette, lerpSequential,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
@@ -14,6 +14,91 @@ import { buildFont, TYPEFACES } from './typefaces.js';
 export const CAL_DATE_KEY          = '__cal_date__';
 export const CAL_DATE_HPD_KEY      = '__cal_date_hpd__';
 export const CAL_DATE_HPD_ONLY_KEY = '__cal_date_hpd_only__';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Filter evaluation helpers (used by TreeRenderer._passesFilter)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function _evalFilterCondition(cond, annotations) {
+  const raw = annotations?.[cond.field];
+  const op  = cond.operator;
+  const DATE_OPS = ['before','after','on or before','on or after','in year','not in year','month is','month is not'];
+  const isDateOp = DATE_OPS.includes(op) || ((op === '=' || op === '!=') && _looksLikeDateField(cond, annotations));
+  if (raw === undefined || raw === null) {
+    return op === '!=' || op === 'not in' || op === 'not contains' ||
+           op === 'not starts with' || op === 'not ends with' || op === 'not regex' ||
+           op === 'not in year' || op === 'month is not';
+  }
+  if (op === '>=' || op === '<=' || op === '>' || op === '<') {
+    const v = parseFloat(raw), t = parseFloat(cond.value);
+    if (!isFinite(v) || !isFinite(t)) return false;
+    if (op === '>=') return v >= t;
+    if (op === '<=') return v <= t;
+    if (op === '>')  return v >  t;
+    if (op === '<')  return v <  t;
+  }
+  if (op === 'in' || op === 'not in') {
+    const hit = (cond.values ?? []).some(v => String(v) === String(raw));
+    return op === 'in' ? hit : !hit;
+  }
+  // Date operators
+  if (DATE_OPS.includes(op)) {
+    const rawDec = dateToDecimalYear(String(raw));
+    if (!isFinite(rawDec)) return op === 'not in year' || op === 'month is not';
+    if (op === 'in year' || op === 'not in year') {
+      const hit = isFinite(parseInt(cond.value)) && Math.floor(rawDec) === parseInt(cond.value);
+      return op === 'in year' ? hit : !hit;
+    }
+    if (op === 'month is' || op === 'month is not') {
+      const { month } = TreeCalibration.decYearToDate(rawDec);
+      const hit = month === parseInt(cond.value);
+      return op === 'month is' ? hit : !hit;
+    }
+    const valDec = dateToDecimalYear(String(cond.value ?? ''));
+    if (!isFinite(valDec)) return false;
+    const EPS = 1 / (365 * 48);
+    if (op === 'before')       return rawDec < valDec - EPS;
+    if (op === 'after')        return rawDec > valDec + EPS;
+    if (op === 'on or before') return rawDec <= valDec + EPS;
+    if (op === 'on or after')  return rawDec >= valDec - EPS;
+  }
+  if (op === '=')      return String(raw) === String(cond.value);
+  if (op === '!=')     return String(raw) !== String(cond.value);
+  // String operators
+  const cs   = cond.caseSensitive === true;
+  const sRaw = cs ? String(raw) : String(raw).toLowerCase();
+  const sVal = cs ? String(cond.value ?? '') : String(cond.value ?? '').toLowerCase();
+  if (op === 'contains')         return sRaw.includes(sVal);
+  if (op === 'not contains')     return !sRaw.includes(sVal);
+  if (op === 'starts with')      return sRaw.startsWith(sVal);
+  if (op === 'not starts with')  return !sRaw.startsWith(sVal);
+  if (op === 'ends with')        return sRaw.endsWith(sVal);
+  if (op === 'not ends with')    return !sRaw.endsWith(sVal);
+  if (op === 'regex') {
+    try { return new RegExp(String(cond.value ?? ''), cs ? '' : 'i').test(String(raw)); } catch { return false; }
+  }
+  if (op === 'not regex') {
+    try { return !new RegExp(String(cond.value ?? ''), cs ? '' : 'i').test(String(raw)); } catch { return true; }
+  }
+  return true;
+}
+
+function _looksLikeDateField(cond, annotations) {
+  // Cheap heuristic: used only for = / != when stored operator came from a date field.
+  return false;
+}
+
+function _evalFilterGroup(group, annotations) {
+  const isAnd = group.logic !== 'OR';
+  for (const item of group.items) {
+    const result = item.logic !== undefined
+      ? _evalFilterGroup(item, annotations)
+      : _evalFilterCondition(item, annotations);
+    if (isAnd && !result) return false;
+    if (!isAnd && result) return true;
+  }
+  return isAnd ? true : false;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Canvas renderer
@@ -358,6 +443,17 @@ export class TreeRenderer {
     this.cladeHighlightStrokeWidth = s.cladeHighlightStrokeWidth != null ? +s.cladeHighlightStrokeWidth : (this.cladeHighlightStrokeWidth ?? 1);
     this.cladeHighlightFillOpacity = s.cladeHighlightFillOpacity != null ? +s.cladeHighlightFillOpacity : (this.cladeHighlightFillOpacity ?? 0.15);
     this.cladeHighlightStrokeOpacity = s.cladeHighlightStrokeOpacity != null ? +s.cladeHighlightStrokeOpacity : (this.cladeHighlightStrokeOpacity ?? 0.70);
+
+    // ── Display feature filters ───────────────────────────────────────────
+    // Each is a filter ID (string) or null = always show.
+    // _filterDefinitions is a Map<id, Filter> injected from filter-manager.js.
+    this._filterDefinitions     = s._filterDefinitions   ?? (this._filterDefinitions   ?? new Map());
+    this._nodeBarsFilterId      = 'nodeBarsFilter'       in s ? (s.nodeBarsFilter       ?? null) : (this._nodeBarsFilterId      ?? null);
+    this._nodeLabelsFilterId    = 'nodeLabelsFilter'     in s ? (s.nodeLabelsFilter     ?? null) : (this._nodeLabelsFilterId    ?? null);
+    this._branchLabelsFilterId  = 'branchLabelsFilter'   in s ? (s.branchLabelsFilter   ?? null) : (this._branchLabelsFilterId  ?? null);
+    this._tipLabelsFilterId     = 'tipLabelsFilter'      in s ? (s.tipLabelsFilter      ?? null) : (this._tipLabelsFilterId     ?? null);
+    this._nodeShapesFilterId    = 'nodeShapesFilter'     in s ? (s.nodeShapesFilter     ?? null) : (this._nodeShapesFilterId    ?? null);
+    this._tipShapesFilterId     = 'tipShapesFilter'      in s ? (s.tipShapesFilter      ?? null) : (this._tipShapesFilterId     ?? null);
     this.cladeHighlightColour      = s.cladeHighlightColour      ?? (this.cladeHighlightColour      ?? '#ffaa00');
 
     // Propagate bg colour to an attached legend renderer.
@@ -369,6 +465,27 @@ export class TreeRenderer {
       this._updateMinScaleY();
       this._dirty = true;
     }
+  }
+
+  /** Replace the complete filter definition map (Map<id, Filter>). Marks dirty. */
+  setFilterDefinitions(map) {
+    this._filterDefinitions = map instanceof Map ? map : new Map(Object.entries(map ?? {}));
+    if (this.nodes) this._dirty = true;
+  }
+
+  /**
+   * Returns true if the node passes the named filter (should be drawn),
+   * false if it should be skipped. A null filterId always passes.
+   * A missing filter definition is treated as "always pass" for robustness.
+   */
+  _passesFilter(filterId, node) {
+    if (!filterId) return true;
+    const f = this._filterDefinitions?.get(filterId);
+    if (!f?.root?.items?.length) return true;
+    // Augment annotations with __name__ so tip-name conditions work.
+    const ann = node.annotations ?? {};
+    const augmented = node.name ? { __name__: node.name, ...ann } : ann;
+    return _evalFilterGroup(f.root, augmented);
   }
 
   setData(nodes, nodeMap, maxX, maxY) {
@@ -2890,6 +3007,7 @@ export class TreeRenderer {
     ctx.fillStyle   = col;
     ctx.globalAlpha = this.nodeBarsFillOpacity;
     for (const node of this._vInner) {
+      if (!this._passesFilter(this._nodeBarsFilterId, node)) continue;
       const hpd = node.annotations?.[hpdKey];
       if (!Array.isArray(hpd) || hpd.length < 2) continue;
       // larger height → closer to root → further left on screen
@@ -2906,6 +3024,7 @@ export class TreeRenderer {
     ctx.globalAlpha = this.nodeBarsStrokeOpacity;
     ctx.beginPath();
     for (const node of this._vInner) {
+      if (!this._passesFilter(this._nodeBarsFilterId, node)) continue;
       const hpd = node.annotations?.[hpdKey];
       if (!Array.isArray(hpd) || hpd.length < 2) continue;
       const xLeft  = this._wx(maxX - hpd[1]);
@@ -2925,6 +3044,7 @@ export class TreeRenderer {
       ctx.globalAlpha = this.nodeBarsStrokeOpacity;
       ctx.beginPath();
       for (const node of this._vInner) {
+        if (!this._passesFilter(this._nodeBarsFilterId, node)) continue;
         const hpd = node.annotations?.[hpdKey];
         if (!Array.isArray(hpd) || hpd.length < 2) continue;
         let xLine;
@@ -3202,6 +3322,7 @@ export class TreeRenderer {
       ctx.lineWidth   = nodeHalo * 2;
       ctx.beginPath();
       for (const node of this._vInner) {
+        if (!this._passesFilter(this._nodeShapesFilterId, node)) continue;
         ctx.moveTo(this._wx(node.x) + nodeR, this._wy(node.y));
         ctx.arc(this._wx(node.x), this._wy(node.y), nodeR, 0, Math.PI * 2);
       }
@@ -3215,6 +3336,7 @@ export class TreeRenderer {
       ctx.lineWidth   = tipHalo * 2;
       ctx.beginPath();
       for (const node of this._vTips) {
+        if (!this._passesFilter(this._tipShapesFilterId, node)) continue;
         ctx.moveTo(this._wx(node.x) + r, this._wy(node.y));
         ctx.arc(this._wx(node.x), this._wy(node.y), r, 0, Math.PI * 2);
       }
@@ -3230,6 +3352,7 @@ export class TreeRenderer {
         // should stay at the default nodeShapeColor.
         const tipOnly = def && !def.onNodes && def.onTips && key !== 'user_colour';
         for (const node of this._vInner) {
+          if (!this._passesFilter(this._nodeShapesFilterId, node)) continue;
           const val = tipOnly
             ? this._aggregateTipValue(node, key)
             : this._statValue(node, key);
@@ -3242,6 +3365,7 @@ export class TreeRenderer {
         ctx.fillStyle = this.nodeShapeColor;
         ctx.beginPath();
         for (const node of this._vInner) {
+          if (!this._passesFilter(this._nodeShapesFilterId, node)) continue;
           ctx.moveTo(this._wx(node.x) + nodeR, this._wy(node.y));
           ctx.arc(this._wx(node.x), this._wy(node.y), nodeR, 0, Math.PI * 2);
         }
@@ -3255,6 +3379,7 @@ export class TreeRenderer {
         // Per-tip colour: draw each circle individually.
         const key = this._tipColourBy;
         for (const node of this._vTips) {
+          if (!this._passesFilter(this._tipShapesFilterId, node)) continue;
           const val   = this._statValue(node, key);
           const col   = this._tipColourForValue(val) ?? this.tipShapeColor;
           ctx.fillStyle = col;
@@ -3266,6 +3391,7 @@ export class TreeRenderer {
         ctx.fillStyle = this.tipShapeColor;
         ctx.beginPath();
         for (const node of this._vTips) {
+          if (!this._passesFilter(this._tipShapesFilterId, node)) continue;
           ctx.moveTo(this._wx(node.x) + r, this._wy(node.y));
           ctx.arc(this._wx(node.x), this._wy(node.y), r, 0, Math.PI * 2);
         }
@@ -3366,6 +3492,7 @@ export class TreeRenderer {
         // Sub-pass 3a: unselected labels in dim grey
         ctx.fillStyle = dimColor;
         for (const node of this._vTips) {
+          if (!this._passesFilter(this._tipLabelsFilterId, node)) continue;
           if (this._selectedTipIds.has(node.id)) continue;
           if (!this._showLabelAt(node.y)) continue;
           const _t = this._tipLabelText(node);
@@ -3376,6 +3503,7 @@ export class TreeRenderer {
         ctx.fillStyle = this.selectedLabelColor;
         ctx.font = this._selectedFont(this.fontSize);
         for (const node of this._vTips) {
+          if (!this._passesFilter(this._tipLabelsFilterId, node)) continue;
           if (!this._selectedTipIds.has(node.id)) continue;
           if (!this._showLabelAt(node.y)) continue;
           const _t = this._tipLabelText(node);
@@ -3386,6 +3514,7 @@ export class TreeRenderer {
       } else if (this._labelColourBy && this._labelColourScale) {
         const key = this._labelColourBy;
         for (const node of this._vTips) {
+          if (!this._passesFilter(this._tipLabelsFilterId, node)) continue;
           if (!this._showLabelAt(node.y)) continue;
           const _t = this._tipLabelText(node);
           if (!_t) continue;
@@ -3397,6 +3526,7 @@ export class TreeRenderer {
       } else {
         ctx.fillStyle = this.labelColor;
         for (const node of this._vTips) {
+          if (!this._passesFilter(this._tipLabelsFilterId, node)) continue;
           if (!this._showLabelAt(node.y)) continue;
           const _t = this._tipLabelText(node);
           const _bX = alignLabelX ?? (this._wx(node.x) + outlineR);
@@ -3816,6 +3946,7 @@ export class TreeRenderer {
     const _nlDef = _nlcBy ? this._annotationSchema?.get(this._nodeLabelColourBy) : null;
     const _nlTipOnly = _nlDef && !_nlDef.onNodes && _nlDef.onTips && this._nodeLabelColourBy !== 'user_colour';
     for (const node of this._vInner) {
+      if (!this._passesFilter(this._nodeLabelsFilterId, node)) continue;
       const label = this._nodeLabelText(node);
       if (!label) continue;
       if (_nlcBy) {
@@ -3870,6 +4001,7 @@ export class TreeRenderer {
     const _blDef = _blcBy ? this._annotationSchema?.get(this._branchLabelColourBy) : null;
     const _blTipOnly = _blDef && !_blDef.onNodes && _blDef.onTips && this._branchLabelColourBy !== 'user_colour';
     for (const node of this._vAll) {
+      if (!this._passesFilter(this._branchLabelsFilterId, node)) continue;
       if (!node.parentId) continue;  // skip root
       const label = this._branchLabelText(node);
       if (!label) continue;

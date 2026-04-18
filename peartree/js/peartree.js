@@ -1,5 +1,5 @@
-import { parseNexus, parseNewick, graphToNewick, parseDelimited } from './treeio.js';
-import { computeLayoutFromGraph, graphVisibleTipCount, graphSubtreeHasHidden } from './treeutils.js';
+import { parseNexus, parseNewick, graphToNewick, parseDelimited } from './tree-io.js';
+import { computeLayoutFromGraph, graphVisibleTipCount, graphSubtreeHasHidden } from './tree-utils.js';
 import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointRootGraph, temporalRootGraph, optimiseRootEdge, buildAnnotationSchema, injectBuiltinStats, isNumericType, TreeCalibration, computeTemporalResiduals } from './phylograph.js';
 import { htmlEsc as _esc, downloadBlob as _downloadBlob, wireDropZone as _wireDropZone } from './utils.js';
 import { TreeRenderer, CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY } from './treerenderer.js';
@@ -9,9 +9,10 @@ import { THEMES, DEFAULT_THEME, SETTINGS_KEY, USER_THEMES_KEY } from './themes.j
 import { TYPEFACES, buildFont } from './typefaces.js';
 import { CATEGORICAL_PALETTES, SEQUENTIAL_PALETTES,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE } from './palettes.js';
-import { viewportDims, compositeViewPng, buildGraphicSVG } from './graphicsio.js';
-import { createAnnotImporter } from './annotationsio.js';
-import { createAnnotCurator  } from './annotations-manager.js';
+import { viewportDims, compositeViewPng, buildGraphicSVG } from './graphics-io.js';
+import { createAnnotImporter } from './annotation-io.js';
+import { createAnnotCurator  } from './annotation-manager.js';
+import { createFilterManager } from './filter-manager.js';
 import { createDataTableRenderer } from './datatablerenderer.js';
 import { createRTTChart          } from './rttchart.js';
 import { createCommands } from './commands.js';
@@ -386,6 +387,14 @@ async function _initCore(root = document) {
   const btnResetSettings       = $('btn-reset-settings');
   const btnImportAnnot         = $('btn-import-annot');
   const btnCurateAnnot         = $('btn-curate-annot');
+  const btnManageFilters       = $('btn-manage-filters');
+  let filterManager            = null;  // assigned after renderer is created
+  const nodeBarsFilterEl      = $('node-bars-filter');
+  const nodeLabelsFilterEl    = $('node-labels-filter');
+  const branchLabelsFilterEl  = $('branch-labels-filter');
+  const tipLabelsFilterEl     = $('tip-labels-filter');
+  const nodeShapesFilterEl    = $('node-shapes-filter');
+  const tipShapesFilterEl     = $('tip-shapes-filter');
   const btnDataTable           = $('btn-data-table');
   const btnRtt                 = $('btn-rtt');
   const btnExportTree          = $('btn-export-tree');
@@ -783,6 +792,13 @@ async function _initCore(root = document) {
       cladeHighlightStrokeOpacity: cladeHighlightStrokeOpacitySlider?.value ?? '0.7',
       cladeHighlightColour:        cladeHighlightDefaultColourEl?.value    ?? '#ffaa00',
       cladeHighlights:             renderer?.getCladeHighlightsData() ?? [],
+      filters:                     filterManager ? JSON.stringify([...filterManager.getAll().values()]) : '[]',
+      nodeBarsFilter:              nodeBarsFilterEl?.value     || null,
+      nodeLabelsFilter:            nodeLabelsFilterEl?.value   || null,
+      branchLabelsFilter:          branchLabelsFilterEl?.value || null,
+      tipLabelsFilter:             tipLabelsFilterEl?.value    || null,
+      nodeShapesFilter:            nodeShapesFilterEl?.value   || null,
+      tipShapesFilter:             tipShapesFilterEl?.value    || null,
     };
   }
 
@@ -1562,6 +1578,13 @@ async function _initCore(root = document) {
       cladeHighlightFillOpacity:   parseFloat(cladeHighlightFillOpacitySlider?.value ?? '0.15'),
       cladeHighlightStrokeOpacity: parseFloat(cladeHighlightStrokeOpacitySlider?.value ?? '0.7'),
       cladeHighlightColour:        cladeHighlightDefaultColourEl?.value ?? '#ffaa00',
+      _filterDefinitions:          filterManager?.getAll() ?? new Map(),
+      nodeBarsFilter:              nodeBarsFilterEl?.value     || null,
+      nodeLabelsFilter:            nodeLabelsFilterEl?.value   || null,
+      branchLabelsFilter:          branchLabelsFilterEl?.value || null,
+      tipLabelsFilter:             tipLabelsFilterEl?.value    || null,
+      nodeShapesFilter:            nodeShapesFilterEl?.value   || null,
+      tipShapesFilter:             tipShapesFilterEl?.value    || null,
     };
   }
 
@@ -2086,6 +2109,16 @@ async function _initCore(root = document) {
     cladeHighlightStrokeWidthSlider.value = _saved.cladeHighlightStrokeWidth;
     $('clade-highlight-stroke-width-value') && ($('clade-highlight-stroke-width-value').textContent = _saved.cladeHighlightStrokeWidth);
   }
+
+  // Restore filter manager state
+  // (only select values here — filterManager itself is created later;
+  //  the definitions are loaded into it after creation below)
+  const _filterSelectIds = ['nodeBarsFilter', 'nodeLabelsFilter', 'branchLabelsFilter', 'tipLabelsFilter', 'nodeShapesFilter', 'tipShapesFilter'];
+  const _filterSelectEls = [nodeBarsFilterEl, nodeLabelsFilterEl, branchLabelsFilterEl, tipLabelsFilterEl, nodeShapesFilterEl, tipShapesFilterEl];
+  for (let i = 0; i < _filterSelectIds.length; i++) {
+    const val = _saved[_filterSelectIds[i]];
+    if (val && _filterSelectEls[i]) _filterSelectEls[i].value = val;
+  }
   const container = canvas.parentElement;
   const dpr = window.devicePixelRatio || 1;
   canvas.style.width  = container.clientWidth  + 'px';
@@ -2457,11 +2490,12 @@ async function _initCore(root = document) {
 
     if (e.key === 'Escape') {
       // Close innermost open overlay first.
-      if ($('parse-tips-overlay')?.classList.contains('open'))    { /* handled by annotations-manager */ return; }
+      if ($('parse-tips-overlay')?.classList.contains('open'))    { /* handled by annotation-manager */ return; }
       if ($('export-graphic-overlay')?.classList.contains('open')) { exportCtrl.closeGraphicsDialog(); return; }
       if ($('export-tree-overlay')?.classList.contains('open'))    { exportCtrl.closeExportDialog();   return; }
       if (annotConfigOverlay?.classList.contains('open')) { annotConfigOverlay.classList.remove('open'); return; }
       if ($('curate-annot-overlay')?.classList.contains('open')) { annotCurator.close(); return; }
+      if ($('manage-filters-overlay')?.classList.contains('open')) { filterManager.close(); return; }
       if ($('import-annot-overlay')?.classList.contains('open'))  { annotImporter.close(); return; }
       const nodeInfoOv = $('node-info-overlay');
       if (nodeInfoOv && nodeInfoOv.classList.contains('open')) { nodeInfoOv.classList.remove('open'); return; }
@@ -2665,6 +2699,73 @@ async function _initCore(root = document) {
     onConfigureClick: (key) => openAnnotConfig(key),
   });
   btnCurateAnnot?.addEventListener('click', () => commands.execute('curate-annot'));
+
+  // ── Filter Manager ───────────────────────────────────────────────────────
+  filterManager = createFilterManager({
+    getSchema: () => graph?.annotationSchema ?? null,
+    onFiltersChange: (map) => {
+      renderer?.setFilterDefinitions(map);
+      _refreshFilterUIs(map);
+      saveSettings();
+    },
+  });
+  // Restore saved filter definitions now that filterManager exists
+  if (_saved.filters) {
+    try {
+      const arr = JSON.parse(_saved.filters);
+      if (Array.isArray(arr)) {
+        const map = new Map(arr.map(f => [f.id, f]));
+        filterManager.setAll(map);
+        _refreshFilterUIs(map);
+        // Re-apply saved select values (dropdowns now have the filter options)
+        for (let i = 0; i < _filterSelectIds.length; i++) {
+          const val = _saved[_filterSelectIds[i]];
+          if (val && _filterSelectEls[i]) _filterSelectEls[i].value = val;
+        }
+        renderer?.setFilterDefinitions(map);
+      }
+    } catch (_) { /* corrupt saved data — silently skip */ }
+  }
+  btnManageFilters?.addEventListener('click', () => commands.execute('manage-filters'));
+
+  /** Repopulate all 6 filter <select> elements from the current filter map. */
+  function _refreshFilterUIs(filterMap) {
+    const selects = [
+      nodeBarsFilterEl, nodeLabelsFilterEl, branchLabelsFilterEl,
+      tipLabelsFilterEl, nodeShapesFilterEl, tipShapesFilterEl,
+    ];
+    for (const sel of selects) {
+      if (!sel) continue;
+      const current = sel.value;
+      // Keep only the '— always —' placeholder, then re-add filters
+      sel.innerHTML = '<option value="">— always —</option>';
+      for (const [id, f] of filterMap) {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = f.name || id;
+        sel.appendChild(opt);
+      }
+      // Restore previous selection if still available
+      if (current && [...filterMap.keys()].includes(current)) sel.value = current;
+      else sel.value = '';
+      sel.disabled = filterMap.size === 0;
+    }
+  }
+
+  // Wire filter dropdown change events
+  function _onFilterSelectChange() { _applyFilterSelects(); saveSettings(); }
+  nodeBarsFilterEl?.addEventListener('change',     _onFilterSelectChange);
+  nodeLabelsFilterEl?.addEventListener('change',   _onFilterSelectChange);
+  branchLabelsFilterEl?.addEventListener('change', _onFilterSelectChange);
+  tipLabelsFilterEl?.addEventListener('change',    _onFilterSelectChange);
+  nodeShapesFilterEl?.addEventListener('change',   _onFilterSelectChange);
+  tipShapesFilterEl?.addEventListener('change',    _onFilterSelectChange);
+
+  function _applyFilterSelects() {
+    if (!renderer) return;
+    renderer.setSettings(_buildRendererSettings());
+    renderer._dirty = true;
+  }
 
   // ── Data Table Panel ─────────────────────────────────────────────────────
   dataTableRenderer = createDataTableRenderer({
@@ -4008,6 +4109,7 @@ async function _initCore(root = document) {
         commands.setEnabled('paste-tree',      false);  // disable once a tree is loaded
         commands.setEnabled('import-annot',    true);
         commands.setEnabled('curate-annot',    true);
+        commands.setEnabled('manage-filters',   true);
         commands.setEnabled('export-tree',     true);
         commands.setEnabled('export-image',    true);
         commands.setEnabled('print-graphic',   true);
@@ -6932,6 +7034,7 @@ async function _initCore(root = document) {
   commands.get('open-tree').exec  = () => openModal();
   commands.get('import-annot').exec = () => annotImporter.open();
   commands.get('curate-annot').exec  = () => annotCurator.open();
+  commands.get('manage-filters').exec = () => filterManager.open();
   commands.get('select-all').exec = () => {
     const tag = document.activeElement?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) {

@@ -62,6 +62,7 @@ fn build_app_menu(
     let export_image = MenuItem::with_id(manager, "export-image", "Export Image\u{2026}",         true, Some("CmdOrCtrl+Shift+E"))?;
     let print_graphic = MenuItem::with_id(manager, "print-graphic", "Print\u{2026}",             false, Some("CmdOrCtrl+P"))?;
     let curate_annot = MenuItem::with_id(manager, "curate-annot", "Curate Annotations\u{2026}",  false, None::<&str>)?;
+    let manage_filters = MenuItem::with_id(manager, "manage-filters", "Manage Filters\u{2026}",   false, None::<&str>)?;
 
     let file_menu = Submenu::with_items(manager, "File", true, &[
         &new_win,
@@ -69,6 +70,7 @@ fn build_app_menu(
         &open_file,
         &import_annot,
         &curate_annot,
+        &manage_filters,
         &PredefinedMenuItem::separator(manager)?,
         &export_tree,
         &export_image,
@@ -204,7 +206,7 @@ fn build_app_menu(
     ])?;
 
     // Set initial disabled states before the window's JS loads.
-    for item in &[&import_annot, &curate_annot, &export_tree, &export_image] {
+    for item in &[&import_annot, &curate_annot, &manage_filters, &export_tree, &export_image] {
         item.set_enabled(false)?;
     }
     for item in &[
@@ -266,6 +268,7 @@ fn build_app_menu(
         ("tree-collapse-clade", tree_collapse_clade),
         ("tree-expand-clade",   tree_expand_clade),
         ("curate-annot",      curate_annot),
+        ("manage-filters",    manage_filters),
         ("view-hyp-up",        view_hyp_up),
         ("view-hyp-down",      view_hyp_down),
         ("view-scroll-top",    view_scroll_top),

@@ -1836,6 +1836,131 @@ body.palette-pinned #canvas-container {
 .ca-row-fixed { border-bottom: 1px solid var(--pt-divider); cursor: default !important; }
 .ca-row-fixed:hover { background: transparent !important; }
 .ca-row-fixed .ca-name { color: var(--pt-text-icon-hover); }
+
+/* ── Filter Manager dialog ────────────────────────────────────────── */
+.fm-modal { display:flex; flex-direction:column; }
+.fm-modal-body { flex:1; min-height:0; overflow:hidden; }
+.fm-list-pane {
+  display:flex; flex-direction:column; width:220px; flex-shrink:0;
+  border-right:1px solid var(--pt-border);
+  background:var(--pt-bg-deepest);
+}
+.fm-list-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 10px; border-bottom:1px solid var(--pt-border);
+  flex-shrink:0;
+}
+.fm-list-title { font-size:0.78rem; font-weight:600; color:var(--pt-cream); }
+.fm-list { flex:1; overflow-y:auto; }
+.fm-empty { padding:14px 12px; font-size:0.78rem; color:var(--pt-text-muted); line-height:1.6; }
+.fm-list-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:6px 10px; border-bottom:1px solid var(--pt-divider-micro);
+  cursor:pointer; font-size:0.82rem;
+}
+.fm-list-row:hover { background:var(--pt-surface-row); }
+.fm-list-row.active { background:var(--pt-selection-bg); }
+.fm-list-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--pt-text-bright); }
+.fm-list-actions { display:flex; gap:3px; flex-shrink:0; margin-left:6px; }
+
+.fm-editor-pane { flex:1; overflow-y:auto; padding:12px 14px; min-width:0; }
+.fm-editor-empty { padding:20px; font-size:0.82rem; color:var(--pt-text-muted); text-align:center; }
+
+.fm-editor-header { margin-bottom:10px; }
+.fm-name-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.fm-label { font-size:0.75rem; color:var(--pt-cream); white-space:nowrap; }
+.fm-name-input {
+  flex:1; background:var(--pt-input-bg); color:var(--pt-text-bright);
+  border:1px solid var(--pt-border); border-radius:3px; padding:3px 7px;
+  font-size:0.82rem;
+}
+.fm-name-input:focus { outline:none; border-color:var(--pt-gold); }
+
+/* Group container */
+.fm-group {
+  border:1px solid var(--pt-border); border-radius:4px;
+  margin-bottom:8px; background:var(--pt-bg-panel);
+}
+.fm-group-root { margin-bottom:6px; }
+.fm-subgroup { margin:6px 0 6px 12px; background:var(--pt-bg-deepest); }
+.fm-logic-row {
+  display:flex; align-items:center; gap:5px;
+  padding:5px 8px; border-bottom:1px solid var(--pt-divider-micro);
+  flex-wrap:wrap;
+}
+.fm-logic-label { font-size:0.72rem; color:var(--pt-text-muted); margin-right:2px; }
+.fm-logic-btn {
+  font-size:0.72rem; padding:2px 8px; border-radius:3px;
+  border:1px solid var(--pt-border); background:transparent; color:var(--pt-text-subdued);
+  cursor:pointer;
+}
+.fm-logic-btn:hover { border-color:var(--pt-gold); color:var(--pt-gold); }
+.fm-logic-btn.active { background:var(--pt-gold); border-color:var(--pt-gold); color:#000; font-weight:600; }
+.fm-remove-group-btn { padding:2px 6px !important; }
+
+.fm-group-items { padding:6px 8px 0; }
+.fm-add-row {
+  display:flex; gap:6px; padding:6px 8px 8px;
+}
+
+/* Condition row */
+.fm-cond-row {
+  display:flex; align-items:center; gap:5px; margin-bottom:5px; flex-wrap:wrap;
+}
+.fm-sel {
+  background:var(--pt-input-bg); color:var(--pt-text-bright);
+  border:1px solid var(--pt-border); border-radius:3px; padding:2px 5px;
+  font-size:0.78rem;
+}
+.fm-field-sel { min-width:100px; max-width:160px; }
+.fm-op-sel { min-width:60px; }
+.fm-val-wrap { flex:1; min-width:80px; display:flex; align-items:center; gap:4px; }
+.fm-val-input {
+  flex:1; min-width:0; width:100%; background:var(--pt-input-bg); color:var(--pt-text-bright);
+  border:1px solid var(--pt-border); border-radius:3px; padding:2px 6px;
+  font-size:0.78rem;
+}
+.fm-val-input:focus { outline:none; border-color:var(--pt-gold); }
+.fm-remove-cond-btn { padding:2px 6px !important; flex-shrink:0; }
+
+/* Chip (multi-value) widget */
+.fm-chips { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:4px; min-height:4px; }
+.fm-chip {
+  display:inline-flex; align-items:center; gap:3px;
+  background:var(--pt-surface-row); border:1px solid var(--pt-border); border-radius:3px;
+  padding:1px 6px; font-size:0.75rem; color:var(--pt-text-bright);
+}
+.fm-chip-del {
+  background:none; border:none; cursor:pointer; color:var(--pt-text-muted);
+  padding:0 1px; line-height:1; font-size:0.85rem;
+}
+.fm-chip-del:hover { color:var(--pt-danger); }
+.fm-chip-row { display:flex; gap:4px; }
+.fm-chip-input {
+  flex:1; background:var(--pt-input-bg); color:var(--pt-text-bright);
+  border:1px solid var(--pt-border); border-radius:3px; padding:2px 6px;
+  font-size:0.78rem;
+}
+.fm-chip-input:focus { outline:none; border-color:var(--pt-gold); }
+
+/* case-sensitive toggle in string-op value widget */
+.fm-cs-label {
+  display:inline-flex; align-items:center; gap:3px; white-space:nowrap;
+  font-size:0.72rem; color:var(--pt-text-muted); cursor:pointer;
+  margin-left:4px; user-select:none;
+}
+.fm-cs-checkbox { cursor:pointer; }
+
+/* Date input — fixed width so YYYY-MM-DD placeholder is visible */
+.fm-date-input { min-width:8em; }
+
+.fm-editor-footer {
+  display:flex; gap:6px; justify-content:flex-end;
+  padding-top:10px; border-top:1px solid var(--pt-divider-micro); margin-top:6px;
+}
+
+.btn-xs { padding:2px 7px !important; font-size:0.73rem !important; line-height:1.4 !important; }
+
 /* ── Data table panel ─────────────────────────────────────────────── */
 /* Overlay mode (default): slides in from the right over the canvas  */
 #data-table-panel {

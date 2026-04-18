@@ -1,4 +1,4 @@
-// annotations-manager.js — Annotation curation dialog.
+// annotation-manager.js — Annotation curation dialog.
 // Lets the user inspect, retype and adjust scale bounds for annotations
 // to annotations loaded from a tree file or imported from CSV/TSV.
 // ─────────────────────────────────────────────────────────────────────────────

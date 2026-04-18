@@ -26,6 +26,7 @@ const _DEFS = [
   { id: 'open-tree',    label: 'Open Tree…',             shortcut: 'CmdOrCtrl+Shift+O',       group: 'file', enabled: true,  buttonId: 'btn-open-tree'      },
   { id: 'import-annot', label: 'Import Annotations…',    shortcut: 'CmdOrCtrl+Shift+A',       group: 'file', enabled: false, buttonId: 'btn-import-annot'   },
   { id: 'curate-annot', label: 'Curate Annotations…',    shortcut: null,                      group: 'file', enabled: false, buttonId: 'btn-curate-annot'   },
+  { id: 'manage-filters', label: 'Manage Filters…',      shortcut: null,                      group: 'file', enabled: false, buttonId: 'btn-manage-filters' },
   { id: 'export-tree',  label: 'Export Tree…',            shortcut: 'CmdOrCtrl+E',             group: 'file', enabled: false, buttonId: 'btn-export-tree'    },
   { id: 'export-image',  label: 'Export Image…',           shortcut: 'CmdOrCtrl+Shift+E',       group: 'file', enabled: false, buttonId: 'btn-export-graphic' },
   { id: 'print-graphic', label: 'Print…',                  shortcut: 'CmdOrCtrl+P',             group: 'file', enabled: false },
