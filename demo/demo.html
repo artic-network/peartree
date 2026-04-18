@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<!--
+  Pearcore Demo — Minimal reference app built on the pearcore framework.
+
+  Demonstrates: toolbar, palette panel, canvas rendering, file I/O,
+  image export, help/about panels, dark/light theme, settings persistence.
+
+  License: MIT
+-->
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pearcore Demo — Bar Chart</title>
+
+  <!-- Bootstrap 5 theme (vendored) -->
+  <link rel="stylesheet" href="../pearcore/vendor/bootstrap.min-artic.css" />
+  <!-- Bootstrap Icons (vendored) -->
+  <link rel="stylesheet" href="../pearcore/vendor/bootstrap-icons/bootstrap-icons.css" />
+  <!-- Markdown renderer (vendored) -->
+  <script src="../pearcore/vendor/marked.min.js"></script>
+
+  <!-- Pearcore framework CSS -->
+  <link rel="stylesheet" href="../pearcore/css/pearcore.css" />
+  <!-- App-specific CSS -->
+  <link rel="stylesheet" href="css/demo.css" />
+  <!-- Pearcore webapp CSS (layout, scrollbar, etc.) -->
+  <link rel="stylesheet" href="../pearcore/css/pearcore-webapp.css" />
+</head>
+<body>
+
+<div id="app-html-host"></div>
+
+<script src="../pearcore/js/pearcore-ui.js"></script>
+<script src="js/demo-ui.js"></script>
+<script type="module">
+  import { app } from './js/demo.js';
+  app({ storageKey: 'demo.local' });
+</script>
+</body>
+</html>
