@@ -220,7 +220,7 @@ export function createFilterManager({ getSchema, onFiltersChange, onSaveRequest,
     const f    = _filters.get(id);
     const name = f?.name ? `\u201c${f.name}\u201d` : 'this filter';
     const confirmed = showConfirm
-      ? showConfirm('Delete filter', `Delete ${name}?`)
+      ? showConfirm('Delete filter', `Delete ${name}?`, { okLabel: 'Delete', cancelLabel: 'Cancel' })
       : Promise.resolve(window.confirm(`Delete ${name}?`));
     Promise.resolve(confirmed).then(ok => {
       if (!ok) return;
@@ -628,7 +628,8 @@ export function createFilterManager({ getSchema, onFiltersChange, onSaveRequest,
       const confirmed = showConfirm
         ? showConfirm(
             'Overwrite filter',
-            `A filter named "${duplicate.name}" already exists. Overwrite it?`
+            `A filter named "${duplicate.name}" already exists. Overwrite it?`,
+            { okLabel: 'Overwrite', cancelLabel: 'Cancel' }
           )
         : Promise.resolve(window.confirm(`A filter named "${duplicate.name}" already exists. Overwrite it?`));
       Promise.resolve(confirmed).then(ok => {

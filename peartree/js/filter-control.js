@@ -31,7 +31,7 @@ export function createFilterControl(container, opts = {}) {
     onMatchChange           = () => {},
     onSaveFilter            = () => {},
     showPrompt              = (_t, m) => Promise.resolve(window.prompt(m) || null),
-    showConfirm             = (_t, m) => Promise.resolve(window.confirm(m)),
+    showConfirm             = (_t, m, _opts) => Promise.resolve(window.confirm(m)),
     getFilterManager        = () => null,
     enableKeyboard          = true,
   } = opts;
@@ -360,7 +360,8 @@ export function createFilterControl(container, opts = {}) {
     if (existing) {
       const ok = await showConfirm(
         'Overwrite filter',
-        `A filter named \u201c${existing.name}\u201d already exists. Overwrite it?`
+        `A filter named \u201c${existing.name}\u201d already exists. Overwrite it?`,
+        { okLabel: 'Overwrite', cancelLabel: 'Cancel' }
       );
       if (!ok) return;
       // Update in place: keep same id, replace root

@@ -2691,7 +2691,7 @@ async function _initCore(root = document) {
       _refreshFilterUIs(map);
       saveSettings();
     },
-    showConfirm: (t, m) => showConfirmDialog(t, m, { okLabel: 'Overwrite', cancelLabel: 'Cancel' }),
+    showConfirm: (t, m, opts) => showConfirmDialog(t, m, { okLabel: 'OK', cancelLabel: 'Cancel', ...opts }),
   });
   // Restore saved filter definitions now that filterManager exists
   if (_saved.filters) {
@@ -4283,7 +4283,7 @@ async function _initCore(root = document) {
         saveSettings();
       },
       showPrompt:       (t, m) => showPromptDialog(t, m),
-      showConfirm:      (t, m) => showConfirmDialog(t, m, { okLabel: 'Overwrite', cancelLabel: 'Cancel' }),
+      showConfirm:      (t, m, opts) => showConfirmDialog(t, m, { okLabel: 'OK', cancelLabel: 'Cancel', ...opts }),
       getFilterManager: () => filterManager,
       enableKeyboard:   _cfg.enableKeyboard !== false,
     });
