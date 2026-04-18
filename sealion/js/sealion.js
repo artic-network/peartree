@@ -1,7 +1,17 @@
-// script.js - virtualized alignment canvas renderer
-// Expects `alignment` to be provided by alignment.js (loaded before this script in index.html)
+// sealion.js — Sealion alignment viewer app (ES module).
+// Entry point loaded as <script type="module">.
 
-(function () {
+import { SealionViewer } from './sealionviewer.js';
+import { COMMAND_DEFS } from './sealion-commands.js';
+import { createCommands } from '@artic-network/pearcore/commands.js';
+import {
+  andMasks, parseGenBankFile, fetchWithFallback,
+} from './sealion-utils.js';
+
+// Alignment is loaded as a classic script and available on window.
+const Alignment = window.Alignment;
+
+;(async function () {
 
   const __statusEl = document.getElementById('init-status');
   // Feature flag: show a centered translucent status box during initialization
@@ -64,16 +74,21 @@
     } catch (e) { }
   }
 
+  // ── Forward declarations (used by window.sealion interface below) ──────────
+  let viewer = null;
+  let alignment = null;
+  let fileModal = null;
+  let refGenomeModal = null;
+
   // ── Sealion app interface (for sealion-tauri.js and the command registry) ────
   // window.sealion is set up here with stub implementations; concrete methods
   // that rely on closures defined later in this file are filled in below.
   // The Tauri adapter (sealion-tauri.js) may override pickFile and setSaveHandler.
   {
     const _prev = window.sealion || {};
+    const commands = createCommands(document, COMMAND_DEFS);
     window.sealion = {
-      // commands.js populates this before sealion.js runs (or it may already be
-      // set on the stub object created by commands.js).
-      commands: _prev.commands || null,
+      commands,
 
       // Override in sealion-tauri.js for a native file-open dialog.
       pickFile: () => { document.getElementById('open-file-btn')?.click(); },
@@ -98,9 +113,6 @@
       _saveHandler: null,
     };
   }
-
-  //  Start the initialization process
-  initializeViewer();
 
   // Button to jump to next difference from reference
   const diffNextBtn = document.getElementById('diff-next-btn');
@@ -245,10 +257,6 @@
   }
   // ─────────────────────────────────────────────────────────────────────────
 
-  // viewer instance reference (will be created before data is loaded)
-  let viewer = null;
-  // alignment reference (will be set when data is loaded)
-  let alignment = null;
   // Helper to prefer viewer-owned properties but fall back to local value.
   function getViewerProp(name, localVal, viewerKey) {
     try {
@@ -283,13 +291,9 @@
 
   async function initializeViewer() {
     try {
-      // Step 1: Wait for SealionViewer class
-      setStatus('Loading viewer...');
-      await waitForViewerClass();
-
-      // Step 2: Create empty viewer instance (no data yet - will be loaded by user choice)
+      // Create empty viewer instance (no data yet - will be loaded by user choice)
       setStatus('Creating viewer...');
-      viewer = new window.SealionViewer('#sealion', null, window.SealionViewer.DEFAULTS);
+      viewer = new SealionViewer('#sealion', null, SealionViewer.DEFAULTS);
       try { window.viewer = viewer; } catch (_) { }
       console.info('SealionViewer created (no data - waiting for user to load)');
 
@@ -341,13 +345,7 @@
         fileModal.show();
         console.info('Showing file upload modal - waiting for user data choice');
       } else {
-        console.warn('File modal not available, falling back to waiting for alignment');
-        // Fallback to old behavior if modal not available
-        alignment = await waitForAlignment();
-        try { window.alignment = alignment; } catch (_) { }
-        console.info('Alignment data loaded');
-        viewer.setData(alignment);
-        console.info('Viewer data set');
+        console.warn('File modal not available');
       }
 
       // NOTE: The rest of initialization (dark mode, custom names, etc.)
@@ -651,11 +649,7 @@
       window.rowCount = rowCount;
 
       // Reset mask string
-      if (window.refreshMaskStr && typeof window.refreshMaskStr === 'function') {
-        window.maskStr = window.refreshMaskStr();
-      } else {
-        window.maskStr = '1'.repeat(maxSeqLen);
-      }
+      window.maskStr = '1'.repeat(maxSeqLen);
 
       // Load saved dark mode preference from localStorage
       console.time('loadDataIntoViewer:loadDarkMode');
@@ -989,7 +983,7 @@
           window.consensusSequence = cons;
           if (cons) {
             try { window.reference = String(cons); } catch (_) { }
-            if (window.refreshRefStr) window.refreshRefStr();
+            
             console.info('Initialized with consensus as reference sequence');
           }
         }
@@ -1020,49 +1014,6 @@
     }
   }
 
-  // Helper: Wait for SealionViewer class to be available
-  function waitForViewerClass() {
-    return new Promise((resolve, reject) => {
-      if (window.SealionViewer) {
-        resolve();
-        return;
-      }
-      let attempts = 0;
-      const maxAttempts = 50; // 10 seconds
-      const interval = setInterval(() => {
-        attempts++;
-        if (window.SealionViewer) {
-          clearInterval(interval);
-          resolve();
-        } else if (attempts >= maxAttempts) {
-          clearInterval(interval);
-          reject(new Error('SealionViewer class failed to load'));
-        }
-      }, 200);
-    });
-  }
-
-  // Helper: Wait for alignment data to be available
-  function waitForAlignment() {
-    return new Promise((resolve, reject) => {
-      if (window.alignment) {
-        resolve(window.alignment);
-        return;
-      }
-      let attempts = 0;
-      const maxAttempts = 50; // 10 seconds
-      const interval = setInterval(() => {
-        attempts++;
-        if (window.alignment) {
-          clearInterval(interval);
-          resolve(window.alignment);
-        } else if (attempts >= maxAttempts) {
-          clearInterval(interval);
-          reject(new Error('Alignment data failed to load'));
-        }
-      }, 200);
-    });
-  }
   // divider element for resizing the labels column
   const labelDivider = document.getElementById('label-divider');
   const maskToggle = document.getElementById('mask-toggle');
@@ -1070,17 +1021,11 @@
   const colourDiffBtn = document.getElementById('colour-diff-btn');
 
   // mask string (should be provided by alignment.js). If absent we initialize to all '1's
-  // so compression machinery is always enabled but starts uncompressed.
-  // Evaluate and normalize lazily so global `mask` can be injected/edited at runtime.
+  // Mask string: compression always enabled, start with all '1's (no compression)
   let maskStr = null;
-  // Populate maskStr from utils (ui/js/utils.js); fall back to all '1's if helper missing
-  try { maskStr = (window && window.refreshMaskStr) ? window.refreshMaskStr() : '1'.repeat(maxSeqLen); } catch (_) { maskStr = '1'.repeat(maxSeqLen); }
-  // reference handling: evaluate lazily and expose
+  try { maskStr = '1'.repeat(maxSeqLen || 0); } catch (_) { maskStr = ''; }
   let refStr = null;
   let refIndex = null;
-  // populate refStr/refIndex using utils (if available)
-  try { const _r = (window && window.refreshRefStr) ? window.refreshRefStr() : { refStr: null, refIndex: null }; refStr = _r.refStr; refIndex = _r.refIndex; } catch (_) { refStr = null; refIndex = null; }
-  // Mask compression is always enabled; start with a mask of all '1's (no actual compression)
   let maskEnabled = true;
   let refModeEnabled = false;
 
@@ -1283,7 +1228,7 @@
           window.reference = seq.sequence;
           // Store the reference index
           try { window.__refIndex = idx; window.refIndex = idx; } catch (_) { }
-          if (window.refreshRefStr) window.refreshRefStr();
+          
         } catch (_) { }
         
         // Enable reference coloring mode
@@ -1299,7 +1244,7 @@
           // Also set this as the reference for coloring differences
           try { 
             window.reference = refGenome.sequence; 
-            if (window.refreshRefStr) window.refreshRefStr();
+            
           } catch (_) { }
         } else {
           console.warn(`Reference genome ${accession} has no sequence`);
@@ -1393,7 +1338,6 @@
       }
 
       refModeEnabled = true;
-      refreshRefStr();
       try { window.refModeEnabled = true; } catch (_) { }
       if (viewer) { try { viewer.refModeEnabled = true; } catch (_) { } }
       console.info('Colour mode: differences only');
@@ -2223,7 +2167,7 @@
             const cons = (window && window.consensusSequence) ? window.consensusSequence : (viewer && viewer.alignment ? viewer.alignment.computeConsensusSequence() : null);
             if (cons) {
               try { window.reference = String(cons); } catch (_) { }
-              if (window.refreshRefStr) window.refreshRefStr();
+              
             }
           }
           console.info('Colour differences mode: ON');
@@ -2528,9 +2472,7 @@
         // Load the markdown content if not already loaded
         if (helpContent.querySelector('.spinner-border')) {
           try {
-            const response = await (window.SealionUtils && window.SealionUtils.fetchWithFallback
-              ? window.SealionUtils.fetchWithFallback('instructions.md')
-              : fetch('instructions.md'));
+            const response = await fetchWithFallback('instructions.md');
             const markdown = await response.text();
 
             // Use marked.js to convert markdown to HTML if available
@@ -2605,9 +2547,7 @@
         // Load the markdown content if not already loaded
         if (aboutContent.querySelector('.spinner-border')) {
           try {
-            const response = await (window.SealionUtils && window.SealionUtils.fetchWithFallback
-              ? window.SealionUtils.fetchWithFallback('about.md')
-              : fetch('about.md'));
+            const response = await fetchWithFallback('about.md');
             const markdown = await response.text();
 
             // Use marked.js to convert markdown to HTML if available
@@ -2773,8 +2713,6 @@
   const fileLoading = document.getElementById('file-loading');
   const fileError = document.getElementById('file-error');
   const fileErrorText = document.getElementById('file-error-text');
-  
-  let fileModal = null;
   
   if (openFileBtn && fileUploadModal) {
     try {
@@ -2981,9 +2919,7 @@
           
           // Load mpox_clade_iib.fasta
           console.log('Loading mpox_clade_iib.fasta...');
-          const fastaResponse = await (window.SealionUtils && window.SealionUtils.fetchWithFallback
-            ? window.SealionUtils.fetchWithFallback('data/mpox_clade_iib.fasta')
-            : fetch('data/mpox_clade_iib.fasta'));
+          const fastaResponse = await fetchWithFallback('data/mpox_clade_iib.fasta');
           if (!fastaResponse.ok) {
             throw new Error('Failed to load mpox_clade_iib.fasta');
           }
@@ -3019,21 +2955,14 @@
           // Load the reference genome NC_063383_mpox_clade_iib.gb
           try {
             console.log('Loading NC_063383_mpox_clade_iib.gb reference genome...');
-            const gbResponse = await (window.SealionUtils && window.SealionUtils.fetchWithFallback
-              ? window.SealionUtils.fetchWithFallback('data/NC_063383_mpox_clade_iib.gb')
-              : fetch('data/NC_063383_mpox_clade_iib.gb'));
+            const gbResponse = await fetchWithFallback('data/NC_063383_mpox_clade_iib.gb');
             if (!gbResponse.ok) {
               console.warn('Failed to load reference genome NC_063383_mpox_clade_iib.gb');
               return;
             }
             const gbText = await gbResponse.text();
             
-            if (!window.SealionUtils || !window.SealionUtils.parseGenBankFile) {
-              console.warn('GenBank parser not available, skipping reference genome');
-              return;
-            }
-            
-            const referenceGenomeData = window.SealionUtils.parseGenBankFile(gbText);
+            const referenceGenomeData = parseGenBankFile(gbText);
             
             if (referenceGenomeData) {
               // Set name from filename
@@ -3273,8 +3202,6 @@
   const refGenomeSuccess = document.getElementById('ref-genome-success');
   const refGenomeSuccessText = document.getElementById('ref-genome-success-text');
   
-  let refGenomeModal = null;
-  
   if (loadReferenceBtn && referenceGenomeModal) {
     try {
       refGenomeModal = new bootstrap.Modal(referenceGenomeModal);
@@ -3364,12 +3291,7 @@
           }
           // Check if it's a GenBank file
           else if (url.endsWith('.gb') || url.endsWith('.gbk') || url.endsWith('.genbank') || text.trim().startsWith('LOCUS')) {
-            // Use GenBank parser
-            if (!window.SealionUtils || !window.SealionUtils.parseGenBankFile) {
-              throw new Error('GenBank parser not available. Please ensure ui/js/utils.js is loaded.');
-            }
-            
-            referenceGenomeData = window.SealionUtils.parseGenBankFile(text);
+            referenceGenomeData = parseGenBankFile(text);
             
             if (!referenceGenomeData) {
               throw new Error('Failed to parse GenBank file. Please check the file format.');
@@ -3428,12 +3350,7 @@
           }
           // Check if it's a GenBank file
           else if (file.name.endsWith('.gb') || file.name.endsWith('.gbk') || file.name.endsWith('.genbank') || text.trim().startsWith('LOCUS')) {
-            // Use GenBank parser
-            if (!window.SealionUtils || !window.SealionUtils.parseGenBankFile) {
-              throw new Error('GenBank parser not available. Please ensure ui/js/utils.js is loaded.');
-            }
-            
-            referenceGenomeData = window.SealionUtils.parseGenBankFile(text);
+            referenceGenomeData = parseGenBankFile(text);
             
             if (!referenceGenomeData) {
               throw new Error('Failed to parse GenBank file. Please check the file format.');
@@ -3568,8 +3485,8 @@
     }
   }
 
-  // Populate local maskStr from utils
-  try { maskStr = (window && window.refreshMaskStr) ? window.refreshMaskStr() : '1'.repeat(maxSeqLen); } catch (_) { maskStr = '1'.repeat(maxSeqLen); }
+  // Populate local maskStr
+  try { maskStr = '1'.repeat(maxSeqLen || 0); } catch (_) { maskStr = ''; }
 
   // initial sizing + measure (only if viewer is ready)
   if (viewer) {
@@ -3640,10 +3557,11 @@
     } catch (_) { }
   }, 500);
 
+  // All DOM wiring complete — now create the viewer and show the file modal
+  initializeViewer();
+
   // Notify sealion-tauri.js (and any other integrations) that the app
   // interface is fully initialised and ready for use.
   window.dispatchEvent(new CustomEvent('sealion-ready'));
 
-}
-
-)();
+})();

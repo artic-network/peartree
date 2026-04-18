@@ -3677,3 +3677,4 @@ import { PlotRenderer, PLOT_TYPES } from './renderers/PlotRenderer.js';
   }
 
 window.SealionViewer = SealionViewer;
+export { SealionViewer };
