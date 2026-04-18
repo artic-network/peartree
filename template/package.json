@@ -1,0 +1,9 @@
+{
+  "name": "@artic-network/__APPNAME__",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@artic-network/pearcore": "*"
+  }
+}

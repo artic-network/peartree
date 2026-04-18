@@ -6,7 +6,8 @@
   "workspaces": [
     "pearcore",
     "peartree",
-    "demo"
+    "demo",
+    "sealion"
   ],
   "scripts": {
     "tauri": "tauri",

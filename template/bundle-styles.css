@@ -1,0 +1,9 @@
+/* CSS bundle entry for __APPNAME__.
+   Move this file to scripts/bundle-styles-__APPNAME__.css after copying
+   the template, and update the __APPNAME__ placeholder in the path below. */
+
+@import "../pearcore/vendor/bootstrap.min-artic.css";
+@import "../pearcore/vendor/bootstrap-icons/bootstrap-icons.css";
+@import "../pearcore/css/pearcore.css";
+@import "../__APPNAME__/css/__APPNAME__.css";
+@import "../pearcore/css/pearcore-webapp.css";
