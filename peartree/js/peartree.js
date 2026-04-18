@@ -2691,6 +2691,7 @@ async function _initCore(root = document) {
       _refreshFilterUIs(map);
       saveSettings();
     },
+    showConfirm: (t, m) => showConfirmDialog(t, m, { okLabel: 'Overwrite', cancelLabel: 'Cancel' }),
   });
   // Restore saved filter definitions now that filterManager exists
   if (_saved.filters) {
@@ -4253,7 +4254,8 @@ async function _initCore(root = document) {
 
     // ── Tip filter ────────────────────────────────────────────────────────────
     filterControl = createFilterControl($('tip-filter-mount'), {
-      getNodeMap:        () => renderer?.nodeMap,
+      getNodeMap:             () => renderer?.nodeMap,
+      getNodeAnnotationValue: (n, col) => renderer?._statValue(n, col) ?? null,
       passesNamedFilter: (id, node) => renderer?._passesFilter(id, node),
       onMatchChange: (matches) => {
         if (matches === null) {
@@ -4281,6 +4283,7 @@ async function _initCore(root = document) {
         saveSettings();
       },
       showPrompt:       (t, m) => showPromptDialog(t, m),
+      showConfirm:      (t, m) => showConfirmDialog(t, m, { okLabel: 'Overwrite', cancelLabel: 'Cancel' }),
       getFilterManager: () => filterManager,
       enableKeyboard:   _cfg.enableKeyboard !== false,
     });

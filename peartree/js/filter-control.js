@@ -21,15 +21,19 @@
  *   getFilterManager()                → filterManager instance
  *   enableKeyboard                    → bool  (wire Escape key, default true)
  */
+import { dateToDecimalYear } from './phylograph.js';
+
 export function createFilterControl(container, opts = {}) {
   const {
-    getNodeMap        = () => null,
-    passesNamedFilter = () => false,
-    onMatchChange     = () => {},
-    onSaveFilter      = () => {},
-    showPrompt        = (_t, m) => Promise.resolve(window.prompt(m) || null),
-    getFilterManager  = () => null,
-    enableKeyboard    = true,
+    getNodeMap              = () => null,
+    getNodeAnnotationValue  = (n, col) => n.annotations?.[col] ?? null,
+    passesNamedFilter       = () => false,
+    onMatchChange           = () => {},
+    onSaveFilter            = () => {},
+    showPrompt              = (_t, m) => Promise.resolve(window.prompt(m) || null),
+    showConfirm             = (_t, m) => Promise.resolve(window.confirm(m)),
+    getFilterManager        = () => null,
+    enableKeyboard          = true,
   } = opts;
 
   // ── HTML ──────────────────────────────────────────────────────────────────
@@ -67,12 +71,13 @@ export function createFilterControl(container, opts = {}) {
 
   // ── State ──────────────────────────────────────────────────────────────────
   let _col           = '__name__';
+  let _colType       = 'string';  // 'string' | 'numeric' | 'date'
   let _op            = 'contains';
   let _activeNamedId = null;
   let _timer         = null;
 
-  // ── Op table ───────────────────────────────────────────────────────────────
-  const OP_ENTRIES = [
+  // ── Op tables (per annotation type) ────────────────────────────────────────
+  const OPS_STRING = [
     { op: 'contains',     label: 'contains' },
     { op: 'not contains', label: 'not contains' },
     { op: 'starts with',  label: 'starts with' },
@@ -81,18 +86,88 @@ export function createFilterControl(container, opts = {}) {
     { op: '!=',           label: 'is not' },
     { op: 'regex',        label: 'matches regex' },
   ];
+  const OPS_NUMERIC = [
+    { op: '=',  label: '= (equals)' },
+    { op: '!=', label: '\u2260 (not equals)' },
+    { op: '>',  label: '> (greater than)' },
+    { op: '>=', label: '\u2265 (at least)' },
+    { op: '<',  label: '< (less than)' },
+    { op: '<=', label: '\u2264 (at most)' },
+  ];
+  const OPS_DATE = [
+    { op: 'before',       label: 'before' },
+    { op: 'after',        label: 'after' },
+    { op: 'on or before', label: 'on or before' },
+    { op: 'on or after',  label: 'on or after' },
+    { op: 'in year',      label: 'in year' },
+    { op: 'not in year',  label: 'not in year' },
+    { op: '=',            label: 'is exactly' },
+    { op: '!=',           label: 'is not' },
+  ];
+
+  function _opsForType() {
+    if (_colType === 'numeric') return OPS_NUMERIC;
+    if (_colType === 'date')    return OPS_DATE;
+    return OPS_STRING;
+  }
+
+  function _defaultOp(type) {
+    if (type === 'numeric') return '=';
+    if (type === 'date')    return 'after';
+    return 'contains';
+  }
 
   // ── Internal helpers ───────────────────────────────────────────────────────
   function _updatePlaceholder() {
     const colLabel = colPopup?.querySelector('.pt-fcp-item.active')?.textContent ?? 'Name';
-    const opLabel  = OP_ENTRIES.find(x => x.op === _op)?.label ?? _op;
+    const opLabel  = _opsForType().find(x => x.op === _op)?.label ?? _op;
     inputEl.placeholder = `${colLabel} ${opLabel}\u2026`;
   }
 
-  function _buildMatcher(raw, op) {
-    const ql  = raw.toLowerCase();
+  function _buildMatcher(raw, op, colType) {
     const grp = inputEl.closest('.pt-filter-group');
     grp?.classList.remove('regex-error');
+
+    if (colType === 'numeric') {
+      const t = parseFloat(raw);
+      if (!isFinite(t)) return null;
+      if (op === '=')  return v => { const n = parseFloat(v); return isFinite(n) && n === t; };
+      if (op === '!=') return v => { const n = parseFloat(v); return !isFinite(n) || n !== t; };
+      if (op === '>')  return v => { const n = parseFloat(v); return isFinite(n) && n > t; };
+      if (op === '>=') return v => { const n = parseFloat(v); return isFinite(n) && n >= t; };
+      if (op === '<')  return v => { const n = parseFloat(v); return isFinite(n) && n < t; };
+      if (op === '<=') return v => { const n = parseFloat(v); return isFinite(n) && n <= t; };
+      return null;
+    }
+
+    if (colType === 'date') {
+      const EPS = 1 / (365 * 48);
+      if (op === 'in year' || op === 'not in year') {
+        const y = parseInt(raw);
+        if (!isFinite(y)) return null;
+        return v => {
+          const d = dateToDecimalYear(String(v));
+          if (!isFinite(d)) return op === 'not in year';
+          return op === 'in year' ? Math.floor(d) === y : Math.floor(d) !== y;
+        };
+      }
+      const tDec = dateToDecimalYear(raw);
+      if (!isFinite(tDec)) return null;
+      return v => {
+        const d = dateToDecimalYear(String(v));
+        if (!isFinite(d)) return op === '!=';
+        if (op === 'before')       return d < tDec - EPS;
+        if (op === 'after')        return d > tDec + EPS;
+        if (op === 'on or before') return d <= tDec + EPS;
+        if (op === 'on or after')  return d >= tDec - EPS;
+        if (op === '=')            return Math.abs(d - tDec) <= EPS;
+        if (op === '!=')           return Math.abs(d - tDec) >  EPS;
+        return false;
+      };
+    }
+
+    // string ops
+    const ql = raw.toLowerCase();
     if (op === 'regex') {
       try {
         const re = new RegExp(raw, 'i');
@@ -115,13 +190,14 @@ export function createFilterControl(container, opts = {}) {
     const raw     = inputEl?.value.trim() ?? '';
     const nodeMap = getNodeMap();
     if (!raw || !nodeMap) return null;
-    const matcher = _buildMatcher(raw, _op);
+    const matcher = _buildMatcher(raw, _op, _colType);
     if (!matcher) return null;
     const hits = [];
     for (const [, n] of nodeMap) {
       if (!n.isTip) continue;
-      const label = _col === '__name__' ? (n.name ?? '') : String(n.annotations?.[_col] ?? '');
-      if (matcher(label)) hits.push(n);
+      const val = _col === '__name__' ? (n.name ?? '') : getNodeAnnotationValue(n, _col);
+      if (val === null || val === undefined) continue;
+      if (matcher(String(val))) hits.push(n);
     }
     return hits;
   }
@@ -163,7 +239,7 @@ export function createFilterControl(container, opts = {}) {
 
   function _buildOpPopup() {
     opPopup.innerHTML = '';
-    for (const { op, label } of OP_ENTRIES) {
+    for (const { op, label } of _opsForType()) {
       const btn = document.createElement('button');
       btn.className = 'pt-fcp-item' + (op === _op ? ' active' : '');
       btn.textContent = label;
@@ -228,10 +304,17 @@ export function createFilterControl(container, opts = {}) {
     e.stopPropagation();
     const item = e.target.closest('.pt-fcp-item');
     if (!item) return;
+    const newColType = item.dataset.colType ?? 'string';
+    if (newColType !== _colType) {
+      _colType = newColType;
+      _op = _defaultOp(_colType);
+    }
     _col = item.dataset.value;
     for (const el of colPopup.querySelectorAll('.pt-fcp-item')) {
       el.classList.toggle('active', el === item);
     }
+    const opLabel = _opsForType().find(x => x.op === _op)?.label ?? _op;
+    if (btnOp) btnOp.title = `Match condition: ${opLabel}`;
     if (btnSrcIn) btnSrcIn.title = `Search in: ${item.textContent}`;
     _updatePlaceholder();
     colPopup.classList.remove('open');
@@ -255,7 +338,7 @@ export function createFilterControl(container, opts = {}) {
     for (const el of opPopup.querySelectorAll('.pt-fcp-item')) {
       el.classList.toggle('active', el === item);
     }
-    const lbl = OP_ENTRIES.find(x => x.op === _op)?.label ?? _op;
+    const lbl = _opsForType().find(x => x.op === _op)?.label ?? _op;
     if (btnOp) btnOp.title = `Match condition: ${lbl}`;
     _updatePlaceholder();
     opPopup.classList.remove('open');
@@ -268,19 +351,35 @@ export function createFilterControl(container, opts = {}) {
     if (!raw) return;
     const name = await showPrompt('Save Filter', 'Enter a name for this filter:');
     if (!name?.trim()) return;
-    const newFilter = {
-      id:   `filter-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      name: name.trim(),
-      root: { logic: 'AND', items: [{ field: _col, operator: _op, value: raw }] },
-    };
     const fm = getFilterManager();
-    if (fm) {
-      const all = fm.getAll();
+    if (!fm) return;
+    const all = fm.getAll();
+    // Check for a duplicate name
+    const trimmed = name.trim();
+    const existing = [...all.values()].find(f => f.name.toLowerCase() === trimmed.toLowerCase());
+    if (existing) {
+      const ok = await showConfirm(
+        'Overwrite filter',
+        `A filter named \u201c${existing.name}\u201d already exists. Overwrite it?`
+      );
+      if (!ok) return;
+      // Update in place: keep same id, replace root
+      existing.name = trimmed;
+      existing.root = { logic: 'AND', items: [{ field: _col, operator: _op, value: raw }] };
+      all.set(existing.id, existing);
+      fm.setAll(all);
+      onSaveFilter(existing, all);
+    } else {
+      const newFilter = {
+        id:   `filter-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        name: trimmed,
+        root: { logic: 'AND', items: [{ field: _col, operator: _op, value: raw }] },
+      };
       all.set(newFilter.id, newFilter);
       fm.setAll(all);
       onSaveFilter(newFilter, all);
-      _rebuildNamedPopup();
     }
+    _rebuildNamedPopup();
   });
 
   // ── Events: named filter button ────────────────────────────────────────────
@@ -340,6 +439,7 @@ export function createFilterControl(container, opts = {}) {
     reset() {
       inputEl.value  = '';
       _col           = '__name__';
+      _colType       = 'string';
       _op            = 'contains';
       _activeNamedId = null;
       if (btnNamed) btnNamed.title = 'Apply a saved filter';
@@ -368,27 +468,43 @@ export function createFilterControl(container, opts = {}) {
 
     /** Rebuild the column picker from an annotation schema Map. */
     setSchema(schema) {
-      const items = [{ value: '__name__', label: 'Name' }];
+      const items = [{ value: '__name__', label: 'Name', colType: 'string' }];
       for (const [name, def] of schema) {
         if (!def.onTips) continue;
         if (def.groupMember) continue;
         const dt = def.dataType;
-        if (dt !== 'categorical' && dt !== 'ordinal' && dt !== 'date') continue;
-        items.push({ value: name, label: def.label ?? name });
+        let colType;
+        if (dt === 'real' || dt === 'integer' || dt === 'proportion' || dt === 'percentage') {
+          colType = 'numeric';
+        } else if (dt === 'date') {
+          colType = 'date';
+        } else if (dt === 'categorical' || dt === 'ordinal') {
+          colType = 'string';
+        } else {
+          continue; // skip list, etc.
+        }
+        items.push({ value: name, label: def.label ?? name, colType });
       }
-      if (!items.some(i => i.value === _col)) _col = '__name__';
+      if (!items.some(i => i.value === _col)) {
+        _col     = '__name__';
+        _colType = 'string';
+        _op      = 'contains';
+      }
       if (colPopup) {
         colPopup.innerHTML = '';
-        for (const { value, label } of items) {
+        for (const { value, label, colType } of items) {
           const btn = document.createElement('button');
           btn.className = 'pt-fcp-item' + (value === _col ? ' active' : '');
           btn.textContent = label;
-          btn.dataset.value = value;
+          btn.dataset.value   = value;
+          btn.dataset.colType = colType;
           colPopup.appendChild(btn);
         }
       }
-      const activeLabel = items.find(i => i.value === _col)?.label ?? 'Name';
-      if (btnSrcIn) btnSrcIn.title = `Search in: ${activeLabel}`;
+      const activeItem = items.find(i => i.value === _col) ?? items[0];
+      if (btnSrcIn) btnSrcIn.title = `Search in: ${activeItem.label}`;
+      const opLabel = _opsForType().find(x => x.op === _op)?.label ?? _op;
+      if (btnOp) btnOp.title = `Match condition: ${opLabel}`;
       _updatePlaceholder();
     },
 

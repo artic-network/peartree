@@ -143,7 +143,7 @@ export function evaluateFilter(filter, annotations) {
  * @param {Function} opts.onSaveRequest   – optional, called with exportable JSON blob URL (for save dialog)
  * @returns {{ open, close, getAll, setAll, evaluateFilter }}
  */
-export function createFilterManager({ getSchema, onFiltersChange, onSaveRequest }) {
+export function createFilterManager({ getSchema, onFiltersChange, onSaveRequest, showConfirm }) {
   const overlay  = document.getElementById('manage-filters-overlay');
   const listEl   = document.getElementById('filter-list');
   const editorEl = document.getElementById('filter-editor');
@@ -217,10 +217,18 @@ export function createFilterManager({ getSchema, onFiltersChange, onSaveRequest 
   }
 
   function _deleteFilter(id) {
-    _filters.delete(id);
-    if (_editingId === id) { _editingId = null; _draft = null; _renderEditor(null); }
-    _renderList();
-    onFiltersChange(new Map(_filters));
+    const f    = _filters.get(id);
+    const name = f?.name ? `\u201c${f.name}\u201d` : 'this filter';
+    const confirmed = showConfirm
+      ? showConfirm('Delete filter', `Delete ${name}?`)
+      : Promise.resolve(window.confirm(`Delete ${name}?`));
+    Promise.resolve(confirmed).then(ok => {
+      if (!ok) return;
+      _filters.delete(id);
+      if (_editingId === id) { _editingId = null; _draft = null; _renderEditor(null); }
+      _renderList();
+      onFiltersChange(new Map(_filters));
+    });
   }
 
   // ── Editor pane ────────────────────────────────────────────────────────────
@@ -610,6 +618,31 @@ export function createFilterManager({ getSchema, onFiltersChange, onSaveRequest 
     const name = editorEl.querySelector('#filter-name-input')?.value.trim();
     if (!name) {
       editorEl.querySelector('#filter-name-input')?.focus();
+      return;
+    }
+    // Check if another filter (different id) already has this name
+    const duplicate = [..._filters.values()].find(
+      f => f.id !== _draft.id && f.name.toLowerCase() === name.toLowerCase()
+    );
+    if (duplicate) {
+      const confirmed = showConfirm
+        ? showConfirm(
+            'Overwrite filter',
+            `A filter named "${duplicate.name}" already exists. Overwrite it?`
+          )
+        : Promise.resolve(window.confirm(`A filter named "${duplicate.name}" already exists. Overwrite it?`));
+      Promise.resolve(confirmed).then(ok => {
+        if (!ok) return;
+        // Remove the old duplicate entry, then save the draft under its own id
+        _filters.delete(duplicate.id);
+        _draft.name = name;
+        _filters.set(_draft.id, _deepClone(_draft));
+        _editingId = null;
+        _draft     = null;
+        _renderList();
+        _renderEditor(null);
+        onFiltersChange(new Map(_filters));
+      });
       return;
     }
     _draft.name = name;
