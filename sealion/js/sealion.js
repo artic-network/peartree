@@ -2530,6 +2530,26 @@ const Alignment = window.Alignment;
     if (!sequences || sequences.length === 0) throw new Error('No sequences found in file');
     console.log(`Loaded ${sequences.length} sequences from ${name}`);
 
+    // Check if all sequences are the same length
+    if (sequences.length > 1) {
+      let minLen = Infinity, maxLen = 0;
+      for (const s of sequences) {
+        const len = s?.sequence?.length || 0;
+        if (len < minLen) minLen = len;
+        if (len > maxLen) maxLen = len;
+      }
+      if (minLen !== maxLen) {
+        const ok = confirm(`Sequences are not all the same length (range: ${minLen.toLocaleString()}–${maxLen.toLocaleString()}). Shorter sequences will be padded with gaps at the end.\n\nLoad anyway?`);
+        if (!ok) return;
+        // Pad shorter sequences to maxLen
+        for (const s of sequences) {
+          if (s?.sequence && s.sequence.length < maxLen) {
+            s.sequence = s.sequence + '-'.repeat(maxLen - s.sequence.length);
+          }
+        }
+      }
+    }
+
     const alignmentInstance = new Alignment(sequences);
     window.alignment = alignmentInstance;
 
@@ -2719,6 +2739,17 @@ const Alignment = window.Alignment;
     if (!window.alignment) {
       throw new Error('No alignment loaded. Please load an alignment first.');
     }
+
+    // Warn if reference length doesn't match the alignment width
+    if (referenceGenomeData.sequence) {
+      const refLen = referenceGenomeData.sequence.length;
+      const alignLen = window.alignment.getMaxSeqLen ? window.alignment.getMaxSeqLen() : 0;
+      if (alignLen > 0 && refLen !== alignLen) {
+        const ok = confirm(`Reference genome "${referenceGenomeData.accession}" length (${refLen.toLocaleString()}) differs from alignment length (${alignLen.toLocaleString()}). Colouring differences may not align correctly.\n\nLoad anyway?`);
+        if (!ok) return;
+      }
+    }
+
     window.alignment.addReferenceGenome(referenceGenomeData);
     console.log(`Reference genome ${referenceGenomeData.accession} added successfully`);
 

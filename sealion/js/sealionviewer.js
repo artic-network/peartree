@@ -9,6 +9,7 @@ import { HeaderRenderer }    from './renderers/HeaderRenderer.js';
 import { LabelRenderer }     from './renderers/LabelRenderer.js';
 import { AlignmentRenderer } from './renderers/AlignmentRenderer.js';
 import { PlotRenderer, PLOT_TYPES } from './renderers/PlotRenderer.js';
+import { refreshRefStr } from './sealion-utils.js';
 
   // Minimal, self-contained SealionViewer class.
   // Purpose: provide a clean place to migrate rendering, geometry and interaction
@@ -2367,9 +2368,15 @@ import { PlotRenderer, PLOT_TYPES } from './renderers/PlotRenderer.js';
         // compute visible region using the viewer's scroller and instance settings
         const vis = this.computeVisible(this.scroller, { ROW_HEIGHT: this.ROW_HEIGHT, BUFFER_ROWS: this.BUFFER_ROWS, BUFFER_COLS: this.BUFFER_COLS, CHAR_WIDTH: this.charWidth, maxSeqLen: maxSeqLen, rowCount: (this.alignment ? this.alignment.length : 0), maskEnabled: !!this.maskEnabled });
 
-        // refresh reference string/index if helper exists
+        // refresh reference string/index
         let refStr = null, refIndex = null;
-        try { const _r = (window && window.refreshRefStr) ? window.refreshRefStr() : { refStr: null, refIndex: null }; refStr = _r.refStr; refIndex = _r.refIndex; } catch (_) { refStr = null; refIndex = null; }
+        try {
+          const _seqs = this.alignment && this.alignment.getSequences ? this.alignment.getSequences() : [];
+          const _ref = (window && window.reference) ? window.reference : null;
+          const _cons = (window && window.consensusSequence) ? window.consensusSequence : null;
+          const _r = refreshRefStr(_seqs, _ref, maxSeqLen, _cons);
+          refStr = _r.refStr; refIndex = _r.refIndex;
+        } catch (_) { refStr = null; refIndex = null; }
         // Persist so renderers can read via this.refStr / this.refIndex
         this.refStr   = refStr;
         this.refIndex = typeof refIndex === 'number' ? refIndex : null;

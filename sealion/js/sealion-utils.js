@@ -31,14 +31,10 @@ export function refreshMaskStr(rows, maxSeqLen, mask) {
  */
 export function refreshRefStr(rows, reference, maxSeqLen, consensusSequence) {
   const _rows = rows || [];
-  const _max = (typeof maxSeqLen === 'number')
-    ? Math.max(0, maxSeqLen)
-    : Math.max(0, ..._rows.map(r => r?.sequence?.length || 0));
 
   let refStr = null;
   if (reference) {
-    const s = String(reference);
-    refStr = s.length >= _max ? s : null;
+    refStr = String(reference);
   }
 
   let refIndex = null;
