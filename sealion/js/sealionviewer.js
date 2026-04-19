@@ -614,9 +614,10 @@ import { PlotRenderer, PLOT_TYPES } from './renderers/PlotRenderer.js';
         // Rebuild column offsets if needed (for mask, amino acid mode, font size changes)
         if (needsRebuild && typeof this.buildColOffsetsFor === 'function' && this.alignment) {
           // Calculate max sequence length efficiently without spread operator
+          const _seqs = this.alignment.getSequences ? this.alignment.getSequences() : this.alignment;
           let maxSeqLen = 0;
-          for (let i = 0; i < this.alignment.length; i++) {
-            const row = this.alignment[i];
+          for (let i = 0; i < _seqs.length; i++) {
+            const row = _seqs[i];
             if (row && row.sequence) {
               const len = row.sequence.length;
               if (len > maxSeqLen) maxSeqLen = len;
@@ -2350,9 +2351,10 @@ import { PlotRenderer, PLOT_TYPES } from './renderers/PlotRenderer.js';
         if (this.colOffsets && this.colOffsets.length) {
           maxSeqLen = this.colOffsets.length - 1;
         } else if (this.alignment) {
+          const _seqs = this.alignment.getSequences ? this.alignment.getSequences() : this.alignment;
           maxSeqLen = 0;
-          for (let i = 0; i < this.alignment.length; i++) {
-            const r = this.alignment[i];
+          for (let i = 0; i < _seqs.length; i++) {
+            const r = _seqs[i];
             if (r && r.sequence) {
               const len = r.sequence.length;
               if (len > maxSeqLen) maxSeqLen = len;
@@ -2553,6 +2555,7 @@ import { PlotRenderer, PLOT_TYPES } from './renderers/PlotRenderer.js';
     findNextDifference(fromCol, refStr, selectedRows) {
       try {
         if (!this.alignment || !refStr) return -1;
+        const _seqs = this.alignment.getSequences ? this.alignment.getSequences() : this.alignment;
         
         const maxSeqLen = this.colOffsets ? this.colOffsets.length - 1 : 0;
         const startCol = Math.max(0, fromCol + 1);
@@ -2560,7 +2563,7 @@ import { PlotRenderer, PLOT_TYPES } from './renderers/PlotRenderer.js';
         // Determine which rows to check
         const rowsToCheck = selectedRows && selectedRows.size > 0 
           ? Array.from(selectedRows) 
-          : Array.from({ length: this.alignment.length }, (_, i) => i);
+          : Array.from({ length: _seqs.length }, (_, i) => i);
         
         // Search from startCol to the end
         for (let col = startCol; col < maxSeqLen; col++) {
@@ -2569,7 +2572,7 @@ import { PlotRenderer, PLOT_TYPES } from './renderers/PlotRenderer.js';
           
           // Check if any of the rows to check have a difference at this column
           for (const rowIdx of rowsToCheck) {
-            const row = this.alignment[rowIdx];
+            const row = _seqs[rowIdx];
             if (!row || !row.sequence) continue;
             
             const seqChar = row.sequence.charAt(col);
@@ -2595,13 +2598,14 @@ import { PlotRenderer, PLOT_TYPES } from './renderers/PlotRenderer.js';
     findPreviousDifference(fromCol, refStr, selectedRows) {
       try {
         if (!this.alignment || !refStr) return -1;
+        const _seqs = this.alignment.getSequences ? this.alignment.getSequences() : this.alignment;
         
         const startCol = Math.min(fromCol - 1, (this.colOffsets ? this.colOffsets.length - 2 : 0));
         
         // Determine which rows to check
         const rowsToCheck = selectedRows && selectedRows.size > 0 
           ? Array.from(selectedRows) 
-          : Array.from({ length: this.alignment.length }, (_, i) => i);
+          : Array.from({ length: _seqs.length }, (_, i) => i);
         
         // Search from startCol backwards to the beginning
         for (let col = startCol; col >= 0; col--) {
@@ -2610,7 +2614,7 @@ import { PlotRenderer, PLOT_TYPES } from './renderers/PlotRenderer.js';
           
           // Check if any of the rows to check have a difference at this column
           for (const rowIdx of rowsToCheck) {
-            const row = this.alignment[rowIdx];
+            const row = _seqs[rowIdx];
             if (!row || !row.sequence) continue;
             
             const seqChar = row.sequence.charAt(col);

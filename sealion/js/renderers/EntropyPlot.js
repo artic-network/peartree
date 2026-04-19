@@ -71,8 +71,9 @@ export class EntropyPlot {
 
   _getEntropy(viewer, maxSeqLen) {
     const alignment = viewer.alignment;
+    const seqArray  = alignment && alignment.getSequences ? alignment.getSequences() : alignment;
     const dataType  = viewer.dataType || 'nucleotide';
-    const rowCount  = alignment ? alignment.length : 0;
+    const rowCount  = seqArray ? seqArray.length : 0;
 
     // Cache key: changes when row count, column count, or data type changes.
     const cacheKey = `${rowCount}:${maxSeqLen}:${dataType}`;
@@ -96,7 +97,7 @@ export class EntropyPlot {
       let total = 0;
 
       for (let r = 0; r < rowCount; r++) {
-        const row = alignment[r];
+        const row = seqArray[r];
         const seq = row && row.sequence ? row.sequence : '';
         if (c >= seq.length) continue;
         const idx = stateIdx[seq.charCodeAt(c) >= 97

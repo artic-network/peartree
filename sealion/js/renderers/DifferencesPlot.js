@@ -67,10 +67,11 @@ export class DifferencesPlot {
 
   _getDiffs(viewer, maxSeqLen) {
     const alignment     = viewer.alignment;
+    const seqArray      = alignment && alignment.getSequences ? alignment.getSequences() : alignment;
     const dataType      = viewer.dataType || 'nucleotide';
     const refStr        = viewer.refStr   || null;
     const refModeEnabled = viewer.refModeEnabled || false;
-    const rowCount      = alignment ? alignment.length : 0;
+    const rowCount      = seqArray ? seqArray.length : 0;
 
     // Use refIndex to skip the reference row itself when counting diffs
     const refIndex = typeof viewer.refIndex === 'number' ? viewer.refIndex : null;
@@ -105,7 +106,7 @@ export class DifferencesPlot {
 
         for (let r = 0; r < rowCount; r++) {
           if (r === refIndex) continue; // skip the reference row itself
-          const row = alignment[r];
+          const row = seqArray[r];
           const seq = row && row.sequence ? row.sequence : '';
           if (c >= seq.length) continue;
           const ch = seq.charCodeAt(c) >= 97
@@ -126,7 +127,7 @@ export class DifferencesPlot {
         let total    = 0;
 
         for (let r = 0; r < rowCount; r++) {
-          const row = alignment[r];
+          const row = seqArray[r];
           const seq = row && row.sequence ? row.sequence : '';
           if (c >= seq.length) continue;
           const ch = seq.charCodeAt(c) >= 97

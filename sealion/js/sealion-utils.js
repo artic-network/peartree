@@ -152,11 +152,11 @@ export function andMasks(mask1, mask2) {
   const len = Math.max(mask1.length, mask2.length);
   const m1 = mask1.padEnd(len, '1');
   const m2 = mask2.padEnd(len, '1');
-  let result = '';
+  const result = new Array(len);
   for (let i = 0; i < len; i++) {
-    result += (m1[i] === '1' && m2[i] === '1') ? '1' : '0';
+    result[i] = (m1[i] === '1' && m2[i] === '1') ? '1' : '0';
   }
-  return result;
+  return result.join('');
 }
 
 /**

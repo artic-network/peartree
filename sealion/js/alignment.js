@@ -85,12 +85,11 @@ class Alignment {
 
   // Compute the maximum sequence length
   _computeMaxSeqLen() {
-    this._computeMaxSeqLen();
-  }
-
-  // Compute the maximum sequence length
-  _computeMaxSeqLen() {
-    this._cache.maxSeqLen = Math.max(0, ...this._sequences.map(s => s.sequence.length));
+    let max = 0;
+    for (const s of this._sequences) {
+      if (s.sequence.length > max) max = s.sequence.length;
+    }
+    this._cache.maxSeqLen = max;
   }
 
   // Get the maximum sequence length
@@ -601,32 +600,38 @@ class Alignment {
   computeConstantMask() {
     try {
       const maxLen = this.getMaxSeqLen();
-      const mask = new Array(maxLen);
-      
-      for (let col = 0; col < maxLen; col++) {
-        let firstChar = null;
-        let isConstant = true;
-        
-        // Check if all non-gap characters at this position are identical
-        for (let row = 0; row < this._currentOrder.length; row++) {
-          const seq = this._currentOrder[row].sequence;
-          const ch = (col < seq.length) ? seq[col].toUpperCase() : '-';
-          
-          // Skip gaps
-          if (ch === '-') continue;
-          
-          if (firstChar === null) {
-            firstChar = ch;
-          } else if (ch !== firstChar) {
-            isConstant = false;
-            break;
+      const seqs = this._currentOrder;
+      const numSeqs = seqs.length;
+
+      // Track first non-gap char at each column and whether it varies.
+      // Using Uint8Arrays for cache-friendly access.
+      const firstChar = new Uint8Array(maxLen); // charCode of first non-gap char (0 = unseen)
+      const variable  = new Uint8Array(maxLen); // 1 = variable site
+
+      // Row-major iteration for better CPU cache behavior (strings are contiguous)
+      for (let row = 0; row < numSeqs; row++) {
+        const seq = seqs[row].sequence;
+        const sLen = seq.length;
+        for (let col = 0; col < sLen; col++) {
+          if (variable[col]) continue; // already known variable — skip
+          let code = seq.charCodeAt(col);
+          // Uppercase without function call: a-z → A-Z
+          if (code >= 97 && code <= 122) code -= 32;
+          if (code === 45) continue; // '-' gap
+          if (firstChar[col] === 0) {
+            firstChar[col] = code;
+          } else if (code !== firstChar[col]) {
+            variable[col] = 1;
           }
         }
-        
-        // Mark constant sites as '0', variable sites as '1'
-        mask[col] = isConstant ? '0' : '1';
+        // Columns beyond this sequence's length are treated as gaps — no action needed
       }
-      
+
+      // Build result string: variable='1', constant='0'
+      const mask = new Array(maxLen);
+      for (let col = 0; col < maxLen; col++) {
+        mask[col] = variable[col] ? '1' : '0';
+      }
       const result = mask.join('');
       this._cache.constantMask = result;
       return result;
@@ -640,33 +645,33 @@ class Alignment {
   computeConstantMaskAllowN(isAminoAcid = false) {
     try {
       const maxLen = this.getMaxSeqLen();
-      const mask = new Array(maxLen);
-      const ambiguousChar = isAminoAcid ? 'X' : 'N'; // X for AA, N for nucleotides
-      
-      for (let col = 0; col < maxLen; col++) {
-        let firstNonAmbig = null;
-        let isConstant = true;
-        
-        // Check if all non-ambiguous characters at this position are identical
-        for (let row = 0; row < this._currentOrder.length; row++) {
-          const seq = this._currentOrder[row].sequence;
-          const ch = (col < seq.length) ? seq[col].toUpperCase() : '-';
-          
-          // Skip gaps and ambiguous character (N for nucleotides, X for amino acids)
-          if (ch === '-' || ch === ambiguousChar) continue;
-          
-          if (firstNonAmbig === null) {
-            firstNonAmbig = ch;
-          } else if (ch !== firstNonAmbig) {
-            isConstant = false;
-            break;
+      const seqs = this._currentOrder;
+      const numSeqs = seqs.length;
+      // charCodes: N=78, n=110, X=88, x=120, -=45
+      const ambigUpper = isAminoAcid ? 88 : 78;
+      const ambigLower = isAminoAcid ? 120 : 110;
+
+      const firstChar = new Uint8Array(maxLen);
+      const variable  = new Uint8Array(maxLen);
+
+      for (let row = 0; row < numSeqs; row++) {
+        const seq = seqs[row].sequence;
+        const sLen = seq.length;
+        for (let col = 0; col < sLen; col++) {
+          if (variable[col]) continue;
+          let code = seq.charCodeAt(col);
+          if (code >= 97 && code <= 122) code -= 32;
+          if (code === 45 || code === ambigUpper) continue; // gap or ambiguous
+          if (firstChar[col] === 0) {
+            firstChar[col] = code;
+          } else if (code !== firstChar[col]) {
+            variable[col] = 1;
           }
         }
-        
-        // Mark constant sites as '0', variable sites as '1'
-        mask[col] = isConstant ? '0' : '1';
       }
-      
+
+      const mask = new Array(maxLen);
+      for (let col = 0; col < maxLen; col++) mask[col] = variable[col] ? '1' : '0';
       return mask.join('');
     } catch (e) {
       console.warn('Alignment.computeConstantMaskAllowN failed', e);
@@ -678,33 +683,32 @@ class Alignment {
   computeConstantMaskAllowNAndGaps(isAminoAcid = false) {
     try {
       const maxLen = this.getMaxSeqLen();
-      const mask = new Array(maxLen);
-      const ambiguousChar = isAminoAcid ? 'X' : 'N'; // X for AA, N for nucleotides
-      
-      for (let col = 0; col < maxLen; col++) {
-        let firstNonAmbig = null;
-        let isConstant = true;
-        
-        // Check if all definite characters at this position are identical
-        for (let row = 0; row < this._currentOrder.length; row++) {
-          const seq = this._currentOrder[row].sequence;
-          const ch = (col < seq.length) ? seq[col].toUpperCase() : '-';
-          
-          // Skip gaps, ambiguous character, and empty
-          if (ch === '-' || ch === ambiguousChar || ch === '') continue;
-          
-          if (firstNonAmbig === null) {
-            firstNonAmbig = ch;
-          } else if (ch !== firstNonAmbig) {
-            isConstant = false;
-            break;
+      const seqs = this._currentOrder;
+      const numSeqs = seqs.length;
+      const ambigUpper = isAminoAcid ? 88 : 78; // X=88, N=78
+
+      const firstChar = new Uint8Array(maxLen);
+      const variable  = new Uint8Array(maxLen);
+
+      for (let row = 0; row < numSeqs; row++) {
+        const seq = seqs[row].sequence;
+        const sLen = seq.length;
+        for (let col = 0; col < sLen; col++) {
+          if (variable[col]) continue;
+          let code = seq.charCodeAt(col);
+          if (code >= 97 && code <= 122) code -= 32;
+          // Skip gaps (45), ambiguous, and empty
+          if (code === 45 || code === ambigUpper) continue;
+          if (firstChar[col] === 0) {
+            firstChar[col] = code;
+          } else if (code !== firstChar[col]) {
+            variable[col] = 1;
           }
         }
-        
-        // Mark constant sites as '0', variable sites as '1'
-        mask[col] = isConstant ? '0' : '1';
       }
-      
+
+      const mask = new Array(maxLen);
+      for (let col = 0; col < maxLen; col++) mask[col] = variable[col] ? '1' : '0';
       return mask.join('');
     } catch (e) {
       console.warn('Alignment.computeConstantMaskAllowNAndGaps failed', e);

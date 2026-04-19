@@ -31,6 +31,7 @@ export class AlignmentRenderer extends CanvasRenderer {
     const colOffsets       = v.colOffsets || [];
 
     const rows         = v.alignment  || (window.alignment) || [];
+    const seqArray     = rows.getSequences ? rows.getSequences() : rows; // bypass Proxy
     const selectedRows = v.selectedRows || new Set();
     const selectedCols = v.selectedCols || new Set();
 
@@ -157,7 +158,8 @@ export class AlignmentRenderer extends CanvasRenderer {
     for (let r = vis.firstRow; r <= vis.lastRow; r++) {
       const rawRowY = (r * rowHeight) - vis.scrollTop;
       const y       = Math.round((rawRowY + seqTextVertOffset) * pr) / pr;
-      const seq     = (rows[r] && rows[r].sequence) ? rows[r].sequence : '';
+      const rowObj  = seqArray[r];
+      const seq     = (rowObj && rowObj.sequence) ? rowObj.sequence : '';
       ctx.fillStyle = '#000';
 
       // Pre-translate sequence for translate/codon modes
@@ -430,7 +432,8 @@ export class AlignmentRenderer extends CanvasRenderer {
         if (isDoubleClick) {
           // Smart character-type selection
           if (!v.alignment || row < 0 || row >= v.alignment.length) return;
-          const seq = v.alignment[row];
+          const _seqs = v.alignment.getSequences ? v.alignment.getSequences() : v.alignment;
+          const seq = _seqs[row];
           if (!seq || !seq.sequence || col < 0 || col >= seq.sequence.length) return;
 
           const clickedChar = seq.sequence[col].toUpperCase();
