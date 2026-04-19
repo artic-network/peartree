@@ -232,6 +232,188 @@ function initOpenFileDialog(root, opts = {}) {
   return { open, close, setError, setLoading, overlay };
 }
 
+// ── Search Dialog ────────────────────────────────────────────────────────
+
+/**
+ * Build HTML for a generic search dialog overlay.
+ *
+ * Element IDs are prefixed with `opts.prefix` so multiple search dialogs can
+ * coexist.  Example with prefix 'seq':
+ *   #seq-search-modal, #seq-search-input, #seq-search-find-btn,
+ *   #seq-search-status, #seq-search-close-btn
+ *
+ * @param {object}  opts
+ * @param {string}  opts.prefix         - ID prefix, e.g. 'seq' → #seq-search-modal
+ * @param {string}  [opts.title]        - dialog title (default 'Search')
+ * @param {string}  [opts.icon]         - Bootstrap-icon name (default 'search')
+ * @param {string}  [opts.placeholder]  - placeholder for the input/textarea
+ * @param {string}  [opts.hint]         - help text below the input
+ * @param {string}  [opts.inputType]    - 'textarea' (default) or 'input'
+ * @param {number}  [opts.rows]         - rows for textarea (default 2)
+ * @param {string}  [opts.findLabel]    - label on the Find button (default 'Find')
+ * @param {string}  [opts.findNextLabel] - label for Find Next (default 'Next')
+ * @param {string}  [opts.findPrevLabel] - label for Find Prev (default 'Previous')
+ * @param {boolean} [opts.showNavButtons] - show Next/Previous buttons (default true)
+ * @returns {string} HTML string
+ */
+function buildSearchDialogHTML(opts = {}) {
+  const p     = opts.prefix || 'search';
+  const title = opts.title || 'Search';
+  const icon  = opts.icon || 'search';
+  const placeholder = opts.placeholder || 'Enter search pattern\u2026';
+  const hint  = opts.hint || '';
+  const rows  = opts.rows || 2;
+  const findLabel = opts.findLabel || 'Find';
+  const findNextLabel = opts.findNextLabel || 'Next';
+  const findPrevLabel = opts.findPrevLabel || 'Previous';
+  const showNav = opts.showNavButtons !== false;
+  const inputType = opts.inputType || 'textarea';
+
+  const inputHTML = inputType === 'textarea'
+    ? `<textarea class="form-control font-monospace" id="${p}-search-input" rows="${rows}" placeholder="${placeholder}" spellcheck="false" autocomplete="off"></textarea>`
+    : `<input type="text" class="form-control font-monospace" id="${p}-search-input" placeholder="${placeholder}" spellcheck="false" autocomplete="off">`;
+
+  const hintHTML = hint ? `<div class="pt-search-hint">${hint}</div>` : '';
+
+  const navHTML = showNav ? `\
+      <button class="btn btn-sm btn-outline-secondary" id="${p}-search-prev-btn" title="${findPrevLabel}" disabled><i class="bi bi-chevron-up"></i></button>
+      <button class="btn btn-sm btn-outline-secondary" id="${p}-search-next-btn" title="${findNextLabel}" disabled><i class="bi bi-chevron-down"></i></button>` : '';
+
+  return `\
+<div id="${p}-search-modal" class="pt-modal-overlay">
+  <div class="pt-modal pt-search-dialog">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-${icon} me-2"></i>${title}</h5>
+      <button class="pt-modal-close-btn" id="${p}-search-close-btn" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body">
+      <div class="pt-search-input-group">
+        ${inputHTML}
+        ${hintHTML}
+      </div>
+      <div id="${p}-search-status" class="pt-search-status"></div>
+    </div>
+    <div class="pt-modal-footer">
+${navHTML}
+      <button class="btn btn-sm btn-primary" id="${p}-search-find-btn"><i class="bi bi-search me-1"></i>${findLabel}</button>
+    </div>
+  </div>
+</div>`;
+}
+
+/**
+ * Wire up a search dialog built with buildSearchDialogHTML.
+ *
+ * @param {Document|Element} root - document or container element
+ * @param {object}  opts
+ * @param {string}  opts.prefix    - same prefix used in buildSearchDialogHTML
+ * @param {Function} opts.onFind   - (query: string) => { count: number, index?: number }
+ *                                   Called when user clicks Find or presses Enter.
+ *                                   Return count of matches and optional current index (0-based).
+ * @param {Function} [opts.onNext] - () => { count: number, index: number }
+ *                                   Called when user clicks Next. Returns updated count/index.
+ * @param {Function} [opts.onPrev] - () => { count: number, index: number }
+ *                                   Called when user clicks Previous. Returns updated count/index.
+ * @param {boolean} [opts.closeOnFind] - close dialog on successful find (default true)
+ * @returns {{ open: Function, close: Function, setStatus: Function }}
+ */
+function initSearchDialog(root, opts = {}) {
+  const _root = root === document ? document : root;
+  const $ = id => _root.querySelector('#' + id);
+  const p = opts.prefix || 'search';
+  const closeOnFind = opts.closeOnFind !== false;
+
+  const overlay  = $(`${p}-search-modal`);
+  const input    = $(`${p}-search-input`);
+  const findBtn  = $(`${p}-search-find-btn`);
+  const nextBtn  = $(`${p}-search-next-btn`);
+  const prevBtn  = $(`${p}-search-prev-btn`);
+  const closeBtn = $(`${p}-search-close-btn`);
+  const statusEl = $(`${p}-search-status`);
+
+  function open() {
+    setStatus('');
+    overlay?.classList.add('open');
+    setTimeout(() => { if (input) input.focus(); }, 50);
+  }
+
+  function close() {
+    overlay?.classList.remove('open');
+  }
+
+  /**
+   * Set the status message.
+   * @param {string} msg  - text to display
+   * @param {'info'|'success'|'warning'|'error'} [type='info'] - visual style
+   */
+  function setStatus(msg, type) {
+    if (!statusEl) return;
+    statusEl.textContent = msg;
+    statusEl.className = 'pt-search-status';
+    if (type) statusEl.classList.add(`pt-search-status-${type}`);
+  }
+
+  function updateNavButtons(count) {
+    if (nextBtn) nextBtn.disabled = !count;
+    if (prevBtn) prevBtn.disabled = !count;
+  }
+
+  function handleFind() {
+    const query = input ? input.value.trim() : '';
+    if (!query) { setStatus('Please enter a search pattern.', 'warning'); return; }
+    if (!opts.onFind) return;
+    const result = opts.onFind(query);
+    const count = result?.count ?? 0;
+    const index = result?.index ?? 0;
+    if (count === 0) {
+      setStatus('No matches found.', 'error');
+      updateNavButtons(0);
+    } else {
+      setStatus(`Match ${index + 1} of ${count}.`, 'success');
+      updateNavButtons(count);
+      if (closeOnFind) close();
+    }
+  }
+
+  function handleNext() {
+    if (!opts.onNext) return;
+    const result = opts.onNext();
+    const count = result?.count ?? 0;
+    const index = result?.index ?? 0;
+    if (count > 0) setStatus(`Match ${index + 1} of ${count}.`, 'success');
+    updateNavButtons(count);
+  }
+
+  function handlePrev() {
+    if (!opts.onPrev) return;
+    const result = opts.onPrev();
+    const count = result?.count ?? 0;
+    const index = result?.index ?? 0;
+    if (count > 0) setStatus(`Match ${index + 1} of ${count}.`, 'success');
+    updateNavButtons(count);
+  }
+
+  // Event wiring
+  closeBtn?.addEventListener('click', close);
+  findBtn?.addEventListener('click', handleFind);
+  nextBtn?.addEventListener('click', handleNext);
+  prevBtn?.addEventListener('click', handlePrev);
+
+  if (input) {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleFind(); }
+      if (e.key === 'Escape') { e.preventDefault(); close(); }
+    });
+  }
+
+  // Close on overlay background click
+  overlay?.addEventListener('click', (e) => {
+    if (e.target === overlay) close();
+  });
+
+  return { open, close, setStatus };
+}
+
 /**
  * Build the standard error / confirm / prompt dialog HTML.
  * These overlays are required by showConfirmDialog(), showAlertDialog(),

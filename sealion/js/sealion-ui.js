@@ -252,29 +252,17 @@ function _buildHelpAbout() {
 // ── Bootstrap modals (search, file upload, reference genome) ─────────────
 
 function _buildSearchModal() {
-  return `\
-<div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="searchModalLabel"><i class="bi bi-search me-2"></i>Search Sequence</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="mb-3">
-          <label for="seq-search-input" class="form-label">Search pattern (nucleotide or amino acid)</label>
-          <textarea class="form-control font-monospace" id="seq-search-input" rows="3" placeholder="Enter sequence or regex pattern\u2026" spellcheck="false" autocomplete="off"></textarea>
-          <div class="form-text">Supports regex patterns (e.g. <code>ATG[CGT]+</code>). Case-insensitive. Searches in currently selected sequence first.</div>
-        </div>
-        <div id="seq-search-status" class="small"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary" id="seq-search-find-btn"><i class="bi bi-search me-1"></i>Find</button>
-      </div>
-    </div>
-  </div>
-</div>`;
+  return buildSearchDialogHTML({
+    prefix:      'seq',
+    title:       'Search Sequence',
+    icon:        'search',
+    placeholder: 'Enter sequence or regex pattern\u2026',
+    hint:        'Supports regex patterns (e.g. <code>ATG[CGT]+</code>). Case-insensitive. Searches in currently selected sequence first.',
+    inputType:   'textarea',
+    rows:        3,
+    findLabel:   'Find',
+    showNavButtons: true,
+  });
 }
 
 function _buildFileUploadModal() {

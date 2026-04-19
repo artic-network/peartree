@@ -1450,6 +1450,34 @@
   margin-bottom: 0.1rem;
 }
 
+/* ── Search dialog ── */
+.pt-search-dialog {
+  max-width: 460px;
+  width: 90%;
+}
+.pt-search-input-group {
+  margin-bottom: 0.6rem;
+}
+.pt-search-input-group textarea,
+.pt-search-input-group input {
+  width: 100%;
+}
+.pt-search-hint {
+  font-size: 0.78rem;
+  color: var(--bs-secondary-color);
+  margin-top: 0.35rem;
+  line-height: 1.35;
+}
+.pt-search-status {
+  font-size: 0.82rem;
+  min-height: 1.2em;
+  margin-top: 0.2rem;
+}
+.pt-search-status-success { color: var(--bs-success); }
+.pt-search-status-warning { color: var(--bs-warning); }
+.pt-search-status-error   { color: var(--bs-danger); }
+.pt-search-status-info    { color: var(--bs-secondary-color); }
+
 /* ── Import Annotations dialog ── */
 .imp-section { margin-bottom: 0.85rem; }
 .imp-section > label.imp-section-label {

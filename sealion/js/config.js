@@ -11,13 +11,13 @@
 export const EXAMPLE_DATASETS = [
   {
     title:       'Mpox clade IIb',
-    description: 'Mpox virus clade IIb alignment with reference genome annotation.',
+    description: '199 Mpox virus clade IIb alignment with reference genome annotation (length 197,209).',
     path:        'data/mpox_clade_iib.fasta',
     reference:   'data/NC_063383_mpox_clade_iib.gb',
   },
   {
     title:       'Ebola virus (Makona)',
-    description: '1,610 Ebola virus sequences from the 2014–2016 West Africa epidemic.',
+    description: '1,610 Ebola virus sequences from the 2014–2016 West Africa epidemic (length 18,959).',
     path:        'data/Makona_1610.fasta',
     reference:   'data/NC_002549_EBOV_1976.gb',
   },
