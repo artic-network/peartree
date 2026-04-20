@@ -1,13 +1,11 @@
 {
-  "name": "pearcore",
+  "name": "peartree",
   "version": "0.1.0",
-  "description": "Pearcore — Reusable application framework (PearTree, Demo, and more)",
+  "description": "PearTree — Phylogenetic tree viewer and annotator",
   "private": true,
   "workspaces": [
     "pearcore",
-    "peartree",
-    "demo",
-    "sealion"
+    "peartree"
   ],
   "scripts": {
     "tauri": "tauri",
@@ -15,8 +13,7 @@
     "build": "tauri build",
     "icon": "tauri icon",
     "bundle": "node scripts/build-bundle.mjs --app peartree",
-    "bundle:peartree": "node scripts/build-bundle.mjs --app peartree",
-    "bundle:demo": "node scripts/build-bundle.mjs --app demo"
+    "bundle:peartree": "node scripts/build-bundle.mjs --app peartree"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0",

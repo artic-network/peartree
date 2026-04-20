@@ -1,0 +1,3 @@
+[submodule "pearcore"]
+	path = pearcore
+	url = git@github.com:rambaut/pearcore-lib.git

@@ -1,9 +1,0 @@
-/* Entry point for the Demo app single-file bundle.
-   esbuild resolves these @imports, inlines the bootstrap-icons font as a
-   base64 data URI, and emits a single minified CSS string. */
-
-@import "../pearcore/vendor/bootstrap.min-artic.css";
-@import "../pearcore/vendor/bootstrap-icons/bootstrap-icons.css";
-@import "../pearcore/css/pearcore.css";
-@import "../demo/css/demo.css";
-@import "../pearcore/css/pearcore-webapp.css";

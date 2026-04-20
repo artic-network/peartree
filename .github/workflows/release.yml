@@ -19,6 +19,8 @@ jobs:
       release_id: ${{ steps.create.outputs.release_id }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Create draft release
         id: create
         env:
@@ -53,6 +55,8 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -154,6 +158,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
         with:
           ref: main
           fetch-depth: 0

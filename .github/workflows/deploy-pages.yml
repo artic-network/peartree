@@ -31,6 +31,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
+        with:
           ref: main
           fetch-depth: 0
 
