@@ -9,8 +9,9 @@ rm -rf "$DEST"
 mkdir -p "$DEST"
 
 # Mirror the two source trees (pearcore + peartree) keeping directory structure.
-# rsync is available on macOS by default.
-rsync -a --exclude='*.md' "$ROOT/pearcore/" "$DEST/pearcore/"
-rsync -a --exclude='*.md' "$ROOT/peartree/" "$DEST/peartree/"
+cp -r "$ROOT/pearcore/." "$DEST/pearcore/"
+cp -r "$ROOT/peartree/." "$DEST/peartree/"
+# Remove markdown files from the staged output.
+find "$DEST" -name '*.md' -delete
 
 echo "Staged Tauri frontend → $DEST"
