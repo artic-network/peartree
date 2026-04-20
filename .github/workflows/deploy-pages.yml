@@ -55,7 +55,7 @@ jobs:
         run: |
           mkdir -p _site/data _site/img _site/logo _site/manual/images
           cp peartree/index.html                     _site/index.html
-          cp CNAME                                   _site/CNAME
+          [ -f CNAME ] && cp CNAME                  _site/CNAME || true
           cp dist/peartree.bundle.min.js             _site/peartree.bundle.min.js
           cp peartree/img/peartree.svg               _site/img/peartree.svg
           cp peartree/img/peartree.png               _site/img/peartree.png
