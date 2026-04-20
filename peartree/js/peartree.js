@@ -8,11 +8,14 @@ import { AxisRenderer  } from './axisrenderer.js';
 import { THEMES, DEFAULT_THEME, SETTINGS_KEY, USER_THEMES_KEY } from './themes.js';
 import { TYPEFACES, buildFont } from '@artic-network/pearcore/typefaces.js';
 import { CATEGORICAL_PALETTES, SEQUENTIAL_PALETTES,
-         DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE } from '@artic-network/pearcore/palettes.js';
+         DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
+         setUserCategoricalPalettes, setUserSequentialPalettes,
+         allCategoricalPalettes, allSequentialPalettes } from '@artic-network/pearcore/palettes.js';
 import { createAnnotImporter } from '@artic-network/pearcore/annotation-io.js';
 import { createAnnotCurator  } from '@artic-network/pearcore/annotation-manager.js';
 import { createFilterControl } from './filter-control.js';
 import { createFilterManager } from './filter-manager.js';
+import { createPaletteManager } from '@artic-network/pearcore/palette-manager.js';
 import { createDataTableRenderer } from './datatablerenderer.js';
 import { createRTTChart          } from './rttchart.js';
 import { createCommands } from '@artic-network/pearcore/commands.js';
@@ -375,7 +378,9 @@ async function _initCore(root = document) {
   const btnImportAnnot         = $('btn-import-annot');
   const btnCurateAnnot         = $('btn-curate-annot');
   const btnManageFilters       = $('btn-manage-filters');
+  const btnManagePalettes      = $('btn-manage-palettes');
   let filterManager            = null;  // assigned after renderer is created
+  let paletteManager           = null;  // assigned after renderer is created
   const nodeBarsFilterEl      = $('node-bars-filter');
   const nodeLabelsFilterEl    = $('node-labels-filter');
   const branchLabelsFilterEl  = $('branch-labels-filter');
@@ -469,7 +474,7 @@ async function _initCore(root = document) {
     // Populate palette select
     if (annotConfigPaletteSelect) {
       const isCat = def?.dataType === 'categorical' || def?.dataType === 'ordinal';
-      const palettes = isCat ? CATEGORICAL_PALETTES : SEQUENTIAL_PALETTES;
+      const palettes = isCat ? allCategoricalPalettes() : allSequentialPalettes();
       const defPal   = isCat ? DEFAULT_CATEGORICAL_PALETTE : DEFAULT_SEQUENTIAL_PALETTE;
       const stored   = annotationPalettes.get(key) ?? defPal;
       annotConfigPaletteSelect.innerHTML = '';
@@ -2268,6 +2273,7 @@ async function _initCore(root = document) {
       if (annotConfigOverlay?.classList.contains('open')) { annotConfigOverlay.classList.remove('open'); return; }
       if ($('curate-annot-overlay')?.classList.contains('open')) { annotCurator.close(); return; }
       if ($('manage-filters-overlay')?.classList.contains('open')) { filterManager.close(); return; }
+      if ($('palette-manager-overlay')?.classList.contains('open')) { paletteManager.close(); return; }
       if ($('import-annot-overlay')?.classList.contains('open'))  { annotImporter.close(); return; }
       const nodeInfoOv = $('node-info-overlay');
       if (nodeInfoOv && nodeInfoOv.classList.contains('open')) { nodeInfoOv.classList.remove('open'); return; }
@@ -2502,6 +2508,20 @@ async function _initCore(root = document) {
     } catch (_) { /* corrupt saved data — silently skip */ }
   }
   btnManageFilters?.addEventListener('click', () => commands.execute('manage-filters'));
+
+  // ── Palette Manager ──────────────────────────────────────────────────────
+  paletteManager = createPaletteManager({
+    onPalettesChange: (userCat, userSeq) => {
+      setUserCategoricalPalettes(userCat);
+      setUserSequentialPalettes(userSeq);
+      saveSettings();
+    },
+    showConfirm: (t, m, opts) => showConfirmDialog(t, m, { okLabel: 'OK', cancelLabel: 'Cancel', ...opts }),
+  });
+  // Seed the global palette registry with any persisted user palettes
+  setUserCategoricalPalettes(paletteManager.getUserCategorical());
+  setUserSequentialPalettes(paletteManager.getUserSequential());
+  btnManagePalettes?.addEventListener('click', () => commands.execute('manage-palettes'));
 
   /** Repopulate all 6 filter <select> elements from the current filter map. */
   function _refreshFilterUIs(filterMap) {
@@ -3867,6 +3887,7 @@ async function _initCore(root = document) {
         commands.setEnabled('tree-order-up',   true);
         commands.setEnabled('tree-order-down', true);
         commands.setEnabled('manage-filters',  true);
+        commands.setEnabled('manage-palettes', true);
       }
 
       // Restore interaction mode (file settings take priority).
@@ -6711,6 +6732,7 @@ async function _initCore(root = document) {
   commands.get('import-annot').exec = () => annotImporter.open();
   commands.get('curate-annot').exec  = () => annotCurator.open();
   commands.get('manage-filters').exec = () => filterManager.open();
+  commands.get('manage-palettes').exec = () => paletteManager.open();
   commands.get('select-all').exec = () => {
     const tag = document.activeElement?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) {

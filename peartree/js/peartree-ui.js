@@ -572,7 +572,8 @@ function _tbSectionFilter() {
 function _tbSectionAnnotations() {
   return `
     <button id="btn-curate-annot" class="btn btn-sm btn-outline-secondary" disabled title="Curate annotations"><i class="bi bi-tags"></i></button>
-    <button id="btn-manage-filters" class="btn btn-sm btn-outline-secondary" disabled title="Manage filters"><i class="bi bi-funnel"></i></button>`;}
+    <button id="btn-manage-filters" class="btn btn-sm btn-outline-secondary" disabled title="Manage filters"><i class="bi bi-funnel"></i></button>
+    <button id="btn-manage-palettes" class="btn btn-sm btn-outline-secondary" disabled title="Manage palettes"><i class="bi bi-palette"></i></button>`;}
 
 function _tbSectionNodeInfo() {
   return `
@@ -906,6 +907,33 @@ function _buildModals() {
       <button id="filter-import-btn" class="btn btn-sm btn-outline-secondary me-1"><i class="bi bi-upload me-1"></i>Import</button>
       <button id="filter-export-btn" class="btn btn-sm btn-outline-secondary me-auto"><i class="bi bi-download me-1"></i>Export All</button>
       <button id="manage-filters-close-footer" class="btn btn-sm btn-secondary">Close</button>
+    </div>
+  </div>
+</div>
+<div id="palette-manager-overlay" class="pt-modal-overlay">
+  <div class="pt-modal pm-modal" style="width:860px;max-width:calc(100vw - 24px);min-width:min(720px,calc(100vw - 24px));max-height:calc(100vh - 48px)">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-palette me-2"></i>Palette Manager</h5>
+      <button class="pt-modal-close-btn" id="palette-manager-close" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body pm-modal-body" style="padding:0;display:flex;flex-direction:column;overflow:hidden">
+      <div class="pm-tabs">
+        <div class="pm-tab active" id="pm-tab-categorical">Categorical</div>
+        <div class="pm-tab" id="pm-tab-continuous">Continuous</div>
+      </div>
+      <div class="pm-split">
+        <div class="pm-list-pane">
+          <div class="pm-list-header">
+            <span class="pm-list-title">Palettes</span>
+            <button id="pm-new-btn" class="btn btn-xs btn-primary"><i class="bi bi-plus me-1"></i>New</button>
+          </div>
+          <div id="pm-list" class="pm-list"></div>
+        </div>
+        <div id="pm-editor" class="pm-editor-pane"></div>
+      </div>
+    </div>
+    <div class="pt-modal-footer">
+      <button id="palette-manager-close-footer" class="btn btn-sm btn-secondary">Close</button>
     </div>
   </div>
 </div>`;
