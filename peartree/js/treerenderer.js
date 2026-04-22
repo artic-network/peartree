@@ -1594,6 +1594,7 @@ export class TreeRenderer {
     this._animating = true;
     this._dirty = true;
     if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
+    this._notifyStats();
     if (this._onNavChange) this._onNavChange(true, false);
   }
 
@@ -1652,6 +1653,7 @@ export class TreeRenderer {
     this._animating = true;
     this._dirty = true;
     if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
+    this._notifyStats();
     if (this._onNavChange) this._onNavChange(this._navStack.length > 0, true);
     if (this._onNodeSelectChange) this._onNodeSelectChange(this._selectedTipIds.size > 0 || !!this._mrcaNodeId);
   }
@@ -1687,6 +1689,7 @@ export class TreeRenderer {
     this._animating = true;
     this._dirty = true;
     if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
+    this._notifyStats();
     if (this._onNavChange) this._onNavChange(true, this._fwdStack.length > 0);
     if (this._onNodeSelectChange) this._onNodeSelectChange(this._selectedTipIds.size > 0 || !!this._mrcaNodeId);
   }
@@ -1724,6 +1727,7 @@ export class TreeRenderer {
     this._animating = true;
     this._dirty = true;
     if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
+    this._notifyStats();
     if (this._onNavChange) this._onNavChange(this._navStack.length > 0, false);
     if (this._onNodeSelectChange) this._onNodeSelectChange(false);
   }
@@ -1782,6 +1786,7 @@ export class TreeRenderer {
     this._animating = true;
     this._dirty = true;
     if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
+    this._notifyStats();
     if (this._onNavChange) this._onNavChange(true, false);
     if (this._onNodeSelectChange) this._onNodeSelectChange(false);
   }
@@ -4835,16 +4840,22 @@ export class TreeRenderer {
       height = globalH(refNode) - minTipGH;
     }
 
-    // Total branch length: within subtree rooted at refNode, or whole tree.
-    const subRootId = refNode ? refNode.id : (this.nodes.find(n => !n.parentId) || {}).id;
+    // Total branch length: sum of all branches within the selected clade
+    // (MRCA subtree, excluding the MRCA's own stem branch) when 2+ tips are
+    // selected; otherwise sum of all branches in the visible subtree.
+    // A single selected tip has no meaningful clade so falls back to the
+    // full visible subtree total.
+    const lengthScopeId = this._mrcaNodeId ?? (this.nodes.find(n => !n.parentId) || {}).id;
     let totalLength = 0;
-    if (subRootId != null) {
-      const stack = [subRootId];
+    if (lengthScopeId != null) {
+      const stack = [lengthScopeId];
       while (stack.length) {
         const id   = stack.pop();
         const node = this.nodeMap.get(id);
         if (!node) continue;
-        if (node.parentId) {
+        // Skip the stem branch of the scope root (it leads outside the clade).
+        // The view root's parentId is already null, so the guard is consistent.
+        if (node.parentId && id !== lengthScopeId) {
           const parent = this.nodeMap.get(node.parentId);
           if (parent) totalLength += node.x - parent.x;
         }
@@ -4852,7 +4863,40 @@ export class TreeRenderer {
       }
     }
 
-    return { tipCount, distance, height, totalLength };
+    // Subtree length: sum of branches that actually subtend ≥1 selected tip
+    // (minimal spanning subtree for the selected set). Only computed when 2+
+    // tips are selected; null otherwise.
+    let subtreeLength = null;
+    if (this._mrcaNodeId && this._selectedTipIds.size >= 2) {
+      // Pre-order DFS to collect nodes within the MRCA clade, then post-order
+      // (reverse) to propagate 'selected tip below' counts upward.
+      const order = [];
+      const dfsStack = [this._mrcaNodeId];
+      while (dfsStack.length) {
+        const id = dfsStack.pop();
+        const node = this.nodeMap.get(id);
+        if (!node) continue;
+        order.push(id);
+        if (!node.isTip) for (const cid of node.children) dfsStack.push(cid);
+      }
+      const selectedBelow = new Map();
+      subtreeLength = 0;
+      for (let i = order.length - 1; i >= 0; i--) {
+        const id   = order[i];
+        const node = this.nodeMap.get(id);
+        if (!node) continue;
+        let count = this._selectedTipIds.has(id) ? 1 : 0;
+        if (!node.isTip) for (const cid of node.children) count += selectedBelow.get(cid) ?? 0;
+        selectedBelow.set(id, count);
+        // Include this branch if it leads to ≥1 selected tip AND it's not the MRCA root itself.
+        if (count > 0 && node.parentId && id !== this._mrcaNodeId) {
+          const parent = this.nodeMap.get(node.parentId);
+          if (parent) subtreeLength += node.x - parent.x;
+        }
+      }
+    }
+
+    return { tipCount, distance, height, totalLength, subtreeLength };
   }
 
   /** Fire the stats-change callback with current selection/tree stats. */

@@ -1946,7 +1946,11 @@ async function _initCore(root = document) {
       `<span class="st-sep"> | </span>` +
       `<span class="st-lbl">Age\u2009</span><span class="st-val">${stats.height.toFixed(5)}</span>` +
       `<span class="st-sep"> | </span>` +
-      `<span class="st-lbl">Length\u2009</span><span class="st-val">${stats.totalLength.toFixed(5)}</span>`;
+      `<span class="st-lbl">Length\u2009</span><span class="st-val">${stats.totalLength.toFixed(5)}</span>` +
+      (stats.subtreeLength != null
+        ? `<span class="st-sep"> | </span>` +
+          `<span class="st-lbl">Subtree\u2009</span><span class="st-val">${stats.subtreeLength.toFixed(5)}</span>`
+        : '');
   };
 
   // ── Legend renderer ────────────────────────────────────────────────────────
