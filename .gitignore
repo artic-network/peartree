@@ -26,3 +26,5 @@ src-tauri/gen/
 !.vscode/tasks.json
 !.vscode/settings.json
  
+# Any test folders
+test*/
