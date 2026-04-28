@@ -232,19 +232,6 @@ body.palette-pinned #canvas-container {
   font-style: italic;
 }
 
-/* ── Palette row grid: tree-specific overrides ── */
-/* node-bars-controls: plain show/hide div that contains rows */
-#node-bars-controls {
-  display: grid;
-  grid-template-columns: max-content 1fr auto;
-  column-gap: 8px;
-  row-gap: 6px;
-  align-items: center;
-}
-#node-bars-controls > :not(.pt-palette-row):not(.pt-palette-row--span) {
-  grid-column: 1 / -1;
-}
-
 /* ── Panel-toggle buttons — gold when open ── */
 #btn-palette.active,
 #btn-data-table.active,
