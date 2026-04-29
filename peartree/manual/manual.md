@@ -72,7 +72,7 @@ Runs along the top of the window. Contains buttons grouped by function:
 | **Hide / Show** | Hide selected subtree, unhide |
 | **Collapse** | Collapse clade to triangle, expand triangle |
 | **Colour** | Colour picker swatch, apply colour, clear user colours, highlight clade, clear highlights |
-| **Filter** | Tip filter text box with regex toggle and column selector |
+| **Filter** | Tip filter box with field selector, match-operator selector, saved-filter selector, save-filter button, and buttons for **Manage Filters** / **Manage Palettes** |
 | **Panels** | Data table panel toggle, root-to-tip panel toggle |
 
 ### Visual Options Palette
@@ -196,6 +196,7 @@ For each key you can:
 |---|---|
 | **Rename** | Give a key a more readable display label |
 | **Change type** | Switch between *categorical* and *real* (continuous numeric) |
+| **Palette** | Open colour settings for the key (palette choice and numeric scale mode) |
 | **Branch annotation** | Mark a key as belonging to branches rather than nodes — affects how values move when rerooting (see [Appendix C](#appendix-c-bootstrap-values-branch-annotations-and-rerooting)) |
 
 > [!TIP]
@@ -412,15 +413,35 @@ Press **⌘B** again to return to Nodes mode.
 
 ### Filtering Tips
 
-The filter box in the toolbar instantly selects all visible tips whose labels contain the typed string.
+The filter controls in the toolbar instantly select visible tips using ad-hoc or saved rules.
+
+The ad-hoc filter has four parts:
+
+- **Search field button** — choose which field to query (*Name* or an annotation key)
+- **Operator button** — choose the match rule (*contains*, *starts with*, numeric comparisons, date comparisons, regex, etc.)
+- **Input box** — type the value/pattern
+- **+ button** — save the current ad-hoc query as a named filter
 
 > <img src="images/filter_box.png" style="width:200px;"/>
 
-For example, type `SLE` to select all Sierra Leone EBOV tips:
+For example, choose *Name contains* and type `SLE` to select all Sierra Leone EBOV tips:
 
 > <img src="images/filter_box_SLE.png" style="width:200px;"/>
 
 Press **Escape** or clear the box to remove the filter (the tip selection remains).
+
+### Named Filters and the Filter Manager
+
+Click the funnel button beside the filter box to apply a saved named filter. Named filters can be combined with the ad-hoc filter: a tip must pass both to remain selected.
+
+Use **Manage Filters** (funnel button in the toolbar Filter group) to open the Filter Manager dialog. There you can:
+
+- Create filters with nested **AND/OR** groups
+- Add conditions for string, numeric, categorical, and date fields
+- Edit or delete existing filters
+- Import/export filter sets as JSON
+
+Saved filters are available throughout the Visual Options palette in **Filter** dropdowns for tip labels, branch labels, node labels, tip shapes, node shapes, and node bars. Each feature's filter is applied only when that feature is enabled.
 
 ### Node Info
 
@@ -472,6 +493,26 @@ The **Theme** section at the top of the palette provides pre-built visual preset
 
 Changing any individual setting switches the selector to *Custom*. Click **Reset to defaults** at the bottom of the palette to revert to the Artic theme.
 
+### Palette Manager
+
+Click **Manage Palettes** (palette button in the toolbar Filter group) to open the Palette Manager.
+
+The manager has two tabs:
+
+- **Categorical**: edit discrete swatch sets, add/remove colours, reorder colours, duplicate palettes
+- **Continuous**: edit gradient palettes either as colour stops or an HSB sweep, with full stop editing and duplication
+
+Built-in palettes are read-only. User palettes are editable, persisted, and immediately available in all *Colour by* controls and legends.
+
+### Annotation Colour Settings
+
+Whenever a section has a **Colour by** selector and a **Configure** button, click **Configure** to open key-specific colour settings.
+
+For the selected annotation key you can set:
+
+- **Palette** (categorical or sequential, depending on data type)
+- **Scale mode** for numeric keys (auto, symmetric around zero, from zero, or 0→1)
+
 ### Tree Appearance
 
 The **Tree** section controls the canvas background, branch colour and width, and the typeface used for all labels.
@@ -497,11 +538,12 @@ The **Tree** section controls the canvas background, branch colour and width, an
 | Control | Effect |
 |---|---|
 | Show | *Off* — hide all labels; *Names* — show tip name; or select an annotation key to display its values instead |
+| Filter | Apply a saved named filter so only matching tips get labels |
 | Layout | *Normal* (labels float at each tip) or aligned options (*Aligned*, *Dashed*, *Dots*, *Solid*) — labels line up at the rightmost tip with optional connector lines |
 | Size | Font size (1–20 pt) |
 | Colour | Default label colour |
 | Colour by | Use an annotation key for per-tip label colour |
-| Palette | Colour scheme when *Colour by* is active |
+| Palette | Colour scheme when *Colour by* is active (**Configure** opens annotation colour settings) |
 | Spacing | Gap between the tip marker and the label text (px) |
 
 ### Label Shapes
@@ -527,11 +569,12 @@ Multiple independent shape slots (up to 10) can be added to show several annotat
 | Control | Effect |
 |---|---|
 | Size | Tip circle radius (0 = hidden) |
+| Filter | Apply a saved named filter so only matching tips get shapes |
 | Colour | Stroke/fill colour |
 | Background | Halo fill colour |
 | Halo | Halo ring radius (0 = hidden) |
 | Colour by | Use an annotation key for tip colours |
-| Palette | Colour scheme when *Colour by* is active |
+| Palette | Colour scheme when *Colour by* is active (**Configure** opens annotation colour settings) |
 
 Set **Colour by** to `country` to colour each tip by sampling country:
 
@@ -552,8 +595,9 @@ Internal nodes can show circles coloured by a node-level annotation — useful f
 | Control | Effect |
 |---|---|
 | Size | Node circle radius (0 = hidden) |
+| Filter | Apply a saved named filter so only matching nodes get shapes |
 | Colour by | Use an annotation key (e.g. `posterior`) |
-| Palette | For continuous support values, a diverging palette such as *Blue-Black-Red* works well: red = high support, blue = low |
+| Palette | For continuous support values, a diverging palette such as *Blue-Black-Red* works well: red = high support, blue = low (**Configure** opens annotation colour settings) |
 
 > <img src="images/fig12c.png" style="width:260px;"/>
 >
@@ -570,6 +614,7 @@ Annotation values can be displayed as text labels on internal nodes — useful f
 | Control | Effect |
 |---|---|
 | Annotation | Which annotation key to display |
+| Filter | Apply a saved named filter so only matching nodes get labels |
 | Position | *Right*, *Above left*, or *Below left* |
 | Font size | Label text size |
 | Colour | Label text colour |
@@ -586,6 +631,7 @@ When a BEAST tree carries HPD height annotations (e.g. `height_95%_HPD`), the **
 | Control | Effect |
 |---|---|
 | Show | Toggle bars on/off |
+| Filter | Apply a saved named filter so bars draw only on matching nodes |
 | Colour | Bar colour |
 | Bar height | Vertical thickness of each bar (px) |
 | Line | Show a line at the node *Mean*, *Median*, or neither |
@@ -621,7 +667,7 @@ Clade highlights draw a translucent coloured shape behind a selected subtree —
 
 **Adding a highlight:**
 1. Select any internal node (its entire descendant clade is highlighted).
-2. Click the **Highlight** button <img src="images/open_button.png" style="width:28px;"/> (highlighter icon) in the toolbar.
+2. Click the **Highlight** button (highlighter icon) in the toolbar.
 
 A translucent shape appears behind all descendants of that node. Multiple independent highlights can be active simultaneously — each is stored separately and can have its own colour.
 
@@ -743,7 +789,7 @@ The root is placed at the midpoint of the branch above the MRCA node.
 
 If your tree has tip dates, PearTree can find the root position that best linearises the root-to-tip regression (least-squares RTT regression).
 
-Click **Temporal Root** in the toolbar or press **⌘⇧M**. Two modes are available:
+Click **Temporal Root** in the toolbar. Two modes are available (**⌘⇧R** = Local, **⌘R** = Global):
 
 | Mode | Description |
 |---|---|
@@ -979,7 +1025,8 @@ If PearTree is already running, the file opens in a new window. On Windows, drag
 | **⌘D** | Order: larger clades toward bottom |
 | **⌘U** | Order: larger clades toward top |
 | **⌘M** | Midpoint root |
-| **⌘⇧M** | Temporal root |
+| **⌘R** | Global temporal root |
+| **⌘⇧R** | Local temporal root (optimise on current root branch) |
 | **⌘I** | Node info |
 | **⌘[** | Navigate back |
 | **⌘]** | Navigate forward |
@@ -1008,6 +1055,26 @@ If PearTree is already running, the file opens in a new window. On Windows, drag
 
 <img src="images/controls_themes.png" style="width:250px;"/>
 
+### Palette Manager
+
+| Control | Effect |
+|---|---|
+| Categorical tab | Edit discrete swatch palettes (add/remove/reorder colours) |
+| Continuous tab | Edit sequential gradients (colour stops or HSB sweep) |
+| Duplicate | Clone an existing palette as a starting point |
+| Delete | Remove a user palette |
+
+### Filters
+
+| Control | Effect |
+|---|---|
+| Search field | Choose Name or an annotation key to query |
+| Match operator | String/numeric/date/regex matching mode |
+| Value box | Query value or pattern |
+| + | Save current query as a named filter |
+| Named filter selector | Apply a saved filter in the toolbar |
+| Manage Filters | Open filter editor with nested AND/OR conditions and import/export |
+
 ### Tree
 
 | Control | Effect |
@@ -1032,11 +1099,12 @@ If PearTree is already running, the file opens in a new window. On Windows, drag
 | Control | Effect |
 |---|---|
 | Show | *Off* / *Names* / annotation key |
+| Filter | Apply a saved named filter so only matching tips get labels |
 | Layout | *Normal* / *Aligned* / *Dashed* / *Dots* / *Solid* |
 | Size | Font size (1–20 pt) |
 | Colour | Default label colour |
 | Colour by | Annotation key for per-tip label colour |
-| Palette | Colour scheme |
+| Palette | Colour scheme (**Configure** opens annotation colour settings) |
 | Spacing | Gap after tip marker (px) |
 | Selected style | *Normal* / *Bold* / *Italic* / *Bold Italic* for selected tips |
 
@@ -1058,11 +1126,12 @@ If PearTree is already running, the file opens in a new window. On Windows, drag
 | Control | Effect |
 |---|---|
 | Size | Radius (0 = hidden) |
+| Filter | Apply a saved named filter so only matching tips get shapes |
 | Colour | Stroke/fill colour |
 | Background | Halo fill colour |
 | Halo | Halo ring radius |
 | Colour by | Annotation key |
-| Palette | Colour scheme |
+| Palette | Colour scheme (**Configure** opens annotation colour settings) |
 
 <img src="images/controls_tip_shapes.png" style="width:250px;"/>
 
@@ -1073,8 +1142,9 @@ If PearTree is already running, the file opens in a new window. On Windows, drag
 | Size | Radius (0 = hidden) |
 | Colour | Default shape colour |
 | Background | Halo fill |
+| Filter | Apply a saved named filter so only matching nodes get shapes |
 | Colour by | Annotation key |
-| Palette | Colour scheme |
+| Palette | Colour scheme (**Configure** opens annotation colour settings) |
 
 <img src="images/controls_node_shapes.png" style="width:250px;"/>
 
@@ -1083,6 +1153,7 @@ If PearTree is already running, the file opens in a new window. On Windows, drag
 | Control | Effect |
 |---|---|
 | Annotation | Key to display as text on internal nodes |
+| Filter | Apply a saved named filter so only matching nodes get labels |
 | Position | *Right* / *Above left* / *Below left* |
 | Font size | Text size (pt) |
 | Colour | Text colour |
@@ -1093,6 +1164,7 @@ If PearTree is already running, the file opens in a new window. On Windows, drag
 | Control | Effect |
 |---|---|
 | Show | On / Off |
+| Filter | Apply a saved named filter so bars draw only on matching nodes |
 | Colour | Bar colour |
 | Bar height | Vertical thickness (px) |
 | Line | *Mean* / *Median* / *Off* |
