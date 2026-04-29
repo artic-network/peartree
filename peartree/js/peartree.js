@@ -3290,6 +3290,20 @@ async function _initCore(root = document) {
       const _fileSettings = nexusTrees.length > 0 ? (nexusTrees[0].peartreeSettings || null) : null;
       if (nexusTrees.length > 0) {
         parsedRoot = nexusTrees[0].root;
+        // Warn the user if any tree tips had no matching entry in the taxa block.
+        const _taxonWarnings = nexusTrees[0].taxonAnnotWarnings;
+        if (_taxonWarnings && _taxonWarnings.length > 0) {
+          const MAX = 5;
+          const sample = _taxonWarnings.slice(0, MAX).join('\n  ');
+          const more   = _taxonWarnings.length > MAX ? `\n  … and ${_taxonWarnings.length - MAX} more` : '';
+          setModalLoading(false);
+          await showConfirmDialog(
+            'Taxa block mismatch',
+            `${_taxonWarnings.length} tip(s) in the tree were not found in the NEXUS taxa block and could not receive taxon annotations:\n\n  ${sample}${more}\n\nThe tree will still be loaded.`,
+            { okLabel: 'OK', cancelLabel: null }
+          );
+          setModalLoading(true);
+        }
       } else {
         const trimmed = text.trim();
         if (trimmed.startsWith('(')) {
