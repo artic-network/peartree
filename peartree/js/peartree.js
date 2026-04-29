@@ -1379,8 +1379,27 @@ async function _initCore(root = document) {
    */
   function _syncControlVisibility() {
     const _vis = (el, visible) => { if (el) el.classList.toggle('pt-detail-open', visible); };
-    _vis(tipShapeDetailEl,      parseInt(tipSlider.value)   > 0);
-    _vis(nodeShapeDetailEl,     parseInt(nodeSlider.value)  > 0);
+    const _showRowForControl = (controlEl, visible) => {
+      const row = controlEl?.closest('.pt-palette-row');
+      if (row) row.style.display = visible ? '' : 'none';
+    };
+
+    const tipShapesOn    = parseInt(tipSlider.value) > 0;
+    const nodeShapesOn   = parseInt(nodeSlider.value) > 0;
+    const tipLabelsOn    = tipLabelShow.value !== 'off';
+    const nodeLabelsOn   = nodeLabelShowEl.value !== '';
+    const branchLabelsOn = branchLabelShowEl.value !== '';
+    const nodeBarsOn     = nodeBarsShowEl.value === 'on';
+
+    _showRowForControl(tipShapesFilterEl, tipShapesOn);
+    _showRowForControl(nodeShapesFilterEl, nodeShapesOn);
+    _showRowForControl(tipLabelsFilterEl, tipLabelsOn);
+    _showRowForControl(nodeLabelsFilterEl, nodeLabelsOn);
+    _showRowForControl(branchLabelsFilterEl, branchLabelsOn);
+    _showRowForControl(nodeBarsFilterEl, nodeBarsOn);
+
+    _vis(tipShapeDetailEl,      tipShapesOn);
+    _vis(nodeShapeDetailEl,     nodeShapesOn);
     _vis(tipLabelShapeDetailEl, tipLabelShapeEl.value       !== 'off');
     const _spacingRow = $('tip-label-shape-spacing-row');
     if (_spacingRow) _spacingRow.style.display = (tipLabelShapeEl.value !== 'off' && tipLabelShapeExtraEls[0].value !== 'off') ? '' : 'none';
@@ -1392,9 +1411,9 @@ async function _initCore(root = document) {
       _vis(tipLabelShapeExtraSectionEls[i], _shapeOneOn && prevValue !== 'off');
       _vis(tipLabelShapeExtraDetailEls[i],  _shapeOneOn && tipLabelShapeExtraEls[i].value !== 'off');
     }
-    _vis(nodeLabelDetailEl,     nodeLabelShowEl.value       !== '');
-    _vis(branchLabelDetailEl,   branchLabelShowEl.value     !== '');
-    _vis(nodeBarsDetailEl,      nodeBarsShowEl.value        === 'on');
+    _vis(nodeLabelDetailEl,     nodeLabelsOn);
+    _vis(branchLabelDetailEl,   branchLabelsOn);
+    _vis(nodeBarsDetailEl,      nodeBarsOn);
     _vis(legendDetailEl,        legendAnnotEl.value         !== '');
     _vis(legend2SectionEl,      legendAnnotEl.value         !== '');
     _vis(legend2DetailEl,       legend2AnnotEl.value        !== '');
@@ -6002,6 +6021,7 @@ async function _initCore(root = document) {
     renderer.setTipLabelsOff(isOff);
     if (!isOff) renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
     saveSettings();
+    _syncControlVisibility();
   });
 
   tipLabelAlignEl.addEventListener('change', () => {

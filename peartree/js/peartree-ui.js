@@ -176,7 +176,7 @@ function _sectionNodeBars() {
     <div class="pt-palette-section" id="node-bars-section">
       <h3><i class="bi bi-bar-chart-steps bi-rotate-180"></i> Node Bars</h3>
       <div id="node-bars-unavail" style="display:block;font-size:0.78rem;color:var(--pt-text-muted);font-style:italic;padding:2px 0 4px;">Requires BEAST tree with height HPD</div>
-      <div id="node-bars-controls" style="display:none">
+      <div id="node-bars-controls" class="pt-palette-grid" style="display:none">
         <div class="pt-palette-row" title="Show confidence interval bars (e.g. 95% HPD) on nodes"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="node-bars-show"><option value="off">Off</option><option value="on">On</option></select></div>
         <div class="pt-palette-row" title="Only draw bars on nodes that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="node-bars-filter" disabled><option value="">— always —</option></select></div>
         <div id="node-bars-detail" class="pt-detail pt-sub-controls">
