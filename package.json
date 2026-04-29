@@ -13,10 +13,13 @@
     "build": "tauri build",
     "icon": "tauri icon",
     "bundle": "node scripts/build-bundle.mjs --app peartree",
-    "bundle:peartree": "node scripts/build-bundle.mjs --app peartree"
+    "bundle:peartree": "node scripts/build-bundle.mjs --app peartree",
+    "docs": "node scripts/markdown-server.mjs"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0",
-    "esbuild": "^0.27.4"
+    "chokidar": "^5.0.0",
+    "esbuild": "^0.27.4",
+    "marked": "^18.0.2"
   }
 }

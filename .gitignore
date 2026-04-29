@@ -23,8 +23,10 @@ src-tauri/gen/
 # Editor directories
 .idea/
 .vscode/*
-!.vscode/tasks.json
 !.vscode/settings.json
  
 # Any test folders
 test*/
+
+# Local markdown server script
+scripts/markdown-server.mjs
