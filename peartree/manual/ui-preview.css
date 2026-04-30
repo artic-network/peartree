@@ -98,3 +98,88 @@
 .pt-palette-section--demo .pt-sec-chevron {
   transform: rotate(90deg);
 }
+
+/* ── Toolbar button previews ─────────────────────────────────────────────────
+   Used by {% include btn.html id="..." %} and {% include btn-group.html ... %}
+   in the manual.  Buttons render in their enabled state and are non-interactive.
+────────────────────────────────────────────────────────────────────────────── */
+
+/* Replicate .pt-toolbar .btn overrides; keep opacity 1 regardless of [disabled] */
+.pt-btn-preview {
+  background: var(--pt-surface) !important;
+  padding: 0.12rem 0.3rem !important;
+  font-size: 0.90rem !important;
+  line-height: 1.4 !important;
+  pointer-events: none;
+  opacity: 1 !important;
+  vertical-align: middle;
+}
+
+/* Group-position border-radius — derived from each button's place in its group.
+   Rules only take effect when the button is rendered standalone (outside a real
+   Bootstrap .btn-group).  Inside .btn-group Bootstrap's own CSS already applies
+   the correct radii, and the higher-specificity id selector below still agrees
+   with what Bootstrap would do, so there is no visual conflict. */
+
+/* First in group: remove right radius */
+#btn-back.pt-btn-preview,
+#btn-drill.pt-btn-preview,
+#btn-zoom-in.pt-btn-preview,
+#btn-fit.pt-btn-preview,
+#btn-order-asc.pt-btn-preview,
+#btn-rotate.pt-btn-preview,
+#btn-mode-nodes.pt-btn-preview,
+#btn-reroot.pt-btn-preview,
+#btn-hide.pt-btn-preview,
+#btn-collapse-clade.pt-btn-preview,
+#btn-apply-user-colour.pt-btn-preview,
+#btn-highlight-clade.pt-btn-preview {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* Last in group: remove left radius */
+#btn-forward.pt-btn-preview,
+#btn-home.pt-btn-preview,
+#btn-zoom-out.pt-btn-preview,
+#btn-fit-labels.pt-btn-preview,
+#btn-order-desc.pt-btn-preview,
+#btn-rotate-all.pt-btn-preview,
+#btn-mode-branches.pt-btn-preview,
+#btn-temporal-root.pt-btn-preview,
+#btn-show.pt-btn-preview,
+#btn-expand-clade.pt-btn-preview,
+#btn-clear-user-colour.pt-btn-preview,
+#btn-clear-highlights.pt-btn-preview {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/* Middle of group: remove all radius */
+#btn-climb.pt-btn-preview,
+#btn-midpoint-root.pt-btn-preview,
+#btn-temporal-root-global.pt-btn-preview {
+  border-radius: 0;
+}
+
+/* ── Filter box preview ──────────────────────────────────────────────────── */
+.pt-filter-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  vertical-align: middle;
+}
+/* Use span elements for the filter group containers so they render inline */
+.pt-filter-preview .pt-filter-group {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  border: 1px solid var(--pt-border);
+  border-radius: 4px;
+  background: var(--pt-surface-input);
+}
+.pt-filter-preview .pt-named-filter-wrap {
+  display: inline-flex;
+  align-items: center;
+}

@@ -97,7 +97,7 @@ PearTree reads **NEXUS** (`.nex`, `.nexus`, `.tre`, `.tree`, `.treefile`) and **
 
 ### Opening a File
 
-Click the **open** button <img src="images/open_button.png" style="width:28px;"/> in the toolbar, or press **⌘O**, to open the *Open Tree File* dialog.
+Click the **open** button {% include btn.html id="btn-open-tree" %} in the toolbar, or press **⌘O**, to open the *Open Tree File* dialog.
 
 Three tabs are available:
 
@@ -152,7 +152,7 @@ Tree files embed per-tip metadata written by the inference tool (e.g. BEAST post
 
 ### Importing a CSV or TSV File
 
-Click the annotation-import button <img src="images/load_annotations_button.png" style="width:28px;"/> in the toolbar or press **⌘⇧A**.
+Click the annotation-import button {% include btn.html id="btn-import-annot" %} in the toolbar or press **⌘⇧A**.
 
 > <img src="images/fig11a.png" style="width:320px;"/>
 >
@@ -188,7 +188,7 @@ After import the new annotation keys appear in all *Colour by* dropdowns, the le
 
 ### The Annotation Curator
 
-Open the Annotation Curator from the toolbar (tags button) to review every annotation key currently loaded.
+Open the Annotation Curator {% include btn.html id="btn-curate-annot" %} from the toolbar to review every annotation key currently loaded.
 
 For each key you can:
 
@@ -223,10 +223,10 @@ Toolbar zoom buttons:
 
 | Button | Shortcut | Action |
 |---|---|---|
-| <img src="images/zoom_in_button.png" style="width:28px;"/> | **⌘=** | Zoom in ×1.5 |
-| <img src="images/zoom_out_button.png" style="width:28px;"/> | **⌘−** | Zoom out ×1.5 |
-| <img src="images/show_all_button.png" style="width:28px;"/> | **⌘0** | Fit entire tree to window |
-| <img src="images/show_labels_button.png" style="width:28px;"/> | **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
+| {% include btn.html id="btn-zoom-in" %} | **⌘=** | Zoom in ×1.5 |
+| {% include btn.html id="btn-zoom-out" %} | **⌘−** | Zoom out ×1.5 |
+| {% include btn.html id="btn-fit" %} | **⌘0** | Fit entire tree to window |
+| {% include btn.html id="btn-fit-labels" %} | **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
 
 > **Automatic horizontal scaling:** When zoomed out so far that tip labels are hidden, PearTree expands the tree branches to fill the full canvas width. When you zoom back in enough for labels to become readable, the horizontal scale contracts to make room for them again. This maximises screen use at every zoom level.
 
@@ -240,7 +240,7 @@ Press **⌘0** to return to the full view at any time.
 
 **Double-click** any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node, scaled to fill the full window.
 
-Alternatively, select an internal node and click the drill-down button <img src="images/drill_down_button.png" style="width:28px;"/> or press **⌘⇧.**.
+Alternatively, select an internal node and click the drill-down button {% include btn.html id="btn-drill" %} or press **⌘⇧.**.
 
 > <img src="images/fig7a.png" style="width:440px;"/>
 >
@@ -252,10 +252,10 @@ PearTree maintains a full navigation history:
 
 | Button | Shortcut | Effect |
 |---|---|---|
-| <img src="images/back_button.png" style="width:28px;"/> | **⌘[** | Go back to the previous view |
-| <img src="images/forward_button.png" style="width:28px;"/> | **⌘]** | Go forward in history |
-| <img src="images/climb_up_button.png" style="width:28px;"/> | **⌘⇧,** | Step up one level toward the root |
-| <img src="images/home_button.png" style="width:28px;"/> | **⌘\\** | Return to the full-tree root view |
+| {% include btn.html id="btn-back" %} | **⌘[** | Go back to the previous view |
+| {% include btn.html id="btn-forward" %} | **⌘]** | Go forward in history |
+| {% include btn.html id="btn-climb" %} | **⌘⇧,** | Step up one level toward the root |
+| {% include btn.html id="btn-home" %} | **⌘\\** | Return to the full-tree root view |
 
 > [!TIP]
 > Navigate history like a web browser. Drill down into several different clades in sequence, then press **⌘[** to step back through each view. **⌘]** goes forward again. This makes it easy to compare distant parts of a large tree without re-navigating each time.
@@ -301,8 +301,8 @@ The **Order** buttons sort all clades by descendant count, giving a ladder-like 
 
 | Button | Shortcut | Effect |
 |---|---|---|
-| <img src="images/order_up_button.png" style="width:28px;"/> | **⌘U** | Larger clades toward the top |
-| <img src="images/order_down_button.png" style="width:28px;"/> | **⌘D** | Larger clades toward the bottom |
+| {% include btn.html id="btn-order-asc" %} | **⌘U** | Larger clades toward the top |
+| {% include btn.html id="btn-order-desc" %} | **⌘D** | Larger clades toward the bottom |
 
 > <img src="images/fig3.png" style="width:440px;"/>
 >
@@ -319,8 +319,8 @@ Select an internal node, then use the Rotate buttons:
 
 | Button | Effect |
 |---|---|
-| <img src="images/rotate_branch_button.png" style="width:28px;"/> | Reverse the direct children of the selected node only |
-| <img src="images/rotate_clade_button.png" style="width:28px;"/> | Recursively reverse children at every level within the selected subtree |
+| {% include btn.html id="btn-rotate" %} | Reverse the direct children of the selected node only |
+| {% include btn.html id="btn-rotate-all" %} | Recursively reverse children at every level within the selected subtree |
 
 > <img src="images/fig8a.png" style="width:440px;"/>
 >
@@ -335,7 +335,7 @@ Select an internal node, then use the Rotate buttons:
 Hiding removes a tip or entire subtree from the display without deleting it from the underlying tree. The remaining tree reflows to fill the space.
 
 1. Select a tip or internal node.
-2. Click the **Hide** button (eye-slash icon) in the toolbar.
+2. Click the **Hide** button {% include btn.html id="btn-hide" %} in the toolbar.
 
 > <img src="images/fig9a.png" style="width:440px;"/>
 >
@@ -349,7 +349,7 @@ Hiding removes a tip or entire subtree from the display without deleting it from
 >
 > A subtree selected (top) and after hiding all descendants (bottom).
 
-**Showing hidden nodes:** when any hidden nodes exist in the current view, the **Unhide** button <img src="images/unhide_button.png" style="width:28px;"/> becomes active.
+**Showing hidden nodes:** when any hidden nodes exist in the current view, the **Unhide** button {% include btn.html id="btn-show" %} becomes active.
 
 - **With a node selected** — click Unhide to restore the hidden descendants of that node.
 - **With nothing selected** — click Unhide to restore all hidden nodes at once.
@@ -362,13 +362,13 @@ Hiding removes a tip or entire subtree from the display without deleting it from
 Collapsing replaces a subtree with a filled triangle symbol. Unlike hiding, collapsed clades remain visible as a compact summary with a tip-count label.
 
 1. Select an internal node.
-2. Click the **Collapse** button in the toolbar.
+2. Click the **Collapse** button {% include btn.html id="btn-collapse-clade" %} in the toolbar.
 
 The subtree becomes a filled triangle labelled with the clade name and enclosed tip count.
 
-To expand: click the triangle to select it and click **Expand**, or **double-click the triangle** directly.
+To expand: click the triangle to select it and click **Expand** {% include btn.html id="btn-expand-clade" %}, or **double-click the triangle** directly.
 
-**Changing a triangle's colour:** with a triangle selected, use the colour picker in the toolbar to assign a custom fill colour. The eraser button resets to the theme default.
+**Changing a triangle's colour:** with a triangle selected, use the colour picker in the toolbar to assign a custom fill colour. The eraser button {% include btn.html id="btn-clear-user-colour" %} resets to the theme default.
 
 In the **Visual Options palette**, the **Collapsed Clades** section (visible once any clade has been collapsed) provides:
 
@@ -395,7 +395,7 @@ PearTree has two selection modes. The active mode is shown by which toolbar butt
 - **⌘-click** — add to or remove from the current selection
 - **Click and drag** — drag-select all tips within a rectangular area
 - **⌘A** — select all visible tips
-- **⌘⇧I** — invert the selection (also available as the ⇄ toolbar button)
+- **⌘⇧I** — invert the selection (also available as the {% include btn.html id="btn-invert-selection" %} toolbar button)
 - **Click empty canvas** — clear the selection
 
 > <img src="images/fig6.png" style="width:440px;"/>
@@ -404,7 +404,7 @@ PearTree has two selection modes. The active mode is shown by which toolbar butt
 
 **Branches mode (⌘B)**
 
-Press **⌘B** or click the branch-mode button to switch. Click anywhere along a horizontal branch to place a precise positional marker. This mode enables exact-position rerooting (see [Chapter 10](#chapter-10-rooting)).
+Press **⌘B** or click the branch-mode button {% include btn.html id="btn-mode-branches" %} to switch. Click anywhere along a horizontal branch to place a precise positional marker. This mode enables exact-position rerooting (see [Chapter 10](#chapter-10-rooting)).
 
 > [!TIP]
 > Branches mode is mainly used for precise rerooting. The example EBOV tree is an explicitly-rooted BEAST tree, so rerooting is disabled for it. Use `data/varv_rooted.nwk` or `data/large_tree.tree` to practise rerooting.
@@ -422,7 +422,7 @@ The ad-hoc filter has four parts:
 - **Input box** — type the value/pattern
 - **+ button** — save the current ad-hoc query as a named filter
 
-> <img src="images/filter_box.png" style="width:200px;"/>
+> {% include filter-box.html %}
 
 For example, choose *Name contains* and type `SLE` to select all Sierra Leone EBOV tips:
 
@@ -434,7 +434,7 @@ Press **Escape** or clear the box to remove the filter (the tip selection remain
 
 Click the funnel button beside the filter box to apply a saved named filter. Named filters can be combined with the ad-hoc filter: a tip must pass both to remain selected.
 
-Use **Manage Filters** (funnel button in the toolbar Filter group) to open the Filter Manager dialog. There you can:
+Use **Manage Filters** {% include btn.html id="btn-manage-filters" %} to open the Filter Manager dialog. There you can:
 
 - Create filters with nested **AND/OR** groups
 - Add conditions for string, numeric, categorical, and date fields
@@ -445,7 +445,7 @@ Saved filters are available throughout the Visual Options palette in **Filter** 
 
 ### Node Info
 
-Select any node or tip, then press **⌘I** or click the <img src="images/get_info_button.png" style="width:28px;"/> button. The Node Info dialog lists every annotation on that node — name, divergence, branch length, posterior support, date, and any imported custom fields.
+Select any node or tip, then press **⌘I** or click the {% include btn.html id="btn-node-info" %} button. The Node Info dialog lists every annotation on that node — name, divergence, branch length, posterior support, date, and any imported custom fields.
 
 > <img src="images/fig10.png" style="width:400px;"/>
 >
@@ -455,7 +455,7 @@ Select any node or tip, then press **⌘I** or click the <img src="images/get_in
 
 1. Pick a colour using the colour swatch in the toolbar.
 2. Select one or more tips.
-3. Click the **Apply** button <img src="images/paint_button.png" style="width:28px;"/>.
+3. Click the **Apply** button {% include btn.html id="btn-apply-user-colour" %}.
 
 > <img src="images/fig14.png" style="width:440px;"/>
 >
@@ -463,7 +463,7 @@ Select any node or tip, then press **⌘I** or click the <img src="images/get_in
 
 User colours are stored as a `user_colour` annotation and are available in all *Colour by* dropdowns. When a NEXUS file is exported they travel with it.
 
-To remove: click the **Clear** button <img src="images/eraser_button.png" style="width:28px;"/>. With tips selected, clears only those tips; with nothing selected, clears all user colours in the current view.
+To remove: click the **Clear** button {% include btn.html id="btn-clear-user-colour" %}. With tips selected, clears only those tips; with nothing selected, clears all user colours in the current view.
 
 > [!TIP]
 > Click a colour swatch in a categorical legend to instantly select all tips with that annotation value, wherever they appear in the tree. **⌘-click** additional swatches to add them to the selection. Then apply a user colour, hide, or export that group.
@@ -495,7 +495,7 @@ Changing any individual setting switches the selector to *Custom*. Click **Reset
 
 ### Palette Manager
 
-Click **Manage Palettes** (palette button in the toolbar Filter group) to open the Palette Manager.
+Click **Manage Palettes** {% include btn.html id="btn-manage-palettes" %} to open the Palette Manager.
 
 The manager has two tabs:
 
@@ -667,7 +667,7 @@ Clade highlights draw a translucent coloured shape behind a selected subtree —
 
 **Adding a highlight:**
 1. Select any internal node (its entire descendant clade is highlighted).
-2. Click the **Highlight** button (highlighter icon) in the toolbar.
+2. Click the **Highlight** button {% include btn.html id="btn-highlight-clade" %} in the toolbar.
 
 A translucent shape appears behind all descendants of that node. Multiple independent highlights can be active simultaneously — each is stored separately and can have its own colour.
 
@@ -766,14 +766,14 @@ Rerooting is available for trees that are not explicitly rooted (e.g. raw IQ-TRE
 
 ### Midpoint Root (⌘M)
 
-Press **⌘M** or click **Midpoint** in the toolbar. The tree is rooted at the midpoint of the longest tip-to-tip path — a common exploratory starting point when no outgroup is available.
+Press **⌘M** or click the **Midpoint Root** button {% include btn.html id="btn-midpoint-root" %} in the toolbar. The tree is rooted at the midpoint of the longest tip-to-tip path — a common exploratory starting point when no outgroup is available.
 
 > **Screenshot placeholder** — `data/large_tree.tree` before and after midpoint rerooting, with root repositioned.
 
 ### Rerooting at a Selected Node
 
 1. Select one or more tips (their MRCA defines the branch to root on).
-2. Click the **Reroot** button in the toolbar.
+2. Click the **Reroot** button {% include btn.html id="btn-reroot" %} in the toolbar.
 
 The root is placed at the midpoint of the branch above the MRCA node.
 
@@ -781,7 +781,7 @@ The root is placed at the midpoint of the branch above the MRCA node.
 
 1. Press **⌘B** to enter **Branches** mode.
 2. Click exactly where you want the new root along any branch.
-3. Click **Reroot**.
+3. Click **Reroot** {% include btn.html id="btn-reroot" %}.
 
 > **Screenshot placeholder** — Branch position marker on `data/varv_rooted.nwk`, and the resulting tree after rerooting.
 
@@ -789,7 +789,7 @@ The root is placed at the midpoint of the branch above the MRCA node.
 
 If your tree has tip dates, PearTree can find the root position that best linearises the root-to-tip regression (least-squares RTT regression).
 
-Click **Temporal Root** in the toolbar. Two modes are available (**⌘⇧R** = Local, **⌘R** = Global):
+Click **Temporal Root** {% include btn-group.html ids="btn-temporal-root btn-temporal-root-global" label="Temporal root" %} in the toolbar. Two modes are available (**⌘⇧R** = Local, **⌘R** = Global):
 
 | Mode | Description |
 |---|---|
@@ -813,7 +813,7 @@ The Root-to-Tip (RTT) panel plots each tip's root-to-tip divergence against a ti
 
 *Load `data/ebov.tree` and import `data/ebov.csv` to follow along.*
 
-Click the **RTT** button in the toolbar to open the panel.
+Click the **RTT** button {% include btn.html id="btn-rtt" %} in the toolbar to open the panel.
 
 > **Screenshot placeholder** — EBOV RTT panel showing a strong linear clock signal. Points are colour-coded by country.
 
@@ -910,7 +910,7 @@ In the **RTT** section of the Visual Options palette:
 
 ## Chapter 12: The Data Table Panel
 
-The Data Table panel lists all visible tips in tree order, with one column per annotation. Open it with the table button in the toolbar.
+The Data Table panel lists all visible tips in tree order, with one column per annotation. Open it with the **Data Table** button {% include btn.html id="btn-data-table" %} in the toolbar.
 
 > **Screenshot placeholder** — Data Table panel pinned alongside the EBOV tree, showing tip names and imported annotation columns.
 
@@ -943,7 +943,7 @@ By default all annotation columns are shown. Rename keys in the Annotation Curat
 
 ### Exporting the Tree File
 
-Click the **export tree** button (or press **⌘S**) to save the tree.
+Click the **export tree** button {% include btn.html id="btn-export-tree" %} (or press **⌘S**) to save the tree.
 
 > <img src="images/fig17.png" style="width:360px;"/>
 >
@@ -961,7 +961,7 @@ Click the **export tree** button (or press **⌘S**) to save the tree.
 
 ### Exporting a Graphic
 
-Click the **export graphic** button (or press **⌘⇧E**) to download an image.
+Click the **export graphic** button {% include btn.html id="btn-export-graphic" %} (or press **⌘⇧E**) to download an image.
 
 > <img src="images/fig18.png" style="width:360px;"/>
 >

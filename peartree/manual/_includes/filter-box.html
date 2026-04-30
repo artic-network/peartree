@@ -1,0 +1,26 @@
+{%- comment -%}
+  filter-box.html — Render the PearTree filter/search box inline in the manual.
+
+  Renders a static (non-interactive) preview of the filter input as it appears
+  in the toolbar, using the same HTML structure and CSS classes as the real control.
+
+  Usage:
+    {% include filter-box.html %}
+
+  No parameters.
+{%- endcomment -%}
+<span class="pt-filter-preview">
+  <span class="pt-filter-group">
+    <span class="pt-filter-col-wrap">
+      <button class="fc-searchin pt-filter-col-btn" title="Search in: Name"><i class="bi bi-tag"></i></button>
+    </span>
+    <span class="pt-filter-col-wrap">
+      <button class="fc-op pt-filter-col-btn" title="Match condition: contains"><i class="bi bi-chevron-down"></i></button>
+    </span>
+    <input type="search" class="fc-input pt-filter-input" placeholder="Name contains…" autocomplete="off" spellcheck="false" readonly>
+    <button class="fc-add pt-filter-col-btn" title="Save as named filter"><i class="bi bi-plus-lg"></i></button>
+  </span>
+  <span class="pt-named-filter-wrap">
+    <button class="fc-named pt-filter-col-btn pt-named-filter-btn" title="Apply a saved filter"><i class="bi bi-funnel"></i></button>
+  </span>
+</span>

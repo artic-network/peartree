@@ -1,0 +1,18 @@
+{%- comment -%}
+  btn-group.html — Render a PearTree toolbar button group inline in the manual.
+
+  Wraps multiple btn.html buttons in a Bootstrap .btn-group span so borders
+  merge and radii are handled automatically by Bootstrap's group CSS.
+
+  Usage (Jekyll / Eleventy Liquid):
+    {% include btn-group.html ids="btn-back btn-forward" label="Navigate history" %}
+    {% include btn-group.html ids="btn-drill btn-climb btn-home" label="Navigate subtree" %}
+
+  Parameters:
+    ids    (required)  — space-separated list of button ids
+    label  (optional)  — aria-label for the group (defaults to "Button group")
+{%- endcomment -%}
+
+{%- assign _items = include.ids | split: " " -%}
+{%- assign _label = include.label | default: "Button group" -%}
+<span class="btn-group pt-btngrp-preview" role="group" aria-label="{{ _label }}">{%- for _bid in _items %}{% include btn.html id=_bid %}{%- endfor -%}</span>
