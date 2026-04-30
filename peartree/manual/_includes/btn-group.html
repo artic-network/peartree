@@ -13,6 +13,6 @@
     label  (optional)  — aria-label for the group (defaults to "Button group")
 {%- endcomment -%}
 
-{%- assign _items = include.ids | split: " " -%}
-{%- assign _label = include.label | default: "Button group" -%}
-<span class="btn-group pt-btngrp-preview" role="group" aria-label="{{ _label }}">{%- for _bid in _items %}{% include btn.html id=_bid %}{%- endfor -%}</span>
+{%- assign _items = ids | split: " " -%}
+{%- assign _label = label | default: "Button group" -%}
+<span class="btn-group pt-btngrp-preview" role="group" aria-label="{{ _label }}">{%- for _bid in _items %}{%- include 'btn.html', id: _bid -%}{%- endfor -%}</span>
