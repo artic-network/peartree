@@ -14,26 +14,26 @@
 
 .pt-figure-panel {
   display: inline-block;
+  /* max-width and background are set via inline style by the include */
   max-width: 100%;
   border: 1px solid var(--pt-border, rgba(255,255,255,0.15));
-  border-radius: 6px;
-  padding: 12px;
+  border-radius: 8px;
+  padding: 14px;
   overflow: hidden;
 }
 
 .pt-figure-panel img {
   display: block;
-  max-width: 100%;
+  width: 100%;
   height: auto;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 .pt-figure figcaption {
-  margin-top: 0.3rem;
-  font-size: 0.9rem;
+  margin-top: 0.55rem;
+  font-size: 0.85rem;
   color: var(--bs-secondary-color, rgba(255,255,255,0.55));
   line-height: 1.5;
-  max-width: 100%;
 }
 
 /* Demo container — gives each mockup a distinct inset background */
@@ -73,10 +73,10 @@
   overflow: visible !important;
 }
 
-/* Also block pointer on all form controls inside demos */
+/* Also block pointer on all form controls inside demos (but allow hover on preview buttons) */
 .pt-ui-demo input,
 .pt-ui-demo select,
-.pt-ui-demo button:not(.pt-modal-close) {
+.pt-ui-demo button:not(.pt-modal-close):not(.pt-btn-preview) {
   pointer-events: none;
 }
 
@@ -102,7 +102,8 @@
 
 /* ── Toolbar button previews ─────────────────────────────────────────────────
    Used by {% include btn.html id="..." %} and {% include btn-group.html ... %}
-   in the manual.  Buttons render in their enabled state and are non-interactive.
+   in the manual.  Buttons render in their enabled state with hover effects matching
+   the real toolbar, but clicks do nothing (no JS handlers are attached).
 ────────────────────────────────────────────────────────────────────────────── */
 
 /* Inline button/group spacing — add a small left margin so buttons don't abut text */
@@ -111,15 +112,25 @@
   margin-left: 0.25em;
 }
 
+/* pearcore.css is not loaded in the manual — define the tokens it would provide */
+:root {
+  --pt-surface:       rgba(255,255,255,0.05);
+  --pt-surface-focus: rgba(255,255,255,0.12);
+}
+
 /* Replicate .pt-toolbar .btn overrides; keep opacity 1 regardless of [disabled] */
 .pt-btn-preview {
   background: var(--pt-surface) !important;
   padding: 0.12rem 0.3rem !important;
   font-size: 0.90rem !important;
   line-height: 1.4 !important;
-  pointer-events: none;
   opacity: 1 !important;
   vertical-align: middle;
+  cursor: default;
+  transition: background 0.1s;
+}
+.pt-btn-preview:hover {
+  background: var(--pt-surface-focus) !important;
 }
 
 /* Group-position border-radius — derived from each button's place in its group.
