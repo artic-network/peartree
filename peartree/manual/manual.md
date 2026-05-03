@@ -48,7 +48,7 @@ This manual covers the full feature set of PearTree, organised by topic. Each ch
 
 When a tree is loaded the interface has four main areas:
 
-{% include 'figure.html', src: "images/fig2a.png", alt: "EBOV example tree loaded", maxwidth: "550px", legend: "EBOV example tree loaded. The toolbar runs along the top, the canvas fills the centre, and the status bar sits at the bottom. The Visual Options palette is shown toggled open on the right. Other panels such as the metadata table and temporal signal (root-to-tip) plot open on the right." %}
+{% include 'figure.html', src: "images/app_window.png", alt: "EBOV example tree loaded", maxwidth: "550px", border: "none", padding: "0", legend: "EBOV example tree loaded. The toolbar runs along the top, the canvas fills the centre, and the status bar sits at the bottom. The Visual Options palette is shown toggled open on the right. Other panels such as the metadata table and temporal signal (root-to-tip) plot open on the right." %}
 
 ### Toolbar
 
