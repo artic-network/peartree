@@ -149,7 +149,9 @@ Drag a CSV or TSV file onto the drop zone, or click *Choose file* to browse. In 
 https://artic-network.github.io/peartree/docs/data/ebov.csv
 ```
 
-> **Desktop app note:** A system file chooser appears instead of the URL tab. The EBOV annotation file can be downloaded from the URL above and then selected in the file chooser.
+{% note %}
+For the desktop app, a system file chooser appears instead of the URL tab. The EBOV annotation file can be downloaded from the URL above and then selected in the file chooser.
+{% endnote %}
 
 #### Match Configuration
 
@@ -163,7 +165,7 @@ PearTree can match the entire tip label string, or just one pipe-delimited (`|`)
 
 After clicking **Import**, a summary reports how many tips were matched.
 
-{% include 'figure.html', src: "images/import_matches.png", alt: "Import summary", maxwidth: "320px", bg: "#083642", legend: "Import summary confirming all 1610 tips matched." %}
+{% include 'figure.html', src: "images/import_summary.png", alt: "Import summary", maxwidth: "460px", bg: "#083642", legend: "Import summary confirming all 1610 tips matched." %}
 
 After import the new annotation keys appear in all *Colour by* dropdowns, the legend selector, and the Node Info dialog.
 
@@ -173,17 +175,17 @@ Open the Annotation Manager {%- include 'btn.html', id: "btn-curate-annot" %} fr
 
 {% include 'dialog-annotation-manager.html', maxwidth: "800px" %}
 
-For each key you can:
+For each annotation you can:
 
 | Action | Description |
 |---|---|
-| **Rename** | Give a key a more readable display label |
+| **Rename** | Give an annotation a more readable display label |
 | **Change type** | Switch between *categorical* and *real* (continuous numeric) |
-| **Palette** | Open colour settings for the key (palette choice and numeric scale mode) |
-| **Branch annotation** | Mark a key as belonging to branches rather than nodes — affects how values move when rerooting (see [Appendix C](#appendix-c-bootstrap-values-branch-annotations-and-rerooting)) |
+| **Palette** | Open colour settings for the annotation (palette choice and numeric scale mode) |
+| **Branch annotation** | Mark an annotation as belonging to branches rather than nodes — affects how values move when rerooting (see [Appendix C](#appendix-c-bootstrap-values-branch-annotations-and-rerooting)) |
 
 {% tip %}
-If your tree uses a non-standard name for bootstrap values (e.g. `UFBoot` from IQ-TREE), open the Curator and tick **Branch annotation** for that key so PearTree handles it correctly when rerooting.
+If your tree uses a non-standard name for bootstrap values (e.g. `UFBoot` from IQ-TREE), open the Annotation Manager and tick **Branch annotation** for that key so PearTree handles it correctly when rerooting.
 {% endtip %}
 
 ### Parse Tip Names
