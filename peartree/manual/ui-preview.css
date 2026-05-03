@@ -191,10 +191,6 @@
   border-radius: 4px;
   background: var(--pt-surface-input);
 }
-.pt-filter-preview .pt-named-filter-wrap {
-  display: inline-flex;
-  align-items: center;
-}
 
 /* ── Tip callout box ─────────────────────────────────────────────────────── */
 .pt-tip-box {

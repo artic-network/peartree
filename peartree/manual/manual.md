@@ -322,9 +322,12 @@ Press **⌘B** again to return to Nodes mode.
 
 Typing into the filter box in the toolbar is the quickest way to select tips by name or annotation value. Choose a field and operator from the buttons to the left of the input, then type a value — matching tips are selected immediately.
 
-> {%- include 'filter-box.html' -%}
+
 
 For example, choose *Name contains* and type `SLE` to select all Sierra Leone EBOV tips. Press **Escape** or clear the box to remove the filter (the selection remains in place).
+
+{% include 'filter-box.html', contents: "SLE" -%}<br />
+<br />
 
 For the full set of filter operators, saved named filters, and the Filter Manager, see [Chapter 9](#chapter-9-filtering).
 
