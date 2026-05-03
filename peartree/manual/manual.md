@@ -232,7 +232,9 @@ Toolbar zoom buttons:
 | {%- include 'btn.html', id: "btn-fit" %} | **⌘0** | Fit entire tree to window |
 | {%- include 'btn.html', id: "btn-fit-labels" %} | **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
 
-> **Automatic horizontal scaling:** When zoomed out so far that tip labels are hidden, PearTree expands the tree branches to fill the full canvas width. When you zoom back in enough for labels to become readable, the horizontal scale contracts to make room for them again. 
+{% note %}
+**Automatic horizontal scaling:** When zoomed out so far that tip labels are hidden, PearTree expands the tree branches to fill the full canvas width. When you zoom back in enough for labels to become readable, the horizontal scale contracts to make room for them again. 
+{% endnote %}
 
 {% include 'figure.html', src: "images/fig4.png", alt: "EBOV tree zoomed in", maxwidth: "440px", legend: "EBOV tree zoomed in to show individual tip labels." %}
 

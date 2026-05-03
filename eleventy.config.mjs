@@ -9,6 +9,12 @@ export default function (eleventyConfig) {
     return `<aside class="pt-tip-box"><span class="pt-tip-label"><i class="bi bi-lightbulb-fill"></i> Tip</span>\u00a0${rendered}</aside>`;
   });
 
+  // ── Paired shortcode: {% note %}...{% endnote %} ────────────────────────
+  eleventyConfig.addPairedShortcode("note", function (content) {
+    const rendered = _mdLib ? _mdLib.renderInline(content.trim()) : content;
+    return `<aside class="pt-note-box"><span class="pt-note-label"><i class="bi bi-info-circle-fill"></i> Note</span>\u00a0${rendered}</aside>`;
+  });
+
   // ── Passthrough copies ──────────────────────────────────────────────────
   // Assets referenced by the page.html layout (paths are project-root relative)
   eleventyConfig.addPassthroughCopy({ "pearcore/vendor/bootstrap.min-artic.css": "css/bootstrap.min-artic.css" });

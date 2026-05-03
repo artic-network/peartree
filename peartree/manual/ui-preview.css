@@ -213,3 +213,22 @@
   white-space: nowrap;
   margin-right: 0.1em;
 }
+
+/* ── Note callout box ────────────────────────────────────────────────────── */
+.pt-note-box {
+  border-left: 3px solid var(--pt-gold);
+  background: rgba(181, 137, 0, 0.08);
+  border-radius: 0 5px 5px 0;
+  padding: 0.6rem 1rem 0.6rem 0.9rem;
+  margin: 1.25rem 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  display: block;
+  color: var(--pt-text);
+}
+.pt-note-label {
+  font-weight: 700;
+  color: var(--pt-gold);
+  white-space: nowrap;
+  margin-right: 0.1em;
+}
