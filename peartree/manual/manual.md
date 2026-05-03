@@ -32,12 +32,13 @@ This manual covers the full feature set of PearTree, organised by topic. Each ch
 6. [Selecting and Filtering](#chapter-6-selecting-and-filtering)
 7. [Organising the Tree](#chapter-7-organising-the-tree)
 8. [Decorating the Tree](#chapter-8-decorating-the-tree)
-9. [The Time Axis](#chapter-9-the-time-axis)
-10. [Rooting](#chapter-10-rooting)
-11. [The Root-to-Tip Panel](#chapter-11-the-root-to-tip-panel)
-12. [The Data Table Panel](#chapter-12-the-data-table-panel)
-13. [Exporting](#chapter-13-exporting)
-14. [Settings and Persistence](#chapter-14-settings-and-persistence)
+9. [Filtering](#chapter-9-filtering)
+10. [The Time Axis](#chapter-10-the-time-axis)
+11. [Rooting](#chapter-11-rooting)
+12. [The Root-to-Tip Panel](#chapter-12-the-root-to-tip-panel)
+13. [The Data Table Panel](#chapter-13-the-data-table-panel)
+14. [Exporting](#chapter-14-exporting)
+15. [Settings and Persistence](#chapter-15-settings-and-persistence)
 15. [Appendix A: Keyboard Shortcuts](#appendix-a-keyboard-shortcuts)
 16. [Appendix B: Visual Options Reference](#appendix-b-visual-options-reference)
 17. [Appendix C: Bootstrap Values and Branch Annotations](#appendix-c-bootstrap-values-branch-annotations-and-rerooting)
@@ -130,7 +131,7 @@ You can share a link that opens a remote tree automatically. Append `?treeUrl=<U
 
 ### Opening a NEXUS File with Embedded Settings
 
-If a NEXUS file was exported from PearTree with **Embed settings** ticked (see [Chapter 13](#chapter-13-exporting)), opening it restores the full visual appearance automatically — theme, palette choices, colouring, legends, and axis configuration.
+If a NEXUS file was exported from PearTree with **Embed settings** ticked (see [Chapter 14](#chapter-14-exporting)), opening it restores the full visual appearance automatically — theme, palette choices, colouring, legends, and axis configuration.
 
 
 ## Chapter 3: Importing Annotations
@@ -305,11 +306,11 @@ PearTree has two selection modes. The active mode is shown by which toolbar butt
 - **⌘⇧I** — invert the selection (also available as the {%- include 'btn.html', id: "btn-invert-selection" %} toolbar button)
 - **Click empty canvas** — clear the selection
 
-{% include 'figure.html', src: "images/fig6.png", alt: "Tips selected with MRCA ring", maxwidth: "440px", legend: "A group of tips selected (highlighted) with MRCA ring visible on their most recent common ancestral node." %}
+{% include 'figure.html', src: "images/select_clade.png", alt: "Tips selected with MRCA ring", maxwidth: "80%", bg: "#EAE8E1", legend: "A group of tips selected (highlighted in blue) with MRCA ring visible on their most recent common ancestral node (highlighted in red)." %}
 
 **Branches mode (⌘B)**
 
-Press **⌘B** or click the branch-mode button {%- include 'btn.html', id: "btn-mode-branches" %} to switch. Click anywhere along a horizontal branch to place a precise positional marker. This mode enables exact-position rerooting (see [Chapter 10](#chapter-10-rooting)).
+Press **⌘B** or click the branch-mode button {%- include 'btn.html', id: "btn-mode-branches" %} to switch. Click anywhere along a horizontal branch to place a precise positional marker. This mode enables exact-position rerooting (see [Chapter 11](#chapter-11-rooting)).
 
 {% tip %}
 Branches mode is mainly used for precise rerooting. The example EBOV tree is an explicitly-rooted BEAST tree, so rerooting is disabled for it. Use `data/varv_rooted.nwk` or `data/large_tree.tree` to practise rerooting.
@@ -317,39 +318,15 @@ Branches mode is mainly used for precise rerooting. The example EBOV tree is an 
 
 Press **⌘B** again to return to Nodes mode.
 
-### Filtering Tips
+### Selecting with the Filter Box
 
-The filter controls in the toolbar instantly select visible tips using ad-hoc or saved rules.
-
-The ad-hoc filter has four parts:
-
-- **Search field button** — choose which field to query (*Name* or an annotation key)
-- **Operator button** — choose the match rule (*contains*, *starts with*, numeric comparisons, date comparisons, regex, etc.)
-- **Input box** — type the value/pattern
-- **+ button** — save the current ad-hoc query as a named filter
+Typing into the filter box in the toolbar is the quickest way to select tips by name or annotation value. Choose a field and operator from the buttons to the left of the input, then type a value — matching tips are selected immediately.
 
 > {%- include 'filter-box.html' -%}
 
-For example, choose *Name contains* and type `SLE` to select all Sierra Leone EBOV tips:
+For example, choose *Name contains* and type `SLE` to select all Sierra Leone EBOV tips. Press **Escape** or clear the box to remove the filter (the selection remains in place).
 
-{% include 'figure.html', src: "images/filter_box_SLE.png", alt: "Filter box with SLE entered", maxwidth: "200px" %}
-
-Press **Escape** or clear the box to remove the filter (the tip selection remains).
-
-### Named Filters and the Filter Manager
-
-Click the funnel button beside the filter box to apply a saved named filter. Named filters can be combined with the ad-hoc filter: a tip must pass both to remain selected.
-
-Use **Manage Filters** {%- include 'btn.html', id: "btn-manage-filters" %} to open the Filter Manager dialog. There you can:
-
-- Create filters with nested **AND/OR** groups
-- Add conditions for string, numeric, categorical, and date fields
-- Edit or delete existing filters
-- Import/export filter sets as JSON
-
-{% include 'dialog-filter-manager.html', maxwidth: "820px" %}
-
-Saved filters are available throughout the Visual Options palette in **Filter** dropdowns for tip labels, branch labels, node labels, tip shapes, node shapes, and node bars. Each feature's filter is applied only when that feature is enabled.
+For the full set of filter operators, saved named filters, and the Filter Manager, see [Chapter 9](#chapter-9-filtering).
 
 ### Node Info
 
@@ -680,7 +657,44 @@ The *Outline subtree* left edge combined with *Outline tips* right edge creates 
 {% endtip %}
 
 
-## Chapter 9: The Time Axis
+## Chapter 9: Filtering
+
+### Quick Filter
+
+The filter controls in the toolbar instantly select visible tips using ad-hoc or saved rules.
+
+The ad-hoc filter has four parts:
+
+- **Search field button** — choose which field to query (*Name* or an annotation key)
+- **Operator button** — choose the match rule (*contains*, *starts with*, numeric comparisons, date comparisons, regex, etc.)
+- **Input box** — type the value/pattern
+- **+ button** — save the current ad-hoc query as a named filter
+
+> {%- include 'filter-box.html' -%}
+
+For example, choose *Name contains* and type `SLE` to select all Sierra Leone EBOV tips:
+
+{% include 'figure.html', src: "images/filter_box_SLE.png", alt: "Filter box with SLE entered", maxwidth: "200px" %}
+
+Press **Escape** or clear the box to remove the filter (the tip selection remains).
+
+### Named Filters and the Filter Manager
+
+Click the funnel button beside the filter box to apply a saved named filter. Named filters can be combined with the ad-hoc filter: a tip must pass both to remain selected.
+
+Use **Manage Filters** {%- include 'btn.html', id: "btn-manage-filters" %} to open the Filter Manager dialog. There you can:
+
+- Create filters with nested **AND/OR** groups
+- Add conditions for string, numeric, categorical, and date fields
+- Edit or delete existing filters
+- Import/export filter sets as JSON
+
+{% include 'dialog-filter-manager.html', maxwidth: "820px" %}
+
+Saved filters are available throughout the Visual Options palette in **Filter** dropdowns for tip labels, branch labels, node labels, tip shapes, node shapes, and node bars. Each feature's filter is applied only when that feature is enabled.
+
+
+## Chapter 10: The Time Axis
 
 The axis adds a scale bar along the bottom of the canvas. Load the EBOV example tree to follow along — it carries a `date` annotation on each tip.
 
@@ -741,7 +755,7 @@ For Weeks ticks: *Component* shows `W01`–`W53`; *Full* and *Partial* both show
 {% include 'figure.html', src: "images/fig15.png", alt: "EBOV tree with time axis", maxwidth: "280px", legend: "EBOV tree with time axis. Major ticks = Years, labels = Partial." %}
 
 
-## Chapter 10: Rooting
+## Chapter 11: Rooting
 
 Rerooting is available for trees that are not explicitly rooted (e.g. raw IQ-TREE or RAxML output). For explicitly-rooted trees such as BEAST timed trees, rerooting is disabled.
 
@@ -790,7 +804,7 @@ Use **Global** temporal root on a fresh unrooted tree to find the best root de n
 When you reroot a tree, bootstrap support values (and other branch annotations) are correctly relocated to follow their branches. See [Appendix C](#appendix-c-bootstrap-values-branch-annotations-and-rerooting) for a full explanation of how this works.
 
 
-## Chapter 11: The Root-to-Tip Panel
+## Chapter 12: The Root-to-Tip Panel
 
 The Root-to-Tip (RTT) panel plots each tip's root-to-tip divergence against a tip-date annotation, with a linear regression overlay. It is the standard visual tool for assessing clock-like signal in a timed phylogeny and identifying outlier sequences.
 
@@ -891,7 +905,7 @@ Select outlier tips in the RTT scatter plot (click their points or drag-select a
 {% endtip %}
 
 
-## Chapter 12: The Data Table Panel
+## Chapter 13: The Data Table Panel
 
 The Data Table panel lists all visible tips in tree order, with one column per annotation. Open it with the **Data Table** button {%- include 'btn.html', id: "btn-data-table" %} in the toolbar.
 
@@ -922,7 +936,7 @@ The Data Table is the fastest way to find a specific tip by name in a large tree
 {% endtip %}
 
 
-## Chapter 13: Exporting
+## Chapter 14: Exporting
 
 ### Exporting the Tree File
 
@@ -960,7 +974,7 @@ Click the **export graphic** button {%- include 'btn.html', id: "btn-export-grap
 SVG exports include branches, labels, shapes, legend strips, and the axis as true vector elements — ideal for publication figures.
 
 
-## Chapter 14: Settings and Persistence
+## Chapter 15: Settings and Persistence
 
 ### Automatic Saving
 
@@ -972,7 +986,7 @@ Click **Reset to defaults** at the bottom of the Visual Options palette to resto
 
 ### Embedding Settings in a NEXUS File
 
-Export a NEXUS file with **Embed settings** ticked (see [Chapter 13](#chapter-13-exporting)) to bundle all current visual settings with the tree data. Opening that file in PearTree on any machine restores the full appearance, making this the recommended way to share a tree with its visual configuration.
+Export a NEXUS file with **Embed settings** ticked (see [Chapter 14](#chapter-14-exporting)) to bundle all current visual settings with the tree data. Opening that file in PearTree on any machine restores the full appearance, making this the recommended way to share a tree with its visual configuration.
 
 ### Opening a File from the Command Line (Desktop App)
 
