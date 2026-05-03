@@ -337,22 +337,6 @@ Select any node or tip, then press **⌘I** or click the {%- include 'btn.html',
 
 {% include 'figure.html', src: "images/fig10.png", alt: "Node Info dialog", maxwidth: "400px", legend: "Node Info dialog for a selected EBOV tip." %}
 
-### Applying User Colours
-
-1. Pick a colour using the colour swatch in the toolbar.
-2. Select one or more tips.
-3. Click the **Apply** button {%- include 'btn.html', id: "btn-apply-user-colour" %}.
-
-{% include 'figure.html', src: "images/fig14.png", alt: "Tips highlighted in orange", maxwidth: "440px", legend: "Tips dated from July–September 2015 highlighted in orange." %}
-
-User colours are stored as a `user_colour` annotation and are available in all *Colour by* dropdowns. When a NEXUS file is exported they travel with it.
-
-To remove: click the **Clear** button {%- include 'btn.html', id: "btn-clear-user-colour" %}. With tips selected, clears only those tips; with nothing selected, clears all user colours in the current view.
-
-{% tip %}
-Click a colour swatch in a categorical legend to instantly select all tips with that annotation value, wherever they appear in the tree. **⌘-click** additional swatches to add them to the selection. Then apply a user colour, hide, or export that group.
-{% endtip %}
-
 
 ## Chapter 7: Organising the Tree
 
@@ -459,6 +443,22 @@ Collapse the uninteresting parts of a large tree into triangles so the important
 All visual controls live in the **Visual Options palette**. Open it with the sliders button in the status bar or press **Tab**. Controls are organised into collapsible sections.
 
 *This chapter uses the EBOV example tree with the `ebov.csv` annotations imported (see [Chapter 3](#chapter-3-importing-annotations)).*
+
+### Applying User Colours
+
+1. Pick a colour using the colour swatch in the toolbar.
+2. Select one or more tips.
+3. Click the **Apply** button {%- include 'btn.html', id: "btn-apply-user-colour" %}.
+
+{% include 'figure.html', src: "images/fig14.png", alt: "Tips highlighted in orange", maxwidth: "440px", legend: "Tips dated from July–September 2015 highlighted in orange." %}
+
+User colours are stored as a `user_colour` annotation and are available in all *Colour by* dropdowns. When a NEXUS file is exported they travel with it.
+
+To remove: click the **Clear** button {%- include 'btn.html', id: "btn-clear-user-colour" %}. With tips selected, clears only those tips; with nothing selected, clears all user colours in the current view.
+
+{% tip %}
+Click a colour swatch in a categorical legend to instantly select all tips with that annotation value, wherever they appear in the tree. **⌘-click** additional swatches to add them to the selection. Then apply a user colour, hide, or export that group.
+{% endtip %}
 
 ### Themes
 
@@ -673,17 +673,17 @@ The ad-hoc filter has four parts:
 - **Input box** — type the value/pattern
 - **+ button** — save the current ad-hoc query as a named filter
 
-> {%- include 'filter-box.html' -%}
 
 For example, choose *Name contains* and type `SLE` to select all Sierra Leone EBOV tips:
 
-{% include 'figure.html', src: "images/filter_box_SLE.png", alt: "Filter box with SLE entered", maxwidth: "200px" %}
+{% include 'filter-box.html', contents: "SLE" -%}<br />
+<br />
 
 Press **Escape** or clear the box to remove the filter (the tip selection remains).
 
 ### Named Filters and the Filter Manager
 
-Click the funnel button beside the filter box to apply a saved named filter. Named filters can be combined with the ad-hoc filter: a tip must pass both to remain selected.
+Click the funnel button {%- include 'btn.html', id: "btn-named-filter" %} beside the filter box to apply a saved named filter. Named filters can be combined with the ad-hoc filter: a tip must pass both to remain selected.
 
 Use **Manage Filters** {%- include 'btn.html', id: "btn-manage-filters" %} to open the Filter Manager dialog. There you can:
 

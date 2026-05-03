@@ -1,9 +1,18 @@
+import markdownItAnchor from "markdown-it-anchor";
+
 export default function (eleventyConfig) {
+  // ── markdown-it-anchor: add id= to every heading ───────────────────────
+  // Slug matches the TOC link format: lowercase, colon/punctuation stripped, spaces → dashes
+  const slugify = s => s.toLowerCase().replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-");
+
   // ── Paired shortcode: {% tip %}...{% endtip %} ──────────────────────────
   // Renders a styled tip callout box. Content is processed as inline Markdown
   // so bold, code, and links all work without writing HTML by hand.
   let _mdLib;
-  eleventyConfig.amendLibrary("md", lib => { _mdLib = lib; });
+  eleventyConfig.amendLibrary("md", lib => {
+    _mdLib = lib;
+    lib.use(markdownItAnchor, { slugify, level: [2, 3, 4] });
+  });
   eleventyConfig.addPairedShortcode("tip", function (content) {
     const rendered = _mdLib ? _mdLib.renderInline(content.trim()) : content;
     return `<aside class="pt-tip-box"><span class="pt-tip-label"><i class="bi bi-lightbulb-fill"></i> Tip</span>\u00a0${rendered}</aside>`;
