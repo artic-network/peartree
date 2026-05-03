@@ -21,7 +21,6 @@ This manual covers the full feature set of PearTree, organised by topic. Each ch
 >
 > All features described in this manual work in both versions unless noted.
 
----
 
 ## Contents
 
@@ -44,7 +43,6 @@ This manual covers the full feature set of PearTree, organised by topic. Each ch
 17. [Appendix C: Bootstrap Values and Branch Annotations](#appendix-c-bootstrap-values-branch-annotations-and-rerooting)
 18. [Appendix D: URL Parameters and Sharing](#appendix-d-url-parameters-and-sharing)
 
----
 
 ## Chapter 1: The Interface at a Glance
 
@@ -87,7 +85,6 @@ Runs along the bottom. Shows live annotation values for the tip or node under th
 
 The tree drawing fills all available space between the toolbar and status bar. Zoom and scroll with the mouse or trackpad. The tip labels are not shown unless zoomed to a level that they don't overlap.
 
----
 
 ## Chapter 2: Loading Trees
 
@@ -144,7 +141,6 @@ When no tree is loaded, the canvas shows the startup screen with direct **Open�
 
 If a NEXUS file was exported from PearTree with **Embed settings** ticked (see [Chapter 13](#chapter-13-exporting)), opening it restores the full visual appearance automatically — theme, palette choices, colouring, legends, and axis configuration.
 
----
 
 ## Chapter 3: Importing Annotations
 
@@ -202,7 +198,6 @@ For each key you can:
 > [!TIP]
 > If your tree uses a non-standard name for bootstrap values (e.g. `UFBoot` from IQ-TREE), open the Curator and tick **Branch annotation** for that key so PearTree handles it correctly when rerooting.
 
----
 
 ## Chapter 4: Navigating the Tree
 
@@ -219,7 +214,8 @@ For each key you can:
 | **⌘↑ / ⌘↓** | Scroll one page |
 | **⌘⇧↑ / ⌘⇧↓** | Jump to the top or bottom of the tree |
 
-Toolbar zoom buttons:
+Toolbar zoom buttons: 
+{% include 'btn-group.html', ids: "btn-zoom-in btn-zoom-out btn-fit btn-fit-labels", label: "Zoom" %}
 
 | Button | Shortcut | Action |
 |---|---|---|
@@ -250,6 +246,7 @@ Alternatively, select an internal node and click the drill-down button {%- inclu
 
 PearTree maintains a full navigation history:
 
+Navigation tools: {% include 'btn-group.html', ids: "btn-back btn-forward btn-climb btn-home", label: "Navigation" %}
 | Button | Shortcut | Effect |
 |---|---|---|
 | {%- include 'btn.html', id: "btn-back" %} | **⌘[** | Go back to the previous view |
@@ -259,8 +256,6 @@ PearTree maintains a full navigation history:
 
 > [!TIP]
 > Navigate history like a web browser. Drill down into several different clades in sequence, then press **⌘[** to step back through each view. **⌘]** goes forward again. This makes it easy to compare distant parts of a large tree without re-navigating each time.
-
----
 
 ## Chapter 5: The Hyperbolic Lens
 
@@ -291,7 +286,6 @@ Peak magnification caps at the *Fit Labels* spacing level, so labels in the expa
 > [!TIP]
 > The hyperbolic lens is ideal for large trees where fully zooming in would hide the context. Hold **~**, move to the region of interest, release to lock the focus, then interact with the expanded section. Press **Escape** when done.
 
----
 
 ## Chapter 6: Organising the Tree
 
@@ -380,7 +374,6 @@ In the **Visual Options palette**, the **Collapsed Clades** section (visible onc
 > [!TIP]
 > Collapse the uninteresting parts of a large tree into triangles so the important regions fill the canvas with readable labels. Double-click any triangle to re-expand it when needed. Collapsed clades can also be individually coloured to categorise groups at a glance.
 
----
 
 ## Chapter 7: Selecting and Filtering
 
@@ -468,7 +461,6 @@ To remove: click the **Clear** button {%- include 'btn.html', id: "btn-clear-use
 > [!TIP]
 > Click a colour swatch in a categorical legend to instantly select all tips with that annotation value, wherever they appear in the tree. **⌘-click** additional swatches to add them to the selection. Then apply a user colour, hide, or export that group.
 
----
 
 ## Chapter 8: Decorating the Tree
 
@@ -692,7 +684,6 @@ In the **Clade Highlights** section of the palette:
 > [!TIP]
 > The *Outline subtree* left edge combined with *Outline tips* right edge creates a tight polygon that traces the exact profile of the clade — useful for complex, non-rectangular subtrees. Collapsed clades inside the highlight are treated correctly: the shape extends to the full tip of the triangle.
 
----
 
 ## Chapter 9: The Time Axis
 
@@ -756,7 +747,6 @@ For Weeks ticks: *Component* shows `W01`–`W53`; *Full* and *Partial* both show
 >
 > EBOV tree with time axis. Major ticks = Years, labels = Partial.
 
----
 
 ## Chapter 10: Rooting
 
@@ -805,7 +795,6 @@ Click **Temporal Root** {%- include 'btn-group.html', ids: "btn-temporal-root bt
 
 When you reroot a tree, bootstrap support values (and other branch annotations) are correctly relocated to follow their branches. See [Appendix C](#appendix-c-bootstrap-values-branch-annotations-and-rerooting) for a full explanation of how this works.
 
----
 
 ## Chapter 11: The Root-to-Tip Panel
 
@@ -906,7 +895,6 @@ In the **RTT** section of the Visual Options palette:
 > [!TIP]
 > Select outlier tips in the RTT scatter plot (click their points or drag-select a region), then click **Hide** in the main toolbar to remove them from the tree. This is the fastest way to clean a dataset for clock analysis.
 
----
 
 ## Chapter 12: The Data Table Panel
 
@@ -937,7 +925,6 @@ By default all annotation columns are shown. Rename keys in the Annotation Curat
 > [!TIP]
 > The Data Table is the fastest way to find a specific tip by name in a large tree. Open the panel, scan the sorted list or use your browser's in-page find (Ctrl/Cmd+F), click the row — the canvas scrolls and selects the tip automatically.
 
----
 
 ## Chapter 13: Exporting
 
@@ -975,7 +962,6 @@ Click the **export graphic** button {%- include 'btn.html', id: "btn-export-grap
 
 SVG exports include branches, labels, shapes, legend strips, and the axis as true vector elements — ideal for publication figures.
 
----
 
 ## Chapter 14: Settings and Persistence
 
@@ -1001,7 +987,6 @@ open -a PearTree /path/to/my.nwk
 
 If PearTree is already running, the file opens in a new window. On Windows, drag the file onto the PearTree icon in the taskbar, or use **Open With** from the Explorer context menu.
 
----
 
 ## Appendix A: Keyboard Shortcuts
 
@@ -1040,7 +1025,6 @@ If PearTree is already running, the file opens in a new window. On Windows, drag
 | **⌘⇧−** | Contract lens flat zone |
 | **Escape** | Dismiss lens / close dialog / clear selection |
 
----
 
 ## Appendix B: Visual Options Reference
 
@@ -1244,7 +1228,6 @@ If PearTree is already running, the file opens in a new window. On Windows, drag
 | Major / minor ticks | Tick intervals (heterochronous mode only) |
 | Major / minor labels | Label format (heterochronous mode only) |
 
----
 
 ## Appendix C: Bootstrap Values, Branch Annotations, and Rerooting
 
@@ -1277,7 +1260,6 @@ When you reroot on a new branch, PearTree updates all branch annotation values a
 
 Multiple sequential reroots are handled correctly. BEAST trees carry posterior as a **node** annotation (not a branch annotation), and rerooting is disabled for them in any case.
 
----
 
 ## Appendix D: URL Parameters and Sharing
 

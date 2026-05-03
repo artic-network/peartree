@@ -104,6 +104,12 @@
    in the manual.  Buttons render in their enabled state and are non-interactive.
 ────────────────────────────────────────────────────────────────────────────── */
 
+/* Inline button/group spacing — add a small left margin so buttons don't abut text */
+.pt-btn-preview,
+.pt-btngrp-preview {
+  margin-left: 0.25em;
+}
+
 /* Replicate .pt-toolbar .btn overrides; keep opacity 1 regardless of [disabled] */
 .pt-btn-preview {
   background: var(--pt-surface) !important;

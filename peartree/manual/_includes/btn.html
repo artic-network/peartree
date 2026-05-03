@@ -157,4 +157,4 @@
 {%- elsif _b == "btn-data-table" -%}<i class="bi bi-caret-left"></i><i class="bi bi-layout-sidebar-reverse"></i>
 {%- elsif _b == "btn-rtt" -%}<i class="bi bi-caret-left"></i><i class="bi bi-graph-up-arrow"></i>
 {%- endif -%}
-{%- endcapture -%}<button class="btn btn-sm {{ _v }}{{ _act }} pt-btn-preview" id="{{ _b }}" title="{{ _t }}">{{ _ico }}</button>
+{%- endcapture -%}{%- capture _btn -%}<button class="btn btn-sm {{ _v }}{{ _act }} pt-btn-preview" id="{{ _b }}" title="{{ _t }}">{{ _ico }}</button>{%- endcapture -%}{{ _btn -}}
