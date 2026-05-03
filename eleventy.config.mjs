@@ -5,6 +5,8 @@ export default function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "peartree/css/peartree.css": "css/peartree.css" });
   // ui-preview.css is referenced as /manual/ui-preview.css
   eleventyConfig.addPassthroughCopy({ "peartree/manual/ui-preview.css": "manual/ui-preview.css" });
+  // Logo (referenced as /logo/ in the manual and layout)
+  eleventyConfig.addPassthroughCopy({ "logo": "logo" });
   // Images for favicon / logo
   eleventyConfig.addPassthroughCopy({ "peartree/img": "img" });
   // Manual images
@@ -25,3 +27,4 @@ export default function (eleventyConfig) {
     templateFormats: ["md", "html"],
   };
 }
+
