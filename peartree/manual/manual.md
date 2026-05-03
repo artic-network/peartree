@@ -122,7 +122,7 @@ Click a dataset card to load it immediately.
 
 When no tree is loaded, the canvas shows the startup screen with direct **Open…** and **Example…** buttons.
 
-{% include 'figure.html', src: "images/fig1a.png", alt: "Startup screen", maxwidth: "220px", legend: "Startup screen." %}
+{% include 'figure.html', src: "images/startup.png", alt: "Startup screen", maxwidth: "220px", bg: "#02292E", legend: "Startup screen." %}
 
 > [!TIP]
 > You can share a link that opens a remote tree automatically. Append `?treeUrl=<URL>` to the PearTree web address — anyone who follows the link has the tree loaded immediately with no upload required. See [Appendix D](#appendix-d-url-parameters-and-sharing) for details.
@@ -140,9 +140,7 @@ Tree files embed per-tip metadata written by the inference tool (e.g. BEAST post
 
 Click the annotation-import button {%- include 'btn.html', id: "btn-import-annot" %} in the toolbar or press **⌘⇧A**.
 
-{% include 'dialog-import-annot.html', phase: "pick", maxwidth: "480px" %}
-
-{% include 'figure.html', src: "images/fig11a.png", alt: "Import Annotations dialog", maxwidth: "320px", legend: "Import Annotations dialog." %}
+{% include 'dialog-import-annot.html', phase: "pick", maxwidth: "480px", legend: "Import Annotations dialog." %}
 
 Drag a CSV or TSV file onto the drop zone, or click *Choose file* to browse. In the web app you can also switch to the *URL* tab and paste a public URL directly — for example the EBOV annotation file used in this manual:
 
@@ -156,9 +154,7 @@ https://artic-network.github.io/peartree/docs/data/ebov.csv
 
 After selecting the file a configuration step appears. Choose which column in the metadata file identifies each tip:
 
-{% include 'dialog-import-annot.html', phase: "config", maxwidth: "480px" %}
-
-{% include 'figure.html', src: "images/fig11b.png", alt: "Import configuration", maxwidth: "320px", legend: "Import configuration: choose the column that matches tip labels, and toggle which columns to import." %}
+{% include 'dialog-import-annot.html', phase: "config", maxwidth: "480px", legend: "Import configuration: choose the column that matches tip labels, and toggle which columns to import." %}
 
 PearTree can match the entire tip label string, or just one pipe-delimited (`|`) field within it. For the EBOV example, select field 2 (`lab-id`) to match the second segment of each label.
 
@@ -166,7 +162,7 @@ PearTree can match the entire tip label string, or just one pipe-delimited (`|`)
 
 After clicking **Import**, a summary reports how many tips were matched.
 
-{% include 'figure.html', src: "images/fig11c.png", alt: "Import summary", maxwidth: "320px", legend: "Import summary confirming all 1610 tips matched." %}
+{% include 'figure.html', src: "images/import_matches.png", alt: "Import summary", maxwidth: "320px", bg: "#083642", legend: "Import summary confirming all 1610 tips matched." %}
 
 After import the new annotation keys appear in all *Colour by* dropdowns, the legend selector, and the Node Info dialog.
 

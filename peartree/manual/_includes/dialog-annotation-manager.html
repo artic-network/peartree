@@ -31,21 +31,21 @@
               <td class="ca-center" style="color:var(--pt-text-subdued);font-size:0.72rem">T</td>
               <td><span style="color:var(--pt-text-dim)">—</span></td>
               <td><span style="color:var(--pt-text-dim)">—</span></td>
-              <td class="ca-center"><input type="checkbox" checked title="Show in data table panel" style="cursor:pointer;accent-color:var(--pt-teal)"></td>
+              <td class="ca-center"><input type="checkbox" class="ca-table-chk" checked title="Show in data table panel" style="cursor:pointer;accent-color:var(--pt-teal,#2aa198)"></td>
               <td class="ca-center"><span style="color:var(--pt-text-dim)" title="Cannot be deleted">—</span></td>
             </tr>
             <tr class="selected">
               <td><span class="ca-name">country</span></td>
-              <td><span class="ca-badge ca-badge-categorical">categorical</span></td>
+              <td><span class="ca-type-badge ca-type-categorical">categorical</span></td>
               <td class="ca-center" style="color:var(--pt-text-subdued);font-size:0.72rem">T</td>
               <td><span style="color:var(--pt-text-subdued)">3 values</span></td>
               <td><span style="color:var(--pt-text-dim)">—</span></td>
-              <td class="ca-center"><input type="checkbox" checked style="cursor:pointer;accent-color:var(--pt-teal)"></td>
+              <td class="ca-center"><input type="checkbox" class="ca-table-chk" checked style="cursor:pointer;accent-color:var(--pt-teal,#2aa198)"></td>
               <td class="ca-center"><button class="ca-del-btn" title="Delete annotation"><i class="bi bi-trash3"></i></button></td>
             </tr>
             <tr>
               <td><span class="ca-name">date</span></td>
-              <td><span class="ca-badge ca-badge-categorical">date</span></td>
+              <td><span class="ca-type-badge ca-type-date">date</span></td>
               <td class="ca-center" style="color:var(--pt-text-subdued);font-size:0.72rem">T</td>
               <td><span style="font-family:monospace">2014-06-06</span>
                 <span style="color:var(--pt-text-muted);padding:0 3px">…</span>
@@ -53,16 +53,16 @@
               <td><span style="font-family:monospace;color:var(--pt-text-subdued)">2014-06-06</span>
                 <span style="color:var(--pt-text-muted);padding:0 3px">…</span>
                 <span style="font-family:monospace;color:var(--pt-text-subdued)">2015-09-18</span></td>
-              <td class="ca-center"><input type="checkbox" checked style="cursor:pointer;accent-color:var(--pt-teal)"></td>
+              <td class="ca-center"><input type="checkbox" class="ca-table-chk" checked style="cursor:pointer;accent-color:var(--pt-teal,#2aa198)"></td>
               <td class="ca-center"><button class="ca-del-btn" title="Delete annotation"><i class="bi bi-trash3"></i></button></td>
             </tr>
             <tr>
               <td><span class="ca-name">lineage</span></td>
-              <td><span class="ca-badge ca-badge-categorical">categorical</span></td>
+              <td><span class="ca-type-badge ca-type-categorical">categorical</span></td>
               <td class="ca-center" style="color:var(--pt-text-subdued);font-size:0.72rem">T</td>
               <td><span style="color:var(--pt-text-subdued)">5 values</span></td>
               <td><span style="color:var(--pt-text-dim)">—</span></td>
-              <td class="ca-center"><input type="checkbox" style="cursor:pointer;accent-color:var(--pt-teal)"></td>
+              <td class="ca-center"><input type="checkbox" class="ca-table-chk" style="cursor:pointer;accent-color:var(--pt-teal,#2aa198)"></td>
               <td class="ca-center"><button class="ca-del-btn" title="Delete annotation"><i class="bi bi-trash3"></i></button></td>
             </tr>
           </tbody>
@@ -74,17 +74,24 @@
         <div class="ca-row">
           <label class="ca-row-lbl">Type</label>
           <select class="ca-sel">
-            <option selected>Categorical</option>
-            <option>Integer</option>
-            <option>Real</option>
-            <option>Date</option>
+            <option value="categorical" selected>categorical</option>
           </select>
         </div>
         <div class="ca-section-lbl" style="margin-top:10px">Values <span class="ca-hint">3 distinct</span></div>
         <div class="ca-row" style="flex-wrap:wrap;gap:4px 0">
-          <span class="ca-badge ca-badge-categorical me-1">GIN</span>
-          <span class="ca-badge ca-badge-categorical me-1">LBR</span>
-          <span class="ca-badge ca-badge-categorical me-1">SLE</span>
+          <span class="ca-mono" style="margin-right:6px">GIN</span>
+          <span class="ca-mono" style="margin-right:6px">LBR</span>
+          <span class="ca-mono" style="margin-right:6px">SLE</span>
+        </div>
+        <div class="ca-section-lbl" style="margin-top:10px">Behaviour</div>
+        <div class="ca-row">
+          <label class="ca-chk-lbl"><input type="checkbox"> Branch annotation
+            <span class="ca-hint">(stored on descendant; describes the branch above it — transferred on reroot)</span>
+          </label>
+        </div>
+        <div class="ca-section-lbl" style="margin-top:10px">Colours</div>
+        <div class="ca-row">
+          <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-palette2 me-1"></i>Configure colours…</button>
         </div>
       </div>
     </div>
