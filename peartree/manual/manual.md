@@ -29,8 +29,8 @@ This manual covers the full feature set of PearTree, organised by topic. Each ch
 3. [Importing Annotations](#chapter-3-importing-annotations)
 4. [Navigating the Tree](#chapter-4-navigating-the-tree)
 5. [The Hyperbolic Lens](#chapter-5-the-hyperbolic-lens)
-6. [Organising the Tree](#chapter-6-organising-the-tree)
-7. [Selecting and Filtering](#chapter-7-selecting-and-filtering)
+6. [Selecting and Filtering](#chapter-6-selecting-and-filtering)
+7. [Organising the Tree](#chapter-7-organising-the-tree)
 8. [Decorating the Tree](#chapter-8-decorating-the-tree)
 9. [The Time Axis](#chapter-9-the-time-axis)
 10. [Rooting](#chapter-10-rooting)
@@ -309,7 +309,7 @@ PearTree has two selection modes. The active mode is shown by which toolbar butt
 
 **Branches mode (⌘B)**
 
-Press **⌘B** or click the branch-mode button {%- include 'btn.html', id: "btn-mode-branches" %} to switch. Click anywhere along a horizontal branch to place a precise positional marker. This mode enables exact-position rerooting (see [Chapter 11](#chapter-11-rooting)).
+Press **⌘B** or click the branch-mode button {%- include 'btn.html', id: "btn-mode-branches" %} to switch. Click anywhere along a horizontal branch to place a precise positional marker. This mode enables exact-position rerooting (see [Chapter 10](#chapter-10-rooting)).
 
 {% tip %}
 Branches mode is mainly used for precise rerooting. The example EBOV tree is an explicitly-rooted BEAST tree, so rerooting is disabled for it. Use `data/varv_rooted.nwk` or `data/large_tree.tree` to practise rerooting.
