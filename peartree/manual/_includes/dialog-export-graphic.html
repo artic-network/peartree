@@ -1,0 +1,54 @@
+{%- comment -%}
+  dialog-export-graphic.html — Export Graphic dialog preview
+  Parameters:
+    format    (optional) — "svg" (default) or "png"
+    maxwidth  (optional) — CSS max-width of the wrapper (default: "400px")
+{%- endcomment -%}
+{%- assign _fmt = format | default: "svg" -%}
+{%- assign _mw  = maxwidth | default: "400px" -%}
+{%- assign _legend = legend | default: "" -%}
+<div class="pt-ui-demo pt-ui-demo--dialog" style="max-width:{{ _mw }}">
+  <div class="pt-modal pt-modal--demo">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-image me-2"></i>Export Graphic</h5>
+      <button class="pt-modal-close-btn" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body">
+      <div class="expg-row">
+        <span class="expg-label">Filename</span>
+        <input type="text" class="expg-input" value="tree" readonly>
+        <span style="font-size:0.82rem;color:var(--bs-secondary-color);flex-shrink:0">{% if _fmt == "png" %}.png{% else %}.svg{% endif %}</span>
+      </div>
+      <div class="expg-row">
+        <span class="expg-label">Format</span>
+        <div class="expg-radios">
+          <label class="expg-radio"><input type="radio" name="expg-fmt" {% if _fmt == "svg" %}checked{% endif %}>&nbsp;SVG (vector)</label>
+          <label class="expg-radio"><input type="radio" name="expg-fmt" {% if _fmt == "png" %}checked{% endif %}>&nbsp;PNG (raster)</label>
+        </div>
+      </div>
+      <div class="expg-row">
+        <span class="expg-label">View</span>
+        <div class="expg-radios">
+          <label class="expg-radio"><input type="radio" name="expg-view" checked>&nbsp;Current view</label>
+          <label class="expg-radio"><input type="radio" name="expg-view">&nbsp;Full tree</label>
+        </div>
+      </div>
+      <div class="expg-row">
+        <span class="expg-label">Background</span>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" checked>&nbsp;Include background colour
+        </label>
+      </div>
+      {%- if _fmt == "png" -%}
+      <div style="border-top:1px solid var(--pt-border);padding-top:0.75rem;margin-top:0.3rem">
+        <p class="expg-hint">Output size: 2560 &times; 1440 px (2&times; current viewport)</p>
+      </div>
+      {%- endif -%}
+    </div>
+    <div class="pt-modal-footer">
+      <button class="btn btn-sm btn-secondary">Cancel</button>
+      <button class="btn btn-sm btn-primary"><i class="bi bi-download me-1"></i>Download</button>
+    </div>
+  </div>
+</div>
+{%- if _legend -%}<p class="pt-ui-demo-legend">{{ _legend }}</p>{%- endif -%}

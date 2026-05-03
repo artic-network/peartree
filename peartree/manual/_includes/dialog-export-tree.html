@@ -1,0 +1,73 @@
+{%- comment -%}
+  dialog-export-tree.html — Export Tree dialog preview
+  Parameters:
+    format    (optional) — active format: "nexus" (default), "newick", or "csv"
+    maxwidth  (optional) — CSS max-width of the wrapper (default: "420px")
+{%- endcomment -%}
+{%- assign _fmt = format | default: "nexus" -%}
+{%- assign _mw  = maxwidth | default: "420px" -%}
+{%- assign _legend = legend | default: "" -%}
+<div class="pt-ui-demo pt-ui-demo--dialog" style="max-width:{{ _mw }}">
+  <div class="pt-modal pt-modal--demo">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-file-earmark-arrow-down me-2"></i>Export Tree</h5>
+      <button class="pt-modal-close-btn" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body">
+      <div class="exp-section">
+        <span class="exp-section-label">Format</span>
+        <div class="exp-radio-group">
+          <label class="exp-radio-opt"><input type="radio" name="exp-format" {% if _fmt == "nexus" %}checked{% endif %}>&nbsp;NEXUS <span style="color:var(--bs-secondary-color);font-size:0.78rem">(.nexus)</span></label>
+          <label class="exp-radio-opt"><input type="radio" name="exp-format" {% if _fmt == "newick" %}checked{% endif %}>&nbsp;Newick <span style="color:var(--bs-secondary-color);font-size:0.78rem">(.nwk)</span></label>
+          <label class="exp-radio-opt"><input type="radio" name="exp-format" {% if _fmt == "csv" %}checked{% endif %}>&nbsp;CSV metadata <span style="color:var(--bs-secondary-color);font-size:0.78rem">(.csv)</span></label>
+        </div>
+      </div>
+      {%- if _fmt == "nexus" or _fmt == "newick" -%}
+      <div class="exp-section">
+        <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;cursor:pointer">
+          <input type="checkbox" checked>
+          <span>Embed current visual settings in file</span>
+        </label>
+      </div>
+      <div class="exp-section">
+        <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;cursor:pointer">
+          <input type="checkbox" checked>
+          <span>Embed view state (collapsed clades, highlights)</span>
+        </label>
+      </div>
+      {%- endif -%}
+      <div class="exp-section">
+        <span class="exp-section-label">Scope</span>
+        <div class="exp-radio-group">
+          <label class="exp-radio-opt"><input type="radio" name="exp-scope" checked>&nbsp;Entire tree</label>
+          <label class="exp-radio-opt exp-disabled"><input type="radio" name="exp-scope" disabled>&nbsp;Current subtree view</label>
+        </div>
+      </div>
+      <div class="exp-section">
+        <span class="exp-section-label" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Annotations to include</span>
+          <span style="display:flex;gap:0.3rem">
+            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.7rem;padding:1px 8px;line-height:1.4">All</button>
+            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.7rem;padding:1px 8px;line-height:1.4">None</button>
+          </span>
+        </span>
+        <div class="imp-col-grid" style="margin-top:0.35rem">
+          <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.82rem;cursor:pointer;white-space:nowrap">
+            <input type="checkbox" checked> <code>country</code>
+          </label>
+          <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.82rem;cursor:pointer;white-space:nowrap">
+            <input type="checkbox" checked> <code>date</code>
+          </label>
+          <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.82rem;cursor:pointer;white-space:nowrap">
+            <input type="checkbox" checked> <code>lineage</code>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="pt-modal-footer">
+      <button class="btn btn-sm btn-secondary">Cancel</button>
+      <button class="btn btn-sm btn-primary"><i class="bi bi-download me-1"></i>Download</button>
+    </div>
+  </div>
+</div>
+{%- if _legend -%}<p class="pt-ui-demo-legend">{{ _legend }}</p>{%- endif -%}

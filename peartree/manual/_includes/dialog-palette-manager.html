@@ -1,0 +1,157 @@
+{%- comment -%}
+  dialog-palette-manager.html — Palette Manager dialog preview
+  Parameters:
+    tab       (optional) — "categorical" (default) or "continuous"
+    maxwidth  (optional) — CSS max-width of the wrapper (default: "860px")
+{%- endcomment -%}
+{%- assign _tab = tab | default: "categorical" -%}
+{%- assign _mw  = maxwidth | default: "860px" -%}
+{%- assign _legend = legend | default: "" -%}
+<div class="pt-ui-demo pt-ui-demo--dialog-wide" style="max-width:{{ _mw }}">
+  <div class="pt-modal pm-modal pt-modal--demo" style="width:100%">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-palette me-2"></i>Palette Manager</h5>
+      <button class="pt-modal-close-btn" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body pm-modal-body" style="padding:0;display:flex;flex-direction:column;overflow:hidden">
+      <div class="pm-tabs">
+        <div class="pm-tab{% if _tab == 'categorical' %} active{% endif %}">Categorical</div>
+        <div class="pm-tab{% if _tab == 'continuous' %} active{% endif %}">Continuous</div>
+      </div>
+      <div class="pm-split">
+        <div class="pm-list-pane">
+          <div class="pm-list-header">
+            <span class="pm-list-title">Palettes</span>
+            <button class="btn btn-xs btn-primary"><i class="bi bi-plus me-1"></i>New</button>
+          </div>
+          <div class="pm-list">
+            {%- if _tab == "categorical" -%}
+            <div class="pm-list-row pm-builtin active">
+              <div class="pm-list-info">
+                <span class="pm-list-name">Solarized</span>
+                <div class="pm-list-preview">
+                  <span class="pm-mini-swatch" style="background:#268bd2"></span>
+                  <span class="pm-mini-swatch" style="background:#2aa198"></span>
+                  <span class="pm-mini-swatch" style="background:#859900"></span>
+                  <span class="pm-mini-swatch" style="background:#b58900"></span>
+                  <span class="pm-mini-swatch" style="background:#cb4b16"></span>
+                  <span class="pm-mini-swatch" style="background:#dc322f"></span>
+                  <span class="pm-mini-swatch" style="background:#d33682"></span>
+                  <span class="pm-mini-swatch" style="background:#6c71c4"></span>
+                </div>
+              </div>
+              <div class="pm-list-actions">
+                <button class="btn btn-xs btn-outline-secondary" title="Duplicate"><i class="bi bi-copy"></i></button>
+              </div>
+            </div>
+            <div class="pm-list-row pm-builtin">
+              <div class="pm-list-info">
+                <span class="pm-list-name">Tableau 10</span>
+                <div class="pm-list-preview">
+                  <span class="pm-mini-swatch" style="background:#4e79a7"></span>
+                  <span class="pm-mini-swatch" style="background:#f28e2b"></span>
+                  <span class="pm-mini-swatch" style="background:#e15759"></span>
+                  <span class="pm-mini-swatch" style="background:#76b7b2"></span>
+                  <span class="pm-mini-swatch" style="background:#59a14f"></span>
+                  <span class="pm-mini-swatch" style="background:#edc948"></span>
+                  <span class="pm-mini-swatch" style="background:#b07aa1"></span>
+                  <span class="pm-mini-swatch" style="background:#ff9da7"></span>
+                </div>
+              </div>
+              <div class="pm-list-actions">
+                <button class="btn btn-xs btn-outline-secondary" title="Duplicate"><i class="bi bi-copy"></i></button>
+              </div>
+            </div>
+            <div class="pm-list-row">
+              <div class="pm-list-info">
+                <span class="pm-list-name">My Custom</span>
+                <div class="pm-list-preview">
+                  <span class="pm-mini-swatch" style="background:#e41a1c"></span>
+                  <span class="pm-mini-swatch" style="background:#377eb8"></span>
+                  <span class="pm-mini-swatch" style="background:#4daf4a"></span>
+                  <span class="pm-mini-swatch" style="background:#984ea3"></span>
+                </div>
+              </div>
+              <div class="pm-list-actions">
+                <button class="btn btn-xs btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-xs btn-outline-secondary" title="Duplicate"><i class="bi bi-copy"></i></button>
+                <button class="btn btn-xs btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+              </div>
+            </div>
+            {%- else -%}
+            <div class="pm-list-row pm-builtin active">
+              <div class="pm-list-info">
+                <span class="pm-list-name">Viridis</span>
+                <div class="pm-list-preview">
+                  <span class="pm-mini-gradient" style="background:linear-gradient(to right, #440154, #31688e, #35b779, #fde725)"></span>
+                </div>
+              </div>
+              <div class="pm-list-actions">
+                <button class="btn btn-xs btn-outline-secondary" title="Duplicate"><i class="bi bi-copy"></i></button>
+              </div>
+            </div>
+            <div class="pm-list-row pm-builtin">
+              <div class="pm-list-info">
+                <span class="pm-list-name">Plasma</span>
+                <div class="pm-list-preview">
+                  <span class="pm-mini-gradient" style="background:linear-gradient(to right, #0d0887, #cc4778, #f89540, #f0f921)"></span>
+                </div>
+              </div>
+              <div class="pm-list-actions">
+                <button class="btn btn-xs btn-outline-secondary" title="Duplicate"><i class="bi bi-copy"></i></button>
+              </div>
+            </div>
+            <div class="pm-list-row pm-builtin">
+              <div class="pm-list-info">
+                <span class="pm-list-name">Inferno</span>
+                <div class="pm-list-preview">
+                  <span class="pm-mini-gradient" style="background:linear-gradient(to right, #000004, #bc3754, #f98c0a, #fcffa4)"></span>
+                </div>
+              </div>
+              <div class="pm-list-actions">
+                <button class="btn btn-xs btn-outline-secondary" title="Duplicate"><i class="bi bi-copy"></i></button>
+              </div>
+            </div>
+            {%- endif -%}
+          </div>
+        </div>
+        <div class="pm-editor-pane">
+          {%- if _tab == "categorical" -%}
+          <div class="pm-editor-header">
+            <div class="pm-name-display">Solarized <span class="pm-builtin-badge">built-in</span></div>
+          </div>
+          <div class="pm-preview-content">
+            <div class="pm-swatch-grid">
+              <div class="pm-swatch-cell"><span class="pm-swatch" style="background:#268bd2"></span><span class="pm-swatch-label">#268bd2</span></div>
+              <div class="pm-swatch-cell"><span class="pm-swatch" style="background:#2aa198"></span><span class="pm-swatch-label">#2aa198</span></div>
+              <div class="pm-swatch-cell"><span class="pm-swatch" style="background:#859900"></span><span class="pm-swatch-label">#859900</span></div>
+              <div class="pm-swatch-cell"><span class="pm-swatch" style="background:#b58900"></span><span class="pm-swatch-label">#b58900</span></div>
+              <div class="pm-swatch-cell"><span class="pm-swatch" style="background:#cb4b16"></span><span class="pm-swatch-label">#cb4b16</span></div>
+              <div class="pm-swatch-cell"><span class="pm-swatch" style="background:#dc322f"></span><span class="pm-swatch-label">#dc322f</span></div>
+              <div class="pm-swatch-cell"><span class="pm-swatch" style="background:#d33682"></span><span class="pm-swatch-label">#d33682</span></div>
+              <div class="pm-swatch-cell"><span class="pm-swatch" style="background:#6c71c4"></span><span class="pm-swatch-label">#6c71c4</span></div>
+            </div>
+          </div>
+          {%- else -%}
+          <div class="pm-editor-header">
+            <div class="pm-name-display">Viridis <span class="pm-builtin-badge">built-in</span></div>
+          </div>
+          <div class="pm-preview-content">
+            <div class="pm-gradient-bar" style="background:linear-gradient(to right, #440154, #31688e, #35b779, #fde725)"></div>
+            <div class="pm-stop-labels">
+              <span class="pm-stop-label"><span class="pm-mini-swatch" style="background:#440154"></span> #440154</span>
+              <span class="pm-stop-label"><span class="pm-mini-swatch" style="background:#31688e"></span> #31688e</span>
+              <span class="pm-stop-label"><span class="pm-mini-swatch" style="background:#35b779"></span> #35b779</span>
+              <span class="pm-stop-label"><span class="pm-mini-swatch" style="background:#fde725"></span> #fde725</span>
+            </div>
+          </div>
+          {%- endif -%}
+        </div>
+      </div>
+    </div>
+    <div class="pt-modal-footer">
+      <button class="btn btn-sm btn-secondary">Close</button>
+    </div>
+  </div>
+</div>
+{%- if _legend -%}<p class="pt-ui-demo-legend">{{ _legend }}</p>{%- endif -%}

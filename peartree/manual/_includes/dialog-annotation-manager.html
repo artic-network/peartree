@@ -1,0 +1,98 @@
+{%- comment -%}
+  dialog-annotation-manager.html — Annotation Curator dialog preview
+  Parameters:
+    maxwidth  (optional) — CSS max-width of the wrapper (default: "800px")
+{%- endcomment -%}
+{%- assign _mw = maxwidth | default: "800px" -%}
+{%- assign _legend = legend | default: "" -%}
+<div class="pt-ui-demo pt-ui-demo--dialog-wide" style="max-width:{{ _mw }}">
+  <div class="pt-modal pt-modal--demo" style="width:100%">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-tags me-2"></i>Annotations</h5>
+      <button class="pt-modal-close-btn" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body" style="padding:0;display:flex;flex-direction:column">
+      <div class="ca-table-wrap">
+        <table class="ca-table">
+          <thead><tr>
+            <th>Annotation</th>
+            <th>Type</th>
+            <th>On</th>
+            <th>Observed range</th>
+            <th>Scale bounds</th>
+            <th title="Show column in data table panel" style="width:36px;text-align:center"><i class="bi bi-layout-sidebar-reverse" style="font-size:0.8rem"></i></th>
+            <th style="width:32px"></th>
+          </tr></thead>
+          <tbody>
+            <tr class="ca-row-fixed">
+              <td><span class="ca-name">Names</span>
+                <span style="margin-left:5px;font-size:0.68rem;color:var(--pt-text-muted);font-style:italic">tip name</span></td>
+              <td><span style="color:var(--pt-text-dim)">—</span></td>
+              <td class="ca-center" style="color:var(--pt-text-subdued);font-size:0.72rem">T</td>
+              <td><span style="color:var(--pt-text-dim)">—</span></td>
+              <td><span style="color:var(--pt-text-dim)">—</span></td>
+              <td class="ca-center"><input type="checkbox" checked title="Show in data table panel" style="cursor:pointer;accent-color:var(--pt-teal)"></td>
+              <td class="ca-center"><span style="color:var(--pt-text-dim)" title="Cannot be deleted">—</span></td>
+            </tr>
+            <tr class="selected">
+              <td><span class="ca-name">country</span></td>
+              <td><span class="ca-badge ca-badge-categorical">categorical</span></td>
+              <td class="ca-center" style="color:var(--pt-text-subdued);font-size:0.72rem">T</td>
+              <td><span style="color:var(--pt-text-subdued)">3 values</span></td>
+              <td><span style="color:var(--pt-text-dim)">—</span></td>
+              <td class="ca-center"><input type="checkbox" checked style="cursor:pointer;accent-color:var(--pt-teal)"></td>
+              <td class="ca-center"><button class="ca-del-btn" title="Delete annotation"><i class="bi bi-trash3"></i></button></td>
+            </tr>
+            <tr>
+              <td><span class="ca-name">date</span></td>
+              <td><span class="ca-badge ca-badge-categorical">date</span></td>
+              <td class="ca-center" style="color:var(--pt-text-subdued);font-size:0.72rem">T</td>
+              <td><span style="font-family:monospace">2014-06-06</span>
+                <span style="color:var(--pt-text-muted);padding:0 3px">…</span>
+                <span style="font-family:monospace">2015-09-18</span></td>
+              <td><span style="font-family:monospace;color:var(--pt-text-subdued)">2014-06-06</span>
+                <span style="color:var(--pt-text-muted);padding:0 3px">…</span>
+                <span style="font-family:monospace;color:var(--pt-text-subdued)">2015-09-18</span></td>
+              <td class="ca-center"><input type="checkbox" checked style="cursor:pointer;accent-color:var(--pt-teal)"></td>
+              <td class="ca-center"><button class="ca-del-btn" title="Delete annotation"><i class="bi bi-trash3"></i></button></td>
+            </tr>
+            <tr>
+              <td><span class="ca-name">lineage</span></td>
+              <td><span class="ca-badge ca-badge-categorical">categorical</span></td>
+              <td class="ca-center" style="color:var(--pt-text-subdued);font-size:0.72rem">T</td>
+              <td><span style="color:var(--pt-text-subdued)">5 values</span></td>
+              <td><span style="color:var(--pt-text-dim)">—</span></td>
+              <td class="ca-center"><input type="checkbox" style="cursor:pointer;accent-color:var(--pt-teal)"></td>
+              <td class="ca-center"><button class="ca-del-btn" title="Delete annotation"><i class="bi bi-trash3"></i></button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ca-detail">
+        <div class="ca-detail-header"><i class="bi bi-tag me-1"></i>country</div>
+        <div class="ca-section-lbl">Interpret as</div>
+        <div class="ca-row">
+          <label class="ca-row-lbl">Type</label>
+          <select class="ca-sel">
+            <option selected>Categorical</option>
+            <option>Integer</option>
+            <option>Real</option>
+            <option>Date</option>
+          </select>
+        </div>
+        <div class="ca-section-lbl" style="margin-top:10px">Values <span class="ca-hint">3 distinct</span></div>
+        <div class="ca-row" style="flex-wrap:wrap;gap:4px 0">
+          <span class="ca-badge ca-badge-categorical me-1">GIN</span>
+          <span class="ca-badge ca-badge-categorical me-1">LBR</span>
+          <span class="ca-badge ca-badge-categorical me-1">SLE</span>
+        </div>
+      </div>
+    </div>
+    <div class="pt-modal-footer">
+      <button class="btn btn-sm btn-outline-secondary me-auto"><i class="bi bi-scissors me-1"></i>Parse Tips</button>
+      <button class="btn btn-sm btn-secondary">Cancel</button>
+      <button class="btn btn-sm btn-primary">Apply</button>
+    </div>
+  </div>
+</div>
+{%- if _legend -%}<p class="pt-ui-demo-legend">{{ _legend }}</p>{%- endif -%}

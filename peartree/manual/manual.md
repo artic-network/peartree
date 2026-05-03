@@ -98,11 +98,12 @@ Three tabs are available:
 
 **File tab** — drag a file onto the drop zone or click *Choose file* to browse.
 
-{% include 'figure.html', src: "images/fig1c.png", alt: "Open Tree File dialog, File tab", bg: "#033940" maxwidth: "320px", legend: "*Open Tree File* dialog, File tab. The file stays on your computer — nothing is uploaded." %}
+{% include 'dialog-open-tree.html', tab: "file", maxwidth: "460px", legend: "<em>Open Tree File</em> dialog, File tab. The file stays on your computer — nothing is uploaded." %}
 
-> **Desktop app note:** In the desktop application, **⌘O** opens the system file chooser directly rather than this dialog.
 
 **URL tab** — paste a public URL to a remote tree file and click *Load from URL*. The remote server must allow cross-origin requests (CORS). GitHub raw URLs (`raw.githubusercontent.com/…`) work out of the box.
+
+{% include 'dialog-open-tree.html', tab: "url", maxwidth: "460px" %}
 
 {% include 'figure.html', src: "images/fig1d.png", alt: "Open Tree File dialog, URL tab", maxwidth: "320px", legend: "*Open Tree File* dialog, URL tab." %}
 
@@ -115,6 +116,8 @@ Three tabs are available:
 | **Variola virus (VARV)** | Smallpox virus (variola) phylogeny |
 
 Click a dataset card to load it immediately.
+
+{% include 'dialog-open-tree.html', tab: "example", maxwidth: "460px" %}
 
 {% include 'figure.html', src: "images/fig1b.png", alt: "Open Tree File dialog, Example tab", maxwidth: "320px", legend: "*Open Tree File* dialog, Example tab." %}
 
@@ -140,6 +143,8 @@ Tree files embed per-tip metadata written by the inference tool (e.g. BEAST post
 
 Click the annotation-import button {%- include 'btn.html', id: "btn-import-annot" %} in the toolbar or press **⌘⇧A**.
 
+{% include 'dialog-import-annot.html', phase: "pick", maxwidth: "480px" %}
+
 {% include 'figure.html', src: "images/fig11a.png", alt: "Import Annotations dialog", maxwidth: "320px", legend: "Import Annotations dialog." %}
 
 Drag a CSV or TSV file onto the drop zone, or click *Choose file* to browse. In the web app you can also switch to the *URL* tab and paste a public URL directly — for example the EBOV annotation file used in this manual:
@@ -153,6 +158,8 @@ https://artic-network.github.io/peartree/docs/data/ebov.csv
 #### Match Configuration
 
 After selecting the file a configuration step appears. Choose which column in the metadata file identifies each tip:
+
+{% include 'dialog-import-annot.html', phase: "config", maxwidth: "480px" %}
 
 {% include 'figure.html', src: "images/fig11b.png", alt: "Import configuration", maxwidth: "320px", legend: "Import configuration: choose the column that matches tip labels, and toggle which columns to import." %}
 
@@ -170,6 +177,8 @@ After import the new annotation keys appear in all *Colour by* dropdowns, the le
 
 Open the Annotation Curator {%- include 'btn.html', id: "btn-curate-annot" %} from the toolbar to review every annotation key currently loaded.
 
+{% include 'dialog-annotation-manager.html', maxwidth: "800px" %}
+
 For each key you can:
 
 | Action | Description |
@@ -181,6 +190,25 @@ For each key you can:
 
 > [!TIP]
 > If your tree uses a non-standard name for bootstrap values (e.g. `UFBoot` from IQ-TREE), open the Curator and tick **Branch annotation** for that key so PearTree handles it correctly when rerooting.
+
+### Parse Tip Names
+
+The **Parse Tips** button at the bottom of the Annotation Curator opens the Parse Tip Names dialog. This extracts a new annotation from tip names by splitting each label on a delimiter.
+
+{% include 'dialog-parse-tips.html', maxwidth: "460px" %}
+
+| Field | Description |
+|---|---|
+| **Name** | The annotation key that will be created |
+| **Delimiter** | The character(s) used to split each tip label (e.g. `\|`, `_`, `-`) |
+| **Field** | Which segment to extract: `1` = first, `2` = second, `-1` = last, etc. |
+| **Type** | Data type for the new annotation — *Auto-detect* examines all values and picks the most specific type |
+| **Missing** | A field value that should be treated as missing data (shown as an empty cell) |
+
+A preview of how three example tip labels will be parsed is shown at the bottom of the dialog.
+
+> [!TIP]
+> Many BEAST and epidemiological tree files encode metadata directly in the tip name using `|` as a separator — for example `EBOV|2014-08-13|SLE|G3732`. Use Parse Tip Names to pull out the country field (`field 3`) or sampling date (`field 2`) as a proper typed annotation without needing a separate CSV file.
 
 
 ## Chapter 4: Navigating the Tree
@@ -291,7 +319,7 @@ Select an internal node, then use the Rotate buttons:
 | {%- include 'btn.html', id: "btn-rotate" %} | Reverse the direct children of the selected node only |
 | {%- include 'btn.html', id: "btn-rotate-all" %} | Recursively reverse children at every level within the selected subtree |
 
-{% include 'figure.html', src: "images/fig8a.png", alt: "Tree before rotation", maxwidth: "440px" %}
+{% include 'figure.html', src: "images/fig8a.png", alt: "Tree before rotation", bg: "#ffffff" maxwidth: "440px" %}
 {% include 'figure.html', src: "images/fig8b.png", alt: "Tree after rotating a single node", maxwidth: "440px" %}
 {% include 'figure.html', src: "images/fig8c.png", alt: "Tree after rotating the entire clade", maxwidth: "440px", legend: "Before and after rotating a single node (middle), and after rotating the entire clade (bottom)." %}
 
@@ -397,6 +425,8 @@ Use **Manage Filters** {%- include 'btn.html', id: "btn-manage-filters" %} to op
 - Edit or delete existing filters
 - Import/export filter sets as JSON
 
+{% include 'dialog-filter-manager.html', maxwidth: "820px" %}
+
 Saved filters are available throughout the Visual Options palette in **Filter** dropdowns for tip labels, branch labels, node labels, tip shapes, node shapes, and node bars. Each feature's filter is applied only when that feature is enabled.
 
 ### Node Info
@@ -452,6 +482,8 @@ The manager has two tabs:
 - **Continuous**: edit gradient palettes either as colour stops or an HSB sweep, with full stop editing and duplication
 
 Built-in palettes are read-only. User palettes are editable, persisted, and immediately available in all *Colour by* controls and legends.
+
+{% include 'dialog-palette-manager.html', tab: "categorical", maxwidth: "860px" %}
 
 ### Annotation Colour Settings
 
@@ -868,6 +900,8 @@ By default all annotation columns are shown. Rename keys in the Annotation Curat
 
 Click the **export tree** button {%- include 'btn.html', id: "btn-export-tree" %} (or press **⌘S**) to save the tree.
 
+{% include 'dialog-export-tree.html', maxwidth: "420px" %}
+
 {% include 'figure.html', src: "images/fig17.png", alt: "Export Tree dialog", maxwidth: "360px", legend: "Export Tree dialog." %}
 
 | Option | Values | Notes |
@@ -883,6 +917,8 @@ Click the **export tree** button {%- include 'btn.html', id: "btn-export-tree" %
 ### Exporting a Graphic
 
 Click the **export graphic** button {%- include 'btn.html', id: "btn-export-graphic" %} (or press **⌘⇧E**) to download an image.
+
+{% include 'dialog-export-graphic.html', maxwidth: "400px" %}
 
 {% include 'figure.html', src: "images/fig18.png", alt: "Export Graphic dialog", maxwidth: "360px", legend: "Export Graphic dialog." %}
 

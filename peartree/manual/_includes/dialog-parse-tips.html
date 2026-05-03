@@ -1,0 +1,60 @@
+{%- comment -%}
+  dialog-parse-tips.html — Parse Tip Names dialog preview
+  Parameters:
+    maxwidth  (optional) — CSS max-width of the wrapper (default: "460px")
+{%- endcomment -%}
+{%- assign _mw = maxwidth | default: "460px" -%}
+{%- assign _legend = legend | default: "" -%}
+<div class="pt-ui-demo pt-ui-demo--dialog" style="max-width:{{ _mw }}">
+  <div class="pt-modal pt-modal--demo">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-scissors me-2"></i>Parse Tip Names</h5>
+      <button class="pt-modal-close-btn" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body">
+      <p style="font-size:0.82rem;color:var(--pt-text-subdued);margin-bottom:14px">Extract an annotation from tip names by splitting on a delimiter.</p>
+      <div class="ca-row" style="margin-bottom:10px">
+        <label class="ca-row-lbl" style="width:80px">Name</label>
+        <input type="text" class="ca-num-input" style="flex:1;width:auto" value="country" placeholder="annotation name" readonly>
+      </div>
+      <div class="ca-row" style="margin-bottom:10px">
+        <label class="ca-row-lbl" style="width:80px">Delimiter</label>
+        <input type="text" class="ca-num-input" style="width:70px;font-family:monospace" value="|" readonly>
+        <span class="ca-hint" style="margin-left:8px">character(s) used to split tip names</span>
+      </div>
+      <div class="ca-row" style="margin-bottom:10px">
+        <label class="ca-row-lbl" style="width:80px">Field</label>
+        <input type="number" class="ca-num-input" style="width:70px" value="2" readonly>
+        <span class="ca-hint" style="margin-left:8px">1 = first &middot; &minus;1 = last</span>
+      </div>
+      <div class="ca-row" style="margin-bottom:10px">
+        <label class="ca-row-lbl" style="width:80px">Type</label>
+        <select class="ca-sel">
+          <option selected>Auto-detect</option>
+          <option>Categorical</option>
+          <option>Integer</option>
+          <option>Real</option>
+          <option>Date</option>
+        </select>
+      </div>
+      <div class="ca-row" style="margin-bottom:10px">
+        <label class="ca-row-lbl" style="width:80px">Missing</label>
+        <input type="text" class="ca-num-input" style="width:70px" value="?" readonly>
+        <span class="ca-hint" style="margin-left:8px">field value treated as missing data</span>
+      </div>
+      <div style="margin-top:14px">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--pt-text-muted);margin-bottom:6px">Example tip labels</div>
+        <div style="font-family:monospace;font-size:0.78rem;color:var(--pt-text-bright);line-height:1.9">
+          <div>EBOV|<strong style="color:var(--pt-gold)">SLE</strong>|2014-10-12 &nbsp;<span style="color:var(--pt-text-muted)">&rarr;&nbsp;SLE</span></div>
+          <div>EBOV|<strong style="color:var(--pt-gold)">GIN</strong>|2014-08-04 &nbsp;<span style="color:var(--pt-text-muted)">&rarr;&nbsp;GIN</span></div>
+          <div>EBOV|<strong style="color:var(--pt-gold)">LBR</strong>|2015-01-22 &nbsp;<span style="color:var(--pt-text-muted)">&rarr;&nbsp;LBR</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="pt-modal-footer">
+      <button class="btn btn-sm btn-secondary">Cancel</button>
+      <button class="btn btn-sm btn-primary">Add Annotation</button>
+    </div>
+  </div>
+</div>
+{%- if _legend -%}<p class="pt-ui-demo-legend">{{ _legend }}</p>{%- endif -%}
