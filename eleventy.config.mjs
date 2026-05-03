@@ -1,4 +1,14 @@
 export default function (eleventyConfig) {
+  // ── Paired shortcode: {% tip %}...{% endtip %} ──────────────────────────
+  // Renders a styled tip callout box. Content is processed as inline Markdown
+  // so bold, code, and links all work without writing HTML by hand.
+  let _mdLib;
+  eleventyConfig.amendLibrary("md", lib => { _mdLib = lib; });
+  eleventyConfig.addPairedShortcode("tip", function (content) {
+    const rendered = _mdLib ? _mdLib.renderInline(content.trim()) : content;
+    return `<aside class="pt-tip-box"><span class="pt-tip-label"><i class="bi bi-lightbulb-fill"></i> Tip</span>\u00a0${rendered}</aside>`;
+  });
+
   // ── Passthrough copies ──────────────────────────────────────────────────
   // Assets referenced by the page.html layout (paths are project-root relative)
   eleventyConfig.addPassthroughCopy({ "pearcore/vendor/bootstrap.min-artic.css": "css/bootstrap.min-artic.css" });

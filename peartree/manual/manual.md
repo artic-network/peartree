@@ -124,8 +124,9 @@ When no tree is loaded, the canvas shows the startup screen with direct **Open�
 
 {% include 'figure.html', src: "images/startup.png", alt: "Startup screen", maxwidth: "220px", bg: "#02292E", legend: "Startup screen." %}
 
-> [!TIP]
-> You can share a link that opens a remote tree automatically. Append `?treeUrl=<URL>` to the PearTree web address — anyone who follows the link has the tree loaded immediately with no upload required. See [Appendix D](#appendix-d-url-parameters-and-sharing) for details.
+{% tip %}
+You can share a link that opens a remote tree automatically. Append `?treeUrl=<URL>` to the PearTree web address — anyone who follows the link has the tree loaded immediately with no upload required. See [Appendix D](#appendix-d-url-parameters-and-sharing) for details.
+{% endtip %}
 
 ### Opening a NEXUS File with Embedded Settings
 
@@ -166,9 +167,9 @@ After clicking **Import**, a summary reports how many tips were matched.
 
 After import the new annotation keys appear in all *Colour by* dropdowns, the legend selector, and the Node Info dialog.
 
-### The Annotation Curator
+### The Annotation Manager
 
-Open the Annotation Curator {%- include 'btn.html', id: "btn-curate-annot" %} from the toolbar to review every annotation key currently loaded.
+Open the Annotation Manager {%- include 'btn.html', id: "btn-curate-annot" %} from the toolbar to review every annotation key currently loaded.
 
 {% include 'dialog-annotation-manager.html', maxwidth: "800px" %}
 
@@ -181,8 +182,9 @@ For each key you can:
 | **Palette** | Open colour settings for the key (palette choice and numeric scale mode) |
 | **Branch annotation** | Mark a key as belonging to branches rather than nodes — affects how values move when rerooting (see [Appendix C](#appendix-c-bootstrap-values-branch-annotations-and-rerooting)) |
 
-> [!TIP]
-> If your tree uses a non-standard name for bootstrap values (e.g. `UFBoot` from IQ-TREE), open the Curator and tick **Branch annotation** for that key so PearTree handles it correctly when rerooting.
+{% tip %}
+If your tree uses a non-standard name for bootstrap values (e.g. `UFBoot` from IQ-TREE), open the Curator and tick **Branch annotation** for that key so PearTree handles it correctly when rerooting.
+{% endtip %}
 
 ### Parse Tip Names
 
@@ -200,8 +202,9 @@ The **Parse Tips** button at the bottom of the Annotation Curator opens the Pars
 
 A preview of how three example tip labels will be parsed is shown at the bottom of the dialog.
 
-> [!TIP]
-> Many BEAST and epidemiological tree files encode metadata directly in the tip name using `|` as a separator — for example `EBOV|2014-08-13|SLE|G3732`. Use Parse Tip Names to pull out the country field (`field 3`) or sampling date (`field 2`) as a proper typed annotation without needing a separate CSV file.
+{% tip %}
+Many BEAST and epidemiological tree files encode metadata directly in the tip name using `|` as a separator — for example `EBOV|G3732|SLE|2014-08-13`. Use Parse Tip Names to pull out the country field (`field 3`) or sampling date (`field 4`) as a proper typed annotation without needing a separate CSV file.
+{% endtip %}
 
 
 ## Chapter 4: Navigating the Tree
@@ -229,7 +232,7 @@ Toolbar zoom buttons:
 | {%- include 'btn.html', id: "btn-fit" %} | **⌘0** | Fit entire tree to window |
 | {%- include 'btn.html', id: "btn-fit-labels" %} | **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
 
-> **Automatic horizontal scaling:** When zoomed out so far that tip labels are hidden, PearTree expands the tree branches to fill the full canvas width. When you zoom back in enough for labels to become readable, the horizontal scale contracts to make room for them again. This maximises screen use at every zoom level.
+> **Automatic horizontal scaling:** When zoomed out so far that tip labels are hidden, PearTree expands the tree branches to fill the full canvas width. When you zoom back in enough for labels to become readable, the horizontal scale contracts to make room for them again. 
 
 {% include 'figure.html', src: "images/fig4.png", alt: "EBOV tree zoomed in", maxwidth: "440px", legend: "EBOV tree zoomed in to show individual tip labels." %}
 
@@ -254,8 +257,9 @@ Navigation tools: {% include 'btn-group.html', ids: "btn-back btn-forward btn-cl
 | {%- include 'btn.html', id: "btn-climb" %} | **⌘⇧,** | Step up one level toward the root |
 | {%- include 'btn.html', id: "btn-home" %} | **⌘\\** | Return to the full-tree root view |
 
-> [!TIP]
-> Navigate history like a web browser. Drill down into several different clades in sequence, then press **⌘[** to step back through each view. **⌘]** goes forward again. This makes it easy to compare distant parts of a large tree without re-navigating each time.
+{% tip %}
+Navigate history like a web browser. Drill down into several different clades in sequence, then press **⌘[** to step back through each view. **⌘]** goes forward again. This makes it easy to compare distant parts of a large tree without re-navigating each time.
+{% endtip %}
 
 ## Chapter 5: The Hyperbolic Lens
 
@@ -281,8 +285,9 @@ The **Lens** ⊕/⊖ buttons in the toolbar (or **⌘⇧=** / **⌘⇧−**) con
 
 Peak magnification caps at the *Fit Labels* spacing level, so labels in the expanded zone never overlap.
 
-> [!TIP]
-> The hyperbolic lens is ideal for large trees where fully zooming in would hide the context. Hold **~**, move to the region of interest, release to lock the focus, then interact with the expanded section. Press **Escape** when done.
+{% tip %}
+The hyperbolic lens is ideal for large trees where fully zooming in would hide the context. Hold **~**, move to the region of interest, release to lock the focus, then interact with the expanded section. Press **Escape** when done.
+{% endtip %}
 
 
 ## Chapter 6: Organising the Tree
@@ -298,8 +303,9 @@ The **Order** buttons sort all clades by descendant count, giving a ladder-like 
 
 {% include 'figure.html', src: "images/fig3.png", alt: "EBOV tree with ascending order", maxwidth: "440px", legend: "EBOV tree with ascending (larger clades upward) order applied." %}
 
-> [!NOTE]
-> Once ordered, the original clade order is lost. You can switch between ascending and descending ordering, or rotate individual nodes manually (see below). Hiding a node (see below) also clears the branch ordering since the tip counts have changed.
+{% tip %}
+Once ordered, the original clade order is lost. You can switch between ascending and descending ordering, or rotate individual nodes manually (see below). Hiding a node (see below) also clears the branch ordering since the tip counts have changed.
+{% endtip %}
 
 ### Rotating Nodes
 
@@ -334,8 +340,9 @@ Hiding removes a tip or entire subtree from the display without deleting it from
 - **With a node selected** — click Unhide to restore the hidden descendants of that node.
 - **With nothing selected** — click Unhide to restore all hidden nodes at once.
 
-> [!TIP]
-> To isolate a subset of tips: type a keyword into the filter box to select all matching tips, press **⌘⇧I** to invert the selection, then click Hide. Everything except your subset disappears. Click Unhide (with nothing selected) when done.
+{% tip %}
+To isolate a subset of tips: type a keyword into the filter box to select all matching tips, press **⌘⇧I** to invert the selection, then click Hide. Everything except your subset disappears. Click Unhide (with nothing selected) when done.
+{% endtip %}
 
 ### Collapsing Clades
 
@@ -357,8 +364,9 @@ In the **Visual Options palette**, the **Collapsed Clades** section (visible onc
 | **Fill opacity** | Translucency of the triangle (0 = transparent, 1 = solid) |
 | **Height (rows)** | Height of the triangle base in tip-row units (1–20) |
 
-> [!TIP]
-> Collapse the uninteresting parts of a large tree into triangles so the important regions fill the canvas with readable labels. Double-click any triangle to re-expand it when needed. Collapsed clades can also be individually coloured to categorise groups at a glance.
+{% tip %}
+Collapse the uninteresting parts of a large tree into triangles so the important regions fill the canvas with readable labels. Double-click any triangle to re-expand it when needed. Collapsed clades can also be individually coloured to categorise groups at a glance.
+{% endtip %}
 
 
 ## Chapter 7: Selecting and Filtering
@@ -383,8 +391,9 @@ PearTree has two selection modes. The active mode is shown by which toolbar butt
 
 Press **⌘B** or click the branch-mode button {%- include 'btn.html', id: "btn-mode-branches" %} to switch. Click anywhere along a horizontal branch to place a precise positional marker. This mode enables exact-position rerooting (see [Chapter 10](#chapter-10-rooting)).
 
-> [!TIP]
-> Branches mode is mainly used for precise rerooting. The example EBOV tree is an explicitly-rooted BEAST tree, so rerooting is disabled for it. Use `data/varv_rooted.nwk` or `data/large_tree.tree` to practise rerooting.
+{% tip %}
+Branches mode is mainly used for precise rerooting. The example EBOV tree is an explicitly-rooted BEAST tree, so rerooting is disabled for it. Use `data/varv_rooted.nwk` or `data/large_tree.tree` to practise rerooting.
+{% endtip %}
 
 Press **⌘B** again to return to Nodes mode.
 
@@ -440,8 +449,9 @@ User colours are stored as a `user_colour` annotation and are available in all *
 
 To remove: click the **Clear** button {%- include 'btn.html', id: "btn-clear-user-colour" %}. With tips selected, clears only those tips; with nothing selected, clears all user colours in the current view.
 
-> [!TIP]
-> Click a colour swatch in a categorical legend to instantly select all tips with that annotation value, wherever they appear in the tree. **⌘-click** additional swatches to add them to the selection. Then apply a user colour, hide, or export that group.
+{% tip %}
+Click a colour swatch in a categorical legend to instantly select all tips with that annotation value, wherever they appear in the tree. **⌘-click** additional swatches to add them to the selection. Then apply a user colour, hide, or export that group.
+{% endtip %}
 
 
 ## Chapter 8: Decorating the Tree
@@ -613,8 +623,9 @@ For categorical annotations a swatch-and-label key is drawn. For continuous nume
 
 Use **Height %** to control what fraction of the panel height each legend occupies.
 
-> [!TIP]
-> Use Legend 1 for a categorical annotation (e.g. country) and Legend 2 with **Position: Below** for a continuous annotation (e.g. posterior support) to display both keys simultaneously in a single neatly stacked column.
+{% tip %}
+Use Legend 1 for a categorical annotation (e.g. country) and Legend 2 with **Position: Below** for a continuous annotation (e.g. posterior support) to display both keys simultaneously in a single neatly stacked column.
+{% endtip %}
 
 ### Clade Highlights
 
@@ -644,8 +655,9 @@ In the **Clade Highlights** section of the palette:
 | **Stroke** | Opacity of the border line |
 | **Width** | Border line thickness (px) |
 
-> [!TIP]
-> The *Outline subtree* left edge combined with *Outline tips* right edge creates a tight polygon that traces the exact profile of the clade — useful for complex, non-rectangular subtrees. Collapsed clades inside the highlight are treated correctly: the shape extends to the full tip of the triangle.
+{% tip %}
+The *Outline subtree* left edge combined with *Outline tips* right edge creates a tight polygon that traces the exact profile of the clade — useful for complex, non-rectangular subtrees. Collapsed clades inside the highlight are treated correctly: the shape extends to the full tip of the triangle.
+{% endtip %}
 
 
 ## Chapter 9: The Time Axis
@@ -747,8 +759,9 @@ Click **Temporal Root** {%- include 'btn-group.html', ids: "btn-temporal-root bt
 | **Local** (default) | Optimises root position only along the current root branch |
 | **Global** | Searches every branch for the best regression fit |
 
-> [!TIP]
-> Use **Global** temporal root on a fresh unrooted tree to find the best root de novo. Use **Local** to fine-tune the position on a branch you have already identified as correct.
+{% tip %}
+Use **Global** temporal root on a fresh unrooted tree to find the best root de novo. Use **Local** to fine-tune the position on a branch you have already identified as correct.
+{% endtip %}
 
 > **Screenshot placeholder** — RTT plot for `data/ebov.tree` before and after temporal rooting, showing improvement in the linear relationship.
 
@@ -853,8 +866,9 @@ In the **RTT** section of the Visual Options palette:
 | Format | Date format for time-calibrated x-axis |
 | Major / minor ticks | Interval and label configuration (same options as the main time axis; shown only in heterochronous mode) |
 
-> [!TIP]
-> Select outlier tips in the RTT scatter plot (click their points or drag-select a region), then click **Hide** in the main toolbar to remove them from the tree. This is the fastest way to clean a dataset for clock analysis.
+{% tip %}
+Select outlier tips in the RTT scatter plot (click their points or drag-select a region), then click **Hide** in the main toolbar to remove them from the tree. This is the fastest way to clean a dataset for clock analysis.
+{% endtip %}
 
 
 ## Chapter 12: The Data Table Panel
@@ -883,8 +897,9 @@ Collapsed clades appear as either one row per enclosed tip or a single placehold
 
 By default all annotation columns are shown. Rename keys in the Annotation Curator for cleaner column headers. When using the [embed API](embedded-api.md), pass `dataTableColumns` to show only specific columns in a fixed order.
 
-> [!TIP]
-> The Data Table is the fastest way to find a specific tip by name in a large tree. Open the panel, scan the sorted list or use your browser's in-page find (Ctrl/Cmd+F), click the row — the canvas scrolls and selects the tip automatically.
+{% tip %}
+The Data Table is the fastest way to find a specific tip by name in a large tree. Open the panel, scan the sorted list or use your browser's in-page find (Ctrl/Cmd+F), click the row — the canvas scrolls and selects the tip automatically.
+{% endtip %}
 
 
 ## Chapter 13: Exporting
@@ -904,8 +919,9 @@ Click the **export tree** button {%- include 'btn.html', id: "btn-export-tree" %
 | **Annotations** | Checkboxes per annotation key | Deselect any keys you do not want to include |
 | **Embed settings** | Checkbox (NEXUS only) | Writes all current visual settings into the file |
 
-> [!TIP]
-> Always tick **Embed settings** when exporting NEXUS files for sharing or archival. The recipient's PearTree will automatically restore the full appearance — colours, legends, axis, theme — when they open the file.
+{% tip %}
+Always tick **Embed settings** when exporting NEXUS files for sharing or archival. The recipient's PearTree will automatically restore the full appearance — colours, legends, axis, theme — when they open the file.
+{% endtip %}
 
 ### Exporting a Graphic
 
