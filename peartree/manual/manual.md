@@ -238,20 +238,19 @@ Toolbar zoom buttons:
 **Automatic horizontal scaling:** When zoomed out so far that tip labels are hidden, PearTree expands the tree branches to fill the full canvas width. When you zoom back in enough for labels to become readable, the horizontal scale contracts to make room for them again. 
 {% endnote %}
 
-{% include 'figure.html', src: "images/fig4.png", alt: "EBOV tree zoomed in", maxwidth: "440px", legend: "EBOV tree zoomed in to show individual tip labels." %}
+{% include 'figure.html', src: "images/zoomed_tree.png", alt: "EBOV tree zoomed in", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV tree zoomed in to show individual tip labels. Only the top portion of the tree is being shown." %}
 
 Press **⌘0** to return to the full view at any time.
 
 ### Subtree Navigation
 
-**Double-click** any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node, scaled to fill the full window.
+**Double-click** any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node, scaled to fill the full window. Alternatively, select an internal node and click the drill-down button {%- include 'btn.html', id: "btn-drill" %} or press **⌘⇧.**.
 
-Alternatively, select an internal node and click the drill-down button {%- include 'btn.html', id: "btn-drill" %} or press **⌘⇧.**.
+{% include 'figure.html', src: "images/select_clade.png", alt: "Subclade before drilling down", maxwidth: "80%", bg: "#EAE8E1", legend: "A subclade is selected."   %}
 
-{% include 'figure.html', src: "images/fig7a.png", alt: "Subclade before drilling down", maxwidth: "440px" %}
-{% include 'figure.html', src: "images/fig7b.png", alt: "Subclade after drilling down", maxwidth: "440px", legend: "A subclade before and after drilling down." %}
+{% include 'figure.html', src: "images/drilldown_clade.png", alt: "Subclade after drilling down", maxwidth: "80%", bg: "#EAE8E1", legend: "The subclade as viewed after drilling down." %}
 
-PearTree maintains a full navigation history:
+PearTree maintains a full navigation history that works like a web browser. Drill down into several different clades in sequence, then press **⌘[** to step back through each view. **⌘]** goes forward again. This makes it easy to compare distant parts of a large tree without re-navigating each time.
 
 Navigation tools: {% include 'btn-group.html', ids: "btn-back btn-forward btn-climb btn-home", label: "Navigation" %}
 | Button | Shortcut | Effect |
@@ -261,10 +260,6 @@ Navigation tools: {% include 'btn-group.html', ids: "btn-back btn-forward btn-cl
 | {%- include 'btn.html', id: "btn-climb" %} | **⌘⇧,** | Step up one level toward the root |
 | {%- include 'btn.html', id: "btn-home" %} | **⌘\\** | Return to the full-tree root view |
 
-{% tip %}
-Navigate history like a web browser. Drill down into several different clades in sequence, then press **⌘[** to step back through each view. **⌘]** goes forward again. This makes it easy to compare distant parts of a large tree without re-navigating each time.
-{% endtip %}
-
 ## Chapter 5: The Hyperbolic Lens
 
 The hyperbolic lens expands a region of the tree to label-readable spacing without losing the surrounding context — the rest of the tree compresses but remains fully visible.
@@ -273,13 +268,13 @@ The hyperbolic lens expands a region of the tree to label-readable spacing witho
 
 Hold **~** (tilde/backtick) and move the cursor over the canvas. The tree distorts around the cursor's vertical position.
 
-{% include 'figure.html', src: "images/fig5.png", alt: "Hyperbolic lens active", maxwidth: "440px", legend: "Lens active: tips near the cursor are spread apart and readable; tips further away are compressed but still visible." %}
+{% include 'figure.html', src: "images/lens_view.png", alt: "Hyperbolic lens active", maxwidth: "80%", bg: "#EAE8E1", legend: "Lens active: tips near the cursor are spread apart and readable; tips further away are compressed but still visible." %}
 
 The lens **persists** after you release **~** — the focus locks in place so you can click, select, or inspect the expanded region normally. Re-hold **~** and move to reposition the focus. Press **Escape** to dismiss.
 
 While the lens is active a reminder appears in the status bar: *Lens mode active – press Esc to cancel*.
 
-### Adjusting the Lens Width
+<!-- ### Adjusting the Lens Width
 
 The **Lens** ⊕/⊖ buttons in the toolbar (or **⌘⇧=** / **⌘⇧−**) control how many tip rows wide the uniformly-expanded flat centre zone is:
 
@@ -287,7 +282,7 @@ The **Lens** ⊕/⊖ buttons in the toolbar (or **⌘⇧=** / **⌘⇧−**) con
 - **⊖** — remove one row
 - At zero (default) the lens is a pure hyperbolic falloff from the focus point
 
-Peak magnification caps at the *Fit Labels* spacing level, so labels in the expanded zone never overlap.
+Peak magnification caps at the *Fit Labels* spacing level, so labels in the expanded zone never overlap. -->
 
 {% tip %}
 The hyperbolic lens is ideal for large trees where fully zooming in would hide the context. Hold **~**, move to the region of interest, release to lock the focus, then interact with the expanded section. Press **Escape** when done.
@@ -298,18 +293,22 @@ The hyperbolic lens is ideal for large trees where fully zooming in would hide t
 
 ### Branch Ordering
 
-The **Order** buttons sort all clades by descendant count, giving a ladder-like layout:
+The **Order** buttons sort all clades by descendant count, giving a ladder-like layout. This can be useful to provide a clearer layout of the tree.
+
+Order: {% include 'btn-group.html', ids: "btn-order-asc btn-order-desc", label: "Order" %}
 
 | Button | Shortcut | Effect |
 |---|---|---|
 | {%- include 'btn.html', id: "btn-order-asc" %} | **⌘U** | Larger clades toward the top |
 | {%- include 'btn.html', id: "btn-order-desc" %} | **⌘D** | Larger clades toward the bottom |
 
-{% include 'figure.html', src: "images/fig3.png", alt: "EBOV tree with ascending order", maxwidth: "440px", legend: "EBOV tree with ascending (larger clades upward) order applied." %}
+{% include 'figure.html', src: "images/sort_up.png", alt: "EBOV tree with ascending order", maxwidth: "50%", bg: "#EAE8E1", legend: "EBOV tree with ascending (larger clades upward) order applied." %}
 
-{% tip %}
+{% include 'figure.html', src: "images/sort_down.png", alt: "EBOV tree with ascending order", maxwidth: "50%", bg: "#EAE8E1", legend: "EBOV tree with ascending (larger clades upward) order applied." %}
+
+{% note %}
 Once ordered, the original clade order is lost. You can switch between ascending and descending ordering, or rotate individual nodes manually (see below). Hiding a node (see below) also clears the branch ordering since the tip counts have changed.
-{% endtip %}
+{% endnote %}
 
 ### Rotating Nodes
 
@@ -317,27 +316,44 @@ Once ordered, the original clade order is lost. You can switch between ascending
 
 Select an internal node, then use the Rotate buttons:
 
+Order: {% include 'btn-group.html', ids: "btn-rotate btn-rotate-all", label: "Rotate" %}
+
 | Button | Effect |
 |---|---|
 | {%- include 'btn.html', id: "btn-rotate" %} | Reverse the direct children of the selected node only |
 | {%- include 'btn.html', id: "btn-rotate-all" %} | Recursively reverse children at every level within the selected subtree |
 
-{% include 'figure.html', src: "images/fig8a.png", alt: "Tree before rotation", bg: "#ffffff" maxwidth: "440px" %}
-{% include 'figure.html', src: "images/fig8b.png", alt: "Tree after rotating a single node", maxwidth: "440px" %}
-{% include 'figure.html', src: "images/fig8c.png", alt: "Tree after rotating the entire clade", maxwidth: "440px", legend: "Before and after rotating a single node (middle), and after rotating the entire clade (bottom)." %}
+1. Select an internal node in the tree.
+
+{% include 'figure.html', src: "images/clade_selected.png", alt: "Tree before rotation", maxwidth: "80%", bg: "#EAE8E1", legend: "A clade is selected by clicking the node at its root." %}
+
+2. Click the **rotate node** button {%- include 'btn.html', id: "btn-rotate" %} in the toolbar.
+
+{% include 'figure.html', src: "images/node_rotated.png", alt: "Tree after rotating a single node", maxwidth: "80%", bg: "#EAE8E1", legend: "The root node is rotated without affecting the rest of the clade."   %}
+
+3. Click the **rotate clade** button {%- include 'btn.html', id: "btn-rotate-all" %} in the toolbar.
+
+{% include 'figure.html', src: "images/clade_rotated.png", alt: "Tree after rotating the entire clade", maxwidth: "80%", bg: "#EAE8E1", legend: "The entire clade is rotated reversing its order." %}
 
 ### Hiding Nodes and Subtrees
 
 Hiding removes a tip or entire subtree from the display without deleting it from the underlying tree. The remaining tree reflows to fill the space.
 
 1. Select a tip or internal node.
+
+{% include 'figure.html', src: "images/tip_selected.png", alt: "Tip before hiding", maxwidth: "80%", bg: "#EAE8E1" %}
+
 2. Click the **Hide** button {%- include 'btn.html', id: "btn-hide" %} in the toolbar.
 
-{% include 'figure.html', src: "images/fig9a.png", alt: "Tip before hiding", maxwidth: "440px" %}
-{% include 'figure.html', src: "images/fig9b.png", alt: "Tip after hiding", maxwidth: "440px", legend: "A single tip before and after hiding." %}
+{% include 'figure.html', src: "images/tip_hidden.png", alt: "Tip after hiding", maxwidth: "80%", bg: "#EAE8E1", legend: "The selected tip is now hidden." %}
 
-{% include 'figure.html', src: "images/fig9c.png", alt: "Subtree selected", maxwidth: "440px" %}
-{% include 'figure.html', src: "images/fig9d.png", alt: "Subtree after hiding", maxwidth: "440px", legend: "A subtree selected (top) and after hiding all descendants (bottom)." %}
+3. Select a clade in the tree.
+
+{% include 'figure.html', src: "images/clade_selected.png", alt: "Subtree selected", maxwidth: "80%", bg: "#EAE8E1" %}
+
+4. Click the **Hide** button {%- include 'btn.html', id: "btn-hide" %} in the toolbar.
+
+{% include 'figure.html', src: "images/clade_hidden.png", alt: "Subtree after hiding", maxwidth: "80%", bg: "#EAE8E1", legend: "The entire selected clade is hidden." %}
 
 **Showing hidden nodes:** when any hidden nodes exist in the current view, the **Unhide** button {%- include 'btn.html', id: "btn-show" %} becomes active.
 
