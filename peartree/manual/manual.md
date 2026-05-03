@@ -289,7 +289,92 @@ The hyperbolic lens is ideal for large trees where fully zooming in would hide t
 {% endtip %}
 
 
-## Chapter 6: Organising the Tree
+## Chapter 6: Selecting and Filtering
+
+### Selection Modes
+
+PearTree has two selection modes. The active mode is shown by which toolbar button is pressed.
+
+**Nodes mode** (default)
+
+- **Click a tip** — selects that tip; the status bar shows its name and divergence
+- **Click an internal node** — selects all descendant tips; a teal MRCA ring marks the node
+- **⌘-click** — add to or remove from the current selection
+- **Click and drag** — drag-select all tips within a rectangular area
+- **⌘A** — select all visible tips
+- **⌘⇧I** — invert the selection (also available as the {%- include 'btn.html', id: "btn-invert-selection" %} toolbar button)
+- **Click empty canvas** — clear the selection
+
+{% include 'figure.html', src: "images/fig6.png", alt: "Tips selected with MRCA ring", maxwidth: "440px", legend: "A group of tips selected (highlighted) with MRCA ring visible on their most recent common ancestral node." %}
+
+**Branches mode (⌘B)**
+
+Press **⌘B** or click the branch-mode button {%- include 'btn.html', id: "btn-mode-branches" %} to switch. Click anywhere along a horizontal branch to place a precise positional marker. This mode enables exact-position rerooting (see [Chapter 11](#chapter-11-rooting)).
+
+{% tip %}
+Branches mode is mainly used for precise rerooting. The example EBOV tree is an explicitly-rooted BEAST tree, so rerooting is disabled for it. Use `data/varv_rooted.nwk` or `data/large_tree.tree` to practise rerooting.
+{% endtip %}
+
+Press **⌘B** again to return to Nodes mode.
+
+### Filtering Tips
+
+The filter controls in the toolbar instantly select visible tips using ad-hoc or saved rules.
+
+The ad-hoc filter has four parts:
+
+- **Search field button** — choose which field to query (*Name* or an annotation key)
+- **Operator button** — choose the match rule (*contains*, *starts with*, numeric comparisons, date comparisons, regex, etc.)
+- **Input box** — type the value/pattern
+- **+ button** — save the current ad-hoc query as a named filter
+
+> {%- include 'filter-box.html' -%}
+
+For example, choose *Name contains* and type `SLE` to select all Sierra Leone EBOV tips:
+
+{% include 'figure.html', src: "images/filter_box_SLE.png", alt: "Filter box with SLE entered", maxwidth: "200px" %}
+
+Press **Escape** or clear the box to remove the filter (the tip selection remains).
+
+### Named Filters and the Filter Manager
+
+Click the funnel button beside the filter box to apply a saved named filter. Named filters can be combined with the ad-hoc filter: a tip must pass both to remain selected.
+
+Use **Manage Filters** {%- include 'btn.html', id: "btn-manage-filters" %} to open the Filter Manager dialog. There you can:
+
+- Create filters with nested **AND/OR** groups
+- Add conditions for string, numeric, categorical, and date fields
+- Edit or delete existing filters
+- Import/export filter sets as JSON
+
+{% include 'dialog-filter-manager.html', maxwidth: "820px" %}
+
+Saved filters are available throughout the Visual Options palette in **Filter** dropdowns for tip labels, branch labels, node labels, tip shapes, node shapes, and node bars. Each feature's filter is applied only when that feature is enabled.
+
+### Node Info
+
+Select any node or tip, then press **⌘I** or click the {%- include 'btn.html', id: "btn-node-info" %} button. The Node Info dialog lists every annotation on that node — name, divergence, branch length, posterior support, date, and any imported custom fields.
+
+{% include 'figure.html', src: "images/fig10.png", alt: "Node Info dialog", maxwidth: "400px", legend: "Node Info dialog for a selected EBOV tip." %}
+
+### Applying User Colours
+
+1. Pick a colour using the colour swatch in the toolbar.
+2. Select one or more tips.
+3. Click the **Apply** button {%- include 'btn.html', id: "btn-apply-user-colour" %}.
+
+{% include 'figure.html', src: "images/fig14.png", alt: "Tips highlighted in orange", maxwidth: "440px", legend: "Tips dated from July–September 2015 highlighted in orange." %}
+
+User colours are stored as a `user_colour` annotation and are available in all *Colour by* dropdowns. When a NEXUS file is exported they travel with it.
+
+To remove: click the **Clear** button {%- include 'btn.html', id: "btn-clear-user-colour" %}. With tips selected, clears only those tips; with nothing selected, clears all user colours in the current view.
+
+{% tip %}
+Click a colour swatch in a categorical legend to instantly select all tips with that annotation value, wherever they appear in the tree. **⌘-click** additional swatches to add them to the selection. Then apply a user colour, hide, or export that group.
+{% endtip %}
+
+
+## Chapter 7: Organising the Tree
 
 ### Branch Ordering
 
@@ -386,91 +471,6 @@ In the **Visual Options palette**, the **Collapsed Clades** section (visible onc
 
 {% tip %}
 Collapse the uninteresting parts of a large tree into triangles so the important regions fill the canvas with readable labels. Double-click any triangle to re-expand it when needed. Collapsed clades can also be individually coloured to categorise groups at a glance.
-{% endtip %}
-
-
-## Chapter 7: Selecting and Filtering
-
-### Selection Modes
-
-PearTree has two selection modes. The active mode is shown by which toolbar button is pressed.
-
-**Nodes mode** (default)
-
-- **Click a tip** — selects that tip; the status bar shows its name and divergence
-- **Click an internal node** — selects all descendant tips; a teal MRCA ring marks the node
-- **⌘-click** — add to or remove from the current selection
-- **Click and drag** — drag-select all tips within a rectangular area
-- **⌘A** — select all visible tips
-- **⌘⇧I** — invert the selection (also available as the {%- include 'btn.html', id: "btn-invert-selection" %} toolbar button)
-- **Click empty canvas** — clear the selection
-
-{% include 'figure.html', src: "images/fig6.png", alt: "Tips selected with MRCA ring", maxwidth: "440px", legend: "A group of tips selected (highlighted) with MRCA ring visible on their most recent common ancestral node." %}
-
-**Branches mode (⌘B)**
-
-Press **⌘B** or click the branch-mode button {%- include 'btn.html', id: "btn-mode-branches" %} to switch. Click anywhere along a horizontal branch to place a precise positional marker. This mode enables exact-position rerooting (see [Chapter 10](#chapter-10-rooting)).
-
-{% tip %}
-Branches mode is mainly used for precise rerooting. The example EBOV tree is an explicitly-rooted BEAST tree, so rerooting is disabled for it. Use `data/varv_rooted.nwk` or `data/large_tree.tree` to practise rerooting.
-{% endtip %}
-
-Press **⌘B** again to return to Nodes mode.
-
-### Filtering Tips
-
-The filter controls in the toolbar instantly select visible tips using ad-hoc or saved rules.
-
-The ad-hoc filter has four parts:
-
-- **Search field button** — choose which field to query (*Name* or an annotation key)
-- **Operator button** — choose the match rule (*contains*, *starts with*, numeric comparisons, date comparisons, regex, etc.)
-- **Input box** — type the value/pattern
-- **+ button** — save the current ad-hoc query as a named filter
-
-> {%- include 'filter-box.html' -%}
-
-For example, choose *Name contains* and type `SLE` to select all Sierra Leone EBOV tips:
-
-{% include 'figure.html', src: "images/filter_box_SLE.png", alt: "Filter box with SLE entered", maxwidth: "200px" %}
-
-Press **Escape** or clear the box to remove the filter (the tip selection remains).
-
-### Named Filters and the Filter Manager
-
-Click the funnel button beside the filter box to apply a saved named filter. Named filters can be combined with the ad-hoc filter: a tip must pass both to remain selected.
-
-Use **Manage Filters** {%- include 'btn.html', id: "btn-manage-filters" %} to open the Filter Manager dialog. There you can:
-
-- Create filters with nested **AND/OR** groups
-- Add conditions for string, numeric, categorical, and date fields
-- Edit or delete existing filters
-- Import/export filter sets as JSON
-
-{% include 'dialog-filter-manager.html', maxwidth: "820px" %}
-
-Saved filters are available throughout the Visual Options palette in **Filter** dropdowns for tip labels, branch labels, node labels, tip shapes, node shapes, and node bars. Each feature's filter is applied only when that feature is enabled.
-
-### Node Info
-
-Select any node or tip, then press **⌘I** or click the {%- include 'btn.html', id: "btn-node-info" %} button. The Node Info dialog lists every annotation on that node — name, divergence, branch length, posterior support, date, and any imported custom fields.
-
-{% include 'figure.html', src: "images/fig10.png", alt: "Node Info dialog", maxwidth: "400px", legend: "Node Info dialog for a selected EBOV tip." %}
-
-### Applying User Colours
-
-1. Pick a colour using the colour swatch in the toolbar.
-2. Select one or more tips.
-3. Click the **Apply** button {%- include 'btn.html', id: "btn-apply-user-colour" %}.
-
-{% include 'figure.html', src: "images/fig14.png", alt: "Tips highlighted in orange", maxwidth: "440px", legend: "Tips dated from July–September 2015 highlighted in orange." %}
-
-User colours are stored as a `user_colour` annotation and are available in all *Colour by* dropdowns. When a NEXUS file is exported they travel with it.
-
-To remove: click the **Clear** button {%- include 'btn.html', id: "btn-clear-user-colour" %}. With tips selected, clears only those tips; with nothing selected, clears all user colours in the current view.
-
-{% tip %}
-Click a colour swatch in a categorical legend to instantly select all tips with that annotation value, wherever they appear in the tree. **⌘-click** additional swatches to add them to the selection. Then apply a user colour, hide, or export that group.
 {% endtip %}
 
 
