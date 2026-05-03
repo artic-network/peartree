@@ -14,9 +14,12 @@
     "icon": "tauri icon",
     "bundle": "node scripts/build-bundle.mjs --app peartree",
     "bundle:peartree": "node scripts/build-bundle.mjs --app peartree",
-    "docs": "node scripts/markdown-server.mjs"
+    "docs": "node scripts/markdown-server.mjs",
+    "manual": "eleventy --serve",
+    "build:manual": "eleventy"
   },
   "devDependencies": {
+    "@11ty/eleventy": "^3.1.5",
     "@tauri-apps/cli": "^2.0.0",
     "chokidar": "^5.0.0",
     "esbuild": "^0.27.4",

@@ -51,6 +51,9 @@ jobs:
           PEARTREE_VERSION_TAG: ${{ github.event.workflow_run.head_branch }}
         run: npm run bundle
 
+      - name: Build manual
+        run: npm run build:manual
+
       - name: Assemble site
         run: |
           mkdir -p _site/data _site/img _site/logo _site/manual/images
@@ -68,8 +71,6 @@ jobs:
           cp peartree/data/ebov.csv                  _site/data/ebov.csv
           cp peartree/about.md                       _site/about.md
           cp peartree/help.md                        _site/help.md
-          cp peartree/manual/manual.md               _site/manual/manual.md
-          cp -r peartree/manual/images/.             _site/manual/images/
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
