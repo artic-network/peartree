@@ -27,6 +27,3 @@ src-tauri/gen/
  
 # Any test folders
 test*/
-
-# Local markdown server script
-scripts/markdown-server.mjs
