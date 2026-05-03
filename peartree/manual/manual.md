@@ -103,9 +103,8 @@ Three tabs are available:
 
 **URL tab** — paste a public URL to a remote tree file and click *Load from URL*. The remote server must allow cross-origin requests (CORS). GitHub raw URLs (`raw.githubusercontent.com/…`) work out of the box.
 
-{% include 'dialog-open-tree.html', tab: "url", maxwidth: "460px" %}
+{% include 'dialog-open-tree.html', tab: "url", maxwidth: "460px", legend: "<em>Open Tree File</em> dialog, URL tab." %}
 
-{% include 'figure.html', src: "images/fig1d.png", alt: "Open Tree File dialog, URL tab", maxwidth: "320px", legend: "*Open Tree File* dialog, URL tab." %}
 
 **Example tab** — choose from a set of built-in example datasets:
 
@@ -117,9 +116,7 @@ Three tabs are available:
 
 Click a dataset card to load it immediately.
 
-{% include 'dialog-open-tree.html', tab: "example", maxwidth: "460px" %}
-
-{% include 'figure.html', src: "images/fig1b.png", alt: "Open Tree File dialog, Example tab", maxwidth: "320px", legend: "*Open Tree File* dialog, Example tab." %}
+{% include 'dialog-open-tree.html', tab: "example", maxwidth: "460px", legend: "<em>Open Tree File</em> dialog, Example tab." %}
 
 ### The Startup Screen
 
