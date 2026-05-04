@@ -714,8 +714,6 @@ Many sections of the Visual Options palette — **Tip Labels**, **Label Shapes**
 
 When **Colour by** is set to an annotation key, a **Configure** button appears in that section. Click it to open the colour settings for that key:
 
-{% include 'dialog-colour-settings.html', annotation: "country", datatype: "categorical", palette: "Pastel", maxwidth: "320px", legend: "Colour settings for a categorical annotation (country), using the Pastel palette." %}
-
 {% include 'dialog-colour-settings.html', annotation: "posterior", datatype: "continuous", palette: "Blue-Black-Red", scalemode: "zero-one", maxwidth: "320px", legend: "Colour settings for a continuous annotation (posterior), using the Blue-Black-Red diverging palette with a fixed 0→1 scale." %}
 
 - **Palette** — choose a categorical swatch set (for string/boolean fields) or a continuous gradient (for numeric fields). Palettes are shared across all sections that colour by the same key.
@@ -727,6 +725,10 @@ When **Colour by** is set to an annotation key, a **Configure** button appears i
 | **Symmetric ±0** | Scale is centred on zero; min and max are set to ±*max(|value|)* |
 | **From zero** | Scale runs from 0 to the maximum value |
 | **0 → 1** | Values are assumed to already lie in the 0–1 range |
+
+For a catagorical data type then a number of discrete colour palettes are available:
+
+{% include 'dialog-colour-settings.html', annotation: "country", datatype: "categorical", palette: "Pastel", maxwidth: "320px", legend: "Colour settings for a categorical annotation (country), using the Pastel palette." %}
 
 #### Managing Palettes
 

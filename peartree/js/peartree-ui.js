@@ -867,10 +867,6 @@ function _buildModals() {
     </div>
     <div class="pt-modal-body">
       <div id="annot-config-info" style="margin-bottom:8px;font-size:0.82rem;color:var(--pt-text-muted);line-height:1.5"></div>
-      <div class="pt-palette-row">
-        <span class="pt-palette-label">Palette <i class="bi bi-rainbow form-label-sm"></i></span>
-        <select class="pt-palette-select" id="annot-config-palette-select"></select>
-      </div>
       <div class="pt-palette-row" id="annot-config-scale-row">
         <span class="pt-palette-label">Scale <i class="bi bi-rulers form-label-sm"></i></span>
         <select class="pt-palette-select" id="annot-config-scale-select">
@@ -880,6 +876,11 @@ function _buildModals() {
           <option value="zero-one">0 → 1</option>
         </select>
       </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Palette <i class="bi bi-rainbow form-label-sm"></i></span>
+        <select class="pt-palette-select" id="annot-config-palette-select"></select>
+      </div>
+      <div id="annot-config-palette-preview" style="margin-top:8px;min-height:14px"></div>
     </div>
     <div class="pt-modal-footer">
       <button id="annot-config-done" class="btn btn-sm btn-primary">Done</button>

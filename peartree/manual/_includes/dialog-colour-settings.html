@@ -33,6 +33,17 @@
       {%- else -%}
       <div style="margin-bottom:8px;font-size:0.82rem;color:var(--bs-secondary-color);line-height:1.5"><strong>Type:</strong> Continuous&nbsp;&nbsp;<strong>Range:</strong> 0 → 1</div>
       {%- endif -%}
+      {%- if _dtype == "continuous" -%}
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Scale <i class="bi bi-rulers form-label-sm"></i></span>
+        <select class="pt-palette-select" disabled>
+          <option value="" {% if _scalemode == "" %}selected{% endif %}>Auto (min → max)</option>
+          <option value="symmetric-zero" {% if _scalemode == "symmetric-zero" %}selected{% endif %}>Symmetric ±0</option>
+          <option value="zero-positive" {% if _scalemode == "zero-positive" %}selected{% endif %}>From zero</option>
+          <option value="zero-one" {% if _scalemode == "zero-one" %}selected{% endif %}>0 → 1</option>
+        </select>
+      </div>
+      {%- endif -%}
       <div class="pt-palette-row">
         <span class="pt-palette-label">Palette <i class="bi bi-rainbow form-label-sm"></i></span>
         <select class="pt-palette-select" disabled>
@@ -55,17 +66,6 @@
           {%- endif -%}
         </select>
       </div>
-      {%- if _dtype == "continuous" -%}
-      <div class="pt-palette-row">
-        <span class="pt-palette-label">Scale <i class="bi bi-rulers form-label-sm"></i></span>
-        <select class="pt-palette-select" disabled>
-          <option value="" {% if _scalemode == "" %}selected{% endif %}>Auto (min → max)</option>
-          <option value="symmetric-zero" {% if _scalemode == "symmetric-zero" %}selected{% endif %}>Symmetric ±0</option>
-          <option value="zero-positive" {% if _scalemode == "zero-positive" %}selected{% endif %}>From zero</option>
-          <option value="zero-one" {% if _scalemode == "zero-one" %}selected{% endif %}>0 → 1</option>
-        </select>
-      </div>
-      {%- endif -%}
       <!-- Colour swatch strip -->
       {%- if _dtype == "continuous" and _palette == "Blue-Black-Red" -%}
       <div style="margin-top:10px;height:14px;border-radius:4px;background:linear-gradient(to right,#1e70b5,#111111,#c82424);border:1px solid var(--pt-border)"></div>

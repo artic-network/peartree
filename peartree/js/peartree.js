@@ -10,6 +10,7 @@ import { THEMES, DEFAULT_THEME, SETTINGS_KEY, USER_THEMES_KEY } from './themes.j
 import { TYPEFACES, buildFont } from '@artic-network/pearcore/typefaces.js';
 import { CATEGORICAL_PALETTES, SEQUENTIAL_PALETTES,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
+         getCategoricalPalette, getSequentialPalette,
          setUserCategoricalPalettes, setUserSequentialPalettes,
          allCategoricalPalettes, allSequentialPalettes } from '@artic-network/pearcore/palettes.js';
 import { createAnnotImporter } from '@artic-network/pearcore/annotation-io.js';
@@ -274,6 +275,7 @@ async function _initCore(root = document) {
   const annotConfigTitle         = $('annot-config-title');
   const annotConfigInfo          = $('annot-config-info');
   const annotConfigPaletteSelect = $('annot-config-palette-select');
+  const annotConfigPalettePreview = $('annot-config-palette-preview');
   const annotConfigScaleRow      = $('annot-config-scale-row');
   const annotConfigScaleSelect   = $('annot-config-scale-select');
   const tipLabelShapeExtraSectionEls    = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-section`));
@@ -495,6 +497,11 @@ async function _initCore(root = document) {
         annotConfigScaleSelect.value = [...annotConfigScaleSelect.options].some(o => o.value === sm) ? sm : '';
       }
     }
+    // Render palette preview
+    {
+      const isCat = def?.dataType === 'categorical' || def?.dataType === 'ordinal';
+      _renderAnnotConfigPreview(annotConfigPaletteSelect?.value ?? '', isCat);
+    }
     annotConfigOverlay?.classList.add('open');
   }
 
@@ -517,6 +524,30 @@ async function _initCore(root = document) {
     if (_annotConfigKey === key && annotConfigScaleSelect) {
       if ([...annotConfigScaleSelect.options].some(o => o.value === mode))
         annotConfigScaleSelect.value = mode;
+    }
+  }
+
+  /**
+   * Render a palette preview into the annot-config modal's preview div.
+   * For categorical palettes: a row of colour swatches.
+   * For sequential/diverging palettes: a full-width gradient bar.
+   * @param {string} paletteName
+   * @param {boolean} isCat  true → categorical, false → sequential
+   */
+  function _renderAnnotConfigPreview(paletteName, isCat) {
+    if (!annotConfigPalettePreview) return;
+    if (isCat) {
+      const colours = getCategoricalPalette(paletteName);
+      annotConfigPalettePreview.innerHTML = colours.slice(0, 12).map(c =>
+        `<span class="pm-mini-swatch" style="background:${c}"></span>`
+      ).join('');
+    } else {
+      const stops = getSequentialPalette(paletteName);
+      const grad  = stops.length === 1
+        ? stops[0]
+        : `linear-gradient(to right, ${stops.join(', ')})`;
+      annotConfigPalettePreview.innerHTML =
+        `<span class="pm-mini-gradient" style="background:${grad};width:100%;display:block;height:14px;border-radius:3px;border:1px solid rgba(255,255,255,0.12)"></span>`;
     }
   }
 
@@ -6163,6 +6194,11 @@ async function _initCore(root = document) {
     legendRenderer?.draw();
     saveSettings();
     rttChart?.notifyStyleChange?.();
+    // Update palette preview
+    const schema = renderer?._annotationSchema;
+    const def    = schema?.get(_annotConfigKey);
+    const isCat  = def?.dataType === 'categorical' || def?.dataType === 'ordinal';
+    _renderAnnotConfigPreview(annotConfigPaletteSelect.value, isCat);
   });
 
   annotConfigScaleSelect?.addEventListener('change', () => {
