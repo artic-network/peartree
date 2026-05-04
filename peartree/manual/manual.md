@@ -432,26 +432,28 @@ To isolate a subset of tips: type a keyword into the filter box to select all ma
 
 ### Collapsing Clades
 
-Collapsing replaces a subtree with a filled triangle symbol. Unlike hiding, collapsed clades remain visible as a compact summary with a tip-count label.
+Collapsing replaces a subtree with a filled triangle shape. Unlike hiding, collapsed clades remain visible as a compact summary with a tip-count label.
 
 1. Select an internal node.
+
 2. Click the **Collapse** button {%- include 'btn.html', id: "btn-collapse-clade" %} in the toolbar.
 
 The subtree becomes a filled triangle labelled with the clade name and enclosed tip count.
 
-To expand: click the triangle to select it and click **Expand** {%- include 'btn.html', id: "btn-expand-clade" %}, or **double-click the triangle** directly.
+{% include 'figure.html', src: "images/clade_collapsed.png", alt: "Clade after collapsing", maxwidth: "80%", bg: "#EAE8E1", legend: "The selected clade is represented by a triangle shape." %}
 
-**Changing a triangle's colour:** with a triangle selected, use the colour picker in the toolbar to assign a custom fill colour. The eraser button {%- include 'btn.html', id: "btn-clear-user-colour" %} resets to the theme default.
+The **Span** control in the **COLLAPSED CLADES** section of the control panel can adjust the vertical size of the triangle shapes. If set to the maximum then the triangles become the size of the number of tips that they contain and the individual labels will be shown if sufficiently zoomed in.
 
-In the **Visual Options palette**, the **Collapsed Clades** section (visible once any clade has been collapsed) provides:
+{% include 'figure.html', src: "images/clade_collapsed_full.png", alt: "Collapsed clade fully expanded", maxwidth: "80%", bg: "#EAE8E1", legend: "The collapsed clade scaled to show all the tip labels." %}
 
-| Control | Effect |
-|---|---|
-| **Fill opacity** | Translucency of the triangle (0 = transparent, 1 = solid) |
-| **Height (rows)** | Height of the triangle base in tip-row units (1–20) |
+To expand the clade: click the triangle to select it and click **Expand** {%- include 'btn.html', id: "btn-expand-clade" %}. Selecting a clade and then clicking **Expand** {%- include 'btn.html', id: "btn-expand-clade" %} will expand all collapsed subclades and with no selection, all collapse clades visible on the screen.
+
+**Changing a triangle's colour:** with a triangle selected, use the colour picker and paint brush button {%- include 'btn.html', id: "btn-apply-user-colour" %} in the toolbar to assign a custom fill colour. The eraser button {%- include 'btn.html', id: "btn-clear-user-colour" %} resets to the theme default.
+
+See the [**Collapsed Clades**](#collapsed-clades) section of the **Visual Options palette** for more controls of the collapsed clades.
 
 {% tip %}
-Collapse the uninteresting parts of a large tree into triangles so the important regions fill the canvas with readable labels. Double-click any triangle to re-expand it when needed. Collapsed clades can also be individually coloured to categorise groups at a glance.
+You can double click on a collapsed clade to drill-down into the clade and make its subtree visible. On using the back {% include 'btn.html', id: "btn-back", label: "Navigation" %} or home buttons {% include 'btn.html', id: "btn-home", label: "Navigation" %}, the clade will still be shown as collaped.
 {% endtip %}
 
 
