@@ -105,6 +105,37 @@
   vertical-align: top;
 }
 
+/* ── Colour picker demo — show popup statically below the trigger ─────────── */
+.pt-ui-demo--colour-picker {
+  display: inline-block;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+  vertical-align: top;
+}
+#colour-picker-popup.pt-cp-demo {
+  position: static;
+  display: block;
+  margin-top: 6px;
+  box-shadow: none;
+}
+.pt-ui-demo--colour-picker-legend {
+  margin-left: 1.5rem;
+}
+/* ── Inline colour trigger swatch span ────────────────────────────────────── */
+.pt-btn-colour-trigger-preview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 2px;
+  border: 1px solid var(--pt-border-input, rgba(255,255,255,0.25));
+  border-radius: 4px;
+  background: var(--pt-surface-input, #073642);
+  vertical-align: middle;
+  cursor: default;
+}
+
 /* Block all pointer interaction inside demos, except toolbar button previews */
 .pt-ui-demo input,
 .pt-ui-demo select,

@@ -440,27 +440,40 @@ Collapse the uninteresting parts of a large tree into triangles so the important
 
 ## Chapter 8: Decorating the Tree
 
-All visual controls live in the **Visual Options palette**. Open it with the sliders button in the status bar or press **Tab**. Controls are organised into collapsible sections.
-
+{% note %}
 *This chapter uses the EBOV example tree with the `ebov.csv` annotations imported (see [Chapter 3](#chapter-3-importing-annotations)).*
+{% endnote %}
 
 ### Applying User Colours
 
-1. Pick a colour using the colour swatch in the toolbar.
+The simplest way of adding colours to the tree is to select a node or tip and use the paint brush button.
+
+1. Pick a colour using the colour swatch button {%- include 'btn.html', id: "btn-colour-trigger" %} in the toolbar. You can either select a new colour using the 'Custom colour...' control, or pick one from one of the pre-defined swatches.
+
+{% include 'toolbar-colour-picker.html', legend: "The toolbar colour picker — choose a colour from the recent row or a palette." %}
+
 2. Select one or more tips.
-3. Click the **Apply** button {%- include 'btn.html', id: "btn-apply-user-colour" %}.
+3. Click the **Paint** button {%- include 'btn.html', id: "btn-apply-user-colour" %}.
 
-{% include 'figure.html', src: "images/fig14.png", alt: "Tips highlighted in orange", maxwidth: "440px", legend: "Tips dated from July–September 2015 highlighted in orange." %}
-
-User colours are stored as a `user_colour` annotation and are available in all *Colour by* dropdowns. When a NEXUS file is exported they travel with it.
+{% include 'figure.html', src: "images/tips_painted.png", alt: "Tips highlighted in orange", maxwidth: "440px", legend: "Tips dated from July–September 2015 highlighted in orange." %}
 
 To remove: click the **Clear** button {%- include 'btn.html', id: "btn-clear-user-colour" %}. With tips selected, clears only those tips; with nothing selected, clears all user colours in the current view.
 
-{% tip %}
-Click a colour swatch in a categorical legend to instantly select all tips with that annotation value, wherever they appear in the tree. **⌘-click** additional swatches to add them to the selection. Then apply a user colour, hide, or export that group.
-{% endtip %}
+When a tree is exported as a NEXUS file these colour annotions will be stored and then used when the tree is reloaded.
+
+{% note %}
+User colours are stored as a special annotation and are available in all *Colour by* dropdowns as 'user colour'. 
+{% endnote %}
+
+### Visual Options Control-panel
+
+All visual controls live in the **Visual Options** control-panel on the left hand side. Open it with the control-panel button {%- include 'btn.html', id: "btn-palette" %} in the toolbar or press **Tab**. 
+The control-panel can be closed again by clicking the close button {%- include 'btn.html', id: "btn-palette-close" %} or the toolbar button or by clicking on the tree. The control-panel can be fixed to stay open by clicking the pin button {%- include 'btn.html', id: "btn-palette-pin" %}. When pinned the pin button will be gold and the tree will scale horizontally to make space (unpinned, the control-panel will overlay the tree). 
 
 
+{% include 'figure.html', src: "images/visual_options_panel.png", alt: "The visual options panel with all the sections closed.", maxwidth: "260px", bg: "#083642", legend: "The visual options panel with all the sections closed." %}
+
+Controls are organised into collapsible sections. Click on a panel heading to open it and reveal its control.
 
 ### Tree Appearance
 
@@ -503,7 +516,7 @@ The **Tree** section controls the canvas background, branch colour and width, an
 
 Coloured shapes can be drawn to the left of each tip label text, providing annotation colour swatches alongside each name.
 
-{% include 'palette-label-shape.html', legend: "Label shape controls." %}
+{% include 'palette-label-shapes.html', legend: "Label shape controls." %}
 
 | Control | Effect |
 |---|---|
@@ -519,7 +532,7 @@ Multiple independent shape slots (up to 10) can be added to show several annotat
 
 ### Tip Shapes
 
-{% include 'figure.html', src: "images/controls_tip_shapes.png", alt: "Tip shapes controls", maxwidth: "260px" %}
+{% include 'palette-tip-shapes.html', legend: "Tip shapes controls." %}
 
 | Control | Effect |
 |---|---|
@@ -539,7 +552,7 @@ Set **Colour by** to `country` to colour each tip by sampling country:
 
 ### Node Shapes
 
-{% include 'figure.html', src: "images/controls_node_shapes.png", alt: "Node shapes controls", maxwidth: "260px" %} can show circles coloured by a node-level annotation — useful for displaying posterior support values.
+{% include 'palette-node-shapes.html', legend: "Node shapes controls." %}
 
 | Control | Effect |
 |---|---|
@@ -551,6 +564,10 @@ Set **Colour by** to `country` to colour each tip by sampling country:
 {% include 'figure.html', src: "images/fig12c.png", alt: "Node Shapes controls with Colour by set to posterior", maxwidth: "260px", legend: "Node Shapes controls with size set to 3 and **Colour by** set to `posterior`." %}
 
 {% include 'figure.html', src: "images/fig12d.png", alt: "EBOV tree with node shapes coloured by posterior support", maxwidth: "440px", legend: "EBOV tree with node shapes coloured by `posterior` support." %}
+
+{% tip %}
+Nodes can show circles coloured by a node-level annotation — useful for displaying posterior support values.
+{% endtip %}
 
 ### Node Labels
 
