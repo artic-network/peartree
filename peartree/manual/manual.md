@@ -361,7 +361,7 @@ In both boxes the **Copy as TSV** button will copy the contents of the box to th
 
 The **Order** buttons sort all clades by descendant count, giving a ladder-like layout. This can be useful to provide a clearer layout of the tree.
 
-Order: {% include 'btn-group.html', ids: "btn-order-asc btn-order-desc", label: "Order" %}
+The node ordering buttons: {% include 'btn-group.html', ids: "btn-order-asc btn-order-desc", label: "Order" %}
 
 | Button | Shortcut | Effect |
 |---|---|---|
@@ -382,7 +382,7 @@ Once ordered, the original clade order is lost. You can switch between ascending
 
 Select an internal node, then use the Rotate buttons:
 
-Order: {% include 'btn-group.html', ids: "btn-rotate btn-rotate-all", label: "Rotate" %}
+The node rotation buttons: {% include 'btn-group.html', ids: "btn-rotate btn-rotate-all", label: "Rotate" %}
 
 | Button | Effect |
 |---|---|
