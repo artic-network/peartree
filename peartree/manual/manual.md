@@ -474,7 +474,7 @@ The simplest way of adding colours to the tree is to select a node or tip and us
 2. Select one or more tips.
 3. Click the **Paint** button {%- include 'btn.html', id: "btn-apply-user-colour" %}.
 
-{% include 'figure.html', src: "images/tips_painted.png", alt: "Tips highlighted in orange", maxwidth: "440px", legend: "Tips dated from July–September 2015 highlighted in orange." %}
+{% include 'figure.html', src: "images/tips_painted.png", alt: "Tips highlighted in orange", maxwidth: "80%", bg: "#EAE8E1", legend: "Tips selected and then painted orange using the <b>Paint</b> button." %}
 
 To remove: click the **Clear** button {%- include 'btn.html', id: "btn-clear-user-colour" %}. With tips selected, clears only those tips; with nothing selected, clears all user colours in the current view.
 
@@ -489,10 +489,9 @@ User colours are stored as a special annotation and are available in all *Colour
 All visual controls live in the **Visual Options** control-panel on the left hand side. Open it with the control-panel button {%- include 'btn.html', id: "btn-palette" %} in the toolbar or press **Tab**. 
 The control-panel can be closed again by clicking the close button {%- include 'btn.html', id: "btn-palette-close" %} or the toolbar button or by clicking on the tree. The control-panel can be fixed to stay open by clicking the pin button {%- include 'btn.html', id: "btn-palette-pin" %}. When pinned the pin button will be gold and the tree will scale horizontally to make space (unpinned, the control-panel will overlay the tree). 
 
-
 {% include 'figure.html', src: "images/visual_options_panel.png", alt: "The visual options panel with all the sections closed.", maxwidth: "260px", bg: "#083642", legend: "The visual options panel with all the sections closed." %}
 
-Controls are organised into collapsible sections. Click on a panel heading to open it and reveal its control.
+Controls are organised into collapsible sections. Click on a panel heading to open it and reveal its control. When another panel section is opened the currently open one will close. Use the pin button {%- include 'btn.html', id: "btn-palette-pin" %} to keep the panel section open.
 
 ### Tree Appearance
 
@@ -530,8 +529,56 @@ These controls determine how the tip labels are presented. The tip labels will o
 | Typeface | Font family for tip labels — *Theme* uses the typeface set in the Theme section; otherwise choose from Monospace, Sans-serif, Serif, or specific named fonts |
 | Style | Font weight and style — *Theme* inherits from the Theme section; or choose *Regular*, *Bold*, *Italic*, or *Bold Italic* |
 | Colour | The default label colour used if no user colour has been specified using the Paint option or if the `Colour by` option is being used but there is no annotation for that tip |
-| Colour by | Use an annotation key for per-tip label colour |
+| Colour by | Use an annotation key for per-tip label colour. See the Colour by section, below. |
 | Palette | A **Configure** buttoon appears when *Colour by* is active. This button will open a dialog box where a colour palette for this annoation can be selected. |
+
+### Branch Labels
+
+Branch labels display annotation values at the **midpoint of each branch** rather than at a node. This is particularly suited to branch-level annotations such as branch lengths when they should appear visually *on* the branch itself rather than at the node end. Unlike tip or node labels they are anchored to the branch midpoint and positioned above or below it.
+
+{% include 'figure.html', src: "images/branch_labels.png", alt: "Branch labels showing branch lengths", maxwidth: "80%", bg: "#EAE8E1", legend: "Branch labels showing branch lengths above the branches they refer too." %}
+
+{% include 'palette-branch-labels.html', legend: "Branch Labels section of the Visual Options palette." %}
+
+| Control | Effect |
+|---|---|
+| Show | *Off* — hide all branch labels; or select an annotation key to display |
+| Filter | Apply a saved named filter so only matching branches get labels |
+| d.p. | Decimal places for numeric annotations — *Auto* picks a sensible precision |
+| Position | *Above* or *Below* the branch midpoint |
+| Spacing | Vertical gap between the branch line and the label text (in pixels) |
+| Size | Font size (6–48 pt) |
+| Typeface | Font family — *Theme* inherits from the Theme section |
+| Style | Font weight and style — *Theme*, *Regular*, *Bold*, *Italic*, or *Bold Italic* |
+| Colour | Default label text colour |
+| Colour by | Use an annotation key for per-branch label colour |
+| Palette | **Configure** button appears when *Colour by* is active |
+
+{% note %}
+Bootstrap support values are **branch annotations** (see [Appendix C](#appendix-c-bootstrap-values-branch-annotations-and-rerooting)): they describe the branch leading from a node toward its parent, not the node itself. Using Branch Labels to display them places the values visually on the branch they belong to.
+{% endnote %}
+
+### Node Labels
+
+Annotation values are displayed as text labels at each internal node — most commonly used for bootstrap support values, posterior probabilities, clade names, or any node-level annotation. Unlike tip labels, node labels have no layout alignment option; they are always anchored to the node point.
+
+{% include 'figure.html', src: "images/node_labels.png", alt: "Node labels showing posterior support values", maxwidth: "80%", bg: "#EAE8E1", legend: "Node labels showing posterior support values to the right of the nodes they refer too." %}
+
+{% include 'palette-node-labels.html', legend: "Node Labels section of the Visual Options palette." %}
+
+| Control | Effect |
+|---|---|
+| Show | *Off* — hide all node labels; or select an annotation key to display its values |
+| Filter | Apply a saved named filter so only matching nodes get labels |
+| d.p. | Decimal places for numeric annotations — *Auto* picks a sensible precision |
+| Position | Where the label sits relative to the node point: *Right*, *Above left*, or *Below left* |
+| Spacing | Horizontal gap between the node point and the label text (px) |
+| Size | Font size (6–48 pt) |
+| Typeface | Font family — *Theme* inherits from the Theme section |
+| Style | Font weight and style — *Theme*, *Regular*, *Bold*, *Italic*, or *Bold Italic* |
+| Colour | Default label text colour |
+| Colour by | Use an annotation key for per-node label colour |
+| Palette | **Configure** button appears when *Colour by* is active |
 
 ### Label Shapes
 
@@ -590,21 +637,6 @@ Set **Colour by** to `country` to colour each tip by sampling country:
 Nodes can show circles coloured by a node-level annotation — useful for displaying posterior support values.
 {% endtip %}
 
-### Node Labels
-
-Annotation values can be displayed as text labels on internal nodes — useful for bootstrap values, clade names, or any node-level string annotation.
-
-| Control | Effect |
-|---|---|
-| Annotation | Which annotation key to display |
-| Filter | Apply a saved named filter so only matching nodes get labels |
-| Position | *Right*, *Above left*, or *Below left* |
-| Font size | Label text size |
-| Colour | Label text colour |
-| Spacing | Gap between node and label text |
-
-> **Screenshot placeholder** — EBOV tree with `posterior` node labels positioned to the right of each internal node.
-
 ### Node Bars
 
 *Available for trees with node-height HPD annotations — illustrated using `data/measles_genome_tree.nexus`.*
@@ -621,27 +653,6 @@ When a BEAST tree carries HPD height annotations (e.g. `height_95%_HPD`), the **
 | Range whiskers | Show or hide the outer extent whiskers |
 
 > **Screenshot placeholder** — Measles genome tree (`data/measles_genome_tree.nexus`) with node bars showing 95% HPD height intervals.
-
-### Legends
-
-Legends provide a colour key for any annotation used to colour tips, nodes, or labels. PearTree supports up to four independent legend strips simultaneously, all docked to the right side of the canvas.
-
-In the **Legend** section of the palette:
-
-1. Set **Annotation** to an annotation key (e.g. `country`).
-2. Adjust **Height %**, **Colour**, and **Font size** as desired.
-
-For categorical annotations a swatch-and-label key is drawn. For continuous numeric annotations a colour ramp with min/max labels is shown.
-
-{% include 'figure.html', src: "images/fig13.png", alt: "EBOV tree with country legend", maxwidth: "440px", legend: "EBOV tree with `country` legend docked to the right." %}
-
-**Legend 2–4:** additional legends can be configured below Legend 1. Set each legend's **Position** to *Right* (shown in the same panel as Legend 1) or *Below* (stacked vertically).
-
-Use **Height %** to control what fraction of the panel height each legend occupies.
-
-{% tip %}
-Use Legend 1 for a categorical annotation (e.g. country) and Legend 2 with **Position: Below** for a continuous annotation (e.g. posterior support) to display both keys simultaneously in a single neatly stacked column.
-{% endtip %}
 
 ### Clade Highlights
 
@@ -675,6 +686,61 @@ In the **Clade Highlights** section of the palette:
 The *Outline subtree* left edge combined with *Outline tips* right edge creates a tight polygon that traces the exact profile of the clade — useful for complex, non-rectangular subtrees. Collapsed clades inside the highlight are treated correctly: the shape extends to the full tip of the triangle.
 {% endtip %}
 
+### Colouring by Annotations
+
+Many sections of the Visual Options palette — **Tip Labels**, **Label Shapes**, **Tip Shapes**, **Node Shapes**, **Node Labels**, **Clade Highlights**, and **Legends** — share a common **Colour by** control. This dropdown lets you drive the colour of that element from any loaded annotation key rather than a single fixed colour.
+
+| Control | Effect |
+|---|---|
+| **Colour by** | *Off* — use the fixed colour set in that section; or select any annotation key to colour each element by the value of that key |
+| **Configure** (or **Palette**) | Opens the annotation colour settings for the selected key (see below) |
+
+When **Colour by** is set to an annotation key, a **Configure** button appears in that section. Click it to open the colour settings for that key:
+
+- **Palette** — choose a categorical swatch set (for string/boolean fields) or a continuous gradient (for numeric fields). Palettes are shared across all sections that colour by the same key.
+- **Scale mode** (numeric annotations only) — controls how the numeric range maps onto the gradient:
+
+| Scale mode | Description |
+|---|---|
+| **Auto** | Min and max of the data determine the scale endpoints |
+| **Symmetric ±0** | Scale is centred on zero; min and max are set to ±*max(|value|)* |
+| **From zero** | Scale runs from 0 to the maximum value |
+| **0 → 1** | Values are assumed to already lie in the 0–1 range |
+
+#### Managing Palettes
+
+Click **Manage Palettes** {%- include 'btn.html', id: "btn-manage-palettes" %} in the toolbar (also accessible from the annotation colour settings dialog) to open the Palette Manager.
+
+{% include 'dialog-palette-manager.html', tab: "categorical", maxwidth: "860px" %}
+
+The manager has two tabs:
+
+- **Categorical** — edit discrete swatch sets: add, remove, or reorder individual colour swatches, duplicate an existing palette as a starting point
+- **Continuous** — edit gradient palettes either as colour stops or an HSB sweep, with full stop editing and duplication
+
+Built-in palettes are read-only. User palettes are editable, persisted immediately to local storage, and available at once in all *Colour by* controls and legends.
+
+### Legends
+
+Legends provide a colour key for any annotation used to colour tips, nodes, or labels. PearTree supports up to four independent legend strips simultaneously, all docked to the right side of the canvas.
+
+In the **Legend** section of the palette:
+
+1. Set **Annotation** to an annotation key (e.g. `country`).
+2. Adjust **Height %**, **Colour**, and **Font size** as desired.
+
+For categorical annotations a swatch-and-label key is drawn. For continuous numeric annotations a colour ramp with min/max labels is shown.
+
+{% include 'figure.html', src: "images/fig13.png", alt: "EBOV tree with country legend", maxwidth: "440px", legend: "EBOV tree with `country` legend docked to the right." %}
+
+**Legend 2–4:** additional legends can be configured below Legend 1. Set each legend's **Position** to *Right* (shown in the same panel as Legend 1) or *Below* (stacked vertically).
+
+Use **Height %** to control what fraction of the panel height each legend occupies.
+
+{% tip %}
+Use Legend 1 for a categorical annotation (e.g. country) and Legend 2 with **Position: Below** for a continuous annotation (e.g. posterior support) to display both keys simultaneously in a single neatly stacked column.
+{% endtip %}
+
 ### Themes
 
 The **Theme** section at the top of the palette provides pre-built visual presets.
@@ -689,28 +755,6 @@ The **Theme** section at the top of the palette provides pre-built visual preset
 | **Remove** | Delete a user-saved theme |
 
 Changing any individual setting switches the selector to *Custom*. Click **Reset to defaults** at the bottom of the palette to revert to the Artic theme.
-
-### Palette Manager
-
-Click **Manage Palettes** {%- include 'btn.html', id: "btn-manage-palettes" %} to open the Palette Manager.
-
-The manager has two tabs:
-
-- **Categorical**: edit discrete swatch sets, add/remove colours, reorder colours, duplicate palettes
-- **Continuous**: edit gradient palettes either as colour stops or an HSB sweep, with full stop editing and duplication
-
-Built-in palettes are read-only. User palettes are editable, persisted, and immediately available in all *Colour by* controls and legends.
-
-{% include 'dialog-palette-manager.html', tab: "categorical", maxwidth: "860px" %}
-
-### Annotation Colour Settings
-
-Whenever a section has a **Colour by** selector and a **Configure** button, click **Configure** to open key-specific colour settings.
-
-For the selected annotation key you can set:
-
-- **Palette** (categorical or sequential, depending on data type)
-- **Scale mode** for numeric keys (auto, symmetric around zero, from zero, or 0→1)
 
 ## Chapter 9: Filtering
 
