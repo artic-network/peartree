@@ -304,9 +304,13 @@ The hyperbolic lens is ideal for large trees where fully zooming in would hide t
 
 ### Selection Modes
 
-PearTree has two selection modes. The active mode is shown by which toolbar button is pressed.
+PearTree has two selection modes – node selection and branch selection. Which mode is currently in operation is shown by the toolbar buttons {%- include 'btn-group.html', ids: "btn-mode-nodes btn-mode-branches" %}. The default is the node selection mode.
 
-**Nodes mode** (default)
+{% note %}
+If the tree is determined to be rooted when it is loaded (for example if it is a BEAST or other time-calibrated tree) then the selection mode buttons (and the rooting buttons) are not shown. 
+{% endnote %}
+
+**Node selection operations**
 
 - **Click a tip** — selects that tip; the status bar shows its name and divergence
 - **Click an internal node** — selects all descendant tips; a teal MRCA ring marks the node
@@ -323,7 +327,7 @@ PearTree has two selection modes. The active mode is shown by which toolbar butt
 Press **⌘B** or click the branch-mode button {%- include 'btn.html', id: "btn-mode-branches" %} to switch. Click anywhere along a horizontal branch to place a precise positional marker. This mode enables exact-position rerooting (see [Chapter 11](#chapter-11-rooting)).
 
 {% tip %}
-Branches mode is mainly used for precise rerooting. The example EBOV tree is an explicitly-rooted BEAST tree, so rerooting is disabled for it. Use `data/varv_rooted.nwk` or `data/large_tree.tree` to practise rerooting.
+Branches mode is mainly used for precise manual rerooting. The example EBOV tree is an explicitly-rooted BEAST tree, so rerooting is disabled for it. Use `data/varv_rooted.nwk` or `data/large_tree.tree` to practise rerooting and see [Chapter 11](#chapter-11-rooting).
 {% endtip %}
 
 Press **⌘B** again to return to Nodes mode.
@@ -331,8 +335,6 @@ Press **⌘B** again to return to Nodes mode.
 ### Selecting with the Filter Box
 
 Typing into the filter box in the toolbar is the quickest way to select tips by name or annotation value. Choose a field and operator from the buttons to the left of the input, then type a value — matching tips are selected immediately.
-
-
 
 For example, choose *Name contains* and type `SLE` to select all Sierra Leone EBOV tips. Press **Escape** or clear the box to remove the filter (the selection remains in place).
 
@@ -343,10 +345,15 @@ For the full set of filter operators, saved named filters, and the Filter Manage
 
 ### Node Info
 
-Select any node or tip, then press **⌘I** or click the {%- include 'btn.html', id: "btn-node-info" %} button. The Node Info dialog lists every annotation on that node — name, divergence, branch length, posterior support, date, and any imported custom fields.
+Select any node or tip, then press **⌘I** or click the {%- include 'btn.html', id: "btn-node-info" %} button. The Node Info dialog lists every annotation on that node — name, divergence, branch length, posterior support, date, and any imported custom fields. The node can be named by typing into the text field and this will be used as a name for the clade (or can be displayed as a node label).
 
-{% include 'figure.html', src: "images/fig10.png", alt: "Node Info dialog", maxwidth: "400px", legend: "Node Info dialog for a selected EBOV tip." %}
+{% include 'figure.html', src: "images/node_info.png", alt: "Node Info dialog", maxwidth: "400px", bg: "#063642", legend: "Node Info dialog for a selected EBOV internal node." %}
 
+The tip info box similarly shows information and annotations for the selected tip such as those loaded from a CSV file. 
+
+{% include 'figure.html', src: "images/tip_info.png", alt: "Tip Info dialog", maxwidth: "400px", bg: "#063642", legend: "Tip Info dialog for a selected EBOV tip." %}
+
+In both boxes the **Copy as TSV** button will copy the contents of the box to the clipboard in TSV format for pasting into another application such as a spreadsheet. 
 
 ## Chapter 7: Organising the Tree
 
