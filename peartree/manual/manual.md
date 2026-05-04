@@ -588,6 +588,8 @@ Annotation values are displayed as text labels at each internal node — most co
 
 {% include 'figure.html', src: "images/label_shapes_2.png", alt: "Label shapes", maxwidth: "80%", bg: "#EAE8E1", legend: "Aligned label shapes as blocks showing a continuous annotation next to tip labels." %}
 
+Label shapes are controlled by the **LABEL SHAPES** control panel and this can be cascaded to add additional label shapes and more controls.
+
 {% include 'palette-label-shapes.html', legend: "Label shape controls." %}
 
 | Control | Effect |
@@ -601,9 +603,10 @@ Annotation values are displayed as text labels at each internal node — most co
 
 Multiple independent shape slots (up to 10) can be added to show several annotation dimensions simultaneously.
 
-> **Screenshot placeholder** — EBOV tip labels with two shape slots: `country` squares and `location` circles, demonstrating dual-annotation labelling.
 
 ### Tip Shapes
+
+Tips shapes are filled circles drawn at the end of each tip branch. They can be sized and coloured in the control panel or a 'Colour by' annotation provided to control the colour. A background 'halo' effect can be specifed to outline all the tips shapes as a single layer. The tip shapes are always drawn even when the tree is fully zoomed out.
 
 {% include 'palette-tip-shapes.html', legend: "Tip shapes controls." %}
 
@@ -612,16 +615,14 @@ Multiple independent shape slots (up to 10) can be added to show several annotat
 | Size | Tip circle radius (0 = hidden) |
 | Filter | Apply a saved named filter so only matching tips get shapes |
 | Colour | Stroke/fill colour |
-| Background | Halo fill colour |
-| Halo | Halo ring radius (0 = hidden) |
 | Colour by | Use an annotation key for tip colours |
 | Palette | Colour scheme when *Colour by* is active (**Configure** opens annotation colour settings) |
+| Halo | Halo ring radius (0 = hidden) |
+| Halo col. | Halo fill colour |
 
 Set **Colour by** to `country` to colour each tip by sampling country:
 
-{% include 'figure.html', src: "images/fig12a.png", alt: "Tip Shapes controls with Colour by set to country", maxwidth: "260px", legend: "Tip Shapes controls with **Colour by** set to `country`." %}
-
-{% include 'figure.html', src: "images/fig12b.png", alt: "EBOV tips coloured by country", maxwidth: "440px", legend: "EBOV tips coloured by `country`." %}
+{% include 'figure.html', src: "images/tip_shapes.png", alt: "Tip Shapes controls with Colour by set to country", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV tip shapes set with <b>Colour by</b> set to <code>country</code>." %}
 
 ### Node Shapes
 
@@ -631,16 +632,19 @@ Set **Colour by** to `country` to colour each tip by sampling country:
 |---|---|
 | Size | Node circle radius (0 = hidden) |
 | Filter | Apply a saved named filter so only matching nodes get shapes |
-| Colour by | Use an annotation key (e.g. `posterior`) |
-| Palette | For continuous support values, a diverging palette such as *Blue-Black-Red* works well: red = high support, blue = low (**Configure** opens annotation colour settings) |
+| Colour | Stroke/fill colour |
+| Colour by | Use an annotation key for tip colours |
+| Palette | Colour scheme when *Colour by* is active (**Configure** opens annotation colour settings) |
+| Halo | Halo ring radius (0 = hidden) |
+| Halo col. | Halo fill colour |
+
+{% tip %}
+For continuous support values, a diverging palette such as *Blue-Black-Red* works well: red = high support, blue = low (**Configure** opens annotation colour settings)
+{% endtip %}
 
 {% include 'figure.html', src: "images/fig12c.png", alt: "Node Shapes controls with Colour by set to posterior", maxwidth: "260px", legend: "Node Shapes controls with size set to 3 and **Colour by** set to `posterior`." %}
 
 {% include 'figure.html', src: "images/fig12d.png", alt: "EBOV tree with node shapes coloured by posterior support", maxwidth: "440px", legend: "EBOV tree with node shapes coloured by `posterior` support." %}
-
-{% tip %}
-Nodes can show circles coloured by a node-level annotation — useful for displaying posterior support values.
-{% endtip %}
 
 ### Node Bars
 
