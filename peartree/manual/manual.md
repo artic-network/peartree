@@ -582,7 +582,11 @@ Annotation values are displayed as text labels at each internal node — most co
 
 ### Label Shapes
 
-Coloured shapes can be drawn to the left of each tip label text, providing annotation colour swatches alongside each name.
+**Label shapes** are coloured shapes that are drawn to the left of each tip label text, providing additional ways of decorating tips with colours based on annotations. The shapes can be squares, circles or blocks - rectangles that fill the full height between tips to produce a continuous 'stripe'. Circles and squares are useful when the tip labels are not aligned, and blocks work best when the tips labels are aligned (whether visible or not).
+
+{% include 'figure.html', src: "images/label_shapes_1.png", alt: "Label shapes", maxwidth: "80%", bg: "#EAE8E1", legend: "Two label shapes shown next to tips – circles coloured with a categorical annotation, squares with a continuous annotation." %}
+
+{% include 'figure.html', src: "images/label_shapes_2.png", alt: "Label shapes", maxwidth: "80%", bg: "#EAE8E1", legend: "Aligned label shapes as blocks showing a continuous annotation next to tip labels." %}
 
 {% include 'palette-label-shapes.html', legend: "Label shape controls." %}
 
@@ -590,9 +594,10 @@ Coloured shapes can be drawn to the left of each tip label text, providing annot
 |---|---|
 | Shape | *Off* / *Square* / *Circle* / *Block* |
 | Size | Shape height as % of row height |
+| Pad left | Specifies the gap on the left side of the shape (in pixels) |
 | Colour | Default fill colour |
 | Colour by | Use an annotation key for shape colour |
-| Margin left/right | Gap on each side of the shape (px) |
+| Shape 2 | Selecting a shape 2 will open up another label shape in a second column. If turned on then another option, Shape 3 will become available. |
 
 Multiple independent shape slots (up to 10) can be added to show several annotation dimensions simultaneously.
 
