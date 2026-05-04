@@ -214,6 +214,8 @@ Many BEAST and epidemiological tree files encode metadata directly in the tip na
 
 *The examples in this chapter use the EBOV example tree (1610 tips). For navigation in very large trees, try loading `data/SARS-CoV-2_15K.tree` (15,000 tips).*
 
+There are a range of option for zooming into the tree, scrolling and navigating into subtrees or clades. The mouse/trackpad can be used to scroll and zoom with the scroll wheel or with standard gestures on the trackpad. Various hotkeys can be used to get more precise control.
+
 ### Scrolling and Zooming
 
 | Gesture / key | Effect |
@@ -225,8 +227,9 @@ Many BEAST and epidemiological tree files encode metadata directly in the tip na
 | **⌘↑ / ⌘↓** | Scroll one page |
 | **⌘⇧↑ / ⌘⇧↓** | Jump to the top or bottom of the tree |
 
-Toolbar zoom buttons: 
-{% include 'btn-group.html', ids: "btn-zoom-in btn-zoom-out btn-fit btn-fit-labels", label: "Zoom" %}
+The toolbar also has buttons for zooming in and out and fitting the tree to the window or expanding to see the labels. These buttons also have keyboard shortcuts.
+
+*Toolbar zoom buttons*: {% include 'btn-group.html', ids: "btn-zoom-in btn-zoom-out btn-fit btn-fit-labels", label: "Toolbar zoom buttons" %}
 
 | Button | Shortcut | Action |
 |---|---|---|
@@ -235,13 +238,15 @@ Toolbar zoom buttons:
 | {%- include 'btn.html', id: "btn-fit" %} | **⌘0** | Fit entire tree to window |
 | {%- include 'btn.html', id: "btn-fit-labels" %} | **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
 
-{% note %}
-**Automatic horizontal scaling:** When zoomed out so far that tip labels are hidden, PearTree expands the tree branches to fill the full canvas width. When you zoom back in enough for labels to become readable, the horizontal scale contracts to make room for them again. 
-{% endnote %}
+The **Fit Labels** button {%- include 'btn.html', id: "btn-fit-labels" %} or **⌘⇧0** keyboard shortcut zooms the tree verticallys sufficiently that the labels can be shown without any overlap. This will depend on the label font size (set in the [Tip Labels](#tip-labels) section of the control panel). If one or more tips are selected then the zoom will keep the these visible in the window.
 
 {% include 'figure.html', src: "images/zoomed_tree.png", alt: "EBOV tree zoomed in", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV tree zoomed in to show individual tip labels. Only the top portion of the tree is being shown." %}
 
-Press **⌘0** to return to the full view at any time.
+Press {%- include 'btn.html', id: "btn-fit" %} button or **⌘0** keyboard shortcut to return to the full view of the tree (this may hide the tip labels again if there is not enough space to show them).
+
+{% note %}
+**Automatic horizontal scaling:** PearTree only supports vertical zoom. This is a design decision because horizonal zooming can hide the branching order and hinder navigation. The tree is scaled horizontally to fill the available space. The ratio of the vertical scale and fixed horizonal scale determines the aspect ratio of the tree when [exported as a graphic](#exporting-a-graphic).
+{% endnote %}
 
 ### Subtree Navigation
 
