@@ -143,6 +143,13 @@
   pointer-events: none;
 }
 
+/* Configure / palette buttons: sized to match select/input row height */
+.pt-ui-demo .pt-configure-btn {
+  padding: 1px 8px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
 /* ── Modal demo — card only, no overlay backdrop ─────────────────────────── */
 .pt-modal--demo {
   position: relative;
