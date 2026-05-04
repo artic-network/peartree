@@ -444,11 +444,11 @@ The subtree becomes a filled triangle labelled with the clade name and enclosed 
 
 The **Span** control in the **COLLAPSED CLADES** section of the control panel can adjust the vertical size of the triangle shapes. If set to the maximum then the triangles become the size of the number of tips that they contain and the individual labels will be shown if sufficiently zoomed in.
 
-{% include 'figure.html', src: "images/clade_collapsed_full.png", alt: "Collapsed clade fully expanded", maxwidth: "80%", bg: "#EAE8E1", legend: "The collapsed clade scaled to show all the tip labels." %}
+**Changing a triangle's colour:** with a triangle selected, use the colour picker and **Paint** button {%- include 'btn.html', id: "btn-apply-user-colour" %} in the toolbar to assign a custom fill colour. The eraser button {%- include 'btn.html', id: "btn-clear-user-colour" %} resets to the theme default.
+
+{% include 'figure.html', src: "images/clade_collapsed_full.png", alt: "Collapsed clade fully expanded", maxwidth: "80%", bg: "#EAE8E1", legend: "The collapsed clade scaled to show all the tip labels. It has also been coloured using the <b>Paint</b> button." %}
 
 To expand the clade: click the triangle to select it and click **Expand** {%- include 'btn.html', id: "btn-expand-clade" %}. Selecting a clade and then clicking **Expand** {%- include 'btn.html', id: "btn-expand-clade" %} will expand all collapsed subclades and with no selection, all collapse clades visible on the screen.
-
-**Changing a triangle's colour:** with a triangle selected, use the colour picker and paint brush button {%- include 'btn.html', id: "btn-apply-user-colour" %} in the toolbar to assign a custom fill colour. The eraser button {%- include 'btn.html', id: "btn-clear-user-colour" %} resets to the theme default.
 
 See the [**Collapsed Clades**](#collapsed-clades) section of the **Visual Options palette** for more controls of the collapsed clades.
 
