@@ -477,40 +477,42 @@ Controls are organised into collapsible sections. Click on a panel heading to op
 
 ### Tree Appearance
 
-The **Tree** section controls the canvas background, branch colour and width, and the typeface used for all labels.
+The **Tree** and **Branches** sections controls the basic visual look of the tree - the background colour and branch colour and width.
 
 {% include 'palette-tree.html', legend: "Tree appearance controls." %}
 
 | Control | Effect |
 |---|---|
-| Background | Canvas fill colour |
-| Root Len | Root stem length |
+| Calibrate | Specify a date annoation that can be used to calibrate the timescale of the tree. If a date annoation exists when the tree is loaded it will be selected by default. This control will be hidden if there are no date annotations. |
+| Background | The colour of the background canvas of the tree. |
+| Root Len | This determines the length of the root branch 'stem' as a percentage of the whole tree from 0% (hidden) to 20% |
 
 {% include 'palette-branches.html', legend: "Branch appearance controls." %}
 
 | Control | Effect |
 |---|---|
-| Colour | Branch line colour |
+| Colour | The colour of the branches of the tree |
 | Width | Branch line stroke thickness (0.5–8 px) |
 | Elbow radius | How curvy the corners of the branches are |
 
-<!-- {% include 'figure.html', src: "images/negative_branch.png", alt: "Negative branch drawn as-is", maxwidth: "180px" %}
-{% include 'figure.html', src: "images/negative_clamped.png", alt: "Negative branch clamped to zero", maxwidth: "180px", legend: "Negative branch drawn as-is (left) vs. clamped to zero (right)." %} -->
-
 ### Tip Labels
+
+These controls determine how the tip labels are presented. The tip labels will only be visible when the tree is sufficiently zoomed in that there is space for them (determined by the font size). 
 
 {% include 'palette-tip-labels.html', legend: "Tip Labels section of the Visual Options palette." %}
 
 | Control | Effect |
 |---|---|
 | Show | *Off* — hide all labels; *Names* — show tip name; or select an annotation key to display its values instead |
-| Filter | Apply a saved named filter so only matching tips get labels |
-| Layout | *Normal* (labels float at each tip) or aligned options (*Aligned*, *Dashed*, *Dots*, *Solid*) — labels line up at the rightmost tip with optional connector lines |
-| Size | Font size (1–20 pt) |
-| Colour | Default label colour |
+| Filter | Apply a saved named filter so only matching tips get labels (see [Chapter 9: Filtering](#chapter-9-filtering) for more information) |
+| Layout | *Off* (labels are adjacent to each tip) or aligned options (*Aligned*, *Dashed*, *Dots*, *Solid*) — labels align with the rightmost tip with optional connector lines |
+| Spacing | Gap between the tip marker and the label text (in pixels) |
+| Size | Font size (1–48 pt) |
+| Typeface | Font family for tip labels — *Theme* uses the typeface set in the Theme section; otherwise choose from Monospace, Sans-serif, Serif, or specific named fonts |
+| Style | Font weight and style — *Theme* inherits from the Theme section; or choose *Regular*, *Bold*, *Italic*, or *Bold Italic* |
+| Colour | The default label colour used if no user colour has been specified using the Paint option or if the `Colour by` option is being used but there is no annotation for that tip |
 | Colour by | Use an annotation key for per-tip label colour |
-| Palette | Colour scheme when *Colour by* is active (**Configure** opens annotation colour settings) |
-| Spacing | Gap between the tip marker and the label text (px) |
+| Palette | A **Configure** buttoon appears when *Colour by* is active. This button will open a dialog box where a colour palette for this annoation can be selected. |
 
 ### Label Shapes
 
