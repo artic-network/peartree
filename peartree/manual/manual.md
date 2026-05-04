@@ -233,7 +233,7 @@ The toolbar also has buttons for zooming in and out and fitting the tree to the 
 
 | Button | Shortcut | Action |
 |---|---|---|
-| {%- include 'btn.html', id: "btn-zoom-in" %} | **⌘=** | Zoom in ×1.5 |
+| {%- include 'btn.html', id: "btn-zoom-in" %} | **⌘+** | Zoom in ×1.5 |
 | {%- include 'btn.html', id: "btn-zoom-out" %} | **⌘−** | Zoom out ×1.5 |
 | {%- include 'btn.html', id: "btn-fit" %} | **⌘0** | Fit entire tree to window |
 | {%- include 'btn.html', id: "btn-fit-labels" %} | **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
@@ -250,20 +250,23 @@ Press {%- include 'btn.html', id: "btn-fit" %} button or **⌘0** keyboard short
 
 ### Subtree Navigation
 
-**Double-click** any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node, scaled to fill the full window. Alternatively, select an internal node and click the drill-down button {%- include 'btn.html', id: "btn-drill" %} or press **⌘⇧.**.
+**Double-click** any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node, scaled to fill the full window. Alternatively, select an internal node or a set of tips (this will select the most recent common ancestor of the tips) and click the drill-down button {%- include 'btn.html', id: "btn-drill" %} or press **⌘⇧>**.
 
 {% include 'figure.html', src: "images/select_clade.png", alt: "Subclade before drilling down", maxwidth: "80%", bg: "#EAE8E1", legend: "A subclade is selected."   %}
 
-{% include 'figure.html', src: "images/drilldown_clade.png", alt: "Subclade after drilling down", maxwidth: "80%", bg: "#EAE8E1", legend: "The subclade as viewed after drilling down." %}
+{% include 'figure.html', src: "images/drilldown_clade.png", alt: "Subclade after drilling down", maxwidth: "80%", bg: "#EAE8E1", legend: "The subclade as viewed after drilling down using the drill-down button or keyboard shortcut." %}
 
 PearTree maintains a full navigation history that works like a web browser. Drill down into several different clades in sequence, then press **⌘[** to step back through each view. **⌘]** goes forward again. This makes it easy to compare distant parts of a large tree without re-navigating each time.
 
-Navigation tools: {% include 'btn-group.html', ids: "btn-back btn-forward btn-climb btn-home", label: "Navigation" %}
+The **Climb Up** button {%- include 'btn.html', id: "btn-climb" %} or **⌘⇧<** keyboard shortcut moves the view out to include the direct parent node (i.e., one node closer to the root). The **Home** button {%- include 'btn.html', id: "btn-home" %} or **⌘\\** keyboard shortcut restores the view to show the entire tree. Both these steps will be included in the navigation history so the back button will take you back to the former view.
+
+Navigation tools: {% include 'btn-group.html', ids: "btn-back btn-forward", label: "Navigation" %} {% include 'btn-group.html', ids: "btn-drill btn-climb btn-home", label: "Navigation" %}
 | Button | Shortcut | Effect |
 |---|---|---|
-| {%- include 'btn.html', id: "btn-back" %} | **⌘[** | Go back to the previous view |
-| {%- include 'btn.html', id: "btn-forward" %} | **⌘]** | Go forward in history |
-| {%- include 'btn.html', id: "btn-climb" %} | **⌘⇧,** | Step up one level toward the root |
+| {%- include 'btn.html', id: "btn-back" %} | **⌘[** | Go back to the previous view in the navigation history |
+| {%- include 'btn.html', id: "btn-forward" %} | **⌘]** | Go forward in the navigation history - restoring a view after using the back function |
+| {%- include 'btn.html', id: "btn-drill" %} | **⌘⇧** | Drill into selected subtree opening a new view showing only that subtree |
+| {%- include 'btn.html', id: "btn-climb" %} | **⌘⇧<** | Step up one level toward the root revealing including node above the current subtree |
 | {%- include 'btn.html', id: "btn-home" %} | **⌘\\** | Return to the full-tree root view |
 
 ## Chapter 5: The Hyperbolic Lens
