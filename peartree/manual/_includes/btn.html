@@ -92,6 +92,8 @@
   {%- assign _t = "Collapse selected clade to triangle" -%}
 {%- elsif _b == "btn-expand-clade" -%}
   {%- assign _t = "Expand collapsed clade triangle" -%}
+{%- elsif _b == "btn-colour-trigger" -%}
+  {%- assign _t = "Choose colour for selected nodes" -%}
 {%- elsif _b == "btn-apply-user-colour" -%}
   {%- assign _t = "Apply colour to selected nodes" -%}
 {%- elsif _b == "btn-clear-user-colour" -%}
@@ -104,10 +106,18 @@
   {%- assign _t = "Curate annotations" -%}
 {%- elsif _b == "btn-manage-filters" -%}
   {%- assign _t = "Manage filters" -%}
+{%- elsif _b == "btn-named-filter" -%}
+  {%- assign _t = "Apply a saved filter" -%}
 {%- elsif _b == "btn-manage-palettes" -%}
   {%- assign _t = "Manage palettes" -%}
 {%- elsif _b == "btn-node-info" -%}
   {%- assign _t = "Node info (⌘I)" -%}
+{%- elsif _b == "btn-palette" -%}
+  {%- assign _t = "Visual options panel (Tab)" -%}
+{%- elsif _b == "btn-palette-pin" -%}
+  {%- assign _t = "Pin panel open" -%}
+{%- elsif _b == "btn-palette-close" -%}
+  {%- assign _t = "Close panel" -%}
 {%- elsif _b == "btn-data-table" -%}
   {%- assign _t = "Data table panel" -%}
 {%- elsif _b == "btn-rtt" -%}
@@ -146,15 +156,20 @@
 {%- elsif _b == "btn-show" -%}<i class="bi bi-node-plus"></i>
 {%- elsif _b == "btn-collapse-clade" -%}<i class="bi bi-arrows-collapse"></i>
 {%- elsif _b == "btn-expand-clade" -%}<i class="bi bi-arrows-expand"></i>
+{%- elsif _b == "btn-colour-trigger" -%}<span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#ff8800;vertical-align:middle;"></span>
 {%- elsif _b == "btn-apply-user-colour" -%}<i class="bi bi-brush"></i>
 {%- elsif _b == "btn-clear-user-colour" -%}<i class="bi bi-eraser"></i>
 {%- elsif _b == "btn-highlight-clade" -%}<i class="bi bi-highlighter"></i>
 {%- elsif _b == "btn-clear-highlights" -%}<i class="bi bi-eraser"></i>
 {%- elsif _b == "btn-curate-annot" -%}<i class="bi bi-tags"></i>
 {%- elsif _b == "btn-manage-filters" -%}<i class="bi bi-funnel"></i>
+{%- elsif _b == "btn-named-filter" -%}<i class="bi bi-funnel-fill"></i>
 {%- elsif _b == "btn-manage-palettes" -%}<i class="bi bi-palette"></i>
 {%- elsif _b == "btn-node-info" -%}<i class="bi bi-info-circle"></i>
+{%- elsif _b == "btn-palette" -%}<i class="bi bi-sliders"></i><i class="bi bi-caret-right"></i>
+{%- elsif _b == "btn-palette-pin" -%}<i class="bi bi-pin-angle"></i>
+{%- elsif _b == "btn-palette-close" -%}&times;
 {%- elsif _b == "btn-data-table" -%}<i class="bi bi-caret-left"></i><i class="bi bi-layout-sidebar-reverse"></i>
 {%- elsif _b == "btn-rtt" -%}<i class="bi bi-caret-left"></i><i class="bi bi-graph-up-arrow"></i>
 {%- endif -%}
-{%- endcapture -%}{%- capture _btn -%}<button class="btn btn-sm {{ _v }}{{ _act }} pt-btn-preview" id="{{ _b }}" title="{{ _t }}">{{ _ico }}</button>{%- endcapture -%}{{ _btn -}}
+{%- endcapture -%}{%- if _b == "btn-colour-trigger" -%}<span class="pt-btn-preview pt-btn-colour-trigger-preview" title="{{ _t }}">{{ _ico }}</span>{%- else -%}{%- capture _btn -%}<button class="btn btn-sm {{ _v }}{{ _act }} pt-btn-preview" id="{{ _b }}" title="{{ _t }}">{{ _ico }}</button>{%- endcapture -%}{{ _btn }}{%- endif -%}

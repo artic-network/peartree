@@ -1,0 +1,56 @@
+{%- comment -%}
+  dialog-open-tree.html — Open Tree File dialog preview
+  Parameters:
+    tab       (optional) — active tab: "file" (default), "url", or "example"
+    maxwidth  (optional) — CSS max-width of the wrapper (default: "480px")
+{%- endcomment -%}
+{%- assign _tab = tab | default: "file" -%}
+{%- assign _mw  = maxwidth | default: "480px" -%}
+{%- assign _legend = legend | default: "" -%}
+<div class="pt-ui-demo pt-ui-demo--dialog" style="max-width:{{ _mw }}">
+  <div class="pt-modal pt-modal--demo">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-folder2-open me-2"></i>Open Tree File</h5>
+      <button class="pt-modal-close-btn" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body">
+      <div class="pt-tabs">
+        <button class="pt-tab-btn{% if _tab == "file" %} active{% endif %}" data-tab="file"><i class="bi bi-folder2-open me-1"></i>File</button>
+        <button class="pt-tab-btn{% if _tab == "url" %} active{% endif %}" data-tab="url"><i class="bi bi-link-45deg me-1"></i>URL</button>
+        <button class="pt-tab-btn{% if _tab == "example" %} active{% endif %}" data-tab="example"><i class="bi bi-tree me-1"></i>Example</button>
+      </div>
+      <div class="pt-tab-panel{% if _tab == "file" %} active{% endif %}">
+        <div class="pt-drop-zone">
+          <div class="pt-drop-icon"><i class="bi bi-file-earmark-arrow-down"></i></div>
+          <p>Drag and drop your tree file here</p>
+          <p class="text-secondary" style="font-size:0.8rem;margin-bottom:1rem">NEXUS (.nex, .nexus, .tre, .tree, .treefile) &nbsp;or&nbsp; Newick (.nwk, .newick)</p>
+          <button class="btn btn-sm btn-outline-primary"><i class="bi bi-folder2-open me-1"></i>Choose File</button>
+        </div>
+      </div>
+      <div class="pt-tab-panel{% if _tab == "url" %} active{% endif %}">
+        <label class="form-label">Tree file URL</label>
+        <input type="url" class="pt-modal-url-input" value="https://example.com/tree.nexus" placeholder="https://example.com/tree.nexus" readonly>
+        <div style="text-align:center">
+          <button class="btn btn-sm btn-outline-primary"><i class="bi bi-cloud-download me-1"></i>Load from URL</button>
+        </div>
+      </div>
+      <div class="pt-tab-panel{% if _tab == "example" %} active{% endif %}">
+        <div class="pt-example-list">
+          <div class="pt-example-item">
+            <div class="pt-example-desc"><strong>Ebola virus (EBOV)</strong>Phylogenetic tree from the 2014–2016 West Africa epidemic.</div>
+            <button class="btn btn-sm btn-outline-success flex-shrink-0"><i class="bi bi-tree me-1"></i>Load</button>
+          </div>
+          <div class="pt-example-item">
+            <div class="pt-example-desc"><strong>SARS-CoV-2 (15K)</strong>Large SARS-CoV-2 tree with ~15,000 sequences.</div>
+            <button class="btn btn-sm btn-outline-success flex-shrink-0"><i class="bi bi-tree me-1"></i>Load</button>
+          </div>
+          <div class="pt-example-item">
+            <div class="pt-example-desc"><strong>Variola virus (VARV)</strong>Smallpox virus (variola) phylogeny.</div>
+            <button class="btn btn-sm btn-outline-success flex-shrink-0"><i class="bi bi-tree me-1"></i>Load</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{%- if _legend -%}<p class="pt-ui-demo-legend">{{ _legend }}</p>{%- endif -%}

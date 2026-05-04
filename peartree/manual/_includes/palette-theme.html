@@ -1,0 +1,34 @@
+{%- comment -%}
+  palette-theme.html — Theme section preview
+  Parameters:
+    legend  (optional) — caption text
+{%- endcomment -%}
+{%- assign _legend = legend | default: "" -%}
+<div class="pt-ui-demo pt-ui-demo--palette">
+  <div class="pt-palette-section pt-palette-section--demo">
+    <h3>
+      <i class="bi bi-palette2"></i> Theme
+      <span class="pt-sec-actions">
+        <button class="pt-sec-pin" title="Pin open"><i class="bi bi-pin"></i></button>
+        <i class="bi bi-chevron-right pt-sec-chevron"></i>
+      </span>
+    </h3>
+    <div class="pt-section-body">
+      <div class="pt-section-body-inner">
+        <div class="pt-palette-row--span"><select class="pt-palette-select" disabled><option>Solar Dark</option></select></div>
+        <div class="pt-palette-row--span" style="gap:6px">
+          <button class="pt-theme-btn" style="flex:1" disabled>Store</button>
+          <button class="pt-theme-btn" style="flex:1" disabled>Default</button>
+          <button class="pt-theme-btn" style="flex:1" disabled>Remove</button>
+        </div>
+        <div class="pt-palette-row--span" style="gap:6px">
+          <button class="pt-theme-btn" style="flex:1" disabled>Export</button>
+          <button class="pt-theme-btn" style="flex:1" disabled>Import</button>
+        </div>
+        <div class="pt-palette-row" title="Default typeface used throughout the tree (overridable per section)"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" disabled><option value="Monospace">Monospace</option></select></div>
+        <div class="pt-palette-row" title="Default font style used throughout the tree"><span class="pt-palette-label">Style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" disabled><option value="Regular">Regular</option></select></div>
+      </div>
+    </div>
+  </div>
+</div>
+{%- if _legend -%}<p class="pt-ui-demo-legend">{{ _legend }}</p>{%- endif -%}

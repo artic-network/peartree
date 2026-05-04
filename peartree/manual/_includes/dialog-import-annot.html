@@ -1,0 +1,107 @@
+{%- comment -%}
+  dialog-import-annot.html — Import Annotations dialog preview
+  Parameters:
+    phase     (optional) — "pick" (default) or "config"
+    maxwidth  (optional) — CSS max-width of the wrapper (default: "480px")
+{%- endcomment -%}
+{%- assign _phase = phase | default: "pick" -%}
+{%- assign _mw    = maxwidth | default: "480px" -%}
+{%- assign _legend = legend | default: "" -%}
+<div class="pt-ui-demo pt-ui-demo--dialog" style="max-width:{{ _mw }}">
+  <div class="pt-modal pt-modal--demo">
+    <div class="pt-modal-header">
+      {%- if _phase == "config" -%}
+      <h5 class="modal-title"><i class="bi bi-file-earmark-text me-2"></i>ebov.csv</h5>
+      {%- else -%}
+      <h5 class="modal-title"><i class="bi bi-file-earmark-plus me-2"></i>Import Annotations</h5>
+      {%- endif -%}
+      <button class="pt-modal-close-btn" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body">
+      {%- if _phase == "pick" -%}
+      <div class="pt-tabs">
+        <button class="pt-tab-btn active" data-tab="file"><i class="bi bi-folder2-open me-1"></i>File</button>
+        <button class="pt-tab-btn" data-tab="url"><i class="bi bi-link-45deg me-1"></i>URL</button>
+      </div>
+      <div class="pt-tab-panel active">
+        <div class="pt-drop-zone">
+          <div class="pt-drop-icon"><i class="bi bi-file-earmark-arrow-down"></i></div>
+          <p>Drag and drop your annotation file here</p>
+          <p class="text-secondary" style="font-size:0.8rem;margin-bottom:1rem">CSV (.csv) &nbsp;or&nbsp; Tab-separated (.tsv)</p>
+          <button class="btn btn-sm btn-outline-primary"><i class="bi bi-folder2-open me-1"></i>Choose File</button>
+        </div>
+      </div>
+      <div class="pt-tab-panel">
+        <label class="form-label">Annotation file URL</label>
+        <input type="url" class="pt-modal-url-input" placeholder="https://example.com/annotations.csv" readonly>
+        <div style="text-align:center;margin-top:0.5rem">
+          <button class="btn btn-sm btn-outline-primary"><i class="bi bi-cloud-download me-1"></i>Load from URL</button>
+        </div>
+      </div>
+      {%- else -%}
+      <p style="margin:0 0 0.8rem;color:var(--bs-secondary-color)">
+        104&nbsp;rows, 5&nbsp;columns
+      </p>
+      <div class="imp-section">
+        <label class="imp-section-label">Match column</label>
+        <div class="imp-row">
+          <select class="imp-select">
+            <option selected>name</option>
+            <option>country</option>
+            <option>date</option>
+            <option>lineage</option>
+            <option>location</option>
+          </select>
+        </div>
+      </div>
+      <div class="imp-section">
+        <label class="imp-section-label">Match mode</label>
+        <div style="display:flex;flex-direction:column;gap:0.3rem">
+          <label class="imp-row" style="cursor:pointer">
+            <input type="radio" name="imp-mode" checked> Full taxon label
+          </label>
+          <label class="imp-row" style="cursor:pointer">
+            <input type="radio" name="imp-mode"> Pipe-delimited field:&nbsp;
+            <input type="number" class="ca-num-input" value="1" style="width:52px;padding:0.1rem 0.3rem;font-size:0.82rem" readonly>
+          </label>
+        </div>
+      </div>
+      <div class="imp-section">
+        <div style="font-size:0.82rem;padding:0.4rem 0.6rem;border-radius:4px;background:var(--pt-surface);color:var(--pt-text-bright)">
+          <i class="bi bi-check-circle text-success me-1"></i>103 / 104 tips matched
+        </div>
+      </div>
+      <div class="imp-section">
+        <label class="imp-section-label">Columns to import</label>
+        <div class="imp-col-grid">
+          <label><input type="checkbox" class="imp-col-chk" checked> name</label>
+          <label><input type="checkbox" class="imp-col-chk" checked> country</label>
+          <label><input type="checkbox" class="imp-col-chk" checked> date</label>
+          <label><input type="checkbox" class="imp-col-chk" checked> lineage</label>
+          <label><input type="checkbox" class="imp-col-chk" checked> location</label>
+        </div>
+        <button class="btn btn-sm btn-outline-secondary" style="margin-top:0.4rem;font-size:0.75rem;padding:0.1rem 0.5rem">Deselect all</button>
+      </div>
+      <div class="imp-section">
+        <label class="imp-row" style="cursor:pointer;gap:0.4rem;align-items:flex-start">
+          <input type="checkbox" style="margin-top:0.1rem;flex-shrink:0">
+          <span>Replace existing annotations with the same name
+            <span style="display:block;color:var(--bs-secondary-color);font-size:0.75rem">
+              Clears matching annotation keys from all nodes before applying new values.
+            </span>
+          </span>
+        </label>
+      </div>
+      {%- endif -%}
+    </div>
+    <div class="pt-modal-footer">
+      {%- if _phase == "config" -%}
+      <button class="btn btn-sm btn-outline-secondary">Cancel</button>
+      <button class="btn btn-sm btn-primary">Import &#x2192;</button>
+      {%- else -%}
+      <button class="btn btn-sm btn-secondary">Cancel</button>
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+{%- if _legend -%}<p class="pt-ui-demo-legend">{{ _legend }}</p>{%- endif -%}

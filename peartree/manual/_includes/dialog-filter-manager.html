@@ -1,0 +1,123 @@
+{%- comment -%}
+  dialog-filter-manager.html — Filter Manager dialog preview
+  Parameters:
+    maxwidth  (optional) — CSS max-width of the wrapper (default: "820px")
+{%- endcomment -%}
+{%- assign _mw = maxwidth | default: "820px" -%}
+{%- assign _legend = legend | default: "" -%}
+<div class="pt-ui-demo pt-ui-demo--dialog-wide" style="max-width:{{ _mw }}">
+  <div class="pt-modal fm-modal pt-modal--demo" style="width:100%">
+    <div class="pt-modal-header">
+      <h5 class="modal-title"><i class="bi bi-funnel me-2"></i>Filters</h5>
+      <button class="pt-modal-close-btn" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body fm-modal-body" style="padding:0;display:flex;overflow:hidden">
+      <div class="fm-list-pane">
+        <div class="fm-list-header">
+          <span class="fm-list-title">Filters</span>
+          <button class="btn btn-xs btn-primary"><i class="bi bi-plus me-1"></i>New Filter</button>
+        </div>
+        <div class="fm-list">
+          <div class="fm-list-row active">
+            <span class="fm-list-name">West Africa</span>
+            <div class="fm-list-actions">
+              <button class="btn btn-xs btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-xs btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+            </div>
+          </div>
+          <div class="fm-list-row">
+            <span class="fm-list-name">Post-2014</span>
+            <div class="fm-list-actions">
+              <button class="btn btn-xs btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-xs btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+            </div>
+          </div>
+          <div class="fm-list-row">
+            <span class="fm-list-name">SL Lineage 1</span>
+            <div class="fm-list-actions">
+              <button class="btn btn-xs btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-xs btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="fm-editor-pane">
+        <div class="fm-editor-header">
+          <div class="fm-name-row">
+            <label class="fm-label">Name</label>
+            <input type="text" class="fm-name-input" value="West Africa" readonly>
+          </div>
+        </div>
+        <div class="fm-group fm-group-root">
+          <div class="fm-logic-row">
+            <span class="fm-logic-label">Match</span>
+            <button class="fm-logic-btn active">ALL (AND)</button>
+            <button class="fm-logic-btn">ANY (OR)</button>
+          </div>
+          <div class="fm-group-items">
+            <!-- Condition 1: country in [GIN, LBR, SLE] -->
+            <div class="fm-cond-row">
+              <select class="fm-sel fm-field-sel">
+                <option>Tip Name</option>
+                <option selected>country</option>
+                <option>date</option>
+                <option>lineage</option>
+              </select>
+              <select class="fm-sel fm-op-sel">
+                <option selected>in</option>
+                <option>not in</option>
+                <option>is</option>
+                <option>is not</option>
+              </select>
+              <div class="fm-val-wrap" style="flex-direction:column;align-items:flex-start">
+                <div class="fm-chips">
+                  <span class="fm-chip">GIN<button class="fm-chip-del" title="Remove">&times;</button></span>
+                  <span class="fm-chip">LBR<button class="fm-chip-del" title="Remove">&times;</button></span>
+                  <span class="fm-chip">SLE<button class="fm-chip-del" title="Remove">&times;</button></span>
+                </div>
+                <div class="fm-chip-row">
+                  <input type="text" class="fm-chip-input" placeholder="Add value…" readonly>
+                  <button class="btn btn-xs btn-outline-secondary">Add</button>
+                </div>
+              </div>
+              <button class="fm-remove-cond-btn btn btn-xs btn-outline-danger" title="Remove condition"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <!-- Condition 2: date >= 2014-01-01 -->
+            <div class="fm-cond-row">
+              <select class="fm-sel fm-field-sel">
+                <option>Tip Name</option>
+                <option>country</option>
+                <option selected>date</option>
+                <option>lineage</option>
+              </select>
+              <select class="fm-sel fm-op-sel">
+                <option selected>&ge;</option>
+                <option>&le;</option>
+                <option>is</option>
+                <option>is not</option>
+              </select>
+              <div class="fm-val-wrap">
+                <input type="text" class="fm-val-input fm-date-input" value="2014-01-01" readonly>
+              </div>
+              <button class="fm-remove-cond-btn btn btn-xs btn-outline-danger" title="Remove condition"><i class="bi bi-x-lg"></i></button>
+            </div>
+          </div>
+          <div class="fm-add-row">
+            <button class="btn btn-xs btn-outline-secondary"><i class="bi bi-plus me-1"></i>Condition</button>
+            <button class="btn btn-xs btn-outline-secondary"><i class="bi bi-plus me-1"></i>Group</button>
+          </div>
+        </div>
+        <div class="fm-editor-footer">
+          <button class="btn btn-sm btn-primary">Save</button>
+          <button class="btn btn-sm btn-secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div class="pt-modal-footer">
+      <button class="btn btn-sm btn-outline-secondary me-1"><i class="bi bi-upload me-1"></i>Import</button>
+      <button class="btn btn-sm btn-outline-secondary me-auto"><i class="bi bi-download me-1"></i>Export All</button>
+      <button class="btn btn-sm btn-secondary">Close</button>
+    </div>
+  </div>
+</div>
+{%- if _legend -%}<p class="pt-ui-demo-legend">{{ _legend }}</p>{%- endif -%}
