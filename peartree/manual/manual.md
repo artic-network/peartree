@@ -710,14 +710,13 @@ In the **Clade Highlights** section of the palette:
 
 ### Colouring by Annotations
 
-Many sections of the Visual Options palette — **Tip Labels**, **Label Shapes**, **Tip Shapes**, **Node Shapes**, **Node Labels**, **Clade Highlights**, and **Legends** — share a common **Colour by** control. This dropdown lets you drive the colour of that element from any loaded annotation key rather than a single fixed colour.
-
-| Control | Effect |
-|---|---|
-| **Colour by** | *Off* — use the fixed colour set in that section; or select any annotation key to colour each element by the value of that key |
-| **Configure** (or **Palette**) | Opens the annotation colour settings for the selected key (see below) |
+Many sections of the Visual Options palette — **Tip Labels**, **Label Shapes**, **Tip Shapes**, **Node Shapes**, **Node Labels**, **Clade Highlights**, and **Legends** — share a common **Colour by** control. This dropdown lets you drive the colour of that element from an annotation rather than a single fixed colour.
 
 When **Colour by** is set to an annotation key, a **Configure** button appears in that section. Click it to open the colour settings for that key:
+
+{% include 'dialog-colour-settings.html', annotation: "country", datatype: "categorical", palette: "Pastel", maxwidth: "320px", legend: "Colour settings for a categorical annotation (country), using the Pastel palette." %}
+
+{% include 'dialog-colour-settings.html', annotation: "posterior", datatype: "continuous", palette: "Blue-Black-Red", scalemode: "zero-one", maxwidth: "320px", legend: "Colour settings for a continuous annotation (posterior), using the Blue-Black-Red diverging palette with a fixed 0→1 scale." %}
 
 - **Palette** — choose a categorical swatch set (for string/boolean fields) or a continuous gradient (for numeric fields). Palettes are shared across all sections that colour by the same key.
 - **Scale mode** (numeric annotations only) — controls how the numeric range maps onto the gradient:
