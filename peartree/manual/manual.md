@@ -460,42 +460,7 @@ To remove: click the **Clear** button {%- include 'btn.html', id: "btn-clear-use
 Click a colour swatch in a categorical legend to instantly select all tips with that annotation value, wherever they appear in the tree. **⌘-click** additional swatches to add them to the selection. Then apply a user colour, hide, or export that group.
 {% endtip %}
 
-### Themes
 
-The **Theme** section at the top of the palette provides pre-built visual presets.
-
-{% include 'figure.html', src: "images/fig16.png", alt: "Theme section with MCM theme applied", maxwidth: "280px", legend: "The Theme section with the *MCM* theme applied." %}
-
-| Control | Effect |
-|---|---|
-| Theme selector | Switch to a built-in or user-saved theme |
-| **Store** | Save the current settings as a named personal theme |
-| **Default** | Make this theme the starting point for new windows |
-| **Remove** | Delete a user-saved theme |
-
-Changing any individual setting switches the selector to *Custom*. Click **Reset to defaults** at the bottom of the palette to revert to the Artic theme.
-
-### Palette Manager
-
-Click **Manage Palettes** {%- include 'btn.html', id: "btn-manage-palettes" %} to open the Palette Manager.
-
-The manager has two tabs:
-
-- **Categorical**: edit discrete swatch sets, add/remove colours, reorder colours, duplicate palettes
-- **Continuous**: edit gradient palettes either as colour stops or an HSB sweep, with full stop editing and duplication
-
-Built-in palettes are read-only. User palettes are editable, persisted, and immediately available in all *Colour by* controls and legends.
-
-{% include 'dialog-palette-manager.html', tab: "categorical", maxwidth: "860px" %}
-
-### Annotation Colour Settings
-
-Whenever a section has a **Colour by** selector and a **Configure** button, click **Configure** to open key-specific colour settings.
-
-For the selected annotation key you can set:
-
-- **Palette** (categorical or sequential, depending on data type)
-- **Scale mode** for numeric keys (auto, symmetric around zero, from zero, or 0→1)
 
 ### Tree Appearance
 
@@ -503,15 +468,18 @@ The **Tree** section controls the canvas background, branch colour and width, an
 
 {% include 'palette-tree.html', legend: "Tree appearance controls." %}
 
+| Control | Effect |
+|---|---|
+| Background | Canvas fill colour |
+| Root Len | Root stem length |
 
 {% include 'palette-branches.html', legend: "Branch appearance controls." %}
 
+| Control | Effect |
 |---|---|
-| Background | Canvas fill colour |
-| Branches | Branch line colour |
-| Branch width | Stroke thickness (0.5–8 px) |
-| Typeface | Font family for all labels |
-| Neg. branches | *Draw* (as-is) or *Clamp to zero* |
+| Colour | Branch line colour |
+| Width | Branch line stroke thickness (0.5–8 px) |
+| Elbow radius | How curvy the corners of the branches are |
 
 <!-- {% include 'figure.html', src: "images/negative_branch.png", alt: "Negative branch drawn as-is", maxwidth: "180px" %}
 {% include 'figure.html', src: "images/negative_clamped.png", alt: "Negative branch clamped to zero", maxwidth: "180px", legend: "Negative branch drawn as-is (left) vs. clamped to zero (right)." %} -->
@@ -520,7 +488,7 @@ The **Tree** section controls the canvas background, branch colour and width, an
 
 {% include 'palette-tip-labels.html', legend: "Tip Labels section of the Visual Options palette." %}
 
-{% include 'figure.html', src: "images/controls_tip_labels.png", alt: "Tip labels controls", maxwidth: "260px" %}
+| Control | Effect |
 |---|---|
 | Show | *Off* — hide all labels; *Names* — show tip name; or select an annotation key to display its values instead |
 | Filter | Apply a saved named filter so only matching tips get labels |
@@ -534,6 +502,8 @@ The **Tree** section controls the canvas background, branch colour and width, an
 ### Label Shapes
 
 Coloured shapes can be drawn to the left of each tip label text, providing annotation colour swatches alongside each name.
+
+{% include 'palette-label-shape.html', legend: "Label shape controls." %}
 
 | Control | Effect |
 |---|---|
@@ -550,6 +520,8 @@ Multiple independent shape slots (up to 10) can be added to show several annotat
 ### Tip Shapes
 
 {% include 'figure.html', src: "images/controls_tip_shapes.png", alt: "Tip shapes controls", maxwidth: "260px" %}
+
+| Control | Effect |
 |---|---|
 | Size | Tip circle radius (0 = hidden) |
 | Filter | Apply a saved named filter so only matching tips get shapes |
@@ -665,6 +637,42 @@ In the **Clade Highlights** section of the palette:
 The *Outline subtree* left edge combined with *Outline tips* right edge creates a tight polygon that traces the exact profile of the clade — useful for complex, non-rectangular subtrees. Collapsed clades inside the highlight are treated correctly: the shape extends to the full tip of the triangle.
 {% endtip %}
 
+### Themes
+
+The **Theme** section at the top of the palette provides pre-built visual presets.
+
+{% include 'figure.html', src: "images/fig16.png", alt: "Theme section with MCM theme applied", maxwidth: "280px", legend: "The Theme section with the *MCM* theme applied." %}
+
+| Control | Effect |
+|---|---|
+| Theme selector | Switch to a built-in or user-saved theme |
+| **Store** | Save the current settings as a named personal theme |
+| **Default** | Make this theme the starting point for new windows |
+| **Remove** | Delete a user-saved theme |
+
+Changing any individual setting switches the selector to *Custom*. Click **Reset to defaults** at the bottom of the palette to revert to the Artic theme.
+
+### Palette Manager
+
+Click **Manage Palettes** {%- include 'btn.html', id: "btn-manage-palettes" %} to open the Palette Manager.
+
+The manager has two tabs:
+
+- **Categorical**: edit discrete swatch sets, add/remove colours, reorder colours, duplicate palettes
+- **Continuous**: edit gradient palettes either as colour stops or an HSB sweep, with full stop editing and duplication
+
+Built-in palettes are read-only. User palettes are editable, persisted, and immediately available in all *Colour by* controls and legends.
+
+{% include 'dialog-palette-manager.html', tab: "categorical", maxwidth: "860px" %}
+
+### Annotation Colour Settings
+
+Whenever a section has a **Colour by** selector and a **Configure** button, click **Configure** to open key-specific colour settings.
+
+For the selected annotation key you can set:
+
+- **Palette** (categorical or sequential, depending on data type)
+- **Scale mode** for numeric keys (auto, symmetric around zero, from zero, or 0→1)
 
 ## Chapter 9: Filtering
 
