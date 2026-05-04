@@ -732,7 +732,7 @@ For a catagorical data type then a number of discrete colour palettes are availa
 
 #### Managing Palettes
 
-Click **Manage Palettes** {%- include 'btn.html', id: "btn-manage-palettes" %} in the toolbar (also accessible from the annotation colour settings dialog) to open the Palette Manager.
+Click **Manage Palettes** {%- include 'btn.html', id: "btn-manage-palettes" %} in the toolbar (also accessible using the **Palette Manager** button in the annotation Colour Settings dialog) to open the Palette Manager.
 
 {% include 'dialog-palette-manager.html', tab: "categorical", maxwidth: "860px" %}
 
