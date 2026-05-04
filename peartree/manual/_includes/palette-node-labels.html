@@ -1,0 +1,34 @@
+{%- comment -%}
+  palette-node-labels.html — Node Labels section preview
+  Parameters:
+    legend  (optional) — caption text
+{%- endcomment -%}
+{%- assign _legend = legend | default: "" -%}
+<div class="pt-ui-demo pt-ui-demo--palette">
+  <div class="pt-palette-section pt-palette-section--demo">
+    <h3>
+      <i class="bi bi-tag-fill"></i> Node Labels
+      <span class="pt-sec-actions">
+        <button class="pt-sec-pin" title="Pin open"><i class="bi bi-pin"></i></button>
+        <i class="bi bi-chevron-right pt-sec-chevron"></i>
+      </span>
+    </h3>
+    <div class="pt-section-body">
+      <div class="pt-section-body-inner">
+        <div class="pt-palette-row" title="Show labels at internal nodes; choose which annotation to display"><span class="pt-palette-label">Show</span><select class="pt-palette-select" disabled><option value="">Off</option></select></div>
+        <div class="pt-palette-row" title="Only draw node labels on nodes that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" disabled><option value="">— always —</option></select></div>
+        <div class="pt-sub-controls pt-detail pt-detail-open">
+          <div class="pt-palette-row" title="Position of node labels relative to the node point"><span class="pt-palette-label">Position <i class="bi bi-diagram-2-fill form-label-sm bi-rotate-90"></i></span><select class="pt-palette-select" disabled><option value="right">Right</option></select></div>
+          <div class="pt-palette-row" title="Horizontal offset of node labels from the node point"><span class="pt-palette-label">Spacing <i class="bi bi-arrow-bar-right form-label-sm"></i></span><input type="range" class="form-range" min="0" max="20" step="1" value="4" disabled /><span class="pt-val">4</span></div>
+          <div class="pt-palette-row" title="Font size of node labels"><span class="pt-palette-label">Size <i class="bi bi-fonts form-label-sm"></i></span><input type="range" class="form-range" min="6" max="48" value="9" disabled /><span class="pt-val">9</span></div>
+          <div class="pt-palette-row" title="Typeface for node labels"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" disabled><option value="">Theme</option></select></div>
+          <div class="pt-palette-row" title="Font style for node labels"><span class="pt-palette-label">Style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" disabled><option value="">Theme</option></select></div>
+          <div class="pt-palette-row" title="Node label text colour"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" value="#aaaaaa" disabled /></div>
+          <div class="pt-palette-row" title="Colour node labels by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" disabled><option value="user_colour">user colour</option></select></div>
+          <div class="pt-palette-row" title="Open the palette manager for node label colour mapping"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" disabled>Configure</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{%- if _legend -%}<p class="pt-ui-demo-legend">{{ _legend }}</p>{%- endif -%}

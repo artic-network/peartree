@@ -34,6 +34,9 @@
   color: var(--bs-secondary-color);
   line-height: 1.5;
 }
+.pt-ui-demo--palette + .pt-ui-demo-legend {
+  margin-left: 1.5rem;
+}
 
 /* ── Demo container ───────────────────────────────────────────────────────── */
 .pt-ui-demo {
@@ -78,8 +81,28 @@
   pointer-events: none !important;
   overflow: visible !important;
 }
+.pt-palette-section--demo .pt-section-body-inner {
+  overflow: visible !important;
+  min-height: auto !important;
+}
 .pt-palette-section--demo .pt-sec-chevron {
   transform: rotate(90deg);
+  opacity: 0.72;
+}
+/* Neutralise the manual page's h3 margin which overrides pearcore's margin:0 */
+.pt-palette-section h3 {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* ── Palette panel preview wrapper ───────────────────────────────────────── */
+.pt-ui-demo--palette {
+  display: inline-block;
+  width: 220px;
+  padding: 8px 16px 10px;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+  vertical-align: top;
 }
 
 /* Block all pointer interaction inside demos, except toolbar button previews */

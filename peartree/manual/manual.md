@@ -501,7 +501,11 @@ For the selected annotation key you can set:
 
 The **Tree** section controls the canvas background, branch colour and width, and the typeface used for all labels.
 
-{% include 'figure.html', src: "images/controls_tree.png", alt: "Tree appearance controls", maxwidth: "260px" %}
+{% include 'palette-tree.html', legend: "Tree appearance controls." %}
+
+
+{% include 'palette-branches.html', legend: "Branch appearance controls." %}
+
 |---|---|
 | Background | Canvas fill colour |
 | Branches | Branch line colour |
@@ -509,10 +513,12 @@ The **Tree** section controls the canvas background, branch colour and width, an
 | Typeface | Font family for all labels |
 | Neg. branches | *Draw* (as-is) or *Clamp to zero* |
 
-{% include 'figure.html', src: "images/negative_branch.png", alt: "Negative branch drawn as-is", maxwidth: "180px" %}
-{% include 'figure.html', src: "images/negative_clamped.png", alt: "Negative branch clamped to zero", maxwidth: "180px", legend: "Negative branch drawn as-is (left) vs. clamped to zero (right)." %}
+<!-- {% include 'figure.html', src: "images/negative_branch.png", alt: "Negative branch drawn as-is", maxwidth: "180px" %}
+{% include 'figure.html', src: "images/negative_clamped.png", alt: "Negative branch clamped to zero", maxwidth: "180px", legend: "Negative branch drawn as-is (left) vs. clamped to zero (right)." %} -->
 
 ### Tip Labels
+
+{% include 'palette-tip-labels.html', legend: "Tip Labels section of the Visual Options palette." %}
 
 {% include 'figure.html', src: "images/controls_tip_labels.png", alt: "Tip labels controls", maxwidth: "260px" %}
 |---|---|

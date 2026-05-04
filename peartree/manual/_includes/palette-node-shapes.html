@@ -1,0 +1,31 @@
+{%- comment -%}
+  palette-node-shapes.html — Node Shapes section preview
+  Parameters:
+    legend  (optional) — caption text
+{%- endcomment -%}
+{%- assign _legend = legend | default: "" -%}
+<div class="pt-ui-demo pt-ui-demo--palette">
+  <div class="pt-palette-section pt-palette-section--demo">
+    <h3>
+      <i class="bi bi-record-circle"></i> Node Shapes
+      <span class="pt-sec-actions">
+        <button class="pt-sec-pin" title="Pin open"><i class="bi bi-pin"></i></button>
+        <i class="bi bi-chevron-right pt-sec-chevron"></i>
+      </span>
+    </h3>
+    <div class="pt-section-body">
+      <div class="pt-section-body-inner">
+        <div class="pt-palette-row" title="Radius of the circle drawn at each internal node"><span class="pt-palette-label">Size <i class="bi bi-arrow-up-right-circle-fill form-label-sm"></i></span><input type="range" class="form-range" min="0" max="24" value="0" disabled /><span class="pt-val">0</span></div>
+        <div class="pt-palette-row" title="Only draw node shapes on nodes that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" disabled><option value="">— always —</option></select></div>
+        <div class="pt-sub-controls pt-detail pt-detail-open">
+          <div class="pt-palette-row" title="Fill colour of internal node circles"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" value="#888888" disabled /></div>
+          <div class="pt-palette-row" title="Colour node circles by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" disabled><option value="user_colour">user colour</option></select></div>
+          <div class="pt-palette-row" title="Open the palette manager for node shape colour mapping"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" disabled>Configure</button></div>
+          <div class="pt-palette-row" title="Background halo width around each node circle"><span class="pt-palette-label">Halo <i class="bi bi-arrow-up-right-circle form-label-sm"></i></span><input type="range" class="form-range" min="0" max="8" value="2" disabled /><span class="pt-val">2</span></div>
+          <div class="pt-palette-row" title="Halo colour behind each node circle"><span class="pt-palette-label">Halo col. <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" value="#02292e" disabled /></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{%- if _legend -%}<p class="pt-ui-demo-legend">{{ _legend }}</p>{%- endif -%}

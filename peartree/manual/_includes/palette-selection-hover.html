@@ -1,0 +1,55 @@
+{%- comment -%}
+  palette-selection-hover.html — Selection & Hover section preview
+  Parameters:
+    legend  (optional) — caption text
+{%- endcomment -%}
+{%- assign _legend = legend | default: "" -%}
+<div class="pt-ui-demo pt-ui-demo--palette">
+  <div class="pt-palette-section pt-palette-section--demo">
+    <h3>
+      <i class="bi bi-cursor-fill"></i> Selection &amp; Hover
+      <span class="pt-sec-actions">
+        <button class="pt-sec-pin" title="Pin open"><i class="bi bi-pin"></i></button>
+        <i class="bi bi-chevron-right pt-sec-chevron"></i>
+      </span>
+    </h3>
+    <div class="pt-section-body">
+      <div class="pt-section-body-inner">
+        <div class="pt-palette-subhead">Selected Tips</div>
+        <div class="pt-palette-row" title="Font style applied to labels of selected tips"><span class="pt-palette-label">Label style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" disabled><option value="bold">Bold</option><option value="italic">Italic</option><option value="bold italic">Bold + Italic</option><option value="normal">Normal</option></select></div>
+        <div class="pt-palette-row" title="Growth factor applied to tip circle radius when selected"><span class="pt-palette-label">Size <i class="bi bi-arrow-up-right-circle form-label-sm"></i></span><input type="range" class="form-range" min="1" max="5" step="0.1" value="2" disabled /><span class="pt-val">2</span></div>
+        <div class="pt-palette-row" title="Fill colour of the selection circle on tips"><span class="pt-palette-label">Fill <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" value="#888888" disabled /></div>
+        <div class="pt-palette-row" title="Minimum diameter of the selection circle on tips in pixels"><span class="pt-palette-label">Fill <i class="bi bi-arrow-up-right-circle form-label-sm"></i></span><input type="range" class="form-range" min="0" max="20" step="0.5" value="6" disabled /><span class="pt-val">6</span></div>
+        <div class="pt-palette-row" title="Opacity of the selected tip fill circle"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" min="0" max="1" step="0.05" value="0.5" disabled /><span class="pt-val">0.5</span></div>
+        <div class="pt-palette-row" title="Stroke colour of the selection circle on tips"><span class="pt-palette-label">Stroke <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" value="#e06961" disabled /></div>
+        <div class="pt-palette-row" title="Stroke width of the selection circle on tips"><span class="pt-palette-label">Stroke <i class="bi bi-record-circle form-label-sm"></i></span><input type="range" class="form-range" min="0.5" max="10" step="0.5" value="3" disabled /><span class="pt-val">3</span></div>
+        <div class="pt-palette-row" title="Opacity of the selected tip stroke"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" min="0" max="1" step="0.05" value="1" disabled /><span class="pt-val">1</span></div>
+        <div class="pt-palette-subhead">MRCA Node</div>
+        <div class="pt-palette-row" title="Growth factor applied to the MRCA node circle radius when selected"><span class="pt-palette-label">Size <i class="bi bi-box-arrow-up-right form-label-sm"></i></span><input type="range" class="form-range" min="1" max="5" step="0.1" value="2" disabled /><span class="pt-val">2</span></div>
+        <div class="pt-palette-row" title="Fill colour of the MRCA node selection circle"><span class="pt-palette-label">Fill <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" value="#19a699" disabled /></div>
+        <div class="pt-palette-row" title="Minimum diameter of the MRCA node selection circle in pixels"><span class="pt-palette-label">Fill <i class="bi bi-arrow-up-right-circle form-label-sm"></i></span><input type="range" class="form-range" min="0" max="20" step="0.5" value="6" disabled /><span class="pt-val">6</span></div>
+        <div class="pt-palette-row" title="Opacity of the MRCA node fill circle"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" min="0" max="1" step="0.05" value="0.5" disabled /><span class="pt-val">0.5</span></div>
+        <div class="pt-palette-row" title="Stroke colour of the MRCA node selection circle"><span class="pt-palette-label">Stroke <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" value="#19a699" disabled /></div>
+        <div class="pt-palette-row" title="Stroke width of the MRCA node selection circle"><span class="pt-palette-label">Stroke <i class="bi bi-record-circle form-label-sm"></i></span><input type="range" class="form-range" min="0.5" max="10" step="0.5" value="3" disabled /><span class="pt-val">3</span></div>
+        <div class="pt-palette-row" title="Opacity of the MRCA node stroke"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" min="0" max="1" step="0.05" value="1" disabled /><span class="pt-val">1</span></div>
+        <div class="pt-palette-subhead">Tip Hover</div>
+        <div class="pt-palette-row" title="Growth factor applied to the tip circle radius on hover"><span class="pt-palette-label">Size <i class="bi bi-box-arrow-up-right form-label-sm"></i></span><input type="range" class="form-range" min="1" max="5" step="0.1" value="1.5" disabled /><span class="pt-val">1.5</span></div>
+        <div class="pt-palette-row" title="Fill colour of the tip hover circle"><span class="pt-palette-label">Fill <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" value="#bf4b43" disabled /></div>
+        <div class="pt-palette-row" title="Minimum diameter of the tip hover circle in pixels"><span class="pt-palette-label">Fill <i class="bi bi-arrow-up-right-circle form-label-sm"></i></span><input type="range" class="form-range" min="0" max="20" step="0.5" value="6" disabled /><span class="pt-val">6</span></div>
+        <div class="pt-palette-row" title="Opacity of the tip hover fill circle"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" min="0" max="1" step="0.05" value="0.6" disabled /><span class="pt-val">0.6</span></div>
+        <div class="pt-palette-row" title="Stroke colour of the tip hover circle"><span class="pt-palette-label">Stroke <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" value="#7b2820" disabled /></div>
+        <div class="pt-palette-row" title="Stroke width of the tip hover circle"><span class="pt-palette-label">Stroke <i class="bi bi-record-circle form-label-sm"></i></span><input type="range" class="form-range" min="0.5" max="10" step="0.5" value="2" disabled /><span class="pt-val">2</span></div>
+        <div class="pt-palette-row" title="Opacity of the tip hover stroke"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" min="0" max="1" step="0.05" value="1" disabled /><span class="pt-val">1</span></div>
+        <div class="pt-palette-subhead">Node Hover</div>
+        <div class="pt-palette-row" title="Growth factor applied to the node circle radius on hover"><span class="pt-palette-label">Size <i class="bi bi-box-arrow-up-right form-label-sm"></i></span><input type="range" class="form-range" min="1" max="5" step="0.1" value="1.5" disabled /><span class="pt-val">1.5</span></div>
+        <div class="pt-palette-row" title="Fill colour of the node hover circle"><span class="pt-palette-label">Fill <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" value="#19a699" disabled /></div>
+        <div class="pt-palette-row" title="Minimum diameter of the node hover circle in pixels"><span class="pt-palette-label">Fill <i class="bi bi-arrow-up-right-circle form-label-sm"></i></span><input type="range" class="form-range" min="0" max="20" step="0.5" value="6" disabled /><span class="pt-val">6</span></div>
+        <div class="pt-palette-row" title="Opacity of the node hover fill circle"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" min="0" max="1" step="0.05" value="0.6" disabled /><span class="pt-val">0.6</span></div>
+        <div class="pt-palette-row" title="Stroke colour of the node hover circle"><span class="pt-palette-label">Stroke <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" value="#0d6560" disabled /></div>
+        <div class="pt-palette-row" title="Stroke width of the node hover circle"><span class="pt-palette-label">Stroke <i class="bi bi-record-circle form-label-sm"></i></span><input type="range" class="form-range" min="0.5" max="10" step="0.5" value="2" disabled /><span class="pt-val">2</span></div>
+        <div class="pt-palette-row" title="Opacity of the node hover stroke"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" min="0" max="1" step="0.05" value="1" disabled /><span class="pt-val">1</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+{%- if _legend -%}<p class="pt-ui-demo-legend">{{ _legend }}</p>{%- endif -%}
