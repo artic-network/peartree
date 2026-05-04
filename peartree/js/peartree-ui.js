@@ -883,6 +883,7 @@ function _buildModals() {
       <div id="annot-config-palette-preview" style="margin-top:8px;min-height:14px"></div>
     </div>
     <div class="pt-modal-footer">
+      <button id="annot-config-manage-palettes" class="btn btn-sm btn-outline-secondary me-auto" title="Open Palette Manager"><i class="bi bi-palette me-1"></i>Manage Palettes…</button>
       <button id="annot-config-done" class="btn btn-sm btn-primary">Done</button>
     </div>
   </div>

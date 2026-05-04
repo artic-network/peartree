@@ -6208,6 +6208,7 @@ async function _initCore(root = document) {
 
   $('annot-config-close')?.addEventListener('click', () => annotConfigOverlay?.classList.remove('open'));
   $('annot-config-done')?.addEventListener('click',  () => annotConfigOverlay?.classList.remove('open'));
+  $('annot-config-manage-palettes')?.addEventListener('click', () => commands.execute('manage-palettes'));
 
   // ── Tip-label shape controls ───────────────────────────────────────────────
 
