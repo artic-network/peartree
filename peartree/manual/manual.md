@@ -648,24 +648,32 @@ For continuous support values, a diverging palette such as *Blue-Black-Red* work
 
 ### Node Bars
 
-*Available for trees with node-height HPD annotations — illustrated using `data/measles_genome_tree.nexus`.*
+When a BEAST tree carries height HPD (highest posterior density) annotations (e.g. `height_95%_HPD`), the **Node Bars** section appears in the palette. If no such annotations are present it shows an *unavailable* message. At present only `height_95%_HPD` annotation is recognised for use with node bars. If turned on, a horizontal bar will be shown at every node spanning time of the HPDs.
 
-When a BEAST tree carries HPD height annotations (e.g. `height_95%_HPD`), the **Node Bars** section appears in the palette:
+{% include 'figure.html', src: "images/node_bars.png", alt: "Node bars", maxwidth: "80%", bg: "#EAE8E1", legend: "A subclade of the EBOV tree showing height HPD node bars and height range whiskers" %}
+
+The options for node bars are controlled by the **NODE BARS** section of the control panel:
+
+{% include 'palette-node-bars.html', available: "true" %}
 
 | Control | Effect |
 |---|---|
-| Show | Toggle bars on/off |
+| Show | *Off* / *On* — toggle bars on/off |
 | Filter | Apply a saved named filter so bars draw only on matching nodes |
-| Colour | Bar colour |
-| Bar height | Vertical thickness of each bar (px) |
-| Line | Show a line at the node *Mean*, *Median*, or neither |
-| Range whiskers | Show or hide the outer extent whiskers |
+| Line | Draw a vertical line at the node *Mean*, *Median*, or neither |
+| Range | *Show* / *Hide* — display the full range as whisker lines either side of the bars. |
+| Size | Bar height in screen pixels (2–30) |
+| Colour | Fill and stroke colour of the bars |
+| Opacity | Translucency of the bar fill (0 = transparent, 1 = solid) |
+| Stroke | Opacity of the bar border line |
 
-> **Screenshot placeholder** — Measles genome tree (`data/measles_genome_tree.nexus`) with node bars showing 95% HPD height intervals.
+If the are no height HPDs specified in the annotations then this option is not available:
+
+{% include 'palette-node-bars.html', available: "false" %}
 
 ### Clade Highlights
 
-Clade highlights draw a translucent coloured shape behind a selected subtree — useful for drawing attention to named clades in publication figures or for annotating groups visually.
+Clade highlights draw a translucent coloured shape behind a selected subtree — useful for drawing attention to named clades in publication figures or for annotating groups of tips visually.
 
 **Adding a highlight:**
 1. Select any internal node (its entire descendant clade is highlighted).

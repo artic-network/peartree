@@ -1956,25 +1956,45 @@ export class TreeRenderer {
     if (!heightDef?.group?.hpd) return 0;
     const hpdKey   = heightDef.group.hpd;
     const rangeKey = (this.nodeBarsRange && heightDef.group.range) ? heightDef.group.range : null;
+    // Use the absolute height of the layout root as the reference for HPD values.
+    // For the full tree this equals this.maxX (min tip height = 0).
+    // For subtrees not containing the most-recent tip, heightRef > this.maxX,
+    // which gives the correct left-overflow amount and keeps bars aligned with nodes.
+    const heightRef = this._rootHeightRef();
     let maxLeftward = 0;
     for (const node of this.nodes) {
       if (node.isTip) continue;
       // HPD upper bound (larger height = further left)
       const hpd = node.annotations?.[hpdKey];
       if (Array.isArray(hpd) && hpd.length >= 2) {
-        const excess = hpd[1] - this.maxX;   // positive when bar extends past root
+        const excess = hpd[1] - heightRef;   // positive when bar extends past root
         if (excess > maxLeftward) maxLeftward = excess;
       }
       // Range outer bound (whiskers)
       if (rangeKey) {
         const range = node.annotations?.[rangeKey];
         if (Array.isArray(range) && range.length >= 2) {
-          const excess = range[1] - this.maxX;
+          const excess = range[1] - heightRef;
           if (excess > maxLeftward) maxLeftward = excess;
         }
       }
     }
     return maxLeftward;
+  }
+
+  /**
+   * The absolute height of the current layout root.
+   * For the full tree this equals this.maxX (when min tip height = 0).
+   * For a subtree that does not contain the most-recent tip of the full dataset
+   * this is greater than this.maxX by the minimum tip height in the subtree.
+   * HPD / height annotations are always in absolute-height units, so use this
+   * as the reference when converting hpd → world-x to keep bars aligned with nodes.
+   */
+  _rootHeightRef() {
+    const root = this.nodes?.[0];
+    return (root && this._globalHeightMap)
+      ? (this._globalHeightMap.get(root.id) ?? this.maxX)
+      : this.maxX;
   }
 
   /** Recompute the minimum scaleY (tree fits the viewport vertically). */
@@ -3015,7 +3035,10 @@ export class TreeRenderer {
     const hpdKey    = heightDef.group.hpd;     // e.g. 'height_95%_HPD'
     const medianKey = heightDef.group.median;  // e.g. 'height_median'
     const rangeKey  = heightDef.group.range;   // e.g. 'height_range'
-    const maxX      = this.maxX;
+    // Use the absolute height of the layout root, not this.maxX, so that HPD
+    // values (always in absolute-height units) map to the correct world-x even
+    // when the subtree does not contain the most-recent tip of the full dataset.
+    const maxX      = this._rootHeightRef();
     const halfW     = this.nodeBarsWidth / 2;
     const ctx       = this.ctx;
     const col       = this.nodeBarsColor;
