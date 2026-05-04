@@ -622,9 +622,11 @@ Tips shapes are filled circles drawn at the end of each tip branch. They can be 
 
 Set **Colour by** to `country` to colour each tip by sampling country:
 
-{% include 'figure.html', src: "images/tip_shapes.png", alt: "Tip Shapes controls with Colour by set to country", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV tip shapes set with <b>Colour by</b> set to <code>country</code>." %}
+{% include 'figure.html', src: "images/tip_shapes.png", alt: "Tip Shapes set to Colour by country", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV tip shapes set with <b>Colour by</b> set to <code>country</code>." %}
 
 ### Node Shapes
+
+Node shapes are similar to tip shapes but are drawn on the internal nodes of the tree. The same options control them.
 
 {% include 'palette-node-shapes.html', legend: "Node shapes controls." %}
 
@@ -638,13 +640,11 @@ Set **Colour by** to `country` to colour each tip by sampling country:
 | Halo | Halo ring radius (0 = hidden) |
 | Halo col. | Halo fill colour |
 
+{% include 'figure.html', src: "images/node_shapes.png", alt: "Node Shapes set to Colour by posterior", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV node shapes set with <b>Colour by</b> set to <code>posterior</code>. The colour palette is Blue->Black->Red so nodes are coloured blue if < 0.5, red > 0.5 and black if close to 0.5." %}
+
 {% tip %}
-For continuous support values, a diverging palette such as *Blue-Black-Red* works well: red = high support, blue = low (**Configure** opens annotation colour settings)
+For continuous support values, a diverging palette such as *Blue-Black-Red* works well: red = high support, blue = low and black denotes intermediate support. **Configure** opens annotation colour settings dialog which allows the palette to be chosen and the range of the annotation. For a support value such as 'posterior' this should be set to [0, 1]. See [Colouring by Annotations](#colouring-by-annotations) for more information.
 {% endtip %}
-
-{% include 'figure.html', src: "images/fig12c.png", alt: "Node Shapes controls with Colour by set to posterior", maxwidth: "260px", legend: "Node Shapes controls with size set to 3 and **Colour by** set to `posterior`." %}
-
-{% include 'figure.html', src: "images/fig12d.png", alt: "EBOV tree with node shapes coloured by posterior support", maxwidth: "440px", legend: "EBOV tree with node shapes coloured by `posterior` support." %}
 
 ### Node Bars
 
