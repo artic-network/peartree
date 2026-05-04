@@ -238,7 +238,7 @@ The toolbar also has buttons for zooming in and out and fitting the tree to the 
 | {%- include 'btn.html', id: "btn-fit" %} | **⌘0** | Fit entire tree to window |
 | {%- include 'btn.html', id: "btn-fit-labels" %} | **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
 
-The **Fit Labels** button {%- include 'btn.html', id: "btn-fit-labels" %} or **⌘⇧0** keyboard shortcut zooms the tree verticallys sufficiently that the labels can be shown without any overlap. This will depend on the label font size (set in the [Tip Labels](#tip-labels) section of the control panel). If one or more tips are selected then the zoom will keep the these visible in the window.
+The **Fit Labels** button {%- include 'btn.html', id: "btn-fit-labels" %} or **⌘⇧0** keyboard shortcut zooms the tree vertically sufficiently that the labels can be shown without any overlap. This will depend on the label font size (set in the [Tip Labels](#tip-labels) section of the control panel). If one or more tips are selected then the zoom will keep the these visible in the window.
 
 {% include 'figure.html', src: "images/zoomed_tree.png", alt: "EBOV tree zoomed in", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV tree zoomed in to show individual tip labels. Only the top portion of the tree is being shown." %}
 
@@ -280,6 +280,8 @@ Hold **~** (tilde/backtick) and move the cursor over the canvas. The tree distor
 {% include 'figure.html', src: "images/lens_view.png", alt: "Hyperbolic lens active", maxwidth: "80%", bg: "#EAE8E1", legend: "Lens active: tips near the cursor are spread apart and readable; tips further away are compressed but still visible." %}
 
 The lens **persists** after you release **~** — the focus locks in place so you can click, select, or inspect the expanded region normally. Re-hold **~** and move to reposition the focus. Press **Escape** to dismiss.
+
+Clicking the **Fit Labels** button {%- include 'btn.html', id: "btn-fit-labels" %} or **⌘⇧0** keyboard shortcut will turn off the lens mode with the visible labels centred on the screen.
 
 While the lens is active a reminder appears in the status bar: *Lens mode active – press Esc to cancel*.
 

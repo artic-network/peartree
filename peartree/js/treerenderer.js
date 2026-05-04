@@ -2003,6 +2003,9 @@ export class TreeRenderer {
   /**
    * Zoom to the level where consecutive tip labels no longer overlap.
    * Each tip occupies 1 world unit; we need at least (fontSize + 2) screen px per unit.
+   *
+   * If the hyperbolic lens is active the lens focus becomes the vertical midpoint
+   * of the new view, then the lens is dismissed.
    */
   fitLabels() {
     if (!this.nodes) return;
@@ -2010,11 +2013,18 @@ export class TreeRenderer {
     this._updateMinScaleY();
     const labelScaleY = this.fontSize + 2;   // px per world unit – labels just clear each other
     const newScaleY   = Math.max(this.minScaleY, labelScaleY);
-    // Try to keep the current centre stable; fall back to top of tree.
-    const H         = this.canvas.clientHeight;
-    const centreWorldY = this._worldYfromScreen(H / 2);
+    const H           = this.canvas.clientHeight;
+    // If the lens is active, use its focus position as the zoom pivot so the
+    // region the user was inspecting ends up centred in the view.
+    const lensActive   = this._hypFocusScreenY !== null && this._hypTarget !== 0;
+    const pivotScreenY = lensActive ? this._hypFocusScreenY : H / 2;
+    const centreWorldY = this._worldYfromScreen(pivotScreenY);
     const newOffsetY   = H / 2 - centreWorldY * newScaleY;
     this._setTarget(newOffsetY, newScaleY, /*immediate*/ false);
+    if (lensActive) {
+      this._hypTarget = 0;   // animated fade-out; focus Y cleared when strength reaches 0
+      if (this.onHypDeactivate) this.onHypDeactivate();
+    }
     this._dirty = true;
   }
 
