@@ -1924,8 +1924,10 @@ export class TreeRenderer {
    *  immediate=true (default) snaps instantly; false animates via _targetScaleX. */
   _updateScaleX(immediate = true) {
     const W = this.canvas.clientWidth;
-    // Only reserve space for tip labels when they're actually visible at this zoom level.
-    const labelsVisible = this.scaleY >= this.fontSize * 0.5;
+    // Reserve space for tip labels when they're actually visible — either because
+    // the zoom is high enough, or because the hyperbolic lens is active (which
+    // expands tips near the focus to label-readable size, matching _draw's rule).
+    const labelsVisible = this.scaleY >= this.fontSize * 0.5 || this._hypFocusScreenY !== null;
     const plotW = W - this.paddingLeft - (labelsVisible ? this.labelRightPad : (this.paddingRight ?? 10));
     // Extra world-units needed to the left of the root for node bars / whiskers.
     const barPad = this.nodeBarsEnabled ? this._nodeBarsLeftPad() : 0;
@@ -4564,7 +4566,11 @@ export class TreeRenderer {
             this._hypFocusScreenY = clampedHy;
             this._hypTarget       = 1;
             this._dirty           = true;
-            if (wasOff && this.onHypActivate) this.onHypActivate();
+            if (wasOff) {
+              // Lens just turned on — reserve horizontal space for tip labels.
+              this._updateScaleX(false);
+              if (this.onHypActivate) this.onHypActivate();
+            }
           }
           this.canvas.style.cursor = 'ns-resize';
         }
@@ -4709,6 +4715,8 @@ export class TreeRenderer {
         if (this._hypFocusScreenY !== null && this._hypTarget !== 0) {
           this._hypTarget = 0;   // triggers animated fade-out; focus Y cleared when strength reaches 0
           this._dirty     = true;
+          // Lens turned off — revert horizontal scale (no longer showing full-size labels).
+          this._updateScaleX(false);
           if (this.onHypDeactivate) this.onHypDeactivate();
         }
         return;
