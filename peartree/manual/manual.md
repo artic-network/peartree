@@ -677,7 +677,8 @@ Clade highlights draw a translucent coloured shape behind a selected subtree —
 
 **Adding a highlight:**
 1. Select any internal node (its entire descendant clade is highlighted).
-2. Click the **Highlight** button {%- include 'btn.html', id: "btn-highlight-clade" %} in the toolbar.
+2. Select a colour using the colour picker {%- include 'btn.html', id: "btn-colour-trigger" %} in the toolbar
+3. Click the **Highlight** button {%- include 'btn.html', id: "btn-highlight-clade" %} in the toolbar.
 
 A translucent shape appears behind all descendants of that node. Multiple independent highlights can be active simultaneously — each is stored separately and can have its own colour.
 
@@ -685,23 +686,27 @@ A translucent shape appears behind all descendants of that node. Multiple indepe
 
 **Highlight colour:** by default each highlight uses the *Colour by* mapping set in the Clade Highlights section of the palette. Set **Colour by** to *User colour* to use the toolbar colour picker, or to any annotation key to automatically colour each highlight by the value of that annotation at the clade root.
 
+{% include 'figure.html', src: "images/clade_highlights_1.png", alt: "Clade highlights", maxwidth: "80%", bg: "#EAE8E1", legend: "A nested set of clade highlights with the rectangular style" %}
+
+The *Outline subtree* left edge combined with *Outline tips* right edge creates a tight polygon that traces the exact profile of the clade — useful for complex, non-rectangular subtrees.
+
+{% include 'figure.html', src: "images/clade_highlights_2.png", alt: "Clade highlights", maxwidth: "80%", bg: "#EAE8E1", legend: "A nested set of clade highlights with the <code>Outline subtree</code> and <code>Outline tips</code> options on." %}
+
 In the **Clade Highlights** section of the palette:
+
+{% include 'palette-clade-highlights.html', legend: "Clade Highlights section of the Visual Options palette." %}
 
 | Control | Effect |
 |---|---|
-| **Colour by** | *User colour* (toolbar swatch) or any annotation key |
-| **Palette** | Colour scheme when *Colour by* is an annotation key |
 | **Left edge** | *Rectangle* — straight vertical left edge at the clade-root node; *Outline subtree* — the shape hugs the left profile of every branch in the clade |
 | **Right edge** | *At tip* — ends just past the clade's rightmost tip circle; *At label left* — aligns with the global label column; *At label right* — extends to the right canvas edge; *Outline tips* — the right edge steps individually around each tip, creating a staircase silhouette |
-| **Padding** | Gap between the clade extent and the highlight border (px) |
-| **Corners** | Corner-rounding radius (px) |
+| **Padding** | Gap between the clade extent and the highlight border (in pixels) |
+| **Corners** | Corner-rounding radius (in pixels) |
+| **Colour by** | *User colour* (toolbar swatch) or any annotation key |
+| **Palette** | Colour scheme when *Colour by* is an annotation key |
 | **Opacity** | Translucency of the fill (0 = transparent, 1 = solid) |
-| **Stroke** | Opacity of the border line |
-| **Width** | Border line thickness (px) |
-
-{% tip %}
-The *Outline subtree* left edge combined with *Outline tips* right edge creates a tight polygon that traces the exact profile of the clade — useful for complex, non-rectangular subtrees. Collapsed clades inside the highlight are treated correctly: the shape extends to the full tip of the triangle.
-{% endtip %}
+| **Stroke** | Border line width (in pixels) |
+| **Opacity** | Opacity of the border line |
 
 ### Colouring by Annotations
 
@@ -1292,16 +1297,15 @@ If PearTree is already running, the file opens in a new window. On Windows, drag
 
 | Control | Effect |
 |---|---|
-| Colour by | *User colour* or any annotation key |
-| Palette | Colour scheme when *Colour by* is an annotation |
-| Scale | How the numeric colour scale range is mapped (auto / symmetric ±0 / from zero / 0→1) |
 | Left edge | *Rectangle* — straight left edge at clade root; *Outline subtree* — hugs the branch profile |
 | Right edge | *At tip* / *At label left* / *At label right* / *Outline tips* (staircase per tip) |
 | Padding | Gap between clade extent and border (px) |
 | Corners | Corner-rounding radius (px) |
+| Colour by | *User colour* or any annotation key |
+| Palette | Colour scheme when *Colour by* is an annotation |
 | Opacity | Fill translucency |
-| Stroke | Border opacity |
-| Width | Border line thickness (px) |
+| Stroke | Border line width (px) |
+| Opacity | Opacity of the border line |
 
 ### Legend
 
