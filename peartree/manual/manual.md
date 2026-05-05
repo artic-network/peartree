@@ -853,7 +853,9 @@ Use the **Manage Filters** {%- include 'btn.html', id: "btn-manage-filters" %} b
 
 {% include 'dialog-filter-manager.html', maxwidth: "820px" %}
 
-Each condition targets one annotation field. The operators available depend on the field's data type:
+Each condition targets one annotation field but conditions for different annotations can be combined using the **+ Condition** button. More complex sets of conditions can be created by using the **+ Group** button to create nested sets of conditions with different `AND` and `OR` operators.
+
+The operators available depend on the field's data type:
 
 #### Text / Tip Name
 
@@ -915,24 +917,19 @@ Date annotations provide temporal comparison operators:
 | **month is** | falls in the selected month (e.g. *September*) |
 | **month is not** | does not fall in the selected month |
 
-Dates are entered in `YYYY-MM-DD` format. Comparisons use a small ±30-minute tolerance so that exact-equality checks on rounded decimal-year dates work correctly.
+Dates are entered in the ISO `YYYY-MM-DD` format. 
+
+The `Year` annotation is a decimal year value automatically generated from the date. This is treated as a numerical annoation for the filters.
 
 ### Using filters to control the display of visual features of the tree
 
-Saved named filters can be used to restrict *where* a visual feature is drawn, independently of the toolbar selection. Each of the following features has a **Filter** dropdown that appears inside its section of the Visual Options palette whenever that feature is switched on:
+Saved named filters can be used to restrict *where* a visual feature is drawn, independently of the toolbar selection. 
 
-| Feature | Where the Filter row appears | What it restricts |
-|---|---|---|
-| **Tip shapes** | Tips section, when tip size > 0 | Shapes drawn only on filtered tips |
-| **Tip labels** | Tips section, when a label is chosen | Labels drawn only on filtered tips |
-| **Node shapes** | Nodes section, when node size > 0 | Shapes drawn only on filtered nodes |
-| **Node labels** | Nodes section, when a label annotation is chosen | Labels drawn only on filtered nodes |
-| **Branch labels** | Branches section, when a label annotation is chosen | Labels drawn only on filtered branches |
-| **Node bars** | Node Bars section, when bars are on | Bars drawn only on filtered nodes |
+The following display features have a filtering option: **Tip shapes**, **Tip labels**, **Node shapes**, **Node labels**, **Branch labels** and **Node bars**.
 
-The dropdown always starts with **— always —**, which means the feature is drawn on every eligible node/tip. Choosing a saved named filter restricts it to only those tips or nodes that pass the filter.
+When a **Filter** is selected for a feature the shapes, labels or bars are only shown for tips or nodes that pass the filter conditions.
 
-The **Filter** rows are hidden when their parent feature is off — switch the feature on first, then the filter row will appear.
+If a feature doesn't have a particular annotation (for example, tips will not have a `posterior` annotation) then that feature will fail the filter and not be shown.
 
 #### Example — label only the Sierra Leone tips
 
@@ -947,14 +944,10 @@ Using the EBOV example tree, which has a `country` annotation:
 
 For a BEAST MCC tree with a `posterior` annotation:
 
-1. Create a named filter **High posterior** with the condition *posterior ≥ 0.95*.
+1. Create a named filter **High posterior** with the condition *posterior ≥ 0.5*.
 2. In **Visual Options → Node Bars**, turn bars **On**.
 3. Set **Bar filter** to **High posterior**.
 4. HPD bars are suppressed on nodes with low posterior support, reducing visual clutter.
-
-#### Combining with the toolbar ad-hoc filter
-
-The **Filter** dropdowns in the palette and the toolbar ad-hoc/named filter are completely independent — both can be active at once. The toolbar filter controls *which tips are selected* (highlighted in the canvas); the palette filter controls *which labels, shapes, or bars are drawn*.
 
 
 ## Chapter 10: The Time Axis

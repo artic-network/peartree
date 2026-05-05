@@ -482,9 +482,15 @@ export class TreeRenderer {
     if (!filterId) return true;
     const f = this._filterDefinitions?.get(filterId);
     if (!f?.root?.items?.length) return true;
-    // Augment annotations with __name__ so tip-name conditions work.
+    // Augment annotations with __name__ and computed builtin-stat values.
     const ann = node.annotations ?? {};
-    const augmented = node.name ? { __name__: node.name, ...ann } : ann;
+    const augmented = { ...ann };
+    if (node.name) augmented.__name__ = node.name;
+    for (const k of ['__divergence__', '__age__', '__branch_length__', '__tips_below__',
+                      '__cal_date__', '__temporal_residual__', '__temporal_zscore__', '__temporal_outlier__']) {
+      const v = this._statValue(node, k);
+      if (v != null) augmented[k] = v;
+    }
     return _evalFilterGroup(f.root, augmented);
   }
 

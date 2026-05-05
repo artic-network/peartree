@@ -375,7 +375,7 @@ export function createFilterManager({ getSchema, onFiltersChange, onSaveRequest,
     const nameOpt = `<option value="__name__"${cond.field === '__name__' ? ' selected' : ''}>Tip Name</option>`;
     const rest = schema
       ? [...schema.entries()]
-          .filter(([k, d]) => !k.startsWith('__') && !d.groupMember)
+          .filter(([k, d]) => k !== '__name__' && k !== 'user_colour' && !d.groupMember)
           .map(([k, d]) => `<option value="${esc(k)}"${cond.field === k ? ' selected' : ''}>${esc(d.label ?? k)}</option>`)
           .join('')
       : (cond.field && cond.field !== '__name__' ? `<option value="${esc(cond.field)}">${esc(cond.field)}</option>` : '');
