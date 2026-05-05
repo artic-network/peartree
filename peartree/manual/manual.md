@@ -896,7 +896,7 @@ Numeric annotations (`real`, `integer`, `proportion`, `percentage`) support comp
 | **>** | is strictly greater than |
 | **<** | is strictly less than |
 | **= (equals)** | is exactly equal |
-| **≠ (not equals)** | is not equal |
+| **!= (not equals)** | is not equal |
 
 #### Date
 
