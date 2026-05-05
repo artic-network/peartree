@@ -10,9 +10,7 @@ permalink: /manual/
 
 # PearTree Manual
 
-PearTree is a phylogenetic tree viewer that runs entirely in the browser or as a desktop application. No data is ever uploaded to any server — all processing is local to your machine.
-
-This manual covers the full feature set of PearTree, organised by topic. Each chapter can be read independently. The [Quick-Reference](#appendix-a-keyboard-shortcuts) appendix at the end lists all keyboard shortcuts.
+PearTree is a phylogenetic tree viewer that runs entirely in the browser or as a desktop application. No data is ever uploaded to any server — all processing is local to your machine. 
 
 > **Where to get PearTree**
 >
@@ -48,7 +46,7 @@ This manual covers the full feature set of PearTree, organised by topic. Each ch
 
 When a tree is loaded the interface has four main areas:
 
-{% include 'figure.html', src: "images/app_window.png", alt: "EBOV example tree loaded", maxwidth: "550px", border: "none", padding: "0", legend: "EBOV example tree loaded. The toolbar runs along the top, the canvas fills the centre, and the status bar sits at the bottom. The Visual Options palette is shown toggled open on the right. Other panels such as the metadata table and temporal signal (root-to-tip) plot open on the right." %}
+{% include 'figure.html', src: "images/app_window.png", alt: "EBOV example tree loaded", maxwidth: "550px", border: "none", padding: "0", legend: "The PearTree application window with the example EBOV tree loaded." %}
 
 ### Toolbar
 
@@ -73,7 +71,7 @@ Runs along the top of the window. Contains buttons grouped by function:
 
 ### Visual Options Palette
 
-Slides in from the right. Toggle with the sliders button in the status bar or press **Tab**. Contains all display controls organised into collapsible sections. Sections are locked until a tree is loaded, then unlock automatically.
+Slides in from the right. Toggle with the Control Panel button {%- include 'btn.html', id: "btn-palette" %} in the toolbar or press **Tab**. Contains all display controls organised into collapsible sections. 
 
 ### Status Bar
 
@@ -92,7 +90,7 @@ PearTree reads **NEXUS** (`.nex`, `.nexus`, `.tre`, `.tree`, `.treefile`) and **
 
 ### Opening a File
 
-Click the **open** button {%- include 'btn.html', id: "btn-open-tree" %} in the toolbar, or press **⌘O**, to open the *Open Tree File* dialog.
+Click the **Open** button {%- include 'btn.html', id: "btn-open-tree" %} in the toolbar, or press **⌘O**, to open the *Open Tree File* dialog.
 
 Three tabs are available:
 
@@ -120,7 +118,7 @@ Click a dataset card to load it immediately.
 
 ### The Startup Screen
 
-When no tree is loaded, the canvas shows the startup screen with direct **Open…** and **Example…** buttons.
+When no tree is loaded, the canvas shows the startup screen with direct **Open…** and **Example…** buttons. Or a tree file can be dragged directly on to the startup screen.
 
 {% include 'figure.html', src: "images/startup.png", alt: "Startup screen", maxwidth: "220px", bg: "#02292E", legend: "Startup screen." %}
 
