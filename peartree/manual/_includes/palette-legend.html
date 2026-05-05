@@ -15,7 +15,7 @@
     </h3>
     <div class="pt-section-body">
       <div class="pt-section-body-inner">
-        <div class="pt-palette-row" title="Choose an annotation to display as a colour legend"><span class="pt-palette-label">Show</span><select class="pt-palette-select" disabled><option value="">Off</option></select></div>
+        <div class="pt-palette-row" title="Choose an annotation to display as a colour legend"><span class="pt-palette-label">Show</span><select class="pt-palette-select" disabled><option value="">Off</option><option value="country" selected>country</option></select></div>
         <div class="pt-sub-controls pt-detail pt-detail-open">
           <div class="pt-palette-row" title="Height of the primary legend as a percentage of canvas height"><span class="pt-palette-label">Span <i class="bi bi-arrows-expand form-label-sm"></i></span><input type="range" class="form-range" min="10" max="100" step="5" value="100" disabled /><span class="pt-val">100%</span></div>
           <div class="pt-palette-row" title="Primary legend text colour"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" value="#f7eeca" disabled /></div>
@@ -23,7 +23,11 @@
           <div class="pt-palette-row" title="Typeface for legend text"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" disabled><option value="">Theme</option></select></div>
           <div class="pt-palette-row" title="Font style for legend text"><span class="pt-palette-label">Style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" disabled><option value="">Theme</option></select></div>
         </div>
-        <div class="pt-palette-row" title="Choose a second annotation legend"><span class="pt-palette-label">Show 2</span><select class="pt-palette-select" disabled><option value="">Off</option></select></div>
+        <div class="pt-palette-row" title="Choose a second annotation legend"><span class="pt-palette-label">Show 2</span><select class="pt-palette-select" disabled><option value="">Off</option><option value="posterior" selected>posterior</option></select></div>
+        <div class="pt-sub-controls pt-detail pt-detail-open">
+          <div class="pt-palette-row" title="Position of the second legend relative to the first"><span class="pt-palette-label">Position <i class="bi bi-box-arrow-down-right form-label-sm"></i></span><select class="pt-palette-select" disabled><option value="right">Right</option><option value="below" selected>Below</option></select></div>
+          <div class="pt-palette-row" title="Height of the second legend as a percentage of canvas height"><span class="pt-palette-label">Span <i class="bi bi-arrows-expand form-label-sm"></i></span><input type="range" class="form-range" min="10" max="100" step="5" value="50" disabled /><span class="pt-val">50%</span></div>
+        </div>
         <div class="pt-palette-row" title="Choose a third annotation legend"><span class="pt-palette-label">Show 3</span><select class="pt-palette-select" disabled><option value="">Off</option></select></div>
         <div class="pt-palette-row" title="Choose a fourth annotation legend"><span class="pt-palette-label">Show 4</span><select class="pt-palette-select" disabled><option value="">Off</option></select></div>
       </div>

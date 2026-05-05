@@ -747,22 +747,34 @@ Built-in palettes are read-only but can be copied to make a customisable version
 
 Legends provide a colour key for any annotation used to colour tips, nodes, or labels. PearTree supports up to four independent legend strips simultaneously, all docked to the right side of the canvas.
 
-In the **Legend** section of the palette:
+In the **Legend** section of the palette set the `Show` dropdown menu to an annotation key (e.g. `country`).
 
-1. Set **Annotation** to an annotation key (e.g. `country`).
-2. Adjust **Height %**, **Colour**, and **Font size** as desired.
+The type of legend drawn will depend on the annotation type (Categorical or Continuous) and the colour key by the palette selected for that annoation (see [Managing Palettes](#managing-palettes), above).
 
-The type of legend drawn will depend on the annotation type (Categorical or Continuous) and the colour key by the palette selected for that annoation (see Managing Palettes, above).
+{% include 'figure.html', src: "images/legend_country.png", alt: "EBOV tree with country legend", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV tree with `country` legend shown." %}
 
-{% include 'figure.html', src: "images/fig13.png", alt: "EBOV tree with country legend", maxwidth: "440px", legend: "EBOV tree with `country` legend docked to the right." %}
+**Legend 2–4:** additional legends can be configured below Legend 1 by selecting an additional annotation for the control `Show 2`. This will reveal controls for a second legend and the `Show 3` control to add a third legend. Up to four legends can be displayed simultaneously. Set each subsequent legend's **Position** to *Right* (shown side-by-side with Legend 1) or *Below* (stacked vertically).
 
-**Legend 2–4:** additional legends can be configured below Legend 1. Set each legend's **Position** to *Right* (shown in the same panel as Legend 1) or *Below* (stacked vertically).
+{% include 'figure.html', src: "images/legend_side-by-side.png", alt: "EBOV tree with country legend", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV tree with a categorical `country` legend and a continuous `posterior` legend shown, side-by-side" %}
 
-Use **Height %** to control what fraction of the panel height each legend occupies.
+Use the **Span** setting to control what vertical fraction of the panel height each legend occupies.
 
-{% tip %}
-Use Legend 1 for a categorical annotation (e.g. country) and Legend 2 with **Position: Below** for a continuous annotation (e.g. posterior support) to display both keys simultaneously in a single neatly stacked column.
-{% endtip %}
+{% include 'figure.html', src: "images/legend_above-below.png", alt: "EBOV tree with country legend", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV tree with the two legends shown above-and-below with equal height - the `country` legend only has a few categories so doesn't use its full height." %}
+
+Additional controls set the colour, size and typeface of the legend text.
+
+{% include 'palette-legend.html', legend: "Legend section of the Visual Options palette, showing a categorical legend (country) and a second continuous legend (posterior) stacked below." %}
+
+| Control | Effect |
+|---|---|
+| **Show** | Select an annotation key to display as a legend, or *Off* to hide |
+| **Span** | Height span of the legend as a percentage of the canvas height (10–100%). With multiple legends stacked, these act as relative values. |
+| **Colour** | Legend text colour |
+| **Size** | Font size for legend labels (6–48 pt) |
+| **Typeface** | Font family — *Theme* inherits from the Theme section or specify a different typeface |
+| **Style** | Font weight and style — *Theme*, *Regular*, *Bold*, *Italic*, or *Bold Italic* |
+| **Show 2–4** | Select an additional annotation for a second, third, or fourth legend |
+| **Position** | Position of the additional legend relative to the previous: *Right* (side-by-side) or *Below* (stacked) |
 
 ### Themes
 
