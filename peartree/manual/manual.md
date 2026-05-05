@@ -791,7 +791,12 @@ If the **Invert** {%- include 'btn.html', id: "btn-invert-selection" %} button i
 
 The **Theme** section at the top of the palette provides pre-built visual presets.
 
-{% include 'figure.html', src: "images/fig16.png", alt: "Theme section with MCM theme applied", maxwidth: "280px", legend: "The Theme section with the *MCM* theme applied." %}
+{% include 'figure.html', src: "images/theme_mcm.png", alt: "Theme section with MCM theme applied", maxwidth: "80%", padding: "0", legend: "The EBOV tree with the <b>MCM</b> theme applied." %}
+
+Changing any individual visual setting switches the selector to *Custom*. Click **Reset to defaults** at the bottom of the palette to revert to the default theme (the theme with the **★** next to it). Press the **Store** button to give the current `Custom` theme a name and store it locally. This theme will then be available in the selector control. You can also **Export** and **Import** themes (if an imported theme has the same name as an existing one you will be asked to rename it).   
+
+
+{% include 'palette-theme.html', legend: "Theme section of the Visual Options palette." %}
 
 | Control | Effect |
 |---|---|
@@ -799,8 +804,10 @@ The **Theme** section at the top of the palette provides pre-built visual preset
 | **Store** | Save the current settings as a named personal theme |
 | **Default** | Make this theme the starting point for new windows |
 | **Remove** | Delete a user-saved theme |
-
-Changing any individual setting switches the selector to *Custom*. Click **Reset to defaults** at the bottom of the palette to revert to the Artic theme.
+| **Export** | Download the current theme as a JSON file |
+| **Import** | Load a theme from a JSON file |
+| **Typeface** | Default font family used throughout the tree (overridable per section) |
+| **Style** | Default font weight/style — *Regular*, *Bold*, *Italic*, or *Bold Italic* |
 
 ## Chapter 9: Filtering
 
