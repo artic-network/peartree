@@ -1030,53 +1030,66 @@ The full set of controls for the Time Axis (note that the divergence axis have a
 | **Minor labels** | Label style at minor ticks: *Component*, *Partial*, *Full*, or *Off* (*Time* mode only) |
 
 
-## Chapter 11: Rooting
+## Chapter 11: Rooting and Rerooting
 
-Rerooting is available for trees that are not explicitly rooted (e.g. raw IQ-TREE or RAxML output). For explicitly-rooted trees such as BEAST timed trees, rerooting is disabled. A tree is determined to be rooted if it has annotations for the root node in the loaded tree file.
+Rerooting is available for trees that are not explicitly rooted (e.g. raw IQ-TREE or RAxML output). For explicitly-rooted trees such as BEAST timed trees, rerooting is disabled. A tree is determined to be rooted if it has annotations for the root node in the loaded tree file. Unless the tree building method is explicitly a time-calibrate one, or an outgroup has been specified, most software will produce a tree with an arbitrary root position. PearTree has a range of options for re-rooting the tree at a more appropriate place.
 
 *Use the `Variola virus (VARV)` example data set for the instructions in this chapter.*
 
+{% include 'figure.html', src: "images/rooting_initial.png", alt: "VARV tree with initial rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The initial rooting of the Variola virus (VARV) tree - an arbitrary root produced by the tree building software." %}
+
 ### Midpoint Root (⌘M)
 
-Press **⌘M** or click the **Midpoint Root** button {%- include 'btn.html', id: "btn-midpoint-root" %} in the toolbar. The tree is rooted at the midpoint of the longest tip-to-tip path — a common exploratory starting point when no outgroup is available.
+The 'Midpoint Root' is the midpoint of the longest tip-to-tip path. In the absence of any other information about the root of the tree, this is a sensible choice is only because it will minimise the horizonal width of the tree so it will fit on the page better.
 
-> **Screenshot placeholder** — `data/large_tree.tree` before and after midpoint rerooting, with root repositioned.
+Press **⌘M** or click the **Midpoint Root** button {%- include 'btn.html', id: "btn-midpoint-root" %} in the toolbar.
+
+{% include 'figure.html', src: "images/rooting_midpoint.png", alt: "VARV tree with midpoint rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the midpoint rooting option." %}
 
 ### Rerooting at a Selected Node
 
-1. Select one or more tips (their MRCA defines the branch to root on).
+1. Select one or more tips (their MRCA defines the branch to root on) or select an internal node directly.
 2. Click the **Reroot** button {%- include 'btn.html', id: "btn-reroot" %} in the toolbar.
 
 The root is placed at the midpoint of the branch above the MRCA node.
 
 ### Rerooting at an Exact Branch Position
 
-1. Press **⌘B** to enter **Branches** mode.
+1. Press **⌘B** or click the branch-mode button {%- include 'btn.html', id: "btn-mode-branches" %} to enter **Branches** selection mode.
 2. Click exactly where you want the new root along any branch.
 3. Click **Reroot** {%- include 'btn.html', id: "btn-reroot" %}.
 
-> **Screenshot placeholder** — Branch position marker on `data/varv_rooted.nwk`, and the resulting tree after rerooting.
+The root is placed at the point selected on the branch.
 
 ### Temporal Root
 
-If your tree has tip dates, PearTree can find the root position that best linearises the root-to-tip regression (least-squares RTT regression).
+The temporal root method finds the root position that is most consistent with a strict molecular clock. The criterion used depends on whether the tree is heterochronous or isochronous.
 
-Click **Temporal Root** {%- include 'btn-group.html', ids: "btn-temporal-root btn-temporal-root-global", label: "Temporal root" -%} in the toolbar. Two modes are available (**⌘⇧R** = Local, **⌘R** = Global):
+**Heterochronous** trees have tips sampled at different points in time (e.g. a virus sequenced across an outbreak). Samples collected later should have accumulated more substitutions, so under a strict molecular clock root-to-tip divergence increases linearly with sampling date. The slope of that line is the substitution rate.
+
+For heterochronous trees, PearTree instead performs a least-squares linear regression of root-to-tip divergence against tip sampling date for every possible root position and selects the position that maximises R² (the proportion of variance explained by the regression). 
+
+**Isochronous** (homochronous) trees have tips all sampled at the same time — for instance species phylogenies or within-host sequences from a single time point. There is no variation in sampling date, so regression against date cannot be used. However, under a strict molecular clock all tips should be equally divergent from the root, so PearTree finds the root position that **minimises the variance** in root-to-tip divergence. The resulting root is the most clock-like position available given the data.
+
+The [Root-to-Tip Panel](#chapter-12-the-root-to-tip-panel) provides a graphical view of the regression or variance depending on the tree type.
+
+Click **Temporal Root** buttons {%- include 'btn-group.html', ids: "btn-temporal-root btn-temporal-root-global", label: "Temporal root" -%} in the toolbar. 
+Two modes are available (**⌘⇧R** {%- include 'btn.html', id: "btn-temporal-root" -%} = Local, **⌘R** {%- include 'btn.html', id: "btn-temporal-root-global" -%} = Global):
 
 | Mode | Description |
 |---|---|
-| **Local** (default) | Optimises root position only along the current root branch |
-| **Global** | Searches every branch for the best regression fit |
+| **Local** (default) | Optimises the root position only along the current root branch — fast and useful for fine-tuning |
+| **Global** | Searches every branch in the tree for the optimal root position — slower but finds the best root de novo |
+
+{% include 'figure.html', src: "images/rooting_temporal.png", alt: "VARV tree with temporal rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the temporal rooting option with dated tips (heterochronous data)." %}
 
 {% tip %}
-Use **Global** temporal root on a fresh unrooted tree to find the best root de novo. Use **Local** to fine-tune the position on a branch you have already identified as correct.
+Use **Global** temporal root on a fresh unrooted tree (or a tree rooted to another location) to find the best root. Use **Local** to fine-tune the position on a branch you have already identified as correct.
 {% endtip %}
-
-> **Screenshot placeholder** — RTT plot for `data/ebov.tree` before and after temporal rooting, showing improvement in the linear relationship.
 
 ### Bootstrap Values and Rerooting
 
-When you reroot a tree, bootstrap support values (and other branch annotations) are correctly relocated to follow their branches. See [Appendix C](#appendix-c-bootstrap-values-branch-annotations-and-rerooting) for a full explanation of how this works.
+When you reroot a tree, bootstrap support values (and any other values labelled as branch annotations) remain associated with their respective branches, not the internal nodes they were originally assigned to. See [Appendix C](#appendix-c-bootstrap-values-branch-annotations-and-rerooting) for a full explanation of how this works.
 
 
 ## Chapter 12: The Root-to-Tip Panel
