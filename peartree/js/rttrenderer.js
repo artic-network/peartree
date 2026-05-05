@@ -451,7 +451,7 @@ export class RTTRenderer {
       xMajTks = this._xTicksInfo(rect).majorTicks;
     }
     ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,0.055)';
+    ctx.strokeStyle = this._colorWithAlpha(this.axisColor, 0.12);
     ctx.lineWidth   = d;
     ctx.beginPath();
     for (const v of yTks) {
