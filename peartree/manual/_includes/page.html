@@ -101,10 +101,10 @@
 
     /* ── Print styles ── */
     @media print {
-      /* Reset dark theme to plain black-on-white */
+      /* Reset dark theme to plain black-on-white for main content */
       html, body {
         background: #fff !important;
-        color: #000 !important;
+        color: #000;            /* no !important — lets ui-preview.css specificity win inside dialogs */
         padding-top: 0 !important;
         font-size: 11pt;
       }
@@ -152,6 +152,15 @@
         color: #333;
       }
 
+      /* Preserve backgrounds AND colours for figures, dialogs and UI mockups */
+      .pt-figure-panel,
+      .pt-figure-panel *,
+      .pt-ui-demo,
+      .pt-ui-demo * {
+        -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+      }
+
       /* Figures */
       .pt-figure { margin: 0.75rem 0; }
       .pt-figure-panel {
@@ -160,12 +169,13 @@
       }
       .pt-figure figcaption { color: #444; }
 
-      /* UI demo mockups: remove dark chrome, keep layout */
+      /* UI demo mockups: keep layout; background/colours handled above */
       .pt-ui-demo {
-        background: #f0f0f0 !important;
         border-color: #bbb !important;
-        color: #000 !important;
       }
+
+      /* Links: replace pale yellow with a print-friendly dark teal */
+      .pt-page-content a { color: #006a6a !important; }
 
       /* Don't print href expansions for internal links */
       a[href^="#"]::after { content: none !important; }
