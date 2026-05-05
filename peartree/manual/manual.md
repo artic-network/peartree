@@ -643,7 +643,7 @@ Node shapes are similar to tip shapes but are drawn on the internal nodes of the
 {% include 'figure.html', src: "images/node_shapes.png", alt: "Node Shapes set to Colour by posterior", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV node shapes set with <b>Colour by</b> set to <code>posterior</code>. The colour palette is Blue->Black->Red so nodes are coloured blue if < 0.5, red > 0.5 and black if close to 0.5." %}
 
 {% tip %}
-For continuous support values, a diverging palette such as *Blue-Black-Red* works well: red = high support, blue = low and black denotes intermediate support. **Configure** opens annotation colour settings dialog which allows the palette to be chosen and the range of the annotation. For a support value such as 'posterior' this should be set to [0, 1]. See [Colouring by Annotations](#colouring-by-annotations) for more information.
+For phylogenetic support values (e.g., posterior probabilities or bootstrap values), a diverging palette such as *Blue-Black-Red* works well: red = high support, blue = low and black denotes intermediate support. **Configure** opens annotation colour settings dialog which allows the palette to be chosen and the range of the annotation. For a support value such as 'posterior' this should be set to [0, 1]. See [Colouring by Annotations](#colouring-by-annotations) for more information.
 {% endtip %}
 
 ### Node Bars
@@ -673,7 +673,7 @@ If the are no height HPDs specified in the annotations then this option is not a
 
 ### Clade Highlights
 
-Clade highlights draw a translucent coloured shape behind a selected subtree — useful for drawing attention to named clades in publication figures or for annotating groups of tips visually.
+Clade highlights draw a translucent coloured shape behind a selected subtree. These can be used to delineate clades visually.
 
 **Adding a highlight:**
 1. Select any internal node (its entire descendant clade is highlighted).
@@ -688,7 +688,7 @@ A translucent shape appears behind all descendants of that node. Multiple indepe
 
 {% include 'figure.html', src: "images/clade_highlights_1.png", alt: "Clade highlights", maxwidth: "80%", bg: "#EAE8E1", legend: "A nested set of clade highlights with the rectangular style" %}
 
-The *Outline subtree* left edge combined with *Outline tips* right edge creates a tight polygon that traces the exact profile of the clade — useful for complex, non-rectangular subtrees.
+The *Outline subtree* left edge combined with *Outline tips* right edge creates a tight polygon that traces the profile of the subtree.
 
 {% include 'figure.html', src: "images/clade_highlights_2.png", alt: "Clade highlights", maxwidth: "80%", bg: "#EAE8E1", legend: "A nested set of clade highlights with the <code>Outline subtree</code> and <code>Outline tips</code> options on." %}
 
