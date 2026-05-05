@@ -3970,16 +3970,19 @@ async function _initCore(root = document) {
         controlsBound = true;
       }
 
-      // Now that filterControl exists, enable it and replay filter-select values
-      filterControl?.enable();
-      // Push the latest filter definitions into the renderer
+      // Now that filterControl exists (created in bindControls on first load),
+      // populate its column picker from the current tree's schema, then enable it.
+      filterControl?.setSchema(schema);
+      // Populate the named-filter popup with any already-restored saved filters.
       if (filterManager) {
         const fm = filterManager.getAll();
+        filterControl?.setNamedFilters(fm);
         if (fm.size > 0) {
           renderer.setFilterDefinitions(fm);
           _applyFilterSelects();
         }
       }
+      filterControl?.enable();
 
       // Sync button states through callbacks now that bindControls() is guaranteed to have run.
       if (renderer._onNavChange)          renderer._onNavChange(false, false);
@@ -4144,6 +4147,8 @@ async function _initCore(root = document) {
       getNodeMap:            () => renderer?.nodeMap ?? null,
       getNodeAnnotationValue: (n, col) => col === '__name__' ? (n.name ?? '') : (n.annotations?.[col] ?? null),
       passesNamedFilter:     (id, node) => renderer?._passesFilter(id, node) ?? true,
+      showPrompt:  (title, msg, def)    => showPromptDialog(title, msg, def ?? ''),
+      showConfirm: (title, msg, opts)   => showConfirmDialog(title, msg, { okLabel: 'OK', cancelLabel: 'Cancel', ...opts }),
       onMatchChange:         (matches) => {
         if (!matches) {
           renderer._selectedTipIds.clear();

@@ -809,32 +809,42 @@ Changing any individual visual setting switches the selector to *Custom*. Click 
 | **Typeface** | Default font family used throughout the tree (overridable per section) |
 | **Style** | Default font weight/style — *Regular*, *Bold*, *Italic*, or *Bold Italic* |
 
-## Chapter 9: Filtering
+## Chapter 9: Filters and Filtering
 
-### Quick Filter
+### Toolbar Quick Filter
 
 The filter controls in the toolbar instantly select visible tips using ad-hoc or saved rules.
 
 The ad-hoc filter has four parts:
 
-- **Search field button** — choose which field to query (*Name* or an annotation key)
-- **Operator button** — choose the match rule (*contains*, *starts with*, numeric comparisons, date comparisons, regex, etc.)
-- **Input box** — type the value/pattern
-- **+ button** — save the current ad-hoc query as a named filter
+- **Search field button** {% include 'btn.html', id: "btn-fc-searchin", grp: "start" %} — choose which field to query (*Name* or an annotation key)
+
+- **Operator button** {% include 'btn.html', id: "btn-fc-op", grp: "middle" %} — choose the match rule (*contains*, *starts with*, numeric comparisons, date comparisons, regex, etc.)
+
+- **Input box** <span class="pt-filter-preview"><span class="pt-filter-group"><input type="search" class="fc-input pt-filter-input" placeholder="Name contains..." readonly style="border-radius:0" /></span></span> — type the value/pattern
+
+- **+ button** {% include 'btn.html', id: "btn-fc-add", grp: "end" %} — save the current ad-hoc query as a named filter
 
 
-For example, choose *Name contains* and type `SLE` to select all Sierra Leone EBOV tips:
+For example, choose `Name` -> `contains` and type `2015` to select any tips with '2015' in the name:
 
-{% include 'filter-box.html', contents: "SLE" -%}<br />
+{% include 'filter-box.html', contents: "2015" -%}<br />
 <br />
 
-Press **Escape** or clear the box to remove the filter (the tip selection remains).
+Note, however, that it is possible that '2015' will appear by chance in another field. If `date` is selected then explict options for filtering by date are provided such as `in year`:
+
+{% include 'filter-box.html', contents: "date in year..." -%}<br />
+<br />
+
+Press the clear button in the box <i class="bi bi-x-circle"></i> or the **Escape** key to remove the filter.
+
+Selecting the **Add** {% include 'btn.html', id: "btn-fc-add", grp: "end" %} button will add the current options as a Named Filter in the Filter Manager for use as a preset filter in the Toolbar and elsewhere.
+
+Click the funnel button {%- include 'btn.html', id: "btn-named-filter" %} beside the filter box on the toolbar to apply a saved named filter. Named filters can be combined with the ad-hoc filter: a tip must pass both to remain selected. See the next section for more details about the Filter Manager. 
 
 ### Named Filters and the Filter Manager
 
-Click the funnel button {%- include 'btn.html', id: "btn-named-filter" %} beside the filter box to apply a saved named filter. Named filters can be combined with the ad-hoc filter: a tip must pass both to remain selected.
-
-Use **Manage Filters** {%- include 'btn.html', id: "btn-manage-filters" %} to open the Filter Manager dialog. There you can:
+Use the **Manage Filters** {%- include 'btn.html', id: "btn-manage-filters" %} button to open the Filter Manager dialog. There you can:
 
 - Create filters with nested **AND/OR** groups
 - Add conditions for string, numeric, categorical, and date fields
@@ -843,7 +853,108 @@ Use **Manage Filters** {%- include 'btn.html', id: "btn-manage-filters" %} to op
 
 {% include 'dialog-filter-manager.html', maxwidth: "820px" %}
 
-Saved filters are available throughout the Visual Options palette in **Filter** dropdowns for tip labels, branch labels, node labels, tip shapes, node shapes, and node bars. Each feature's filter is applied only when that feature is enabled.
+Each condition targets one annotation field. The operators available depend on the field's data type:
+
+#### Text / Tip Name
+
+The tip name and any free-text string annotations support these operators:
+
+| Operator | Passes if the value… |
+|---|---|
+| **contains** | contains the search string (case-insensitive by default) |
+| **not contains** | does not contain the string |
+| **starts with** | begins with the string |
+| **not starts with** | does not begin with the string |
+| **ends with** | ends with the string |
+| **not ends with** | does not end with the string |
+| **equals** | is an exact match |
+| **not equals** | is not an exact match |
+| **matches regex** | matches the regular expression |
+| **not matches regex** | does not match the regular expression |
+
+A **Aa** checkbox toggles case-sensitive matching for all string operators.
+
+#### Categorical
+
+Categorical annotations (e.g. `country`, `lineage`) use the same string operators as text fields above, plus two set-membership operators:
+
+| Operator | Passes if the value… |
+|---|---|
+| **in** | is one of a set of chosen values (enter values as chips) |
+| **not in** | is not in the set |
+
+Use **in** / **not in** to select multiple categories at once without chaining OR conditions.
+
+#### Continuous (numeric)
+
+Numeric annotations (`real`, `integer`, `proportion`, `percentage`) support comparison operators:
+
+| Operator | Passes if the value… |
+|---|---|
+| **≥** | is greater than or equal to |
+| **≤** | is less than or equal to |
+| **>** | is strictly greater than |
+| **<** | is strictly less than |
+| **= (equals)** | is exactly equal |
+| **≠ (not equals)** | is not equal |
+
+#### Date
+
+Date annotations provide temporal comparison operators:
+
+| Operator | Passes if the date… |
+|---|---|
+| **before** | is earlier than the given date |
+| **after** | is later than the given date |
+| **on or before** | is on or earlier than the given date |
+| **on or after** | is on or later than the given date |
+| **is exactly** | is exactly the given date |
+| **is not exactly** | is not the given date |
+| **in year** | falls within the given calendar year (enter as `YYYY`) |
+| **not in year** | does not fall within the given year |
+| **month is** | falls in the selected month (e.g. *September*) |
+| **month is not** | does not fall in the selected month |
+
+Dates are entered in `YYYY-MM-DD` format. Comparisons use a small ±30-minute tolerance so that exact-equality checks on rounded decimal-year dates work correctly.
+
+### Using filters to control the display of visual features of the tree
+
+Saved named filters can be used to restrict *where* a visual feature is drawn, independently of the toolbar selection. Each of the following features has a **Filter** dropdown that appears inside its section of the Visual Options palette whenever that feature is switched on:
+
+| Feature | Where the Filter row appears | What it restricts |
+|---|---|---|
+| **Tip shapes** | Tips section, when tip size > 0 | Shapes drawn only on filtered tips |
+| **Tip labels** | Tips section, when a label is chosen | Labels drawn only on filtered tips |
+| **Node shapes** | Nodes section, when node size > 0 | Shapes drawn only on filtered nodes |
+| **Node labels** | Nodes section, when a label annotation is chosen | Labels drawn only on filtered nodes |
+| **Branch labels** | Branches section, when a label annotation is chosen | Labels drawn only on filtered branches |
+| **Node bars** | Node Bars section, when bars are on | Bars drawn only on filtered nodes |
+
+The dropdown always starts with **— always —**, which means the feature is drawn on every eligible node/tip. Choosing a saved named filter restricts it to only those tips or nodes that pass the filter.
+
+The **Filter** rows are hidden when their parent feature is off — switch the feature on first, then the filter row will appear.
+
+#### Example — label only the Sierra Leone tips
+
+Using the EBOV example tree, which has a `country` annotation:
+
+1. Open the Filter Manager {%- include 'btn.html', id: "btn-manage-filters" %} and create a filter named **SLE** with the condition *country is exactly SLE*.
+2. In **Visual Options → Tips**, set **Show label** to `Name`.
+3. The **Label filter** row now appears. Choose **SLE** from its dropdown.
+4. Tip labels now appear *only* on Sierra Leone tips; all other tips are unlabelled.
+
+#### Example — show node bars only on well-supported nodes (BEAST trees)
+
+For a BEAST MCC tree with a `posterior` annotation:
+
+1. Create a named filter **High posterior** with the condition *posterior ≥ 0.95*.
+2. In **Visual Options → Node Bars**, turn bars **On**.
+3. Set **Bar filter** to **High posterior**.
+4. HPD bars are suppressed on nodes with low posterior support, reducing visual clutter.
+
+#### Combining with the toolbar ad-hoc filter
+
+The **Filter** dropdowns in the palette and the toolbar ad-hoc/named filter are completely independent — both can be active at once. The toolbar filter controls *which tips are selected* (highlighted in the canvas); the palette filter controls *which labels, shapes, or bars are drawn*.
 
 
 ## Chapter 10: The Time Axis

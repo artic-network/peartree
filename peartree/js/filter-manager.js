@@ -536,6 +536,8 @@ export function createFilterManager({ getSchema, onFiltersChange, onSaveRequest,
     'not starts with':'not starts with',
     'ends with':      'ends with',
     'not ends with':  'not ends with',
+    '=':              'equals',
+    '!=':             'not equals',
     'regex':          'matches regex',
     'not regex':      'not matches regex',
   };
@@ -567,12 +569,12 @@ export function createFilterManager({ getSchema, onFiltersChange, onSaveRequest,
       labels = _DATE_OP_LABELS;
     } else if (isText) {
       ops = ['contains', 'not contains', 'starts with', 'not starts with',
-             'ends with', 'not ends with', 'regex', 'not regex', '=', '!='];
+             'ends with', 'not ends with', '=', '!=', 'regex', 'not regex'];
       labels = _STRING_OP_LABELS;
     } else {
-      ops = ['=', '!=', 'in', 'not in',
+      ops = ['in', 'not in',
              'contains', 'not contains', 'starts with', 'not starts with',
-             'ends with', 'not ends with', 'regex', 'not regex'];
+             'ends with', 'not ends with', '=', '!=', 'regex', 'not regex'];
       labels = _STRING_OP_LABELS;
     }
     return ops.map(o => {

@@ -44,6 +44,17 @@
   {%- assign _act = "" -%}
 {%- endif -%}
 
+{%- comment -%}──────────────── group position style ────────────────{%- endcomment -%}
+{%- if grp == "start" -%}
+  {%- assign _style = "border-radius:3px 0 0 3px;border-left:none" -%}
+{%- elsif grp == "middle" -%}
+  {%- assign _style = "border-radius:0" -%}
+{%- elsif grp == "end" -%}
+  {%- assign _style = "border-radius:0 3px 3px 0" -%}
+{%- else -%}
+  {%- assign _style = "" -%}
+{%- endif -%}
+
 {%- comment -%}──────────────── tooltip title ────────────────{%- endcomment -%}
 {%- if _b == "btn-open-tree" -%}
   {%- assign _t = "Open tree file (⌘O)" -%}
@@ -137,6 +148,12 @@
   {%- assign _t = "Data table panel" -%}
 {%- elsif _b == "btn-rtt" -%}
   {%- assign _t = "Root-to-tip divergence plot" -%}
+{%- elsif _b == "btn-fc-searchin" -%}
+  {%- assign _t = "Search in: Name or annotation" -%}
+{%- elsif _b == "btn-fc-op" -%}
+  {%- assign _t = "Match condition" -%}
+{%- elsif _b == "btn-fc-add" -%}
+  {%- assign _t = "Add as named filter" -%}
 {%- else -%}
   {%- assign _t = _b -%}
 {%- endif -%}
@@ -189,5 +206,8 @@
 {%- elsif _b == "btn-palette-close" -%}&times;
 {%- elsif _b == "btn-data-table" -%}<i class="bi bi-caret-left"></i><i class="bi bi-layout-sidebar-reverse"></i>
 {%- elsif _b == "btn-rtt" -%}<i class="bi bi-caret-left"></i><i class="bi bi-graph-up-arrow"></i>
+{%- elsif _b == "btn-fc-searchin" -%}<i class="bi bi-tag"></i>
+{%- elsif _b == "btn-fc-op" -%}<i class="bi bi-chevron-down"></i>
+{%- elsif _b == "btn-fc-add" -%}<i class="bi bi-plus-lg"></i>
 {%- endif -%}
-{%- endcapture -%}{%- if _b == "btn-colour-trigger" -%}<span class="pt-btn-preview pt-btn-colour-trigger-preview" title="{{ _t }}">{{ _ico }}</span>{%- else -%}{%- capture _btn -%}<button class="btn {{ _sz }} {{ _v }}{{ _act }} pt-btn-preview" id="{{ _b }}" title="{{ _t }}">{{ _ico }}</button>{%- endcapture -%}{{ _btn }}{%- endif -%}
+{%- endcapture -%}{%- if _b == "btn-colour-trigger" -%}<span class="pt-btn-preview pt-btn-colour-trigger-preview" title="{{ _t }}">{{ _ico }}</span>{%- else -%}{%- capture _btn -%}<button class="btn {{ _sz }} {{ _v }}{{ _act }} pt-btn-preview" id="{{ _b }}" title="{{ _t }}"{% if _style != "" %} style="{{ _style }}"{% endif %}>{{ _ico }}</button>{%- endcapture -%}{{ _btn }}{%- endif -%}
