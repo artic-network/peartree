@@ -741,7 +741,7 @@ The manager has two tabs:
 - **Categorical** — edit discrete swatch sets: add, remove, or reorder individual colour swatches, duplicate an existing palette as a starting point
 - **Continuous** — edit gradient palettes either as colour stops or an HSB sweep, with full stop editing and duplication
 
-Built-in palettes are read-only. User palettes are editable, persisted immediately to local storage, and available at once in all *Colour by* controls and legends.
+Built-in palettes are read-only but can be copied to make a customisable version using the **Duplicate** button {%- include 'btn.html', id: "btn-pm-duplicate" %}. User palettes are fully using the **Edit** {%- include 'btn.html', id: "btn-pm-edit" %} button, and can be deleted with the **Delete** {%- include 'btn.html', id: "btn-pm-delete" %} button. Custom palettes are stored on the local machine and can be accessed in all *Colour by* controls and in the legends. The type of palette (Categorical or Continuous) that can be selected for an annotation will depend on its data type. Dates are considered continuous type.
 
 ### Legends
 
@@ -752,7 +752,7 @@ In the **Legend** section of the palette:
 1. Set **Annotation** to an annotation key (e.g. `country`).
 2. Adjust **Height %**, **Colour**, and **Font size** as desired.
 
-For categorical annotations a swatch-and-label key is drawn. For continuous numeric annotations a colour ramp with min/max labels is shown.
+The type of legend drawn will depend on the annotation type (Categorical or Continuous) and the colour key by the palette selected for that annoation (see Managing Palettes, above).
 
 {% include 'figure.html', src: "images/fig13.png", alt: "EBOV tree with country legend", maxwidth: "440px", legend: "EBOV tree with `country` legend docked to the right." %}
 

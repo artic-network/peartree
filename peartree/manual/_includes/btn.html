@@ -24,8 +24,17 @@
   {%- assign _v = "btn-outline-info" -%}
 {%- elsif _b == "btn-export-graphic" -%}
   {%- assign _v = "btn-outline-warning" -%}
+{%- elsif _b == "btn-pm-delete" -%}
+  {%- assign _v = "btn-outline-danger" -%}
 {%- else -%}
   {%- assign _v = "btn-outline-secondary" -%}
+{%- endif -%}
+
+{%- comment -%}──────────────── size (btn-xs for palette-manager row buttons) ────────────────{%- endcomment -%}
+{%- if _b == "btn-pm-edit" or _b == "btn-pm-duplicate" or _b == "btn-pm-delete" -%}
+  {%- assign _sz = "btn-xs" -%}
+{%- else -%}
+  {%- assign _sz = "btn-sm" -%}
 {%- endif -%}
 
 {%- comment -%}──────────────── active state (btn-mode-nodes is on by default) ────────────────{%- endcomment -%}
@@ -110,6 +119,12 @@
   {%- assign _t = "Apply a saved filter" -%}
 {%- elsif _b == "btn-manage-palettes" -%}
   {%- assign _t = "Manage palettes" -%}
+{%- elsif _b == "btn-pm-edit" -%}
+  {%- assign _t = "Edit palette" -%}
+{%- elsif _b == "btn-pm-duplicate" -%}
+  {%- assign _t = "Duplicate palette" -%}
+{%- elsif _b == "btn-pm-delete" -%}
+  {%- assign _t = "Delete palette" -%}
 {%- elsif _b == "btn-node-info" -%}
   {%- assign _t = "Node info (⌘I)" -%}
 {%- elsif _b == "btn-palette" -%}
@@ -165,6 +180,9 @@
 {%- elsif _b == "btn-manage-filters" -%}<i class="bi bi-funnel"></i>
 {%- elsif _b == "btn-named-filter" -%}<i class="bi bi-funnel-fill"></i>
 {%- elsif _b == "btn-manage-palettes" -%}<i class="bi bi-palette"></i>
+{%- elsif _b == "btn-pm-edit" -%}<i class="bi bi-pencil"></i>
+{%- elsif _b == "btn-pm-duplicate" -%}<i class="bi bi-copy"></i>
+{%- elsif _b == "btn-pm-delete" -%}<i class="bi bi-trash"></i>
 {%- elsif _b == "btn-node-info" -%}<i class="bi bi-info-circle"></i>
 {%- elsif _b == "btn-palette" -%}<i class="bi bi-sliders"></i><i class="bi bi-caret-right"></i>
 {%- elsif _b == "btn-palette-pin" -%}<i class="bi bi-pin-angle"></i>
@@ -172,4 +190,4 @@
 {%- elsif _b == "btn-data-table" -%}<i class="bi bi-caret-left"></i><i class="bi bi-layout-sidebar-reverse"></i>
 {%- elsif _b == "btn-rtt" -%}<i class="bi bi-caret-left"></i><i class="bi bi-graph-up-arrow"></i>
 {%- endif -%}
-{%- endcapture -%}{%- if _b == "btn-colour-trigger" -%}<span class="pt-btn-preview pt-btn-colour-trigger-preview" title="{{ _t }}">{{ _ico }}</span>{%- else -%}{%- capture _btn -%}<button class="btn btn-sm {{ _v }}{{ _act }} pt-btn-preview" id="{{ _b }}" title="{{ _t }}">{{ _ico }}</button>{%- endcapture -%}{{ _btn }}{%- endif -%}
+{%- endcapture -%}{%- if _b == "btn-colour-trigger" -%}<span class="pt-btn-preview pt-btn-colour-trigger-preview" title="{{ _t }}">{{ _ico }}</span>{%- else -%}{%- capture _btn -%}<button class="btn {{ _sz }} {{ _v }}{{ _act }} pt-btn-preview" id="{{ _b }}" title="{{ _t }}">{{ _ico }}</button>{%- endcapture -%}{{ _btn }}{%- endif -%}
