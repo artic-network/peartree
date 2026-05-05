@@ -776,6 +776,17 @@ Additional controls set the colour, size and typeface of the legend text.
 | **Show 2–4** | Select an additional annotation for a second, third, or fourth legend |
 | **Position** | Position of the additional legend relative to the previous: *Right* (side-by-side) or *Below* (stacked) |
 
+{% tip %}
+When a categorical legend is displayed, clicking on a category in the legend will select all tips annotated with that category. For example, here the `LBR` (Liberia) category has been clicked and all the tips from this country are now selected (in blue):
+
+{% include 'figure.html', src: "images/legend_liberia_selected.png", alt: "EBOV tree with country legend", maxwidth: "80%", bg: "#EAE8E1" %}
+
+If the **Invert** {%- include 'btn.html', id: "btn-invert-selection" %} button is pressed then everything except tips from Liberia will now be selected. Pressing the **Hide** {%- include 'btn.html', id: "btn-hide" %} button will then hide these tips leaving a tree that only subtends the Liberian tips:
+
+{% include 'figure.html', src: "images/liberia_only.png", alt: "EBOV tree with country legend", maxwidth: "80%", bg: "#EAE8E1" %}
+
+{% endtip %}
+
 ### Themes
 
 The **Theme** section at the top of the palette provides pre-built visual presets.
