@@ -40,9 +40,8 @@ This manual covers the full feature set of PearTree, organised by topic. Each ch
 14. [Exporting](#chapter-14-exporting)
 15. [Settings and Persistence](#chapter-15-settings-and-persistence)
 15. [Appendix A: Keyboard Shortcuts](#appendix-a-keyboard-shortcuts)
-16. [Appendix B: Visual Options Reference](#appendix-b-visual-options-reference)
-17. [Appendix C: Bootstrap Values and Branch Annotations](#appendix-c-bootstrap-values-branch-annotations-and-rerooting)
-18. [Appendix D: URL Parameters and Sharing](#appendix-d-url-parameters-and-sharing)
+16. [Appendix B: Bootstrap Values and Branch Annotations](#appendix-b-bootstrap-values-branch-annotations-and-rerooting)
+17. [Appendix C: URL Parameters and Sharing](#appendix-c-url-parameters-and-sharing)
 
 
 ## Chapter 1: The Interface at a Glance
@@ -126,7 +125,7 @@ When no tree is loaded, the canvas shows the startup screen with direct **Open�
 {% include 'figure.html', src: "images/startup.png", alt: "Startup screen", maxwidth: "220px", bg: "#02292E", legend: "Startup screen." %}
 
 {% tip %}
-You can share a link that opens a remote tree automatically. Append `?treeUrl=<URL>` to the PearTree web address — anyone who follows the link has the tree loaded immediately with no upload required. See [Appendix D](#appendix-d-url-parameters-and-sharing) for details.
+You can share a link that opens a remote tree automatically. Append `?treeUrl=<URL>` to the PearTree web address — anyone who follows the link has the tree loaded immediately with no upload required. See [Appendix C](#appendix-c-url-parameters-and-sharing) for details.
 {% endtip %}
 
 ### Opening a NEXUS File with Embedded Settings
@@ -183,7 +182,7 @@ For each annotation you can:
 | **Rename** | Give an annotation a more readable display label |
 | **Change type** | Switch between *categorical* and *real* (continuous numeric) |
 | **Palette** | Open colour settings for the annotation (palette choice and numeric scale mode) |
-| **Branch annotation** | Mark an annotation as belonging to branches rather than nodes — affects how values move when rerooting (see [Appendix C](#appendix-c-bootstrap-values-branch-annotations-and-rerooting)) |
+| **Branch annotation** | Mark an annotation as belonging to branches rather than nodes — affects how values move when rerooting (see [Appendix B](#appendix-b-bootstrap-values-branch-annotations-and-rerooting)) |
 
 {% tip %}
 If your tree uses a non-standard name for bootstrap values (e.g. `UFBoot` from IQ-TREE), open the Annotation Manager and tick **Branch annotation** for that key so PearTree handles it correctly when rerooting.
@@ -555,7 +554,7 @@ Branch labels display annotation values at the **midpoint of each branch** rathe
 | Palette | **Configure** button appears when *Colour by* is active |
 
 {% note %}
-Bootstrap support values are **branch annotations** (see [Appendix C](#appendix-c-bootstrap-values-branch-annotations-and-rerooting)): they describe the branch leading from a node toward its parent, not the node itself. Using Branch Labels to display them places the values visually on the branch they belong to.
+Bootstrap support values are **branch annotations** (see [Appendix B](#appendix-b-bootstrap-values-branch-annotations-and-rerooting)): they describe the branch leading from a node toward its parent, not the node itself. Using Branch Labels to display them places the values visually on the branch they belong to.
 {% endnote %}
 
 ### Node Labels
@@ -1034,7 +1033,7 @@ The full set of controls for the Time Axis (note that the divergence axis have a
 
 Rerooting is available for trees that are not explicitly rooted (e.g. raw IQ-TREE or RAxML output). For explicitly-rooted trees such as BEAST timed trees, rerooting is disabled. A tree is determined to be rooted if it has annotations for the root node in the loaded tree file. Unless the tree building method is explicitly a time-calibrate one, or an outgroup has been specified, most software will produce a tree with an arbitrary root position. PearTree has a range of options for re-rooting the tree at a more appropriate place.
 
-*Use the `Variola virus (VARV)` example data set for the instructions in this chapter.*
+*Use the `Variola virus (VARV)` example data set (either in the Load dialog box or the file in `data/varv.tree`) to follow the instructions in this chapter.*
 
 {% include 'figure.html', src: "images/rooting_initial.png", alt: "VARV tree with initial rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The initial rooting of the Variola virus (VARV) tree - an arbitrary root produced by the tree building software." %}
 
@@ -1089,14 +1088,14 @@ Use **Global** temporal root on a fresh unrooted tree (or a tree rooted to anoth
 
 ### Bootstrap Values and Rerooting
 
-When you reroot a tree, bootstrap support values (and any other values labelled as branch annotations) remain associated with their respective branches, not the internal nodes they were originally assigned to. See [Appendix C](#appendix-c-bootstrap-values-branch-annotations-and-rerooting) for a full explanation of how this works.
+When you reroot a tree, bootstrap support values (and any other values labelled as branch annotations) remain associated with their respective branches, not the internal nodes they were originally assigned to. See [Appendix B](#appendix-b-bootstrap-values-branch-annotations-and-rerooting) for a full explanation of how this works.
 
 
 ## Chapter 12: The Root-to-Tip Panel
 
 The Root-to-Tip (RTT) panel plots each tip's root-to-tip divergence against a tip-date annotation, with a linear regression overlay. It is the standard visual tool for assessing clock-like signal in a timed phylogeny and identifying outlier sequences.
 
-*Load `data/ebov.tree` and import `data/ebov.csv` to follow along.*
+*Use the `Variola virus (VARV)` example data set (either in the Load dialog box or the file in `data/varv.tree`) to follow the instructions in this chapter.*
 
 Click the **RTT** button {%- include 'btn.html', id: "btn-rtt" %} in the toolbar to open the panel.
 
@@ -1192,6 +1191,19 @@ In the **RTT** section of the Visual Options palette:
 Select outlier tips in the RTT scatter plot (click their points or drag-select a region), then click **Hide** in the main toolbar to remove them from the tree. This is the fastest way to clean a dataset for clock analysis.
 {% endtip %}
 
+{% include 'figure.html', src: "images/rtt_initial-root.png", alt: "VARV tree with inital rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the temporal rooting option with dated tips (heterochronous data)." %}
+
+{% include 'figure.html', src: "images/rtt_temporal-root.png", alt: "VARV tree with inital rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the temporal rooting option with dated tips (heterochronous data)." %}
+
+{% include 'figure.html', src: "images/rtt_select_C20.png", alt: "VARV tree with inital rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the temporal rooting option with dated tips (heterochronous data)." %}
+
+{% include 'figure.html', src: "images/rtt_C20_only.png", alt: "VARV tree with inital rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the temporal rooting option with dated tips (heterochronous data)." %}
+
+{% include 'figure.html', src: "images/rtt_select_outliers.png", alt: "VARV tree with inital rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the temporal rooting option with dated tips (heterochronous data)." %}
+
+{% include 'figure.html', src: "images/rtt_final_C20.png", alt: "VARV tree with inital rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the temporal rooting option with dated tips (heterochronous data)." %}
+
+{% include 'figure.html', src: "images/rtt_plot_CIs.png", alt: "VARV tree with inital rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the temporal rooting option with dated tips (heterochronous data)." %}
 
 ## Chapter 13: The Data Table Panel
 
@@ -1232,8 +1244,6 @@ Click the **export tree** button {%- include 'btn.html', id: "btn-export-tree" %
 
 {% include 'dialog-export-tree.html', maxwidth: "420px" %}
 
-{% include 'figure.html', src: "images/fig17.png", alt: "Export Tree dialog", maxwidth: "360px", legend: "Export Tree dialog." %}
-
 | Option | Values | Notes |
 |---|---|---|
 | **Format** | NEXUS / Newick | NEXUS supports annotations and embedded settings; Newick is the most portable format |
@@ -1250,8 +1260,6 @@ Always tick **Embed settings** when exporting NEXUS files for sharing or archiva
 Click the **export graphic** button {%- include 'btn.html', id: "btn-export-graphic" %} (or press **⌘⇧E**) to download an image.
 
 {% include 'dialog-export-graphic.html', maxwidth: "400px" %}
-
-{% include 'figure.html', src: "images/fig18.png", alt: "Export Graphic dialog", maxwidth: "360px", legend: "Export Graphic dialog." %}
 
 | Option | Values | Notes |
 |---|---|---|
@@ -1325,209 +1333,7 @@ If PearTree is already running, the file opens in a new window. On Windows, drag
 | **Escape** | Dismiss lens / close dialog / clear selection |
 
 
-## Appendix B: Visual Options Reference
-
-### Theme
-
-| Control | Effect |
-|---|---|
-| Theme selector | Choose a built-in or personal preset |
-| **Store** | Save the current settings as a named theme |
-| **Default** | Set selected theme as the default for new windows |
-| **Remove** | Delete a user-saved theme |
-
-{% include 'figure.html', src: "images/controls_themes.png", alt: "Themes controls", maxwidth: "250px" %}
-
-### Palette Manager
-
-| Control | Effect |
-|---|---|
-| Categorical tab | Edit discrete swatch palettes (add/remove/reorder colours) |
-| Continuous tab | Edit sequential gradients (colour stops or HSB sweep) |
-| Duplicate | Clone an existing palette as a starting point |
-| Delete | Remove a user palette |
-
-### Filters
-
-| Control | Effect |
-|---|---|
-| Search field | Choose Name or an annotation key to query |
-| Match operator | String/numeric/date/regex matching mode |
-| Value box | Query value or pattern |
-| + | Save current query as a named filter |
-| Named filter selector | Apply a saved filter in the toolbar |
-| Manage Filters | Open filter editor with nested AND/OR conditions and import/export |
-
-### Tree
-
-| Control | Effect |
-|---|---|
-| Calibrate | Annotation key holding tip dates for time axis calibration |
-| Format | Display format for calibrated axis labels |
-| Background | Canvas background colour |
-| Branches | Branch line colour |
-| Branch width | Stroke thickness (0.5–8 px) |
-| Typeface | Font family for all labels |
-| Typeface style | Regular / Bold / Italic / Bold Italic |
-| Neg. branches | *Draw* (as-is) or *Clamp to zero* |
-| Elbow radius | Branch corner rounding (px) |
-| Root stub | Length of the root stem line (px) |
-| Root stem % | Root stem as % of total tree age (0–20) |
-| Padding | Canvas margins: top, bottom, left, right (px) |
-
-{% include 'figure.html', src: "images/controls_tree.png", alt: "Tree appearance controls", maxwidth: "250px" %}
-
-### Tip Labels
-
-| Control | Effect |
-|---|---|
-| Show | *Off* / *Names* / annotation key |
-| Filter | Apply a saved named filter so only matching tips get labels |
-| Layout | *Normal* / *Aligned* / *Dashed* / *Dots* / *Solid* |
-| Size | Font size (1–20 pt) |
-| Colour | Default label colour |
-| Colour by | Annotation key for per-tip label colour |
-| Palette | Colour scheme (**Configure** opens annotation colour settings) |
-| Spacing | Gap after tip marker (px) |
-| Selected style | *Normal* / *Bold* / *Italic* / *Bold Italic* for selected tips |
-
-{% include 'figure.html', src: "images/controls_tip_labels.png", alt: "Tip labels controls", maxwidth: "250px" %}
-
-### Label Shapes
-
-| Control | Effect |
-|---|---|
-| Shape | *Off* / *Square* / *Circle* / *Block* |
-| Size | % of row height |
-| Colour | Default fill |
-| Colour by | Annotation key |
-| Margin left/right | Gap on each side (px) |
-| Spacing | Gap between multiple shape slots (px) |
-
-### Tip Shapes
-
-| Control | Effect |
-|---|---|
-| Size | Radius (0 = hidden) |
-| Filter | Apply a saved named filter so only matching tips get shapes |
-| Colour | Stroke/fill colour |
-| Background | Halo fill colour |
-| Halo | Halo ring radius |
-| Colour by | Annotation key |
-| Palette | Colour scheme (**Configure** opens annotation colour settings) |
-
-{% include 'figure.html', src: "images/controls_tip_shapes.png", alt: "Tip shapes controls", maxwidth: "250px" %}
-
-### Node Shapes
-
-| Control | Effect |
-|---|---|
-| Size | Radius (0 = hidden) |
-| Colour | Default shape colour |
-| Background | Halo fill |
-| Filter | Apply a saved named filter so only matching nodes get shapes |
-| Colour by | Annotation key |
-| Palette | Colour scheme (**Configure** opens annotation colour settings) |
-
-{% include 'figure.html', src: "images/controls_node_shapes.png", alt: "Node shapes controls", maxwidth: "250px" %}
-
-### Node Labels
-
-| Control | Effect |
-|---|---|
-| Annotation | Key to display as text on internal nodes |
-| Filter | Apply a saved named filter so only matching nodes get labels |
-| Position | *Right* / *Above left* / *Below left* |
-| Font size | Text size (pt) |
-| Colour | Text colour |
-| Spacing | Gap between node and label (px) |
-
-### Node Bars *(BEAST trees only)*
-
-| Control | Effect |
-|---|---|
-| Show | On / Off |
-| Filter | Apply a saved named filter so bars draw only on matching nodes |
-| Colour | Bar colour |
-| Bar height | Vertical thickness (px) |
-| Line | *Mean* / *Median* / *Off* |
-| Range whiskers | Show outer extent whiskers |
-
-### Collapsed Clades
-
-| Control | Effect |
-|---|---|
-| Fill opacity | 0 (transparent) – 1 (solid) |
-| Height (rows) | Triangle base height in tip-row units |
-
-### Clade Highlights
-
-| Control | Effect |
-|---|---|
-| Left edge | *Rectangle* — straight left edge at clade root; *Outline subtree* — hugs the branch profile |
-| Right edge | *At tip* / *At label left* / *At label right* / *Outline tips* (staircase per tip) |
-| Padding | Gap between clade extent and border (px) |
-| Corners | Corner-rounding radius (px) |
-| Colour by | *User colour* or any annotation key |
-| Palette | Colour scheme when *Colour by* is an annotation |
-| Opacity | Fill translucency |
-| Stroke | Border line width (px) |
-| Opacity | Opacity of the border line |
-
-### Legend
-
-| Control | Effect |
-|---|---|
-| Annotation | Annotation key to show as a colour key |
-| Colour | Legend text and label colour |
-| Font size | Legend font size (pt) |
-| Height % | Fraction of canvas height this legend occupies |
-
-{% include 'figure.html', src: "images/controls_legend.png", alt: "Legend controls", maxwidth: "250px" %}
-
-### Axis
-
-| Control | Effect |
-|---|---|
-| Show | *Off* / *Forward* / *Reverse* / *Time* |
-| Colour | Axis line and label colour |
-| Font size | Tick-label font size |
-| Line width | Axis stroke thickness |
-| Major ticks | Auto / Decades / Years / Quarters / Months / Weeks / Days |
-| Minor ticks | Off / (finer intervals) |
-| Major labels | *Partial* / *Full* / *Component* / *Off* |
-| Minor labels | *Off* / *Component* / *Partial* / *Full* |
-
-{% include 'figure.html', src: "images/controls_axis.png", alt: "Axis controls", maxwidth: "250px" %}
-
-### RTT
-
-| Control | Effect |
-|---|---|
-| X-axis origin | *Data range* or *Root age* |
-| Aspect ratio | Fixed ratio or *fit panel* |
-| Grid lines | *Both* / *Horizontal* / *Vertical* / *Off* |
-| Reg. line | Regression / mean-line style: *Solid* / *Big dash* / *Dash* / *Dots* |
-| Reg. colour | Regression / mean line colour |
-| Reg. width | Line thickness (px) |
-| Band | *Off* / *±2σ residual* / *95% CI* — shown in both scatter and histogram modes |
-| Band style | Border style of band lines |
-| Band colour | Band border colour |
-| Band width | Band border thickness (px) |
-| Band fill | Band fill colour |
-| Band fill opacity | Band fill translucency |
-| Box bg / text | Stats box background and text colours |
-| Box font | Stats box font size |
-| Axis colour | Axis line and label colour |
-| Axis font | Tick-label font size |
-| Axis line | Axis stroke thickness |
-| Typeface / Style | Font family and style for axis labels |
-| Format | Date format (heterochronous mode only) |
-| Major / minor ticks | Tick intervals (heterochronous mode only) |
-| Major / minor labels | Label format (heterochronous mode only) |
-
-
-## Appendix C: Bootstrap Values, Branch Annotations, and Rerooting
+## Appendix B: Bootstrap Values, Branch Annotations, and Rerooting
 
 ### Node Annotations vs. Branch Annotations
 
@@ -1559,7 +1365,7 @@ When you reroot on a new branch, PearTree updates all branch annotation values a
 Multiple sequential reroots are handled correctly. BEAST trees carry posterior as a **node** annotation (not a branch annotation), and rerooting is disabled for them in any case.
 
 
-## Appendix D: URL Parameters and Sharing
+## Appendix C: URL Parameters and Sharing
 
 When using the PearTree web application, you can construct a URL that pre-loads a tree and applies settings automatically.
 
