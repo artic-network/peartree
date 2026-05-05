@@ -950,9 +950,9 @@ For a BEAST MCC tree with a `posterior` annotation:
 4. HPD bars are suppressed on nodes with low posterior support, reducing visual clutter.
 
 
-## Chapter 10: The Time Axis
+## Chapter 10: The Tree Scale Axis
 
-The axis adds a scale bar along the bottom of the canvas. Load the EBOV example tree to follow along — it carries a `date` annotation on each tip.
+The axis adds a scale bar along the bottom of the canvas. Load the EBOV example tree to follow along — it carries a `date` annotation for each tip.
 
 In the **Axis** section of the palette, set **Show** to one of four modes:
 
@@ -965,30 +965,27 @@ In the **Axis** section of the palette, set **Show** to one of four modes:
 
 ### Divergence Axes
 
-Select **Forward** or **Reverse** to draw a plain numeric scale immediately — no calibration needed. Use these when branch lengths represent substitutions-per-site or similar units.
+Select **Forward** or **Reverse** to draw a plain numeric scale immediately — no calibration needed. The units will be the same as the branch lengths supplied in the tree (e.g., substitutions-per-site or number of mutations). If the tree is a time calibrated tree then these will be in the time units used by the branches (i.e., decimal years). When the **Forward** axis is selected, the origin will align with the root node of the tree. When the **Reverse** axis is shown the origin will align with the most divergent tip and show the height above this tip.
 
 ### Time-Calibrated Axis
 
+Selecting the **Time** axis option will show an axis labelled with dates in a customisable range of formats. This option is only available if there is a tip annotation of the type 'date'. On loading the tree, PearTree will automatically detect an annotation in this format if available. Otherwise it can be loaded in a CSV file (see [Importing a CSV or TSV File](#importing-a-csv-or-tsv-file)) or by parsing a date out of the tip names (see [Parse Tip Names](#parse-tip-names)).
+
 #### Step 1 — Calibrate
 
-In the **Tree** section of the palette (above the Axis section), a **Calibrate** dropdown appears when the loaded tree has at least one annotation that PearTree recognises as a date type. Select that annotation key (e.g. `date` or `collection_date`).
-
-Once selected, a **Format** row appears:
-
-| Format code | Example output |
-|---|---|
-| `yyyy-MM-dd` | `2014-09-12` |
-| `yyyy-MMM-dd` | `2014-Sep-12` |
-| `dd MMM yyyy` | `12 Sep 2014` |
-| `dd MMMM yyyy` | `12 September 2014` |
-| `MMM dd, yyyy` | `Sep 12, 2014` |
-| `MMMM dd, yyyy` | `September 12, 2014` |
+In the **Tree** section at the top of the control panel, a **Calibrate** dropdown appears when the loaded tree has at least one annotation that PearTree recognises as a date type. Select that annotation key (e.g., `date` or `collection_date`).
 
 #### Step 2 — Set the axis to Time
 
 In **Axis → Show**, select `Time`. The axis now displays calendar dates derived from the calibration.
 
+{% note %}
+If the tips have a date annotation but the tree is not time-calibrated (the branch lengths are not in units of time) then the time axis will not accurately reflect the time scale of the tree. The time axis will be 'fitted' to the tree using a regression of divergence to the date for each tip. This regression analysis is shown in the [Root-to-Tip Panel](#chapter-12-the-root-to-tip-panel).
+{% endnote %}
+
 #### Step 3 — Configure tick intervals
+
+Two sets of options control the spacing of tick marks on the axis and the labels placed at these tick marks:
 
 | Control | Options | Notes |
 |---|---|---|
@@ -1008,14 +1005,36 @@ In **Axis → Show**, select `Time`. The axis now displays calendar dates derive
 
 For Weeks ticks: *Component* shows `W01`–`W53`; *Full* and *Partial* both show `2014-W37`.
 
-{% include 'figure.html', src: "images/fig15.png", alt: "EBOV tree with time axis", maxwidth: "280px", legend: "EBOV tree with time axis. Major ticks = Years, labels = Partial." %}
+Example time axis:
+{% include 'figure.html', src: "images/axis_years-months.png", alt: "EBOV tree with country legend", maxwidth: "80%", bg: "#EAE8E1", legend: "Major ticks as years, minor ticks as months." %}
+{% include 'figure.html', src: "images/axis_years-weeks.png", alt: "EBOV tree with country legend", maxwidth: "80%", bg: "#EAE8E1", legend: "Major ticks as years, minor ticks as weeks." %}
+{% include 'figure.html', src: "images/axis_decades.png", alt: "EBOV tree with country legend", maxwidth: "80%", bg: "#EAE8E1", legend: "Major ticks as decades, minor ticks as years." %}
+
+
+The full set of controls for the Time Axis (note that the divergence axis have a subset of these):
+
+{% include 'palette-axis.html', legend: "Axis section of the Visual Options palette." %}
+
+| Control | Effect |
+|---|---|
+| **Show** | *Off* — no axis; *Forward* — divergence from root; *Reverse* — distance from the most-divergent tip; *Time* — calendar-date axis (requires a date calibration) |
+| **Colour** | Colour of the axis line and tick labels |
+| **Size** | Font size for tick labels (6–48 pt) |
+| **Typeface** | Font family for axis labels — *Theme* inherits from the Theme section |
+| **Style** | Font weight and style — *Theme*, *Regular*, *Bold*, *Italic*, or *Bold Italic* |
+| **Line** | Axis stroke thickness (0.5–4 px) |
+| **Format** | Date format for tick labels — choose from `1977-05-04`, `1977-May-04`, `04 May 1977`, `May 04, 1977`, etc. (*Time* mode only) |
+| **Major ticks** | Tick interval: *Auto* / *Millennia* / *Centuries* / *Decades* / *Years* / *Quarters* / *Months* / *Weeks* / *Days* — *Auto* gives ~5–8 ticks across the current view (*Time* mode only) |
+| **Minor ticks** | Finer tick interval between major ticks, or *Off* (*Time* mode only) |
+| **Major labels** | Label style at major ticks: *Component*, *Partial*, *Full*, or *Off* (*Time* mode only) |
+| **Minor labels** | Label style at minor ticks: *Component*, *Partial*, *Full*, or *Off* (*Time* mode only) |
 
 
 ## Chapter 11: Rooting
 
-Rerooting is available for trees that are not explicitly rooted (e.g. raw IQ-TREE or RAxML output). For explicitly-rooted trees such as BEAST timed trees, rerooting is disabled.
+Rerooting is available for trees that are not explicitly rooted (e.g. raw IQ-TREE or RAxML output). For explicitly-rooted trees such as BEAST timed trees, rerooting is disabled. A tree is determined to be rooted if it has annotations for the root node in the loaded tree file.
 
-*Use `data/varv_rooted.nwk` or `data/large_tree.tree` for the examples in this chapter.*
+*Use the `Variola virus (VARV)` example data set for the instructions in this chapter.*
 
 ### Midpoint Root (⌘M)
 
