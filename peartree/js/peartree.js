@@ -1977,7 +1977,7 @@ async function _initCore(root = document) {
     if (!_statusSelectEl) return;
     if (count > 0) {
       _statusSelectEl.innerHTML =
-        `<span class="st-sep">| </span><span class="st-lbl">Selected\u2009</span><span class="st-val">${count}</span>`;
+        `<span class="st-lbl">Selected\u2009</span><span class="st-val">${count}</span><span class="st-sep"> |</span>`;
       _statusSelectEl.classList.add('visible');
     } else {
       _statusSelectEl.innerHTML = '';

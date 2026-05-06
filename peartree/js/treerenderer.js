@@ -4882,7 +4882,7 @@ export class TreeRenderer {
       const viewRoot = this.nodes.find(n => !n.parentId);
       height = viewRoot ? globalH(viewRoot) - minTipGH : this.maxX;
     } else if (refNode.isTip) {
-      height = 0;
+      height = globalH(refNode) - minTipGH;
     } else {
       height = globalH(refNode) - minTipGH;
     }
