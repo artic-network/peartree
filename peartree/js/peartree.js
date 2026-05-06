@@ -2677,15 +2677,28 @@ async function _initCore(root = document) {
 
       // Patch the observed range in the schema entry (without full rebuild)
       if (def && schema && isNumericType(dt)) {
-        const values = [];
+        let min = Infinity, max = -Infinity;
         for (const n of graph.nodes) {
           const v = n.annotations?.[key];
-          if (v != null && v !== '?' && Number.isFinite(Number(v))) values.push(Number(v));
+          if (v != null && v !== '?' && Number.isFinite(Number(v))) {
+            const nv = Number(v);
+            if (nv < min) min = nv;
+            if (nv > max) max = nv;
+          }
         }
-        if (values.length > 0) {
-          def.observedMin = Math.min(...values);
-          def.observedMax = Math.max(...values);
+        if (min <= max) {
+          def.observedMin = min;
+          def.observedMax = max;
         }
+      } else if (def && schema && (dt === 'categorical' || dt === 'date')) {
+        // Rebuild the distinct values list after an edit may have added a new
+        // category or removed the last occurrence of an existing one.
+        const seen = new Set();
+        for (const n of graph.nodes) {
+          const v = n.annotations?.[key];
+          if (v != null && v !== '' && v !== '?') seen.add(String(v));
+        }
+        def.values = [...seen].sort();
       }
 
       if (schema) {
