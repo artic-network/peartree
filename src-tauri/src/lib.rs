@@ -106,8 +106,6 @@ fn build_app_menu(
     let view_fit_labels = MenuItem::with_id(manager, "view-fit-labels", "Fit Labels", true, Some("CmdOrCtrl+Shift+0"))?;
     let view_hyp_up      = MenuItem::with_id(manager, "view-hyp-up",      "Widen Lens",       false, Some("CmdOrCtrl+Shift+="))?;
     let view_hyp_down    = MenuItem::with_id(manager, "view-hyp-down",    "Narrow Lens",      false, Some("CmdOrCtrl+Shift+-"))?;
-    let view_scroll_top  = MenuItem::with_id(manager, "view-scroll-top",  "Scroll to Top",    false, Some("CmdOrCtrl+Shift+Up"))?;
-    let view_scroll_bottom = MenuItem::with_id(manager, "view-scroll-bottom", "Scroll to Bottom", false, Some("CmdOrCtrl+Shift+Down"))?;
     let view_info       = MenuItem::with_id(manager, "view-info",       "Get Info...", true, Some("CmdOrCtrl+I"))?;
     let show_devtools   = MenuItem::with_id(manager, "show-devtools",   "Developer Tools", true, Some("CmdOrCtrl+Alt+I"))?;
     let view_show_options = MenuItem::with_id(manager, "view-options-panel", "Show Options Panel", true, None::<&str>)?;
@@ -117,8 +115,6 @@ fn build_app_menu(
     let view_menu = Submenu::with_items(manager, "View", true, &[
         &view_zoom_in,
         &view_zoom_out,
-        &view_hyp_up,
-        &view_hyp_down,
         &PredefinedMenuItem::separator(manager)?,
         &view_fit,
         &view_fit_labels,
@@ -129,9 +125,6 @@ fn build_app_menu(
         &view_drill,
         &view_climb,
         &view_home,
-        &PredefinedMenuItem::separator(manager)?,
-        &view_scroll_top,
-        &view_scroll_bottom,
         &PredefinedMenuItem::separator(manager)?,
         &view_show_options,
         &view_show_rtt,
@@ -146,16 +139,18 @@ fn build_app_menu(
     let tree_rotate_all    = MenuItem::with_id(manager, "tree-rotate-all",    "Rotate Clade",   true, None::<&str>)?;
     let tree_order_up      = MenuItem::with_id(manager, "tree-order-up",      "Order Nodes Up",       true, Some("CmdOrCtrl+U"))?;
     let tree_order_down    = MenuItem::with_id(manager, "tree-order-down",    "Order Nodes Down",     true, Some("CmdOrCtrl+D"))?;
-    let tree_reroot        = MenuItem::with_id(manager, "tree-reroot",        "Re-root Tree",   true, None::<&str>)?;
-    let tree_midpoint      = MenuItem::with_id(manager, "tree-midpoint",      "Midpoint Root",  true, Some("CmdOrCtrl+M"))?;
-    let tree_hide          = MenuItem::with_id(manager, "tree-hide",          "Hide Nodes",     true, None::<&str>)?;
-    let tree_show          = MenuItem::with_id(manager, "tree-show",          "Show Nodes",     true, None::<&str>)?;
-    let tree_collapse_clade = MenuItem::with_id(manager, "tree-collapse-clade", "Collapse Clade", true, None::<&str>)?;
-    let tree_expand_clade   = MenuItem::with_id(manager, "tree-expand-clade",   "Expand Clade",   true, None::<&str>)?;
-    let tree_paint         = MenuItem::with_id(manager, "tree-paint",         "Paint Node",     true, None::<&str>)?;
-    let tree_clear_colours = MenuItem::with_id(manager, "tree-clear-colours", "Clear Colours",  true, None::<&str>)?;
-    let tree_highlight_clade   = MenuItem::with_id(manager, "tree-highlight-clade",   "Highlight Clade",   false, None::<&str>)?;
-    let tree_clear_highlights  = MenuItem::with_id(manager, "tree-clear-highlights",  "Remove Highlight",  false, None::<&str>)?;
+    let tree_reroot               = MenuItem::with_id(manager, "tree-reroot",               "Re-root Tree",            true,  Some("CmdOrCtrl+R"))?;
+    let tree_midpoint             = MenuItem::with_id(manager, "tree-midpoint",             "Midpoint Root",           true,  Some("CmdOrCtrl+M"))?;
+    let tree_temporal_root_global = MenuItem::with_id(manager, "tree-temporal-root-global", "Global Temporal Root",    true,  Some("CmdOrCtrl+T"))?;
+    let tree_temporal_root        = MenuItem::with_id(manager, "tree-temporal-root",        "Optimise Root on Branch", true,  Some("CmdOrCtrl+Shift+T"))?;
+    let tree_hide                 = MenuItem::with_id(manager, "tree-hide",                 "Hide Nodes",              true,  Some("CmdOrCtrl+Backspace"))?;
+    let tree_show                 = MenuItem::with_id(manager, "tree-show",                 "Show Nodes",              true,  Some("CmdOrCtrl+Shift+Backspace"))?;
+    let tree_collapse_clade       = MenuItem::with_id(manager, "tree-collapse-clade",       "Collapse Clade",          true,  Some("CmdOrCtrl+1"))?;
+    let tree_expand_clade         = MenuItem::with_id(manager, "tree-expand-clade",         "Expand Clade",            true,  Some("CmdOrCtrl+Shift+1"))?;
+    let tree_paint                = MenuItem::with_id(manager, "tree-paint",                "Paint Node",              true,  Some("CmdOrCtrl+K"))?;
+    let tree_clear_colours        = MenuItem::with_id(manager, "tree-clear-colours",        "Clear Colours",           true,  Some("CmdOrCtrl+Shift+K"))?;
+    let tree_highlight_clade      = MenuItem::with_id(manager, "tree-highlight-clade",      "Highlight Clade",         false, Some("CmdOrCtrl+Shift+L"))?;
+    let tree_clear_highlights     = MenuItem::with_id(manager, "tree-clear-highlights",     "Remove Highlight",        false, None::<&str>)?;
 
     let tree_menu = Submenu::with_items(manager, "Tree", true, &[
         &tree_order_up,
@@ -166,6 +161,8 @@ fn build_app_menu(
         &PredefinedMenuItem::separator(manager)?,
         &tree_reroot,
         &tree_midpoint,
+        &tree_temporal_root_global,
+        &tree_temporal_root,
         &PredefinedMenuItem::separator(manager)?,
         &tree_hide,
         &tree_show,
@@ -213,7 +210,6 @@ fn build_app_menu(
         &view_back, &view_forward, &view_home,
         &view_drill, &view_climb,
         &view_hyp_up, &view_hyp_down,
-        &view_scroll_top, &view_scroll_bottom,
         &view_zoom_in, &view_zoom_out, &view_fit, &view_fit_labels,
         &view_info,
     ] {
@@ -223,6 +219,7 @@ fn build_app_menu(
         &tree_rotate, &tree_rotate_all,
         &tree_order_up, &tree_order_down,
         &tree_reroot, &tree_midpoint,
+        &tree_temporal_root_global, &tree_temporal_root,
         &tree_hide, &tree_show,
         &tree_collapse_clade, &tree_expand_clade,
         &tree_highlight_clade, &tree_clear_highlights,
@@ -261,8 +258,10 @@ fn build_app_menu(
         ("tree-rotate-all",  tree_rotate_all),
         ("tree-order-up",    tree_order_up),
         ("tree-order-down",  tree_order_down),
-        ("tree-reroot",      tree_reroot),
-        ("tree-midpoint",    tree_midpoint),
+        ("tree-reroot",               tree_reroot),
+        ("tree-midpoint",             tree_midpoint),
+        ("tree-temporal-root-global", tree_temporal_root_global),
+        ("tree-temporal-root",        tree_temporal_root),
         ("tree-hide",        tree_hide),
         ("tree-show",        tree_show),
         ("tree-collapse-clade", tree_collapse_clade),
@@ -271,8 +270,6 @@ fn build_app_menu(
         ("manage-filters",    manage_filters),
         ("view-hyp-up",        view_hyp_up),
         ("view-hyp-down",      view_hyp_down),
-        ("view-scroll-top",    view_scroll_top),
-        ("view-scroll-bottom", view_scroll_bottom),
         ("tree-highlight-clade",  tree_highlight_clade),
         ("tree-clear-highlights", tree_clear_highlights),
         ("tree-paint",       tree_paint),
