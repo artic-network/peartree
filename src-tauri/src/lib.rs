@@ -107,7 +107,8 @@ fn build_app_menu(
     let view_hyp_up      = MenuItem::with_id(manager, "view-hyp-up",      "Widen Lens",       false, Some("CmdOrCtrl+Shift+="))?;
     let view_hyp_down    = MenuItem::with_id(manager, "view-hyp-down",    "Narrow Lens",      false, Some("CmdOrCtrl+Shift+-"))?;
     let view_info       = MenuItem::with_id(manager, "view-info",       "Get Info...", true, Some("CmdOrCtrl+I"))?;
-    let show_devtools   = MenuItem::with_id(manager, "show-devtools",   "Developer Tools", true, Some("CmdOrCtrl+Alt+I"))?;
+    #[cfg(debug_assertions)]
+    let show_devtools   = MenuItem::with_id(manager, "show-devtools",   "Developer Tools", true, None::<&str>)?;
     let view_show_options = MenuItem::with_id(manager, "view-options-panel", "Show Options Panel", true, None::<&str>)?;
     let view_show_rtt     = MenuItem::with_id(manager, "view-rtt-plot",     "Show RTT Plot",      true, None::<&str>)?;
     let view_show_dt      = MenuItem::with_id(manager, "view-data-table",   "Show Data Table",    true, None::<&str>)?;
@@ -131,9 +132,11 @@ fn build_app_menu(
         &view_show_dt,
         &PredefinedMenuItem::separator(manager)?,
         &view_info,
-        &PredefinedMenuItem::separator(manager)?,
-        &show_devtools,
     ])?;
+    #[cfg(debug_assertions)]
+    view_menu.append(&PredefinedMenuItem::separator(manager)?)?;
+    #[cfg(debug_assertions)]
+    view_menu.append(&show_devtools)?;
 
     let tree_rotate        = MenuItem::with_id(manager, "tree-rotate",        "Rotate Node",    true, None::<&str>)?;
     let tree_rotate_all    = MenuItem::with_id(manager, "tree-rotate-all",    "Rotate Clade",   true, None::<&str>)?;
@@ -183,11 +186,13 @@ fn build_app_menu(
         &PredefinedMenuItem::fullscreen(manager, None)?,
     ])?;
 
-    let show_help     = MenuItem::with_id(manager, "show-help",         "PearTree Help",            true, Some("CmdOrCtrl+?"))?;
-    let check_updates = MenuItem::with_id(manager, "check-for-updates", "Check for Updates\u{2026}", true, None::<&str>)?;
+    let show_help        = MenuItem::with_id(manager, "show-help",         "PearTree Help",             true, Some("CmdOrCtrl+?"))?;
+    let open_manual      = MenuItem::with_id(manager, "open-manual",       "Open Manual in Browser",    true, None::<&str>)?;
+    let check_updates    = MenuItem::with_id(manager, "check-for-updates", "Check for Updates\u{2026}", true, None::<&str>)?;
 
     let help_menu = Submenu::with_items(manager, "Help", true, &[
         &show_help,
+        &open_manual,
         &PredefinedMenuItem::separator(manager)?,
         &check_updates,
     ])?;
@@ -275,6 +280,7 @@ fn build_app_menu(
         ("tree-paint",       tree_paint),
         ("tree-clear-colours", tree_clear_colours),
         ("show-help",           show_help),
+        ("open-manual",         open_manual),
         ("check-for-updates",   check_updates),
     ] {
         map.insert(id.to_string(), item);
@@ -604,11 +610,18 @@ pub fn run() {
                 app.on_menu_event(move |app2, event| {
                     let id     = event.id().as_ref().to_string();
                     let target = app2.state::<LastFocusedWindow>().0.lock().unwrap().clone();
+                    if id == "open-manual" {
+                        tauri_plugin_opener::open_url("https://peartree.live/manual", None::<&str>).ok();
+                        return;
+                    }
+                    #[cfg(debug_assertions)]
                     if id == "show-devtools" {
                         if let Some(ww) = app2.get_webview_window(&target) {
                             ww.open_devtools();
                         }
-                    } else {
+                        return;
+                    }
+                    {
                         let event_name = format!("menu-event-{target}");
                         app2.emit_to(
                             EventTarget::WebviewWindow { label: target.clone() },
