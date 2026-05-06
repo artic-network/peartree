@@ -11,7 +11,9 @@ mkdir -p "$DEST"
 # Mirror the two source trees (pearcore + peartree) keeping directory structure.
 cp -r "$ROOT/pearcore/." "$DEST/pearcore/"
 cp -r "$ROOT/peartree/." "$DEST/peartree/"
-# Remove markdown files from the staged output.
-find "$DEST" -name '*.md' -delete
+# Remove the manual source tree (Eleventy input – not needed in the app).
+rm -rf "$DEST/peartree/manual"
+# Remove any remaining .md files except help.md and about.md (needed at runtime).
+find "$DEST" -name '*.md' ! -name 'help.md' ! -name 'about.md' -delete
 
 echo "Staged Tauri frontend → $DEST"
