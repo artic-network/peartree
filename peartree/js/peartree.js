@@ -5150,8 +5150,17 @@ async function _initCore(root = document) {
         if (!selNode || selX === null) return;
         const parentLayoutNode = renderer.nodeMap.get(selNode.parentId);
         if (!parentLayoutNode) return;
-        targetNode     = selNode;
-        distFromParent = selX - parentLayoutNode.x;
+        targetNode = selNode;
+        if (parentLayoutNode.id === '__graph_root__') {
+          // The graph "parent" of a root-arm node is the OTHER arm (adjacents[0]
+          // crosses the full root edge).  distFromParent must be measured from
+          // that other-arm node, not from the virtual layout root at x=0.
+          const selNodeIdx = graph.origIdToIdx.get(selNode.id);
+          const otherLen   = (selNodeIdx === graph.root.nodeA) ? graph.root.lenB : graph.root.lenA;
+          distFromParent   = otherLen + selX;
+        } else {
+          distFromParent = selX - parentLayoutNode.x;
+        }
       } else {
         // Nodes mode: single tip → that node; ≥2 tips → their MRCA.
         let nodeId;
