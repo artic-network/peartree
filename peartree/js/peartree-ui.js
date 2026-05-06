@@ -519,8 +519,8 @@ function _tbSectionReroot() {
       <div class="btn-group" role="group" aria-label="Rooting">
         <button id="btn-reroot" class="btn btn-sm btn-outline-secondary" disabled title="Reroot tree at selection"><i class="bi bi-arrow-return-left"></i></button>
         <button id="btn-midpoint-root" class="btn btn-sm btn-outline-secondary" disabled title="Midpoint root (⌘M)"><i class="bi bi-chevron-bar-contract bi-rotate-90"></i></button>
-        <button id="btn-temporal-root-global" class="btn btn-sm btn-outline-secondary" disabled title="Global temporal root (⌘R)"><i class="bi bi-clock"></i></button>
-        <button id="btn-temporal-root" class="btn btn-sm btn-outline-secondary" disabled title="Optimise root on current branch (⇧⌘R)"><i class="bi bi-clock-history"></i></button>
+        <button id="btn-temporal-root-global" class="btn btn-sm btn-outline-secondary" disabled title="Global temporal root (⌘T)"><i class="bi bi-clock"></i></button>
+        <button id="btn-temporal-root" class="btn btn-sm btn-outline-secondary" disabled title="Optimise root on current branch (⌘⇧T)"><i class="bi bi-clock-history"></i></button>
       </div>
     </div>`;
 }
