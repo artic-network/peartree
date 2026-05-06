@@ -27,8 +27,6 @@ Click <i class="bi bi-folder2-open"></i> or press **⌘O** to open the *Open Tre
 
 Supported formats: **NEXUS** (`.nex`, `.nexus`, `.tre`, `.tree`, `.treefile`) and **Newick** (`.nwk`, `.newick`).
 
-Press **Escape** or click × to close the dialog without loading (once a tree is already open).
-
 ---
 
 ## Toolbar Buttons
@@ -117,16 +115,9 @@ Press **Escape** or click × to close the dialog without loading (once a tree is
 | <i class="bi bi-brush"></i> | With tips selected, open the colour picker to apply a colour to those tips (stored as `user_colour` annotation) |
 | <i class="bi bi-eraser"></i> Clear | Remove all user-assigned colours from the tree |
 
-Clicking the <i class="bi bi-brush"></i> button opens a popup panel with:
-- A row of **recently used colours** (persisted across sessions)
-- Rows of **categorical palette swatches** — click any swatch to apply that colour immediately
-- An **Open colour picker** button that invokes the system native colour dialog for precise hex/RGB entry
-
-The user colour is stored as a `user_colour` annotation in `#RRGGBB` format on individual nodes. It round-trips through NEXUS export/import. Once at least one node has been coloured, **user colour** appears as the second option (after "none") in all three **Colour by** selectors (tip shape, node shape, label). It is intentionally excluded from the Legend selector.
-
 ### Tip Search / Filter
 
-The **Filter tips…** search box in the toolbar searches tip labels as currently displayed — by name, annotation value, date string, or whatever the *Tip Labels → Show* dropdown is set to. Matches are selected (highlighted), non-matches are dimmed, and the count of matching tips is shown. The filter applies with a short debounce as you type and reacts to changes in the displayed label type without needing to re-enter the query.
+The **Filter tips…** search box in the toolbar searches tip labels as currently displayed — by name, annotation value, date string, or whatever the *Tip Labels → Show* dropdown is set to. 
 
 ### Panels
 
@@ -213,30 +204,9 @@ The **Filter tips…** search box in the toolbar searches tip labels as currentl
 | **⌘0** | Fit all |
 | **⌘⇧0** | Fit labels |
 
-### Hyperbolic Lens
-
-| Shortcut | Action |
-|---|---|
-| **\`** (hold) | Activate hyperbolic lens at cursor position |
-| **⌘⇧=** | Widen hyperbolic lens magnification |
-| **⌘⇧−** | Narrow hyperbolic lens magnification |
-
-### Dialogs
-
-| Shortcut | Action |
-|---|---|
-| **Enter** | Confirm / Download in the active dialog |
-| **Escape** | Cancel / close the active dialog |
-
----
-
 ## Hyperbolic Lens
 
-Hold the **\`** (backtick/tilde) key to activate a fisheye lens that expands the tree around the current cursor position without zooming the whole view. The area near the cursor is stretched to readable spacing while the rest compresses but stays visible.
-
-- Use **⌘⇧=** / **⌘⇧−** to increase or decrease the magnification strength.
-- Release **\`** to fade the lens out.
-- The lens is especially useful for browsing large trees without losing context.
+Hold the **\`** (backtick/tilde) key to activate a fisheye lens that expands the tree around the current cursor position without zooming the whole view. Releasing the key keeps the current expanded view and pressing **Escape** will cancel the fisheye mode.
 
 ---
 
@@ -270,20 +240,10 @@ Hold the **\`** (backtick/tilde) key to activate a fisheye lens that expands the
 2. Click on any branch to place a marker at the desired position
 3. Click **Reroot** — the root is placed at exactly the clicked position
 
-After rerooting, the navigation history is cleared and the full rerooted tree is displayed.
-
-> **Note:** Explicitly rooted trees (where the root node carries annotations) have rerooting disabled.
-
----
-
 ## Midpoint Root (⌘M)
-
 PearTree finds the two tips with the greatest path length and places the root at the exact midpoint:
 
-- **No selection** — uses the global tree diameter
-- **Single tip selected** — roots at the midpoint of the branch above that tip
-- **Multiple tips selected** — roots at the midpoint of the branch above their MRCA
-- **Branch marker placed** — roots at the exact clicked position on that branch
+> **Note:** Explicitly rooted trees (where the root node carries annotations) have rerooting disabled.
 
 ---
 
@@ -317,19 +277,7 @@ Collapsing replaces a subtree with a filled **triangle symbol**, keeping it visi
 3. The triangle's label shows the clade name and tip count
 4. Click the <i class="bi bi-arrows-expand"></i> **Expand** button, or **double-click the triangle**, to restore the full subtree
 
-### Triangle appearance
-
 - The triangle **fill colour** defaults to the current theme's tip shape colour. It can be changed by selecting the triangle and using the <i class="bi bi-brush"></i> brush tool.
-- The <i class="bi bi-eraser"></i> button resets a triangle's colour back to the theme default.
-- The triangle draws a **halo** ring matching the tip shape halo settings.
-- **Fill opacity** and **Height (rows)** are controlled in the *Collapsed Clades* section of the Visual Options palette (see below).
-
-### Zoom behaviour
-
-- If **Fit labels** (⌘⇧0) was the active zoom mode, collapsing or expanding re-applies fit labels for the new tip count.
-- Otherwise the current zoom level is preserved, scaled proportionally to the change in layout height.
-
----
 
 ## Node Info (⌘I)
 
@@ -414,39 +362,15 @@ SVG export includes all visible elements — branches, tip labels, node/tip shap
 
 ## Data Table Panel
 
-Click the <i class="bi bi-layout-sidebar-reverse"></i> button in the toolbar to open a scrollable panel listing all visible tips in tree order.
-
-- The panel is **synchronised** with the canvas: selecting a tip in the tree highlights its row, and clicking a row selects that tip.
-- For **collapsed clades**, the table shows one row per enclosed tip (if the clade is full-height) or a single placeholder row otherwise, allowing you to browse and select tips within a collapsed clade.
-- The panel can be **pinned** open alongside the canvas (it shows a resize handle when pinned) or used as a floating overlay.
-- Columns reflect the loaded annotations; the table is re-rendered whenever the layout changes.
+Click the <i class="bi bi-layout-sidebar-reverse"></i> button in the toolbar to open a scrollable panel listing all visible tips in tree order. The data columns shown can be selected in the Annotations Manager window. Values can be edited by double-clicking the cell.
 
 ---
 
-## Visual Options Palette
+## Visual Options Panel
 
 Toggle with **Tab** or the <i class="bi bi-sliders"></i> button. Close with **Tab**, **Escape**, the × button, or by clicking the canvas.
 
 ---
-
-### Theme
-
-A named preset that sets all visual parameters at once.
-
-| Control | Description |
-|---|---|
-| **Theme selector** | Choose a built-in theme (*Artic*, *Gytis*) or a saved user theme |
-| **Store** button | Save the current appearance under a new name. Built-in themes cannot be overwritten. |
-| **Default** button | Set the selected theme as the default for newly opened windows |
-| **Remove** button | Delete a user-saved theme (built-in themes cannot be removed) |
-| **Typeface** | Font family used for all tip labels, node labels, and axis labels |
-
-When you manually change any visual control, the selector switches to *Custom* and the **Store** button is enabled.
-
-| Theme | Description |
-|---|---|
-| **Artic** | Dark teal background with warm cream labels and grey node shapes |
-| **Gytis** | White background with black branches and blue/grey node shapes |
 
 ---
 
@@ -576,6 +500,20 @@ This section appears in the palette once at least one clade has been collapsed t
 | **Minor labels** | Date format for minor tick labels, or *Off* |
 
 ---
+
+### Theme
+
+A named preset that sets all visual parameters at once.
+
+| Control | Description |
+|---|---|
+| **Theme selector** | Choose a built-in theme (*Artic*, *Gytis*) or a saved user theme |
+| **Store** button | Save the current appearance under a new name. Built-in themes cannot be overwritten. |
+| **Default** button | Set the selected theme as the default for newly opened windows |
+| **Remove** button | Delete a user-saved theme (built-in themes cannot be removed) |
+| **Typeface** | Font family used for all tip labels, node labels, and axis labels |
+
+When you manually change any visual control, the selector switches to *Custom* and the **Store** button is enabled.
 
 ### Reset to Defaults
 

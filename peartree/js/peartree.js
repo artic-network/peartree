@@ -2876,12 +2876,8 @@ async function _initCore(root = document) {
     onStatsBoxCornerChange: () => saveSettings(),
   });
 
-  // Restore persistent panel state
-  if (_saved.dataTableOpen)     dataTableRenderer.open();
-  if (_saved.dataTablePinned)   dataTableRenderer.pin();
-  if (_saved.rttOpen)           rttChart.open();
-  if (_saved.rttPinned)         rttChart.setPin(true);
-  if (_saved.rttStatsBoxCorner) rttChart.setStatsBoxCorner(_saved.rttStatsBoxCorner);
+  // Panel state is restored inside loadTree() on first tree load so that the
+  // theme colours are already applied to the renderer before the panels open.
 
   // Restore saved clade highlights (populated after renderer is created)
   if (Array.isArray(_saved.cladeHighlights) && _saved.cladeHighlights.length > 0) {
@@ -3957,6 +3953,14 @@ async function _initCore(root = document) {
         commands.setEnabled('tree-order-down', true);
         commands.setEnabled('manage-filters',  true);
         commands.setEnabled('manage-palettes', true);
+
+        // Restore persistent panel state now that the theme is applied and the
+        // renderer has the correct bgColor, so panels open with the right colours.
+        if (_saved.dataTableOpen)     dataTableRenderer?.open();
+        if (_saved.dataTablePinned)   dataTableRenderer?.pin();
+        if (_saved.rttOpen)           rttChart?.open();
+        if (_saved.rttPinned)         rttChart?.setPin(true);
+        if (_saved.rttStatsBoxCorner) rttChart?.setStatsBoxCorner(_saved.rttStatsBoxCorner);
       }
 
       // Restore interaction mode (file settings take priority).
@@ -5660,6 +5664,7 @@ async function _initCore(root = document) {
     _markCustomTheme();
     renderer.setBgColor(canvasBgColorEl.value);
     _syncCanvasWrapperBg(canvasBgColorEl.value);
+    rttChart?.notifyStyleChange?.();
     saveSettings();
   });
 
