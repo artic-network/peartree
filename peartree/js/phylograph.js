@@ -1332,7 +1332,7 @@ export class TreeCalibration {
    */
   applyRegression(reg, maxX, minTipH = 0) {
     this._regression = reg ?? null;
-    if (!reg || reg.xInt == null || Math.abs(reg.a) < 1e-20) {
+    if (!reg || reg.xInt == null || !isFinite(reg.xInt) || !isFinite(reg.a) || Math.abs(reg.a) < 1e-20) {
       this._clear(); return false;
     }
     this._anchorDecYear = reg.xInt;
@@ -1741,7 +1741,7 @@ export class TreeCalibration {
 
   static niceCalendarTicks(minDY, maxDY, targetCount = 5) {
     const range = maxDY - minDY;
-    if (range === 0) return [minDY];
+    if (!isFinite(range) || range === 0) return isFinite(minDY) ? [minDY] : [];
     // Candidates in decreasing size order: millennia down to 1 day.
     // W_DY and D_DY give weekly and daily resolution.
     const W_DY = 7 / 365.25;   // ≈ 0.01915
@@ -1764,8 +1764,10 @@ export class TreeCalibration {
     const ticks = [];
     if (step >= 1) {
       const startYear = Math.ceil(minDY / step - 1e-9) * step;
-      for (let y = startYear; y <= maxDY + step * 1e-9; y += step)
+      for (let y = startYear; y <= maxDY + step * 1e-9; y += step) {
         ticks.push(parseFloat(y.toPrecision(10)));
+        if (ticks.length > 1000) break;   // safety cap against degenerate calibrations
+      }
     } else if (step >= 0.03) {
       // Monthly ticks — covers 1/12 through 1/2 (1/24 ≈ 0.042 also lands here → mps=1=monthly)
       const mps  = Math.max(1, Math.round(step * 12));
@@ -1799,26 +1801,27 @@ export class TreeCalibration {
    * @returns {number[]}  decimal years
    */
   static calendarTicksForInterval(minDY, maxDY, interval) {
+    if (!isFinite(minDY) || !isFinite(maxDY) || maxDY < minDY) return [];
     const ticks = [];
     const sd    = TreeCalibration.decYearToDate(minDY);
     const dy    = (yr, mo, d) => TreeCalibration.dateToDecYear(yr, mo, d);
 
     if (interval === 'millennia') {
       const start = Math.ceil(minDY / 1000 - 1e-9) * 1000;
-      for (let y = start; y <= maxDY + 1e-6; y += 1000) ticks.push(y);
+      for (let y = start; y <= maxDY + 1e-6; y += 1000) { ticks.push(y); if (ticks.length > 5000) break; }
 
     } else if (interval === 'centuries') {
       const start = Math.ceil(minDY / 100 - 1e-9) * 100;
-      for (let y = start; y <= maxDY + 1e-6; y += 100) ticks.push(y);
+      for (let y = start; y <= maxDY + 1e-6; y += 100) { ticks.push(y); if (ticks.length > 5000) break; }
 
     } else if (interval === 'decades') {
       const start = Math.ceil(minDY / 10 - 1e-9) * 10;
-      for (let y = start; y <= maxDY + 1e-6; y += 10) ticks.push(dy(y, 1, 1));
+      for (let y = start; y <= maxDY + 1e-6; y += 10) { ticks.push(dy(y, 1, 1)); if (ticks.length > 5000) break; }
 
     } else if (interval === 'years') {
       let yr = sd.year;
       if (dy(yr, 1, 1) < minDY - 1e-9) yr++;
-      for (; dy(yr, 1, 1) <= maxDY + 1e-6; yr++) ticks.push(dy(yr, 1, 1));
+      for (; dy(yr, 1, 1) <= maxDY + 1e-6; yr++) { ticks.push(dy(yr, 1, 1)); if (ticks.length > 5000) break; }
 
     } else if (interval === 'quarters') {
       let yr = sd.year, m = Math.ceil(sd.month / 3) * 3 - 2;
