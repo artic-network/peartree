@@ -544,30 +544,34 @@ pub fn run() {
                 for url in event.urls() {
                     if let Ok(path) = url.to_file_path() {
                         let path_str = path.to_string_lossy().to_string();
-                        let focused = app_handle
-                            .webview_windows()
-                            .into_values()
-                            .find(|w| w.is_focused().unwrap_or(false));
-                        if let Some(w) = focused {
-                            // App running and focused — deliver directly.
-                            let label = w.label().to_string();
-                            w.emit_to(EventTarget::WebviewWindow { label }, "open-file", &path_str).ok();
-                        } else {
-                            // No focused window.  Two cases:
-                            //   (a) Fresh launch — JS not yet loaded, event would be lost.
-                            //       Store in PendingFiles so take_pending_file() picks it up.
-                            //   (b) App backgrounded — JS is loaded but window not focused.
-                            //       Broadcast so the active open-file listener handles it.
-                            // Both actions are safe to do together: on a fresh launch the
-                            // broadcast fires before any listener is registered (no-op),
-                            // while take_pending_file() is called on startup and sees the
-                            // stored path.  For a backgrounded app, the broadcast triggers
-                            // the listener; the stale PendingFiles["main"] entry is harmless
-                            // because take_pending_file() was already called at that window's
-                            // startup and won't be called again.
-                            app_handle.state::<PendingFiles>().0.lock().unwrap()
-                                .insert("main".to_string(), path_str.clone());
-                            app_handle.emit("open-file", &path_str).ok();
+                        // Each file opened while the app is running gets its own new window,
+                        // consistent with macOS multi-document app behaviour.  The cold-start
+                        // case (first file on launch) is handled separately by get_current()
+                        // below, so this callback only fires for subsequent files.
+                        let n = app_handle.state::<WindowCounter>().0.fetch_add(1, Ordering::SeqCst);
+                        let label = format!("window-{n}");
+                        app_handle.state::<PendingFiles>().0.lock().unwrap()
+                            .insert(label.clone(), path_str);
+                        match tauri::WebviewWindowBuilder::new(
+                            &app_handle,
+                            &label,
+                            tauri::WebviewUrl::App("peartree/peartree-tauri.html".into()),
+                        )
+                        .title("PearTree \u{2014} Phylogenetic Tree Viewer")
+                        .inner_size(1400.0, 900.0)
+                        .min_inner_size(900.0, 600.0)
+                        .build() {
+                            Ok(win) => {
+                                let app_h2 = app_handle.clone();
+                                let lbl2   = label.clone();
+                                win.on_window_event(move |ev| {
+                                    if let tauri::WindowEvent::Focused(true) = ev {
+                                        *app_h2.state::<LastFocusedWindow>().0.lock().unwrap() = lbl2.clone();
+                                    }
+                                });
+                                *app_handle.state::<LastFocusedWindow>().0.lock().unwrap() = label;
+                            }
+                            Err(e) => eprintln!("[PearTree] Failed to open window for file: {e}"),
                         }
                     }
                 }

@@ -103,6 +103,39 @@ import { setupTauriAdapter } from '@artic-network/pearcore/pearcore-tauri.js';
     if (emptyState) emptyState.classList.remove('hidden');
   }
 
+  // ── Drag-drop onto the window (Tauri intercepts drag events before WebView) ──
+  // When a file is dragged onto a Tauri window, WKWebView never sees the HTML5
+  // drop event. Tauri fires a 'tauri://drag-drop' window event instead, with
+  // payload { paths: string[] }.  We handle it here.
+  await currentWindow.listen('tauri://drag-drop', async (event) => {
+    const paths = event.payload?.paths;
+    if (!Array.isArray(paths) || paths.length === 0) return;
+    const filePath = paths[0];
+    if (app.hasTree) {
+      // Already showing a tree — open each file in its own new window.
+      for (const p of paths) {
+        invoke('new_window', { filePath: p }).catch(err => console.error('new_window failed:', err));
+      }
+      return;
+    }
+    try {
+      app.closeModal();
+      const emptyState = document.getElementById('empty-state');
+      if (emptyState) emptyState.classList.add('hidden');
+      const content = await invoke('read_file_content', { path: filePath });
+      const name = filePath.split(/[\\/]/).pop() || 'tree';
+      await app.loadTree(content, name);
+      // Open remaining files (if any) in new windows.
+      for (let i = 1; i < paths.length; i++) {
+        invoke('new_window', { filePath: paths[i] }).catch(err => console.error('new_window failed:', err));
+      }
+    } catch (err) {
+      const emptyState = document.getElementById('empty-state');
+      if (emptyState) emptyState.classList.remove('hidden');
+      app.showErrorDialog(err.message ?? String(err));
+    }
+  });
+
   // ── File opened via drag-to-icon / double-click / file association ─────
   // Rust emits this only to the focused window. Use getCurrentWindow().listen
   // so each window only handles events targeted at it (not all windows).
