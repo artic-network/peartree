@@ -423,6 +423,7 @@ async function _initCore(root = document) {
   let _cachedMidpoint      = null;  // cached midpointRootGraph() result; cleared on every tree change
   let isExplicitlyRooted = false; // true when root node carries annotations — rerooting disabled
   let _loadedFilename    = null;  // filename of the most recently loaded tree
+  let _treeSourceUrl     = null;  // URL the current tree was fetched from (null if loaded from file)
   let _onTitleChange     = null;  // optional callback(filename|null) for platform title updates
   let _axisIsTimedTree   = false;
   let treeLoaded         = false; // declared early — referenced by _syncCanvasWrapperBg before modal init
@@ -2003,6 +2004,30 @@ async function _initCore(root = document) {
         : '');
   };
 
+  // ── Share-URL button ───────────────────────────────────────────────────────
+  // Shown only when the current tree was loaded from a URL (via the URL tab
+  // in the Open Tree modal, or via the ?treeUrl= startup parameter).
+  // Clicking it copies a peartree.live share link to the clipboard.
+  const _shareUrlBtn = $('btn-share-url');
+  function _updateShareUrlBtn() {
+    if (!_shareUrlBtn) return;
+    if (_treeSourceUrl) {
+      _shareUrlBtn.classList.remove('d-none');
+      _shareUrlBtn.onclick = async () => {
+        const shareUrl = 'https://peartree.live/?treeUrl=' + encodeURIComponent(_treeSourceUrl);
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          statusMessage('Link copied!', 2000);
+        } catch (_err) {
+          statusMessage('Could not copy: ' + _err.message, 3000);
+        }
+      };
+    } else {
+      _shareUrlBtn.classList.add('d-none');
+      _shareUrlBtn.onclick = null;
+    }
+  }
+
   // ── Legend renderer ────────────────────────────────────────────────────────
   // Must be created before applyTheme() (which calls legendRenderer.setTextColor).
   const legendRenderer = new LegendRenderer(
@@ -2403,6 +2428,8 @@ async function _initCore(root = document) {
       if (!resp.ok) throw new Error('HTTP ' + resp.status + ' – ' + url);
       const text = await resp.text();
       await loadTree(text, url.split('/').pop() || 'tree');
+      _treeSourceUrl = url;
+      _updateShareUrlBtn();
     } catch (err) {
       setModalError(err.message);
       setModalLoading(false);
@@ -3336,6 +3363,9 @@ async function _initCore(root = document) {
     setModalLoading(true);
     setModalError(null);
     _loadedFilename = filename || null;
+    // Clear the source URL — will be set again by the caller if loaded from a URL.
+    _treeSourceUrl = null;
+    _updateShareUrlBtn();
     document.title = _loadedFilename ? `${_loadedFilename} — PearTree` : 'PearTree — Phylogenetic Tree Viewer';
     if (_onTitleChange) _onTitleChange(_loadedFilename);
     // Yield to the browser so the spinner renders before heavy parsing
@@ -7355,6 +7385,8 @@ async function _initCore(root = document) {
             const _text = await _resp.text();
             const _name = new URL(_validated).pathname.split('/').pop() || 'tree';
             await loadTree(_text, _name);
+            _treeSourceUrl = _validated;
+            _updateShareUrlBtn();
           } catch (_err) {
             setModalError(_err.message);
             setModalLoading(false);
