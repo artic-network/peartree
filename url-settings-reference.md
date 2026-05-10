@@ -107,10 +107,13 @@ Boolean keys accept booleans; string values `'0'/'1'/'false'/'true'` are coerced
 ## 3) `settings` Object Properties
 
 `settings` is composed of:
+
 - Core runtime keys from `DEFAULT_SETTINGS`
 - Theme-driven visual keys from `REQUIRED_THEME_KEYS`
 
-In practice, the accepted settings keys are the union below.
+Canonical key table (allowed values + defaults): [settings-object-reference.md](settings-object-reference.md).
+
+The lists below are a quick grouped view.
 
 ## Core settings keys (`DEFAULT_SETTINGS`)
 
@@ -125,6 +128,7 @@ In practice, the accepted settings keys are the union below.
 - `tipLabelShow`
 - `tipLabelAlign`
 - `tipLabelSpacing`
+- `tipLabelDecimalPlaces`
 - `tipLabelShape`
 - `tipLabelShapeSize`
 - `tipLabelShapeMarginLeft`
@@ -133,8 +137,10 @@ In practice, the accepted settings keys are the union below.
 - `tipLabelShapeExtraColourBys`
 - `nodeLabelAnnotation`
 - `nodeLabelPosition`
+- `nodeLabelDecimalPlaces`
 - `branchLabelAnnotation`
 - `branchLabelPosition`
+- `branchLabelDecimalPlaces`
 - `nodeBarsEnabled`
 - `nodeBarsLine`
 - `nodeBarsRange`
