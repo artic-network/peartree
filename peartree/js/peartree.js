@@ -3629,7 +3629,16 @@ async function _initCore(root = document) {
         _fileSettings || {},
         _cfg.initSettings || {},
       );
-      _applyVisualSettingsFromFile(_treeEffectiveSettings);
+      // If init/URL explicitly requested a theme, apply that theme and then only
+      // apply explicit init visual overrides on top. This prevents file-embedded
+      // visual settings from clobbering the chosen theme's colours.
+      const _initTheme = _cfg.initSettings?.selectedTheme ?? _cfg.initSettings?.theme;
+      if (_initTheme && _initTheme !== 'custom' && themeManager?.registry?.has(_initTheme)) {
+        applyTheme(_initTheme);
+        _applyVisualSettingsFromFile(_cfg.initSettings || {});
+      } else {
+        _applyVisualSettingsFromFile(_treeEffectiveSettings);
+      }
       _cachedMidpoint = null;
       isExplicitlyRooted = graph.rooted;
 
