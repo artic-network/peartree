@@ -107,6 +107,15 @@
 <!-- ── UI Visibility ─────────────────────────────────────────────────── -->
 <div class="section-heading">UI Visibility</div>
 <p class="text-secondary" style="font-size:0.82rem">Uncheck items to hide them. Hidden items append <code>?param=0</code> to the URL.</p>
+<div class="mb-2" style="max-width:260px">
+  <label class="form-label mb-1" for="ui-theme-select">UI theme</label>
+  <select id="ui-theme-select" class="form-select form-select-sm">
+    <option value="">System / saved default</option>
+    <option value="dark">Dark</option>
+    <option value="light">Light</option>
+  </select>
+  <div class="form-text">Adds <code>theme=dark</code> or <code>theme=light</code> to the URL.</div>
+</div>
 <div id="ui-params-container" class="mb-1"></div>
 
 <!-- ── Settings JSON ─────────────────────────────────────────────────── -->
@@ -322,6 +331,10 @@ function buildURL() {
     if (!cb.checked) params.set(cb.dataset.param, '0');
   });
 
+  // UI light/dark mode
+  const uiTheme = document.getElementById('ui-theme-select').value;
+  if (uiTheme === 'dark' || uiTheme === 'light') params.set('theme', uiTheme);
+
   // Settings JSON
   const settings = {};
   document.querySelectorAll('.setting-cb').forEach(cb => {
@@ -360,6 +373,7 @@ function saveState() {
     nodeLabelName: document.getElementById('node-label-input').value,
     nostore:     document.getElementById('nostore-cb').checked,
     outputMode:  outputMode(),
+    uiTheme:     document.getElementById('ui-theme-select').value,
     iframeWidth: document.getElementById('iframe-width').value,
     iframeHeight: document.getElementById('iframe-height').value,
     uiParams:    {},
@@ -391,6 +405,7 @@ function restoreState() {
     const radio = document.querySelector(`input[name="output-mode"][value="${state.outputMode}"]`);
     if (radio) radio.checked = true;
   }
+  if (state.uiTheme !== undefined) document.getElementById('ui-theme-select').value = state.uiTheme;
   if (state.iframeWidth)  document.getElementById('iframe-width').value  = state.iframeWidth;
   if (state.iframeHeight) document.getElementById('iframe-height').value = state.iframeHeight;
 
@@ -460,6 +475,7 @@ document.getElementById('reset-btn').addEventListener('click', () => {
   document.getElementById('tree-url-input').value = '';
   document.getElementById('node-label-input').value = '';
   document.getElementById('nostore-cb').checked = false;
+  document.getElementById('ui-theme-select').value = '';
   document.querySelectorAll('.ui-param-cb').forEach(cb => cb.checked = true);
   document.querySelectorAll('.setting-cb').forEach(cb => {
     cb.checked = false;
