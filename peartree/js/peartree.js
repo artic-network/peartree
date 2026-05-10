@@ -77,50 +77,124 @@ async function _initCore(root = document) {
   //   sbstats=0, sbselect=0, sbmessage=0, sbshare=0,
   //   tbfileops=0, tbann=0, tbnode=0, tbnav=0, tbzoom=0, tborder=0,
   //   tbrotate=0, tbreroot=0, tbhide=0, tbcolour=0, tbfilter=0, tbpanels=0
+  //   configUrl=https://…json   — fetch config JSON with optional {ui, settings}
+  //                               (applied before URL switches and settings=)
   //   nostore=1             — same as storageKey: null
   //   storageKey=my-key     — custom storage key
+  const _p = new URLSearchParams(window.location.search);
+
+  function _normalizeConfigJsonUrl(rawUrl) {
+    const u = new URL(rawUrl, window.location.href);
+
+    // Support GitHub blob URLs by converting to raw content URLs.
+    // Example:
+    //   https://github.com/owner/repo/blob/main/path/file.json
+    // ->https://raw.githubusercontent.com/owner/repo/main/path/file.json
+    if (u.hostname === 'github.com') {
+      const parts = u.pathname.split('/').filter(Boolean);
+      if (parts.length >= 5 && parts[2] === 'blob') {
+        const owner = parts[0];
+        const repo = parts[1];
+        const branch = parts[3];
+        const filePath = parts.slice(4).join('/');
+        return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`;
+      }
+    }
+
+    return u.href;
+  }
+
+  async function _fetchJsonFromParam(paramName) {
+    const raw = _p.get(paramName);
+    if (!raw) return null;
+    try {
+      const url = _normalizeConfigJsonUrl(raw);
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status + ' – ' + url);
+      const obj = await resp.json();
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('Expected JSON object');
+      return obj;
+    } catch (err) {
+      console.warn('peartree: ignoring invalid ' + paramName + ' –', err.message);
+      return null;
+    }
+  }
+
+  const _fetchedConfig = await _fetchJsonFromParam('configUrl');
+  const _fetchedUI = (_fetchedConfig && typeof _fetchedConfig.ui === 'object' && !Array.isArray(_fetchedConfig.ui))
+    ? _fetchedConfig.ui
+    : null;
+  const _fetchedSettings = (_fetchedConfig && typeof _fetchedConfig.settings === 'object' && !Array.isArray(_fetchedConfig.settings))
+    ? _fetchedConfig.settings
+    : null;
+
+  const _flagDefs = [
+    { name: 'showPalette',         uiKey: 'palette',          param: 'palette' },
+    { name: 'showToolbar',         uiKey: 'toolbar',          param: 'toolbar' },
+    { name: 'showRTT',             uiKey: 'rtt',              param: 'rtt',        extended: true },
+    { name: 'showRTTHeader',       uiKey: 'rttHeader',        param: 'rttheader' },
+    { name: 'showDataTable',       uiKey: 'dataTable',        param: 'dt',         extended: true },
+    { name: 'showDataTableHeader', uiKey: 'dataTableHeader',  param: 'dtheader' },
+    { name: 'showImport',          uiKey: 'import',           param: 'import' },
+    { name: 'showExport',          uiKey: 'export',           param: 'export' },
+    { name: 'showStatusBar',       uiKey: 'statusBar',        param: 'statusbar' },
+    { name: 'showStatusStats',     uiKey: 'statusStats',      param: 'sbstats' },
+    { name: 'showStatusSelect',    uiKey: 'statusSelect',     param: 'sbselect' },
+    { name: 'showStatusMessage',   uiKey: 'statusMessage',    param: 'sbmessage' },
+    { name: 'showStatusShare',     uiKey: 'statusShare',      param: 'sbshare' },
+    { name: 'showHelp',            uiKey: 'help',             param: 'help' },
+    { name: 'showAbout',           uiKey: 'about',            param: 'about' },
+    { name: 'showThemeToggle',     uiKey: 'themeToggle',      param: 'themetoggle' },
+    { name: 'showBrand',           uiKey: 'brand',            param: 'brand' },
+    { name: 'showToolbarFileOps',  uiKey: 'tbFileOps',        param: 'tbfileops' },
+    { name: 'showToolbarAnn',      uiKey: 'tbAnnotations',    param: 'tbann' },
+    { name: 'showToolbarNode',     uiKey: 'tbNodeInfo',       param: 'tbnode' },
+    { name: 'showToolbarNav',      uiKey: 'tbNavigation',     param: 'tbnav' },
+    { name: 'showToolbarZoom',     uiKey: 'tbZoom',           param: 'tbzoom' },
+    { name: 'showToolbarOrder',    uiKey: 'tbOrder',          param: 'tborder' },
+    { name: 'showToolbarRotate',   uiKey: 'tbRotate',         param: 'tbrotate' },
+    { name: 'showToolbarReroot',   uiKey: 'tbReroot',         param: 'tbreroot' },
+    { name: 'showToolbarHide',     uiKey: 'tbHideShow',       param: 'tbhide' },
+    { name: 'showToolbarColour',   uiKey: 'tbColour',         param: 'tbcolour' },
+    { name: 'showToolbarFilter',   uiKey: 'tbFilter',         param: 'tbfilter' },
+    { name: 'showToolbarPanels',   uiKey: 'tbPanels',         param: 'tbpanels' },
+  ];
+
   const _cfg = resolveEmbedConfig({
     configKey: 'peartreeConfig',
     settingsKeyDefault: SETTINGS_KEY,
-    flagDefs: [
-      { name: 'showPalette',         uiKey: 'palette',          param: 'palette' },
-      { name: 'showToolbar',         uiKey: 'toolbar',          param: 'toolbar' },
-      { name: 'showRTT',             uiKey: 'rtt',              param: 'rtt',        extended: true },
-      { name: 'showRTTHeader',       uiKey: 'rttHeader',        param: 'rttheader' },
-      { name: 'showDataTable',       uiKey: 'dataTable',        param: 'dt',         extended: true },
-      { name: 'showDataTableHeader', uiKey: 'dataTableHeader',  param: 'dtheader' },
-      { name: 'showImport',          uiKey: 'import',           param: 'import' },
-      { name: 'showExport',          uiKey: 'export',           param: 'export' },
-      { name: 'showStatusBar',       uiKey: 'statusBar',        param: 'statusbar' },
-      { name: 'showStatusStats',     uiKey: 'statusStats',      param: 'sbstats' },
-      { name: 'showStatusSelect',    uiKey: 'statusSelect',     param: 'sbselect' },
-      { name: 'showStatusMessage',   uiKey: 'statusMessage',    param: 'sbmessage' },
-      { name: 'showStatusShare',     uiKey: 'statusShare',      param: 'sbshare' },
-      { name: 'showHelp',            uiKey: 'help',             param: 'help' },
-      { name: 'showAbout',           uiKey: 'about',            param: 'about' },
-      { name: 'showThemeToggle',     uiKey: 'themeToggle',      param: 'themetoggle' },
-      { name: 'showBrand',           uiKey: 'brand',            param: 'brand' },
-      { name: 'showToolbarFileOps',  uiKey: 'tbFileOps',        param: 'tbfileops' },
-      { name: 'showToolbarAnn',      uiKey: 'tbAnnotations',    param: 'tbann' },
-      { name: 'showToolbarNode',     uiKey: 'tbNodeInfo',       param: 'tbnode' },
-      { name: 'showToolbarNav',      uiKey: 'tbNavigation',     param: 'tbnav' },
-      { name: 'showToolbarZoom',     uiKey: 'tbZoom',           param: 'tbzoom' },
-      { name: 'showToolbarOrder',    uiKey: 'tbOrder',          param: 'tborder' },
-      { name: 'showToolbarRotate',   uiKey: 'tbRotate',         param: 'tbrotate' },
-      { name: 'showToolbarReroot',   uiKey: 'tbReroot',         param: 'tbreroot' },
-      { name: 'showToolbarHide',     uiKey: 'tbHideShow',       param: 'tbhide' },
-      { name: 'showToolbarColour',   uiKey: 'tbColour',         param: 'tbcolour' },
-      { name: 'showToolbarFilter',   uiKey: 'tbFilter',         param: 'tbfilter' },
-      { name: 'showToolbarPanels',   uiKey: 'tbPanels',         param: 'tbpanels' },
-    ],
+    flagDefs: _flagDefs,
     extras: (wc, _p) => ({
       dataTableColumns: Array.isArray(wc.dataTableColumns) ? wc.dataTableColumns : null,
       initSettings: Object.assign(
+        _fetchedSettings || {},
         (() => { try { const v = _p.get('settings'); return v ? JSON.parse(atob(v)) : {}; } catch { return {}; } })(),
         wc.settings || wc.initSettings || {},
       ),
     }),
   });
+
+  // Apply fetched UI defaults only when not explicitly set by window config
+  // and when the corresponding URL switch is absent.
+  if (_fetchedUI && typeof _fetchedUI === 'object') {
+    const _wcUi = (window.peartreeConfig || {}).ui || {};
+    const _toFlag = (val, extended) => {
+      if (extended && val === 'fixed') return 'fixed';
+      if (typeof val === 'string') {
+        const s = val.toLowerCase();
+        if (extended && s === 'fixed') return 'fixed';
+        if (s === '0' || s === 'false') return false;
+        if (s === '1' || s === 'true') return true;
+      }
+      return Boolean(val);
+    };
+    for (const def of _flagDefs) {
+      if (_wcUi[def.uiKey] !== undefined) continue;
+      if (_p.has(def.param)) continue;
+      if (_fetchedUI[def.uiKey] === undefined) continue;
+      _cfg[def.name] = _toFlag(_fetchedUI[def.uiKey], !!def.extended);
+    }
+  }
   // Apply UI restrictions immediately so hidden elements never flash visible.
   if (!_cfg.showPalette)   $('btn-palette')        ?.classList.add('d-none');
   if (!_cfg.showToolbar)   root.querySelector('.pt-toolbar')          ?.classList.add('d-none');

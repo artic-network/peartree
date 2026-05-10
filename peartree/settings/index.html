@@ -103,6 +103,12 @@
     No local storage (<code>nostore=1</code>) — ignore any previously saved settings
   </label>
 </div>
+<div class="mb-2">
+  <label class="form-label mb-1" for="config-url-input">Config URL (<code>configUrl=</code>)</label>
+  <input id="config-url-input" class="form-control form-control-sm" type="url"
+         placeholder="https://example.com/peartree-config.json">
+  <div class="form-text">URL to a JSON object with optional <code>ui</code> and <code>settings</code> objects, applied before explicit URL switches and <code>settings=</code>.</div>
+</div>
 
 <!-- ── UI Visibility ─────────────────────────────────────────────────── -->
 <div class="section-heading">UI Visibility</div>
@@ -135,6 +141,8 @@
     <label class="btn btn-outline-secondary" for="mode-iframe"><i class="bi bi-code-slash"></i> iframe embed</label>
     <input type="radio" class="btn-check" name="output-mode" id="mode-embed-api" value="embed-api">
     <label class="btn btn-outline-secondary" for="mode-embed-api"><i class="bi bi-braces"></i> Embedded HTML</label>
+    <input type="radio" class="btn-check" name="output-mode" id="mode-config-json" value="config-json">
+    <label class="btn btn-outline-secondary" for="mode-config-json"><i class="bi bi-filetype-json"></i> Config JSON</label>
   </div>
   <div id="iframe-options" class="d-none d-flex align-items-center gap-2">
     <label class="mb-0 text-secondary" style="font-size:0.82rem;white-space:nowrap">width</label>
@@ -397,6 +405,20 @@ function buildEmbedAPIHTML() {
 `<\\/script>`;
 }
 
+function buildConfigObject() {
+  const ui = _collectUiObject();
+  const settings = _collectSettingsObject();
+  const cfg = {};
+  if (Object.keys(ui).length > 0) cfg.ui = ui;
+  if (Object.keys(settings).length > 0) cfg.settings = settings;
+  return cfg;
+}
+
+function buildConfigJSON() {
+  const cfg = buildConfigObject();
+  return JSON.stringify(cfg, null, 2);
+}
+
 function normalizeBaseUrl(rawBase) {
   const fallback = PEARTREE_DEFAULT_URL;
   const input = (rawBase || '').trim();
@@ -432,6 +454,10 @@ function buildURL() {
   const nlName = document.getElementById('node-label-input').value.trim();
   if (nlName) params.set('nodeLabelName', nlName);
 
+  // remote JSON config URLs
+  const configUrl = document.getElementById('config-url-input').value.trim();
+  if (configUrl) params.set('configUrl', configUrl);
+
   // nostore
   if (document.getElementById('nostore-cb').checked) params.set('nostore', '1');
 
@@ -463,6 +489,7 @@ function saveState() {
     baseUrl:     document.getElementById('base-url-input').value,
     treeUrl:     document.getElementById('tree-url-input').value,
     nodeLabelName: document.getElementById('node-label-input').value,
+    configUrl:   document.getElementById('config-url-input').value,
     nostore:     document.getElementById('nostore-cb').checked,
     outputMode:  outputMode(),
     uiTheme:     document.getElementById('ui-theme-select').value,
@@ -492,6 +519,7 @@ function restoreState() {
   if (state.baseUrl     !== undefined) document.getElementById('base-url-input').value  = state.baseUrl;
   if (state.treeUrl     !== undefined) document.getElementById('tree-url-input').value  = state.treeUrl;
   if (state.nodeLabelName !== undefined) document.getElementById('node-label-input').value = state.nodeLabelName;
+  if (state.configUrl   !== undefined) document.getElementById('config-url-input').value = state.configUrl;
   if (state.nostore     !== undefined) document.getElementById('nostore-cb').checked    = state.nostore;
   if (state.outputMode) {
     const radio = document.querySelector(`input[name="output-mode"][value="${state.outputMode}"]`);
@@ -523,7 +551,9 @@ function refreshURL() {
   const mode = outputMode();
   const output = mode === 'iframe'
     ? buildIframe(url)
-    : (mode === 'embed-api' ? buildEmbedAPIHTML() : url);
+    : (mode === 'embed-api'
+      ? buildEmbedAPIHTML()
+      : (mode === 'config-json' ? buildConfigJSON() : url));
   document.getElementById('url-output').textContent = output;
   // Show/hide iframe dimension options
   document.getElementById('iframe-options').classList.toggle('d-none', mode !== 'iframe' && mode !== 'embed-api');
@@ -569,6 +599,7 @@ document.getElementById('reset-btn').addEventListener('click', () => {
   document.getElementById('base-url-input').value = '';
   document.getElementById('tree-url-input').value = '';
   document.getElementById('node-label-input').value = '';
+  document.getElementById('config-url-input').value = '';
   document.getElementById('nostore-cb').checked = false;
   document.getElementById('ui-theme-select').value = '';
   document.querySelectorAll('.ui-param-cb').forEach(cb => cb.checked = true);
