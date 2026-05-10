@@ -57,7 +57,7 @@ jobs:
 
       - name: Assemble site
         run: |
-          mkdir -p _site/data _site/img _site/logo _site/manual/images
+          mkdir -p _site/data _site/img _site/logo _site/manual/images _site/settings _site/js
           cp peartree/index.html                     _site/index.html
           [ -f CNAME ] && cp CNAME                  _site/CNAME || true
           cp dist/peartree.bundle.min.js             _site/peartree.bundle.min.js
@@ -72,6 +72,9 @@ jobs:
           cp peartree/data/ebov.csv                  _site/data/ebov.csv
           cp peartree/about.md                       _site/about.md
           cp peartree/help.md                        _site/help.md
+          cp peartree/settings/index.html            _site/settings/index.html
+          cp peartree/js/settings-schema.js          _site/js/settings-schema.js
+          cp peartree/js/config.js                   _site/js/config.js
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

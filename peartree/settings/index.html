@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PearTree URL Builder</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/solar/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+  <style>
+    body {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 4rem;
+      font-size: 0.9rem;
+    }
+    h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
+    .section-heading {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 1.5rem 0 0.5rem;
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid var(--bs-border-color);
+    }
+    .settings-group-heading {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+      color: var(--bs-secondary-color);
+      margin: 1rem 0 0.4rem;
+    }
+    .setting-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.5rem 1rem;
+      align-items: center;
+      margin-bottom: 0.4rem;
+    }
+    .setting-row label {
+      margin-bottom: 0;
+      cursor: pointer;
+    }
+    .setting-row .control-wrap {
+      min-width: 180px;
+    }
+    .setting-desc {
+      grid-column: 1 / -1;
+      font-size: 0.78rem;
+      color: var(--bs-secondary-color);
+      margin-top: -0.2rem;
+      margin-bottom: 0.4rem;
+    }
+    .param-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.3rem;
+    }
+    .param-row label { margin-bottom: 0; }
+    #url-output {
+      font-family: monospace;
+      font-size: 0.82rem;
+      word-break: break-all;
+      user-select: all;
+      min-height: 3.5rem;
+    }
+    .include-cb { width: 1rem; height: 1rem; }
+  </style>
+</head>
+<body>
+
+<h1><i class="bi bi-link-45deg"></i> PearTree URL Builder</h1>
+<p class="text-secondary mb-3">
+  Build a URL or embeddable iframe HTML that opens PearTree with a specific tree and configuration.
+</p>
+
+<!-- ── Base URL ───────────────────────────────────────────────────────── -->
+<div class="section-heading">Base PearTree URL</div>
+<div class="mb-2">
+  <label class="form-label mb-1" for="base-url-input">PearTree page URL</label>
+  <input id="base-url-input" class="form-control form-control-sm" type="url"
+         placeholder="https://peartree.live/">
+  <div class="form-text">Leave blank to use the default PearTree site.</div>
+</div>
+
+<!-- ── Tree URL ───────────────────────────────────────────────────────── -->
+<div class="section-heading">Tree &amp; Data</div>
+<div class="mb-2">
+  <label class="form-label mb-1" for="tree-url-input">Tree URL (<code>treeUrl=</code>)</label>
+  <input id="tree-url-input" class="form-control form-control-sm" type="url"
+         placeholder="https://example.com/my_tree.tree">
+  <div class="form-text">A publicly accessible Newick / Nexus tree file URL.</div>
+</div>
+<div class="mb-2">
+  <label class="form-label mb-1" for="node-label-input">Node label annotation (<code>nodeLabelName=</code>)</label>
+  <input id="node-label-input" class="form-control form-control-sm" type="text"
+         placeholder="e.g. bootstrap">
+  <div class="form-text">Name of the annotation to display as node labels (shortcut URL param, also available in Settings below).</div>
+</div>
+<div class="mb-2 form-check">
+  <input class="form-check-input" type="checkbox" id="nostore-cb">
+  <label class="form-check-label" for="nostore-cb">
+    No local storage (<code>nostore=1</code>) — ignore any previously saved settings
+  </label>
+</div>
+
+<!-- ── UI Visibility ─────────────────────────────────────────────────── -->
+<div class="section-heading">UI Visibility</div>
+<p class="text-secondary" style="font-size:0.82rem">Uncheck items to hide them. Hidden items append <code>?param=0</code> to the URL.</p>
+<div id="ui-params-container" class="mb-1"></div>
+
+<!-- ── Settings JSON ─────────────────────────────────────────────────── -->
+<div class="section-heading">Tree Settings (<code>settings=</code>)</div>
+<p class="text-secondary" style="font-size:0.82rem">
+  Only changed settings are included. The value is base64-encoded JSON appended as <code>settings=…</code>.
+</p>
+<div id="settings-container"></div>
+
+<!-- ── Generated output ─────────────────────────────────────────────── -->
+<div class="section-heading">Generated Output</div>
+<div class="d-flex align-items-center gap-3 mb-2">
+  <div class="btn-group btn-group-sm" role="group" aria-label="Output mode">
+    <input type="radio" class="btn-check" name="output-mode" id="mode-url" value="url" checked>
+    <label class="btn btn-outline-secondary" for="mode-url"><i class="bi bi-link-45deg"></i> URL</label>
+    <input type="radio" class="btn-check" name="output-mode" id="mode-iframe" value="iframe">
+    <label class="btn btn-outline-secondary" for="mode-iframe"><i class="bi bi-code-slash"></i> iframe embed</label>
+  </div>
+  <div id="iframe-options" class="d-none d-flex align-items-center gap-2">
+    <label class="mb-0 text-secondary" style="font-size:0.82rem;white-space:nowrap">width</label>
+    <input id="iframe-width" class="form-control form-control-sm" type="text" value="100%" style="width:6rem">
+    <label class="mb-0 text-secondary" style="font-size:0.82rem;white-space:nowrap">height</label>
+    <input id="iframe-height" class="form-control form-control-sm" type="text" value="600px" style="width:6rem">
+  </div>
+</div>
+<div class="card mb-2">
+  <div class="card-body p-2" id="url-output">(fill in fields above)</div>
+</div>
+<div class="d-flex gap-2">
+  <button class="btn btn-sm btn-primary" id="copy-btn"><i class="bi bi-clipboard"></i> Copy</button>
+  <button class="btn btn-sm btn-outline-secondary" id="open-btn"><i class="bi bi-box-arrow-up-right"></i> Open in new tab</button>
+  <button class="btn btn-sm btn-outline-secondary ms-auto" id="reset-btn"><i class="bi bi-arrow-counterclockwise"></i> Reset all</button>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────────────── -->
+<script type="module">
+import { DEFAULT_SETTINGS, BUILT_IN_THEMES, URL_PARAMS, SETTINGS_SCHEMA } from '../js/settings-schema.js';
+
+const PEARTREE_DEFAULT_URL = 'https://peartree.live/';
+
+// ── Theme options are already built into the schema via the getter ───────────
+// (BUILT_IN_THEMES drives SETTINGS_SCHEMA.find(selectedTheme).options)
+
+// ── Build UI Params section ─────────────────────────────────────────────
+const uiContainer = document.getElementById('ui-params-container');
+URL_PARAMS.forEach(({ param, label, desc }) => {
+  const id = `ui-${param}`;
+  const row = document.createElement('div');
+  row.className = 'param-row';
+  row.innerHTML = `
+    <input class="form-check-input ui-param-cb" type="checkbox" id="${id}" data-param="${param}" checked>
+    <label class="form-check-label" for="${id}">
+      <strong>${label}</strong>
+      <span class="text-secondary ms-1" style="font-size:0.8rem">(${param})</span>
+    </label>`;
+  if (desc) {
+    row.title = desc;
+  }
+  uiContainer.appendChild(row);
+});
+
+// ── Build Settings section ──────────────────────────────────────────────
+const settingsContainer = document.getElementById('settings-container');
+
+// Group entries by group key
+const groups = {};
+SETTINGS_SCHEMA.forEach(s => {
+  if (!groups[s.group]) groups[s.group] = [];
+  groups[s.group].push(s);
+});
+
+Object.entries(groups).forEach(([groupName, entries]) => {
+  const heading = document.createElement('div');
+  heading.className = 'settings-group-heading';
+  heading.textContent = groupName;
+  settingsContainer.appendChild(heading);
+
+  entries.forEach(schema => {
+    const defaultVal = DEFAULT_SETTINGS[schema.key];
+    const rowId = `s-${schema.key}`;
+    const cbId  = `cb-${schema.key}`;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'setting-row';
+    wrapper.dataset.key = schema.key;
+
+    // Label + include checkbox
+    const labelEl = document.createElement('label');
+    labelEl.htmlFor = rowId;
+    labelEl.innerHTML = `
+      <input class="include-cb me-1 setting-cb" type="checkbox" id="${cbId}" data-key="${schema.key}">
+      ${schema.label}
+      ${defaultVal !== undefined ? `<span class="text-secondary ms-1" style="font-size:0.78rem">default: <code>${defaultVal}</code></span>` : ''}`;
+
+    // Control
+    const controlWrap = document.createElement('div');
+    controlWrap.className = 'control-wrap';
+    controlWrap.appendChild(buildControl(schema, rowId, defaultVal));
+
+    wrapper.appendChild(labelEl);
+    wrapper.appendChild(controlWrap);
+
+    if (schema.desc) {
+      const descEl = document.createElement('div');
+      descEl.className = 'setting-desc';
+      descEl.textContent = schema.desc;
+      wrapper.appendChild(descEl);
+    }
+
+    settingsContainer.appendChild(wrapper);
+  });
+});
+
+function buildControl(schema, id, defaultVal) {
+  let el;
+  if (schema.type === 'select') {
+    el = document.createElement('select');
+    el.className = 'form-select form-select-sm setting-control';
+    el.id = id;
+    el.dataset.key = schema.key;
+    schema.options.forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt.value;
+      o.textContent = opt.label;
+      if (opt.value === defaultVal) o.selected = true;
+      el.appendChild(o);
+    });
+  } else if (schema.type === 'boolean') {
+    el = document.createElement('select');
+    el.className = 'form-select form-select-sm setting-control';
+    el.id = id;
+    el.dataset.key = schema.key;
+    [{ value: 'true', label: 'true' }, { value: 'false', label: 'false' }].forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt.value;
+      o.textContent = opt.label;
+      if (String(defaultVal) === opt.value) o.selected = true;
+      el.appendChild(o);
+    });
+  } else if (schema.type === 'number') {
+    el = document.createElement('input');
+    el.type = 'number';
+    el.className = 'form-control form-control-sm setting-control';
+    el.id = id;
+    el.dataset.key = schema.key;
+    if (schema.min !== undefined) el.min = schema.min;
+    if (schema.max !== undefined) el.max = schema.max;
+    if (schema.step !== undefined) el.step = schema.step;
+    el.value = defaultVal ?? '';
+  } else { // text
+    el = document.createElement('input');
+    el.type = 'text';
+    el.className = 'form-control form-control-sm setting-control';
+    el.id = id;
+    el.dataset.key = schema.key;
+    el.placeholder = schema.placeholder ?? '';
+    el.value = defaultVal ?? '';
+  }
+  return el;
+}
+
+// ── Output mode helpers ────────────────────────────────────────────────
+function outputMode() {
+  return document.querySelector('input[name="output-mode"]:checked')?.value ?? 'url';
+}
+
+function buildIframe(url) {
+  const w = document.getElementById('iframe-width').value.trim()  || '100%';
+  const h = document.getElementById('iframe-height').value.trim() || '600px';
+  return `<iframe src="${url}" width="${w}" height="${h}" style="border:none;" allowfullscreen></iframe>`;
+}
+
+// ── URL generation ──────────────────────────────────────────────────────
+function buildURL() {
+  const base = (document.getElementById('base-url-input').value.trim() || PEARTREE_DEFAULT_URL);
+  const params = new URLSearchParams();
+
+  // treeUrl
+  const treeUrl = document.getElementById('tree-url-input').value.trim();
+  if (treeUrl) params.set('treeUrl', treeUrl);
+
+  // nodeLabelName
+  const nlName = document.getElementById('node-label-input').value.trim();
+  if (nlName) params.set('nodeLabelName', nlName);
+
+  // nostore
+  if (document.getElementById('nostore-cb').checked) params.set('nostore', '1');
+
+  // UI visibility flags
+  document.querySelectorAll('.ui-param-cb').forEach(cb => {
+    if (!cb.checked) params.set(cb.dataset.param, '0');
+  });
+
+  // Settings JSON
+  const settings = {};
+  document.querySelectorAll('.setting-cb').forEach(cb => {
+    if (!cb.checked) return;
+    const key = cb.dataset.key;
+    const control = document.querySelector(`.setting-control[data-key="${key}"]`);
+    if (!control) return;
+    let val = control.value;
+    if (control.tagName === 'SELECT' && (val === 'true' || val === 'false')) {
+      val = val === 'true'; // coerce boolean
+    }
+    settings[key] = val;
+  });
+
+  if (Object.keys(settings).length > 0) {
+    params.set('settings', btoa(JSON.stringify(settings)));
+  }
+
+  const qs = params.toString();
+  return base + (qs ? '?' + qs : '');
+}
+
+// ── Local storage persistence ────────────────────────────────────────────
+const LS_KEY = 'peartree-url-builder';
+
+function saveState() {
+  const state = {
+    baseUrl:     document.getElementById('base-url-input').value,
+    treeUrl:     document.getElementById('tree-url-input').value,
+    nodeLabelName: document.getElementById('node-label-input').value,
+    nostore:     document.getElementById('nostore-cb').checked,
+    outputMode:  outputMode(),
+    iframeWidth: document.getElementById('iframe-width').value,
+    iframeHeight: document.getElementById('iframe-height').value,
+    uiParams:    {},
+    settings:    {},
+    settingsCbs: {},
+  };
+  document.querySelectorAll('.ui-param-cb').forEach(cb => {
+    state.uiParams[cb.dataset.param] = cb.checked;
+  });
+  document.querySelectorAll('.setting-cb').forEach(cb => {
+    const key = cb.dataset.key;
+    state.settingsCbs[key] = cb.checked;
+    const control = document.querySelector(`.setting-control[data-key="${key}"]`);
+    if (control) state.settings[key] = control.value;
+  });
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (_) {}
+}
+
+function restoreState() {
+  let state;
+  try { state = JSON.parse(localStorage.getItem(LS_KEY)); } catch (_) {}
+  if (!state) return;
+
+  if (state.baseUrl     !== undefined) document.getElementById('base-url-input').value  = state.baseUrl;
+  if (state.treeUrl     !== undefined) document.getElementById('tree-url-input').value  = state.treeUrl;
+  if (state.nodeLabelName !== undefined) document.getElementById('node-label-input').value = state.nodeLabelName;
+  if (state.nostore     !== undefined) document.getElementById('nostore-cb').checked    = state.nostore;
+  if (state.outputMode) {
+    const radio = document.querySelector(`input[name="output-mode"][value="${state.outputMode}"]`);
+    if (radio) radio.checked = true;
+  }
+  if (state.iframeWidth)  document.getElementById('iframe-width').value  = state.iframeWidth;
+  if (state.iframeHeight) document.getElementById('iframe-height').value = state.iframeHeight;
+
+  if (state.uiParams) {
+    document.querySelectorAll('.ui-param-cb').forEach(cb => {
+      if (state.uiParams[cb.dataset.param] !== undefined)
+        cb.checked = state.uiParams[cb.dataset.param];
+    });
+  }
+
+  if (state.settingsCbs || state.settings) {
+    document.querySelectorAll('.setting-cb').forEach(cb => {
+      const key = cb.dataset.key;
+      if (state.settingsCbs?.[key] !== undefined) cb.checked = state.settingsCbs[key];
+      const control = document.querySelector(`.setting-control[data-key="${key}"]`);
+      if (control && state.settings?.[key] !== undefined) control.value = state.settings[key];
+    });
+  }
+}
+
+function refreshURL() {
+  const url  = buildURL();
+  const mode = outputMode();
+  document.getElementById('url-output').textContent = mode === 'iframe' ? buildIframe(url) : url;
+  // Show/hide iframe dimension options
+  document.getElementById('iframe-options').classList.toggle('d-none', mode !== 'iframe');
+  // Open button only makes sense for a plain URL
+  document.getElementById('open-btn').classList.toggle('d-none', mode !== 'url');
+}
+
+// ── Event listeners ─────────────────────────────────────────────────────
+document.addEventListener('input', () => { refreshURL(); saveState(); });
+document.addEventListener('change', () => { refreshURL(); saveState(); });
+
+document.getElementById('copy-btn').addEventListener('click', () => {
+  const text = document.getElementById('url-output').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.innerHTML = '<i class="bi bi-check-lg"></i> Copied!';
+    setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy URL'; }, 1800);
+  });
+});
+
+document.getElementById('open-btn').addEventListener('click', () => {
+  const url = buildURL();
+  if (url) window.open(url, '_blank');
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  document.getElementById('base-url-input').value = '';
+  document.getElementById('tree-url-input').value = '';
+  document.getElementById('node-label-input').value = '';
+  document.getElementById('nostore-cb').checked = false;
+  document.querySelectorAll('.ui-param-cb').forEach(cb => cb.checked = true);
+  document.querySelectorAll('.setting-cb').forEach(cb => {
+    cb.checked = false;
+    const key = cb.dataset.key;
+    const schema = SETTINGS_SCHEMA.find(s => s.key === key);
+    const control = document.querySelector(`.setting-control[data-key="${key}"]`);
+    if (control && schema) {
+      const def = DEFAULT_SETTINGS[key];
+      if (schema.type === 'boolean') {
+        control.value = String(def);
+      } else {
+        control.value = def ?? '';
+      }
+    }
+  });
+  try { localStorage.removeItem(LS_KEY); } catch (_) {}
+  refreshURL();
+});
+
+// Restore persisted state, then render
+restoreState();
+refreshURL();
+</script>
+</body>
+</html>

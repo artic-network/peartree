@@ -1,0 +1,268 @@
+/**
+ * settings-schema.js
+ *
+ * Single source of truth for the URL-builder tool at /settings.
+ * Imports DEFAULT_SETTINGS directly from config.js so defaults are always
+ * in sync.  THEMES is not imported here because themes.js re-exports a
+ * package symbol that requires a bundler; instead, BUILT_IN_THEMES lists
+ * the names of the built-in themes and should be updated when themes.js
+ * gains or loses a theme entry.
+ *
+ * Exports:
+ *   URL_PARAMS       – UI-visibility flags that become plain ?key=0 params
+ *   SETTINGS_SCHEMA  – per-key metadata for the settings= JSON object
+ *   BUILT_IN_THEMES  – ordered list of built-in theme names
+ *   DEFAULT_SETTINGS – re-exported from config.js for convenience
+ */
+
+export { DEFAULT_SETTINGS } from './config.js';
+
+/**
+ * Names of the built-in themes (mirrors the keys of THEMES in themes.js).
+ * Update this list when a theme is added or removed from themes.js.
+ */
+export const BUILT_IN_THEMES = ['Monochrome', 'ARTIC', 'BEAST', "O'Toole", 'MCM'];
+
+// ── URL boolean flags (value '0' hides, absent / '1' shows) ──────────────
+export const URL_PARAMS = [
+  { param: 'palette',     label: 'Settings panel button',  desc: 'Show/hide the ⚙ Settings sidebar toggle' },
+  { param: 'toolbar',     label: 'Toolbar',                desc: 'Show/hide the top toolbar' },
+  { param: 'import',      label: 'Open / Import buttons',  desc: 'Show/hide Open Tree and Import Annotations buttons' },
+  { param: 'export',      label: 'Export buttons',         desc: 'Show/hide Export Tree and Export Graphic buttons' },
+  { param: 'rtt',         label: 'Root-to-tip button',     desc: 'Show/hide the RTT scatter-plot panel button (extended=fixed also supported)' },
+  { param: 'dt',          label: 'Data table button',      desc: 'Show/hide the Data Table panel button' },
+  { param: 'statusbar',   label: 'Status bar',             desc: 'Show/hide the bottom status bar' },
+  { param: 'help',        label: 'Help button',            desc: 'Show/hide the ? Help button' },
+  { param: 'about',       label: 'About button',           desc: 'Show/hide the About button' },
+  { param: 'themetoggle', label: 'Theme toggle button',    desc: 'Show/hide the light/dark theme toggle button' },
+  { param: 'brand',       label: 'PearTree brand logo',    desc: 'Show/hide the PearTree brand name/logo in the toolbar' },
+];
+
+// ── Settings schema ───────────────────────────────────────────────────────
+// Each entry describes one key that can appear in the settings= JSON blob.
+// type: 'select' | 'boolean' | 'number' | 'text'
+// options: [{value, label}] for select type
+// min/max/step: for number type
+export const SETTINGS_SCHEMA = [
+  // ── Tree layout ────────────────────────────────────────────────────────
+  {
+    key: 'introAnimation',
+    label: 'Intro animation',
+    group: 'Tree',
+    type: 'select',
+    options: [
+      { value: 'x-then-y',    label: 'X then Y (default)' },
+      { value: 'y-then-x',    label: 'Y then X' },
+      { value: 'simultaneous',label: 'Simultaneous' },
+      { value: 'from-bottom', label: 'From bottom' },
+      { value: 'from-top',    label: 'From top' },
+      { value: 'none',        label: 'None' },
+    ],
+    desc: 'Opening animation style when a tree loads.',
+  },
+  {
+    key: 'rootStemPct',
+    label: 'Root stem length (%)',
+    group: 'Tree',
+    type: 'number',
+    min: 0, max: 20, step: 1,
+    desc: 'Root stem length as a percentage of the tree age (0–20).',
+  },
+  {
+    key: 'paddingLeft',
+    label: 'Padding left (px)',
+    group: 'Tree',
+    type: 'number',
+    min: 0, max: 100, step: 1,
+    desc: 'Left padding in pixels.',
+  },
+  {
+    key: 'paddingRight',
+    label: 'Padding right (px)',
+    group: 'Tree',
+    type: 'number',
+    min: 0, max: 100, step: 1,
+    desc: 'Right padding in pixels.',
+  },
+  {
+    key: 'paddingTop',
+    label: 'Padding top (px)',
+    group: 'Tree',
+    type: 'number',
+    min: 0, max: 100, step: 1,
+    desc: 'Top padding in pixels.',
+  },
+  {
+    key: 'paddingBottom',
+    label: 'Padding bottom (px)',
+    group: 'Tree',
+    type: 'number',
+    min: 0, max: 100, step: 1,
+    desc: 'Bottom padding in pixels.',
+  },
+
+  // ── Tip labels ─────────────────────────────────────────────────────────
+  {
+    key: 'tipLabelShow',
+    label: 'Tip labels',
+    group: 'Tip labels',
+    type: 'select',
+    options: [
+      { value: 'off',   label: 'Off' },
+      { value: 'names', label: 'Names (default)' },
+    ],
+    desc: 'Which annotation to show as tip labels. Use "names" for tip names, "off" to hide, or an annotation key from the tree.',
+  },
+  {
+    key: 'tipLabelAlign',
+    label: 'Tip label alignment',
+    group: 'Tip labels',
+    type: 'select',
+    options: [
+      { value: 'off',     label: 'At tip (default)' },
+      { value: 'aligned', label: 'Aligned (right-aligned, no connector)' },
+      { value: 'dots',    label: 'Dots connector' },
+      { value: 'dashed',  label: 'Dashed connector' },
+      { value: 'solid',   label: 'Solid connector' },
+    ],
+    desc: 'Alignment style for tip labels.',
+  },
+  {
+    key: 'tipLabelSpacing',
+    label: 'Tip label spacing (px)',
+    group: 'Tip labels',
+    type: 'number',
+    min: 0, max: 20, step: 1,
+    desc: 'Gap between tip circle and label text.',
+  },
+
+  // ── Node labels ─────────────────────────────────────────────────────────
+  {
+    key: 'nodeLabelAnnotation',
+    label: 'Node label annotation key',
+    group: 'Node labels',
+    type: 'text',
+    placeholder: 'e.g. bootstrap',
+    desc: 'Annotation key to display as internal-node labels (e.g. "bootstrap"). Leave blank to hide.',
+  },
+  {
+    key: 'nodeLabelPosition',
+    label: 'Node label position',
+    group: 'Node labels',
+    type: 'select',
+    options: [
+      { value: 'right',      label: 'Right of node (default)' },
+      { value: 'above-left', label: 'Above branch, left of node' },
+      { value: 'below-left', label: 'Below branch, left of node' },
+    ],
+    desc: 'Where to draw internal-node labels relative to the node.',
+  },
+
+  // ── Branch labels ───────────────────────────────────────────────────────
+  {
+    key: 'branchLabelAnnotation',
+    label: 'Branch label annotation key',
+    group: 'Branch labels',
+    type: 'text',
+    placeholder: 'e.g. bootstrap',
+    desc: 'Annotation key to display at branch midpoints. Leave blank to hide.',
+  },
+  {
+    key: 'branchLabelPosition',
+    label: 'Branch label position',
+    group: 'Branch labels',
+    type: 'select',
+    options: [
+      { value: 'above', label: 'Above branch (default)' },
+      { value: 'below', label: 'Below branch' },
+    ],
+    desc: 'Whether branch labels appear above or below the branch.',
+  },
+
+  // ── Axis ────────────────────────────────────────────────────────────────
+  {
+    key: 'axisShow',
+    label: 'Axis',
+    group: 'Axis',
+    type: 'select',
+    options: [
+      { value: 'off',     label: 'Off' },
+      { value: 'forward', label: 'Forward / divergence (default)' },
+      { value: 'reverse', label: 'Reverse (from tips)' },
+      { value: 'time',    label: 'Time (requires date annotation)' },
+    ],
+    desc: 'Axis display mode.',
+  },
+  {
+    key: 'axisDateAnnotation',
+    label: 'Axis date annotation key',
+    group: 'Axis',
+    type: 'text',
+    placeholder: 'e.g. date',
+    desc: 'Annotation key for calendar dates used when axisShow = "time".',
+  },
+
+  // ── Node bars ───────────────────────────────────────────────────────────
+  {
+    key: 'nodeBarsEnabled',
+    label: 'Node bars (HPD)',
+    group: 'Node bars',
+    type: 'select',
+    options: [
+      { value: 'off', label: 'Off (default)' },
+      { value: 'on',  label: 'On' },
+    ],
+    desc: 'Show BEAST HPD node bars (requires a BEAST tree with height annotations).',
+  },
+
+  // ── Theme ────────────────────────────────────────────────────────────────
+  {
+    key: 'selectedTheme',
+    label: 'Theme',
+    group: 'Theme',
+    type: 'select',
+    // Derived from BUILT_IN_THEMES (exported above) at schema build time
+    get options() {
+      // Lazily built so that the BUILT_IN_THEMES export remains the one source
+      return BUILT_IN_THEMES.map(name => ({ value: name, label: name }));
+    },
+    desc: 'Visual colour theme.',
+  },
+
+  // ── Panels ──────────────────────────────────────────────────────────────
+  {
+    key: 'dataTableOpen',
+    label: 'Data table open at startup',
+    group: 'Panels',
+    type: 'boolean',
+    desc: 'Open the Data Table panel automatically on load.',
+  },
+  {
+    key: 'dataTablePinned',
+    label: 'Data table pinned (docked)',
+    group: 'Panels',
+    type: 'boolean',
+    desc: 'Pin (dock) the Data Table panel so it takes up permanent screen space.',
+  },
+  {
+    key: 'rttOpen',
+    label: 'Root-to-tip open at startup',
+    group: 'Panels',
+    type: 'boolean',
+    desc: 'Open the Root-to-Tip panel automatically on load.',
+  },
+  {
+    key: 'rttPinned',
+    label: 'Root-to-tip pinned (docked)',
+    group: 'Panels',
+    type: 'boolean',
+    desc: 'Pin (dock) the RTT panel so it takes up permanent screen space.',
+  },
+  {
+    key: 'paletteOpen',
+    label: 'Settings panel open at startup',
+    group: 'Panels',
+    type: 'boolean',
+    desc: 'Open the Settings sidebar automatically on load.',
+  },
+];
