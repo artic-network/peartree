@@ -117,6 +117,7 @@ No data is ever uploaded to a server. All processing runs locally on your machin
 
 - **Manual:** [https://artic-network.github.io/peartree/manual/](https://artic-network.github.io/peartree/manual/)
 - **Embedding API:** [embedded-api.md](embedded-api.md) — embed PearTree in your own web pages
+- **URL/UI/Settings reference:** [url-settings-reference.md](url-settings-reference.md) — complete query params plus `ui` and `settings` keys
 - **Tauri build notes:** [tauri-build.md](tauri-build.md)
 
 ---
