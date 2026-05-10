@@ -73,7 +73,9 @@ async function _initCore(root = document) {
   //                                       string = custom key (default: SETTINGS_KEY)
   //
   // Equivalent URL parameters (value of '0' hides; anything else shows):
-  //   palette=0, rtt=0, dt=0, import=0, export=0, statusbar=0
+  //   palette=0, toolbar=0, rtt=0, dt=0, import=0, export=0, statusbar=0
+  //   tbfileops=0, tbann=0, tbnode=0, tbnav=0, tbzoom=0, tborder=0,
+  //   tbrotate=0, tbreroot=0, tbhide=0, tbcolour=0, tbfilter=0, tbpanels=0
   //   nostore=1             — same as storageKey: null
   //   storageKey=my-key     — custom storage key
   const _cfg = resolveEmbedConfig({
@@ -93,6 +95,18 @@ async function _initCore(root = document) {
       { name: 'showAbout',           uiKey: 'about',            param: 'about' },
       { name: 'showThemeToggle',     uiKey: 'themeToggle',      param: 'themetoggle' },
       { name: 'showBrand',           uiKey: 'brand',            param: 'brand' },
+      { name: 'showToolbarFileOps',  uiKey: 'tbFileOps',        param: 'tbfileops' },
+      { name: 'showToolbarAnn',      uiKey: 'tbAnnotations',    param: 'tbann' },
+      { name: 'showToolbarNode',     uiKey: 'tbNodeInfo',       param: 'tbnode' },
+      { name: 'showToolbarNav',      uiKey: 'tbNavigation',     param: 'tbnav' },
+      { name: 'showToolbarZoom',     uiKey: 'tbZoom',           param: 'tbzoom' },
+      { name: 'showToolbarOrder',    uiKey: 'tbOrder',          param: 'tborder' },
+      { name: 'showToolbarRotate',   uiKey: 'tbRotate',         param: 'tbrotate' },
+      { name: 'showToolbarReroot',   uiKey: 'tbReroot',         param: 'tbreroot' },
+      { name: 'showToolbarHide',     uiKey: 'tbHideShow',       param: 'tbhide' },
+      { name: 'showToolbarColour',   uiKey: 'tbColour',         param: 'tbcolour' },
+      { name: 'showToolbarFilter',   uiKey: 'tbFilter',         param: 'tbfilter' },
+      { name: 'showToolbarPanels',   uiKey: 'tbPanels',         param: 'tbpanels' },
     ],
     extras: (wc, _p) => ({
       dataTableColumns: Array.isArray(wc.dataTableColumns) ? wc.dataTableColumns : null,
@@ -143,6 +157,51 @@ async function _initCore(root = document) {
   if (!_cfg.showExport)  { $('btn-export-tree')    ?.classList.add('d-none');
                            $('btn-export-graphic') ?.classList.add('d-none'); }
   if (!_cfg.showStatusBar) $('status-bar')          ?.classList.add('d-none');
+
+  const _hideTb = (selector) => root.querySelectorAll(selector).forEach(el => el.classList.add('d-none'));
+  if (!_cfg.showToolbarFileOps) _hideTb('#btn-open-tree, #btn-import-annot, #btn-export-tree, #btn-export-graphic');
+  if (!_cfg.showToolbarAnn)     _hideTb('#btn-curate-annot, #btn-manage-filters, #btn-manage-palettes');
+  if (!_cfg.showToolbarNode)    _hideTb('#btn-node-info');
+  if (!_cfg.showToolbarNav)     _hideTb('.pt-toolbar .btn-group[aria-label="Navigate history"], .pt-toolbar .btn-group[aria-label="Navigate subtree"]');
+  if (!_cfg.showToolbarZoom)    _hideTb('.pt-toolbar .btn-group[aria-label="Zoom"], .pt-toolbar .btn-group[aria-label="Fit view"]');
+  if (!_cfg.showToolbarOrder)   _hideTb('.pt-toolbar .btn-group[aria-label="Branch order"]');
+  if (!_cfg.showToolbarRotate)  _hideTb('.pt-toolbar .btn-group[aria-label="Rotate node"]');
+  if (!_cfg.showToolbarReroot)  _hideTb('#btn-invert-selection, #reroot-controls');
+  if (!_cfg.showToolbarHide)    _hideTb('.pt-toolbar .btn-group[aria-label="Hide/show subtree"], .pt-toolbar .btn-group[aria-label="Collapse/expand clade"]');
+  if (!_cfg.showToolbarColour)  _hideTb('#colour-pick-wrap');
+  if (!_cfg.showToolbarFilter)  _hideTb('#tip-filter-mount');
+  if (!_cfg.showToolbarPanels)  _hideTb('#btn-data-table, #btn-rtt');
+
+  // Hide separator bars when adjacent button groups are not displayed
+  root.querySelectorAll('.pt-toolbar-sep').forEach(sep => {
+    let prevVisible = false;
+    let nextVisible = false;
+
+    // Check if previous visible sibling is displayed
+    let prev = sep.previousElementSibling;
+    while (prev) {
+      if (!prev.classList.contains('d-none')) {
+        prevVisible = true;
+        break;
+      }
+      prev = prev.previousElementSibling;
+    }
+
+    // Check if next visible sibling is displayed
+    let next = sep.nextElementSibling;
+    while (next) {
+      if (!next.classList.contains('d-none')) {
+        nextVisible = true;
+        break;
+      }
+      next = next.nextElementSibling;
+    }
+
+    // Hide separator if either adjacent visible content is missing
+    if (!prevVisible || !nextVisible) {
+      sep.classList.add('d-none');
+    }
+  });
 
   const canvas            = $('tree-canvas');
   const loadingEl         = $('loading');

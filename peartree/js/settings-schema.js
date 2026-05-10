@@ -36,6 +36,18 @@ export const URL_PARAMS = [
   { param: 'about',       label: 'About button',           desc: 'Show/hide the About button' },
   { param: 'themetoggle', label: 'Theme toggle button',    desc: 'Show/hide the light/dark theme toggle button' },
   { param: 'brand',       label: 'PearTree brand logo',    desc: 'Show/hide the PearTree brand name/logo in the toolbar' },
+  { param: 'tbfileops',   label: 'Toolbar: File ops',      desc: 'Show/hide Open, Import, Export Tree and Export Graphic buttons' },
+  { param: 'tbann',       label: 'Toolbar: Annotations',   desc: 'Show/hide annotation utility buttons (curate/filters/palettes)' },
+  { param: 'tbnode',      label: 'Toolbar: Node info',     desc: 'Show/hide Node Info button' },
+  { param: 'tbnav',       label: 'Toolbar: Navigation',    desc: 'Show/hide back/forward/drill/climb/home groups' },
+  { param: 'tbzoom',      label: 'Toolbar: Zoom',          desc: 'Show/hide zoom and fit groups' },
+  { param: 'tborder',     label: 'Toolbar: Order',         desc: 'Show/hide branch ordering group' },
+  { param: 'tbrotate',    label: 'Toolbar: Rotate',        desc: 'Show/hide rotate node/subtree group' },
+  { param: 'tbreroot',    label: 'Toolbar: Reroot',        desc: 'Show/hide invert-selection and reroot controls' },
+  { param: 'tbhide',      label: 'Toolbar: Hide/Show',     desc: 'Show/hide collapse/expand subtree and clade groups' },
+  { param: 'tbcolour',    label: 'Toolbar: Colour',        desc: 'Show/hide colour picker and clade highlight controls' },
+  { param: 'tbfilter',    label: 'Toolbar: Filter',        desc: 'Show/hide tip filter box' },
+  { param: 'tbpanels',    label: 'Toolbar: Panels',        desc: 'Show/hide Data Table and RTT panel buttons' },
 ];
 
 // ── Settings schema ───────────────────────────────────────────────────────
