@@ -59,6 +59,7 @@ For extended panel flags (`rtt`, `dt`):
 | `tbcolour` | `tbColour` | Toolbar colour group visibility |
 | `tbfilter` | `tbFilter` | Toolbar filter group visibility |
 | `tbpanels` | `tbPanels` | Toolbar panel-toggle group visibility |
+| `keyboard` | `keyboard` | Keyboard shortcuts enable/disable |
 
 ## 2) `ui` Object Properties
 
@@ -68,6 +69,7 @@ Use these in:
 
 Boolean keys accept booleans; string values `'0'/'1'/'false'/'true'` are coerced.
 `rtt` and `dataTable` additionally accept `'fixed'`.
+`openTree` is treated as an alias of `import`.
 
 | Key | Type | Notes |
 |---|---|---|
@@ -88,6 +90,7 @@ Boolean keys accept booleans; string values `'0'/'1'/'false'/'true'` are coerced
 | `about` | boolean | About button |
 | `themeToggle` | boolean | Dark/light toggle button |
 | `brand` | boolean | Brand text/logo |
+| `keyboard` | boolean | Keyboard shortcuts enable/disable |
 | `tbFileOps` | boolean | Toolbar file operations group |
 | `tbAnnotations` | boolean | Toolbar annotation tools group |
 | `tbNodeInfo` | boolean | Toolbar node-info group |

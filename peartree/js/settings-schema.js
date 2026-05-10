@@ -30,7 +30,9 @@ export const URL_PARAMS = [
   { param: 'import',      label: 'Open / Import buttons',  desc: 'Show/hide Open Tree and Import Annotations buttons' },
   { param: 'export',      label: 'Export buttons',         desc: 'Show/hide Export Tree and Export Graphic buttons' },
   { param: 'rtt',         label: 'Root-to-tip button',     desc: 'Show/hide the RTT scatter-plot panel button (extended=fixed also supported)' },
+  { param: 'rttheader',   label: 'RTT panel header',       desc: 'Show/hide the Root-to-tip panel header bar' },
   { param: 'dt',          label: 'Data table button',      desc: 'Show/hide the Data Table panel button' },
+  { param: 'dtheader',    label: 'Data table header',      desc: 'Show/hide the Data Table panel header rows' },
   { param: 'statusbar',   label: 'Status bar',             desc: 'Show/hide the bottom status bar' },
   { param: 'sbstats',     label: 'Status: tree stats',     desc: 'Show/hide the status bar tree statistics section' },
   { param: 'sbselect',    label: 'Status: selection count',desc: 'Show/hide the status bar selection count section' },
@@ -52,6 +54,7 @@ export const URL_PARAMS = [
   { param: 'tbcolour',    label: 'Toolbar: Colour',        desc: 'Show/hide colour picker and clade highlight controls' },
   { param: 'tbfilter',    label: 'Toolbar: Filter',        desc: 'Show/hide tip filter box' },
   { param: 'tbpanels',    label: 'Toolbar: Panels',        desc: 'Show/hide Data Table and RTT panel buttons' },
+  { param: 'keyboard',    label: 'Keyboard shortcuts',     desc: 'Enable/disable keyboard shortcuts' },
 ];
 
 // ── Settings schema ───────────────────────────────────────────────────────

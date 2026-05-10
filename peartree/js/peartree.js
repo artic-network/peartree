@@ -49,6 +49,104 @@ async function fetchExampleTree() {
   return fetchWithFallback(EXAMPLE_TREE_PATH);
 }
 
+// Single source of truth for URL<->ui flag mapping used by app(), embed(), and
+// embedFrame(). Keep this aligned with the UI options documented for embeds.
+const PT_UI_FLAG_DEFS = [
+  { name: 'showPalette',         uiKey: 'palette',         param: 'palette' },
+  { name: 'showToolbar',         uiKey: 'toolbar',         param: 'toolbar' },
+  { name: 'showRTT',             uiKey: 'rtt',             param: 'rtt',      extended: true },
+  { name: 'showRTTHeader',       uiKey: 'rttHeader',       param: 'rttheader' },
+  { name: 'showDataTable',       uiKey: 'dataTable',       param: 'dt',       extended: true },
+  { name: 'showDataTableHeader', uiKey: 'dataTableHeader', param: 'dtheader' },
+  { name: 'showImport',          uiKey: 'import',          uiKeys: ['import', 'openTree'], param: 'import' },
+  { name: 'showExport',          uiKey: 'export',          param: 'export' },
+  { name: 'showStatusBar',       uiKey: 'statusBar',       param: 'statusbar' },
+  { name: 'showStatusStats',     uiKey: 'statusStats',     param: 'sbstats' },
+  { name: 'showStatusSelect',    uiKey: 'statusSelect',    param: 'sbselect' },
+  { name: 'showStatusMessage',   uiKey: 'statusMessage',   param: 'sbmessage' },
+  { name: 'showStatusShare',     uiKey: 'statusShare',     param: 'sbshare' },
+  { name: 'showHelp',            uiKey: 'help',            param: 'help' },
+  { name: 'showAbout',           uiKey: 'about',           param: 'about' },
+  { name: 'showThemeToggle',     uiKey: 'themeToggle',     param: 'themetoggle' },
+  { name: 'showBrand',           uiKey: 'brand',           param: 'brand' },
+  { name: 'showToolbarFileOps',  uiKey: 'tbFileOps',       param: 'tbfileops' },
+  { name: 'showToolbarAnn',      uiKey: 'tbAnnotations',   param: 'tbann' },
+  { name: 'showToolbarNode',     uiKey: 'tbNodeInfo',      param: 'tbnode' },
+  { name: 'showToolbarNav',      uiKey: 'tbNavigation',    param: 'tbnav' },
+  { name: 'showToolbarZoom',     uiKey: 'tbZoom',          param: 'tbzoom' },
+  { name: 'showToolbarOrder',    uiKey: 'tbOrder',         param: 'tborder' },
+  { name: 'showToolbarRotate',   uiKey: 'tbRotate',        param: 'tbrotate' },
+  { name: 'showToolbarReroot',   uiKey: 'tbReroot',        param: 'tbreroot' },
+  { name: 'showToolbarHide',     uiKey: 'tbHideShow',      param: 'tbhide' },
+  { name: 'showToolbarColour',   uiKey: 'tbColour',        param: 'tbcolour' },
+  { name: 'showToolbarFilter',   uiKey: 'tbFilter',        param: 'tbfilter' },
+  { name: 'showToolbarPanels',   uiKey: 'tbPanels',        param: 'tbpanels' },
+  { name: 'enableKeyboard',      uiKey: 'keyboard',        param: 'keyboard' },
+];
+
+function _coerceUiFlag(val, extended = false) {
+  if (extended && val === 'fixed') return 'fixed';
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'number') return val !== 0;
+  if (typeof val === 'string') {
+    const s = val.trim().toLowerCase();
+    if (extended && s === 'fixed') return 'fixed';
+    if (s === '0' || s === 'false') return false;
+    if (s === '1' || s === 'true') return true;
+  }
+  return Boolean(val);
+}
+
+function _readUiValue(uiObj, def) {
+  if (!uiObj || typeof uiObj !== 'object') return undefined;
+  if (Array.isArray(def.uiKeys) && def.uiKeys.length) {
+    for (const key of def.uiKeys) {
+      if (uiObj[key] !== undefined) return uiObj[key];
+    }
+    return undefined;
+  }
+  return uiObj[def.uiKey];
+}
+
+function _setUiFlagsAsUrlParams(params, uiObj) {
+  for (const def of PT_UI_FLAG_DEFS) {
+    const raw = _readUiValue(uiObj, def);
+    if (raw === undefined) continue;
+    const v = _coerceUiFlag(raw, !!def.extended);
+    if (v === false) params.set(def.param, '0');
+    else if (def.extended && v === 'fixed') params.set(def.param, 'fixed');
+  }
+}
+
+function _isPlainObject(value) {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function _decodeSettingsParam(params) {
+  try {
+    const v = params.get('settings');
+    if (!v) return {};
+    const parsed = JSON.parse(atob(v));
+    return _isPlainObject(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function _encodeSettingsParam(params, settings) {
+  if (!_isPlainObject(settings) || Object.keys(settings).length === 0) return;
+  params.set('settings', btoa(JSON.stringify(settings)));
+}
+
+function _resolveInitSettings({ fetchedSettings, params, windowConfig }) {
+  const fromFetched = _isPlainObject(fetchedSettings) ? fetchedSettings : {};
+  const fromUrl = _decodeSettingsParam(params);
+  const fromWindow = _isPlainObject(windowConfig?.settings)
+    ? windowConfig.settings
+    : (_isPlainObject(windowConfig?.initSettings) ? windowConfig.initSettings : {});
+  return Object.assign({}, fromFetched, fromUrl, fromWindow);
+}
+
 async function _initCore(root = document) {
   const $ = id => root.querySelector('#' + id);
   // Per-instance command registry — each embed gets its own scoped registry so
@@ -128,49 +226,13 @@ async function _initCore(root = document) {
     ? _fetchedConfig.settings
     : null;
 
-  const _flagDefs = [
-    { name: 'showPalette',         uiKey: 'palette',          param: 'palette' },
-    { name: 'showToolbar',         uiKey: 'toolbar',          param: 'toolbar' },
-    { name: 'showRTT',             uiKey: 'rtt',              param: 'rtt',        extended: true },
-    { name: 'showRTTHeader',       uiKey: 'rttHeader',        param: 'rttheader' },
-    { name: 'showDataTable',       uiKey: 'dataTable',        param: 'dt',         extended: true },
-    { name: 'showDataTableHeader', uiKey: 'dataTableHeader',  param: 'dtheader' },
-    { name: 'showImport',          uiKey: 'import',           param: 'import' },
-    { name: 'showExport',          uiKey: 'export',           param: 'export' },
-    { name: 'showStatusBar',       uiKey: 'statusBar',        param: 'statusbar' },
-    { name: 'showStatusStats',     uiKey: 'statusStats',      param: 'sbstats' },
-    { name: 'showStatusSelect',    uiKey: 'statusSelect',     param: 'sbselect' },
-    { name: 'showStatusMessage',   uiKey: 'statusMessage',    param: 'sbmessage' },
-    { name: 'showStatusShare',     uiKey: 'statusShare',      param: 'sbshare' },
-    { name: 'showHelp',            uiKey: 'help',             param: 'help' },
-    { name: 'showAbout',           uiKey: 'about',            param: 'about' },
-    { name: 'showThemeToggle',     uiKey: 'themeToggle',      param: 'themetoggle' },
-    { name: 'showBrand',           uiKey: 'brand',            param: 'brand' },
-    { name: 'showToolbarFileOps',  uiKey: 'tbFileOps',        param: 'tbfileops' },
-    { name: 'showToolbarAnn',      uiKey: 'tbAnnotations',    param: 'tbann' },
-    { name: 'showToolbarNode',     uiKey: 'tbNodeInfo',       param: 'tbnode' },
-    { name: 'showToolbarNav',      uiKey: 'tbNavigation',     param: 'tbnav' },
-    { name: 'showToolbarZoom',     uiKey: 'tbZoom',           param: 'tbzoom' },
-    { name: 'showToolbarOrder',    uiKey: 'tbOrder',          param: 'tborder' },
-    { name: 'showToolbarRotate',   uiKey: 'tbRotate',         param: 'tbrotate' },
-    { name: 'showToolbarReroot',   uiKey: 'tbReroot',         param: 'tbreroot' },
-    { name: 'showToolbarHide',     uiKey: 'tbHideShow',       param: 'tbhide' },
-    { name: 'showToolbarColour',   uiKey: 'tbColour',         param: 'tbcolour' },
-    { name: 'showToolbarFilter',   uiKey: 'tbFilter',         param: 'tbfilter' },
-    { name: 'showToolbarPanels',   uiKey: 'tbPanels',         param: 'tbpanels' },
-  ];
-
   const _cfg = resolveEmbedConfig({
     configKey: 'peartreeConfig',
     settingsKeyDefault: SETTINGS_KEY,
-    flagDefs: _flagDefs,
+    flagDefs: PT_UI_FLAG_DEFS,
     extras: (wc, _p) => ({
       dataTableColumns: Array.isArray(wc.dataTableColumns) ? wc.dataTableColumns : null,
-      initSettings: Object.assign(
-        _fetchedSettings || {},
-        (() => { try { const v = _p.get('settings'); return v ? JSON.parse(atob(v)) : {}; } catch { return {}; } })(),
-        wc.settings || wc.initSettings || {},
-      ),
+      initSettings: _resolveInitSettings({ fetchedSettings: _fetchedSettings, params: _p, windowConfig: wc }),
     }),
   });
 
@@ -178,21 +240,12 @@ async function _initCore(root = document) {
   // and when the corresponding URL switch is absent.
   if (_fetchedUI && typeof _fetchedUI === 'object') {
     const _wcUi = (window.peartreeConfig || {}).ui || {};
-    const _toFlag = (val, extended) => {
-      if (extended && val === 'fixed') return 'fixed';
-      if (typeof val === 'string') {
-        const s = val.toLowerCase();
-        if (extended && s === 'fixed') return 'fixed';
-        if (s === '0' || s === 'false') return false;
-        if (s === '1' || s === 'true') return true;
-      }
-      return Boolean(val);
-    };
-    for (const def of _flagDefs) {
-      if (_wcUi[def.uiKey] !== undefined) continue;
+    for (const def of PT_UI_FLAG_DEFS) {
+      if (_readUiValue(_wcUi, def) !== undefined) continue;
       if (_p.has(def.param)) continue;
-      if (_fetchedUI[def.uiKey] === undefined) continue;
-      _cfg[def.name] = _toFlag(_fetchedUI[def.uiKey], !!def.extended);
+      const _raw = _readUiValue(_fetchedUI, def);
+      if (_raw === undefined) continue;
+      _cfg[def.name] = _coerceUiFlag(_raw, !!def.extended);
     }
   }
   // Apply UI restrictions immediately so hidden elements never flash visible.
@@ -7810,7 +7863,9 @@ export async function embed(options = {}) {
     import:      false,
     export:      true,
     rtt:         false,
+    rttHeader:   true,
     dataTable:   false,
+    dataTableHeader: true,
     statusBar:   true,
     statusStats: true,
     statusSelect: true,
@@ -7821,6 +7876,18 @@ export async function embed(options = {}) {
     about:       false,
     themeToggle: false,
     brand:       false,
+    tbFileOps:   true,
+    tbAnnotations: true,
+    tbNodeInfo:  true,
+    tbNavigation: true,
+    tbZoom:      true,
+    tbOrder:     true,
+    tbRotate:    true,
+    tbReroot:    true,
+    tbHideShow:  true,
+    tbColour:    true,
+    tbFilter:    true,
+    tbPanels:    true,
   }, options.ui || {});
   if (ui.openTree === false) ui.import   = false;
   if (ui.import   === false) ui.openTree = false;
@@ -7858,6 +7925,18 @@ export async function embed(options = {}) {
       about:       ui.about,
       themeToggle: ui.themeToggle,
       brand:       ui.brand,
+      tbFileOps:   ui.tbFileOps,
+      tbAnnotations: ui.tbAnnotations,
+      tbNodeInfo:  ui.tbNodeInfo,
+      tbNavigation: ui.tbNavigation,
+      tbZoom:      ui.tbZoom,
+      tbOrder:     ui.tbOrder,
+      tbRotate:    ui.tbRotate,
+      tbReroot:    ui.tbReroot,
+      tbHideShow:  ui.tbHideShow,
+      tbColour:    ui.tbColour,
+      tbFilter:    ui.tbFilter,
+      tbPanels:    ui.tbPanels,
       theme:       _theme,
     },
     storageKey:       options.storageKey ?? null,  // null by default — embeds don't persist settings
@@ -7966,7 +8045,9 @@ export function embedFrame(options = {}) {
 
   const base  = typeof options.base === 'string' ? options.base : _selfBase;
   const height = options.height || '600px';
-  const theme  = options.theme  || 'dark';
+  const theme  = (options.ui && (options.ui.theme === 'light' || options.ui.theme === 'dark'))
+    ? options.ui.theme
+    : (options.theme || 'dark');
 
   const ui = Object.assign({
     palette:   true,
@@ -7975,33 +8056,41 @@ export function embedFrame(options = {}) {
     import:    false,
     export:    true,
     rtt:       false,
+    rttHeader: true,
     dataTable: false,
+    dataTableHeader: true,
     statusBar: true,
     statusStats: true,
     statusSelect: true,
     statusMessage: true,
     statusShare: true,
+    help: true,
+    about: true,
+    themeToggle: true,
+    brand: true,
+    tbFileOps: true,
+    tbAnnotations: true,
+    tbNodeInfo: true,
+    tbNavigation: true,
+    tbZoom: true,
+    tbOrder: true,
+    tbRotate: true,
+    tbReroot: true,
+    tbHideShow: true,
+    tbColour: true,
+    tbFilter: true,
+    tbPanels: true,
   }, options.ui || {});
   if (ui.openTree === false) ui.import   = false;
   if (ui.import   === false) ui.openTree = false;
 
-  // Build URL params — boolean UI flags work natively via peartree.html's existing
-  // URL param support.  Complex objects (settings, sections) are base64-encoded JSON.
+  // Build URL params from the same UI schema used by app/embed resolution.
+  // Complex objects (settings, sections) are base64-encoded JSON.
   const params = new URLSearchParams({ nostore: '1' });
-  if (!ui.palette)   params.set('palette',   '0');
-  if (!ui.toolbar)   params.set('toolbar',   '0');
-  if (!ui.rtt)       params.set('rtt',       '0');
-  if (!ui.dataTable) params.set('dt',        '0');
-  if (!ui.import)    params.set('import',    '0');
-  if (!ui.export)    params.set('export',    '0');
-  if (!ui.statusBar) params.set('statusbar', '0');
-  if (!ui.statusStats) params.set('sbstats', '0');
-  if (!ui.statusSelect) params.set('sbselect', '0');
-  if (!ui.statusMessage) params.set('sbmessage', '0');
-  if (!ui.statusShare) params.set('sbshare', '0');
+  _setUiFlagsAsUrlParams(params, ui);
+  if (theme === 'dark' || theme === 'light') params.set('theme', theme);
 
-  if (options.settings && Object.keys(options.settings).length)
-    params.set('settings', btoa(JSON.stringify(options.settings)));
+  _encodeSettingsParam(params, options.settings);
   if (options.toolbarSections && options.toolbarSections !== 'all')
     params.set('toolbarSections', btoa(JSON.stringify(options.toolbarSections)));
   if (options.appSections && options.appSections !== 'all')
