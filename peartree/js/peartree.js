@@ -2210,6 +2210,11 @@ async function _initCore(root = document) {
     }
   }
 
+  // applyTheme sets a complete visual baseline (including font sizes).
+  // Re-apply explicit saved/init visual keys afterwards so URL-provided
+  // overrides like settings.fontSize win over the selected theme defaults.
+  _applyVisualSettingsFromFile(_saved);
+
   // Always sync legend/axis font families after renderer init — applyTheme does
   // this when called, but the else branch above skips applyTheme entirely.
   _applyLegendTypeface();
@@ -3538,13 +3543,16 @@ async function _initCore(root = document) {
         }
       }
 
-      // Apply visual settings for this tree load.
-      // Precedence: embedded file settings, then init settings (URL/embed-time)
-      // so URL-provided options can override [peartree={...}] in NEXUS files.
-      const _fileAndInit = _fileSettings
-        ? Object.assign({}, _fileSettings, _cfg.initSettings)
-        : null;
-      if (_fileAndInit) _applyVisualSettingsFromFile(_fileAndInit);
+      // Apply effective settings for this tree load.
+      // Precedence (low -> high): saved/local, file-embedded, init(URL/embed).
+      // This guarantees URL settings always win over tree-embedded values.
+      const _treeEffectiveSettings = Object.assign(
+        {},
+        _saved || {},
+        _fileSettings || {},
+        _cfg.initSettings || {},
+      );
+      _applyVisualSettingsFromFile(_treeEffectiveSettings);
       _cachedMidpoint = null;
       isExplicitlyRooted = graph.rooted;
 
@@ -3760,9 +3768,8 @@ async function _initCore(root = document) {
       }
 
       // Annotation-dependent settings for this tree load.
-      // If the file has embedded settings, overlay init settings on top so URL
-      // options override tree-embedded values key-by-key.
-      const _eff = _fileAndInit || _saved;
+      // Uses the same precedence as visual settings.
+      const _eff = _treeEffectiveSettings;
       const _hasOpt = (sel, key) => key && [...sel.options].some(o => o.value === key);
       tipColourBy.value          = _hasOpt(tipColourBy,          _eff.tipColourBy)           ? _eff.tipColourBy           : 'user_colour';
       nodeColourBy.value         = _hasOpt(nodeColourBy,         _eff.nodeColourBy)          ? _eff.nodeColourBy          : 'user_colour';
@@ -3788,12 +3795,12 @@ async function _initCore(root = document) {
       branchLabelShowEl.value = _hasOpt(branchLabelShowEl, _eff.branchLabelAnnotation) ? _eff.branchLabelAnnotation : '';
       if (nodeLabelColourBy)   nodeLabelColourBy.value   = _hasOpt(nodeLabelColourBy,   _eff.nodeLabelColourBy)   ? _eff.nodeLabelColourBy   : 'user_colour';
       if (branchLabelColourBy) branchLabelColourBy.value = _hasOpt(branchLabelColourBy, _eff.branchLabelColourBy) ? _eff.branchLabelColourBy : 'user_colour';
-      // Restore node order from per-tree effective settings (file + init),
+      // Restore node order from per-tree effective settings,
       // not from saved prefs, so it remains a per-tree choice.
-      if (_fileAndInit?.nodeOrder === 'asc' || _fileAndInit?.nodeOrder === 'desc') {
-        const asc = _fileAndInit.nodeOrder === 'asc';
+      if (_treeEffectiveSettings?.nodeOrder === 'asc' || _treeEffectiveSettings?.nodeOrder === 'desc') {
+        const asc = _treeEffectiveSettings.nodeOrder === 'asc';
         reorderGraph(graph, asc);
-        currentOrder = _fileAndInit.nodeOrder;
+        currentOrder = _treeEffectiveSettings.nodeOrder;
       }
 
       // Pass schema to the renderer so it can build colour scales.

@@ -279,9 +279,31 @@ function buildIframe(url) {
   return `<iframe src="${url}" width="${w}" height="${h}" style="border:none;" allowfullscreen></iframe>`;
 }
 
+function normalizeBaseUrl(rawBase) {
+  const fallback = PEARTREE_DEFAULT_URL;
+  const input = (rawBase || '').trim();
+  if (!input) return fallback;
+  try {
+    const u = new URL(input);
+    const isLocal = u.hostname === 'localhost' || u.hostname === '127.0.0.1';
+    if (isLocal) {
+      // Local static servers often redirect *.html -> extensionless and may
+      // drop query params on redirect. Use a stable extensionless app URL.
+      if (u.pathname === '/' || u.pathname === '/index' || u.pathname === '/index.html') {
+        u.pathname = '/peartree/peartree';
+      } else if (u.pathname.endsWith('.html')) {
+        u.pathname = u.pathname.slice(0, -5);
+      }
+    }
+    return u.toString();
+  } catch {
+    return input;
+  }
+}
+
 // ── URL generation ──────────────────────────────────────────────────────
 function buildURL() {
-  const base = (document.getElementById('base-url-input').value.trim() || PEARTREE_DEFAULT_URL);
+  const base = normalizeBaseUrl(document.getElementById('base-url-input').value);
   const params = new URLSearchParams();
 
   // treeUrl
@@ -313,6 +335,12 @@ function buildURL() {
     }
     settings[key] = val;
   });
+
+  // Convenience: if a date annotation is set for the axis but axis mode was
+  // not explicitly included, turn the axis on in forward mode.
+  if (settings.axisDateAnnotation && settings.axisDateAnnotation.trim() && settings.axisShow == null) {
+    settings.axisShow = 'forward';
+  }
 
   if (Object.keys(settings).length > 0) {
     params.set('settings', btoa(JSON.stringify(settings)));
@@ -394,8 +422,24 @@ function refreshURL() {
 }
 
 // ── Event listeners ─────────────────────────────────────────────────────
-document.addEventListener('input', () => { refreshURL(); saveState(); });
-document.addEventListener('change', () => { refreshURL(); saveState(); });
+document.addEventListener('input', (e) => {
+  const t = e.target;
+  if (t && t.classList?.contains('setting-control') && t.dataset?.key) {
+    const cb = document.querySelector(`.setting-cb[data-key="${t.dataset.key}"]`);
+    if (cb) cb.checked = true;
+  }
+  refreshURL();
+  saveState();
+});
+document.addEventListener('change', (e) => {
+  const t = e.target;
+  if (t && t.classList?.contains('setting-control') && t.dataset?.key) {
+    const cb = document.querySelector(`.setting-cb[data-key="${t.dataset.key}"]`);
+    if (cb) cb.checked = true;
+  }
+  refreshURL();
+  saveState();
+});
 
 document.getElementById('copy-btn').addEventListener('click', () => {
   const text = document.getElementById('url-output').textContent;
