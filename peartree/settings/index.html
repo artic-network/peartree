@@ -133,6 +133,8 @@
     <label class="btn btn-outline-secondary" for="mode-url"><i class="bi bi-link-45deg"></i> URL</label>
     <input type="radio" class="btn-check" name="output-mode" id="mode-iframe" value="iframe">
     <label class="btn btn-outline-secondary" for="mode-iframe"><i class="bi bi-code-slash"></i> iframe embed</label>
+    <input type="radio" class="btn-check" name="output-mode" id="mode-embed-api" value="embed-api">
+    <label class="btn btn-outline-secondary" for="mode-embed-api"><i class="bi bi-braces"></i> Embedded HTML</label>
   </div>
   <div id="iframe-options" class="d-none d-flex align-items-center gap-2">
     <label class="mb-0 text-secondary" style="font-size:0.82rem;white-space:nowrap">width</label>
@@ -288,6 +290,113 @@ function buildIframe(url) {
   return `<iframe src="${url}" width="${w}" height="${h}" style="border:none;" allowfullscreen></iframe>`;
 }
 
+function _collectSettingsObject() {
+  const settings = {};
+  document.querySelectorAll('.setting-cb').forEach(cb => {
+    if (!cb.checked) return;
+    const key = cb.dataset.key;
+    const control = document.querySelector(`.setting-control[data-key="${key}"]`);
+    if (!control) return;
+    let val = control.value;
+    if (control.tagName === 'SELECT' && (val === 'true' || val === 'false')) {
+      val = val === 'true';
+    }
+    settings[key] = val;
+  });
+
+  // Convenience: if a date annotation is set for the axis but axis mode was
+  // not explicitly included, turn the axis on in forward mode.
+  if (settings.axisDateAnnotation && settings.axisDateAnnotation.trim() && settings.axisShow == null) {
+    settings.axisShow = 'forward';
+  }
+
+  return settings;
+}
+
+function _collectUiObject() {
+  const map = {
+    palette: 'palette',
+    toolbar: 'toolbar',
+    import: 'import',
+    export: 'export',
+    rtt: 'rtt',
+    dt: 'dataTable',
+    statusbar: 'statusBar',
+    sbstats: 'statusStats',
+    sbselect: 'statusSelect',
+    sbmessage: 'statusMessage',
+    sbshare: 'statusShare',
+    help: 'help',
+    about: 'about',
+    themetoggle: 'themeToggle',
+    brand: 'brand',
+    tbfileops: 'tbFileOps',
+    tbann: 'tbAnnotations',
+    tbnode: 'tbNodeInfo',
+    tbnav: 'tbNavigation',
+    tbzoom: 'tbZoom',
+    tborder: 'tbOrder',
+    tbrotate: 'tbRotate',
+    tbreroot: 'tbReroot',
+    tbhide: 'tbHideShow',
+    tbcolour: 'tbColour',
+    tbfilter: 'tbFilter',
+    tbpanels: 'tbPanels',
+  };
+
+  const ui = {};
+  document.querySelectorAll('.ui-param-cb').forEach(cb => {
+    const param = cb.dataset.param;
+    const key = map[param];
+    if (!key) return;
+    if (!cb.checked) ui[key] = false;
+  });
+
+  // openTree is linked to import in the embed API.
+  if (ui.import === false) ui.openTree = false;
+
+  const uiTheme = document.getElementById('ui-theme-select').value;
+  if (uiTheme === 'dark' || uiTheme === 'light') ui.theme = uiTheme;
+
+  return ui;
+}
+
+function _bundleScriptUrl(base) {
+  try {
+    const u = new URL(base);
+    return `${u.origin}/dist/peartree.bundle.min.js`;
+  } catch {
+    return 'dist/peartree.bundle.min.js';
+  }
+}
+
+function buildEmbedAPIHTML() {
+  const base = normalizeBaseUrl(document.getElementById('base-url-input').value);
+  const treeUrl = document.getElementById('tree-url-input').value.trim();
+  const nodeLabelName = document.getElementById('node-label-input').value.trim();
+  const w = document.getElementById('iframe-width').value.trim() || '100%';
+  const h = document.getElementById('iframe-height').value.trim() || '600px';
+
+  const options = {
+    container: 'peartree-container',
+    height: h,
+  };
+  if (treeUrl) options.treeUrl = treeUrl;
+  if (nodeLabelName) options.nodeLabelName = nodeLabelName;
+
+  const settings = _collectSettingsObject();
+  if (Object.keys(settings).length > 0) options.settings = settings;
+
+  const ui = _collectUiObject();
+  if (Object.keys(ui).length > 0) options.ui = ui;
+
+  return `<div id="peartree-container" style="width:${w};height:${h};"></div>\n` +
+`<script src="${_bundleScriptUrl(base)}"><\\/script>\n` +
+`<script>\n` +
+`  PearTreeEmbed.embed(${JSON.stringify(options, null, 2)});\n` +
+`<\\/script>`;
+}
+
 function normalizeBaseUrl(rawBase) {
   const fallback = PEARTREE_DEFAULT_URL;
   const input = (rawBase || '').trim();
@@ -336,24 +445,7 @@ function buildURL() {
   if (uiTheme === 'dark' || uiTheme === 'light') params.set('theme', uiTheme);
 
   // Settings JSON
-  const settings = {};
-  document.querySelectorAll('.setting-cb').forEach(cb => {
-    if (!cb.checked) return;
-    const key = cb.dataset.key;
-    const control = document.querySelector(`.setting-control[data-key="${key}"]`);
-    if (!control) return;
-    let val = control.value;
-    if (control.tagName === 'SELECT' && (val === 'true' || val === 'false')) {
-      val = val === 'true'; // coerce boolean
-    }
-    settings[key] = val;
-  });
-
-  // Convenience: if a date annotation is set for the axis but axis mode was
-  // not explicitly included, turn the axis on in forward mode.
-  if (settings.axisDateAnnotation && settings.axisDateAnnotation.trim() && settings.axisShow == null) {
-    settings.axisShow = 'forward';
-  }
+  const settings = _collectSettingsObject();
 
   if (Object.keys(settings).length > 0) {
     params.set('settings', btoa(JSON.stringify(settings)));
@@ -429,9 +521,12 @@ function restoreState() {
 function refreshURL() {
   const url  = buildURL();
   const mode = outputMode();
-  document.getElementById('url-output').textContent = mode === 'iframe' ? buildIframe(url) : url;
+  const output = mode === 'iframe'
+    ? buildIframe(url)
+    : (mode === 'embed-api' ? buildEmbedAPIHTML() : url);
+  document.getElementById('url-output').textContent = output;
   // Show/hide iframe dimension options
-  document.getElementById('iframe-options').classList.toggle('d-none', mode !== 'iframe');
+  document.getElementById('iframe-options').classList.toggle('d-none', mode !== 'iframe' && mode !== 'embed-api');
   // Open button only makes sense for a plain URL
   document.getElementById('open-btn').classList.toggle('d-none', mode !== 'url');
 }
@@ -461,7 +556,7 @@ document.getElementById('copy-btn').addEventListener('click', () => {
   navigator.clipboard.writeText(text).then(() => {
     const btn = document.getElementById('copy-btn');
     btn.innerHTML = '<i class="bi bi-check-lg"></i> Copied!';
-    setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy URL'; }, 1800);
+    setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy'; }, 1800);
   });
 });
 
