@@ -8,6 +8,7 @@ on:
   workflow_run:
     workflows: ["Release"]
     types: [completed]
+  workflow_dispatch:  # allow manual re-deploy from the Actions UI without a release
 
 permissions:
   contents: read
@@ -23,7 +24,7 @@ concurrency:
 
 jobs:
   deploy-pages:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -44,11 +45,11 @@ jobs:
         run: npm install
 
       - name: Set version from release tag
-        run: node scripts/set-version.js ${{ github.event.workflow_run.head_branch }}
+        run: node scripts/set-version.js ${{ github.event.workflow_run.head_branch || 'main' }}
 
       - name: Build single-file bundle
         env:
-          PEARTREE_VERSION_TAG: ${{ github.event.workflow_run.head_branch }}
+          PEARTREE_VERSION_TAG: ${{ github.event.workflow_run.head_branch || 'main' }}
         run: npm run bundle
 
       - name: Build manual
