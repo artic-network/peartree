@@ -135,6 +135,14 @@ export const SETTINGS_SCHEMA = [
     min: 0, max: 20, step: 1,
     desc: 'Gap between tip circle and label text.',
   },
+  {
+    key: 'fontSize',
+    label: 'Tip label font size (px)',
+    group: 'Tip labels',
+    type: 'number',
+    min: 6, max: 48, step: 1,
+    desc: 'Main label font size for tip labels.',
+  },
 
   // ── Node labels ─────────────────────────────────────────────────────────
   {
@@ -157,6 +165,14 @@ export const SETTINGS_SCHEMA = [
     ],
     desc: 'Where to draw internal-node labels relative to the node.',
   },
+  {
+    key: 'nodeLabelFontSize',
+    label: 'Node label font size (px)',
+    group: 'Node labels',
+    type: 'number',
+    min: 6, max: 48, step: 1,
+    desc: 'Font size for internal-node labels.',
+  },
 
   // ── Branch labels ───────────────────────────────────────────────────────
   {
@@ -177,6 +193,32 @@ export const SETTINGS_SCHEMA = [
       { value: 'below', label: 'Below branch' },
     ],
     desc: 'Whether branch labels appear above or below the branch.',
+  },
+  {
+    key: 'branchLabelFontSize',
+    label: 'Branch label font size (px)',
+    group: 'Branch labels',
+    type: 'number',
+    min: 6, max: 48, step: 1,
+    desc: 'Font size for branch labels.',
+  },
+
+  // ── Shapes ──────────────────────────────────────────────────────────────
+  {
+    key: 'tipSize',
+    label: 'Tip shape size (px)',
+    group: 'Shapes',
+    type: 'number',
+    min: 0, max: 30, step: 1,
+    desc: 'Size of tip markers.',
+  },
+  {
+    key: 'nodeSize',
+    label: 'Node shape size (px)',
+    group: 'Shapes',
+    type: 'number',
+    min: 0, max: 30, step: 1,
+    desc: 'Size of internal node markers.',
   },
 
   // ── Axis ────────────────────────────────────────────────────────────────
