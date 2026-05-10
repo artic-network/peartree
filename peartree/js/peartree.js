@@ -3538,10 +3538,13 @@ async function _initCore(root = document) {
         }
       }
 
-      // Apply any visual settings embedded in the file immediately, before
-      // annotation dropdowns are populated (annotation-dependent settings
-      // are handled below after the dropdowns exist).
-      if (_fileSettings) _applyVisualSettingsFromFile(_fileSettings);
+      // Apply visual settings for this tree load.
+      // Precedence: embedded file settings, then init settings (URL/embed-time)
+      // so URL-provided options can override [peartree={...}] in NEXUS files.
+      const _fileAndInit = _fileSettings
+        ? Object.assign({}, _fileSettings, _cfg.initSettings)
+        : null;
+      if (_fileAndInit) _applyVisualSettingsFromFile(_fileAndInit);
       _cachedMidpoint = null;
       isExplicitlyRooted = graph.rooted;
 
@@ -3756,8 +3759,10 @@ async function _initCore(root = document) {
         commands.setEnabled('tree-clear-colours', schema.has('user_colour'));
       }
 
-      // Annotation-dependent settings:  file-embedded settings take priority over saved prefs.
-      const _eff = _fileSettings || _saved;
+      // Annotation-dependent settings for this tree load.
+      // If the file has embedded settings, overlay init settings on top so URL
+      // options override tree-embedded values key-by-key.
+      const _eff = _fileAndInit || _saved;
       const _hasOpt = (sel, key) => key && [...sel.options].some(o => o.value === key);
       tipColourBy.value          = _hasOpt(tipColourBy,          _eff.tipColourBy)           ? _eff.tipColourBy           : 'user_colour';
       nodeColourBy.value         = _hasOpt(nodeColourBy,         _eff.nodeColourBy)          ? _eff.nodeColourBy          : 'user_colour';
@@ -3783,12 +3788,12 @@ async function _initCore(root = document) {
       branchLabelShowEl.value = _hasOpt(branchLabelShowEl, _eff.branchLabelAnnotation) ? _eff.branchLabelAnnotation : '';
       if (nodeLabelColourBy)   nodeLabelColourBy.value   = _hasOpt(nodeLabelColourBy,   _eff.nodeLabelColourBy)   ? _eff.nodeLabelColourBy   : 'user_colour';
       if (branchLabelColourBy) branchLabelColourBy.value = _hasOpt(branchLabelColourBy, _eff.branchLabelColourBy) ? _eff.branchLabelColourBy : 'user_colour';
-      // Restore node order — only from file-embedded settings, not from saved prefs
-      // (order is a per-tree choice and should not persist across different trees).
-      if (_fileSettings?.nodeOrder === 'asc' || _fileSettings?.nodeOrder === 'desc') {
-        const asc = _fileSettings.nodeOrder === 'asc';
+      // Restore node order from per-tree effective settings (file + init),
+      // not from saved prefs, so it remains a per-tree choice.
+      if (_fileAndInit?.nodeOrder === 'asc' || _fileAndInit?.nodeOrder === 'desc') {
+        const asc = _fileAndInit.nodeOrder === 'asc';
         reorderGraph(graph, asc);
-        currentOrder = _fileSettings.nodeOrder;
+        currentOrder = _fileAndInit.nodeOrder;
       }
 
       // Pass schema to the renderer so it can build colour scales.
