@@ -74,6 +74,7 @@ async function _initCore(root = document) {
   //
   // Equivalent URL parameters (value of '0' hides; anything else shows):
   //   palette=0, toolbar=0, rtt=0, dt=0, import=0, export=0, statusbar=0
+  //   sbstats=0, sbselect=0, sbmessage=0, sbshare=0,
   //   tbfileops=0, tbann=0, tbnode=0, tbnav=0, tbzoom=0, tborder=0,
   //   tbrotate=0, tbreroot=0, tbhide=0, tbcolour=0, tbfilter=0, tbpanels=0
   //   nostore=1             — same as storageKey: null
@@ -91,6 +92,10 @@ async function _initCore(root = document) {
       { name: 'showImport',          uiKey: 'import',           param: 'import' },
       { name: 'showExport',          uiKey: 'export',           param: 'export' },
       { name: 'showStatusBar',       uiKey: 'statusBar',        param: 'statusbar' },
+      { name: 'showStatusStats',     uiKey: 'statusStats',      param: 'sbstats' },
+      { name: 'showStatusSelect',    uiKey: 'statusSelect',     param: 'sbselect' },
+      { name: 'showStatusMessage',   uiKey: 'statusMessage',    param: 'sbmessage' },
+      { name: 'showStatusShare',     uiKey: 'statusShare',      param: 'sbshare' },
       { name: 'showHelp',            uiKey: 'help',             param: 'help' },
       { name: 'showAbout',           uiKey: 'about',            param: 'about' },
       { name: 'showThemeToggle',     uiKey: 'themeToggle',      param: 'themetoggle' },
@@ -157,6 +162,14 @@ async function _initCore(root = document) {
   if (!_cfg.showExport)  { $('btn-export-tree')    ?.classList.add('d-none');
                            $('btn-export-graphic') ?.classList.add('d-none'); }
   if (!_cfg.showStatusBar) $('status-bar')          ?.classList.add('d-none');
+  if (!_cfg.showStatusStats) $('status-stats')      ?.classList.add('d-none');
+  if (!_cfg.showStatusSelect) $('status-select')    ?.classList.add('d-none');
+  if (!_cfg.showStatusMessage) $('status-message')  ?.classList.add('d-none');
+  if (!_cfg.showStatusShare) $('btn-share-url')     ?.classList.add('d-none');
+  if (!_cfg.showHelp)      $('btn-help')            ?.classList.add('d-none');
+  if (!_cfg.showAbout)     $('btn-about')           ?.classList.add('d-none');
+  if (!_cfg.showThemeToggle) $('btn-theme')         ?.classList.add('d-none');
+  if (!_cfg.showBrand)     $('status-brand')        ?.classList.add('d-none');
 
   const _hideTb = (selector) => root.querySelectorAll(selector).forEach(el => el.classList.add('d-none'));
   if (!_cfg.showToolbarFileOps) _hideTb('#btn-open-tree, #btn-import-annot, #btn-export-tree, #btn-export-graphic');
@@ -2070,6 +2083,11 @@ async function _initCore(root = document) {
   const _shareUrlBtn = $('btn-share-url');
   function _updateShareUrlBtn() {
     if (!_shareUrlBtn) return;
+    if (!_cfg.showStatusShare) {
+      _shareUrlBtn.classList.add('d-none');
+      _shareUrlBtn.onclick = null;
+      return;
+    }
     if (_treeSourceUrl) {
       _shareUrlBtn.classList.remove('d-none');
       _shareUrlBtn.onclick = async () => {
@@ -7714,6 +7732,10 @@ export async function embed(options = {}) {
     rtt:         false,
     dataTable:   false,
     statusBar:   true,
+    statusStats: true,
+    statusSelect: true,
+    statusMessage: true,
+    statusShare: true,
     keyboard:    false,
     help:        false,
     about:       false,
@@ -7747,6 +7769,10 @@ export async function embed(options = {}) {
       dataTable:        ui.dataTable,
       dataTableHeader:  ui.dataTableHeader,
       statusBar:        ui.statusBar,
+      statusStats:      ui.statusStats,
+      statusSelect:     ui.statusSelect,
+      statusMessage:    ui.statusMessage,
+      statusShare:      ui.statusShare,
       keyboard:    ui.keyboard,
       help:        ui.help,
       about:       ui.about,
@@ -7871,6 +7897,10 @@ export function embedFrame(options = {}) {
     rtt:       false,
     dataTable: false,
     statusBar: true,
+    statusStats: true,
+    statusSelect: true,
+    statusMessage: true,
+    statusShare: true,
   }, options.ui || {});
   if (ui.openTree === false) ui.import   = false;
   if (ui.import   === false) ui.openTree = false;
@@ -7885,6 +7915,10 @@ export function embedFrame(options = {}) {
   if (!ui.import)    params.set('import',    '0');
   if (!ui.export)    params.set('export',    '0');
   if (!ui.statusBar) params.set('statusbar', '0');
+  if (!ui.statusStats) params.set('sbstats', '0');
+  if (!ui.statusSelect) params.set('sbselect', '0');
+  if (!ui.statusMessage) params.set('sbmessage', '0');
+  if (!ui.statusShare) params.set('sbshare', '0');
 
   if (options.settings && Object.keys(options.settings).length)
     params.set('settings', btoa(JSON.stringify(options.settings)));
