@@ -7547,9 +7547,6 @@ async function _initCore(root = document) {
         console.warn('peartree: ignoring invalid treeUrl parameter –', _e.message);
       }
       if (_validated) {
-        openModal();
-        setModalLoading(true);
-        setModalError(null);
         (async () => {
           try {
             const _resp = await fetch(_validated);
@@ -7560,8 +7557,8 @@ async function _initCore(root = document) {
             _treeSourceUrl = _validated;
             _updateShareUrlBtn();
           } catch (_err) {
-            setModalError(_err.message);
-            setModalLoading(false);
+            showEmptyState();
+            showEmptyStateError(_err.message);
           }
         })();
       }
