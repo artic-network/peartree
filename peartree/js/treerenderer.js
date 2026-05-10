@@ -518,13 +518,11 @@ export class TreeRenderer {
       this._updateMinScaleY();       // recomputes this.minScaleY
       const plotH     = this.canvas.clientHeight - this.paddingTop - this.paddingBottom;
       const landingY  = Math.max(this.minScaleY, plotH / 500);  // show ~500 rows
-      // Use landingY for the label-visibility check so scaleX is correct immediately.
-      const _prevScaleY = this.scaleY;
-      this.scaleY = landingY;
-      this._updateScaleX();          // immediate snap: scaleX/offsetX fitted
-      this.scaleY = _prevScaleY;
       const offsetY   = this.paddingTop + landingY * 0.5;
+      // Set _targetScaleY first so _updateScaleX evaluates label visibility at
+      // landingY (immediate=true also snaps scaleY = landingY directly).
       this._setTarget(offsetY, landingY, /*immediate*/ true);
+      this._updateScaleX();          // immediate snap: scaleX/offsetX fitted
       this._dirty = true;
     } else {
       this.fitToWindow();  // animated
@@ -710,7 +708,7 @@ export class TreeRenderer {
     this.tipLabelAnnotation = key || null;
     this._labelCacheKey = null;
     this._measureLabels();
-    this._updateScaleX();
+    this._updateScaleX(false);   // animate, never snap mid-load
     this._dirty = true;
   }
 
@@ -718,7 +716,7 @@ export class TreeRenderer {
     this._tipLabelsOff = !!v;
     this._labelCacheKey = null;
     this._measureLabels();
-    this._updateScaleX();
+    this._updateScaleX(false);   // animate, never snap mid-load
     this._dirty = true;
   }
 
@@ -1891,20 +1889,23 @@ export class TreeRenderer {
   _measureLabels() {
     if (!this.nodes) return;
     // Only redo the expensive measureText scan when font/annotation settings or node data changes.
-    const cacheKey = `${this.fontSize}|${this._tipLabelTypefaceKey ?? this._typefaceKey}|${this._tipLabelTypefaceStyle ?? this._typefaceStyle}|${this.tipLabelAnnotation ?? ''}|${this._calDateFormat}|${this._tipLabelDecimalPlaces ?? ''}|${this._nodeLabelDecimalPlaces ?? ''}|${this._tipLabelsOff ? '0' : '1'}`;        
+    const cacheKey = `${this.fontSize}|${this._tipLabelTypefaceKey ?? this._typefaceKey}|${this._tipLabelTypefaceStyle ?? this._typefaceStyle}|${this.tipLabelAnnotation ?? ''}|${this._calDateFormat}|${this._tipLabelDecimalPlaces ?? ''}|${this._nodeLabelDecimalPlaces ?? ''}|${this._tipLabelsOff ? '0' : '1'}`;
     if (this._labelCacheKey !== cacheKey) {
       const ctx = this.ctx;
       ctx.font = this._tipFont(this.fontSize);
       let max = 0;
+      const widths = new Map();
       for (const n of this.nodes) {
         if (!n.isTip) continue;
         const t = this._tipLabelText(n);
         if (t) {
           const w = ctx.measureText(t).width;
+          widths.set(n.id, w);
           if (w > max) max = w;
         }
       }
       this._maxLabelWidth = max;
+      this._tipLabelWidths = widths;
       this._labelCacheKey = cacheKey;
     }
     const r = this.tipRadius;
@@ -1923,25 +1924,63 @@ export class TreeRenderer {
       shapesExtraWidth += this._shapeSize(this._tipLabelShapeSize, _activeExtras[i])
         + (i < _activeExtras.length - 1 ? this._tipLabelShapeSpacing : 0);
     }
-    this.labelRightPad = this._maxLabelWidth + Math.max(tipOuterR, 5) + 5 + this.tipLabelSpacing + shapeExtra + shapesExtraWidth + (this.paddingRight ?? 10);
+    // _labelOverhead: the fixed non-text portion added to every tip's label clearance.
+    this._labelOverhead = Math.max(tipOuterR, 5) + 5 + this.tipLabelSpacing + shapeExtra + shapesExtraWidth + (this.paddingRight ?? 10);
+    this.labelRightPad  = this._maxLabelWidth + this._labelOverhead;
   }
 
   /** Recompute scaleX so the tree always fills the full viewport width.
    *  immediate=true (default) snaps instantly; false animates via _targetScaleX. */
   _updateScaleX(immediate = true) {
     const W = this.canvas.clientWidth;
-    // Reserve space for tip labels when they're actually visible — either because
-    // the zoom is high enough, or because the hyperbolic lens is active (which
-    // expands tips near the focus to label-readable size, matching _draw's rule).
-    const labelsVisible = this.scaleY >= this.fontSize * 0.5 || this._hypFocusScreenY !== null;
-    const plotW = W - this.paddingLeft - (labelsVisible ? this.labelRightPad : (this.paddingRight ?? 10));
+    // Use the TARGET scaleY (where the animation is heading) rather than the
+    // current (mid-animation) scaleY.  This ensures that callers such as
+    // fitToWindow() and setData(), which set _targetScaleY before calling here,
+    // always get the correct label-visibility decision without needing to
+    // temporarily override this.scaleY.
+    const evalScaleY    = this._targetScaleY ?? this.scaleY;
+    const labelsVisible = evalScaleY >= this.fontSize * 0.5 || this._hypFocusScreenY !== null;
     // Extra world-units needed to the left of the root for node bars / whiskers.
     const barPad = this.nodeBarsEnabled ? this._nodeBarsLeftPad() : 0;
     // Root stem: only applied to the whole-tree view (not subtree navigation).
     const stemWorld = (this._viewSubtreeRootId === null)
       ? (this.rootStemPct ?? 0) / 100 * this.maxX
       : 0;
-    this._targetScaleX  = plotW / (this.maxX + barPad + stemWorld);
+    // Available plot width when labels are hidden: full canvas minus padding only.
+    const plotWNoLabels = W - this.paddingLeft - (this.paddingRight ?? 10);
+
+    let targetScaleX;
+    if (!labelsVisible) {
+      // Labels are hidden at this zoom level — fill the full plot width so the
+      // tree uses all available space without reserving label room.
+      targetScaleX = plotWNoLabels / (this.maxX + barPad + stemWorld);
+    } else if (this.tipLabelAlign === 'off' && this._tipLabelWidths?.size > 0) {
+      // Non-aligned labels: each tip's label starts at its own branch-tip x.
+      // Binding constraint per tip:
+      //   paddingLeft + (barPad + stemWorld + x_i) * scaleX + overhead + lw_i = W
+      // Take the minimum across all tips (O(n), closed-form).
+      // During the intro animation n.x is temporarily 0; use _introFinalX (the
+      // real final positions) so the scale is computed correctly from frame one.
+      const overhead = this._labelOverhead ?? (this.labelRightPad - this._maxLabelWidth);
+      const base = W - this.paddingLeft;
+      let minScale = Infinity;
+      for (const n of this.nodes) {
+        if (!n.isTip) continue;
+        const nx = this._introFinalX ? (this._introFinalX.get(n.id) ?? n.x) : n.x;
+        if (nx <= 0) continue;
+        const lw = this._tipLabelWidths.get(n.id) ?? 0;
+        if (lw === 0) continue;
+        const s = (base - overhead - lw) / (barPad + stemWorld + nx);
+        if (s < minScale) minScale = s;
+      }
+      targetScaleX = isFinite(minScale) ? minScale : plotWNoLabels / (this.maxX + barPad + stemWorld);
+    } else {
+      // Aligned labels all land at the same right-hand column — use the
+      // maxLabelWidth-based labelRightPad which is exact for this case.
+      const plotW = W - this.paddingLeft - this.labelRightPad;
+      targetScaleX = plotW / (this.maxX + barPad + stemWorld);
+    }
+    this._targetScaleX  = targetScaleX;
     // Shift the origin right so bars/stem that extend past the root remain visible.
     this._targetOffsetX = this.paddingLeft + (barPad + stemWorld) * this._targetScaleX;
     if (immediate) {
@@ -2017,14 +2056,12 @@ export class TreeRenderer {
     if (!this.nodes) return;
     this._fitLabelsMode = false;
     this._updateMinScaleY();
-    // Use minScaleY for the label-visibility check so the horizontal scale is
-    // correct from the start of the animation rather than correcting mid-flight.
-    const _prevScaleY = this.scaleY;
-    this.scaleY = this.minScaleY;
-    this._updateScaleX(immediate);
-    this.scaleY = _prevScaleY;
     const newOffsetY = this.paddingTop + this.minScaleY * 0.5;
+    // Set _targetScaleY BEFORE calling _updateScaleX so that the label-
+    // visibility check inside _updateScaleX evaluates the landing zoom level
+    // (minScaleY) rather than the current mid-animation scaleY.
     this._setTarget(newOffsetY, this.minScaleY, immediate);
+    this._updateScaleX(immediate);
     this._dirty = true;
   }
 
@@ -2487,10 +2524,13 @@ export class TreeRenderer {
       this._dirty = true;
     }
 
-    // Recalculate horizontal scale smoothly when the user's zoom crosses the
-    // label-visibility threshold (scaleY == fontSize * 0.5).
+    // Recalculate horizontal scale when the TARGET zoom crosses the label-
+    // visibility threshold.  Using _targetScaleY (not the current animating
+    // scaleY) means the layout is correct from the very first frame rather than
+    // correcting mid-animation when scaleY happens to cross fontSize*0.5.
     if (this.nodes) {
-      const _labelsNowVisible = this.scaleY >= this.fontSize * 0.5;
+      const _labelsNowVisible = (this._targetScaleY ?? this.scaleY) >= this.fontSize * 0.5
+                             || this._hypFocusScreenY !== null;
       if (_labelsNowVisible !== this._labelsWereVisible) {
         this._labelsWereVisible = _labelsNowVisible;
         this._updateScaleX(false);
@@ -3969,6 +4009,7 @@ export class TreeRenderer {
    */
   _drawNodeLabels(yWorldMin, yWorldMax) {
     if (!this.nodeLabelAnnotation || !this.nodes) return;
+    if (this._introPhase !== null) return;  // skip during intro: all nodes pile at rootY → _vInner is huge
     const minScale = this.nodeLabelFontSize * 0.5;
     if (this.scaleY < minScale) return;
 
@@ -4029,6 +4070,7 @@ export class TreeRenderer {
    */
   _drawBranchLabels(yWorldMin, yWorldMax) {
     if (!this.branchLabelAnnotation || !this.nodes) return;
+    if (this._introPhase !== null) return;  // skip during intro: all nodes pile at rootY → _vInner is huge
     const minScale = this.branchLabelFontSize * 0.5;
     if (this.scaleY < minScale) return;
 
