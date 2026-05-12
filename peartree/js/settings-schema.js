@@ -128,9 +128,9 @@ export const SETTINGS_SCHEMA = [
     type: 'select',
     options: [
       { value: 'off',   label: 'Off' },
-      { value: 'names', label: 'Names (default)' },
+      { value: 'name',  label: 'Name (default)' },
     ],
-    desc: 'Which annotation to show as tip labels. Use "names" for tip names, "off" to hide, or an annotation key from the tree.',
+    desc: 'Which annotation to show as tip labels. Use "name" for tip names, "off" to hide, or an annotation key from the tree.',
   },
   {
     key: 'tipLabelAlign',
@@ -160,7 +160,7 @@ export const SETTINGS_SCHEMA = [
     group: 'Tip labels',
     type: 'text',
     placeholder: '["off","off","off"]',
-    desc: 'Array of three values for labels 2–4: off, names, or annotation key.',
+    desc: 'Array of three values for labels 2–4: off, name, or annotation key.',
   },
   {
     key: 'tipLabelsExtraLayouts',

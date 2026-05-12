@@ -1641,6 +1641,9 @@ async function _initCore(root = document) {
     };
   }
 
+  const _isTipNameValue = (value) => value === 'name' || value === 'names';
+  const _normalizeTipNameValue = (value) => _isTipNameValue(value) ? 'name' : value;
+
   function _buildRendererSettings() {
     return {
       bgColor:          canvasBgColorEl.value,
@@ -1710,7 +1713,7 @@ async function _initCore(root = document) {
       typefaceKey:        fontFamilyEl.value,
       typefaceStyle:      fontTypefaceStyleEl?.value || TYPEFACES[fontFamilyEl.value]?.defaultStyle || 'Regular',
       tipLabelsOff:       tipLabelShow.value === 'off',
-      tipLabelAnnotation: tipLabelShow.value === 'names' ? null
+      tipLabelAnnotation: _isTipNameValue(tipLabelShow.value) ? null
                         : tipLabelShow.value === 'off'   ? null
                         : tipLabelShow.value,
       tipLabelAlign:      tipLabelAlignEl.value,
@@ -2947,7 +2950,7 @@ async function _initCore(root = document) {
       for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++)
         renderer.setTipLabelShapeExtraColourBy(_i, tipLabelShapeExtraColourBys[_i].value || null);
       renderer.setTipLabelsOff(tipLabelShow.value === 'off');
-      if (tipLabelShow.value !== 'off') renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
+      if (tipLabelShow.value !== 'off') renderer.setTipLabelAnnotation(_isTipNameValue(tipLabelShow.value) ? null : tipLabelShow.value);
       applyLegend();
       renderer._dirty = true;
       rttChart?.notifyStyleChange?.();
@@ -3531,7 +3534,7 @@ async function _initCore(root = document) {
     if (!rowEl) return;
     const SYNTHETIC = [CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY];
     const dt = schema?.get(annotKey)?.dataType;
-    const isNumeric = annotKey && annotKey !== 'names' && annotKey !== '' &&
+    const isNumeric = annotKey && !_isTipNameValue(annotKey) && annotKey !== '' &&
                       !SYNTHETIC.includes(annotKey) &&
                       ['real', 'integer', 'proportion', 'percentage'].includes(dt);
     rowEl.style.display = isNumeric ? '' : 'none';
@@ -3656,10 +3659,10 @@ async function _initCore(root = document) {
     repopulate(legend2AnnotEl,       { isLegend: true  });
     repopulate(legend3AnnotEl,       { isLegend: true  });
     repopulate(legend4AnnotEl,       { isLegend: true  });
-    // Tip label show: option[0]='off', option[1]='names', then dynamic annotations.
+    // Tip label show: option[0]='off', option[1]='name', then dynamic annotations.
     {
       const prev = tipLabelShow.value;
-      // Remove dynamic options only — keep the two static ones (off, names).
+      // Remove dynamic options only — keep the two static ones (off, name).
       while (tipLabelShow.options.length > 2) tipLabelShow.remove(2);
       for (const [name, def] of schema) {
         if (def.dataType === 'list') continue;
@@ -3681,14 +3684,14 @@ async function _initCore(root = document) {
         tipLabelShow.appendChild(_optHpdOnly);
       }
       tipLabelShow.disabled = false;
-      tipLabelShow.value = [...tipLabelShow.options].some(o => o.value === prev) ? prev : 'names';
+      tipLabelShow.value = [...tipLabelShow.options].some(o => o.value === prev) ? prev : 'name';
       tipLabelControlsEl.style.display = tipLabelShow.value === 'off' ? 'none' : '';
       if (renderer) {
         renderer.setTipLabelsOff(tipLabelShow.value === 'off');
-        if (tipLabelShow.value !== 'off') renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
+        if (tipLabelShow.value !== 'off') renderer.setTipLabelAnnotation(_isTipNameValue(tipLabelShow.value) ? null : tipLabelShow.value);
       }
     }
-    // Extra tip label shows (Labels 2-4): option[0]='off', option[1]='names', then dynamic annotations.
+    // Extra tip label shows (Labels 2-4): option[0]='off', option[1]='name', then dynamic annotations.
     {
       const extraEls = [tipLabel2ShowEl, tipLabel3ShowEl, tipLabel4ShowEl];
       for (const el of extraEls) {
@@ -4313,7 +4316,7 @@ async function _initCore(root = document) {
       legend3AnnotEl.value       = _hasOpt(legend3AnnotEl,       _eff.legendAnnotation3)     ? _eff.legendAnnotation3     : '';
       legend4AnnotEl.value       = _hasOpt(legend4AnnotEl,       _eff.legendAnnotation4)     ? _eff.legendAnnotation4     : '';
       _legendMemory.fill(null);
-      tipLabelShow.value  = _hasOpt(tipLabelShow,  _eff.tipLabelShow)     ? _eff.tipLabelShow     : 'names';
+      tipLabelShow.value  = _normalizeTipNameValue(_hasOpt(tipLabelShow,  _eff.tipLabelShow) ? _eff.tipLabelShow : 'name');
       tipLabelControlsEl.style.display = tipLabelShow.value === 'off' ? 'none' : '';
       nodeLabelShowEl.value = _hasOpt(nodeLabelShowEl, _eff.nodeLabelAnnotation) ? _eff.nodeLabelAnnotation : '';
       branchLabelShowEl.value = _hasOpt(branchLabelShowEl, _eff.branchLabelAnnotation) ? _eff.branchLabelAnnotation : '';
@@ -4364,7 +4367,7 @@ async function _initCore(root = document) {
       for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++)
         renderer.setTipLabelShapeExtraColourBy(_i, tipLabelShapeExtraColourBys[_i].value || null);
       renderer.setTipLabelsOff(tipLabelShow.value === 'off');
-      if (tipLabelShow.value !== 'off') renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
+      if (tipLabelShow.value !== 'off') renderer.setTipLabelAnnotation(_isTipNameValue(tipLabelShow.value) ? null : tipLabelShow.value);
       renderer.setNodeLabelAnnotation(nodeLabelShowEl.value || null);
       renderer.setBranchLabelAnnotation(branchLabelShowEl.value || null);
       if (nodeLabelColourBy)   renderer.setNodeLabelColourBy(nodeLabelColourBy.value || null);
@@ -6650,7 +6653,7 @@ async function _initCore(root = document) {
     const schema = renderer?._annotationSchema ?? new Map();
     _updateLabelDpRow(tipLabelDpRowEl, tipLabelShow.value, schema);
     renderer.setTipLabelsOff(isOff);
-    if (!isOff) renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
+    if (!isOff) renderer.setTipLabelAnnotation(_isTipNameValue(tipLabelShow.value) ? null : tipLabelShow.value);
     saveSettings();
     _syncControlVisibility();
   });

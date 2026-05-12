@@ -60,7 +60,7 @@ function _sectionTipLabels() {
   return `
     <div class="pt-palette-section">
       <h3><i class="bi bi-tag"></i> Tip Labels</h3>
-      <div class="pt-palette-row" title="Show tip labels; choose which annotation to display"><span class="pt-palette-label">Label 1</span><select class="pt-palette-select" id="tip-label-show" disabled><option value="off">Off</option><option value="names" selected>names</option></select></div>
+      <div class="pt-palette-row" title="Show tip labels; choose which annotation to display"><span class="pt-palette-label">Label 1</span><select class="pt-palette-select" id="tip-label-show" disabled><option value="off">Off</option><option value="name" selected>name</option></select></div>
       <div class="pt-palette-row" title="Only draw tip labels on tips that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="tip-labels-filter" disabled><option value="">— always —</option></select></div>
       <div id="tip-label-controls" class="pt-sub-controls" style="display:none">
         <div class="pt-palette-row" id="tip-label-dp-row" style="display:none" title="Decimal places for numeric tip labels"><span class="pt-palette-label">d.p.</span><select class="pt-palette-select" id="tip-label-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
@@ -75,19 +75,19 @@ function _sectionTipLabels() {
         <!-- Extra tip labels 2–4 with progressive disclosure -->
       </div>
       <div id="tip-label2-section" class="pt-detail">
-        <div class="pt-palette-row"><span class="pt-palette-label">Label 2</span><select class="pt-palette-select" id="tip-label2-show"><option value="off" selected>Off</option><option value="names">names</option></select></div>
+        <div class="pt-palette-row"><span class="pt-palette-label">Label 2</span><select class="pt-palette-select" id="tip-label2-show"><option value="off" selected>Off</option><option value="name">name</option></select></div>
         <div id="tip-label2-detail" class="pt-detail pt-sub-controls">
           <div class="pt-palette-row" title="Layout of Label 2 relative to Label 1"><span class="pt-palette-label">Layout</span><select class="pt-palette-select" id="tip-label2-layout"><option value="append">Append</option><option value="align">Align</option><option value="join-space">Join with space</option><option value="join-pipe">Join with |</option><option value="join-slash">Join with /</option><option value="join-underscore">Join with _</option><option value="join-dash">Join with -</option></select></div>
         </div>
       </div>
       <div id="tip-label3-section" class="pt-detail">
-        <div class="pt-palette-row"><span class="pt-palette-label">Label 3</span><select class="pt-palette-select" id="tip-label3-show"><option value="off" selected>Off</option><option value="names">names</option></select></div>
+        <div class="pt-palette-row"><span class="pt-palette-label">Label 3</span><select class="pt-palette-select" id="tip-label3-show"><option value="off" selected>Off</option><option value="name">name</option></select></div>
         <div id="tip-label3-detail" class="pt-detail pt-sub-controls">
           <div class="pt-palette-row" title="Layout of Label 3 relative to Label 2"><span class="pt-palette-label">Layout</span><select class="pt-palette-select" id="tip-label3-layout"><option value="append">Append</option><option value="align">Align</option><option value="join-space">Join with space</option><option value="join-pipe">Join with |</option><option value="join-slash">Join with /</option><option value="join-underscore">Join with _</option><option value="join-dash">Join with -</option></select></div>
         </div>
       </div>
       <div id="tip-label4-section" class="pt-detail">
-        <div class="pt-palette-row"><span class="pt-palette-label">Label 4</span><select class="pt-palette-select" id="tip-label4-show"><option value="off" selected>Off</option><option value="names">names</option></select></div>
+        <div class="pt-palette-row"><span class="pt-palette-label">Label 4</span><select class="pt-palette-select" id="tip-label4-show"><option value="off" selected>Off</option><option value="name">name</option></select></div>
         <div id="tip-label4-detail" class="pt-detail pt-sub-controls">
           <div class="pt-palette-row" title="Layout of Label 4 relative to Label 3"><span class="pt-palette-label">Layout</span><select class="pt-palette-select" id="tip-label4-layout"><option value="append">Append</option><option value="align">Align</option><option value="join-space">Join with space</option><option value="join-pipe">Join with |</option><option value="join-slash">Join with /</option><option value="join-underscore">Join with _</option><option value="join-dash">Join with -</option></select></div>
         </div>
@@ -99,7 +99,7 @@ function _sectionBranchLabels() {
   return `
     <div class="pt-palette-section">
       <h3><i class="bi bi-tag"></i> Branch Labels</h3>
-      <div class="pt-palette-row" title="Show labels at the midpoint of each branch; choose which annotation to display"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="branch-label-show" disabled><option value="">Off</option></select></div>
+      <div class="pt-palette-row" title="Show labels at the midpoint of each branch; choose which annotation to display"><span class="pt-palette-label">Label</span><select class="pt-palette-select" id="branch-label-show" disabled><option value="">Off</option></select></div>
       <div class="pt-palette-row" title="Only draw branch labels on nodes that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="branch-labels-filter" disabled><option value="">— always —</option></select></div>
       <div id="branch-label-detail" class="pt-detail pt-sub-controls">
         <div class="pt-palette-row" id="branch-label-dp-row" style="display:none" title="Decimal places for numeric branch labels"><span class="pt-palette-label">d.p. <i class="bi bi-three-dots form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
@@ -118,7 +118,7 @@ function _sectionBranchLabels() {
 function _sectionNodeLabels() {  return `
     <div class="pt-palette-section">
       <h3><i class="bi bi-tag-fill"></i> Node Labels</h3>
-      <div class="pt-palette-row" title="Show labels at internal nodes; choose which annotation to display"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="node-label-show" disabled><option value="">Off</option></select></div>
+      <div class="pt-palette-row" title="Show labels at internal nodes; choose which annotation to display"><span class="pt-palette-label">Label</span><select class="pt-palette-select" id="node-label-show" disabled><option value="">Off</option></select></div>
       <div class="pt-palette-row" title="Only draw node labels on nodes that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="node-labels-filter" disabled><option value="">— always —</option></select></div>
       <div id="node-label-detail" class="pt-detail pt-sub-controls">
         <div class="pt-palette-row" id="node-label-dp-row" style="display:none" title="Decimal places for numeric node labels"><span class="pt-palette-label">d.p. <i class="bi bi-three-dots form-label-sm"></i></span><select class="pt-palette-select" id="node-label-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
@@ -432,12 +432,12 @@ const _SECTION_BUILDERS = {
   tree:            _sectionTree,
   branches:        _sectionBranches,
   tipLabels:       _sectionTipLabels,
-  branchLabels:    _sectionBranchLabels,
   labelShapes:     _sectionLabelShapes,
   tipShapes:       _sectionTipShapes,
   nodeShapes:      _sectionNodeShapes,
   branchShapes:    _sectionBranchShapes,
   nodeLabels:      _sectionNodeLabels,
+  branchLabels:    _sectionBranchLabels,
   nodeBars:        _sectionNodeBars,
   cladeHighlights: _sectionCladeHighlights,
   collapsedClades: _sectionCollapsedClades,
@@ -449,7 +449,7 @@ const _SECTION_BUILDERS = {
 };
 
 const _ALL_SECTIONS = [
-  'tree', 'branches', 'tipLabels', 'branchLabels', 'nodeLabels', 'labelShapes', 'tipShapes', 'nodeShapes', 'branchShapes',
+  'tree', 'branches', 'tipLabels', 'nodeLabels', 'branchLabels', 'labelShapes', 'tipShapes', 'nodeShapes', 'branchShapes',
   'nodeBars', 'cladeHighlights', 'collapsedClades', 'legend', 'axis', 'rtt', 'theme',
   'selectionHover', 
 ];

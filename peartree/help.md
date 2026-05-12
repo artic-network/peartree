@@ -159,8 +159,8 @@ The **Filter tips…** search box in the toolbar searches tip labels as currentl
 | **⌘⇧O** | Open *Open Tree* dialog (File / URL / Example tabs) |
 | **⌘N** | New window |
 | **⌘V** | Paste a tree from the clipboard |
-| **⌘C** | Copy the current tree to the clipboard |
-| **⌘⇧C** | Copy tip names to the clipboard |
+| **⌘C** | Copy the current tree to the clipboard using the exported tip-label naming rules |
+| **⌘⇧C** | Copy displayed tip labels to the clipboard |
 | **⌘⇧A** | Import annotation file |
 | **⌘E** | Export tree file |
 | **⌘⇧E** | Export graphic |
@@ -353,6 +353,30 @@ Click the <i class="bi bi-file-earmark-arrow-down"></i> button (or press **⌘E*
 | **Entire tree** | Exports the complete tree regardless of the current subtree view |
 | **Current subtree view** | Exports only the visible subtree (enabled when zoomed in) |
 
+### Tip Label
+
+The **Tip Label** selector controls what leaf names are written into exported NEXUS/Newick trees:
+
+| Option | Description |
+|---|---|
+| **As displayed** | Uses the first rendered tip-label field exactly as currently displayed. Joined secondary labels are included; non-joined later labels are ignored. |
+| **name** | Uses the original taxon names |
+| **non-numerical tip annotation** | Uses the selected tip annotation value as the exported leaf name |
+
+If the selected tip label is not unique within the export scope, PearTree shows a warning because many downstream tools expect unique tip names.
+
+### CSV ID Column
+
+When exporting **CSV metadata**, the **ID column** selector controls the first column in the exported table:
+
+| Option | Description |
+|---|---|
+| **As viewed** | Uses the first rendered tip-label field exactly as currently displayed. Joined secondary labels are included; non-joined later labels are ignored. |
+| **name** | Uses the original taxon names |
+| **non-numerical tip annotation** | Uses the selected tip annotation value |
+
+If the selected ID values are not unique within the export scope, PearTree shows a warning because the CSV ID column is usually used for joins and should be unique.
+
 ### Annotations to include
 
 When annotations are present, checkboxes let you choose which keys to embed in the output. **All** / **None** buttons select or deselect everything at once.
@@ -362,6 +386,12 @@ When annotations are present, checkboxes let you choose which keys to embed in t
 ### Embed current visual settings (NEXUS only)
 
 When this checkbox is ticked (on by default) PearTree appends a `[peartree={…}]` comment inside the TREES block containing all current visual settings as JSON. When that file is reopened, the saved appearance is automatically restored and written back to localStorage.
+
+### Copying Trees and Tip Labels
+
+- **⌘C / Copy** uses the same leaf-name rule as **Export Tree**. If later labels are joined onto the first displayed tip label, they are included in copied/exported tree tip names.
+- **⌘⇧C / Copy tip labels** copies the displayed label fields. Joined labels stay merged into the previous field; non-joined later labels are copied as additional tab-separated columns.
+- **CSV metadata export** uses the same name source in its `name` column as the exported tree tip names.
 
 ---
 
@@ -385,7 +415,7 @@ SVG export includes all visible elements — branches, tip labels, node/tip shap
 
 The **Visual Options palette** (toggle with **Tab** or the <i class="bi bi-sliders"></i> button) contains organized control sections for all display settings:
 
-- **Tip labels** — show/position/style tip names or annotation values; add Labels 2–4 for multi-field display
+- **Tip labels** — label/position/style tip names or annotation values; add Labels 2–4 for multi-field display
 - **Node labels** — show internal node values (e.g. bootstrap support)
 - **Branch labels** — show values at branch midpoints
 - **Node shapes** — customize tip and internal node marker appearance
@@ -409,7 +439,7 @@ The primary label is selected with the **Label 1** dropdown. Options:
 | Value | Effect |
 |---|---|
 | `Off` | No label drawn |
-| `names` | Display the taxon name |
+| `name` | Display the taxon name |
 | annotation key | Display the value of that annotation |
 
 When Label 1 is on, additional controls appear:
@@ -436,14 +466,14 @@ All labels share Label 1's font, size, colour, and spacing settings.
 
 ### Example: Show name + collection date
 
-1. Set **Label 1** = `names`
+1. Set **Label 1** = `name`
 2. Set **Label 2** = `date` (or whichever annotation holds collection dates)
 3. Set **Spacing** = 6
 4. Tips now show: `SampleA ···  2024-01-15`
 
 ### Example: Show name + location + clade
 
-1. Set **Label 1** = `names`, **Label 2** = `country`, **Label 3** = `clade`
+1. Set **Label 1** = `name`, **Label 2** = `country`, **Label 3** = `clade`
 2. Set **Alignment** = `Aligned + dashed` for clean column layout
 
 ---

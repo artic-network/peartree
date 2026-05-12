@@ -121,6 +121,10 @@ export function createExportController({
     // __tips_below__ is excluded — it counts descendants so is only useful on internal nodes.
     const TIP_BUILTINS = new Set(['__divergence__', '__age__', '__branch_length__', '__cal_date__']);
     const tipAnnotKeys = annotKeys.filter(k => schema.get(k)?.onTips || TIP_BUILTINS.has(k));
+    const tipLabelAnnotKeys = treeAnnotKeys.filter(k => {
+      const def = schema.get(k);
+      return def?.onTips && def.dataType !== 'list' && !isNumericType(def.dataType);
+    });
     // Numerical annotations present on internal nodes — valid node-label candidates.
     const numericalNodeKeys = treeAnnotKeys.filter(k => {
       const def = schema.get(k);
@@ -186,11 +190,38 @@ export function createExportController({
             : '<div style="font-size:0.82rem;color:rgba(255,255,255,0.4);font-style:italic">No tip annotations found</div>'}
         </div>
       </div>` : ''}
+      <div class="exp-section" id="exp-tip-label-section">
+        <div style="display:flex;align-items:center;gap:0.4rem;margin-top:0.25rem">
+          <span class="pt-palette-label" style="white-space:nowrap">Tip label</span>
+          <select id="exp-tip-label-sel" class="pt-palette-select" style="flex:1;min-width:0">
+            <option value="__as_displayed__">As displayed</option>
+            <option value="name">name</option>
+            ${tipLabelAnnotKeys.map(k => `<option value="${esc(k)}">${esc(schema.get(k)?.label ?? k)}</option>`).join('')}
+          </select>
+        </div>
+        <div id="exp-tip-label-warn" style="display:none;margin-top:0.5rem;padding:0.4rem 0.6rem;border-radius:4px;background:rgba(203,75,22,0.15);border:1px solid rgba(203,75,22,0.45);font-size:0.8rem;color:#e07040;align-items:flex-start;gap:0.4rem">
+          <i class="bi bi-exclamation-triangle-fill" style="flex-shrink:0;margin-top:1px"></i>
+          <span id="exp-tip-label-warn-text">Selected tip labels are not unique in this export scope.</span>
+        </div>
+      </div>
+      <div class="exp-section" id="exp-csv-id-section" style="display:none">
+        <div style="display:flex;align-items:center;gap:0.4rem;margin-top:0.25rem">
+          <span class="pt-palette-label" style="white-space:nowrap">ID column</span>
+          <select id="exp-csv-id-sel" class="pt-palette-select" style="flex:1;min-width:0">
+            <option value="__as_displayed__">Tip label</option>
+            <option value="name">name</option>
+            ${tipLabelAnnotKeys.map(k => `<option value="${esc(k)}">${esc(schema.get(k)?.label ?? k)}</option>`).join('')}
+          </select>
+        </div>
+        <div id="exp-csv-id-warn" style="display:none;margin-top:0.5rem;padding:0.4rem 0.6rem;border-radius:4px;background:rgba(203,75,22,0.15);border:1px solid rgba(203,75,22,0.45);font-size:0.8rem;color:#e07040;align-items:flex-start;gap:0.4rem">
+          <i class="bi bi-exclamation-triangle-fill" style="flex-shrink:0;margin-top:1px"></i>
+          <span id="exp-csv-id-warn-text">Selected IDs are not unique in this export scope.</span>
+        </div>
+      </div>
       ${numericalNodeKeys.length > 0 ? `
       <div class="exp-section" id="exp-node-label-section">
-        <span class="exp-section-label">Node label</span>
         <div style="display:flex;align-items:center;gap:0.4rem;margin-top:0.25rem">
-          <span class="pt-palette-label" style="white-space:nowrap">Annotation</span>
+          <span class="pt-palette-label" style="white-space:nowrap">Node label</span>
           <select id="exp-node-label-sel" class="pt-palette-select" style="flex:1;min-width:0">
             <option value="">None</option>
             ${numericalNodeKeys.map(k => `<option value="${esc(k)}">${esc(k)}</option>`).join('')}
@@ -205,6 +236,88 @@ export function createExportController({
     $('exp-cancel-btn').addEventListener('click', _closeExportDialog);
     $('exp-download-btn').addEventListener('click', _doExport);
 
+    const _exportScopeTipNodes = () => {
+      if (!renderer?.nodes) return [];
+      let tips = renderer.nodes.filter(n => n.isTip);
+      const scope = root.querySelector('input[name="exp-scope"]:checked')?.value || 'full';
+      const subtreeId = scope === 'subtree' ? renderer._viewSubtreeRootId : null;
+      if (!subtreeId) return tips;
+      const subtreeSet = new Set();
+      const stack = [subtreeId];
+      while (stack.length) {
+        const id = stack.pop();
+        const node = renderer.nodeMap?.get(id);
+        if (!node) continue;
+        if (node.isTip) subtreeSet.add(id);
+        else if (node.children) node.children.forEach(c => stack.push(c));
+      }
+      return tips.filter(n => subtreeSet.has(n.id));
+    };
+
+    const _tipNameForSelection = (node, sel) => {
+      if (sel === '__as_displayed__') return renderer._tipLabelCopyName?.(node) ?? node.name ?? node.id ?? '';
+      if (sel === 'name' || sel === 'names') return node.name ?? node.id ?? '';
+      return renderer._labelText?.(node, sel, renderer._tipLabelDecimalPlaces ?? null, null) ?? '';
+    };
+
+    const _syncWarningForSelector = (selectorId, warnId, csvOnly = false) => {
+      const fmt = root.querySelector('input[name="exp-format"]:checked')?.value || 'nexus';
+      const row = $(selectorId);
+      const warn = $(warnId);
+      const warnText = $(warnId + '-text');
+      if (!row || !warn || !warnText) return;
+      if (csvOnly && fmt !== 'csv') {
+        row.style.display = 'none';
+        warn.style.display = 'none';
+        return;
+      }
+      row.style.display = '';
+      const sel = row.querySelector('select')?.value || '__as_displayed__';
+      const tips = _exportScopeTipNodes();
+      const counts = new Map();
+      for (const tip of tips) {
+        const value = _tipNameForSelection(tip, sel);
+        counts.set(value, (counts.get(value) ?? 0) + 1);
+      }
+      const dupCount = [...counts.values()].filter(v => v > 1).reduce((a, b) => a + b, 0);
+      if (dupCount > 0) {
+        warnText.textContent = `Selected values are not unique in this export scope (${dupCount} tips share duplicated labels). Some software expects unique tip names.`;
+        warn.style.display = 'flex';
+      } else {
+        warn.style.display = 'none';
+      }
+    };
+
+    const _syncTipLabelWarning = () => {
+      const fmt = root.querySelector('input[name="exp-format"]:checked')?.value || 'nexus';
+      const row = $('exp-tip-label-section');
+      const warn = $('exp-tip-label-warn');
+      const warnText = $('exp-tip-label-warn-text');
+      if (!row || !warn || !warnText) return;
+      if (fmt === 'csv') {
+        row.style.display = 'none';
+        warn.style.display = 'none';
+        return;
+      }
+      row.style.display = '';
+      const sel = $('exp-tip-label-sel')?.value || '__as_displayed__';
+      const tips = _exportScopeTipNodes();
+      const counts = new Map();
+      for (const tip of tips) {
+        const value = _tipNameForSelection(tip, sel);
+        counts.set(value, (counts.get(value) ?? 0) + 1);
+      }
+      const dupCount = [...counts.values()].filter(v => v > 1).reduce((a, b) => a + b, 0);
+      if (dupCount > 0) {
+        warnText.textContent = `Selected tip label values are not unique in this export scope (${dupCount} tips share duplicated labels). Some software expects unique tip names.`;
+        warn.style.display = 'flex';
+      } else {
+        warn.style.display = 'none';
+      }
+    };
+
+    const _syncCsvIdWarning = () => _syncWarningForSelector('exp-csv-id-section', 'exp-csv-id-warn', true);
+
     // Always wire up the format radios to toggle the Store-settings / state rows,
     // regardless of whether annotations are present.
     root.querySelectorAll('input[name="exp-format"]').forEach(radio =>
@@ -214,7 +327,12 @@ export function createExportController({
         const stateRow    = $('exp-state-row');
         if (settingsRow) settingsRow.style.display = fmt === 'nexus' ? '' : 'none';
         if (stateRow)    stateRow.style.display    = fmt === 'nexus' ? '' : 'none';
+        _syncTipLabelWarning();
       }));
+
+    root.querySelectorAll('input[name="exp-scope"]').forEach(radio =>
+      radio.addEventListener('change', _syncTipLabelWarning));
+    $('exp-tip-label-sel')?.addEventListener('change', _syncTipLabelWarning);
 
     if (annotKeys.length > 0) {
       const treeGrid = $('exp-annot-grid-tree');
@@ -233,6 +351,8 @@ export function createExportController({
         const fmt = root.querySelector('input[name="exp-format"]:checked')?.value;
         const settingsRow    = $('exp-settings-row');
         const stateRow       = $('exp-state-row');
+        const tipLabelRow    = $('exp-tip-label-section');
+        const csvIdRow       = $('exp-csv-id-section');
         const nodeLabelRow   = $('exp-node-label-section');
         $('exp-newick-warn')?.remove();
         if (fmt === 'csv') {
@@ -241,6 +361,8 @@ export function createExportController({
           csvGrid.querySelectorAll('.exp-annot-cb').forEach(cb => { cb.checked = true; });
           if (settingsRow)  settingsRow.style.display  = 'none';
           if (stateRow)     stateRow.style.display     = 'none';
+          if (tipLabelRow)  tipLabelRow.style.display  = 'none';
+          if (csvIdRow)    csvIdRow.style.display     = '';
           if (nodeLabelRow) nodeLabelRow.style.display = 'none';
         } else if (fmt === 'newick') {
           treeGrid.style.display = '';
@@ -248,6 +370,8 @@ export function createExportController({
           treeGrid.querySelectorAll('.exp-annot-cb').forEach(cb => { cb.checked = false; });
           if (settingsRow)  settingsRow.style.display  = 'none';
           if (stateRow)     stateRow.style.display     = 'none';
+          if (tipLabelRow)  tipLabelRow.style.display  = '';
+          if (csvIdRow)    csvIdRow.style.display     = 'none';
           if (nodeLabelRow) nodeLabelRow.style.display = '';
         } else {
           treeGrid.style.display = '';
@@ -255,8 +379,12 @@ export function createExportController({
           treeGrid.querySelectorAll('.exp-annot-cb').forEach(cb => { cb.checked = true; });
           if (settingsRow)  settingsRow.style.display  = '';
           if (stateRow)     stateRow.style.display     = '';
+          if (tipLabelRow)  tipLabelRow.style.display  = '';
+          if (csvIdRow)    csvIdRow.style.display     = 'none';
           if (nodeLabelRow) nodeLabelRow.style.display = '';
         }
+        _syncTipLabelWarning();
+        _syncCsvIdWarning();
       };
 
       // Format radio change → sync annotations.
@@ -281,6 +409,14 @@ export function createExportController({
         allCbs().forEach(cb => { cb.checked = false; });
         $('exp-newick-warn')?.remove();
       });
+
+      $('exp-csv-id-sel')?.addEventListener('change', _syncCsvIdWarning);
+      root.querySelectorAll('input[name="exp-scope"]').forEach(radio =>
+        radio.addEventListener('change', _syncCsvIdWarning));
+
+      _syncAnnotSection();
+    } else {
+      _syncTipLabelWarning();
     }
   }
 
@@ -300,10 +436,16 @@ export function createExportController({
     const gridId    = format === 'csv' ? '#exp-annot-grid-csv' : '#exp-annot-grid-tree';
     const annotKeys = [...root.querySelectorAll(`${gridId} .exp-annot-cb:checked`)].map(cb => cb.value);
     const nodeLabelKey = $('exp-node-label-sel')?.value || null;
+    const csvIdKey = $('exp-csv-id-sel')?.value || '__as_displayed__';
+    const tipLabelKey = $('exp-tip-label-sel')?.value || '__as_displayed__';
     const tipNameFn = (gNode) => {
       const origId = gNode?.origId ?? gNode?.id;
       const rNode = origId ? renderer?.nodeMap?.get(origId) : null;
-      return rNode ? (renderer._tipLabelCopyName?.(rNode) ?? rNode.name ?? rNode.id) : (gNode?.name || gNode?.label || '');
+      if (!rNode) return gNode?.name || gNode?.label || '';
+      if (tipLabelKey === '__as_displayed__') return renderer._tipLabelCopyName?.(rNode) ?? rNode.name ?? rNode.id;
+      if (tipLabelKey === 'name' || tipLabelKey === 'names') return rNode.name ?? rNode.id;
+      return renderer._labelText?.(rNode, tipLabelKey, renderer._tipLabelDecimalPlaces ?? null, null)
+        ?? rNode.name ?? rNode.id;
     };
 
     // ── CSV metadata export ───────────────────────────────────────────────────
@@ -336,7 +478,9 @@ export function createExportController({
 
       const header = ['name', ...cols.map(c => c.label)].map(_csvCell).join(',');
       const rows   = tips.map(tip => {
-        const cells = [tip.name ?? tip.id ?? ''];
+        const cells = [
+          _tipNameForSelection(tip, csvIdKey) ?? tipNameFn(tip) ?? tip.name ?? tip.id ?? ''
+        ];
         for (const { key, dataKey, isBuiltin, fmtValue } of cols) {
           let raw;
           if (isBuiltin) {

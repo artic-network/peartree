@@ -328,13 +328,13 @@ export class TreeRenderer {
     this.dimLabelColor      = s.dimLabelColor      ?? _dim;
     this.selectedLabelColor = s.selectedLabelColor ?? _sel;
     this.selectedLabelStyle = s.selectedLabelStyle ?? 'bold';
-    this.tipLabelAnnotation         = s.tipLabelAnnotation ?? null;
+    this.tipLabelAnnotation         = (s.tipLabelAnnotation === 'name' || s.tipLabelAnnotation === 'names') ? null : (s.tipLabelAnnotation ?? null);
     this._tipLabelsOff               = s.tipLabelsOff ?? false;
     this._tipLabelDecimalPlaces      = s.tipLabelDecimalPlaces  ?? null;  // null = auto (schema formatter)
     // ── Extra tip labels 2–4 (shown to the right of label 1) ────────────────
     this._tipLabelsExtra = Array(3).fill('off');
     if (Array.isArray(s.tipLabelsExtra)) {
-      s.tipLabelsExtra.forEach((v, i) => { if (i < 3) this._tipLabelsExtra[i] = v ?? 'off'; });
+      s.tipLabelsExtra.forEach((v, i) => { if (i < 3) this._tipLabelsExtra[i] = (v === 'names' ? 'name' : (v ?? 'off')); });
     }
     this._tipLabelsExtraLayouts = Array(3).fill('append');
     if (Array.isArray(s.tipLabelsExtraLayouts)) {
@@ -1992,7 +1992,7 @@ export class TreeRenderer {
     for (let i = 0; i < 3; i++) {
       const anno = this._tipLabelsExtra[i];
       if (anno !== 'off') {
-        texts[i + 1] = this._labelText(node, anno === 'names' ? null : anno, this._tipLabelDecimalPlaces, null);
+        texts[i + 1] = this._labelText(node, anno === 'name' ? null : anno, this._tipLabelDecimalPlaces, null);
       }
     }
     return texts;
