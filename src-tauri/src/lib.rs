@@ -481,6 +481,24 @@ fn open_path_in_new_window(app: &tauri::AppHandle, path_str: String) {
     }
 }
 
+#[cfg(target_os = "macos")]
+fn run_app_event_loop(app: tauri::App) {
+    app.run(|app_handle, event| {
+        if let tauri::RunEvent::Opened { urls } = event {
+            for url in urls {
+                if let Ok(path) = url.to_file_path() {
+                    open_path_in_new_window(app_handle, path.to_string_lossy().to_string());
+                }
+            }
+        }
+    });
+}
+
+#[cfg(not(target_os = "macos"))]
+fn run_app_event_loop(app: tauri::App) {
+    app.run(|_, _| {});
+}
+
 /// Called by the JS adapter on startup to load a file passed to `new_window`.
 #[tauri::command]
 fn take_pending_file(
@@ -664,13 +682,5 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building PearTree");
 
-    app.run(|app_handle, event| {
-        if let tauri::RunEvent::Opened { urls } = event {
-            for url in urls {
-                if let Ok(path) = url.to_file_path() {
-                    open_path_in_new_window(app_handle, path.to_string_lossy().to_string());
-                }
-            }
-        }
-    });
+    run_app_event_loop(app);
 }
