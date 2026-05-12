@@ -421,13 +421,18 @@ When Label 1 is on, additional controls appear:
 
 ### Labels 2, 3, and 4 (extras)
 
-When Label 1 is on, **Label 2**, **Label 3**, and **Label 4** dropdowns appear, each offering the same annotation choices. Select any annotation key to add a second (or third, fourth) text field immediately to the right of the previous label.
+When Label 1 is on, **Label 2**, **Label 3**, and **Label 4** dropdowns appear, each offering the same annotation choices. Each extra label also has a **Layout** control.
 
 All labels share Label 1's font, size, colour, and spacing settings.
 
+**Layout modes for Labels 2–4:**
+- **Append**: place the label to the right of the previous displayed field, using the Spacing value
+- **Align**: start a new aligned column; the left edge is at the longest extent of the previous column plus Spacing
+- **Join with space / | / / / _ / -**: append text directly onto the previous field with that separator; no extra spacing and no new column
+
 **Alignment behaviour with multiple labels:**
-- When Alignment is **off**: each label appears at its natural position to the right of the previous one
-- When Alignment is **aligned**: Label 1's left edge aligns to a common right margin; Labels 2–4 each align their left edge to the right of the longest previous label plus the spacing value
+- Label 1 still follows the main **Alignment** control (off/aligned/dots/dashed/solid)
+- For each extra label set to **Align**, its column is aligned independently across tips using the previous column's longest width + Spacing
 
 ### Example: Show name + collection date
 

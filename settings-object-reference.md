@@ -176,6 +176,8 @@ Canonical reference for settings keys accepted in the `settings` object (URL `se
 | `tipLabelShapeSpacing` | number or numeric string | `3` |
 | `tipLabelShow` | 'off' \| 'names' \| <annotation-key> | `names` |
 | `tipLabelSpacing` | number (0..20, step 1) | `3` |
+| `tipLabelsExtra` | array of 3 values ('off' \| 'names' \| <annotation-key>) | `['off','off','off']` |
+| `tipLabelsExtraLayouts` | array of 3 values ('append' \| 'align' \| 'join-space' \| 'join-pipe' \| 'join-slash' \| 'join-underscore' \| 'join-dash') | `['append','append','append']` |
 | `tipShapeBgColor` | CSS color string | `#4b4b49` |
 | `tipShapeColor` | CSS color string | `#ebe8e2` |
 | `tipSize` | number (0..30, step 1) | `3` |

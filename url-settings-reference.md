@@ -128,6 +128,8 @@ The lists below are a quick grouped view.
 - `tipLabelShow`
 - `tipLabelAlign`
 - `tipLabelSpacing`
+- `tipLabelsExtra`
+- `tipLabelsExtraLayouts`
 - `tipLabelDecimalPlaces`
 - `tipLabelShape`
 - `tipLabelShapeSize`

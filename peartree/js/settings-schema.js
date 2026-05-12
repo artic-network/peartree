@@ -155,6 +155,22 @@ export const SETTINGS_SCHEMA = [
     desc: 'Gap between tip circle and label text.',
   },
   {
+    key: 'tipLabelsExtra',
+    label: 'Extra tip labels (2–4)',
+    group: 'Tip labels',
+    type: 'text',
+    placeholder: '["off","off","off"]',
+    desc: 'Array of three values for labels 2–4: off, names, or annotation key.',
+  },
+  {
+    key: 'tipLabelsExtraLayouts',
+    label: 'Extra label layout modes (2–4)',
+    group: 'Tip labels',
+    type: 'text',
+    placeholder: '["append","append","append"]',
+    desc: 'Array of three layout modes: append, align, join-space, join-pipe, join-slash, join-underscore, join-dash.',
+  },
+  {
     key: 'fontSize',
     label: 'Tip label font size (px)',
     group: 'Tip labels',
