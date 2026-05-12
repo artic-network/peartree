@@ -464,6 +464,23 @@ fn new_window(app: tauri::AppHandle, file_path: Option<String>) -> Result<(), St
     Ok(())
 }
 
+/// Open a file in a fresh PearTree window (multi-document behaviour).
+/// If the file was already captured as the cold-start pending file for `main`,
+/// skip creating a duplicate window.
+fn open_path_in_new_window(app: &tauri::AppHandle, path_str: String) {
+    let is_main_startup_file = {
+        let pending_state = app.state::<PendingFiles>();
+        let pending = pending_state.0.lock().unwrap();
+        pending.get("main").map(|p| p == &path_str).unwrap_or(false)
+    };
+    if is_main_startup_file {
+        return;
+    }
+    if let Err(e) = new_window(app.clone(), Some(path_str)) {
+        eprintln!("[PearTree] Failed to open window for file: {e}");
+    }
+}
+
 /// Called by the JS adapter on startup to load a file passed to `new_window`.
 #[tauri::command]
 fn take_pending_file(
@@ -528,54 +545,13 @@ async fn install_update(app: tauri::AppHandle) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![set_menu_item_enabled, set_menu_item_text, pick_tree_file, pick_annot_file, save_file, read_file_content, new_window, take_pending_file, trigger_print, check_for_updates, install_update])
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
-            // Forward any file opened via drag-to-icon or double-click (macOS file
-            // association) to the frontend as an "open-file" event with the file path.
-            // Emit only to the focused window; if no window has focus (app was in the
-            // background), broadcast to all so at least one window handles it.
-            let app_handle = app.handle().clone();
-            app.deep_link().on_open_url(move |event| {
-                for url in event.urls() {
-                    if let Ok(path) = url.to_file_path() {
-                        let path_str = path.to_string_lossy().to_string();
-                        // Each file opened while the app is running gets its own new window,
-                        // consistent with macOS multi-document app behaviour.  The cold-start
-                        // case (first file on launch) is handled separately by get_current()
-                        // below, so this callback only fires for subsequent files.
-                        let n = app_handle.state::<WindowCounter>().0.fetch_add(1, Ordering::SeqCst);
-                        let label = format!("window-{n}");
-                        app_handle.state::<PendingFiles>().0.lock().unwrap()
-                            .insert(label.clone(), path_str);
-                        match tauri::WebviewWindowBuilder::new(
-                            &app_handle,
-                            &label,
-                            tauri::WebviewUrl::App("peartree/peartree-tauri.html".into()),
-                        )
-                        .title("PearTree \u{2014} Phylogenetic Tree Viewer")
-                        .inner_size(1400.0, 900.0)
-                        .min_inner_size(900.0, 600.0)
-                        .build() {
-                            Ok(win) => {
-                                let app_h2 = app_handle.clone();
-                                let lbl2   = label.clone();
-                                win.on_window_event(move |ev| {
-                                    if let tauri::WindowEvent::Focused(true) = ev {
-                                        *app_h2.state::<LastFocusedWindow>().0.lock().unwrap() = lbl2.clone();
-                                    }
-                                });
-                                *app_handle.state::<LastFocusedWindow>().0.lock().unwrap() = label;
-                            }
-                            Err(e) => eprintln!("[PearTree] Failed to open window for file: {e}"),
-                        }
-                    }
-                }
-            });
             // ── Main window + app-wide menu (macOS) ─────────────────────────
             // On macOS, window.set_menu() is unsupported; the menu bar is
             // application-wide.  We use app.set_menu() once and route menu
@@ -685,6 +661,16 @@ pub fn run() {
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running PearTree");
+        .build(tauri::generate_context!())
+        .expect("error while building PearTree");
+
+    app.run(|app_handle, event| {
+        if let tauri::RunEvent::Opened { urls } = event {
+            for url in urls {
+                if let Ok(path) = url.to_file_path() {
+                    open_path_in_new_window(app_handle, path.to_string_lossy().to_string());
+                }
+            }
+        }
+    });
 }
