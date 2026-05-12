@@ -7537,7 +7537,7 @@ async function _initCore(root = document) {
     if (selSize === 1) {
       const tipId = [...renderer._selectedTipIds][0];
       const node  = renderer.nodes?.find(n => n.id === tipId);
-      const name  = node?.name ?? tipId;
+      const name  = node ? (renderer._tipLabelCopyName?.(node) ?? node.name ?? tipId) : tipId;
       await navigator.clipboard.writeText(name);
       return;
     }
@@ -7548,7 +7548,17 @@ async function _initCore(root = document) {
     if (selSize > 1) {
       subtreeId = renderer._mrcaNodeId ?? subtreeId;
     }
-    const newick = graphToNewick(graph, subtreeId, annotKeys);
+    const newick = graphToNewick(
+      graph,
+      subtreeId,
+      annotKeys,
+      null,
+      (gNode) => {
+        const origId = gNode?.origId ?? gNode?.id;
+        const rNode = origId ? renderer?.nodeMap?.get(origId) : null;
+        return rNode ? (renderer._tipLabelCopyName?.(rNode) ?? rNode.name ?? rNode.id) : (gNode?.name || gNode?.label || '');
+      },
+    );
     if (!newick) return;
     const rootedTag = annotKeys.length > 0 ? '[&R] ' : '';
     const nexus = `#NEXUS\nBEGIN TREES;\n\ttree TREE1 = ${rootedTag}${newick}\nEND;\n`;
@@ -7564,13 +7574,17 @@ async function _initCore(root = document) {
     const targetTips   = useSelection
       ? visibleTips.filter(n => renderer._selectedTipIds.has(n.id))
       : visibleTips;
+    const tipParts = (node) => renderer._tipLabelCopyParts?.(node) ?? [renderer._tipLabelCopyName?.(node) ?? node.name ?? node.id];
     if (dataTableRenderer.isOpen()) {
       const { columns } = dataTableRenderer.getState();
       if (columns.length > 0) {
         const schema = renderer._annotationSchema;
         const colLabels = columns.map(k => schema?.get(k)?.label ?? k);
-        const header = ['name', ...colLabels].join('\t');
+        const maxPartCount = targetTips.reduce((m, n) => Math.max(m, tipParts(n).length), 1);
+        const labelHeaders = Array.from({ length: Math.max(0, maxPartCount - 1) }, (_, i) => `label${i + 2}`);
+        const header = ['name', ...labelHeaders, ...colLabels].join('\t');
         const rows   = targetTips.map(n => {
+          const labelVals = tipParts(n);
           const vals = columns.map(k => {
             const def = schema?.get(k);
             const actualKey = def?.dataKey ?? k;
@@ -7581,13 +7595,14 @@ async function _initCore(root = document) {
             if (typeof raw === 'number' && def?.fmtValue) return def.fmtValue(raw);
             return String(raw);
           });
-          return [n.name ?? n.id, ...vals].join('\t');
+          while (labelVals.length < maxPartCount) labelVals.push('');
+          return [...labelVals, ...vals].join('\t');
         });
         await navigator.clipboard.writeText([header, ...rows].join('\n'));
         return;
       }
     }
-    await navigator.clipboard.writeText(targetTips.map(n => n.name ?? n.id).join('\n'));
+    await navigator.clipboard.writeText(targetTips.map(n => tipParts(n).join('\t')).join('\n'));
   };
   commands.get('view-scroll-top').exec    = () => renderer._setTarget(Infinity,  renderer._targetScaleY, false);
   commands.get('view-scroll-bottom').exec = () => renderer._setTarget(-Infinity, renderer._targetScaleY, false);

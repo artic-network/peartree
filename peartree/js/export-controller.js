@@ -300,6 +300,11 @@ export function createExportController({
     const gridId    = format === 'csv' ? '#exp-annot-grid-csv' : '#exp-annot-grid-tree';
     const annotKeys = [...root.querySelectorAll(`${gridId} .exp-annot-cb:checked`)].map(cb => cb.value);
     const nodeLabelKey = $('exp-node-label-sel')?.value || null;
+    const tipNameFn = (gNode) => {
+      const origId = gNode?.origId ?? gNode?.id;
+      const rNode = origId ? renderer?.nodeMap?.get(origId) : null;
+      return rNode ? (renderer._tipLabelCopyName?.(rNode) ?? rNode.name ?? rNode.id) : (gNode?.name || gNode?.label || '');
+    };
 
     // ── CSV metadata export ───────────────────────────────────────────────────
     if (format === 'csv') {
@@ -389,7 +394,7 @@ export function createExportController({
           finalAnnotKeys = [...annotKeys, '_pt_collapsed', '_pt_collapsed_colour', '_pt_highlight'];
         }
       }
-      const result = graphToNewick(graph, subtreeId, finalAnnotKeys, nodeLabelKey);
+      const result = graphToNewick(graph, subtreeId, finalAnnotKeys, nodeLabelKey, tipNameFn);
       // Always clean up, even on error, to leave the graph annotations unchanged.
       for (const { node, keys } of _ptInjected) {
         for (const k of keys) delete node.annotations[k];

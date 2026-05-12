@@ -2036,6 +2036,16 @@ export class TreeRenderer {
     return { parts, modes };
   }
 
+  _tipLabelCopyParts(node) {
+    const pd = this._tipLabelPartData?.get(node.id) ?? this._tipLabelParts(node);
+    return pd.parts?.length > 0 ? [...pd.parts] : [node.name ?? node.id ?? ''];
+  }
+
+  _tipLabelCopyName(node) {
+    const parts = this._tipLabelCopyParts(node);
+    return parts[0] ?? node.name ?? node.id ?? '';
+  }
+
   /**
    * Returns the display text for an internal-node label.
    * Uses nodeLabelAnnotation to look up the annotation value on the node.
