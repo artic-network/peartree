@@ -6,8 +6,8 @@ import { AxisRenderer } from './axisrenderer.js';
 import { isNumericType, TreeCalibration } from './phylograph.js';
 import { getSequentialPalette,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
-         MISSING_DATA_COLOUR, buildCategoricalColourMap } from './palettes.js';
-import { htmlEsc as esc } from './utils.js';
+         MISSING_DATA_COLOUR, buildCategoricalColourMap } from '@artic-network/pearcore/palettes.js';
+import { htmlEsc as esc } from '@artic-network/pearcore/utils.js';
 
 /** @private SVG text-content escaper (no quot needed here). */
 function svgTextEsc(s) {
@@ -731,6 +731,29 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     }
   }
 
+  // ── Branch labels ────────────────────────────────────────────────────
+  if (renderer.branchLabelAnnotation && renderer.nodes && renderer.nodeMap) {
+    const blfs    = renderer.branchLabelFontSize ?? Math.round(fs * 0.85);
+    const blc     = renderer.branchLabelColor ?? lc;
+    const spacing = renderer.branchLabelSpacing ?? 4;
+    const above   = renderer.branchLabelPosition !== 'below';
+    const baseline  = above ? 'auto'    : 'hanging';
+    const anchor    = 'middle';
+    for (const node of renderer.nodes) {
+      if (!node.parentId) continue;
+      const parent = renderer.nodeMap.get(node.parentId);
+      if (!parent) continue;
+      const branchLabel = renderer._branchLabelText ? renderer._branchLabelText(node) : null;
+      if (!branchLabel) continue;
+      const nx = toSX(node.x);
+      const ny = toSY(node.y);
+      if (!fullTree && (ny < -MARGIN || ny > ttH_eff + MARGIN)) continue;
+      const mx  = (toSX(parent.x) + nx) / 2;
+      const ty  = above ? ny - spacing : ny + spacing;
+      labelParts.push(`<text x="${f(mx)}" y="${f(ty)}" dominant-baseline="${baseline}" text-anchor="${anchor}" font-family="monospace" font-size="${blfs}px" fill="${esc(blc)}">${svgTextEsc(branchLabel)}</text>`);
+    }
+  }
+
   // ── Collapsed clade triangles and labels ──────────────────────────────
   const collapsedCladeParts = [];
   if (renderer.nodes) {
@@ -749,7 +772,9 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
 
       const colour = node.collapsedColour ?? renderer.tipShapeColor;
       const pts    = `${f(apexSX)},${f(apexSY)} ${f(baseSX)},${f(tSY)} ${f(baseSX)},${f(bSY)}`;
-      collapsedCladeParts.push(`<polygon points="${pts}" fill="${esc(colour)}" fill-opacity="${ccOpacity}" stroke="${esc(colour)}" stroke-width="${bw}"/>`);
+      const ccStrokeW = renderer._collapsedCladeStrokeWidth ?? 1;
+      const ccStrokeOp = renderer._collapsedCladeStrokeOpacity ?? 1;
+      collapsedCladeParts.push(`<polygon points="${pts}" fill="${esc(colour)}" fill-opacity="${ccOpacity}" stroke="${esc(colour)}" stroke-width="${ccStrokeW}" stroke-opacity="${ccStrokeOp}"/>`);
 
       // Labels — skip if triangle is too small to show text.
       const pixH = node.collapsedTipCount * sy;

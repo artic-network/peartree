@@ -1,0 +1,33 @@
+{%- comment -%}
+  figure.html — Render a captioned screenshot or diagram in the manual.
+
+  Wraps an image in a rounded, outlined panel with optional background colour,
+  constrained to a specified maximum width.
+
+  Usage:
+    {% include 'figure.html', src: "images/fig1.png", alt: "The main toolbar" %}
+    {% include 'figure.html', src: "images/fig2.png", alt: "Filter box", legend: "The filter box in the toolbar." %}
+    {% include 'figure.html', src: "images/fig3.png", alt: "Palette panel", maxwidth: "480px", bg: "#073642" %}
+    {% include 'figure.html', src: "images/fig4.png", alt: "Full view", maxwidth: "80%", bg: "transparent" %}
+    {% include 'figure.html', src: "images/fig5.png", alt: "No border", border: "none", padding: "0" %}
+
+  Parameters:
+    src       (required) — path to the image, relative to the page URL
+    alt       (required) — alt text for the image (accessibility)
+    legend    (optional) — caption text shown below the image
+    maxwidth  (optional) — CSS max-width of the panel, e.g. "600px" or "70%"
+                           defaults to "100%"
+    bg        (optional) — CSS background of the panel, e.g. "#073642" or
+                           "rgba(7,54,66,0.6)" or "transparent"
+                           defaults to transparent (no fill, outline only)
+    border    (optional) — CSS border of the panel, e.g. "none" or
+                           "2px solid red"; defaults to the standard panel border
+    padding   (optional) — CSS padding of the panel, e.g. "0" or "8px 12px"
+                           defaults to "14px"
+{%- endcomment -%}
+
+{%- assign _maxw    = maxwidth | default: "100%" -%}
+{%- assign _bg      = bg      | default: "transparent" -%}
+{%- assign _border  = border  | default: "1px solid var(--pt-border)" -%}
+{%- assign _padding = padding | default: "14px" -%}
+<figure class="pt-figure"><div class="pt-figure-panel" style="max-width:{{ _maxw }};background:{{ _bg }};border:{{ _border }};padding:{{ _padding }};"><img src="{{ src }}" alt="{{ alt }}" /></div>{%- if legend -%}<figcaption>{{ legend }}</figcaption>{%- endif -%}</figure>

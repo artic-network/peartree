@@ -16,13 +16,14 @@
   <title>EBOV Outbreak — PearTree Embedded Demo</title>
 
   <!-- Bootstrap 5 / Solar Bootswatch -->
-  <link rel="stylesheet" href="css/bootstrap.min-artic.css" />
+  <link rel="stylesheet" href="../pearcore/vendor/bootstrap.min-artic.css" />
   <!-- Bootstrap Icons (vendored) -->
-  <link rel="stylesheet" href="vendor/bootstrap-icons/bootstrap-icons.css" />
+  <link rel="stylesheet" href="../pearcore/vendor/bootstrap-icons/bootstrap-icons.css" />
 
   <!-- PearTree core styles + embed-mode layout override -->
+  <link rel="stylesheet" href="../pearcore/css/pearcore.css" />
   <link rel="stylesheet" href="css/peartree.css" />
-  <link rel="stylesheet" href="css/peartree-embed.css" />
+  <link rel="stylesheet" href="../pearcore/css/pearcore-embed.css" />
 
   <style>
     /* ── Report page styles ── */
@@ -132,6 +133,9 @@
 
 </main>
 
+<script type="importmap">
+  { "imports": { "@artic-network/pearcore/": "../pearcore/js/" } }
+</script>
 <script type="module">
   // Each embed() call creates a fully independent instance scoped to its
   // container element — no iframes needed.  Multiple instances coexist on

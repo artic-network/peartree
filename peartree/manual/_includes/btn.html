@@ -1,0 +1,213 @@
+{%- comment -%}
+  btn.html — Render a single PearTree toolbar button inline in the manual.
+
+  The button's icon, colour variant, and tooltip are looked up from the id.
+  Group-position border-radius treatment is handled automatically by CSS rules
+  in ui-preview.css that target each #btn-* id — no extra parameters needed.
+
+  Usage (Jekyll / Eleventy Liquid):
+    {% include btn.html id="btn-back" %}
+    {% include btn.html id="btn-open-tree" %}
+
+  Parameters:
+    id  (required)  — PearTree button id, e.g. "btn-back"
+{%- endcomment -%}
+
+{%- assign _b = id -%}
+
+{%- comment -%}──────────────── colour variant ────────────────{%- endcomment -%}
+{%- if _b == "btn-open-tree" -%}
+  {%- assign _v = "btn-outline-primary" -%}
+{%- elsif _b == "btn-import-annot" -%}
+  {%- assign _v = "btn-outline-success" -%}
+{%- elsif _b == "btn-export-tree" -%}
+  {%- assign _v = "btn-outline-info" -%}
+{%- elsif _b == "btn-export-graphic" -%}
+  {%- assign _v = "btn-outline-warning" -%}
+{%- elsif _b == "btn-pm-delete" -%}
+  {%- assign _v = "btn-outline-danger" -%}
+{%- else -%}
+  {%- assign _v = "btn-outline-secondary" -%}
+{%- endif -%}
+
+{%- comment -%}──────────────── size (btn-xs for palette-manager row buttons) ────────────────{%- endcomment -%}
+{%- if _b == "btn-pm-edit" or _b == "btn-pm-duplicate" or _b == "btn-pm-delete" -%}
+  {%- assign _sz = "btn-xs" -%}
+{%- else -%}
+  {%- assign _sz = "btn-sm" -%}
+{%- endif -%}
+
+{%- comment -%}──────────────── active state (btn-mode-nodes is on by default) ────────────────{%- endcomment -%}
+{%- if _b == "btn-mode-nodes" -%}
+  {%- assign _act = " active" -%}
+{%- else -%}
+  {%- assign _act = "" -%}
+{%- endif -%}
+
+{%- comment -%}──────────────── group position style ────────────────{%- endcomment -%}
+{%- if grp == "start" -%}
+  {%- assign _style = "border-radius:3px 0 0 3px;border-left:none" -%}
+{%- elsif grp == "middle" -%}
+  {%- assign _style = "border-radius:0" -%}
+{%- elsif grp == "end" -%}
+  {%- assign _style = "border-radius:0 3px 3px 0" -%}
+{%- else -%}
+  {%- assign _style = "" -%}
+{%- endif -%}
+
+{%- comment -%}──────────────── tooltip title ────────────────{%- endcomment -%}
+{%- if _b == "btn-open-tree" -%}
+  {%- assign _t = "Open tree file (⌘O)" -%}
+{%- elsif _b == "btn-import-annot" -%}
+  {%- assign _t = "Import annotations from CSV/TSV (⌘⇧O)" -%}
+{%- elsif _b == "btn-export-tree" -%}
+  {%- assign _t = "Export tree (Newick or NEXUS)" -%}
+{%- elsif _b == "btn-export-graphic" -%}
+  {%- assign _t = "Download graphic (SVG or PNG)" -%}
+{%- elsif _b == "btn-back" -%}
+  {%- assign _t = "Navigate back (⌘[)" -%}
+{%- elsif _b == "btn-forward" -%}
+  {%- assign _t = "Navigate forward (⌘])" -%}
+{%- elsif _b == "btn-drill" -%}
+  {%- assign _t = "Drill into subtree (⌘⇧>)" -%}
+{%- elsif _b == "btn-climb" -%}
+  {%- assign _t = "Climb out one level (⌘⇧<)" -%}
+{%- elsif _b == "btn-home" -%}
+  {%- assign _t = "Navigate to root (⌘\)" -%}
+{%- elsif _b == "btn-zoom-in" -%}
+  {%- assign _t = "Zoom in (⌘+)" -%}
+{%- elsif _b == "btn-zoom-out" -%}
+  {%- assign _t = "Zoom out (⌘−)" -%}
+{%- elsif _b == "btn-fit" -%}
+  {%- assign _t = "Fit all (⌘0)" -%}
+{%- elsif _b == "btn-fit-labels" -%}
+  {%- assign _t = "Fit labels (⌘⇧0)" -%}
+{%- elsif _b == "btn-order-asc" -%}
+  {%- assign _t = "Order branches ascending by clade size (⌘U)" -%}
+{%- elsif _b == "btn-order-desc" -%}
+  {%- assign _t = "Order branches descending by clade size (⌘D)" -%}
+{%- elsif _b == "btn-rotate" -%}
+  {%- assign _t = "Rotate selected node" -%}
+{%- elsif _b == "btn-rotate-all" -%}
+  {%- assign _t = "Rotate all nodes in subtree" -%}
+{%- elsif _b == "btn-invert-selection" -%}
+  {%- assign _t = "Invert selection (⌘⇧I)" -%}
+{%- elsif _b == "btn-mode-nodes" -%}
+  {%- assign _t = "Select nodes mode" -%}
+{%- elsif _b == "btn-mode-branches" -%}
+  {%- assign _t = "Toggle branches/nodes mode (⌘B)" -%}
+{%- elsif _b == "btn-reroot" -%}
+  {%- assign _t = "Reroot tree at selection" -%}
+{%- elsif _b == "btn-midpoint-root" -%}
+  {%- assign _t = "Midpoint root (⌘M)" -%}
+{%- elsif _b == "btn-temporal-root-global" -%}
+  {%- assign _t = "Global temporal root (⌘R)" -%}
+{%- elsif _b == "btn-temporal-root" -%}
+  {%- assign _t = "Optimise root on current branch (⇧⌘R)" -%}
+{%- elsif _b == "btn-hide" -%}
+  {%- assign _t = "Collapse selected subtree" -%}
+{%- elsif _b == "btn-show" -%}
+  {%- assign _t = "Expand selected collapsed subtree" -%}
+{%- elsif _b == "btn-collapse-clade" -%}
+  {%- assign _t = "Collapse selected clade to triangle" -%}
+{%- elsif _b == "btn-expand-clade" -%}
+  {%- assign _t = "Expand collapsed clade triangle" -%}
+{%- elsif _b == "btn-colour-trigger" -%}
+  {%- assign _t = "Choose colour for selected nodes" -%}
+{%- elsif _b == "btn-apply-user-colour" -%}
+  {%- assign _t = "Apply colour to selected nodes" -%}
+{%- elsif _b == "btn-clear-user-colour" -%}
+  {%- assign _t = "Clear all user colours" -%}
+{%- elsif _b == "btn-highlight-clade" -%}
+  {%- assign _t = "Highlight selected clade" -%}
+{%- elsif _b == "btn-clear-highlights" -%}
+  {%- assign _t = "Remove clade highlight" -%}
+{%- elsif _b == "btn-curate-annot" -%}
+  {%- assign _t = "Curate annotations" -%}
+{%- elsif _b == "btn-manage-filters" -%}
+  {%- assign _t = "Manage filters" -%}
+{%- elsif _b == "btn-named-filter" -%}
+  {%- assign _t = "Apply a saved filter" -%}
+{%- elsif _b == "btn-manage-palettes" -%}
+  {%- assign _t = "Manage palettes" -%}
+{%- elsif _b == "btn-pm-edit" -%}
+  {%- assign _t = "Edit palette" -%}
+{%- elsif _b == "btn-pm-duplicate" -%}
+  {%- assign _t = "Duplicate palette" -%}
+{%- elsif _b == "btn-pm-delete" -%}
+  {%- assign _t = "Delete palette" -%}
+{%- elsif _b == "btn-node-info" -%}
+  {%- assign _t = "Node info (⌘I)" -%}
+{%- elsif _b == "btn-palette" -%}
+  {%- assign _t = "Visual options panel (Tab)" -%}
+{%- elsif _b == "btn-palette-pin" -%}
+  {%- assign _t = "Pin panel open" -%}
+{%- elsif _b == "btn-palette-close" -%}
+  {%- assign _t = "Close panel" -%}
+{%- elsif _b == "btn-data-table" -%}
+  {%- assign _t = "Data table panel" -%}
+{%- elsif _b == "btn-rtt" -%}
+  {%- assign _t = "Root-to-tip divergence plot" -%}
+{%- elsif _b == "btn-fc-searchin" -%}
+  {%- assign _t = "Search in: Name or annotation" -%}
+{%- elsif _b == "btn-fc-op" -%}
+  {%- assign _t = "Match condition" -%}
+{%- elsif _b == "btn-fc-add" -%}
+  {%- assign _t = "Add as named filter" -%}
+{%- else -%}
+  {%- assign _t = _b -%}
+{%- endif -%}
+
+{%- comment -%}──────────────── icon HTML ────────────────{%- endcomment -%}
+{%- capture _ico -%}
+{%- if _b == "btn-open-tree" -%}<i class="bi bi-folder2-open"></i>
+{%- elsif _b == "btn-import-annot" -%}<i class="bi bi-table"></i>
+{%- elsif _b == "btn-export-tree" -%}<i class="bi bi-file-earmark-arrow-down"></i>
+{%- elsif _b == "btn-export-graphic" -%}<i class="bi bi-image"></i>
+{%- elsif _b == "btn-back" -%}<i class="bi bi-chevron-left"></i>
+{%- elsif _b == "btn-forward" -%}<i class="bi bi-chevron-right"></i>
+{%- elsif _b == "btn-drill" -%}<i class="bi bi-box-arrow-in-right"></i>
+{%- elsif _b == "btn-climb" -%}<i class="bi bi-box-arrow-left"></i>
+{%- elsif _b == "btn-home" -%}<i class="bi bi-house"></i>
+{%- elsif _b == "btn-zoom-in" -%}<i class="bi bi-zoom-in"></i>
+{%- elsif _b == "btn-zoom-out" -%}<i class="bi bi-zoom-out"></i>
+{%- elsif _b == "btn-fit" -%}<i class="bi bi-arrows-fullscreen"></i>
+{%- elsif _b == "btn-fit-labels" -%}<i class="bi bi-type"></i>
+{%- elsif _b == "btn-order-asc" -%}<i class="bi bi-sort-up"></i>
+{%- elsif _b == "btn-order-desc" -%}<i class="bi bi-sort-up"></i>
+{%- elsif _b == "btn-rotate" -%}<i class="bi bi-repeat bi-rotate-90"></i>
+{%- elsif _b == "btn-rotate-all" -%}<i class="bi bi-symmetry-horizontal bi-flip-horizontal"></i>
+{%- elsif _b == "btn-invert-selection" -%}<i class="bi bi-arrow-left-right"></i>
+{%- elsif _b == "btn-mode-nodes" -%}<i class="bi bi-circle bi-rotate-270"></i>
+{%- elsif _b == "btn-mode-branches" -%}<i class="bi bi-dash-lg"></i>
+{%- elsif _b == "btn-reroot" -%}<i class="bi bi-arrow-return-left"></i>
+{%- elsif _b == "btn-midpoint-root" -%}<i class="bi bi-chevron-bar-contract bi-rotate-90"></i>
+{%- elsif _b == "btn-temporal-root-global" -%}<i class="bi bi-clock"></i>
+{%- elsif _b == "btn-temporal-root" -%}<i class="bi bi-clock-history"></i>
+{%- elsif _b == "btn-hide" -%}<i class="bi bi-node-minus"></i>
+{%- elsif _b == "btn-show" -%}<i class="bi bi-node-plus"></i>
+{%- elsif _b == "btn-collapse-clade" -%}<i class="bi bi-arrows-collapse"></i>
+{%- elsif _b == "btn-expand-clade" -%}<i class="bi bi-arrows-expand"></i>
+{%- elsif _b == "btn-colour-trigger" -%}<span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#ff8800;vertical-align:middle;"></span>
+{%- elsif _b == "btn-apply-user-colour" -%}<i class="bi bi-brush"></i>
+{%- elsif _b == "btn-clear-user-colour" -%}<i class="bi bi-eraser"></i>
+{%- elsif _b == "btn-highlight-clade" -%}<i class="bi bi-highlighter"></i>
+{%- elsif _b == "btn-clear-highlights" -%}<i class="bi bi-eraser"></i>
+{%- elsif _b == "btn-curate-annot" -%}<i class="bi bi-tags"></i>
+{%- elsif _b == "btn-manage-filters" -%}<i class="bi bi-funnel"></i>
+{%- elsif _b == "btn-named-filter" -%}<i class="bi bi-funnel-fill"></i>
+{%- elsif _b == "btn-manage-palettes" -%}<i class="bi bi-palette"></i>
+{%- elsif _b == "btn-pm-edit" -%}<i class="bi bi-pencil"></i>
+{%- elsif _b == "btn-pm-duplicate" -%}<i class="bi bi-copy"></i>
+{%- elsif _b == "btn-pm-delete" -%}<i class="bi bi-trash"></i>
+{%- elsif _b == "btn-node-info" -%}<i class="bi bi-info-circle"></i>
+{%- elsif _b == "btn-palette" -%}<i class="bi bi-sliders"></i><i class="bi bi-caret-right"></i>
+{%- elsif _b == "btn-palette-pin" -%}<i class="bi bi-pin-angle"></i>
+{%- elsif _b == "btn-palette-close" -%}&times;
+{%- elsif _b == "btn-data-table" -%}<i class="bi bi-caret-left"></i><i class="bi bi-layout-sidebar-reverse"></i>
+{%- elsif _b == "btn-rtt" -%}<i class="bi bi-caret-left"></i><i class="bi bi-graph-up-arrow"></i>
+{%- elsif _b == "btn-fc-searchin" -%}<i class="bi bi-tag"></i>
+{%- elsif _b == "btn-fc-op" -%}<i class="bi bi-chevron-down"></i>
+{%- elsif _b == "btn-fc-add" -%}<i class="bi bi-plus-lg"></i>
+{%- endif -%}
+{%- endcapture -%}{%- if _b == "btn-colour-trigger" -%}<span class="pt-btn-preview pt-btn-colour-trigger-preview" title="{{ _t }}">{{ _ico }}</span>{%- else -%}{%- capture _btn -%}<button class="btn {{ _sz }} {{ _v }}{{ _act }} pt-btn-preview" id="{{ _b }}" title="{{ _t }}"{% if _style != "" %} style="{{ _style }}"{% endif %}>{{ _ico }}</button>{%- endcapture -%}{{ _btn }}{%- endif -%}

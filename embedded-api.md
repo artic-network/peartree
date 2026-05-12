@@ -21,7 +21,8 @@ PearTree can be embedded directly inside any HTML page using a single JavaScript
   <!-- 2. A container element -->
   <div id="my-tree"></div>
 
-  <!-- 3. Load the embed script -->
+  <!-- 3. Load the embed scripts -->
+  <script src="pearcore/js/pearcore-embed.js"></script>
   <script src="peartree/js/peartree-embed.js"></script>
 
   <!-- 4. Initialise -->
@@ -249,6 +250,8 @@ Available section keys:
 
 The `settings` object sets the initial state of the visual options. All values are strings. Every key listed here maps to a control in the Visual Options panel.
 
+For the complete machine-readable key table (all keys, allowed values, and defaults), see [settings-object-reference.md](settings-object-reference.md).
+
 Settings are merged on top of PearTree's defaults, so you only need to specify the values you want to change.
 
 ```js
@@ -261,6 +264,7 @@ PearTreeEmbed.embed({
     // 'off' | 'names' | '<annotation-key>'
     tipLabelShow:              'names',
     tipLabelSpacing:           '3',       // px gap between tip marker and label
+    tipLabelDecimalPlaces:     '2',       // decimal places for numeric tip labels; ''/null = auto
     tipLabelAlign:             'off',     // 'off' | 'aligned' | 'dashed' | 'dots' | 'solid'
                                           //   'off'     — labels positioned at their tip (default)
                                           //   'aligned' — labels right-aligned to the rightmost tip, no connector
@@ -310,9 +314,15 @@ PearTreeEmbed.embed({
     // ── Node labels ────────────────────────────────────────────────────────
     nodeLabelAnnotation:       '',        // annotation key to display on nodes
     nodeLabelPosition:         'right',   // 'right' | 'left' | 'above' | 'below'
+    nodeLabelDecimalPlaces:    '2',       // decimal places for numeric node labels; ''/null = auto
     nodeLabelFontSize:         '9',
     nodeLabelColor:            '#aaaaaa',
     nodeLabelSpacing:          '4',
+
+    // ── Branch labels ─────────────────────────────────────────────────────
+    branchLabelAnnotation:     '',        // annotation key to display on branches
+    branchLabelPosition:       'above',   // 'above' | 'below'
+    branchLabelDecimalPlaces:  '2',       // decimal places for numeric branch labels; ''/null = auto
 
     // ── Collapsed clades ───────────────────────────────────────────────────
     collapsedCladeFontSize:    '11',
@@ -502,6 +512,7 @@ Controllers returned by `embedFrame()` expose the same methods (messages are for
     <div id="report-tree"></div>
   </div>
 
+  <script src="pearcore/js/pearcore-embed.js"></script>
   <script src="peartree/js/peartree-embed.js"></script>
   <script>
     PearTreeEmbed.embed({

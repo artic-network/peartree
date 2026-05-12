@@ -1,7 +1,7 @@
 // themes.js — built-in theme presets and application defaults
 // ─────────────────────────────────────────────────────────────────────────────
 
-export { TYPEFACES, buildFont } from './typefaces.js';
+export { TYPEFACES, buildFont } from '@artic-network/pearcore/typefaces.js';
 
 export const SETTINGS_KEY = 'peartree-settings';
 export const USER_THEMES_KEY = 'peartree-user-themes';
@@ -35,6 +35,12 @@ export const DEFAULT_THEME = {
         "nodeLabelTypefaceStyle": "",
         "nodeLabelColor": "#aaaaaa",
         "nodeLabelSpacing": "4",
+        // Branch Labels
+        "branchLabelFontSize": "9",
+        "branchLabelTypefaceKey": "",
+        "branchLabelTypefaceStyle": "",
+        "branchLabelColor": "#aaaaaa",
+        "branchLabelSpacing": "4",
         // Node Bars
         "nodeBarsColor": "#333231",
         "nodeBarsWidth": "6",
@@ -44,11 +50,13 @@ export const DEFAULT_THEME = {
         "paintColour": "#ff8800",
         // Clade Highlights
         "cladeHighlightFillOpacity": "0.15",
-        "cladeHighlightStrokeOpacity": "0.7",
         "cladeHighlightStrokeWidth": "1",
+        "cladeHighlightStrokeOpacity": "0.7",
         "cladeHighlightColour": "#ffaa00",
         // Collapsed Clades
         "collapsedCladeFontSize": "11",
+        "collapsedCladeStrokeWidth": "1",
+        "collapsedCladeStrokeOpacity": "0.7",
         "collapsedCladeTypefaceKey": "",
         "collapsedCladeTypefaceStyle": "",
         // Legend
@@ -124,7 +132,7 @@ export const THEMES = {
     "Monochrome": { 
         inherit: '',
     },
-    "Artic": {
+    "ARTIC": {
         inherit: '',
         canvasBgColor: '#02292e',
         branchColor: '#19A699',
@@ -220,7 +228,6 @@ export const THEMES = {
         nodeHoverFillColor: '#263b3f',
         nodeHoverStrokeColor: '#263b3f',
     },
-    // Deep jewel tones: The Life Aquatic / Isle of Dogs palette
     "MCM": {
         canvasBgColor: '#1e2d3a',
         branchColor: '#edd59c',
@@ -242,54 +249,6 @@ export const THEMES = {
         rttStatsBgColor: '#121c24',
         rttStatsTextColor: '#edd59c',
         rttAxisColor: '#edd59c',
-        typeface: 'Monospace',
-    },
-    // Royal Tenenbaums: aged plaster, forest green, burgundy, tennis-ball gold
-    "Tenenbaums": {
-        canvasBgColor: '#f0e8d8',
-        branchColor: '#2b4a2a',
-        branchWidth: '1',
-        fontSize: '11',
-        labelColor: '#1c3220',
-        tipSize: '3',
-        tipShapeColor: '#a01830',
-        tipHaloSize: '1',
-        tipShapeBgColor: '#f0e8d8',
-        nodeSize: '2',
-        nodeShapeColor: '#c8a020',
-        nodeHaloSize: '1',
-        nodeShapeBgColor: '#f0e8d8',
-        nodeBarsColor: '#a01830',
-        legendTextColor: '#2b4a2a',
-        axisColor: '#2b4a2a',
-        rttRegressionColor: '#2b4a2a',
-        rttStatsBgColor: '#d8cfbf',
-        rttStatsTextColor: '#1c3220',
-        rttAxisColor: '#2b4a2a',
-        typeface: 'Monospace',
-    },
-    // The Darjeeling Limited: warm cream, saffron, cerulean, rust
-    "Darjeeling": {
-        canvasBgColor: '#faf0d8',
-        branchColor: '#c87010',
-        branchWidth: '1',
-        fontSize: '11',
-        labelColor: '#3a2010',
-        tipSize: '4',
-        tipShapeColor: '#1a5878',
-        tipHaloSize: '1',
-        tipShapeBgColor: '#faf0d8',
-        nodeSize: '0',
-        nodeShapeColor: '#c04428',
-        nodeHaloSize: '1',
-        nodeShapeBgColor: '#faf0d8',
-        nodeBarsColor: '#1a5878',
-        legendTextColor: '#3a2010',
-        axisColor: '#3a2010',
-        rttRegressionColor: '#c87010',
-        rttStatsBgColor: '#e8d8c0',
-        rttStatsTextColor: '#3a2010',
-        rttAxisColor: '#3a2010',
         typeface: 'Monospace',
     },
 };

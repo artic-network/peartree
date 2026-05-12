@@ -22,7 +22,7 @@
 //   padding-right via body.dt-pinned, shrinking the canvas.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { htmlEsc as _esc } from './utils.js';
+import { htmlEsc as _esc } from '@artic-network/pearcore/utils.js';
 
 /** Shared offscreen canvas used only for text measurement. */
 const _measureCanvas = document.createElement('canvas');
@@ -206,12 +206,11 @@ export function createDataTableRenderer({
                          Math.round(layoutH) >= realTips;
         if (isFullH) {
           const N    = tip.collapsedTipNames.length;
-          const topY = tip.y - (N - 1) / 2;
           for (let i = 0; i < N; i++) {
             cumNum++;
             _expandedRows.push({
               key: tip.id + '\0' + i, tip,
-              vt: tip.collapsedTipNames[i], y: topY + i,
+              vt: tip.collapsedTipNames[i], vtOffset: i - (N - 1) / 2,
               isBlank: false, cumNum,
             });
           }
@@ -219,7 +218,7 @@ export function createDataTableRenderer({
           // One tall blank placeholder covering the triangle's visual extent.
           _expandedRows.push({
             key: tip.id + '\0blank', tip,
-            vt: null, y: tip.y, isBlank: true, layoutH, cumNum: null,
+            vt: null, isBlank: true, layoutH, cumNum: null,
           });
           cumNum += realTips;   // advance past all hidden tips
         }
@@ -227,7 +226,7 @@ export function createDataTableRenderer({
         cumNum++;
         _expandedRows.push({
           key: tip.id, tip,
-          vt: null, y: tip.y, isBlank: false, cumNum,
+          vt: null, isBlank: false, cumNum,
         });
       }
     }
@@ -445,7 +444,7 @@ export function createDataTableRenderer({
 
     for (let ri = 0; ri < _expandedRows.length; ri++) {
       const row = _expandedRows[ri];
-      const { key, tip, vt, y, isBlank, cumNum } = row;
+      const { key, tip, vt, isBlank, cumNum } = row;
       const isSelected = _selectedIds.has(tip.id);
 
       if (isBlank) {
@@ -485,7 +484,10 @@ export function createDataTableRenderer({
       }
 
       // ── Regular tip or virtual tip from a full-height collapsed clade ──────
-      const screenY = y * scaleY + offsetY;
+      // Read tip.y live (not from a snapshot) so position changes from the intro
+      // animation or reorder animations are reflected without rebuilding rows.
+      const liveY   = 'vtOffset' in row ? tip.y + row.vtOffset : tip.y;
+      const screenY = liveY * scaleY + offsetY;
       const topY    = screenY - rowH * 0.5 - HEADER_H;
       const inView  = (topY + rowH + BUFFER) >= 0 && (topY - BUFFER) <= bodyH;
       if (!inView || !labelsVisible) {

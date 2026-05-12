@@ -1,0 +1,26 @@
+{%- comment -%}
+  filter-box.html — Static preview of the PearTree filter/search box.
+
+  Matches the HTML structure and CSS classes of the real toolbar control.
+
+  Parameters:
+    contents  (optional)  Contents text shown in the input.
+                             Default: "Name contains…"
+
+  Usage:
+    {%- include 'filter-box.html' -%}
+    {%- include 'filter-box.html', contents: "Name starts with…" -%}
+{%- endcomment -%}
+{%- assign _ph = contents | default: "Name contains…" -%}
+<span class="pt-filter-preview">
+  <span class="pt-filter-group">
+    <span class="pt-filter-col-wrap">
+      <button class="fc-searchin pt-filter-col-btn" title="Search in: Name"><i class="bi bi-tag"></i></button>
+    </span>
+    <span class="pt-filter-col-wrap">
+      <button class="fc-op pt-filter-col-btn" title="Match condition: contains"><i class="bi bi-chevron-down"></i></button>
+    </span>
+    <input type="search" class="fc-input pt-filter-input" placeholder="{{ _ph }}" autocomplete="off" spellcheck="false" readonly>
+    <button class="fc-add pt-filter-col-btn" title="Save as named filter"><i class="bi bi-plus-lg"></i></button>
+  </span>
+</span>

@@ -1,23 +1,32 @@
-import { parseNexus, parseNewick, graphToNewick, parseDelimited } from './treeio.js';
+import { parseNexus, parseNewick, graphToNewick, parseDelimited } from '@artic-network/pearcore/tree-io.js';
 import { computeLayoutFromGraph, graphVisibleTipCount, graphSubtreeHasHidden } from './treeutils.js';
-import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointRootGraph, temporalRootGraph, optimiseRootEdge, buildAnnotationSchema, injectBuiltinStats, isNumericType, TreeCalibration, computeTemporalResiduals } from './phylograph.js';
-import { htmlEsc as _esc, downloadBlob as _downloadBlob, wireDropZone as _wireDropZone } from './utils.js';
+import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointRootGraph, temporalRootGraph, optimiseRootEdge, buildAnnotationSchema } from '@artic-network/pearcore/tree-graph.js';
+import { injectBuiltinStats, isNumericType, TreeCalibration, computeTemporalResiduals } from './phylograph.js';
+import { htmlEsc as _esc, downloadBlob as _downloadBlob, wireDropZone as _wireDropZone } from '@artic-network/pearcore/utils.js';
 import { TreeRenderer, CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY } from './treerenderer.js';
 import { LegendRenderer } from './legendrenderer.js';
 import { AxisRenderer  } from './axisrenderer.js';
 import { THEMES, DEFAULT_THEME, SETTINGS_KEY, USER_THEMES_KEY } from './themes.js';
-import { TYPEFACES, buildFont } from './typefaces.js';
+import { TYPEFACES, buildFont } from '@artic-network/pearcore/typefaces.js';
 import { CATEGORICAL_PALETTES, SEQUENTIAL_PALETTES,
-         DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE } from './palettes.js';
-import { viewportDims, compositeViewPng, buildGraphicSVG } from './graphicsio.js';
-import { createAnnotImporter } from './annotationsio.js';
-import { createAnnotCurator  } from './annotations-manager.js';
+         DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
+         getCategoricalPalette, getSequentialPalette,
+         setUserCategoricalPalettes, setUserSequentialPalettes,
+         allCategoricalPalettes, allSequentialPalettes } from '@artic-network/pearcore/palettes.js';
+import { createAnnotImporter } from '@artic-network/pearcore/annotation-io.js';
+import { createAnnotCurator  } from '@artic-network/pearcore/annotation-manager.js';
+import { createFilterControl } from './filter-control.js';
+import { createFilterManager } from './filter-manager.js';
+import { createPaletteManager } from '@artic-network/pearcore/palette-manager.js';
 import { createDataTableRenderer } from './datatablerenderer.js';
 import { createRTTChart          } from './rttchart.js';
-import { createCommands } from './commands.js';
+import { createCommands } from '@artic-network/pearcore/commands.js';
+import { COMMAND_DEFS } from './peartree-commands.js';
 import { createExportController } from './export-controller.js';
 import { EXAMPLE_TREE_PATH, EXAMPLE_DATASETS, PEARTREE_BASE_URL, DEFAULT_SETTINGS, REQUIRED_THEME_KEYS, NODE_TOOLTIP_FIELDS } from './config.js';
-import { createToolbarColourPicker, upgradeAllPaletteColourPickers } from './colorpicker.js';
+import { createToolbarColourPicker, upgradeAllPaletteColourPickers } from '@artic-network/pearcore/colorpicker.js';
+import { createThemeManager, resolveEmbedConfig, initSectionAccordion,
+         ensureStylesheet, loadScript, resolveAssetBases } from '@artic-network/pearcore/pearcore-app.js';
 
 /**
  * Fetch a file by relative path, falling back to the absolute GitHub Pages URL
@@ -40,11 +49,109 @@ async function fetchExampleTree() {
   return fetchWithFallback(EXAMPLE_TREE_PATH);
 }
 
+// Single source of truth for URL<->ui flag mapping used by app(), embed(), and
+// embedFrame(). Keep this aligned with the UI options documented for embeds.
+const PT_UI_FLAG_DEFS = [
+  { name: 'showPalette',         uiKey: 'palette',         param: 'palette' },
+  { name: 'showToolbar',         uiKey: 'toolbar',         param: 'toolbar' },
+  { name: 'showRTT',             uiKey: 'rtt',             param: 'rtt',      extended: true },
+  { name: 'showRTTHeader',       uiKey: 'rttHeader',       param: 'rttheader' },
+  { name: 'showDataTable',       uiKey: 'dataTable',       param: 'dt',       extended: true },
+  { name: 'showDataTableHeader', uiKey: 'dataTableHeader', param: 'dtheader' },
+  { name: 'showImport',          uiKey: 'import',          uiKeys: ['import', 'openTree'], param: 'import' },
+  { name: 'showExport',          uiKey: 'export',          param: 'export' },
+  { name: 'showStatusBar',       uiKey: 'statusBar',       param: 'statusbar' },
+  { name: 'showStatusStats',     uiKey: 'statusStats',     param: 'sbstats' },
+  { name: 'showStatusSelect',    uiKey: 'statusSelect',    param: 'sbselect' },
+  { name: 'showStatusMessage',   uiKey: 'statusMessage',   param: 'sbmessage' },
+  { name: 'showStatusShare',     uiKey: 'statusShare',     param: 'sbshare' },
+  { name: 'showHelp',            uiKey: 'help',            param: 'help' },
+  { name: 'showAbout',           uiKey: 'about',           param: 'about' },
+  { name: 'showThemeToggle',     uiKey: 'themeToggle',     param: 'themetoggle' },
+  { name: 'showBrand',           uiKey: 'brand',           param: 'brand' },
+  { name: 'showToolbarFileOps',  uiKey: 'tbFileOps',       param: 'tbfileops' },
+  { name: 'showToolbarAnn',      uiKey: 'tbAnnotations',   param: 'tbann' },
+  { name: 'showToolbarNode',     uiKey: 'tbNodeInfo',      param: 'tbnode' },
+  { name: 'showToolbarNav',      uiKey: 'tbNavigation',    param: 'tbnav' },
+  { name: 'showToolbarZoom',     uiKey: 'tbZoom',          param: 'tbzoom' },
+  { name: 'showToolbarOrder',    uiKey: 'tbOrder',         param: 'tborder' },
+  { name: 'showToolbarRotate',   uiKey: 'tbRotate',        param: 'tbrotate' },
+  { name: 'showToolbarReroot',   uiKey: 'tbReroot',        param: 'tbreroot' },
+  { name: 'showToolbarHide',     uiKey: 'tbHideShow',      param: 'tbhide' },
+  { name: 'showToolbarColour',   uiKey: 'tbColour',        param: 'tbcolour' },
+  { name: 'showToolbarFilter',   uiKey: 'tbFilter',        param: 'tbfilter' },
+  { name: 'showToolbarPanels',   uiKey: 'tbPanels',        param: 'tbpanels' },
+  { name: 'enableKeyboard',      uiKey: 'keyboard',        param: 'keyboard' },
+];
+
+function _coerceUiFlag(val, extended = false) {
+  if (extended && val === 'fixed') return 'fixed';
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'number') return val !== 0;
+  if (typeof val === 'string') {
+    const s = val.trim().toLowerCase();
+    if (extended && s === 'fixed') return 'fixed';
+    if (s === '0' || s === 'false') return false;
+    if (s === '1' || s === 'true') return true;
+  }
+  return Boolean(val);
+}
+
+function _readUiValue(uiObj, def) {
+  if (!uiObj || typeof uiObj !== 'object') return undefined;
+  if (Array.isArray(def.uiKeys) && def.uiKeys.length) {
+    for (const key of def.uiKeys) {
+      if (uiObj[key] !== undefined) return uiObj[key];
+    }
+    return undefined;
+  }
+  return uiObj[def.uiKey];
+}
+
+function _setUiFlagsAsUrlParams(params, uiObj) {
+  for (const def of PT_UI_FLAG_DEFS) {
+    const raw = _readUiValue(uiObj, def);
+    if (raw === undefined) continue;
+    const v = _coerceUiFlag(raw, !!def.extended);
+    if (v === false) params.set(def.param, '0');
+    else if (def.extended && v === 'fixed') params.set(def.param, 'fixed');
+  }
+}
+
+function _isPlainObject(value) {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function _decodeSettingsParam(params) {
+  try {
+    const v = params.get('settings');
+    if (!v) return {};
+    const parsed = JSON.parse(atob(v));
+    return _isPlainObject(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function _encodeSettingsParam(params, settings) {
+  if (!_isPlainObject(settings) || Object.keys(settings).length === 0) return;
+  params.set('settings', btoa(JSON.stringify(settings)));
+}
+
+function _resolveInitSettings({ fetchedSettings, params, windowConfig }) {
+  const fromFetched = _isPlainObject(fetchedSettings) ? fetchedSettings : {};
+  const fromUrl = _decodeSettingsParam(params);
+  const fromWindow = _isPlainObject(windowConfig?.settings)
+    ? windowConfig.settings
+    : (_isPlainObject(windowConfig?.initSettings) ? windowConfig.initSettings : {});
+  return Object.assign({}, fromFetched, fromUrl, fromWindow);
+}
+
 async function _initCore(root = document) {
   const $ = id => root.querySelector('#' + id);
   // Per-instance command registry — each embed gets its own scoped registry so
   // commands.exec and button enabled-state never bleed across instances.
-  const commands = createCommands(root);
+  const commands = createCommands(root, COMMAND_DEFS);
   // ── Embed configuration ───────────────────────────────────────────────────
   // Supports window.peartreeConfig (same-page / iframe embedding) and URL
   // search params as a lower-priority alternative.  window.peartreeConfig
@@ -64,51 +171,83 @@ async function _initCore(root = document) {
   //                                       string = custom key (default: SETTINGS_KEY)
   //
   // Equivalent URL parameters (value of '0' hides; anything else shows):
-  //   palette=0, rtt=0, dt=0, import=0, export=0, statusbar=0
+  //   palette=0, toolbar=0, rtt=0, dt=0, import=0, export=0, statusbar=0
+  //   sbstats=0, sbselect=0, sbmessage=0, sbshare=0,
+  //   tbfileops=0, tbann=0, tbnode=0, tbnav=0, tbzoom=0, tborder=0,
+  //   tbrotate=0, tbreroot=0, tbhide=0, tbcolour=0, tbfilter=0, tbpanels=0
+  //   configUrl=https://…json   — fetch config JSON with optional {ui, settings}
+  //                               (applied before URL switches and settings=)
   //   nostore=1             — same as storageKey: null
   //   storageKey=my-key     — custom storage key
-  const _cfg = (() => {
-    const _p  = new URLSearchParams(window.location.search);
-    const _wc = window.peartreeConfig || {};
-    const _ui = _wc.ui || {};
-    /** Resolve a boolean flag: explicit window.peartreeConfig value > URL param > default (true). */
-    const _flag = (uiVal, param) => uiVal !== undefined ? Boolean(uiVal) : _p.get(param) !== '0';
-    // Like _flag but also preserves the string value 'fixed'.
-    const _flagEx = (uiVal, param) => {
-      if (uiVal === 'fixed') return 'fixed';
-      if (uiVal !== undefined) return Boolean(uiVal);
-      return _p.get(param) !== '0';
-    };
-    const _sk = _wc.storageKey !== undefined
-      ? _wc.storageKey
-      : _p.get('storageKey') ?? (_p.get('nostore') === '1' ? null : SETTINGS_KEY);
-    return {
-      showPalette:        _flag(_ui.palette,      'palette'),
-      showToolbar:        _flag(_ui.toolbar,      'toolbar'),
-      showRTT:            _flagEx(_ui.rtt,         'rtt'),
-      showRTTHeader:      _flag(_ui.rttHeader,     'rttheader'),
-      showDataTable:      _flagEx(_ui.dataTable,   'dt'),
-      showDataTableHeader:_flag(_ui.dataTableHeader,'dtheader'),
-      showImport:         _flag(_ui.import,        'import'),
-      showExport:         _flag(_ui.export,        'export'),
-      showStatusBar:  _flag(_ui.statusBar,    'statusbar'),
-      showHelp:        _flag(_ui.help,         'help'),
-      showAbout:       _flag(_ui.about,        'about'),
-      showThemeToggle: _flag(_ui.themeToggle,  'themetoggle'),
-      showBrand:       _flag(_ui.brand,        'brand'),
-      enableKeyboard: _ui.keyboard !== undefined ? Boolean(_ui.keyboard) : _p.get('keyboard') !== '0',
-      storageKey:    _sk,
-      dataTableColumns: Array.isArray(_wc.dataTableColumns) ? _wc.dataTableColumns : null,
-      initSettings:  (() => {
-        // URL ?settings=<base64-JSON> provides initial settings for embedFrame() iframes.
-        // window.peartreeConfig.settings always wins over URL params.
-        const _urlSettings = (() => {
-          try { const v = _p.get('settings'); return v ? JSON.parse(atob(v)) : {}; } catch { return {}; }
-        })();
-        return Object.assign(_urlSettings, _wc.settings || _wc.initSettings || {});
-      })(),
-    };
-  })();
+  const _p = new URLSearchParams(window.location.search);
+
+  function _normalizeConfigJsonUrl(rawUrl) {
+    const u = new URL(rawUrl, window.location.href);
+
+    // Support GitHub blob URLs by converting to raw content URLs.
+    // Example:
+    //   https://github.com/owner/repo/blob/main/path/file.json
+    // ->https://raw.githubusercontent.com/owner/repo/main/path/file.json
+    if (u.hostname === 'github.com') {
+      const parts = u.pathname.split('/').filter(Boolean);
+      if (parts.length >= 5 && parts[2] === 'blob') {
+        const owner = parts[0];
+        const repo = parts[1];
+        const branch = parts[3];
+        const filePath = parts.slice(4).join('/');
+        return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`;
+      }
+    }
+
+    return u.href;
+  }
+
+  async function _fetchJsonFromParam(paramName) {
+    const raw = _p.get(paramName);
+    if (!raw) return null;
+    try {
+      const url = _normalizeConfigJsonUrl(raw);
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status + ' – ' + url);
+      const obj = await resp.json();
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('Expected JSON object');
+      return obj;
+    } catch (err) {
+      console.warn('peartree: ignoring invalid ' + paramName + ' –', err.message);
+      return null;
+    }
+  }
+
+  const _fetchedConfig = await _fetchJsonFromParam('configUrl');
+  const _fetchedUI = (_fetchedConfig && typeof _fetchedConfig.ui === 'object' && !Array.isArray(_fetchedConfig.ui))
+    ? _fetchedConfig.ui
+    : null;
+  const _fetchedSettings = (_fetchedConfig && typeof _fetchedConfig.settings === 'object' && !Array.isArray(_fetchedConfig.settings))
+    ? _fetchedConfig.settings
+    : null;
+
+  const _cfg = resolveEmbedConfig({
+    configKey: 'peartreeConfig',
+    settingsKeyDefault: SETTINGS_KEY,
+    flagDefs: PT_UI_FLAG_DEFS,
+    extras: (wc, _p) => ({
+      dataTableColumns: Array.isArray(wc.dataTableColumns) ? wc.dataTableColumns : null,
+      initSettings: _resolveInitSettings({ fetchedSettings: _fetchedSettings, params: _p, windowConfig: wc }),
+    }),
+  });
+
+  // Apply fetched UI defaults only when not explicitly set by window config
+  // and when the corresponding URL switch is absent.
+  if (_fetchedUI && typeof _fetchedUI === 'object') {
+    const _wcUi = (window.peartreeConfig || {}).ui || {};
+    for (const def of PT_UI_FLAG_DEFS) {
+      if (_readUiValue(_wcUi, def) !== undefined) continue;
+      if (_p.has(def.param)) continue;
+      const _raw = _readUiValue(_fetchedUI, def);
+      if (_raw === undefined) continue;
+      _cfg[def.name] = _coerceUiFlag(_raw, !!def.extended);
+    }
+  }
   // Apply UI restrictions immediately so hidden elements never flash visible.
   if (!_cfg.showPalette)   $('btn-palette')        ?.classList.add('d-none');
   if (!_cfg.showToolbar)   root.querySelector('.pt-toolbar')          ?.classList.add('d-none');
@@ -150,6 +289,59 @@ async function _initCore(root = document) {
   if (!_cfg.showExport)  { $('btn-export-tree')    ?.classList.add('d-none');
                            $('btn-export-graphic') ?.classList.add('d-none'); }
   if (!_cfg.showStatusBar) $('status-bar')          ?.classList.add('d-none');
+  if (!_cfg.showStatusStats) $('status-stats')      ?.classList.add('d-none');
+  if (!_cfg.showStatusSelect) $('status-select')    ?.classList.add('d-none');
+  if (!_cfg.showStatusMessage) $('status-message')  ?.classList.add('d-none');
+  if (!_cfg.showStatusShare) $('btn-share-url')     ?.classList.add('d-none');
+  if (!_cfg.showHelp)      $('btn-help')            ?.classList.add('d-none');
+  if (!_cfg.showAbout)     $('btn-about')           ?.classList.add('d-none');
+  if (!_cfg.showThemeToggle) $('btn-theme')         ?.classList.add('d-none');
+  if (!_cfg.showBrand)     $('status-brand')        ?.classList.add('d-none');
+
+  const _hideTb = (selector) => root.querySelectorAll(selector).forEach(el => el.classList.add('d-none'));
+  if (!_cfg.showToolbarFileOps) _hideTb('#btn-open-tree, #btn-import-annot, #btn-export-tree, #btn-export-graphic');
+  if (!_cfg.showToolbarAnn)     _hideTb('#btn-curate-annot, #btn-manage-filters, #btn-manage-palettes');
+  if (!_cfg.showToolbarNode)    _hideTb('#btn-node-info');
+  if (!_cfg.showToolbarNav)     _hideTb('.pt-toolbar .btn-group[aria-label="Navigate history"], .pt-toolbar .btn-group[aria-label="Navigate subtree"]');
+  if (!_cfg.showToolbarZoom)    _hideTb('.pt-toolbar .btn-group[aria-label="Zoom"], .pt-toolbar .btn-group[aria-label="Fit view"]');
+  if (!_cfg.showToolbarOrder)   _hideTb('.pt-toolbar .btn-group[aria-label="Branch order"]');
+  if (!_cfg.showToolbarRotate)  _hideTb('.pt-toolbar .btn-group[aria-label="Rotate node"]');
+  if (!_cfg.showToolbarReroot)  _hideTb('#btn-invert-selection, #reroot-controls');
+  if (!_cfg.showToolbarHide)    _hideTb('.pt-toolbar .btn-group[aria-label="Hide/show subtree"], .pt-toolbar .btn-group[aria-label="Collapse/expand clade"]');
+  if (!_cfg.showToolbarColour)  _hideTb('#colour-pick-wrap');
+  if (!_cfg.showToolbarFilter)  _hideTb('#tip-filter-mount');
+  if (!_cfg.showToolbarPanels)  _hideTb('#btn-data-table, #btn-rtt');
+
+  // Hide separator bars when adjacent button groups are not displayed
+  root.querySelectorAll('.pt-toolbar-sep').forEach(sep => {
+    let prevVisible = false;
+    let nextVisible = false;
+
+    // Check if previous visible sibling is displayed
+    let prev = sep.previousElementSibling;
+    while (prev) {
+      if (!prev.classList.contains('d-none')) {
+        prevVisible = true;
+        break;
+      }
+      prev = prev.previousElementSibling;
+    }
+
+    // Check if next visible sibling is displayed
+    let next = sep.nextElementSibling;
+    while (next) {
+      if (!next.classList.contains('d-none')) {
+        nextVisible = true;
+        break;
+      }
+      next = next.nextElementSibling;
+    }
+
+    // Hide separator if either adjacent visible content is missing
+    if (!prevVisible || !nextVisible) {
+      sep.classList.add('d-none');
+    }
+  });
 
   const canvas            = $('tree-canvas');
   const loadingEl         = $('loading');
@@ -206,13 +398,12 @@ async function _initCore(root = document) {
   const nodeBarsControlsEl  = $('node-bars-controls');
   const nodeBarsUnavailEl   = $('node-bars-unavail');
   const collapsedOpacitySlider = $('collapsed-opacity-slider');
+  const collapsedStrokeWidthSlider = $('collapsed-stroke-width-slider');
+  const collapsedStrokeOpacitySlider = $('collapsed-stroke-opacity-slider');
   const collapsedHeightNSlider = $('collapsed-height-n-slider');
   const collapsedCladeFontSizeSlider = $('collapsed-clade-font-size-slider');
-  const collapsedCladeColourByEl   = $('collapsed-clade-colour-by');
-  const collapsedCladePaletteSelect = $('collapsed-clade-palette-select');
-  const collapsedCladePaletteRow   = $('collapsed-clade-palette-row');
-  const collapsedCladeScaleModeSelect = $('collapsed-clade-scale-mode-select');
-  const collapsedCladeScaleModeRow = $('collapsed-clade-scale-mode-row');
+  const collapsedCladeColourByEl     = $('collapsed-clade-colour-by');
+  const collapsedCladeConfigureRow   = $('collapsed-clade-configure-row');
   const tipShapeDetailEl    = $('tip-shape-detail');
   const nodeShapeDetailEl   = $('node-shape-detail');
   const nodeLabelDetailEl   = $('node-label-detail');
@@ -247,17 +438,27 @@ async function _initCore(root = document) {
   const tipLabelDpEl             = $('tip-label-decimal-places');
   const nodeLabelDpRowEl         = $('node-label-dp-row');
   const nodeLabelDpEl            = $('node-label-decimal-places');
-  const tipPaletteSelect   = $('tip-palette-select');
-  const tipPaletteRow      = $('tip-palette-row');
-  const nodePaletteSelect  = $('node-palette-select');
-  const nodePaletteRow     = $('node-palette-row');
-  const labelPaletteSelect = $('label-palette-select');
-  const labelPaletteRow    = $('label-palette-row');
+  const nodeLabelColourBy        = $('node-label-colour-by');
+  const nodeLabelConfigureRow    = $('node-label-configure-row');
+  const branchLabelDetailEl       = $('branch-label-detail');
+  const branchLabelTypefaceEl      = $('branch-label-typeface-select');
+  const branchLabelTypefaceStyleEl = $('branch-label-typeface-style-select');
+  const branchLabelShowEl          = $('branch-label-show');
+  const branchLabelPositionEl      = $('branch-label-position');
+  const branchLabelFontSizeSlider  = $('branch-label-font-size-slider');
+  const branchLabelColorEl         = $('branch-label-color');
+  const branchLabelSpacingSlider   = $('branch-label-spacing-slider');
+  const branchLabelDpRowEl         = $('branch-label-dp-row');
+  const branchLabelDpEl            = $('branch-label-decimal-places');
+  const branchLabelColourBy        = $('branch-label-colour-by');
+  const branchLabelConfigureRow    = $('branch-label-configure-row');
+  const tipConfigureRow    = $('tip-configure-row');
+  const nodeConfigureRow   = $('node-configure-row');
+  const labelConfigureRow  = $('label-configure-row');
   const tipLabelShapeEl              = $('tip-label-shape');
   const tipLabelShapeColorEl         = $('tip-label-shape-color');
   const tipLabelShapeColourBy        = $('tip-label-shape-colour-by');
-  const tipLabelShapePaletteRow      = $('tip-label-shape-palette-row');
-  const tipLabelShapePaletteSelect   = $('tip-label-shape-palette-select');
+  const tipLabelShapeConfigureRow    = $('tip-label-shape-configure-row');
   const tipLabelShapeMarginLeftSlider  = $('tip-label-shape-margin-left-slider');
   const tipLabelShapeSpacingSlider     = $('tip-label-shape-spacing-slider');
   const tipLabelShapeSizeSlider        = $('tip-label-shape-size-slider');
@@ -266,18 +467,16 @@ async function _initCore(root = document) {
   const EXTRA_SHAPE_COUNT = 9;
   const tipLabelShapeExtraEls           = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}`));
   const tipLabelShapeExtraColourBys     = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-colour-by`));
-  const tipLabelShapeExtraPaletteRows   = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-palette-row`));
-  const tipLabelShapeExtraPaletteSelects = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-palette-select`));
-  const tipScaleModeSelect   = $('tip-scale-mode-select');
-  const tipScaleModeRow      = $('tip-scale-mode-row');
-  const nodeScaleModeSelect  = $('node-scale-mode-select');
-  const nodeScaleModeRow     = $('node-scale-mode-row');
-  const labelScaleModeSelect = $('label-scale-mode-select');
-  const labelScaleModeRow    = $('label-scale-mode-row');
-  const tipLabelShapeScaleModeRow    = $('tip-label-shape-scale-mode-row');
-  const tipLabelShapeScaleModeSelect = $('tip-label-shape-scale-mode-select');
-  const tipLabelShapeExtraScaleModeRows    = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-scale-mode-row`));
-  const tipLabelShapeExtraScaleModeSelects = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-scale-mode-select`));
+  const tipLabelShapeExtraConfigureRows  = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-configure-row`));
+  const tipLabelShapeExtraConfigureBtns  = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-configure-btn`));
+  // Annotation colour config modal
+  const annotConfigOverlay       = $('annot-config-overlay');
+  const annotConfigTitle         = $('annot-config-title');
+  const annotConfigInfo          = $('annot-config-info');
+  const annotConfigPaletteSelect = $('annot-config-palette-select');
+  const annotConfigPalettePreview = $('annot-config-palette-preview');
+  const annotConfigScaleRow      = $('annot-config-scale-row');
+  const annotConfigScaleSelect   = $('annot-config-scale-select');
   const tipLabelShapeExtraSectionEls    = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-section`));
   const tipLabelShapeExtraDetailEls     = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}-detail`));
   // Per-level cascade memory: stores the last non-'off' value of each extra shape
@@ -359,10 +558,7 @@ async function _initCore(root = document) {
   const rttMinorLabelRow       = $('rtt-minor-label-row');
   // Clade highlight controls
   const cladeHighlightColourByEl         = $('clade-highlight-colour-by');
-  const cladeHighlightPaletteSelect      = $('clade-highlight-palette-select');
-  const cladeHighlightPaletteRow         = $('clade-highlight-palette-row');
-  const cladeHighlightScaleModeSelect    = $('clade-highlight-scale-mode-select');
-  const cladeHighlightScaleModeRow       = $('clade-highlight-scale-mode-row');
+  const cladeHighlightConfigureRow       = $('clade-highlight-configure-row');
   const cladeHighlightDefaultColourEl    = $('clade-highlight-default-colour');
   const btnPaintHighlight                = $('btn-paint-highlight');
   const cladeHighlightLeftEdgeEl         = $('clade-highlight-left-edge');
@@ -383,6 +579,16 @@ async function _initCore(root = document) {
   const btnResetSettings       = $('btn-reset-settings');
   const btnImportAnnot         = $('btn-import-annot');
   const btnCurateAnnot         = $('btn-curate-annot');
+  const btnManageFilters       = $('btn-manage-filters');
+  const btnManagePalettes      = $('btn-manage-palettes');
+  let filterManager            = null;  // assigned after renderer is created
+  let paletteManager           = null;  // assigned after renderer is created
+  const nodeBarsFilterEl      = $('node-bars-filter');
+  const nodeLabelsFilterEl    = $('node-labels-filter');
+  const branchLabelsFilterEl  = $('branch-labels-filter');
+  const tipLabelsFilterEl     = $('tip-labels-filter');
+  const nodeShapesFilterEl    = $('node-shapes-filter');
+  const tipShapesFilterEl     = $('tip-shapes-filter');
   const btnDataTable           = $('btn-data-table');
   const btnRtt                 = $('btn-rtt');
   const btnExportTree          = $('btn-export-tree');
@@ -403,25 +609,7 @@ async function _initCore(root = document) {
 
   // Upgrade all side-panel <input type="color" class="pt-palette-color"> to swatch pickers
   upgradeAllPaletteColourPickers(root, { palettes: CATEGORICAL_PALETTES });
-  const tipFilterEl            = $('tip-filter');
-  const btnFilterColEl         = $('btn-filter-col');
-  const btnFilterRegexEl       = $('btn-filter-regex');
-  const filterColPopupEl       = $('filter-col-popup');
-  let   _filterCol             = '__name__';  // currently active filter column
-  let   _filterRegex           = false;       // regex mode toggle
-
-  // Close filter-column popup on outside click or Escape
-  document.addEventListener('click', (e) => {
-    if (!root.contains(e.target)) return;
-    if (filterColPopupEl?.classList.contains('open') &&
-        !filterColPopupEl.contains(e.target) &&
-        e.target !== btnFilterColEl) {
-      filterColPopupEl.classList.remove('open');
-    }
-  });
-  if (_cfg.enableKeyboard) document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && (root === document || root.contains(document.activeElement))) filterColPopupEl?.classList.remove('open');
-  });
+  let filterControl = null;  // managed by filter-control.js; set in bindControls()
 
   // ── Settings persistence ──────────────────────────────────────────────────
   // SETTINGS_KEY, USER_THEMES_KEY, THEMES, DEFAULT_SETTINGS imported from ./themes.js
@@ -434,24 +622,14 @@ async function _initCore(root = document) {
   let _cachedMidpoint      = null;  // cached midpointRootGraph() result; cleared on every tree change
   let isExplicitlyRooted = false; // true when root node carries annotations — rerooting disabled
   let _loadedFilename    = null;  // filename of the most recently loaded tree
+  let _treeSourceUrl     = null;  // URL the current tree was fetched from (null if loaded from file)
   let _onTitleChange     = null;  // optional callback(filename|null) for platform title updates
   let _axisIsTimedTree   = false;
   let treeLoaded         = false; // declared early — referenced by _syncCanvasWrapperBg before modal init
 
-  // Live theme registry: built-ins first, then any user-saved themes added on top.
-  const themeRegistry = new Map(Object.entries(THEMES));
-
-  /** The user-set default theme for new windows (persisted in localStorage). */
-  let defaultTheme = DEFAULT_SETTINGS.defaultTheme;  // restored from _saved.defaultTheme in the init block below
-  // Guard applied after loadUserThemes() so user-saved defaults are recognised.
-
-  /**
-   * Platform-specific save handler for theme export.
-   * Null = use browser download (<a download>). Set by Tauri adapter.
-   * Signature: fn({ content, filename, filterName, extensions }) → Promise
-   */
-  let _themeSaveHandler = null;
-  function setThemeSaveHandler(fn) { _themeSaveHandler = fn; }
+  // Theme manager created later (needs saveSettings which needs _buildSnapshot).
+  // Forward-declared; assigned after _buildSnapshot and applyTheme are defined.
+  let themeManager = null;
 
   /** Per-annotation palette override: annotationKey → palette name string. */
   const annotationPalettes = new Map();
@@ -459,139 +637,121 @@ async function _initCore(root = document) {
   /** Per-annotation scale mode: annotationKey → 'symmetric-zero'|'zero-positive'|'' */
   const annotationScaleModes = new Map();
 
-  /**
-   * Populate a scale-mode <select> for the given annotation key and show/hide its row.
-   * Only shown for numeric annotation types.
-   * @param {HTMLSelectElement} sel
-   * @param {HTMLElement}       row
-   * @param {string|null}       annotKey
-   */
-  function _updateScaleModeSelect(sel, row, annotKey) {
-    const schema = renderer?._annotationSchema;
-    if (!annotKey || annotKey === 'user_colour' || !schema || !row) {
-      if (row) row.style.display = 'none';
-      return;
-    }
-    const def = schema.get(annotKey);
-    if (!def || !isNumericType(def.dataType)) { row.style.display = 'none'; return; }
-    const stored = annotationScaleModes.get(annotKey) ?? '';
-    sel.value = [...sel.options].some(o => o.value === stored) ? stored : '';
-    row.style.display = '';
+  /** Tracks which annotation key the annot-config modal is currently open for. */
+  let _annotConfigKey = null;
+
+  /** Show/hide a configure-button row based on whether a real annotation key is selected. */
+  function _updateConfigureBtn(row, annotKey) {
+    if (!row) return;
+    row.style.display = (annotKey && annotKey !== 'user_colour') ? '' : 'none';
   }
 
-  /**
-   * After storing a scale mode change for `key`, sync every other scale-mode <select>
-   * bound to the same annotation so they all show the same value.
-   */
-  function _syncScaleModeSelects(key, mode) {
-    const pairs = () => [
-      [tipColourBy,            tipScaleModeSelect],
-      [nodeColourBy,           nodeScaleModeSelect],
-      [labelColourBy,          labelScaleModeSelect],
-      [tipLabelShapeColourBy,  tipLabelShapeScaleModeSelect],
-      ...tipLabelShapeExtraColourBys.map((cb, i) => [cb, tipLabelShapeExtraScaleModeSelects[i]]),
-      [cladeHighlightColourByEl, cladeHighlightScaleModeSelect],
-      [collapsedCladeColourByEl, collapsedCladeScaleModeSelect],
-    ];
-    for (const [colourBy, sel] of pairs()) {
-      if (!colourBy || !sel) continue;
-      if (colourBy.value === key && sel.value !== mode) {
-        if ([...sel.options].some(o => o.value === mode)) sel.value = mode;
+  /** Open the annotation colour-config modal for the given annotation key. */
+  function openAnnotConfig(key) {
+    if (!key || key === 'user_colour') return;
+    _annotConfigKey = key;
+    const schema = renderer?._annotationSchema;
+    const def = schema?.get(key);
+    if (annotConfigTitle) annotConfigTitle.textContent = def?.label ?? key;
+    // Populate annotation info
+    if (annotConfigInfo) {
+      const lines = [];
+      if (def) {
+        const typeLabels = { real: 'Continuous', integer: 'Integer', proportion: 'Proportion', percentage: 'Percentage', categorical: 'Categorical', ordinal: 'Ordinal', date: 'Date' };
+        const typeLabel = typeLabels[def.dataType] ?? def.dataType ?? 'Unknown';
+        lines.push(`<strong>Type:</strong> ${typeLabel}`);
+        const isCatLike = def.dataType === 'categorical' || def.dataType === 'ordinal';
+        if (isCatLike && def.values?.length) {
+          lines.push(`<strong>Categories:</strong> ${def.values.length}`);
+        } else if (isNumericType(def.dataType)) {
+          const lo = def.observedMin ?? def.min;
+          const hi = def.observedMax ?? def.max;
+          if (lo != null && hi != null) {
+            const fmt = (v) => Number.isInteger(v) ? v : +v.toPrecision(4);
+            lines.push(`<strong>Range:</strong> ${fmt(lo)} → ${fmt(hi)}`);
+          }
+        }
+      }
+      annotConfigInfo.innerHTML = lines.join('<br>');
+    }
+    // Populate palette select
+    if (annotConfigPaletteSelect) {
+      const isCat = def?.dataType === 'categorical' || def?.dataType === 'ordinal';
+      const palettes = isCat ? allCategoricalPalettes() : allSequentialPalettes();
+      const defPal   = isCat ? DEFAULT_CATEGORICAL_PALETTE : DEFAULT_SEQUENTIAL_PALETTE;
+      const stored   = annotationPalettes.get(key) ?? defPal;
+      annotConfigPaletteSelect.innerHTML = '';
+      for (const name of Object.keys(palettes)) {
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        annotConfigPaletteSelect.appendChild(opt);
+      }
+      annotConfigPaletteSelect.value = [...annotConfigPaletteSelect.options].some(o => o.value === stored) ? stored : defPal;
+    }
+    // Show/populate scale mode row only for numeric annotations
+    if (annotConfigScaleRow && annotConfigScaleSelect) {
+      const isNumeric = def && isNumericType(def.dataType);
+      annotConfigScaleRow.style.display = isNumeric ? '' : 'none';
+      if (isNumeric) {
+        const sm = annotationScaleModes.get(key) ?? '';
+        annotConfigScaleSelect.value = [...annotConfigScaleSelect.options].some(o => o.value === sm) ? sm : '';
       }
     }
-  }
-
-
-  /**
-   * Populate a palette <select> for the given annotation key and show/hide its row.
-   * Restores stored value from annotationPalettes; falls back to the type default.
-   * @param {HTMLSelectElement} sel
-   * @param {HTMLElement}       row
-   * @param {string|null}       annotKey
-   */
-  function _updatePaletteSelect(sel, row, annotKey) {
-    const schema = renderer?._annotationSchema;
-    if (!annotKey || annotKey === 'user_colour' || !schema) {
-      row.style.display = 'none';
-      return;
+    // Render palette preview
+    {
+      const isCat = def?.dataType === 'categorical' || def?.dataType === 'ordinal';
+      _renderAnnotConfigPreview(annotConfigPaletteSelect?.value ?? '', isCat);
     }
-    const def = schema.get(annotKey);
-    if (!def) { row.style.display = 'none'; return; }
-    const isCat    = def.dataType === 'categorical' || def.dataType === 'ordinal';
-    const palettes = isCat ? CATEGORICAL_PALETTES : SEQUENTIAL_PALETTES;
-    const defPal   = isCat ? DEFAULT_CATEGORICAL_PALETTE : DEFAULT_SEQUENTIAL_PALETTE;
-    const stored   = annotationPalettes.get(annotKey) ?? defPal;
-    sel.innerHTML = '';
-    for (const name of Object.keys(palettes)) {
-      const opt = document.createElement('option');
-      opt.value = name; opt.textContent = name;
-      sel.appendChild(opt);
-    }
-    sel.value = [...sel.options].some(o => o.value === stored) ? stored : defPal;
-    row.style.display = '';
+    annotConfigOverlay?.classList.add('open');
   }
 
   /**
-   * After storing a palette change for `key`, sync every other palette <select>
-   * that is currently bound to the same annotation so they all show the same value.
+   * If the annot-config modal is open for `key`, sync its palette select to `paletteName`.
+   * Called when the annotation curator changes a palette.
    */
   function _syncPaletteSelects(key, paletteName) {
-    // Pairs of [colourByEl, paletteSelectEl] – declared further down but accessible via closure.
-    const pairs = () => [
-      [tipColourBy,            tipPaletteSelect],
-      [nodeColourBy,           nodePaletteSelect],
-      [labelColourBy,          labelPaletteSelect],
-      [tipLabelShapeColourBy,  tipLabelShapePaletteSelect],
-      ...tipLabelShapeExtraColourBys.map((cb, i) => [cb, tipLabelShapeExtraPaletteSelects[i]]),
-      [cladeHighlightColourByEl, cladeHighlightPaletteSelect],
-      [collapsedCladeColourByEl, collapsedCladePaletteSelect],
-    ];
-    for (const [colourBy, sel] of pairs()) {
-      if (!colourBy || !sel) continue;
-      if (colourBy.value === key && sel.value !== paletteName) {
-        if ([...sel.options].some(o => o.value === paletteName)) sel.value = paletteName;
-      }
+    if (_annotConfigKey === key && annotConfigPaletteSelect) {
+      if ([...annotConfigPaletteSelect.options].some(o => o.value === paletteName))
+        annotConfigPaletteSelect.value = paletteName;
     }
   }
 
-  /** Persist only user-defined (non-built-in) themes to localStorage. */
-  function saveUserThemes() {
-    const userObj = {};
-    for (const [name, theme] of themeRegistry) {
-      if (!THEMES[name]) userObj[name] = theme;
+  /**
+   * If the annot-config modal is open for `key`, sync its scale select to `mode`.
+   * Called when the annotation curator changes a scale mode.
+   */
+  function _syncScaleModeSelects(key, mode) {
+    if (_annotConfigKey === key && annotConfigScaleSelect) {
+      if ([...annotConfigScaleSelect.options].some(o => o.value === mode))
+        annotConfigScaleSelect.value = mode;
     }
-    localStorage.setItem(USER_THEMES_KEY, JSON.stringify(userObj));
   }
 
-  /** Load user themes from localStorage into themeRegistry. */
-  function loadUserThemes() {
-    try {
-      const stored = JSON.parse(localStorage.getItem(USER_THEMES_KEY) || '{}');
-      for (const [name, theme] of Object.entries(stored)) {
-        themeRegistry.set(name, theme);
-      }
-    } catch { /* ignore */ }
+  /**
+   * Render a palette preview into the annot-config modal's preview div.
+   * For categorical palettes: a row of colour swatches.
+   * For sequential/diverging palettes: a full-width gradient bar.
+   * @param {string} paletteName
+   * @param {boolean} isCat  true → categorical, false → sequential
+   */
+  function _renderAnnotConfigPreview(paletteName, isCat) {
+    if (!annotConfigPalettePreview) return;
+    if (isCat) {
+      const colours = getCategoricalPalette(paletteName);
+      annotConfigPalettePreview.innerHTML = colours.slice(0, 12).map(c =>
+        `<span class="pm-mini-swatch" style="background:${c}"></span>`
+      ).join('');
+    } else {
+      const stops = getSequentialPalette(paletteName);
+      const grad  = stops.length === 1
+        ? stops[0]
+        : `linear-gradient(to right, ${stops.join(', ')})`;
+      annotConfigPalettePreview.innerHTML =
+        `<span class="pm-mini-gradient" style="background:${grad};width:100%;display:block;height:14px;border-radius:3px;border:1px solid rgba(255,255,255,0.12)"></span>`;
+    }
   }
 
-  /** Rebuild the theme <select> options from themeRegistry plus the fixed "Custom" entry. */
-  function _populateThemeSelect() {
-    if (!themeSelect) return;
-    const current = themeSelect.value;
-    themeSelect.innerHTML = '';
-    for (const name of themeRegistry.keys()) {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name + (name === defaultTheme ? ' ★' : '');
-      themeSelect.appendChild(opt);
-    }
-    const customOpt = document.createElement('option');
-    customOpt.value = 'custom';
-    customOpt.textContent = 'Custom';
-    customOpt.style.fontStyle = 'italic';
-    themeSelect.appendChild(customOpt);
-    // Restore selection if still valid, otherwise fall back to first option.
-    themeSelect.value = (themeSelect.querySelector(`option[value="${CSS.escape(current)}"]`) ? current : themeRegistry.keys().next().value);
-  }
+  // Theme helper functions are provided by the themeManager (created later).
 
   /**
    * Build a settings snapshot from the current DOM control values.
@@ -682,13 +842,15 @@ async function _initCore(root = document) {
     return {
       ...themePart,
       selectedTheme:     themeSelect?.value ?? DEFAULT_SETTINGS.selectedTheme,
-      defaultTheme:     defaultTheme,
+      defaultTheme:     themeManager?.defaultTheme ?? DEFAULT_SETTINGS.defaultTheme,
       paintColour:      paintColourPickerEl.value,
       selectedLabelStyle: selectedLabelStyleEl.value,
       tipLabelTypefaceKey:         tipLabelTypefaceEl?.value  || '',
       tipLabelTypefaceStyle:       typefaceStyleEl?.value     || '',
       nodeLabelTypefaceKey:        nodeLabelTypefaceEl?.value || '',
       nodeLabelTypefaceStyle:      nodeLabelTypefaceStyleEl?.value || '',
+      branchLabelTypefaceKey:      branchLabelTypefaceEl?.value || '',
+      branchLabelTypefaceStyle:    branchLabelTypefaceStyleEl?.value || '',
       collapsedCladeTypefaceKey:   collapsedCladeTypefaceEl?.value || '',
       collapsedCladeTypefaceStyle: collapsedCladeTypefaceStyleEl?.value || '',
       tipColourBy:      tipColourBy.value,
@@ -740,6 +902,8 @@ async function _initCore(root = document) {
       nodeBarsLine:             nodeBarsLineEl.value,
       nodeBarsRange:          nodeBarsRangeEl.value,
       collapsedCladeOpacity:  collapsedOpacitySlider.value,
+      collapsedCladeStrokeWidth: collapsedStrokeWidthSlider.value,
+      collapsedCladeStrokeOpacity: collapsedStrokeOpacitySlider.value,
       collapsedCladeHeightN:  collapsedHeightNSlider.value,
       collapsedCladeFontSize: collapsedCladeFontSizeSlider.value,
       rootStemPct:        rootStemPctSlider.value,
@@ -759,8 +923,16 @@ async function _initCore(root = document) {
       nodeLabelFontSize:   nodeLabelFontSizeSlider.value,
       nodeLabelColor:      nodeLabelColorEl.value,
       nodeLabelSpacing:    nodeLabelSpacingSlider.value,
+      nodeLabelColourBy:   nodeLabelColourBy.value,
       tipLabelSpacing:     tipLabelSpacingSlider.value,
       nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
+      branchLabelAnnotation: branchLabelShowEl.value,
+      branchLabelPosition:   branchLabelPositionEl.value,
+      branchLabelFontSize:   branchLabelFontSizeSlider.value,
+      branchLabelColor:      branchLabelColorEl.value,
+      branchLabelSpacing:    branchLabelSpacingSlider.value,
+      branchLabelColourBy:   branchLabelColourBy.value,
+      branchLabelDecimalPlaces: branchLabelDpEl.value !== '' ? parseInt(branchLabelDpEl.value) : null,
       mode:             renderer ? renderer._mode : 'nodes',
       dataTableOpen:       dataTableRenderer?.isOpen()   ?? false,
       dataTablePinned:     dataTableRenderer?.isPinned() ?? false,
@@ -778,159 +950,24 @@ async function _initCore(root = document) {
       cladeHighlightStrokeOpacity: cladeHighlightStrokeOpacitySlider?.value ?? '0.7',
       cladeHighlightColour:        cladeHighlightDefaultColourEl?.value    ?? '#ffaa00',
       cladeHighlights:             renderer?.getCladeHighlightsData() ?? [],
+      filters:                     filterManager ? JSON.stringify([...filterManager.getAll().values()]) : '[]',
+      nodeBarsFilter:              nodeBarsFilterEl?.value     || null,
+      nodeLabelsFilter:            nodeLabelsFilterEl?.value   || null,
+      branchLabelsFilter:          branchLabelsFilterEl?.value || null,
+      tipLabelsFilter:             tipLabelsFilterEl?.value    || null,
+      nodeShapesFilter:            nodeShapesFilterEl?.value   || null,
+      tipShapesFilter:             tipShapesFilterEl?.value    || null,
     };
   }
 
-  /** Prompt for a name and store the current visual settings as a new (or updated) user theme. */
-  async function storeTheme() {
-    const name = await showPromptDialog('Save Theme', 'Enter a name for this theme:');
-    if (!name) return;
-    if (name.toLowerCase() === 'custom') {
-      await showAlertDialog('Reserved name', '"Custom" is a reserved name — please choose a different name.');
-      return;
-    }
-    if (THEMES[name]) {
-      await showAlertDialog('Built-in theme', `"${name}" is a built-in theme and cannot be overwritten.`);
-      return;
-    }
-    themeRegistry.set(name, _buildSnapshot({ themeOnly: true }));
-    saveUserThemes();
-    _populateThemeSelect();
-    themeSelect.value = name;
-    _syncThemeButtons();
-    saveSettings();
-  }
-
-  /** Sync enabled/disabled state of all theme action buttons. */
-  function _syncThemeButtons() {
-    if (!btnStoreTheme) return;
-    const sel       = themeSelect.value;
-    const isCustom  = sel === 'custom';
-    const isBuiltIn = !!THEMES[sel];
-    const isDefault = sel === defaultTheme;
-    btnStoreTheme.disabled   = !isCustom;
-    btnDefaultTheme.disabled = isCustom || isDefault;
-    btnRemoveTheme.disabled  = isCustom || isBuiltIn;
-    // Export is always enabled; disable only when nothing meaningful to name (custom with no name).
-    if (btnExportTheme) btnExportTheme.disabled = false;
-    if (btnImportTheme) btnImportTheme.disabled = false;
-  }
-
-  /** Persist the currently selected named theme as the default for new windows. */
-  function setDefaultTheme() {
-    const name = themeSelect.value;
-    if (name === 'custom' || !themeRegistry.has(name)) return;
-    defaultTheme = name;
-    saveSettings();
-    // Repopulate select to refresh the ★ marker, then restore selection.
-    _populateThemeSelect();
-    themeSelect.value = name;
-    _syncThemeButtons();
-  }
-
-  /** Delete a user-saved (non-built-in) theme from the registry and localStorage. */
-  async function removeTheme() {
-    const name = themeSelect.value;
-    if (name === 'custom' || THEMES[name]) return;
-    if (!await showConfirmDialog('Remove theme', `Remove the theme \u201c${name}\u201d?`, { okLabel: 'Remove', cancelLabel: 'Cancel' })) return;
-    // If the removed theme was the default, fall back to the first built-in.
-    if (defaultTheme === name) {
-      defaultTheme = Object.keys(THEMES)[0];
-    }
-    themeRegistry.delete(name);
-    saveUserThemes();
-    _populateThemeSelect();
-    // Apply whichever theme the select fell back to.
-    const fallback = themeSelect.value;
-    if (themeRegistry.has(fallback)) applyTheme(fallback);
-    _syncThemeButtons();
-  }
-
-  /** Export the current theme as a JSON file the user can save locally. */
-  async function exportTheme() {
-    const sel = themeSelect.value;
-    const isCustom = sel === 'custom';
-    const defaultName = isCustom ? '' : sel;
-    const name = await showPromptDialog('Export Theme', 'Enter a name for the exported theme:', defaultName);
-    if (!name) return;
-    if (name.toLowerCase() === 'custom') {
-      await showAlertDialog('Reserved name', '"Custom" is a reserved name — please choose a different name.');
-      return;
-    }
-    const themeData = isCustom ? _buildSnapshot({ themeOnly: true }) : (themeRegistry.get(sel) ?? _buildSnapshot({ themeOnly: true }));
-    const json = JSON.stringify({ name, theme: themeData }, null, 2);
-    const filename = `${name}.peartree-theme.json`;
-    if (_themeSaveHandler) {
-      await _themeSaveHandler({ content: json, filename, filterName: 'PearTree Theme', extensions: ['json'] });
-    } else {
-      _downloadBlob(json, 'application/json', filename);
-    }
-  }
-
-  /** Import a theme from a JSON file, prompting for a name and handling conflicts. */
-  function importTheme() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json,application/json';
-    input.style.display = 'none';
-    document.body.appendChild(input);
-    input.addEventListener('change', async () => {
-      const file = input.files?.[0];
-      document.body.removeChild(input);
-      if (!file) return;
-      let data, themeObj;
-      try {
-        const text = await file.text();
-        data = JSON.parse(text);
-        // Accept { name, theme } format or a bare theme object.
-        themeObj = (data.theme && typeof data.theme === 'object') ? data.theme : data;
-        // Valid if it has canvasBgColor (fully specified) or a recognised inherit parent.
-        if (typeof themeObj !== 'object' || (!themeObj.canvasBgColor && !(themeObj.inherit && THEMES[themeObj.inherit]))) {
-          await showAlertDialog('Invalid file', 'This does not appear to be a valid PearTree theme file.');
-          return;
-        }
-      } catch {
-        await showAlertDialog('Parse error', 'Failed to parse the theme file — please check it is valid JSON.');
-        return;
-      }
-      const fileNameSuggestion = (typeof data.name === 'string' && data.name.trim()) ? data.name.trim() : '';
-      // Warn if `inherit` is specified but doesn't match a known theme (it will fall back to DEFAULT_THEME).
-      if (themeObj.inherit && !THEMES[themeObj.inherit]) {
-        if (!await showConfirmDialog('Unknown inherit theme',
-            `The file specifies inherit "${themeObj.inherit}" which is not a known theme. DEFAULT_THEME will be used as the base instead. Continue?`,
-            { okLabel: 'Continue', cancelLabel: 'Cancel' })) return;
-      }
-      // Ask the user to confirm or change the name.
-      let name = await showPromptDialog('Import Theme', 'Name for the imported theme:', fileNameSuggestion);
-      if (!name) return;
-      if (name.toLowerCase() === 'custom') {
-        await showAlertDialog('Reserved name', '"Custom" is a reserved name — please choose a different name.');
-        return;
-      }
-      // Built-in conflict: must rename.
-      while (THEMES[name]) {
-        const next = await showPromptDialog('Built-in theme', `"${name}" is a built-in theme and cannot be overwritten.\nPlease enter a different name:`, '');
-        if (!next) return;
-        name = next;
-        if (name.toLowerCase() === 'custom') {
-          await showAlertDialog('Reserved name', '"Custom" is a reserved name — please choose a different name.');
-          return;
-        }
-      }
-      // User theme conflict: ask before overwriting.
-      if (themeRegistry.has(name)) {
-        if (!await showConfirmDialog('Overwrite theme', `A user theme named \u201c${name}\u201d already exists. Overwrite it?`, { okLabel: 'Overwrite', cancelLabel: 'Cancel' })) return;
-      }
-      themeRegistry.set(name, themeObj);
-      saveUserThemes();
-      _populateThemeSelect();
-      themeSelect.value = name;
-      applyTheme(name);
-      _syncThemeButtons();
-    });
-    input.click();
-  }
-
+  // ── Theme CRUD: delegated to themeManager (created after applyTheme is defined) ──
+  // These thin wrappers keep existing call-sites unchanged.
+  function storeTheme()      { themeManager?.storeTheme(); }
+  function setDefaultTheme() { themeManager?.setDefaultTheme(); }
+  function removeTheme()     { themeManager?.removeTheme(); }
+  function exportTheme()     { themeManager?.exportTheme(); }
+  function importTheme()     { themeManager?.importTheme(); }
+  function _syncThemeButtons() { themeManager?.syncButtons(); }
 
   function loadSettings() {
     if (_cfg.storageKey === null) return {};
@@ -1034,6 +1071,10 @@ async function _initCore(root = document) {
     if (nodeLabelTypefaceEl && s.nodeLabelTypefaceKey)   nodeLabelTypefaceEl.value = s.nodeLabelTypefaceKey;
     if (nodeLabelTypefaceStyleEl) {
       _populateStyleSelect(nodeLabelTypefaceEl?.value || fontFamilyEl.value, nodeLabelTypefaceStyleEl, s.nodeLabelTypefaceStyle, true);
+    }
+    if (branchLabelTypefaceEl && s.branchLabelTypefaceKey) branchLabelTypefaceEl.value = s.branchLabelTypefaceKey;
+    if (branchLabelTypefaceStyleEl) {
+      _populateStyleSelect(branchLabelTypefaceEl?.value || fontFamilyEl.value, branchLabelTypefaceStyleEl, s.branchLabelTypefaceStyle, true);
     }
     if (collapsedCladeTypefaceEl && s.collapsedCladeTypefaceKey) collapsedCladeTypefaceEl.value = s.collapsedCladeTypefaceKey;
     if (collapsedCladeTypefaceStyleEl) {
@@ -1246,6 +1287,14 @@ async function _initCore(root = document) {
       collapsedOpacitySlider.value = s.collapsedCladeOpacity;
       $('collapsed-opacity-value').textContent = s.collapsedCladeOpacity;
     }
+    if (s.collapsedCladeStrokeWidth != null) {
+      collapsedStrokeWidthSlider.value = s.collapsedCladeStrokeWidth;
+      $('collapsed-stroke-width-value').textContent = s.collapsedCladeStrokeWidth;
+    }
+    if (s.collapsedCladeStrokeOpacity != null) {
+      collapsedStrokeOpacitySlider.value = s.collapsedCladeStrokeOpacity;
+      $('collapsed-stroke-opacity-value').textContent = s.collapsedCladeStrokeOpacity;
+    }
     if (s.collapsedCladeHeightN != null) {
       collapsedHeightNSlider.value = s.collapsedCladeHeightN;
       $('collapsed-height-n-value').textContent = s.collapsedCladeHeightN;
@@ -1275,9 +1324,20 @@ async function _initCore(root = document) {
     }
     if (s.tipLabelDecimalPlaces  != null && tipLabelDpEl)  tipLabelDpEl.value  = String(s.tipLabelDecimalPlaces);
     if (s.nodeLabelDecimalPlaces != null && nodeLabelDpEl) nodeLabelDpEl.value = String(s.nodeLabelDecimalPlaces);
+    if (s.branchLabelPosition)    branchLabelPositionEl.value   = s.branchLabelPosition;
+    if (s.branchLabelFontSize != null) {
+      branchLabelFontSizeSlider.value = s.branchLabelFontSize;
+      $('branch-label-font-size-value').textContent = s.branchLabelFontSize;
+    }
+    if (s.branchLabelColor)     branchLabelColorEl.value      = s.branchLabelColor;
+    if (s.branchLabelSpacing != null) {
+      branchLabelSpacingSlider.value = s.branchLabelSpacing;
+      $('branch-label-spacing-value').textContent = s.branchLabelSpacing;
+    }
+    if (s.branchLabelDecimalPlaces != null && branchLabelDpEl) branchLabelDpEl.value = String(s.branchLabelDecimalPlaces);
     if (s.paintColour) paintColourPickerEl.value = s.paintColour;
     // Set themeSelect to the stored theme name (or 'custom' if not known).
-    const themeName = s.theme && themeRegistry.has(s.theme) ? s.theme : (s.theme === 'custom' ? 'custom' : 'custom');
+    const themeName = s.theme && themeManager.registry.has(s.theme) ? s.theme : (s.theme === 'custom' ? 'custom' : 'custom');
     if (themeSelect) themeSelect.value = themeName;
     _syncThemeButtons();
     if (renderer) {
@@ -1291,7 +1351,7 @@ async function _initCore(root = document) {
     if (!await showConfirmDialog('Reset settings', 'Reset all visual settings to their defaults?', { okLabel: 'Reset', cancelLabel: 'Cancel' })) return;
 
     // Apply the default theme (hydrates all visual DOM controls + renderer).
-    applyTheme(defaultTheme);
+    applyTheme(themeManager.defaultTheme);
 
     // Reset colour-by dropdowns, legend, and axis controls.
     tipColourBy.value        = 'user_colour';
@@ -1349,6 +1409,9 @@ async function _initCore(root = document) {
     rootStemPctSlider.value = DEFAULT_SETTINGS.rootStemPct ?? '0';
     $('root-stem-pct-value').textContent = (DEFAULT_SETTINGS.rootStemPct ?? '0') + '%';
     nodeLabelShowEl.value     = DEFAULT_SETTINGS.nodeLabelAnnotation;
+    branchLabelShowEl.value   = DEFAULT_SETTINGS.branchLabelAnnotation;
+    if (nodeLabelColourBy)   nodeLabelColourBy.value   = 'user_colour';
+    if (branchLabelColourBy) branchLabelColourBy.value = 'user_colour';
     nodeLabelPositionEl.value = DEFAULT_SETTINGS.nodeLabelPosition;
     if (tipLabelTypefaceEl)            tipLabelTypefaceEl.value = '';
     _populateStyleSelect(fontFamilyEl.value, typefaceStyleEl, '', true);
@@ -1374,6 +1437,8 @@ async function _initCore(root = document) {
       renderer.setNodeColourBy('user_colour');
       renderer.setLabelColourBy('user_colour');
       renderer.setTipLabelShapeColourBy('user_colour');
+      renderer.setNodeLabelColourBy(null);
+      renderer.setBranchLabelColourBy(null);
       for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) renderer.setTipLabelShapeExtraColourBy(i, null);
       _applyLegendTypeface();
       legendRenderer.setTextColor(legendTextColorEl.value);
@@ -1478,6 +1543,8 @@ async function _initCore(root = document) {
       nodeBarsLine: nodeBarsLineEl.value,
       nodeBarsRange:  nodeBarsRangeEl.value  === 'on',
       collapsedCladeOpacity:  parseFloat(collapsedOpacitySlider.value),
+      collapsedCladeStrokeWidth: parseFloat(collapsedStrokeWidthSlider.value),
+      collapsedCladeStrokeOpacity: parseFloat(collapsedStrokeOpacitySlider.value),
       collapsedCladeHeightN:  parseInt(collapsedHeightNSlider.value),
       collapsedCladeFontSize: parseInt(collapsedCladeFontSizeSlider.value),
       collapsedCladeTypefaceKey:   collapsedCladeTypefaceEl?.value   || null,
@@ -1508,6 +1575,14 @@ async function _initCore(root = document) {
       nodeLabelTypefaceStyle: nodeLabelTypefaceStyleEl?.value || null,
       tipLabelSpacing:     parseInt(tipLabelSpacingSlider.value),
       nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
+      branchLabelAnnotation: branchLabelShowEl.value || null,
+      branchLabelPosition:   branchLabelPositionEl.value,
+      branchLabelFontSize:   parseInt(branchLabelFontSizeSlider.value),
+      branchLabelColor:      branchLabelColorEl.value,
+      branchLabelSpacing:    parseInt(branchLabelSpacingSlider.value),
+      branchLabelTypefaceKey:   branchLabelTypefaceEl?.value   || null,
+      branchLabelTypefaceStyle: branchLabelTypefaceStyleEl?.value || null,
+      branchLabelDecimalPlaces: branchLabelDpEl.value !== '' ? parseInt(branchLabelDpEl.value) : null,
       calCalibration:      calibration?.isActive ? calibration : null,
       calDateFormat:       axisDateFmtEl.value,
       introAnimation:      _saved.introAnimation ?? DEFAULT_SETTINGS.introAnimation,
@@ -1519,6 +1594,13 @@ async function _initCore(root = document) {
       cladeHighlightFillOpacity:   parseFloat(cladeHighlightFillOpacitySlider?.value ?? '0.15'),
       cladeHighlightStrokeOpacity: parseFloat(cladeHighlightStrokeOpacitySlider?.value ?? '0.7'),
       cladeHighlightColour:        cladeHighlightDefaultColourEl?.value ?? '#ffaa00',
+      _filterDefinitions:          filterManager?.getAll() ?? new Map(),
+      nodeBarsFilter:              nodeBarsFilterEl?.value     || null,
+      nodeLabelsFilter:            nodeLabelsFilterEl?.value   || null,
+      branchLabelsFilter:          branchLabelsFilterEl?.value || null,
+      tipLabelsFilter:             tipLabelsFilterEl?.value    || null,
+      nodeShapesFilter:            nodeShapesFilterEl?.value   || null,
+      tipShapesFilter:             tipShapesFilterEl?.value    || null,
     };
   }
 
@@ -1528,8 +1610,27 @@ async function _initCore(root = document) {
    */
   function _syncControlVisibility() {
     const _vis = (el, visible) => { if (el) el.classList.toggle('pt-detail-open', visible); };
-    _vis(tipShapeDetailEl,      parseInt(tipSlider.value)   > 0);
-    _vis(nodeShapeDetailEl,     parseInt(nodeSlider.value)  > 0);
+    const _showRowForControl = (controlEl, visible) => {
+      const row = controlEl?.closest('.pt-palette-row');
+      if (row) row.style.display = visible ? '' : 'none';
+    };
+
+    const tipShapesOn    = parseInt(tipSlider.value) > 0;
+    const nodeShapesOn   = parseInt(nodeSlider.value) > 0;
+    const tipLabelsOn    = tipLabelShow.value !== 'off';
+    const nodeLabelsOn   = nodeLabelShowEl.value !== '';
+    const branchLabelsOn = branchLabelShowEl.value !== '';
+    const nodeBarsOn     = nodeBarsShowEl.value === 'on';
+
+    _showRowForControl(tipShapesFilterEl, tipShapesOn);
+    _showRowForControl(nodeShapesFilterEl, nodeShapesOn);
+    _showRowForControl(tipLabelsFilterEl, tipLabelsOn);
+    _showRowForControl(nodeLabelsFilterEl, nodeLabelsOn);
+    _showRowForControl(branchLabelsFilterEl, branchLabelsOn);
+    _showRowForControl(nodeBarsFilterEl, nodeBarsOn);
+
+    _vis(tipShapeDetailEl,      tipShapesOn);
+    _vis(nodeShapeDetailEl,     nodeShapesOn);
     _vis(tipLabelShapeDetailEl, tipLabelShapeEl.value       !== 'off');
     const _spacingRow = $('tip-label-shape-spacing-row');
     if (_spacingRow) _spacingRow.style.display = (tipLabelShapeEl.value !== 'off' && tipLabelShapeExtraEls[0].value !== 'off') ? '' : 'none';
@@ -1541,8 +1642,9 @@ async function _initCore(root = document) {
       _vis(tipLabelShapeExtraSectionEls[i], _shapeOneOn && prevValue !== 'off');
       _vis(tipLabelShapeExtraDetailEls[i],  _shapeOneOn && tipLabelShapeExtraEls[i].value !== 'off');
     }
-    _vis(nodeLabelDetailEl,     nodeLabelShowEl.value       !== '');
-    _vis(nodeBarsDetailEl,      nodeBarsShowEl.value        === 'on');
+    _vis(nodeLabelDetailEl,     nodeLabelsOn);
+    _vis(branchLabelDetailEl,   branchLabelsOn);
+    _vis(nodeBarsDetailEl,      nodeBarsOn);
     _vis(legendDetailEl,        legendAnnotEl.value         !== '');
     _vis(legend2SectionEl,      legendAnnotEl.value         !== '');
     _vis(legend2DetailEl,       legend2AnnotEl.value        !== '');
@@ -1574,23 +1676,11 @@ async function _initCore(root = document) {
    * overrides the previous).  The chain terminates when `inherit` is absent or ''.
    */
   function _resolveTheme(name) {
-    const chain = [];
-    let current = name;
-    const seen = new Set();
-    while (current && !seen.has(current)) {
-      seen.add(current);
-      const t = themeRegistry.get(current);
-      if (!t) break;
-      chain.unshift(t);          // prepend so oldest ancestor ends up first
-      const parent = t.inherit;  // '' or undefined → DEFAULT_THEME is the base; stop
-      if (!parent) break;
-      current = parent;
-    }
-    return Object.assign({}, DEFAULT_THEME, ...chain);
+    return themeManager.resolveTheme(name);
   }
 
   function applyTheme(name) {
-    if (!themeRegistry.has(name)) return;
+    if (!themeManager.registry.has(name)) return;
     // Resolve full theme by walking the inherit chain from DEFAULT_THEME downward.
     const t = _resolveTheme(name);
     canvasBgColorEl.value   = t.canvasBgColor;
@@ -1687,6 +1777,12 @@ async function _initCore(root = document) {
     nodeLabelFontSizeSlider.value = t.nodeLabelFontSize; $('node-label-font-size-value').textContent = t.nodeLabelFontSize;
     nodeLabelColorEl.value        = t.nodeLabelColor;
     nodeLabelSpacingSlider.value  = t.nodeLabelSpacing;  $('node-label-spacing-value').textContent   = t.nodeLabelSpacing;
+    // Branch labels appearance
+    if (branchLabelTypefaceEl) branchLabelTypefaceEl.value = t.branchLabelTypefaceKey || '';
+    _populateStyleSelect(branchLabelTypefaceEl?.value || fontFamilyEl.value, branchLabelTypefaceStyleEl, t.branchLabelTypefaceStyle || '', true);
+    branchLabelFontSizeSlider.value = t.branchLabelFontSize; $('branch-label-font-size-value').textContent = t.branchLabelFontSize;
+    branchLabelColorEl.value        = t.branchLabelColor;
+    branchLabelSpacingSlider.value  = t.branchLabelSpacing;  $('branch-label-spacing-value').textContent   = t.branchLabelSpacing;
     // Node bars appearance
     nodeBarsWidthSlider.value         = t.nodeBarsWidth;         $('node-bars-width-value').textContent          = t.nodeBarsWidth;
     nodeBarsFillOpacitySlider.value   = t.nodeBarsFillOpacity;   $('node-bars-fill-opacity-value').textContent   = t.nodeBarsFillOpacity;
@@ -1700,6 +1796,8 @@ async function _initCore(root = document) {
     if (cladeHighlightStrokeOpacitySlider){ cladeHighlightStrokeOpacitySlider.value = t.cladeHighlightStrokeOpacity; $('clade-highlight-stroke-opacity-value') && ($('clade-highlight-stroke-opacity-value').textContent = t.cladeHighlightStrokeOpacity); }
     // Collapsed clades appearance
     collapsedCladeFontSizeSlider.value  = t.collapsedCladeFontSize;  $('collapsed-clade-font-size-value').textContent = t.collapsedCladeFontSize;
+    if (collapsedStrokeWidthSlider && t.collapsedCladeStrokeWidth != null)   { collapsedStrokeWidthSlider.value   = t.collapsedCladeStrokeWidth;   $('collapsed-stroke-width-value')   && ($('collapsed-stroke-width-value').textContent   = t.collapsedCladeStrokeWidth);   }
+    if (collapsedStrokeOpacitySlider && t.collapsedCladeStrokeOpacity != null){ collapsedStrokeOpacitySlider.value = t.collapsedCladeStrokeOpacity; $('collapsed-stroke-opacity-value') && ($('collapsed-stroke-opacity-value').textContent = t.collapsedCladeStrokeOpacity); }
     // RTT chart appearance
     rttStatsFontSizeSlider.value       = t.rttStatsFontSize;       $('rtt-stats-font-size-value').textContent     = t.rttStatsFontSize;
     rttRegressionStyleEl.value         = t.rttRegressionStyle;
@@ -1733,11 +1831,7 @@ async function _initCore(root = document) {
 
   /** Mark the theme selector as Custom when the user manually edits any visual control. */
   function _markCustomTheme() {
-    if (themeSelect && themeSelect.value !== 'custom') {
-      themeSelect.value = 'custom';
-      saveSettings();
-    }
-    _syncThemeButtons();
+    themeManager?.markCustom();
   }
 
   btnResetSettings?.addEventListener('click', applyDefaults);
@@ -1748,20 +1842,29 @@ async function _initCore(root = document) {
   btnImportTheme?.addEventListener('click', importTheme);
 
   // Bootstrap theme registry and select options before restoring saved state.
-  loadUserThemes();
+  // Create the theme manager now that applyTheme, _buildSnapshot, saveSettings are defined.
+  themeManager = createThemeManager({
+    builtInThemes: THEMES,
+    defaultThemeData: DEFAULT_THEME,
+    requiredThemeKeys: REQUIRED_THEME_KEYS,
+    userThemesKey: USER_THEMES_KEY,
+    themeSelectEl: themeSelect,
+    buttons: { store: btnStoreTheme, setDefault: btnDefaultTheme, remove: btnRemoveTheme, export: btnExportTheme, import: btnImportTheme },
+    buildThemeSnapshot: () => _buildSnapshot({ themeOnly: true }),
+    applyTheme,
+    saveSettings,
+    showAlertDialog,
+    showConfirmDialog,
+    showPromptDialog,
+    downloadBlob: _downloadBlob,
+    appName: 'PearTree',
+  });
+
   // Restore the per-instance default theme from saved settings.
-  // Must run after loadUserThemes() so user-saved themes are recognised.
   const _preSaved = loadSettings();
-  if (_preSaved.defaultTheme && themeRegistry.has(_preSaved.defaultTheme)) defaultTheme = _preSaved.defaultTheme;
-  // Guard: if the stored default is no longer in the registry, fall back gracefully.
-  if (!themeRegistry.has(defaultTheme)) defaultTheme = Object.keys(THEMES)[0];
-  // Validate that DEFAULT_THEME is fully specified (all REQUIRED_THEME_KEYS present).
-  {
-    const _missing = REQUIRED_THEME_KEYS.filter(k => !(k in DEFAULT_THEME));
-    if (_missing.length) console.warn('PearTree: DEFAULT_THEME is missing required keys:', _missing);
+  if (_preSaved.defaultTheme && themeManager.registry.has(_preSaved.defaultTheme)) {
+    themeManager.defaultTheme = _preSaved.defaultTheme;
   }
-  _populateThemeSelect();
-  _syncThemeButtons();
 
   // Load stored settings, then merge any embed-time initSettings on top so
   // window.peartreeConfig.settings always wins over persisted values.
@@ -1971,7 +2074,7 @@ async function _initCore(root = document) {
   }
   // Restore saved theme name; fall back to defaultTheme if no saved settings.
   // selectedTheme is the theme in use; defaultTheme is the starred/preferred one.
-  if (themeSelect) themeSelect.value = _saved.selectedTheme ?? _saved.theme /* bwc */ ?? defaultTheme;
+  if (themeSelect) themeSelect.value = _saved.selectedTheme ?? _saved.theme /* bwc */ ?? themeManager.defaultTheme;
   if (_saved.rttXOrigin)    rttXOriginEl.value    = _saved.rttXOrigin;
   if (_saved.rttGridLines)  rttGridLinesEl.value  = _saved.rttGridLines;
   if (_saved.rttAspectRatio) rttAspectRatioEl.value = _saved.rttAspectRatio;
@@ -2034,6 +2137,16 @@ async function _initCore(root = document) {
     cladeHighlightStrokeWidthSlider.value = _saved.cladeHighlightStrokeWidth;
     $('clade-highlight-stroke-width-value') && ($('clade-highlight-stroke-width-value').textContent = _saved.cladeHighlightStrokeWidth);
   }
+
+  // Restore filter manager state
+  // (only select values here — filterManager itself is created later;
+  //  the definitions are loaded into it after creation below)
+  const _filterSelectIds = ['nodeBarsFilter', 'nodeLabelsFilter', 'branchLabelsFilter', 'tipLabelsFilter', 'nodeShapesFilter', 'tipShapesFilter'];
+  const _filterSelectEls = [nodeBarsFilterEl, nodeLabelsFilterEl, branchLabelsFilterEl, tipLabelsFilterEl, nodeShapesFilterEl, tipShapesFilterEl];
+  for (let i = 0; i < _filterSelectIds.length; i++) {
+    const val = _saved[_filterSelectIds[i]];
+    if (val && _filterSelectEls[i]) _filterSelectEls[i].value = val;
+  }
   const container = canvas.parentElement;
   const dpr = window.devicePixelRatio || 1;
   canvas.style.width  = container.clientWidth  + 'px';
@@ -2064,7 +2177,7 @@ async function _initCore(root = document) {
     if (!_statusSelectEl) return;
     if (count > 0) {
       _statusSelectEl.innerHTML =
-        `<span class="st-sep">| </span><span class="st-lbl">Selected\u2009</span><span class="st-val">${count}</span>`;
+        `<span class="st-lbl">Selected\u2009</span><span class="st-val">${count}</span><span class="st-sep"> |</span>`;
       _statusSelectEl.classList.add('visible');
     } else {
       _statusSelectEl.innerHTML = '';
@@ -2083,8 +2196,41 @@ async function _initCore(root = document) {
       `<span class="st-sep"> | </span>` +
       `<span class="st-lbl">Age\u2009</span><span class="st-val">${stats.height.toFixed(5)}</span>` +
       `<span class="st-sep"> | </span>` +
-      `<span class="st-lbl">Length\u2009</span><span class="st-val">${stats.totalLength.toFixed(5)}</span>`;
+      `<span class="st-lbl">Length\u2009</span><span class="st-val">${stats.totalLength.toFixed(5)}</span>` +
+      (stats.subtreeLength != null
+        ? `<span class="st-sep"> | </span>` +
+          `<span class="st-lbl">Subtree\u2009</span><span class="st-val">${stats.subtreeLength.toFixed(5)}</span>`
+        : '');
   };
+
+  // ── Share-URL button ───────────────────────────────────────────────────────
+  // Shown only when the current tree was loaded from a URL (via the URL tab
+  // in the Open Tree modal, or via the ?treeUrl= startup parameter).
+  // Clicking it copies a peartree.live share link to the clipboard.
+  const _shareUrlBtn = $('btn-share-url');
+  function _updateShareUrlBtn() {
+    if (!_shareUrlBtn) return;
+    if (!_cfg.showStatusShare) {
+      _shareUrlBtn.classList.add('d-none');
+      _shareUrlBtn.onclick = null;
+      return;
+    }
+    if (_treeSourceUrl) {
+      _shareUrlBtn.classList.remove('d-none');
+      _shareUrlBtn.onclick = async () => {
+        const shareUrl = 'https://peartree.live/?treeUrl=' + encodeURIComponent(_treeSourceUrl);
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          statusMessage('Link copied!', 2000);
+        } catch (_err) {
+          statusMessage('Could not copy: ' + _err.message, 3000);
+        }
+      };
+    } else {
+      _shareUrlBtn.classList.add('d-none');
+      _shareUrlBtn.onclick = null;
+    }
+  }
 
   // ── Legend renderer ────────────────────────────────────────────────────────
   // Must be created before applyTheme() (which calls legendRenderer.setTextColor).
@@ -2262,11 +2408,16 @@ async function _initCore(root = document) {
       applyTheme(_st);
     } else {
       // No saved theme, or saved theme was 'custom' — fall back to defaultTheme.
-      applyTheme(defaultTheme);
+      applyTheme(themeManager.defaultTheme);
       // Also update the in-memory snapshot so saveSettings() below records the correct name.
-      if (themeSelect) themeSelect.value = defaultTheme;
+      if (themeSelect) themeSelect.value = themeManager.defaultTheme;
     }
   }
+
+  // applyTheme sets a complete visual baseline (including font sizes).
+  // Re-apply explicit saved/init visual keys afterwards so URL-provided
+  // overrides like settings.fontSize win over the selected theme defaults.
+  _applyVisualSettingsFromFile(_saved);
 
   // Always sync legend/axis font families after renderer init — applyTheme does
   // this when called, but the else branch above skips applyTheme entirely.
@@ -2405,10 +2556,13 @@ async function _initCore(root = document) {
 
     if (e.key === 'Escape') {
       // Close innermost open overlay first.
-      if ($('parse-tips-overlay')?.classList.contains('open'))    { /* handled by annotations-manager */ return; }
+      if ($('parse-tips-overlay')?.classList.contains('open'))    { /* handled by annotation-manager */ return; }
       if ($('export-graphic-overlay')?.classList.contains('open')) { exportCtrl.closeGraphicsDialog(); return; }
       if ($('export-tree-overlay')?.classList.contains('open'))    { exportCtrl.closeExportDialog();   return; }
+      if (annotConfigOverlay?.classList.contains('open')) { annotConfigOverlay.classList.remove('open'); return; }
       if ($('curate-annot-overlay')?.classList.contains('open')) { annotCurator.close(); return; }
+      if ($('manage-filters-overlay')?.classList.contains('open')) { filterManager.close(); return; }
+      if ($('palette-manager-overlay')?.classList.contains('open')) { paletteManager.close(); return; }
       if ($('import-annot-overlay')?.classList.contains('open'))  { annotImporter.close(); return; }
       const nodeInfoOv = $('node-info-overlay');
       if (nodeInfoOv && nodeInfoOv.classList.contains('open')) { nodeInfoOv.classList.remove('open'); return; }
@@ -2483,6 +2637,8 @@ async function _initCore(root = document) {
       if (!resp.ok) throw new Error('HTTP ' + resp.status + ' – ' + url);
       const text = await resp.text();
       await loadTree(text, url.split('/').pop() || 'tree');
+      _treeSourceUrl = url;
+      _updateShareUrlBtn();
     } catch (err) {
       setModalError(err.message);
       setModalLoading(false);
@@ -2548,6 +2704,7 @@ async function _initCore(root = document) {
   // ── Import Annotations ──────────────────────────────────────────────────
   const annotImporter = createAnnotImporter({
     getGraph: () => graph,
+    isTip: n => n.adjacents.length === 1,
     onApply: (g, importedCols = []) => {
       _refreshAnnotationUIs(g.annotationSchema);
       renderer.setAnnotationSchema(g.annotationSchema);
@@ -2575,6 +2732,7 @@ async function _initCore(root = document) {
   // ── Curate Annotations ───────────────────────────────────────────────────
   const annotCurator = createAnnotCurator({
     getGraph: () => graph,
+    isTip: n => n.adjacents.length === 1,
     onApply: (schema) => {
       _refreshAnnotationUIs(schema);
       renderer.setAnnotationSchema(schema);
@@ -2609,8 +2767,93 @@ async function _initCore(root = document) {
       _syncScaleModeSelects(key, mode);
       renderer._dirty = true;
     },
+    onConfigureClick: (key) => openAnnotConfig(key),
   });
   btnCurateAnnot?.addEventListener('click', () => commands.execute('curate-annot'));
+
+  // ── Filter Manager ───────────────────────────────────────────────────────
+  filterManager = createFilterManager({
+    getSchema: () => graph?.annotationSchema ?? null,
+    onFiltersChange: (map) => {
+      renderer?.setFilterDefinitions(map);
+      _refreshFilterUIs(map);
+      saveSettings();
+    },
+    showConfirm: (t, m, opts) => showConfirmDialog(t, m, { okLabel: 'OK', cancelLabel: 'Cancel', ...opts }),
+  });
+  // Restore saved filter definitions now that filterManager exists
+  if (_saved.filters) {
+    try {
+      const arr = JSON.parse(_saved.filters);
+      if (Array.isArray(arr)) {
+        const map = new Map(arr.map(f => [f.id, f]));
+        filterManager.setAll(map);
+        _refreshFilterUIs(map);
+        // Re-apply saved select values (dropdowns now have the filter options)
+        for (let i = 0; i < _filterSelectIds.length; i++) {
+          const val = _saved[_filterSelectIds[i]];
+          if (val && _filterSelectEls[i]) _filterSelectEls[i].value = val;
+        }
+        renderer?.setFilterDefinitions(map);
+      }
+    } catch (_) { /* corrupt saved data — silently skip */ }
+  }
+  btnManageFilters?.addEventListener('click', () => commands.execute('manage-filters'));
+
+  // ── Palette Manager ──────────────────────────────────────────────────────
+  paletteManager = createPaletteManager({
+    onPalettesChange: (userCat, userSeq) => {
+      setUserCategoricalPalettes(userCat);
+      setUserSequentialPalettes(userSeq);
+      saveSettings();
+    },
+    showConfirm: (t, m, opts) => showConfirmDialog(t, m, { okLabel: 'OK', cancelLabel: 'Cancel', ...opts }),
+  });
+  // Seed the global palette registry with any persisted user palettes
+  setUserCategoricalPalettes(paletteManager.getUserCategorical());
+  setUserSequentialPalettes(paletteManager.getUserSequential());
+  btnManagePalettes?.addEventListener('click', () => commands.execute('manage-palettes'));
+
+  /** Repopulate all 6 filter <select> elements from the current filter map. */
+  function _refreshFilterUIs(filterMap) {
+    const selects = [
+      nodeBarsFilterEl, nodeLabelsFilterEl, branchLabelsFilterEl,
+      tipLabelsFilterEl, nodeShapesFilterEl, tipShapesFilterEl,
+    ];
+    for (const sel of selects) {
+      if (!sel) continue;
+      const current = sel.value;
+      // Keep only the '— always —' placeholder, then re-add filters
+      sel.innerHTML = '<option value="">— always —</option>';
+      for (const [id, f] of filterMap) {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = f.name || id;
+        sel.appendChild(opt);
+      }
+      // Restore previous selection if still available
+      if (current && [...filterMap.keys()].includes(current)) sel.value = current;
+      else sel.value = '';
+      sel.disabled = filterMap.size === 0;
+    }
+    filterControl?.setNamedFilters(filterMap);
+  }
+
+  // Wire filter dropdown change events
+  function _onFilterSelectChange() { _applyFilterSelects(); saveSettings(); }
+
+  nodeBarsFilterEl?.addEventListener('change',     _onFilterSelectChange);
+  nodeLabelsFilterEl?.addEventListener('change',   _onFilterSelectChange);
+  branchLabelsFilterEl?.addEventListener('change', _onFilterSelectChange);
+  tipLabelsFilterEl?.addEventListener('change',    _onFilterSelectChange);
+  nodeShapesFilterEl?.addEventListener('change',   _onFilterSelectChange);
+  tipShapesFilterEl?.addEventListener('change',    _onFilterSelectChange);
+
+  function _applyFilterSelects() {
+    if (!renderer) return;
+    renderer.setSettings(_buildRendererSettings());
+    renderer._dirty = true;
+  }
 
   // ── Data Table Panel ─────────────────────────────────────────────────────
   dataTableRenderer = createDataTableRenderer({
@@ -2670,15 +2913,28 @@ async function _initCore(root = document) {
 
       // Patch the observed range in the schema entry (without full rebuild)
       if (def && schema && isNumericType(dt)) {
-        const values = [];
+        let min = Infinity, max = -Infinity;
         for (const n of graph.nodes) {
           const v = n.annotations?.[key];
-          if (v != null && v !== '?' && Number.isFinite(Number(v))) values.push(Number(v));
+          if (v != null && v !== '?' && Number.isFinite(Number(v))) {
+            const nv = Number(v);
+            if (nv < min) min = nv;
+            if (nv > max) max = nv;
+          }
         }
-        if (values.length > 0) {
-          def.observedMin = Math.min(...values);
-          def.observedMax = Math.max(...values);
+        if (min <= max) {
+          def.observedMin = min;
+          def.observedMax = max;
         }
+      } else if (def && schema && (dt === 'categorical' || dt === 'date')) {
+        // Rebuild the distinct values list after an edit may have added a new
+        // category or removed the last occurrence of an existing one.
+        const seen = new Set();
+        for (const n of graph.nodes) {
+          const v = n.annotations?.[key];
+          if (v != null && v !== '' && v !== '?') seen.add(String(v));
+        }
+        def.values = [...seen].sort();
       }
 
       if (schema) {
@@ -2869,12 +3125,8 @@ async function _initCore(root = document) {
     onStatsBoxCornerChange: () => saveSettings(),
   });
 
-  // Restore persistent panel state
-  if (_saved.dataTableOpen)     dataTableRenderer.open();
-  if (_saved.dataTablePinned)   dataTableRenderer.pin();
-  if (_saved.rttOpen)           rttChart.open();
-  if (_saved.rttPinned)         rttChart.setPin(true);
-  if (_saved.rttStatsBoxCorner) rttChart.setStatsBoxCorner(_saved.rttStatsBoxCorner);
+  // Panel state is restored inside loadTree() on first tree load so that the
+  // theme colours are already applied to the renderer before the panels open.
 
   // Restore saved clade highlights (populated after renderer is created)
   if (Array.isArray(_saved.cladeHighlights) && _saved.cladeHighlights.length > 0) {
@@ -3141,29 +3393,9 @@ async function _initCore(root = document) {
     repopulate(labelColourBy,        { filter: 'tips'  });
     if (cladeHighlightColourByEl)  repopulate(cladeHighlightColourByEl,  { filter: 'nodesAndTipAvg' });
     if (collapsedCladeColourByEl)  repopulate(collapsedCladeColourByEl,  { filter: 'nodesAndTipAvg' });
-    // Rebuild filter-column popup: 'Name' first, then categorical/ordinal/date tip annotations only.
-    {
-      const items = [{ value: '__name__', label: 'Name' }];
-      for (const [name, def] of schema) {
-        if (!def.onTips) continue;
-        if (def.groupMember) continue;
-        const dt = def.dataType;
-        if (dt !== 'categorical' && dt !== 'ordinal' && dt !== 'date') continue;
-        items.push({ value: name, label: def.label ?? name });
-      }
-      if (!items.some(i => i.value === _filterCol)) _filterCol = '__name__';
-      if (filterColPopupEl) {
-        filterColPopupEl.innerHTML = '';
-        for (const { value, label } of items) {
-          const btn = document.createElement('button');
-          btn.className = 'pt-fcp-item' + (value === _filterCol ? ' active' : '');
-          btn.textContent = label;
-          btn.dataset.value = value;
-          filterColPopupEl.appendChild(btn);
-        }
-      }
-      if (btnFilterColEl) btnFilterColEl.title = `Search in: ${items.find(i => i.value === _filterCol)?.label ?? 'Name'}`;
-    }
+    if (nodeLabelColourBy)   repopulate(nodeLabelColourBy,   { filter: 'nodesAndTipAvg' });
+    if (branchLabelColourBy) repopulate(branchLabelColourBy, { filter: 'nodesAndTipAvg' });
+    filterControl?.setSchema(schema);
     repopulate(tipLabelShapeColourBy, { filter: 'tips' });
     for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) {
       repopulate(tipLabelShapeExtraColourBys[i], { filter: 'tips' });
@@ -3230,17 +3462,35 @@ async function _initCore(root = document) {
       nodeLabelShowEl.value = [...nodeLabelShowEl.options].some(o => o.value === prev) ? prev : '';
       if (renderer) renderer.setNodeLabelAnnotation(nodeLabelShowEl.value || null);
     }
-    _syncControlVisibility();
-    // Refresh palette selects to match current colour-by selections after annotation schema changes.
-    _updatePaletteSelect(tipPaletteSelect,            tipPaletteRow,            tipColourBy.value);
-    _updatePaletteSelect(nodePaletteSelect,           nodePaletteRow,           nodeColourBy.value);
-    _updatePaletteSelect(labelPaletteSelect,          labelPaletteRow,          labelColourBy.value);
-    _updatePaletteSelect(tipLabelShapePaletteSelect,  tipLabelShapePaletteRow,  tipLabelShapeColourBy.value);
-    for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) {
-      _updatePaletteSelect(tipLabelShapeExtraPaletteSelects[i], tipLabelShapeExtraPaletteRows[i], tipLabelShapeExtraColourBys[i].value);
+    // Branch label show: first option is '' (none); then all annotations (tips + nodes).
+    {
+      const prev = branchLabelShowEl.value;
+      while (branchLabelShowEl.options.length > 1) branchLabelShowEl.remove(1);
+      for (const [name, def] of schema) {
+        if (def.dataType === 'list') continue;
+        if (def.groupMember) continue;
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = def.label ?? name;
+        branchLabelShowEl.appendChild(opt);
+      }
+      branchLabelShowEl.disabled = false;
+      branchLabelShowEl.value = [...branchLabelShowEl.options].some(o => o.value === prev) ? prev : '';
+      _updateLabelDpRow(branchLabelDpRowEl, branchLabelShowEl.value, schema);
+      if (renderer) renderer.setBranchLabelAnnotation(branchLabelShowEl.value || null);
     }
-    _updatePaletteSelect(cladeHighlightPaletteSelect, cladeHighlightPaletteRow, cladeHighlightColourByEl?.value ?? 'user_colour');
-    _updatePaletteSelect(collapsedCladePaletteSelect, collapsedCladePaletteRow, collapsedCladeColourByEl?.value ?? 'user_colour');
+    _syncControlVisibility();
+    // Refresh configure-button visibility to match current colour-by selections.
+    _updateConfigureBtn(tipConfigureRow,                tipColourBy.value);
+    _updateConfigureBtn(nodeConfigureRow,               nodeColourBy.value);
+    _updateConfigureBtn(labelConfigureRow,              labelColourBy.value);
+    _updateConfigureBtn(tipLabelShapeConfigureRow,      tipLabelShapeColourBy.value);
+    for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) {
+      _updateConfigureBtn(tipLabelShapeExtraConfigureRows[i], tipLabelShapeExtraColourBys[i].value);
+    }
+    _updateConfigureBtn(cladeHighlightConfigureRow, cladeHighlightColourByEl?.value ?? 'user_colour');
+    _updateConfigureBtn(collapsedCladeConfigureRow, collapsedCladeColourByEl?.value ?? 'user_colour');
+    if (nodeLabelColourBy)   _updateConfigureBtn(nodeLabelConfigureRow,   nodeLabelColourBy.value);
+    if (branchLabelColourBy) _updateConfigureBtn(branchLabelConfigureRow, branchLabelColourBy.value);
     // Sync clear-user-colour button: enabled only when at least one node has been coloured.
     if (btnClearUserColour) {
       commands.setEnabled('tree-clear-colours', schema.has('user_colour'));
@@ -3255,8 +3505,9 @@ async function _initCore(root = document) {
       if (renderer) { renderer.setSettings(_buildRendererSettings()); renderer._dirty = true; }
     }
     // Show decimal-places row only when a numeric annotation is selected.
-    _updateLabelDpRow(tipLabelDpRowEl,  tipLabelShow.value,    schema);
-    _updateLabelDpRow(nodeLabelDpRowEl, nodeLabelShowEl.value, schema);
+    _updateLabelDpRow(tipLabelDpRowEl,    tipLabelShow.value,      schema);
+    _updateLabelDpRow(nodeLabelDpRowEl,   nodeLabelShowEl.value,   schema);
+    _updateLabelDpRow(branchLabelDpRowEl, branchLabelShowEl.value, schema);
 
     // ── Calibrate (date annotation) dropdown ────────────────────────────────
     // Keep the dropdown in sync whenever the annotation schema changes (e.g.
@@ -3321,6 +3572,9 @@ async function _initCore(root = document) {
     setModalLoading(true);
     setModalError(null);
     _loadedFilename = filename || null;
+    // Clear the source URL — will be set again by the caller if loaded from a URL.
+    _treeSourceUrl = null;
+    _updateShareUrlBtn();
     document.title = _loadedFilename ? `${_loadedFilename} — PearTree` : 'PearTree — Phylogenetic Tree Viewer';
     if (_onTitleChange) _onTitleChange(_loadedFilename);
     // Yield to the browser so the spinner renders before heavy parsing
@@ -3334,6 +3588,20 @@ async function _initCore(root = document) {
       const _fileSettings = nexusTrees.length > 0 ? (nexusTrees[0].peartreeSettings || null) : null;
       if (nexusTrees.length > 0) {
         parsedRoot = nexusTrees[0].root;
+        // Warn the user if any tree tips had no matching entry in the taxa block.
+        const _taxonWarnings = nexusTrees[0].taxonAnnotWarnings;
+        if (_taxonWarnings && _taxonWarnings.length > 0) {
+          const MAX = 5;
+          const sample = _taxonWarnings.slice(0, MAX).join('\n  ');
+          const more   = _taxonWarnings.length > MAX ? `\n  … and ${_taxonWarnings.length - MAX} more` : '';
+          setModalLoading(false);
+          await showConfirmDialog(
+            'Taxa block mismatch',
+            `${_taxonWarnings.length} tip(s) in the tree were not found in the NEXUS taxa block and could not receive taxon annotations:\n\n  ${sample}${more}\n\nThe tree will still be loaded.`,
+            { okLabel: 'OK', cancelLabel: null }
+          );
+          setModalLoading(true);
+        }
       } else {
         const trimmed = text.trim();
         if (trimmed.startsWith('(')) {
@@ -3479,10 +3747,25 @@ async function _initCore(root = document) {
         }
       }
 
-      // Apply any visual settings embedded in the file immediately, before
-      // annotation dropdowns are populated (annotation-dependent settings
-      // are handled below after the dropdowns exist).
-      if (_fileSettings) _applyVisualSettingsFromFile(_fileSettings);
+      // Apply effective settings for this tree load.
+      // Precedence (low -> high): saved/local, file-embedded, init(URL/embed).
+      // This guarantees URL settings always win over tree-embedded values.
+      const _treeEffectiveSettings = Object.assign(
+        {},
+        _saved || {},
+        _fileSettings || {},
+        _cfg.initSettings || {},
+      );
+      // If init/URL explicitly requested a theme, apply that theme and then only
+      // apply explicit init visual overrides on top. This prevents file-embedded
+      // visual settings from clobbering the chosen theme's colours.
+      const _initTheme = _cfg.initSettings?.selectedTheme ?? _cfg.initSettings?.theme;
+      if (_initTheme && _initTheme !== 'custom' && themeManager?.registry?.has(_initTheme)) {
+        applyTheme(_initTheme);
+        _applyVisualSettingsFromFile(_cfg.initSettings || {});
+      } else {
+        _applyVisualSettingsFromFile(_treeEffectiveSettings);
+      }
       _cachedMidpoint = null;
       isExplicitlyRooted = graph.rooted;
 
@@ -3541,6 +3824,8 @@ async function _initCore(root = document) {
       _populateColourBy(labelColourBy,        'tips');
       _populateColourBy(tipLabelShapeColourBy, 'tips');
       for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++) _populateColourBy(tipLabelShapeExtraColourBys[_i], 'tips');
+      if (nodeLabelColourBy)   _populateColourBy(nodeLabelColourBy,   'nodesAndTipAvg');
+      if (branchLabelColourBy) _populateColourBy(branchLabelColourBy, 'nodesAndTipAvg');
       if (cladeHighlightColourByEl) {
         while (cladeHighlightColourByEl.options.length > 0) cladeHighlightColourByEl.remove(0);
         const _chUc = document.createElement('option');
@@ -3628,6 +3913,18 @@ async function _initCore(root = document) {
       }
       nodeLabelShowEl.disabled = false;
 
+      // Branch-label-show: first option is '' (none); then all annotations.
+      while (branchLabelShowEl.options.length > 1) branchLabelShowEl.remove(1);
+      for (const [name, def] of schema) {
+        if (name === 'user_colour') continue;
+        if (def.dataType === 'list') continue;
+        if (def.groupMember) continue;
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = def.label ?? name;
+        branchLabelShowEl.appendChild(opt);
+      }
+      branchLabelShowEl.disabled = false;
+
       // Legend select: blank "(none)" first, then annotations (no user_colour).
       while (legendAnnotEl.options.length > 1) legendAnnotEl.remove(1);
       for (const [name, def] of schema) {
@@ -3683,8 +3980,9 @@ async function _initCore(root = document) {
         commands.setEnabled('tree-clear-colours', schema.has('user_colour'));
       }
 
-      // Annotation-dependent settings:  file-embedded settings take priority over saved prefs.
-      const _eff = _fileSettings || _saved;
+      // Annotation-dependent settings for this tree load.
+      // Uses the same precedence as visual settings.
+      const _eff = _treeEffectiveSettings;
       const _hasOpt = (sel, key) => key && [...sel.options].some(o => o.value === key);
       tipColourBy.value          = _hasOpt(tipColourBy,          _eff.tipColourBy)           ? _eff.tipColourBy           : 'user_colour';
       nodeColourBy.value         = _hasOpt(nodeColourBy,         _eff.nodeColourBy)          ? _eff.nodeColourBy          : 'user_colour';
@@ -3707,12 +4005,15 @@ async function _initCore(root = document) {
       tipLabelShow.value  = _hasOpt(tipLabelShow,  _eff.tipLabelShow)     ? _eff.tipLabelShow     : 'names';
       tipLabelControlsEl.style.display = tipLabelShow.value === 'off' ? 'none' : '';
       nodeLabelShowEl.value = _hasOpt(nodeLabelShowEl, _eff.nodeLabelAnnotation) ? _eff.nodeLabelAnnotation : '';
-      // Restore node order — only from file-embedded settings, not from saved prefs
-      // (order is a per-tree choice and should not persist across different trees).
-      if (_fileSettings?.nodeOrder === 'asc' || _fileSettings?.nodeOrder === 'desc') {
-        const asc = _fileSettings.nodeOrder === 'asc';
+      branchLabelShowEl.value = _hasOpt(branchLabelShowEl, _eff.branchLabelAnnotation) ? _eff.branchLabelAnnotation : '';
+      if (nodeLabelColourBy)   nodeLabelColourBy.value   = _hasOpt(nodeLabelColourBy,   _eff.nodeLabelColourBy)   ? _eff.nodeLabelColourBy   : 'user_colour';
+      if (branchLabelColourBy) branchLabelColourBy.value = _hasOpt(branchLabelColourBy, _eff.branchLabelColourBy) ? _eff.branchLabelColourBy : 'user_colour';
+      // Restore node order from per-tree effective settings,
+      // not from saved prefs, so it remains a per-tree choice.
+      if (_treeEffectiveSettings?.nodeOrder === 'asc' || _treeEffectiveSettings?.nodeOrder === 'desc') {
+        const asc = _treeEffectiveSettings.nodeOrder === 'asc';
         reorderGraph(graph, asc);
-        currentOrder = _fileSettings.nodeOrder;
+        currentOrder = _treeEffectiveSettings.nodeOrder;
       }
 
       // Pass schema to the renderer so it can build colour scales.
@@ -3753,21 +4054,20 @@ async function _initCore(root = document) {
       renderer.setTipLabelsOff(tipLabelShow.value === 'off');
       if (tipLabelShow.value !== 'off') renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
       renderer.setNodeLabelAnnotation(nodeLabelShowEl.value || null);
-      // Show palette and scale-mode selects for active colour-by annotations.
-      _updatePaletteSelect(tipPaletteSelect,            tipPaletteRow,            tipColourBy.value);
-      _updatePaletteSelect(nodePaletteSelect,           nodePaletteRow,           nodeColourBy.value);
-      _updatePaletteSelect(labelPaletteSelect,          labelPaletteRow,          labelColourBy.value);
-      _updatePaletteSelect(tipLabelShapePaletteSelect,  tipLabelShapePaletteRow,  tipLabelShapeColourBy.value);
+      renderer.setBranchLabelAnnotation(branchLabelShowEl.value || null);
+      if (nodeLabelColourBy)   renderer.setNodeLabelColourBy(nodeLabelColourBy.value || null);
+      if (branchLabelColourBy) renderer.setBranchLabelColourBy(branchLabelColourBy.value || null);
+      // Show/hide configure buttons for active colour-by annotations.
+      _updateConfigureBtn(tipConfigureRow,                tipColourBy.value);
+      _updateConfigureBtn(nodeConfigureRow,               nodeColourBy.value);
+      _updateConfigureBtn(labelConfigureRow,              labelColourBy.value);
+      _updateConfigureBtn(tipLabelShapeConfigureRow,      tipLabelShapeColourBy.value);
       for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++)
-        _updatePaletteSelect(tipLabelShapeExtraPaletteSelects[_i], tipLabelShapeExtraPaletteRows[_i], tipLabelShapeExtraColourBys[_i].value);
-      _updateScaleModeSelect(tipScaleModeSelect,           tipScaleModeRow,           tipColourBy.value);
-      _updateScaleModeSelect(nodeScaleModeSelect,          nodeScaleModeRow,          nodeColourBy.value);
-      _updateScaleModeSelect(labelScaleModeSelect,         labelScaleModeRow,         labelColourBy.value);
-      _updateScaleModeSelect(tipLabelShapeScaleModeSelect, tipLabelShapeScaleModeRow, tipLabelShapeColourBy.value);
-      for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++)
-        _updateScaleModeSelect(tipLabelShapeExtraScaleModeSelects[_i], tipLabelShapeExtraScaleModeRows[_i], tipLabelShapeExtraColourBys[_i].value);
-      _updateScaleModeSelect(cladeHighlightScaleModeSelect, cladeHighlightScaleModeRow, cladeHighlightColourByEl?.value ?? 'user_colour');
-      _updateScaleModeSelect(collapsedCladeScaleModeSelect, collapsedCladeScaleModeRow, collapsedCladeColourByEl?.value ?? 'user_colour');
+        _updateConfigureBtn(tipLabelShapeExtraConfigureRows[_i], tipLabelShapeExtraColourBys[_i].value);
+      if (nodeLabelColourBy)   _updateConfigureBtn(nodeLabelConfigureRow,   nodeLabelColourBy.value);
+      if (branchLabelColourBy) _updateConfigureBtn(branchLabelConfigureRow, branchLabelColourBy.value);
+      _updateConfigureBtn(cladeHighlightConfigureRow, cladeHighlightColourByEl?.value ?? 'user_colour');
+      _updateConfigureBtn(collapsedCladeConfigureRow, collapsedCladeColourByEl?.value ?? 'user_colour');
       applyLegend();   // rebuild legend with new data (may clear it)
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
       // setData() does not fire _onLayoutChange (unlike setDataAnimated), so
@@ -3866,31 +4166,16 @@ async function _initCore(root = document) {
       renderer._mrcaNodeId       = null;
 
       // Reset tip filter for each tree load
-      if (tipFilterEl) tipFilterEl.value   = '';
-      if (tipFilterEl) tipFilterEl.placeholder = 'Filter tips…';
+      filterControl?.reset();
       _updateStatusSelect(0);
-      _filterCol   = '__name__';
-      _filterRegex = false;
-      btnFilterRegexEl?.classList.remove('active');
-      tipFilterEl?.closest('.pt-filter-group')?.classList.remove('regex-error');
-      // Seed the popup with Name immediately so it is never blank before _refreshAnnotationUIs runs.
-      if (filterColPopupEl && !filterColPopupEl.hasChildNodes()) {
-        const _seed = document.createElement('button');
-        _seed.className = 'pt-fcp-item active';
-        _seed.textContent = 'Name';
-        _seed.dataset.value = '__name__';
-        filterColPopupEl.appendChild(_seed);
-      }
 
       if (!treeLoaded) {
         treeLoaded = true;
         // Unlock palette sections and restore pinned state (or open TREE section by default).
-        _sectionAccordionUnlock?.();
+        _sectionAccordion.unlock();
         // Now that a tree is loaded, stamp the theme background onto the canvas wrappers.
         _syncCanvasWrapperBg(canvasBgColorEl.value);
-        if (tipFilterEl)     tipFilterEl.disabled      = false;
-        if (btnFilterColEl)  btnFilterColEl.disabled   = false;
-        if (btnFilterRegexEl) btnFilterRegexEl.disabled = false;
+        filterControl?.enable();
         $('btn-colour-trigger')?.removeAttribute('disabled');
         // Buttons with no command equivalent
         const _btnHypUp   = $('btn-hyp-up');
@@ -3934,6 +4219,16 @@ async function _initCore(root = document) {
         commands.setEnabled('view-hyp-down',  true);
         commands.setEnabled('tree-order-up',   true);
         commands.setEnabled('tree-order-down', true);
+        commands.setEnabled('manage-filters',  true);
+        commands.setEnabled('manage-palettes', true);
+
+        // Restore persistent panel state now that the theme is applied and the
+        // renderer has the correct bgColor, so panels open with the right colours.
+        if (_saved.dataTableOpen)     dataTableRenderer?.open();
+        if (_saved.dataTablePinned)   dataTableRenderer?.pin();
+        if (_saved.rttOpen)           rttChart?.open();
+        if (_saved.rttPinned)         rttChart?.setPin(true);
+        if (_saved.rttStatsBoxCorner) rttChart?.setStatsBoxCorner(_saved.rttStatsBoxCorner);
       }
 
       // Restore interaction mode (file settings take priority).
@@ -3946,6 +4241,20 @@ async function _initCore(root = document) {
         bindControls();
         controlsBound = true;
       }
+
+      // Now that filterControl exists (created in bindControls on first load),
+      // populate its column picker from the current tree's schema, then enable it.
+      filterControl?.setSchema(schema);
+      // Populate the named-filter popup with any already-restored saved filters.
+      if (filterManager) {
+        const fm = filterManager.getAll();
+        filterControl?.setNamedFilters(fm);
+        if (fm.size > 0) {
+          renderer.setFilterDefinitions(fm);
+          _applyFilterSelects();
+        }
+      }
+      filterControl?.enable();
 
       // Sync button states through callbacks now that bindControls() is guaranteed to have run.
       if (renderer._onNavChange)          renderer._onNavChange(false, false);
@@ -4106,107 +4415,34 @@ async function _initCore(root = document) {
     const btnNodeInfo     = $('btn-node-info');
 
     // ── Tip filter ────────────────────────────────────────────────────────────
-    let _filterTimer = null;
-
-    function _applyTipFilter() {
-      clearTimeout(_filterTimer);
-      _filterTimer = null;
-      const raw = tipFilterEl.value.trim();
-      const col = _filterCol; // '__name__' or an annotation key
-      const filterGroup = tipFilterEl.closest('.pt-filter-group');
-
-      if (!raw) {
-        filterGroup?.classList.remove('regex-error');
-        renderer._selectedTipIds.clear();
+    filterControl = createFilterControl($('tip-filter-mount'), {
+      getNodeMap:            () => renderer?.nodeMap ?? null,
+      getNodeAnnotationValue: (n, col) => col === '__name__' ? (n.name ?? '') : (n.annotations?.[col] ?? null),
+      passesNamedFilter:     (id, node) => renderer?._passesFilter(id, node) ?? true,
+      showPrompt:  (title, msg, def)    => showPromptDialog(title, msg, def ?? ''),
+      showConfirm: (title, msg, opts)   => showConfirmDialog(title, msg, { okLabel: 'OK', cancelLabel: 'Cancel', ...opts }),
+      onMatchChange:         (matches) => {
+        if (!matches) {
+          renderer._selectedTipIds.clear();
+          renderer._mrcaNodeId = null;
+          if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(false);
+          _updateStatusSelect(0);
+          renderer._dirty = true;
+          return;
+        }
+        renderer._selectedTipIds = new Set(matches.map(n => n.id));
         renderer._mrcaNodeId = null;
-        if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(false);
-        _updateStatusSelect(0);
+        if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(matches.length > 0);
+        _updateStatusSelect(matches.length);
         renderer._dirty = true;
-        return;
-      }
-
-      // Build matcher — regex or plain substring
-      let matcher;
-      if (_filterRegex) {
-        try {
-          const re = new RegExp(raw, 'i');
-          matcher = s => re.test(s);
-          filterGroup?.classList.remove('regex-error');
-        } catch {
-          filterGroup?.classList.add('regex-error');
-          return; // invalid pattern — don't update selection
+        // Scroll topmost matching tip into view when tree is zoomed
+        if (matches.length > 0 && renderer._targetScaleY > renderer.minScaleY * 1.01) {
+          const top = matches.reduce((a, b) => a.y < b.y ? a : b);
+          const newOffsetY = renderer.paddingTop + 10 - top.y * renderer._targetScaleY;
+          renderer._setTarget(newOffsetY, renderer._targetScaleY, false);
         }
-      } else {
-        const q = raw.toLowerCase();
-        matcher = s => s.toLowerCase().includes(q);
-        filterGroup?.classList.remove('regex-error');
-      }
-
-      const matches = [];
-      if (renderer.nodeMap) {
-        for (const [id, n] of renderer.nodeMap) {
-          if (!n.isTip) continue;
-          let label;
-          if (col === '__name__') {
-            label = n.name ?? '';
-          } else {
-            const v = n.annotations?.[col];
-            label = v == null ? '' : String(v);
-          }
-          if (matcher(label)) matches.push(n);
-        }
-      }
-
-      renderer._selectedTipIds = new Set(matches.map(n => n.id));
-      renderer._mrcaNodeId = null;
-      if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(matches.length > 0);
-      _updateStatusSelect(matches.length);
-      renderer._dirty = true;
-
-      // Scroll topmost matching tip into view when tree is zoomed
-      if (matches.length > 0 && renderer._targetScaleY > renderer.minScaleY * 1.01) {
-        const top = matches.reduce((a, b) => a.y < b.y ? a : b);
-        const newOffsetY = renderer.paddingTop + 10 - top.y * renderer._targetScaleY;
-        renderer._setTarget(newOffsetY, renderer._targetScaleY, false);
-      }
-    }
-
-    tipFilterEl?.addEventListener('input', () => {
-      clearTimeout(_filterTimer);
-      _filterTimer = setTimeout(_applyTipFilter, 300);
-    });
-    tipFilterEl?.addEventListener('blur', () => {
-      clearTimeout(_filterTimer);
-      _applyTipFilter();
-    });
-    // Native clear button in <input type="search"> fires 'search' event
-    tipFilterEl?.addEventListener('search', _applyTipFilter);
-
-    // Regex toggle
-    btnFilterRegexEl?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      _filterRegex = !_filterRegex;
-      btnFilterRegexEl.classList.toggle('active', _filterRegex);
-      tipFilterEl.placeholder = _filterRegex ? 'Regex filter…' : 'Filter tips…';
-      _applyTipFilter();
-    });
-
-    // ── Filter column popup ──────────────────────────────────────────────────────
-    btnFilterColEl?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      filterColPopupEl.classList.toggle('open');
-    });
-    filterColPopupEl?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const item = e.target.closest('.pt-fcp-item');
-      if (!item) return;
-      _filterCol = item.dataset.value;
-      for (const el of filterColPopupEl.querySelectorAll('.pt-fcp-item')) {
-        el.classList.toggle('active', el === item);
-      }
-      btnFilterColEl.title = `Search in: ${item.textContent}`;
-      filterColPopupEl.classList.remove('open');
-      if (tipFilterEl.value.trim()) _applyTipFilter();
+      },
+      getFilterManager:      () => filterManager,
     });
 
     // ── Hide/Show helpers ─────────────────────────────────────────────────────
@@ -4370,8 +4606,8 @@ async function _initCore(root = document) {
       commands.setEnabled('tree-highlight-clade',  hasMrca);
       commands.setEnabled('tree-clear-highlights', renderer._cladeHighlights.size > 0);
       // Update status-bar selection count for canvas-click selections.
-      // Filter-driven selections update it directly in _applyTipFilter.
-      if (!tipFilterEl?.value?.trim()) {
+      // Filter-driven selections update it directly in filterControl.
+      if (!filterControl?.getInputValue()?.trim()) {
         _updateStatusSelect(hasSelection ? renderer._selectedTipIds.size : 0);
       }
       // Keep the data table in sync with the canvas selection
@@ -5147,45 +5383,21 @@ async function _initCore(root = document) {
     });
 
     cladeHighlightColourByEl?.addEventListener('change', () => {
-      _updatePaletteSelect(cladeHighlightPaletteSelect, cladeHighlightPaletteRow, cladeHighlightColourByEl.value);
-      _updateScaleModeSelect(cladeHighlightScaleModeSelect, cladeHighlightScaleModeRow, cladeHighlightColourByEl.value);
+      _updateConfigureBtn(cladeHighlightConfigureRow, cladeHighlightColourByEl.value);
       _recolourAllHighlights();
     });
 
-    cladeHighlightPaletteSelect?.addEventListener('change', () => {
-      const key = cladeHighlightColourByEl?.value;
-      if (key && key !== 'user_colour') {
-        annotationPalettes.set(key, cladeHighlightPaletteSelect.value);
-        _syncPaletteSelects(key, cladeHighlightPaletteSelect.value);
-        renderer.setAnnotationPalette(key, cladeHighlightPaletteSelect.value);
-        _recolourAllHighlights();
-      }
-    });
-
-    cladeHighlightScaleModeSelect?.addEventListener('change', () => {
-      _handleScaleModeChange(cladeHighlightColourByEl?.value, cladeHighlightScaleModeSelect.value);
-      _recolourAllHighlights();
+    $('clade-highlight-configure-btn')?.addEventListener('click', () => {
+      openAnnotConfig(cladeHighlightColourByEl?.value);
     });
 
     collapsedCladeColourByEl?.addEventListener('change', () => {
-      _updatePaletteSelect(collapsedCladePaletteSelect, collapsedCladePaletteRow, collapsedCladeColourByEl.value);
-      _updateScaleModeSelect(collapsedCladeScaleModeSelect, collapsedCladeScaleModeRow, collapsedCladeColourByEl.value);
+      _updateConfigureBtn(collapsedCladeConfigureRow, collapsedCladeColourByEl.value);
       _recolourAllCollapsed();
     });
 
-    collapsedCladePaletteSelect?.addEventListener('change', () => {
-      const key = collapsedCladeColourByEl?.value;
-      if (key && key !== 'user_colour') {
-        annotationPalettes.set(key, collapsedCladePaletteSelect.value);
-        _syncPaletteSelects(key, collapsedCladePaletteSelect.value);
-        renderer.setAnnotationPalette(key, collapsedCladePaletteSelect.value);
-        _recolourAllCollapsed();
-      }
-    });
-
-    collapsedCladeScaleModeSelect?.addEventListener('change', () => {
-      _handleScaleModeChange(collapsedCladeColourByEl?.value, collapsedCladeScaleModeSelect.value);
-      _recolourAllCollapsed();
+    $('collapsed-clade-configure-btn')?.addEventListener('click', () => {
+      openAnnotConfig(collapsedCladeColourByEl?.value);
     });
 
     // Mode menu
@@ -5210,8 +5422,17 @@ async function _initCore(root = document) {
         if (!selNode || selX === null) return;
         const parentLayoutNode = renderer.nodeMap.get(selNode.parentId);
         if (!parentLayoutNode) return;
-        targetNode     = selNode;
-        distFromParent = selX - parentLayoutNode.x;
+        targetNode = selNode;
+        if (parentLayoutNode.id === '__graph_root__') {
+          // The graph "parent" of a root-arm node is the OTHER arm (adjacents[0]
+          // crosses the full root edge).  distFromParent must be measured from
+          // that other-arm node, not from the virtual layout root at x=0.
+          const selNodeIdx = graph.origIdToIdx.get(selNode.id);
+          const otherLen   = (selNodeIdx === graph.root.nodeA) ? graph.root.lenB : graph.root.lenA;
+          distFromParent   = otherLen + selX;
+        } else {
+          distFromParent = selX - parentLayoutNode.x;
+        }
       } else {
         // Nodes mode: single tip → that node; ≥2 tips → their MRCA.
         let nodeId;
@@ -5637,6 +5858,35 @@ async function _initCore(root = document) {
       $('node-info-overlay').classList.remove('open');
     });
 
+    $('node-info-copy')?.addEventListener('click', () => {
+      const body = $('node-info-body');
+      if (!body) return;
+      const lines = [];
+      const title = $('node-info-title')?.textContent;
+      if (title) lines.push(title);
+      for (const tr of body.querySelectorAll('tr')) {
+        const cells = tr.querySelectorAll('td');
+        if (cells.length === 1 && cells[0].colSpan > 1) {
+          // Divider row — use its text as a section header
+          const label = cells[0].textContent.trim();
+          if (label) lines.push('', `[${label}]`);
+        } else if (cells.length >= 2) {
+          const key = cells[0].textContent.trim();
+          const input = cells[1].querySelector('input');
+          const val = input ? input.value : cells[1].textContent.trim();
+          if (key || val) lines.push(`${key}\t${val}`);
+        }
+      }
+      const tsv = lines.join('\n');
+      navigator.clipboard?.writeText(tsv).catch(() => {});
+      // Brief icon feedback
+      const btn = $('node-info-copy');
+      if (btn) {
+        btn.innerHTML = '<i class="bi bi-clipboard-check"></i>';
+        setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 1200);
+      }
+    });
+
     $('node-info-overlay').addEventListener('click', e => {
       if (e.target === $('node-info-overlay')) {
         $('node-info-overlay').classList.remove('open');
@@ -5666,7 +5916,6 @@ async function _initCore(root = document) {
         }
       }
       if (e.key === 'b' || e.key === 'B') { e.preventDefault(); applyMode(renderer._mode === 'branches' ? 'nodes' : 'branches'); }
-      if (e.key === 'l' || e.key === 'L') { e.preventDefault(); if (canCollapse()) applyCollapse(); else if (canExpand()) applyExpand(); }
       if (e.key === 'm' || e.key === 'M') { e.preventDefault(); applyMidpointRoot(); }
       if (!e.shiftKey && (e.key === 'i' || e.key === 'I')) { e.preventDefault(); showNodeInfo(); }
     });
@@ -5683,6 +5932,7 @@ async function _initCore(root = document) {
     _markCustomTheme();
     renderer.setBgColor(canvasBgColorEl.value);
     _syncCanvasWrapperBg(canvasBgColorEl.value);
+    rttChart?.notifyStyleChange?.();
     saveSettings();
   });
 
@@ -6057,25 +6307,28 @@ async function _initCore(root = document) {
 
   nodeColourBy.addEventListener('change', () => {
     renderer.setNodeColourBy(nodeColourBy.value || null);
-    _updatePaletteSelect(nodePaletteSelect, nodePaletteRow, nodeColourBy.value);
-    _updateScaleModeSelect(nodeScaleModeSelect, nodeScaleModeRow, nodeColourBy.value);
+    _updateConfigureBtn(nodeConfigureRow, nodeColourBy.value);
     saveSettings();
   });
 
+  $('node-configure-btn')?.addEventListener('click', () => openAnnotConfig(nodeColourBy.value));
+
   tipColourBy.addEventListener('change', () => {
     renderer.setTipColourBy(tipColourBy.value || null);
-    _updatePaletteSelect(tipPaletteSelect, tipPaletteRow, tipColourBy.value);
-    _updateScaleModeSelect(tipScaleModeSelect, tipScaleModeRow, tipColourBy.value);
+    _updateConfigureBtn(tipConfigureRow, tipColourBy.value);
     saveSettings();
     rttChart?.notifyStyleChange?.();
   });
 
+  $('tip-configure-btn')?.addEventListener('click', () => openAnnotConfig(tipColourBy.value));
+
   labelColourBy.addEventListener('change', () => {
     renderer.setLabelColourBy(labelColourBy.value || null);
-    _updatePaletteSelect(labelPaletteSelect, labelPaletteRow, labelColourBy.value);
-    _updateScaleModeSelect(labelScaleModeSelect, labelScaleModeRow, labelColourBy.value);
+    _updateConfigureBtn(labelConfigureRow, labelColourBy.value);
     saveSettings();
   });
+
+  $('label-configure-btn')?.addEventListener('click', () => openAnnotConfig(labelColourBy.value));
 
   tipLabelShow.addEventListener('change', () => {
     const isOff = tipLabelShow.value === 'off';
@@ -6085,6 +6338,7 @@ async function _initCore(root = document) {
     renderer.setTipLabelsOff(isOff);
     if (!isOff) renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
     saveSettings();
+    _syncControlVisibility();
   });
 
   tipLabelAlignEl.addEventListener('change', () => {
@@ -6098,6 +6352,54 @@ async function _initCore(root = document) {
   });
 
   nodeLabelDpEl.addEventListener('change', () => {
+    renderer?.setSettings(_buildRendererSettings());
+    saveSettings(); _markCustomTheme();
+  });
+
+  branchLabelDpEl.addEventListener('change', () => {
+    renderer?.setSettings(_buildRendererSettings());
+    saveSettings(); _markCustomTheme();
+  });
+
+  branchLabelShowEl.addEventListener('change', () => {
+    const schema = renderer?._annotationSchema ?? new Map();
+    _updateLabelDpRow(branchLabelDpRowEl, branchLabelShowEl.value, schema);
+    renderer?.setBranchLabelAnnotation(branchLabelShowEl.value || null);
+    saveSettings(); _markCustomTheme();
+    _syncControlVisibility();
+  });
+
+  branchLabelPositionEl.addEventListener('change', () => {
+    renderer?.setBranchLabelPosition(branchLabelPositionEl.value);
+    saveSettings(); _markCustomTheme();
+  });
+
+  branchLabelFontSizeSlider.addEventListener('input', () => {
+    const v = parseInt(branchLabelFontSizeSlider.value);
+    $('branch-label-font-size-value').textContent = v;
+    renderer?.setBranchLabelFontSize(v);
+    saveSettings(); _markCustomTheme();
+  });
+
+  branchLabelColorEl.addEventListener('input', () => {
+    renderer?.setBranchLabelColor(branchLabelColorEl.value);
+    saveSettings(); _markCustomTheme();
+  });
+
+  branchLabelSpacingSlider.addEventListener('input', () => {
+    const v = parseInt(branchLabelSpacingSlider.value);
+    $('branch-label-spacing-value').textContent = v;
+    renderer?.setBranchLabelSpacing(v);
+    saveSettings(); _markCustomTheme();
+  });
+
+  branchLabelTypefaceEl?.addEventListener('change', () => {
+    _populateStyleSelect(branchLabelTypefaceEl.value || fontFamilyEl.value, branchLabelTypefaceStyleEl, '', true);
+    renderer?.setSettings(_buildRendererSettings());
+    saveSettings(); _markCustomTheme();
+  });
+
+  branchLabelTypefaceStyleEl?.addEventListener('change', () => {
     renderer?.setSettings(_buildRendererSettings());
     saveSettings(); _markCustomTheme();
   });
@@ -6134,6 +6436,22 @@ async function _initCore(root = document) {
     saveSettings(); _markCustomTheme();
   });
 
+  nodeLabelColourBy?.addEventListener('change', () => {
+    renderer?.setNodeLabelColourBy(nodeLabelColourBy.value || null);
+    _updateConfigureBtn(nodeLabelConfigureRow, nodeLabelColourBy.value);
+    saveSettings();
+  });
+
+  $('node-label-configure-btn')?.addEventListener('click', () => openAnnotConfig(nodeLabelColourBy?.value));
+
+  branchLabelColourBy?.addEventListener('change', () => {
+    renderer?.setBranchLabelColourBy(branchLabelColourBy.value || null);
+    _updateConfigureBtn(branchLabelConfigureRow, branchLabelColourBy.value);
+    saveSettings();
+  });
+
+  $('branch-label-configure-btn')?.addEventListener('click', () => openAnnotConfig(branchLabelColourBy?.value));
+
   tipLabelSpacingSlider.addEventListener('input', () => {
     const v = parseInt(tipLabelSpacingSlider.value);
     $('tip-label-spacing-value').textContent = v;
@@ -6141,41 +6459,7 @@ async function _initCore(root = document) {
     saveSettings(); _markCustomTheme();
   });
 
-  tipPaletteSelect.addEventListener('change', () => {
-    const key = tipColourBy.value;
-    if (key && key !== 'user_colour') {
-      annotationPalettes.set(key, tipPaletteSelect.value);
-      _syncPaletteSelects(key, tipPaletteSelect.value);
-      renderer.setAnnotationPalette(key, tipPaletteSelect.value);
-      legendRenderer.draw();
-      saveSettings();
-      rttChart?.notifyStyleChange?.();
-    }
-  });
-
-  nodePaletteSelect.addEventListener('change', () => {
-    const key = nodeColourBy.value;
-    if (key && key !== 'user_colour') {
-      annotationPalettes.set(key, nodePaletteSelect.value);
-      _syncPaletteSelects(key, nodePaletteSelect.value);
-      renderer.setAnnotationPalette(key, nodePaletteSelect.value);
-      legendRenderer.draw();
-      saveSettings();
-    }
-  });
-
-  labelPaletteSelect.addEventListener('change', () => {
-    const key = labelColourBy.value;
-    if (key && key !== 'user_colour') {
-      annotationPalettes.set(key, labelPaletteSelect.value);
-      _syncPaletteSelects(key, labelPaletteSelect.value);
-      renderer.setAnnotationPalette(key, labelPaletteSelect.value);
-      legendRenderer.draw();
-      saveSettings();
-    }
-  });
-
-  // ── Scale mode change handlers ─────────────────────────────────────────────
+  // ── Scale mode change helpers ──────────────────────────────────────────────
 
   function _handleScaleModeChange(key, mode) {
     if (!key || key === 'user_colour') return;
@@ -6187,19 +6471,30 @@ async function _initCore(root = document) {
     saveSettings();
   }
 
-  tipScaleModeSelect.addEventListener('change', () => {
-    _handleScaleModeChange(tipColourBy.value, tipScaleModeSelect.value);
+  // ── Annotation colour-config modal listeners ──────────────────────────────
+
+  annotConfigPaletteSelect?.addEventListener('change', () => {
+    if (!_annotConfigKey || _annotConfigKey === 'user_colour') return;
+    annotationPalettes.set(_annotConfigKey, annotConfigPaletteSelect.value);
+    renderer?.setAnnotationPalette(_annotConfigKey, annotConfigPaletteSelect.value);
+    legendRenderer?.draw();
+    saveSettings();
     rttChart?.notifyStyleChange?.();
+    // Update palette preview
+    const schema = renderer?._annotationSchema;
+    const def    = schema?.get(_annotConfigKey);
+    const isCat  = def?.dataType === 'categorical' || def?.dataType === 'ordinal';
+    _renderAnnotConfigPreview(annotConfigPaletteSelect.value, isCat);
   });
-  nodeScaleModeSelect.addEventListener('change', () => {
-    _handleScaleModeChange(nodeColourBy.value, nodeScaleModeSelect.value);
+
+  annotConfigScaleSelect?.addEventListener('change', () => {
+    if (!_annotConfigKey || _annotConfigKey === 'user_colour') return;
+    _handleScaleModeChange(_annotConfigKey, annotConfigScaleSelect.value);
   });
-  labelScaleModeSelect.addEventListener('change', () => {
-    _handleScaleModeChange(labelColourBy.value, labelScaleModeSelect.value);
-  });
-  tipLabelShapeScaleModeSelect.addEventListener('change', () => {
-    _handleScaleModeChange(tipLabelShapeColourBy.value, tipLabelShapeScaleModeSelect.value);
-  });
+
+  $('annot-config-close')?.addEventListener('click', () => annotConfigOverlay?.classList.remove('open'));
+  $('annot-config-done')?.addEventListener('click',  () => annotConfigOverlay?.classList.remove('open'));
+  $('annot-config-manage-palettes')?.addEventListener('click', () => commands.execute('manage-palettes'));
 
   // ── Tip-label shape controls ───────────────────────────────────────────────
 
@@ -6240,10 +6535,11 @@ async function _initCore(root = document) {
 
   tipLabelShapeColourBy.addEventListener('change', () => {
     renderer.setTipLabelShapeColourBy(tipLabelShapeColourBy.value || null);
-    _updatePaletteSelect(tipLabelShapePaletteSelect, tipLabelShapePaletteRow, tipLabelShapeColourBy.value);
-    _updateScaleModeSelect(tipLabelShapeScaleModeSelect, tipLabelShapeScaleModeRow, tipLabelShapeColourBy.value);
+    _updateConfigureBtn(tipLabelShapeConfigureRow, tipLabelShapeColourBy.value);
     saveSettings();
   });
+
+  $('tip-label-shape-configure-btn')?.addEventListener('click', () => openAnnotConfig(tipLabelShapeColourBy.value));
 
   tipLabelShapeMarginLeftSlider.addEventListener('input', () => {
     const v = parseInt(tipLabelShapeMarginLeftSlider.value);
@@ -6259,17 +6555,6 @@ async function _initCore(root = document) {
     saveSettings(); _markCustomTheme();
   });
 
-  tipLabelShapePaletteSelect.addEventListener('change', () => {
-    const key = tipLabelShapeColourBy.value;
-    if (key && key !== 'user_colour') {
-      annotationPalettes.set(key, tipLabelShapePaletteSelect.value);
-      _syncPaletteSelects(key, tipLabelShapePaletteSelect.value);
-      renderer.setAnnotationPalette(key, tipLabelShapePaletteSelect.value);
-      legendRenderer.draw();
-      saveSettings();
-    }
-  });
-
   // ── Tip-label shape extra controls (shapes 2–10) ─────────────────────────
 
   for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++) {
@@ -6283,22 +6568,11 @@ async function _initCore(root = document) {
     });
     tipLabelShapeExtraColourBys[_idx].addEventListener('change', () => {
       renderer.setTipLabelShapeExtraColourBy(_idx, tipLabelShapeExtraColourBys[_idx].value || null);
-      _updatePaletteSelect(tipLabelShapeExtraPaletteSelects[_idx], tipLabelShapeExtraPaletteRows[_idx], tipLabelShapeExtraColourBys[_idx].value);
-      _updateScaleModeSelect(tipLabelShapeExtraScaleModeSelects[_idx], tipLabelShapeExtraScaleModeRows[_idx], tipLabelShapeExtraColourBys[_idx].value);
+      _updateConfigureBtn(tipLabelShapeExtraConfigureRows[_idx], tipLabelShapeExtraColourBys[_idx].value);
       saveSettings();
     });
-    tipLabelShapeExtraPaletteSelects[_idx].addEventListener('change', () => {
-      const key = tipLabelShapeExtraColourBys[_idx].value;
-      if (key && key !== 'user_colour') {
-        annotationPalettes.set(key, tipLabelShapeExtraPaletteSelects[_idx].value);
-        _syncPaletteSelects(key, tipLabelShapeExtraPaletteSelects[_idx].value);
-        renderer.setAnnotationPalette(key, tipLabelShapeExtraPaletteSelects[_idx].value);
-        legendRenderer.draw();
-        saveSettings();
-      }
-    });
-    tipLabelShapeExtraScaleModeSelects[_idx].addEventListener('change', () => {
-      _handleScaleModeChange(tipLabelShapeExtraColourBys[_idx].value, tipLabelShapeExtraScaleModeSelects[_idx].value);
+    tipLabelShapeExtraConfigureBtns[_idx]?.addEventListener('click', () => {
+      openAnnotConfig(tipLabelShapeExtraColourBys[_idx].value);
     });
   }
 
@@ -6679,6 +6953,16 @@ async function _initCore(root = document) {
     if (renderer) { renderer.setSettings(_buildRendererSettings()); renderer._dirty = true; }
     saveSettings();
   });
+  collapsedStrokeWidthSlider.addEventListener('input', () => {
+    $('collapsed-stroke-width-value').textContent = collapsedStrokeWidthSlider.value;
+    if (renderer) { renderer.setSettings(_buildRendererSettings()); renderer._dirty = true; }
+    saveSettings();
+  });
+  collapsedStrokeOpacitySlider.addEventListener('input', () => {
+    $('collapsed-stroke-opacity-value').textContent = collapsedStrokeOpacitySlider.value;
+    if (renderer) { renderer.setSettings(_buildRendererSettings()); renderer._dirty = true; }
+    saveSettings();
+  });
   collapsedHeightNSlider.addEventListener('input', () => {
     $('collapsed-height-n-value').textContent = collapsedHeightNSlider.value;
     if (renderer && graph) {
@@ -6809,6 +7093,8 @@ async function _initCore(root = document) {
   commands.get('open-tree').exec  = () => openModal();
   commands.get('import-annot').exec = () => annotImporter.open();
   commands.get('curate-annot').exec  = () => annotCurator.open();
+  commands.get('manage-filters').exec = () => filterManager.open();
+  commands.get('manage-palettes').exec = () => paletteManager.open();
   commands.get('select-all').exec = () => {
     const tag = document.activeElement?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) {
@@ -7056,6 +7342,9 @@ async function _initCore(root = document) {
     if (s.axisMinorLabelFormat != null) axisMinorLabelEl.value     = s.axisMinorLabelFormat;
 
     if (s.nodeLabelAnnotation != null && nodeLabelShowEl)  nodeLabelShowEl.value   = s.nodeLabelAnnotation;
+    if (s.branchLabelAnnotation != null && branchLabelShowEl) branchLabelShowEl.value = s.branchLabelAnnotation;
+    if (s.nodeLabelColourBy   != null && nodeLabelColourBy)   { nodeLabelColourBy.value   = s.nodeLabelColourBy;   renderer?.setNodeLabelColourBy(s.nodeLabelColourBy || null); }
+    if (s.branchLabelColourBy != null && branchLabelColourBy) { branchLabelColourBy.value = s.branchLabelColourBy; renderer?.setBranchLabelColourBy(s.branchLabelColourBy || null); }
     if (s.legendTextColor != null && legendTextColorEl) {
       legendTextColorEl.value = s.legendTextColor;
       legendRenderer?.setTextColor?.(s.legendTextColor);
@@ -7111,7 +7400,7 @@ async function _initCore(root = document) {
      *  fn({ content, filename, filterName, extensions }) — called instead of
      *  a browser download when the user clicks Export in the Theme section.
      *  Set to null to restore browser behaviour. */
-    setThemeSaveHandler,
+    setThemeSaveHandler: (fn) => { themeManager.setThemeSaveHandler(fn); },
 
     /** Override the graphic-export action for the current platform.
      *  fn({ content|contentBase64, base64, filename, mimeType, filterName, extensions })
@@ -7311,9 +7600,6 @@ async function _initCore(root = document) {
         console.warn('peartree: ignoring invalid treeUrl parameter –', _e.message);
       }
       if (_validated) {
-        openModal();
-        setModalLoading(true);
-        setModalError(null);
         (async () => {
           try {
             const _resp = await fetch(_validated);
@@ -7321,9 +7607,11 @@ async function _initCore(root = document) {
             const _text = await _resp.text();
             const _name = new URL(_validated).pathname.split('/').pop() || 'tree';
             await loadTree(_text, _name);
+            _treeSourceUrl = _validated;
+            _updateShareUrlBtn();
           } catch (_err) {
-            setModalError(_err.message);
-            setModalLoading(false);
+            showEmptyState();
+            showEmptyStateError(_err.message);
           }
         })();
       }
@@ -7333,160 +7621,13 @@ async function _initCore(root = document) {
   // ── Section accordion ──────────────────────────────────────────────────────
   // Each .pt-palette-section h3 toggles its section open/closed.
   // A section can be "pinned" open — pinned sections are unaffected by the
-  // one-open-at-a-time rule.  Only one non-pinned section may be open at once.
-  // State is persisted to localStorage.
-  // Sections are locked (closed, non-interactive) until the first tree is loaded.
-  let _sectionAccordionUnlock = null;
-  (function _initSectionAccordion() {
-    const STORE_KEY = 'peartree-section-state';
-    let _sectionsUnlocked = false;
-
-    function _loadSt() {
-      try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; }
-    }
-    function _saveSt(st) {
-      try { localStorage.setItem(STORE_KEY, JSON.stringify(st)); } catch {}
-    }
-    function _allSec() {
-      return Array.from(root.querySelectorAll('.pt-palette-section[data-sec-id]'));
-    }
-
-    function _openSec(sec) {
-      sec.classList.add('pt-palette-section--open');
-      const st = _loadSt();
-      st[sec.dataset.secId] = { ...(st[sec.dataset.secId] || {}), open: true };
-      _saveSt(st);
-    }
-    function _closeSec(sec) {
-      sec.classList.remove('pt-palette-section--open');
-      const st = _loadSt();
-      st[sec.dataset.secId] = { ...(st[sec.dataset.secId] || {}), open: false };
-      _saveSt(st);
-    }
-
-    function _toggleSec(sec) {
-      if (!_sectionsUnlocked) return;
-      if (sec.classList.contains('pt-palette-section--pinned')) return;
-      if (sec.classList.contains('pt-palette-section--open')) {
-        _closeSec(sec);
-      } else {
-        // Close current non-pinned open section first
-        _allSec().forEach(s => {
-          if (s !== sec && s.classList.contains('pt-palette-section--open') && !s.classList.contains('pt-palette-section--pinned'))
-            _closeSec(s);
-        });
-        _openSec(sec);
-      }
-    }
-
-    function _togglePin(sec) {
-      if (!_sectionsUnlocked) return;
-      const isPinned = sec.classList.contains('pt-palette-section--pinned');
-      const pinIcon  = sec.querySelector(':scope > h3 .pt-sec-pin i');
-      const st       = _loadSt();
-      if (isPinned) {
-        // Unpin: becomes the active non-pinned open section; close any other non-pinned open
-        sec.classList.remove('pt-palette-section--pinned');
-        if (pinIcon) pinIcon.className = 'bi bi-pin';
-        _allSec().forEach(s => {
-          if (s !== sec && s.classList.contains('pt-palette-section--open') && !s.classList.contains('pt-palette-section--pinned'))
-            _closeSec(s);
-        });
-        sec.classList.add('pt-palette-section--open');
-        st[sec.dataset.secId] = { open: true, pinned: false };
-      } else {
-        // Pin it (opens too)
-        sec.classList.add('pt-palette-section--open', 'pt-palette-section--pinned');
-        if (pinIcon) pinIcon.className = 'bi bi-pin-fill';
-        st[sec.dataset.secId] = { open: true, pinned: true };
-      }
-      _saveSt(st);
-    }
-
-    const savedState = _loadSt();
-    const palBody = root.querySelector('#palette-panel-body');
-
-    root.querySelectorAll('.pt-palette-section').forEach(sec => {
-      const h3 = sec.querySelector(':scope > h3');
-      if (!h3) return;
-
-      // Stable ID from heading text (e.g. "tip-labels")
-      const secId = h3.textContent.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/, '');
-      sec.dataset.secId = secId;
-
-      // Inject pin button + chevron into h3
-      h3.insertAdjacentHTML('beforeend',
-        '<span class="pt-sec-actions">' +
-          '<button class="pt-sec-pin" title="Pin open"><i class="bi bi-pin"></i></button>' +
-          '<i class="bi bi-chevron-right pt-sec-chevron"></i>' +
-        '</span>');
-
-      // Wrap all content after h3 in .pt-section-body > .pt-section-body-inner
-      const inner = document.createElement('div');
-      inner.className = 'pt-section-body-inner';
-      while (h3.nextSibling) inner.appendChild(h3.nextSibling);
-      const body = document.createElement('div');
-      body.className = 'pt-section-body';
-      body.appendChild(inner);
-      sec.appendChild(body);
-
-      // Sections start closed and locked until the first tree is loaded.
-      // (pinned/open state from savedState is restored by _sectionAccordionUnlock)
-
-      // Event: click h3 to toggle (not when clicking the pin button)
-      h3.addEventListener('click', e => { if (!e.target.closest('.pt-sec-pin')) _toggleSec(sec); });
-      h3.tabIndex = 0;
-      h3.addEventListener('keydown', e => {
-        if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('.pt-sec-pin')) {
-          e.preventDefault(); _toggleSec(sec);
-        }
-      });
-
-      // Event: pin button click
-      h3.querySelector('.pt-sec-pin').addEventListener('click', e => {
-        e.stopPropagation(); _togglePin(sec);
-      });
-    });
-
-    // Mark sections as locked until the first tree loads.
-    if (palBody) palBody.classList.add('pt-sections-locked');
-
-    // Called once when the first tree is loaded.  Unlocks interactions, then
-    // restores pinned sections from saved state (or opens the TREE section as default).
-    _sectionAccordionUnlock = function () {
-      if (_sectionsUnlocked) return;
-      _sectionsUnlocked = true;
-      if (palBody) palBody.classList.remove('pt-sections-locked');
-
-      const noTrans = [];
-      let anyPinned = false;
-      _allSec().forEach(sec => {
-        const saved = savedState[sec.dataset.secId] || {};
-        if (saved.pinned) {
-          anyPinned = true;
-          const body = sec.querySelector(':scope > .pt-section-body');
-          if (body) { body.style.transition = 'none'; noTrans.push(body); }
-          sec.classList.add('pt-palette-section--open', 'pt-palette-section--pinned');
-          const pi = sec.querySelector(':scope > h3 .pt-sec-pin i');
-          if (pi) pi.className = 'bi bi-pin-fill';
-        }
-      });
-
-      if (!anyPinned) {
-        // Default: open the TREE section
-        const treeSec = root.querySelector('.pt-palette-section[data-sec-id="tree"]');
-        if (treeSec) {
-          const body = treeSec.querySelector(':scope > .pt-section-body');
-          if (body) { body.style.transition = 'none'; noTrans.push(body); }
-          treeSec.classList.add('pt-palette-section--open');
-        }
-      }
-
-      if (noTrans.length) {
-        requestAnimationFrame(() => requestAnimationFrame(() => noTrans.forEach(b => { b.style.transition = ''; })));
-      }
-    };
-  })();
+  // Section accordion: one-open-at-a-time rule with pin support.
+  // Sections are locked until the first tree is loaded, then unlock() restores
+  // pinned/open state from localStorage.
+  const _sectionAccordion = initSectionAccordion(root, {
+    storageKey: 'peartree-section-state',
+    defaultSectionId: 'tree',
+  });
 
   window.dispatchEvent(new CustomEvent('peartree-ready'));
   // Wire up UI panel behaviours (palette, help, about, keyboard shortcuts,
@@ -7555,46 +7696,15 @@ async function _initCore(root = document) {
 
 // ── Script / stylesheet loaders ───────────────────────────────────────────
 // Used by embed() to dynamically inject assets into the host page.
+// Delegated to pearcore-app.js; the local _ensureStylesheet adds the bundle guard.
 
 function _ensureStylesheet(href) {
-  // When running from the single-file bundle the CSS is already injected.
   if (window.__PEARTREE_CSS_BUNDLED__) return;
-  const a = document.createElement('a');
-  a.href = href;
-  const abs = a.href;
-  const existing = document.querySelectorAll('link[rel="stylesheet"]');
-  for (let i = 0; i < existing.length; i++) {
-    if (existing[i].href === abs) return;
-  }
-  const link = document.createElement('link');
-  link.rel  = 'stylesheet';
-  link.href = abs;
-  document.head.appendChild(link);
-}
-
-function _loadScript(src, isModule) {
-  return new Promise((resolve, reject) => {
-    // Check if already loaded (avoid duplicate module loads which are silently no-ops)
-    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
-    const el = document.createElement('script');
-    if (isModule) el.type = 'module';
-    el.src = src;
-    el.onload  = resolve;
-    el.onerror = () => reject(new Error('PearTree: failed to load ' + src));
-    document.head.appendChild(el);
-  });
+  ensureStylesheet(href);
 }
 
 // Auto-detect our own asset root from import.meta.url.
-// Convention: this file lives at <root>/js/peartree.js so the root is one
-// directory up from the directory that contains this file.
-const _selfBase = (() => {
-  try {
-    const u = new URL(import.meta.url);
-    const dir = u.href.substring(0, u.href.lastIndexOf('/') + 1); // …/js/
-    return dir + '../';  // …/  (root)
-  } catch (_) { return ''; }
-})();
+const { appBase: _selfBase, coreBase: _coreBase } = resolveAssetBases(import.meta.url);
 
 // ── app(options) ──────────────────────────────────────────────────────────
 //
@@ -7753,13 +7863,31 @@ export async function embed(options = {}) {
     import:      false,
     export:      true,
     rtt:         false,
+    rttHeader:   true,
     dataTable:   false,
+    dataTableHeader: true,
     statusBar:   true,
+    statusStats: true,
+    statusSelect: true,
+    statusMessage: true,
+    statusShare: true,
     keyboard:    false,
     help:        false,
     about:       false,
     themeToggle: false,
     brand:       false,
+    tbFileOps:   true,
+    tbAnnotations: true,
+    tbNodeInfo:  true,
+    tbNavigation: true,
+    tbZoom:      true,
+    tbOrder:     true,
+    tbRotate:    true,
+    tbReroot:    true,
+    tbHideShow:  true,
+    tbColour:    true,
+    tbFilter:    true,
+    tbPanels:    true,
   }, options.ui || {});
   if (ui.openTree === false) ui.import   = false;
   if (ui.import   === false) ui.openTree = false;
@@ -7788,11 +7916,27 @@ export async function embed(options = {}) {
       dataTable:        ui.dataTable,
       dataTableHeader:  ui.dataTableHeader,
       statusBar:        ui.statusBar,
+      statusStats:      ui.statusStats,
+      statusSelect:     ui.statusSelect,
+      statusMessage:    ui.statusMessage,
+      statusShare:      ui.statusShare,
       keyboard:    ui.keyboard,
       help:        ui.help,
       about:       ui.about,
       themeToggle: ui.themeToggle,
       brand:       ui.brand,
+      tbFileOps:   ui.tbFileOps,
+      tbAnnotations: ui.tbAnnotations,
+      tbNodeInfo:  ui.tbNodeInfo,
+      tbNavigation: ui.tbNavigation,
+      tbZoom:      ui.tbZoom,
+      tbOrder:     ui.tbOrder,
+      tbRotate:    ui.tbRotate,
+      tbReroot:    ui.tbReroot,
+      tbHideShow:  ui.tbHideShow,
+      tbColour:    ui.tbColour,
+      tbFilter:    ui.tbFilter,
+      tbPanels:    ui.tbPanels,
       theme:       _theme,
     },
     storageKey:       options.storageKey ?? null,  // null by default — embeds don't persist settings
@@ -7806,9 +7950,13 @@ export async function embed(options = {}) {
     dataTableColumns: _dataTableCols,
   };
 
+  // Resolve core base path (may be overridden via options.coreBase).
+  const coreBase = typeof options.coreBase === 'string' ? options.coreBase : _coreBase;
+
   // Inject styles immediately so the page doesn't flash unstyled.
+  _ensureStylesheet(coreBase + 'css/pearcore.css');
   _ensureStylesheet(base + 'css/peartree.css');
-  _ensureStylesheet(base + 'css/peartree-embed.css');
+  _ensureStylesheet(coreBase + 'css/pearcore-embed.css');
 
   // Create the wrapper with an app-host placeholder.  On first load,
   // peartree-ui.js's IIFE finds #app-html-host and replaces it with the full
@@ -7825,8 +7973,9 @@ export async function embed(options = {}) {
 
   // Load dependencies in order, then initialise.
   // Both are skipped when already present (bundled or loaded externally).
-  if (typeof window.marked === 'undefined') await _loadScript(base + 'vendor/marked.min.js', false);
-  if (typeof window.buildAppHTML !== 'function') await _loadScript(base + 'js/peartree-ui.js', false);
+  if (typeof window.marked === 'undefined') await loadScript(coreBase + 'vendor/marked.min.js', false);
+  if (typeof window.buildStandardDialogsHTML !== 'function') await loadScript(coreBase + 'js/pearcore-ui.js', false);
+  if (typeof window.buildAppHTML !== 'function') await loadScript(base + 'js/peartree-ui.js', false);
 
   // If peartree-ui.js was already loaded its IIFEs won't re-fire, so the
   // #app-html-host placeholder is still present.  Inject HTML directly.
@@ -7896,7 +8045,9 @@ export function embedFrame(options = {}) {
 
   const base  = typeof options.base === 'string' ? options.base : _selfBase;
   const height = options.height || '600px';
-  const theme  = options.theme  || 'dark';
+  const theme  = (options.ui && (options.ui.theme === 'light' || options.ui.theme === 'dark'))
+    ? options.ui.theme
+    : (options.theme || 'dark');
 
   const ui = Object.assign({
     palette:   true,
@@ -7905,25 +8056,41 @@ export function embedFrame(options = {}) {
     import:    false,
     export:    true,
     rtt:       false,
+    rttHeader: true,
     dataTable: false,
+    dataTableHeader: true,
     statusBar: true,
+    statusStats: true,
+    statusSelect: true,
+    statusMessage: true,
+    statusShare: true,
+    help: true,
+    about: true,
+    themeToggle: true,
+    brand: true,
+    tbFileOps: true,
+    tbAnnotations: true,
+    tbNodeInfo: true,
+    tbNavigation: true,
+    tbZoom: true,
+    tbOrder: true,
+    tbRotate: true,
+    tbReroot: true,
+    tbHideShow: true,
+    tbColour: true,
+    tbFilter: true,
+    tbPanels: true,
   }, options.ui || {});
   if (ui.openTree === false) ui.import   = false;
   if (ui.import   === false) ui.openTree = false;
 
-  // Build URL params — boolean UI flags work natively via peartree.html's existing
-  // URL param support.  Complex objects (settings, sections) are base64-encoded JSON.
+  // Build URL params from the same UI schema used by app/embed resolution.
+  // Complex objects (settings, sections) are base64-encoded JSON.
   const params = new URLSearchParams({ nostore: '1' });
-  if (!ui.palette)   params.set('palette',   '0');
-  if (!ui.toolbar)   params.set('toolbar',   '0');
-  if (!ui.rtt)       params.set('rtt',       '0');
-  if (!ui.dataTable) params.set('dt',        '0');
-  if (!ui.import)    params.set('import',    '0');
-  if (!ui.export)    params.set('export',    '0');
-  if (!ui.statusBar) params.set('statusbar', '0');
+  _setUiFlagsAsUrlParams(params, ui);
+  if (theme === 'dark' || theme === 'light') params.set('theme', theme);
 
-  if (options.settings && Object.keys(options.settings).length)
-    params.set('settings', btoa(JSON.stringify(options.settings)));
+  _encodeSettingsParam(params, options.settings);
   if (options.toolbarSections && options.toolbarSections !== 'all')
     params.set('toolbarSections', btoa(JSON.stringify(options.toolbarSections)));
   if (options.appSections && options.appSections !== 'all')

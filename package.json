@@ -1,17 +1,29 @@
 {
   "name": "peartree",
   "version": "0.1.0",
-  "description": "PearTree — Phylogenetic Tree Viewer (Tauri desktop app)",
+  "description": "PearTree — Phylogenetic tree viewer and annotator",
   "private": true,
+  "workspaces": [
+    "pearcore",
+    "peartree"
+  ],
   "scripts": {
     "tauri": "tauri",
     "dev": "tauri dev",
     "build": "tauri build",
     "icon": "tauri icon",
-    "bundle": "node scripts/build-bundle.mjs"
+    "bundle": "node scripts/build-bundle.mjs --app peartree",
+    "bundle:peartree": "node scripts/build-bundle.mjs --app peartree",
+    "docs": "node scripts/markdown-server.mjs",
+    "manual": "eleventy --serve",
+    "build:manual": "eleventy"
   },
   "devDependencies": {
+    "@11ty/eleventy": "^3.1.5",
     "@tauri-apps/cli": "^2.0.0",
-    "esbuild": "^0.27.4"
+    "chokidar": "^5.0.0",
+    "esbuild": "^0.27.4",
+    "markdown-it-anchor": "^9.2.0",
+    "marked": "^18.0.2"
   }
 }

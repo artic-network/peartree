@@ -11,8 +11,9 @@
 
 import { RTTRenderer }      from './rttrenderer.js';
 import { TreeCalibration }  from './phylograph.js';
-import { computeOLS, ciHalfWidth } from './regression.js';
-import { downloadBlob, htmlEsc as esc, blobToBase64 } from './utils.js';
+import { computeOLS, ciHalfWidth } from '@artic-network/pearcore/regression.js';
+import { downloadBlob, htmlEsc as esc } from '@artic-network/pearcore/utils.js';
+import { createGraphicsExporter } from '@artic-network/pearcore/graphics-export.js';
 
 /**
  * Create the Root-to-Tip panel controller.
@@ -153,110 +154,33 @@ export function createRTTChart({
     downloadBlob(csvContent, 'text/csv', 'root-to-tip.csv');
   }
 
-  // ── Image export (SVG & PNG) ───────────────────────────────────────────────
+  // ── Image export (SVG & PNG) — uses generic pearcore graphics exporter ────
 
-  let _imageSaveHandler = null;
-
-  const btnImage   = panel.querySelector('#rtt-btn-image');
-  const imgOverlay = document.getElementById('rtt-image-overlay');
-  const imgBody    = document.getElementById('rtt-image-body');
-  const imgFooter  = document.getElementById('rtt-image-footer');
-
-  document.getElementById('rtt-image-close')?.addEventListener('click', _closeImageDialog);
-  btnImage?.addEventListener('click', () => { if (rtt._points.length > 0) _openImageDialog(); });
-
-  function _openImageDialog() {
-    imgOverlay.classList.add('open');
-    _buildImageDialog();
-  }
-
-  function _closeImageDialog() {
-    imgOverlay.classList.remove('open');
-  }
-
-  function _buildImageDialog() {
-    const pw = Math.round(rtt._canvas.clientWidth  * 2);
-    const ph = Math.round(rtt._canvas.clientHeight * 2);
-    const btnLabel = _imageSaveHandler ? 'Export' : 'Download';
-    const btnIcon  = _imageSaveHandler ? 'folder-check' : 'download';
-
-    imgBody.innerHTML = `
-      <div class="expg-row">
-        <span class="expg-label">Filename</span>
-        <input type="text" id="rtti-filename" class="expg-input" value="root-to-tip" autocomplete="off" spellcheck="false">
-        <span id="rtti-ext-hint" style="font-size:0.82rem;color:var(--bs-secondary-color);flex-shrink:0">.svg</span>
-      </div>
-      <div class="expg-row">
-        <span class="expg-label">Format</span>
-        <div class="expg-radios">
-          <label class="expg-radio"><input type="radio" name="rtti-fmt" value="svg" checked>&nbsp;SVG (vector)</label>
-          <label class="expg-radio"><input type="radio" name="rtti-fmt" value="png">&nbsp;PNG (raster)</label>
-        </div>
-      </div>
-      <div class="expg-row">
-        <span class="expg-label">Background</span>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-          <input type="checkbox" id="rtti-bg" checked>&nbsp;Include background colour
-        </label>
-      </div>
-      <div id="rtti-png-opts" style="display:none">
-        <p class="expg-hint">Output size: ${pw} × ${ph} px (2× current viewport)</p>
-      </div>`;
-
-    imgFooter.innerHTML = `
-      <button id="rtti-cancel-btn"   class="btn btn-sm btn-secondary">Cancel</button>
-      <button id="rtti-download-btn" class="btn btn-sm btn-primary"><i class="bi bi-${btnIcon} me-1"></i>${btnLabel}</button>`;
-
-    document.querySelectorAll('input[name="rtti-fmt"]').forEach(r => r.addEventListener('change', () => {
-      const isPng = document.querySelector('input[name="rtti-fmt"]:checked')?.value === 'png';
-      document.getElementById('rtti-png-opts').style.display = isPng ? 'block' : 'none';
-      document.getElementById('rtti-ext-hint').textContent   = isPng ? '.png' : '.svg';
-    }));
-    document.getElementById('rtti-cancel-btn').addEventListener('click',   _closeImageDialog);
-    document.getElementById('rtti-download-btn').addEventListener('click', _doImageExport);
-  }
-
-  function _doImageExport() {
-    const fmt      = document.querySelector('input[name="rtti-fmt"]:checked')?.value || 'svg';
-    const filename = document.getElementById('rtti-filename')?.value.trim() || 'root-to-tip';
-    const transparent = !(document.getElementById('rtti-bg')?.checked ?? true);
-
-    if (fmt === 'png') {
-      const tw = Math.round(rtt._canvas.clientWidth  * 2);
-      const th = Math.round(rtt._canvas.clientHeight * 2);
-      const oc    = new OffscreenCanvas(tw, th);
-      const octx  = oc.getContext('2d');
+  const _imgExporter = createGraphicsExporter({
+    overlay:         document.getElementById('rtt-image-overlay'),
+    body:            document.getElementById('rtt-image-body'),
+    footer:          document.getElementById('rtt-image-footer'),
+    closeBtn:        document.getElementById('rtt-image-close'),
+    openBtn:         panel.querySelector('#rtt-btn-image'),
+    prefix:          'rtti',
+    defaultFilename: 'root-to-tip',
+    hasContent:      () => rtt._points.length > 0,
+    getViewportDims: () => ({
+      width:  rtt._canvas.clientWidth,
+      height: rtt._canvas.clientHeight,
+    }),
+    buildSvg: ({ transparent }) => _buildRTTSVG(transparent),
+    buildPngCanvas: ({ width, height, transparent }) => {
+      const oc   = new OffscreenCanvas(width, height);
+      const octx = oc.getContext('2d');
       if (!transparent) {
         octx.fillStyle = rtt.bgColor;
-        octx.fillRect(0, 0, tw, th);
+        octx.fillRect(0, 0, width, height);
       }
-      octx.drawImage(rtt._canvas, 0, 0, tw, th);
-      oc.convertToBlob({ type: 'image/png' }).then(async blob => {
-        if (_imageSaveHandler) {
-          _imageSaveHandler({
-            contentBase64: await blobToBase64(blob), base64: true,
-            filename: `${filename}.png`, mimeType: 'image/png',
-            filterName: 'PNG images', extensions: ['png'],
-          });
-        } else {
-          downloadBlob(blob, 'image/png', `${filename}.png`);
-        }
-      });
-    } else {
-      const svgStr = _buildRTTSVG(transparent);
-      if (!svgStr) return;
-      if (_imageSaveHandler) {
-        _imageSaveHandler({
-          content: svgStr, base64: false,
-          filename: `${filename}.svg`, mimeType: 'image/svg+xml',
-          filterName: 'SVG images', extensions: ['svg'],
-        });
-      } else {
-        downloadBlob(svgStr, 'image/svg+xml', `${filename}.svg`);
-      }
-    }
-    _closeImageDialog();
-  }
+      octx.drawImage(rtt._canvas, 0, 0, width, height);
+      return oc;
+    },
+  });
 
   /**
    * Build a vector SVG of the current RTT plot using the renderer's data.
@@ -889,6 +813,6 @@ export function createRTTChart({
     recomputeCalibration() { _update(); },
 
     /** Override the image-save action for the current platform (e.g. Tauri native dialog). */
-    setImageSaveHandler(fn) { _imageSaveHandler = fn ?? null; },
+    setImageSaveHandler: _imgExporter.setSaveHandler,
   };
 }

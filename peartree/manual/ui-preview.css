@@ -1,0 +1,292 @@
+/* ── PearTree UI component demo wrapper ───────────────────────────────────────
+   Scoped overrides for the manual's static UI previews.
+   pearcore.css and peartree.css are loaded before this file, so all design
+   tokens (--pt-*), component styles, and utility classes are already available.
+   This file only adds the manual-specific demo container and display overrides.
+──────────────────────────────────────────────────────────────────────────── */
+
+/* ── Figure with caption ──────────────────────────────────────────────────── */
+.pt-figure {
+  margin: 1.5rem 0 1.5rem 1.5rem;
+  display: block;
+}
+
+.pt-figure-panel {
+  display: inline-block;
+  max-width: 100%;
+  border: 1px solid var(--pt-border);
+  border-radius: 8px;
+  padding: 14px;
+  overflow: hidden;
+}
+
+.pt-figure-panel img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.pt-figure figcaption,
+.pt-ui-demo-legend {
+  margin-top: 0.0rem;
+  font-size: 0.85rem;
+  color: var(--bs-secondary-color);
+  line-height: 1.5;
+}
+.pt-ui-demo--palette + .pt-ui-demo-legend {
+  margin-left: 1.5rem;
+}
+
+/* ── Demo container ───────────────────────────────────────────────────────── */
+.pt-ui-demo {
+  background: var(--pt-bg-panel);
+  border: 1px solid var(--pt-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 1.25rem 0;
+  display: inline-block;
+  max-width: 100%;
+  /* Match the real app's body { color: var(--pt-off-white) } from pearcore-webapp.css */
+  color: var(--pt-text);
+}
+
+/* Dialog variant — full-width card, no extra padding.
+   The .pt-modal inside already has its own border, so remove the
+   outer wrapper border to avoid a double border. */
+.pt-ui-demo--dialog,
+.pt-ui-demo--dialog-wide {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  border: none;
+  background: transparent;
+  margin-left: 1.5rem;
+}
+
+/* Toolbar demo strip */
+.pt-toolbar-demo {
+  min-height: 38px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Section demo: force palette section body open */
+.pt-palette-section--demo > .pt-section-body {
+  display: block !important;
+  grid-template-rows: 1fr !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  overflow: visible !important;
+}
+.pt-palette-section--demo .pt-section-body-inner {
+  overflow: visible !important;
+  min-height: auto !important;
+}
+.pt-palette-section--demo .pt-sec-chevron {
+  transform: rotate(90deg);
+  opacity: 0.72;
+}
+/* Neutralise the manual page's h3 margin which overrides pearcore's margin:0 */
+.pt-palette-section h3 {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* ── Palette panel preview wrapper ───────────────────────────────────────── */
+.pt-ui-demo--palette {
+  display: inline-block;
+  width: 220px;
+  padding: 8px 16px 10px;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+  vertical-align: top;
+}
+
+/* ── Colour picker demo — show popup statically below the trigger ─────────── */
+.pt-ui-demo--colour-picker {
+  display: inline-block;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+  vertical-align: top;
+}
+#colour-picker-popup.pt-cp-demo {
+  position: static;
+  display: block;
+  margin-top: 6px;
+  box-shadow: none;
+}
+.pt-ui-demo--colour-picker-legend {
+  margin-left: 1.5rem;
+}
+/* ── Inline colour trigger swatch span ────────────────────────────────────── */
+.pt-btn-colour-trigger-preview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 2px;
+  border: 1px solid var(--pt-border-input, rgba(255,255,255,0.25));
+  border-radius: 4px;
+  background: var(--pt-surface-input, #073642);
+  vertical-align: middle;
+  cursor: default;
+}
+
+/* Block all pointer interaction inside demos, except toolbar button previews */
+.pt-ui-demo input,
+.pt-ui-demo select,
+.pt-ui-demo button:not(.pt-btn-preview) {
+  pointer-events: none;
+}
+
+/* Configure / palette buttons: sized to match select/input row height */
+.pt-ui-demo .pt-configure-btn {
+  padding: 1px 8px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+/* ── Modal demo — card only, no overlay backdrop ─────────────────────────── */
+.pt-modal--demo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Constrain tall dialogs so they don't overflow the page */
+.pt-modal--demo .pt-modal-body {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+/* Wide dialogs (filter/palette/annotation managers) */
+.pt-ui-demo--dialog-wide .pt-modal--demo .pt-modal-body {
+  max-height: 380px;
+}
+
+/* Two-pane dialogs need their own overflow management */
+.pt-modal--demo .fm-modal-body,
+.pt-modal--demo .pm-modal-body {
+  max-height: 340px;
+}
+
+/* ── Toolbar button previews ─────────────────────────────────────────────── */
+.pt-btn-preview,
+.pt-btngrp-preview {
+  margin-left: 0.25em;
+}
+
+.pt-btn-preview {
+  background: var(--pt-surface) !important;
+  padding: 0.12rem 0.3rem !important;
+  font-size: 0.90rem !important;
+  line-height: 1.4 !important;
+  opacity: 1 !important;
+  vertical-align: middle;
+  cursor: default;
+  transition: background 0.1s;
+}
+.pt-btn-preview:hover {
+  background: var(--pt-surface-focus) !important;
+}
+
+/* Button group border-radius — first in group */
+#btn-back.pt-btn-preview,
+#btn-drill.pt-btn-preview,
+#btn-zoom-in.pt-btn-preview,
+#btn-fit.pt-btn-preview,
+#btn-order-asc.pt-btn-preview,
+#btn-rotate.pt-btn-preview,
+#btn-mode-nodes.pt-btn-preview,
+#btn-reroot.pt-btn-preview,
+#btn-hide.pt-btn-preview,
+#btn-collapse-clade.pt-btn-preview,
+#btn-apply-user-colour.pt-btn-preview,
+#btn-highlight-clade.pt-btn-preview {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* Last in group */
+#btn-forward.pt-btn-preview,
+#btn-home.pt-btn-preview,
+#btn-zoom-out.pt-btn-preview,
+#btn-fit-labels.pt-btn-preview,
+#btn-order-desc.pt-btn-preview,
+#btn-rotate-all.pt-btn-preview,
+#btn-mode-branches.pt-btn-preview,
+#btn-temporal-root.pt-btn-preview,
+#btn-show.pt-btn-preview,
+#btn-expand-clade.pt-btn-preview,
+#btn-clear-user-colour.pt-btn-preview,
+#btn-clear-highlights.pt-btn-preview {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/* Middle of group */
+#btn-climb.pt-btn-preview,
+#btn-midpoint-root.pt-btn-preview,
+#btn-temporal-root-global.pt-btn-preview {
+  border-radius: 0;
+}
+
+/* ── Filter box preview ──────────────────────────────────────────────────── */
+.pt-filter-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  vertical-align: middle;
+}
+.pt-filter-preview .pt-filter-group {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  border: 1px solid var(--pt-border);
+  border-radius: 4px;
+  background: var(--pt-surface-input);
+}
+
+/* ── Tip callout box ─────────────────────────────────────────────────────── */
+.pt-tip-box {
+  border-left: 3px solid var(--pt-teal);
+  background: rgba(42, 161, 152, 0.08);
+  border-radius: 0 5px 5px 0;
+  padding: 0.6rem 1rem 0.6rem 0.9rem;
+  margin: 1.25rem 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  display: block;
+  color: var(--pt-text);
+}
+.pt-tip-label {
+  font-weight: 700;
+  color: var(--pt-teal);
+  white-space: nowrap;
+  margin-right: 0.1em;
+}
+
+/* ── Note callout box ────────────────────────────────────────────────────── */
+.pt-note-box {
+  border-left: 3px solid var(--pt-gold);
+  background: rgba(181, 137, 0, 0.08);
+  border-radius: 0 5px 5px 0;
+  padding: 0.6rem 1rem 0.6rem 0.9rem;
+  margin: 1.25rem 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  display: block;
+  color: var(--pt-text);
+}
+.pt-note-label {
+  font-weight: 700;
+  color: var(--pt-gold);
+  white-space: nowrap;
+  margin-right: 0.1em;
+}

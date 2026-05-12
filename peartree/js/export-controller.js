@@ -2,11 +2,11 @@
 // Extracted from peartree.js to keep the app controller focused.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { htmlEsc as esc, downloadBlob, blobToBase64 } from './utils.js';
+import { htmlEsc as esc, downloadBlob } from '@artic-network/pearcore/utils.js';
 import { isNumericType } from './phylograph.js';
-import { graphToNewick } from './treeio.js';
+import { graphToNewick } from '@artic-network/pearcore/tree-io.js';
 import { viewportDims, compositeViewPng, buildGraphicSVG } from './graphicsio.js';
-import { CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY } from './treerenderer.js';
+import { createGraphicsExporter } from '@artic-network/pearcore/graphics-export.js';
 
 /**
  * Create the export controller — manages tree export and graphics export
@@ -47,17 +47,11 @@ export function createExportController({
 }) {
   const $ = id => root.querySelector('#' + id);
 
-  // ── Save-handler slots (injected by platform adapters, e.g. Tauri) ──────────
-  // When set, the "Download" button becomes "Save" and calls the handler with
-  // { content, filename, mimeType, filterName, extensions } instead of triggering
-  // a browser download.
-  let _exportSaveHandler   = null;
-  let _graphicsSaveHandler = null;
-  let _printTrigger        = null; // platform override: fn(layer) → void|Promise
+  // ── Save-handler slot for tree export ──────────────────────────────────────
+  let _exportSaveHandler = null;
 
-  // ── Wire close buttons once at construction ───────────────────────────────
+  // ── Wire close button ─────────────────────────────────────────────────────
   $('export-tree-close')?.addEventListener('click', _closeExportDialog);
-  $('export-graphic-close')?.addEventListener('click', _closeGraphicsDialog);
 
   // ── Tree export DOM refs ───────────────────────────────────────────────────
   const exportOverlay  = $('export-tree-overlay');
@@ -65,12 +59,41 @@ export function createExportController({
   const exportFooter   = $('export-tree-footer');
   const exportTitleEl  = $('export-tree-title');
 
-  // ── Graphics export DOM refs ───────────────────────────────────────────────
-  const exportGraphicOverlay = $('export-graphic-overlay');
-  const exportGraphicBody    = $('export-graphic-body');
-  const exportGraphicFooter  = $('export-graphic-footer');
-  const btnExportGraphic     = $('btn-export-graphic');
-  btnExportGraphic?.addEventListener('click', () => openGraphicsDialog());
+  // ── Graphics exporter (generic dialog + print via pearcore) ────────────────
+  const _gfx = createGraphicsExporter({
+    overlay:         $('export-graphic-overlay'),
+    body:            $('export-graphic-body'),
+    footer:          $('export-graphic-footer'),
+    closeBtn:        $('export-graphic-close'),
+    openBtn:         $('btn-export-graphic'),
+    prefix:          'expg',
+    defaultFilename: 'tree',
+    fullViewLabel:   'Full tree',
+    hasContent:      () => !!getGraph(),
+    getViewportDims: () => {
+      const d = viewportDims({ canvas, axisCanvas, legendRightCanvas });
+      return { width: d.totalW, height: d.totalH };
+    },
+    getFullDims: () => {
+      const r = getRenderer();
+      const d = viewportDims({ canvas, axisCanvas, legendRightCanvas });
+      return {
+        width:  d.totalW,
+        height: r.paddingTop + r.paddingBottom +
+                (r.maxY + 1) * r.scaleY + (d.axVisible ? d.axH : 0),
+      };
+    },
+    buildSvg: ({ fullView, transparent }) => buildGraphicSVG(
+      { renderer: getRenderer(), legendRenderer: getLegendRenderer(),
+        canvas, axisCanvas, legendRightCanvas, legend2RightCanvas, axisRenderer },
+      fullView, transparent,
+    ),
+    buildPngCanvas: ({ width, height, fullView, transparent }) =>
+      compositeViewPng(
+        { renderer: getRenderer(), canvas, axisCanvas, legendRightCanvas, axisRenderer },
+        width, height, fullView, transparent,
+      ),
+  });
 
   // ── Tree export ────────────────────────────────────────────────────────────
 
@@ -149,7 +172,7 @@ export function createExportController({
           ${treeAnnotKeys.map(k => `
             <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.82rem;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
               <input type="checkbox" class="exp-annot-cb" value="${esc(k)}" checked>
-              <code style="font-size:0.78rem;background:#02292e;padding:0 3px;border-radius:3px">${esc(k)}</code>
+              <code class="pt-code-tag">${esc(k)}</code>
             </label>`).join('')}
         </div>
         <div class="imp-col-grid" id="exp-annot-grid-csv" style="margin-top:0.35rem;display:none">
@@ -158,7 +181,7 @@ export function createExportController({
                 const def = schema.get(k);
                 return `<label style="display:flex;align-items:center;gap:0.3rem;font-size:0.82rem;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                   <input type="checkbox" class="exp-annot-cb" value="${esc(k)}" checked>
-                  <code style="font-size:0.78rem;background:#02292e;padding:0 3px;border-radius:3px">${esc(def?.label ?? k)}</code>
+                  <code class="pt-code-tag">${esc(def?.label ?? k)}</code>
                 </label>`;}).join('')
             : '<div style="font-size:0.82rem;color:rgba(255,255,255,0.4);font-style:italic">No tip annotations found</div>'}
         </div>
@@ -402,179 +425,16 @@ export function createExportController({
     _closeExportDialog();
   }
 
-  // ── Graphics export ────────────────────────────────────────────────────────
-
-  function openGraphicsDialog() {
-    if (!getGraph()) return;
-    exportGraphicOverlay.classList.add('open');
-    _buildGraphicsDialog();
-  }
-
-  function _closeGraphicsDialog() {
-    exportGraphicOverlay.classList.remove('open');
-  }
-
-  function _buildGraphicsDialog() {
-    const { totalW, totalH } = viewportDims({ canvas, axisCanvas, legendRightCanvas });
-    const defPx = Math.round(totalW * 2);
-    const defH  = Math.round(totalH * 2);
-
-    exportGraphicBody.innerHTML = `
-      <div class="expg-row">
-        <span class="expg-label">Filename</span>
-        <input type="text" id="expg-filename" class="expg-input" value="tree" autocomplete="off" spellcheck="false">
-        <span id="expg-ext-hint" style="font-size:0.82rem;color:var(--bs-secondary-color);flex-shrink:0">.svg</span>
-      </div>
-      <div class="expg-row">
-        <span class="expg-label">Format</span>
-        <div class="expg-radios">
-          <label class="expg-radio"><input type="radio" name="expg-fmt" value="svg" checked>&nbsp;SVG (vector)</label>
-          <label class="expg-radio"><input type="radio" name="expg-fmt" value="png">&nbsp;PNG (raster)</label>
-        </div>
-      </div>
-      <div class="expg-row">
-        <span class="expg-label">View</span>
-        <div class="expg-radios">
-          <label class="expg-radio"><input type="radio" name="expg-view" value="current" checked>&nbsp;Current view</label>
-          <label class="expg-radio"><input type="radio" name="expg-view" value="full">&nbsp;Full tree</label>
-        </div>
-      </div>
-      <div class="expg-row">
-        <span class="expg-label">Background</span>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-          <input type="checkbox" id="expg-bg" checked>&nbsp;Include background colour
-        </label>
-      </div>
-      <div id="expg-png-opts" style="display:none">
-        <p class="expg-hint">Output size: ${defPx} × ${defH} px (2× current viewport)</p>
-      </div>`;
-
-    exportGraphicFooter.innerHTML = `
-      <button id="expg-cancel-btn"   class="btn btn-sm btn-secondary">Cancel</button>
-      <button id="expg-download-btn" class="btn btn-sm btn-primary"><i class="bi bi-${_graphicsSaveHandler ? 'folder-check' : 'download'} me-1"></i>${_graphicsSaveHandler ? 'Export' : 'Download'}</button>`;
-
-    const _updateExpgHint = () => {
-      const renderer = getRenderer();
-      const { totalW, totalH, axH, axVisible } = viewportDims({ canvas, axisCanvas, legendRightCanvas });
-      const isFull = root.querySelector('input[name="expg-view"]:checked')?.value === 'full';
-      const ph = isFull
-        ? Math.round((renderer.paddingTop + renderer.paddingBottom +
-            (renderer.maxY + 1) * renderer.scaleY + (axVisible ? axH : 0)) * 2)
-        : Math.round(totalH * 2);
-      const pw = Math.round(totalW * 2);
-      const p = root.querySelector('#expg-png-opts p');
-      if (p) p.textContent =
-        `Output size: ${pw} × ${ph} px (2× ${isFull ? 'full tree height' : 'current viewport'})`;
-    };
-    root.querySelectorAll('input[name="expg-fmt"]').forEach(r => r.addEventListener('change', () => {
-      const isPng = root.querySelector('input[name="expg-fmt"]:checked')?.value === 'png';
-      $('expg-png-opts').style.display = isPng ? 'block' : 'none';
-      $('expg-ext-hint').textContent = isPng ? '.png' : '.svg';
-      if (isPng) _updateExpgHint();
-    }));
-    root.querySelectorAll('input[name="expg-view"]').forEach(r => r.addEventListener('change', _updateExpgHint));
-    $('expg-cancel-btn').addEventListener('click',   _closeGraphicsDialog);
-    $('expg-download-btn').addEventListener('click', _doGraphicsExport);
-  }
-
-  function _doGraphicsExport() {
-    const renderer  = getRenderer();
-    const fmt       = root.querySelector('input[name="expg-fmt"]:checked')?.value || 'svg';
-    const filename  = ($('expg-filename')?.value.trim() || 'tree');
-    const fullTree  = root.querySelector('input[name="expg-view"]:checked')?.value === 'full';
-    const transparent = !($('expg-bg')?.checked ?? true);
-
-    if (fmt === 'png') {
-      const { totalW, totalH, axH, axVisible } = viewportDims({ canvas, axisCanvas, legendRightCanvas });
-      const targetW = Math.round(totalW * 2);
-      const targetH = fullTree
-        ? Math.round((renderer.paddingTop + renderer.paddingBottom +
-            (renderer.maxY + 1) * renderer.scaleY + (axVisible ? axH : 0)) * 2)
-        : Math.round(totalH * 2);
-
-      compositeViewPng({ renderer, canvas, axisCanvas, legendRightCanvas, axisRenderer }, targetW, targetH, fullTree, transparent).convertToBlob({ type: 'image/png' }).then(async blob => {
-        if (_graphicsSaveHandler) {
-          _graphicsSaveHandler({
-            contentBase64: await blobToBase64(blob),
-            base64:        true,
-            filename:      `${filename}.png`,
-            mimeType:      'image/png',
-            filterName:    'PNG images',
-            extensions:    ['png'],
-          });
-        } else {
-          downloadBlob(blob, 'image/png', `${filename}.png`);
-        }
-      });
-    } else {
-      const legendRenderer = getLegendRenderer();
-      const svgStr = buildGraphicSVG({ renderer, legendRenderer, canvas, axisCanvas, legendRightCanvas, legend2RightCanvas, axisRenderer }, fullTree, transparent);
-      if (!svgStr) return;
-      if (_graphicsSaveHandler) {
-        _graphicsSaveHandler({
-          content:    svgStr,
-          base64:     false,
-          filename:   `${filename}.svg`,
-          mimeType:   'image/svg+xml',
-          filterName: 'SVG images',
-          extensions: ['svg'],
-        });
-      } else {
-        downloadBlob(svgStr, 'image/svg+xml', `${filename}.svg`);
-      }
-    }
-    _closeGraphicsDialog();
-  }
-
-  // ── Print ──────────────────────────────────────────────────────────────────
-
-  /**
-   * Print the current tree via the OS print dialog.
-   * On macOS, the print panel has a PDF dropdown with "Save as PDF".
-   * Builds the composite SVG, injects it into a hidden #pt-print-layer, then
-   * calls window.print(). The layer is cleared once the dialog closes.
-   */
-  function doPrint() {
-    const renderer       = getRenderer();
-    const legendRenderer = getLegendRenderer();
-    if (!getGraph()) return;
-    const svgStr = buildGraphicSVG(
-      { renderer, legendRenderer, canvas, axisCanvas, legendRightCanvas, legend2RightCanvas, axisRenderer },
-      false, false,
-    );
-    if (!svgStr) return;
-    let layer = document.getElementById('pt-print-layer');
-    if (!layer) {
-      layer = document.createElement('div');
-      layer.id = 'pt-print-layer';
-      document.body.appendChild(layer);
-    }
-    layer.innerHTML = svgStr;
-    // afterprint cleans up; add a fallback timeout for environments where it doesn't fire.
-    const _cleanup = () => { layer.innerHTML = ''; };
-    window.addEventListener('afterprint', _cleanup, { once: true });
-    setTimeout(() => { if (layer.innerHTML) _cleanup(); }, 60_000); // safety net
-    // Wait for two animation frames so the browser paints the SVG before the print
-    // snapshot is taken (critical in WKWebView/Tauri where the snapshot is immediate).
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (_printTrigger) {
-        _printTrigger(layer);
-      } else {
-        window.print();
-      }
-    }));
-  }
-
   // ── Public API ─────────────────────────────────────────────────────────────
 
   return {
     openExportDialog,
     closeExportDialog:      _closeExportDialog,
-    openGraphicsDialog,
-    closeGraphicsDialog:    _closeGraphicsDialog,
-    doPrint,
+    openGraphicsDialog:     _gfx.open,
+    closeGraphicsDialog:    _gfx.close,
+    doPrint:                _gfx.doPrint,
     setExportSaveHandler:   (fn) => { _exportSaveHandler   = fn; },
-    setGraphicsSaveHandler: (fn) => { _graphicsSaveHandler = fn; },
-    setPrintTrigger:        (fn) => { _printTrigger = fn; },
+    setGraphicsSaveHandler: _gfx.setSaveHandler,
+    setPrintTrigger:        _gfx.setPrintTrigger,
   };
 }

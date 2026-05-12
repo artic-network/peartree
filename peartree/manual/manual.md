@@ -10,9 +10,7 @@ permalink: /manual/
 
 # PearTree Manual
 
-PearTree is a phylogenetic tree viewer that runs entirely in the browser or as a desktop application. No data is ever uploaded to any server — all processing is local to your machine.
-
-This manual covers the full feature set of PearTree, organised by topic. Each chapter can be read independently. The [Quick-Reference](#appendix-a-keyboard-shortcuts) appendix at the end lists all keyboard shortcuts.
+PearTree is a phylogenetic tree viewer that runs entirely in the browser or as a desktop application. No data is ever uploaded to any server — all processing is local to your machine. 
 
 > **Where to get PearTree**
 >
@@ -21,7 +19,6 @@ This manual covers the full feature set of PearTree, organised by topic. Each ch
 >
 > All features described in this manual work in both versions unless noted.
 
----
 
 ## Contents
 
@@ -30,29 +27,26 @@ This manual covers the full feature set of PearTree, organised by topic. Each ch
 3. [Importing Annotations](#chapter-3-importing-annotations)
 4. [Navigating the Tree](#chapter-4-navigating-the-tree)
 5. [The Hyperbolic Lens](#chapter-5-the-hyperbolic-lens)
-6. [Organising the Tree](#chapter-6-organising-the-tree)
-7. [Selecting and Filtering](#chapter-7-selecting-and-filtering)
+6. [Selecting and Filtering](#chapter-6-selecting-and-filtering)
+7. [Organising the Tree](#chapter-7-organising-the-tree)
 8. [Decorating the Tree](#chapter-8-decorating-the-tree)
-9. [The Time Axis](#chapter-9-the-time-axis)
-10. [Rooting](#chapter-10-rooting)
-11. [The Root-to-Tip Panel](#chapter-11-the-root-to-tip-panel)
-12. [The Data Table Panel](#chapter-12-the-data-table-panel)
-13. [Exporting](#chapter-13-exporting)
-14. [Settings and Persistence](#chapter-14-settings-and-persistence)
+9. [Filtering](#chapter-9-filtering)
+10. [The Time Axis](#chapter-10-the-time-axis)
+11. [Rooting](#chapter-11-rooting)
+12. [The Root-to-Tip Panel](#chapter-12-the-root-to-tip-panel)
+13. [The Data Table Panel](#chapter-13-the-data-table-panel)
+14. [Exporting](#chapter-14-exporting)
+15. [Settings and Persistence](#chapter-15-settings-and-persistence)
 15. [Appendix A: Keyboard Shortcuts](#appendix-a-keyboard-shortcuts)
-16. [Appendix B: Visual Options Reference](#appendix-b-visual-options-reference)
-17. [Appendix C: Bootstrap Values and Branch Annotations](#appendix-c-bootstrap-values-branch-annotations-and-rerooting)
-18. [Appendix D: URL Parameters and Sharing](#appendix-d-url-parameters-and-sharing)
+16. [Appendix B: Bootstrap Values and Branch Annotations](#appendix-b-bootstrap-values-branch-annotations-and-rerooting)
+17. [Appendix C: URL Parameters and Sharing](#appendix-c-url-parameters-and-sharing)
 
----
 
 ## Chapter 1: The Interface at a Glance
 
 When a tree is loaded the interface has four main areas:
 
-> <img src="images/fig2a.png" style="width:550px;"/>
->
-> EBOV example tree loaded. The toolbar runs along the top, the canvas fills the centre, and the status bar sits at the bottom. The Visual Options palette is shown toggled open on the right. Other panels such as the metadata table and temporal signal (root-to-tip) plot open on the right.
+{% include 'figure.html', src: "images/app_window.png", alt: "EBOV example tree loaded", maxwidth: "550px", border: "none", padding: "0", legend: "The PearTree application window with the example EBOV tree loaded." %}
 
 ### Toolbar
 
@@ -72,12 +66,12 @@ Runs along the top of the window. Contains buttons grouped by function:
 | **Hide / Show** | Hide selected subtree, unhide |
 | **Collapse** | Collapse clade to triangle, expand triangle |
 | **Colour** | Colour picker swatch, apply colour, clear user colours, highlight clade, clear highlights |
-| **Filter** | Tip filter text box with regex toggle and column selector |
+| **Filter** | Tip filter box with field selector, match-operator selector, saved-filter selector, save-filter button, and buttons for **Manage Filters** / **Manage Palettes** |
 | **Panels** | Data table panel toggle, root-to-tip panel toggle |
 
 ### Visual Options Palette
 
-Slides in from the right. Toggle with the sliders button in the status bar or press **Tab**. Contains all display controls organised into collapsible sections. Sections are locked until a tree is loaded, then unlock automatically.
+Slides in from the right. Toggle with the Control Panel button {%- include 'btn.html', id: "btn-palette" %} in the toolbar or press **Tab**. Contains all display controls organised into collapsible sections. 
 
 ### Status Bar
 
@@ -87,7 +81,6 @@ Runs along the bottom. Shows live annotation values for the tip or node under th
 
 The tree drawing fills all available space between the toolbar and status bar. Zoom and scroll with the mouse or trackpad. The tip labels are not shown unless zoomed to a level that they don't overlap.
 
----
 
 ## Chapter 2: Loading Trees
 
@@ -97,23 +90,19 @@ PearTree reads **NEXUS** (`.nex`, `.nexus`, `.tre`, `.tree`, `.treefile`) and **
 
 ### Opening a File
 
-Click the **open** button <img src="images/open_button.png" style="width:28px;"/> in the toolbar, or press **⌘O**, to open the *Open Tree File* dialog.
+Click the **Open** button {%- include 'btn.html', id: "btn-open-tree" %} in the toolbar, or press **⌘O**, to open the *Open Tree File* dialog.
 
 Three tabs are available:
 
 **File tab** — drag a file onto the drop zone or click *Choose file* to browse.
 
-> <img src="images/fig1c.png" style="width:320px;"/>
->
-> *Open Tree File* dialog, File tab. The file stays on your computer — nothing is uploaded.
+{% include 'dialog-open-tree.html', tab: "file", maxwidth: "460px", legend: "<em>Open Tree File</em> dialog, File tab. The file stays on your computer — nothing is uploaded." %}
 
-> **Desktop app note:** In the desktop application, **⌘O** opens the system file chooser directly rather than this dialog.
 
 **URL tab** — paste a public URL to a remote tree file and click *Load from URL*. The remote server must allow cross-origin requests (CORS). GitHub raw URLs (`raw.githubusercontent.com/…`) work out of the box.
 
-> <img src="images/fig1d.png" style="width:320px;"/>
->
-> *Open Tree File* dialog, URL tab.
+{% include 'dialog-open-tree.html', tab: "url", maxwidth: "460px", legend: "<em>Open Tree File</em> dialog, URL tab." %}
+
 
 **Example tab** — choose from a set of built-in example datasets:
 
@@ -125,26 +114,22 @@ Three tabs are available:
 
 Click a dataset card to load it immediately.
 
-> <img src="images/fig1b.png" style="width:320px;"/>
->
-> *Open Tree File* dialog, Example tab.
+{% include 'dialog-open-tree.html', tab: "example", maxwidth: "460px", legend: "<em>Open Tree File</em> dialog, Example tab." %}
 
 ### The Startup Screen
 
-When no tree is loaded, the canvas shows the startup screen with direct **Open…** and **Example…** buttons.
+When no tree is loaded, the canvas shows the startup screen with direct **Open…** and **Example…** buttons. Or a tree file can be dragged directly on to the startup screen.
 
-> <img src="images/fig1a.png" style="width:220px;"/>
->
-> Startup screen.
+{% include 'figure.html', src: "images/startup.png", alt: "Startup screen", maxwidth: "220px", bg: "#02292E", legend: "Startup screen." %}
 
-> [!TIP]
-> You can share a link that opens a remote tree automatically. Append `?treeUrl=<URL>` to the PearTree web address — anyone who follows the link has the tree loaded immediately with no upload required. See [Appendix D](#appendix-d-url-parameters-and-sharing) for details.
+{% tip %}
+You can share a link that opens a remote tree automatically. Append `?treeUrl=<URL>` to the PearTree web address — anyone who follows the link has the tree loaded immediately with no upload required. See [Appendix C](#appendix-c-url-parameters-and-sharing) for details.
+{% endtip %}
 
 ### Opening a NEXUS File with Embedded Settings
 
-If a NEXUS file was exported from PearTree with **Embed settings** ticked (see [Chapter 13](#chapter-13-exporting)), opening it restores the full visual appearance automatically — theme, palette choices, colouring, legends, and axis configuration.
+If a NEXUS file was exported from PearTree with **Embed settings** ticked (see [Chapter 14](#chapter-14-exporting)), opening it restores the full visual appearance automatically — theme, palette choices, colouring, legends, and axis configuration.
 
----
 
 ## Chapter 3: Importing Annotations
 
@@ -152,11 +137,9 @@ Tree files embed per-tip metadata written by the inference tool (e.g. BEAST post
 
 ### Importing a CSV or TSV File
 
-Click the annotation-import button <img src="images/load_annotations_button.png" style="width:28px;"/> in the toolbar or press **⌘⇧A**.
+Click the annotation-import button {%- include 'btn.html', id: "btn-import-annot" %} in the toolbar or press **⌘⇧A**.
 
-> <img src="images/fig11a.png" style="width:320px;"/>
->
-> Import Annotations dialog.
+{% include 'dialog-import-annot.html', phase: "pick", maxwidth: "480px", legend: "Import Annotations dialog." %}
 
 Drag a CSV or TSV file onto the drop zone, or click *Choose file* to browse. In the web app you can also switch to the *URL* tab and paste a public URL directly — for example the EBOV annotation file used in this manual:
 
@@ -164,15 +147,15 @@ Drag a CSV or TSV file onto the drop zone, or click *Choose file* to browse. In 
 https://artic-network.github.io/peartree/docs/data/ebov.csv
 ```
 
-> **Desktop app note:** A system file chooser appears instead of the URL tab. The EBOV annotation file can be downloaded from the URL above and then selected in the file chooser.
+{% note %}
+For the desktop app, a system file chooser appears instead of the URL tab. The EBOV annotation file can be downloaded from the URL above and then selected in the file chooser.
+{% endnote %}
 
 #### Match Configuration
 
 After selecting the file a configuration step appears. Choose which column in the metadata file identifies each tip:
 
-> <img src="images/fig11b.png" style="width:320px;"/>
->
-> Import configuration: choose the column that matches tip labels, and toggle which columns to import.
+{% include 'dialog-import-annot.html', phase: "config", maxwidth: "480px", legend: "Import configuration: choose the column that matches tip labels, and toggle which columns to import." %}
 
 PearTree can match the entire tip label string, or just one pipe-delimited (`|`) field within it. For the EBOV example, select field 2 (`lab-id`) to match the second segment of each label.
 
@@ -180,32 +163,55 @@ PearTree can match the entire tip label string, or just one pipe-delimited (`|`)
 
 After clicking **Import**, a summary reports how many tips were matched.
 
-> <img src="images/fig11c.png" style="width:320px;"/>
->
-> Import summary confirming all 1610 tips matched.
+{% include 'figure.html', src: "images/import_summary.png", alt: "Import summary", maxwidth: "460px", bg: "#083642", legend: "Import summary confirming all 1610 tips matched." %}
 
 After import the new annotation keys appear in all *Colour by* dropdowns, the legend selector, and the Node Info dialog.
 
-### The Annotation Curator
+### The Annotation Manager
 
-Open the Annotation Curator from the toolbar (tags button) to review every annotation key currently loaded.
+Open the Annotation Manager {%- include 'btn.html', id: "btn-curate-annot" %} from the toolbar to review every annotation key currently loaded.
 
-For each key you can:
+{% include 'dialog-annotation-manager.html', maxwidth: "800px" %}
+
+For each annotation you can:
 
 | Action | Description |
 |---|---|
-| **Rename** | Give a key a more readable display label |
+| **Rename** | Give an annotation a more readable display label |
 | **Change type** | Switch between *categorical* and *real* (continuous numeric) |
-| **Branch annotation** | Mark a key as belonging to branches rather than nodes — affects how values move when rerooting (see [Appendix C](#appendix-c-bootstrap-values-branch-annotations-and-rerooting)) |
+| **Palette** | Open colour settings for the annotation (palette choice and numeric scale mode) |
+| **Branch annotation** | Mark an annotation as belonging to branches rather than nodes — affects how values move when rerooting (see [Appendix B](#appendix-b-bootstrap-values-branch-annotations-and-rerooting)) |
 
-> [!TIP]
-> If your tree uses a non-standard name for bootstrap values (e.g. `UFBoot` from IQ-TREE), open the Curator and tick **Branch annotation** for that key so PearTree handles it correctly when rerooting.
+{% tip %}
+If your tree uses a non-standard name for bootstrap values (e.g. `UFBoot` from IQ-TREE), open the Annotation Manager and tick **Branch annotation** for that key so PearTree handles it correctly when rerooting.
+{% endtip %}
 
----
+### Parse Tip Names
+
+The **Parse Tips** button at the bottom of the Annotation Curator opens the Parse Tip Names dialog. This extracts a new annotation from tip names by splitting each label on a delimiter.
+
+{% include 'dialog-parse-tips.html', maxwidth: "460px" %}
+
+| Field | Description |
+|---|---|
+| **Name** | The annotation key that will be created |
+| **Delimiter** | The character(s) used to split each tip label (e.g. `\|`, `_`, `-`) |
+| **Field** | Which segment to extract: `1` = first, `2` = second, `-1` = last, etc. |
+| **Type** | Data type for the new annotation — *Auto-detect* examines all values and picks the most specific type |
+| **Missing** | A field value that should be treated as missing data (shown as an empty cell) |
+
+A preview of how three example tip labels will be parsed is shown at the bottom of the dialog.
+
+{% tip %}
+Many BEAST and epidemiological tree files encode metadata directly in the tip name using `|` as a separator — for example `EBOV|G3732|SLE|2014-08-13`. Use Parse Tip Names to pull out the country field (`field 3`) or sampling date (`field 4`) as a proper typed annotation without needing a separate CSV file.
+{% endtip %}
+
 
 ## Chapter 4: Navigating the Tree
 
 *The examples in this chapter use the EBOV example tree (1610 tips). For navigation in very large trees, try loading `data/SARS-CoV-2_15K.tree` (15,000 tips).*
+
+There are a range of option for zooming into the tree, scrolling and navigating into subtrees or clades. The mouse/trackpad can be used to scroll and zoom with the scroll wheel or with standard gestures on the trackpad. Various hotkeys can be used to get more precise control.
 
 ### Scrolling and Zooming
 
@@ -218,48 +224,47 @@ For each key you can:
 | **⌘↑ / ⌘↓** | Scroll one page |
 | **⌘⇧↑ / ⌘⇧↓** | Jump to the top or bottom of the tree |
 
-Toolbar zoom buttons:
+The toolbar also has buttons for zooming in and out and fitting the tree to the window or expanding to see the labels. These buttons also have keyboard shortcuts.
+
+*Toolbar zoom buttons*: {% include 'btn-group.html', ids: "btn-zoom-in btn-zoom-out btn-fit btn-fit-labels", label: "Toolbar zoom buttons" %}
 
 | Button | Shortcut | Action |
 |---|---|---|
-| <img src="images/zoom_in_button.png" style="width:28px;"/> | **⌘=** | Zoom in ×1.5 |
-| <img src="images/zoom_out_button.png" style="width:28px;"/> | **⌘−** | Zoom out ×1.5 |
-| <img src="images/show_all_button.png" style="width:28px;"/> | **⌘0** | Fit entire tree to window |
-| <img src="images/show_labels_button.png" style="width:28px;"/> | **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
+| {%- include 'btn.html', id: "btn-zoom-in" %} | **⌘+** | Zoom in ×1.5 |
+| {%- include 'btn.html', id: "btn-zoom-out" %} | **⌘−** | Zoom out ×1.5 |
+| {%- include 'btn.html', id: "btn-fit" %} | **⌘0** | Fit entire tree to window |
+| {%- include 'btn.html', id: "btn-fit-labels" %} | **⌘⇧0** | Fit Labels — zoom so no tip labels overlap |
 
-> **Automatic horizontal scaling:** When zoomed out so far that tip labels are hidden, PearTree expands the tree branches to fill the full canvas width. When you zoom back in enough for labels to become readable, the horizontal scale contracts to make room for them again. This maximises screen use at every zoom level.
+The **Fit Labels** button {%- include 'btn.html', id: "btn-fit-labels" %} or **⌘⇧0** keyboard shortcut zooms the tree vertically sufficiently that the labels can be shown without any overlap. This will depend on the label font size (set in the [Tip Labels](#tip-labels) section of the control panel). If one or more tips are selected then the zoom will keep the these visible in the window.
 
-> <img src="images/fig4.png" style="width:440px;"/>
->
-> EBOV tree zoomed in to show individual tip labels.
+{% include 'figure.html', src: "images/zoomed_tree.png", alt: "EBOV tree zoomed in", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV tree zoomed in to show individual tip labels. Only the top portion of the tree is being shown." %}
 
-Press **⌘0** to return to the full view at any time.
+Press {%- include 'btn.html', id: "btn-fit" %} button or **⌘0** keyboard shortcut to return to the full view of the tree (this may hide the tip labels again if there is not enough space to show them).
+
+{% note %}
+**Automatic horizontal scaling:** PearTree only supports vertical zoom. This is a design decision because horizonal zooming can hide the branching order and hinder navigation. The tree is scaled horizontally to fill the available space. The ratio of the vertical scale and fixed horizonal scale determines the aspect ratio of the tree when [exported as a graphic](#exporting-a-graphic).
+{% endnote %}
 
 ### Subtree Navigation
 
-**Double-click** any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node, scaled to fill the full window.
+**Double-click** any internal node to zoom into its subtree. The canvas re-renders showing only the descendants of that node, scaled to fill the full window. Alternatively, select an internal node or a set of tips (this will select the most recent common ancestor of the tips) and click the drill-down button {%- include 'btn.html', id: "btn-drill" %} or press **⌘⇧>**.
 
-Alternatively, select an internal node and click the drill-down button <img src="images/drill_down_button.png" style="width:28px;"/> or press **⌘⇧.**.
+{% include 'figure.html', src: "images/select_clade.png", alt: "Subclade before drilling down", maxwidth: "80%", bg: "#EAE8E1", legend: "A subclade is selected."   %}
 
-> <img src="images/fig7a.png" style="width:440px;"/>
->
-> <img src="images/fig7b.png" style="width:440px;"/>
->
-> A subclade before and after drilling down.
+{% include 'figure.html', src: "images/drilldown_clade.png", alt: "Subclade after drilling down", maxwidth: "80%", bg: "#EAE8E1", legend: "The subclade as viewed after drilling down using the drill-down button or keyboard shortcut." %}
 
-PearTree maintains a full navigation history:
+PearTree maintains a full navigation history that works like a web browser. Drill down into several different clades in sequence, then press **⌘[** to step back through each view. **⌘]** goes forward again. This makes it easy to compare distant parts of a large tree without re-navigating each time.
 
+The **Climb Up** button {%- include 'btn.html', id: "btn-climb" %} or **⌘⇧<** keyboard shortcut moves the view out to include the direct parent node (i.e., one node closer to the root). The **Home** button {%- include 'btn.html', id: "btn-home" %} or **⌘\\** keyboard shortcut restores the view to show the entire tree. Both these steps will be included in the navigation history so the back button will take you back to the former view.
+
+Navigation tools: {% include 'btn-group.html', ids: "btn-back btn-forward", label: "Navigation" %} {% include 'btn-group.html', ids: "btn-drill btn-climb btn-home", label: "Navigation" %}
 | Button | Shortcut | Effect |
 |---|---|---|
-| <img src="images/back_button.png" style="width:28px;"/> | **⌘[** | Go back to the previous view |
-| <img src="images/forward_button.png" style="width:28px;"/> | **⌘]** | Go forward in history |
-| <img src="images/climb_up_button.png" style="width:28px;"/> | **⌘⇧,** | Step up one level toward the root |
-| <img src="images/home_button.png" style="width:28px;"/> | **⌘\\** | Return to the full-tree root view |
-
-> [!TIP]
-> Navigate history like a web browser. Drill down into several different clades in sequence, then press **⌘[** to step back through each view. **⌘]** goes forward again. This makes it easy to compare distant parts of a large tree without re-navigating each time.
-
----
+| {%- include 'btn.html', id: "btn-back" %} | **⌘[** | Go back to the previous view in the navigation history |
+| {%- include 'btn.html', id: "btn-forward" %} | **⌘]** | Go forward in the navigation history - restoring a view after using the back function |
+| {%- include 'btn.html', id: "btn-drill" %} | **⌘⇧** | Drill into selected subtree opening a new view showing only that subtree |
+| {%- include 'btn.html', id: "btn-climb" %} | **⌘⇧<** | Step up one level toward the root revealing including node above the current subtree |
+| {%- include 'btn.html', id: "btn-home" %} | **⌘\\** | Return to the full-tree root view |
 
 ## Chapter 5: The Hyperbolic Lens
 
@@ -269,15 +274,15 @@ The hyperbolic lens expands a region of the tree to label-readable spacing witho
 
 Hold **~** (tilde/backtick) and move the cursor over the canvas. The tree distorts around the cursor's vertical position.
 
-> <img src="images/fig5.png" style="width:440px;"/>
->
-> Lens active: tips near the cursor are spread apart and readable; tips further away are compressed but still visible.
+{% include 'figure.html', src: "images/lens_view.png", alt: "Hyperbolic lens active", maxwidth: "80%", bg: "#EAE8E1", legend: "Lens active: tips near the cursor are spread apart and readable; tips further away are compressed but still visible." %}
 
 The lens **persists** after you release **~** — the focus locks in place so you can click, select, or inspect the expanded region normally. Re-hold **~** and move to reposition the focus. Press **Escape** to dismiss.
 
+Clicking the **Fit Labels** button {%- include 'btn.html', id: "btn-fit-labels" %} or **⌘⇧0** keyboard shortcut will turn off the lens mode with the visible labels centred on the screen.
+
 While the lens is active a reminder appears in the status bar: *Lens mode active – press Esc to cancel*.
 
-### Adjusting the Lens Width
+<!-- ### Adjusting the Lens Width
 
 The **Lens** ⊕/⊖ buttons in the toolbar (or **⌘⇧=** / **⌘⇧−**) control how many tip rows wide the uniformly-expanded flat centre zone is:
 
@@ -285,30 +290,88 @@ The **Lens** ⊕/⊖ buttons in the toolbar (or **⌘⇧=** / **⌘⇧−**) con
 - **⊖** — remove one row
 - At zero (default) the lens is a pure hyperbolic falloff from the focus point
 
-Peak magnification caps at the *Fit Labels* spacing level, so labels in the expanded zone never overlap.
+Peak magnification caps at the *Fit Labels* spacing level, so labels in the expanded zone never overlap. -->
 
-> [!TIP]
-> The hyperbolic lens is ideal for large trees where fully zooming in would hide the context. Hold **~**, move to the region of interest, release to lock the focus, then interact with the expanded section. Press **Escape** when done.
+{% tip %}
+The hyperbolic lens is ideal for large trees where fully zooming in would hide the context. Hold **~**, move to the region of interest, release to lock the focus, then interact with the expanded section. Press **Escape** when done.
+{% endtip %}
 
----
 
-## Chapter 6: Organising the Tree
+## Chapter 6: Selecting and Filtering
+
+### Selection Modes
+
+PearTree has two selection modes – node selection and branch selection. Which mode is currently in operation is shown by the toolbar buttons {%- include 'btn-group.html', ids: "btn-mode-nodes btn-mode-branches" %}. The default is the node selection mode.
+
+{% note %}
+If the tree is determined to be rooted when it is loaded (for example if it is a BEAST or other time-calibrated tree) then the selection mode buttons (and the rooting buttons) are not shown. 
+{% endnote %}
+
+**Node selection operations**
+
+- **Click a tip** — selects that tip; the status bar shows its name and divergence
+- **Click an internal node** — selects all descendant tips; a teal MRCA ring marks the node
+- **⌘-click** — add to or remove from the current selection
+- **Click and drag** — drag-select all tips within a rectangular area
+- **⌘A** — select all visible tips
+- **⌘⇧I** — invert the selection (also available as the {%- include 'btn.html', id: "btn-invert-selection" %} toolbar button)
+- **Click empty canvas** — clear the selection
+
+{% include 'figure.html', src: "images/select_clade.png", alt: "Tips selected with MRCA ring", maxwidth: "80%", bg: "#EAE8E1", legend: "A group of tips selected (highlighted in blue) with MRCA ring visible on their most recent common ancestral node (highlighted in red)." %}
+
+**Branches mode (⌘B)**
+
+Press **⌘B** or click the branch-mode button {%- include 'btn.html', id: "btn-mode-branches" %} to switch. Click anywhere along a horizontal branch to place a precise positional marker. This mode enables exact-position rerooting (see [Chapter 11](#chapter-11-rooting)).
+
+{% tip %}
+Branches mode is mainly used for precise manual rerooting. The example EBOV tree is an explicitly-rooted BEAST tree, so rerooting is disabled for it. Use `data/varv_rooted.nwk` or `data/large_tree.tree` to practise rerooting and see [Chapter 11](#chapter-11-rooting).
+{% endtip %}
+
+Press **⌘B** again to return to Nodes mode.
+
+### Selecting with the Filter Box
+
+Typing into the filter box in the toolbar is the quickest way to select tips by name or annotation value. Choose a field and operator from the buttons to the left of the input, then type a value — matching tips are selected immediately.
+
+For example, choose *Name contains* and type `SLE` to select all Sierra Leone EBOV tips. Press **Escape** or clear the box to remove the filter (the selection remains in place).
+
+{% include 'filter-box.html', contents: "SLE" -%}<br />
+<br />
+
+For the full set of filter operators, saved named filters, and the Filter Manager, see [Chapter 9](#chapter-9-filtering).
+
+### Node Info
+
+Select any node or tip, then press **⌘I** or click the {%- include 'btn.html', id: "btn-node-info" %} button. The Node Info dialog lists every annotation on that node — name, divergence, branch length, posterior support, date, and any imported custom fields. The node can be named by typing into the text field and this will be used as a name for the clade (or can be displayed as a node label).
+
+{% include 'figure.html', src: "images/node_info.png", alt: "Node Info dialog", maxwidth: "400px", bg: "#063642", legend: "Node Info dialog for a selected EBOV internal node." %}
+
+The tip info box similarly shows information and annotations for the selected tip such as those loaded from a CSV file. 
+
+{% include 'figure.html', src: "images/tip_info.png", alt: "Tip Info dialog", maxwidth: "400px", bg: "#063642", legend: "Tip Info dialog for a selected EBOV tip." %}
+
+In both boxes the **Copy as TSV** button will copy the contents of the box to the clipboard in TSV format for pasting into another application such as a spreadsheet. 
+
+## Chapter 7: Organising the Tree
 
 ### Branch Ordering
 
-The **Order** buttons sort all clades by descendant count, giving a ladder-like layout:
+The **Order** buttons sort all clades by descendant count, giving a ladder-like layout. This can be useful to provide a clearer layout of the tree.
+
+The node ordering buttons: {% include 'btn-group.html', ids: "btn-order-asc btn-order-desc", label: "Order" %}
 
 | Button | Shortcut | Effect |
 |---|---|---|
-| <img src="images/order_up_button.png" style="width:28px;"/> | **⌘U** | Larger clades toward the top |
-| <img src="images/order_down_button.png" style="width:28px;"/> | **⌘D** | Larger clades toward the bottom |
+| {%- include 'btn.html', id: "btn-order-asc" %} | **⌘U** | Larger clades toward the top |
+| {%- include 'btn.html', id: "btn-order-desc" %} | **⌘D** | Larger clades toward the bottom |
 
-> <img src="images/fig3.png" style="width:440px;"/>
->
-> EBOV tree with ascending (larger clades upward) order applied.
+{% include 'figure.html', src: "images/sort_up.png", alt: "EBOV tree with ascending order", maxwidth: "50%", bg: "#EAE8E1", legend: "EBOV tree with ascending (larger clades upward) order applied." %}
 
-> [!NOTE]
-> Once ordered, the original clade order is lost. You can switch between ascending and descending ordering, or rotate individual nodes manually (see below). Hiding a node (see below) also clears the branch ordering since the tip counts have changed.
+{% include 'figure.html', src: "images/sort_down.png", alt: "EBOV tree with ascending order", maxwidth: "50%", bg: "#EAE8E1", legend: "EBOV tree with ascending (larger clades upward) order applied." %}
+
+{% note %}
+Once ordered, the original clade order is lost. You can switch between ascending and descending ordering, or rotate individual nodes manually (see below). Hiding a node (see below) also clears the branch ordering since the tip counts have changed.
+{% endnote %}
 
 ### Rotating Nodes
 
@@ -316,312 +379,303 @@ The **Order** buttons sort all clades by descendant count, giving a ladder-like 
 
 Select an internal node, then use the Rotate buttons:
 
+The node rotation buttons: {% include 'btn-group.html', ids: "btn-rotate btn-rotate-all", label: "Rotate" %}
+
 | Button | Effect |
 |---|---|
-| <img src="images/rotate_branch_button.png" style="width:28px;"/> | Reverse the direct children of the selected node only |
-| <img src="images/rotate_clade_button.png" style="width:28px;"/> | Recursively reverse children at every level within the selected subtree |
+| {%- include 'btn.html', id: "btn-rotate" %} | Reverse the direct children of the selected node only |
+| {%- include 'btn.html', id: "btn-rotate-all" %} | Recursively reverse children at every level within the selected subtree |
 
-> <img src="images/fig8a.png" style="width:440px;"/>
->
-> <img src="images/fig8b.png" style="width:440px;"/>
->
-> <img src="images/fig8c.png" style="width:440px;"/>
->
-> Before and after rotating a single node (middle), and after rotating the entire clade (bottom).
+1. Select an internal node in the tree.
+
+{% include 'figure.html', src: "images/clade_selected.png", alt: "Tree before rotation", maxwidth: "80%", bg: "#EAE8E1", legend: "A clade is selected by clicking the node at its root." %}
+
+2. Click the **rotate node** button {%- include 'btn.html', id: "btn-rotate" %} in the toolbar.
+
+{% include 'figure.html', src: "images/node_rotated.png", alt: "Tree after rotating a single node", maxwidth: "80%", bg: "#EAE8E1", legend: "The root node is rotated without affecting the rest of the clade."   %}
+
+3. Click the **rotate clade** button {%- include 'btn.html', id: "btn-rotate-all" %} in the toolbar.
+
+{% include 'figure.html', src: "images/clade_rotated.png", alt: "Tree after rotating the entire clade", maxwidth: "80%", bg: "#EAE8E1", legend: "The entire clade is rotated reversing its order." %}
 
 ### Hiding Nodes and Subtrees
 
 Hiding removes a tip or entire subtree from the display without deleting it from the underlying tree. The remaining tree reflows to fill the space.
 
 1. Select a tip or internal node.
-2. Click the **Hide** button (eye-slash icon) in the toolbar.
 
-> <img src="images/fig9a.png" style="width:440px;"/>
->
-> <img src="images/fig9b.png" style="width:440px;"/>
->
-> A single tip before and after hiding.
+{% include 'figure.html', src: "images/tip_selected.png", alt: "Tip before hiding", maxwidth: "80%", bg: "#EAE8E1" %}
 
-> <img src="images/fig9c.png" style="width:440px;"/>
->
-> <img src="images/fig9d.png" style="width:440px;"/>
->
-> A subtree selected (top) and after hiding all descendants (bottom).
+2. Click the **Hide** button {%- include 'btn.html', id: "btn-hide" %} in the toolbar.
 
-**Showing hidden nodes:** when any hidden nodes exist in the current view, the **Unhide** button <img src="images/unhide_button.png" style="width:28px;"/> becomes active.
+{% include 'figure.html', src: "images/tip_hidden.png", alt: "Tip after hiding", maxwidth: "80%", bg: "#EAE8E1", legend: "The selected tip is now hidden." %}
+
+3. Select a clade in the tree.
+
+{% include 'figure.html', src: "images/clade_selected.png", alt: "Subtree selected", maxwidth: "80%", bg: "#EAE8E1" %}
+
+4. Click the **Hide** button {%- include 'btn.html', id: "btn-hide" %} in the toolbar.
+
+{% include 'figure.html', src: "images/clade_hidden.png", alt: "Subtree after hiding", maxwidth: "80%", bg: "#EAE8E1", legend: "The entire selected clade is hidden." %}
+
+**Showing hidden nodes:** when any hidden nodes exist in the current view, the **Unhide** button {%- include 'btn.html', id: "btn-show" %} becomes active.
 
 - **With a node selected** — click Unhide to restore the hidden descendants of that node.
 - **With nothing selected** — click Unhide to restore all hidden nodes at once.
 
-> [!TIP]
-> To isolate a subset of tips: type a keyword into the filter box to select all matching tips, press **⌘⇧I** to invert the selection, then click Hide. Everything except your subset disappears. Click Unhide (with nothing selected) when done.
+{% tip %}
+To isolate a subset of tips: type a keyword into the filter box to select all matching tips, press **⌘⇧I** to invert the selection, then click Hide. Everything except your subset disappears. Click Unhide (with nothing selected) when done.
+{% endtip %}
 
 ### Collapsing Clades
 
-Collapsing replaces a subtree with a filled triangle symbol. Unlike hiding, collapsed clades remain visible as a compact summary with a tip-count label.
+Collapsing replaces a subtree with a filled triangle shape. Unlike hiding, collapsed clades remain visible as a compact summary with a tip-count label.
 
 1. Select an internal node.
-2. Click the **Collapse** button in the toolbar.
+
+2. Click the **Collapse** button {%- include 'btn.html', id: "btn-collapse-clade" %} in the toolbar.
 
 The subtree becomes a filled triangle labelled with the clade name and enclosed tip count.
 
-To expand: click the triangle to select it and click **Expand**, or **double-click the triangle** directly.
+{% include 'figure.html', src: "images/clade_collapsed.png", alt: "Clade after collapsing", maxwidth: "80%", bg: "#EAE8E1", legend: "The selected clade is represented by a triangle shape." %}
 
-**Changing a triangle's colour:** with a triangle selected, use the colour picker in the toolbar to assign a custom fill colour. The eraser button resets to the theme default.
+The **Span** control in the **COLLAPSED CLADES** section of the control panel can adjust the vertical size of the triangle shapes. If set to the maximum then the triangles become the size of the number of tips that they contain and the individual labels will be shown if sufficiently zoomed in.
 
-In the **Visual Options palette**, the **Collapsed Clades** section (visible once any clade has been collapsed) provides:
+**Changing a triangle's colour:** with a triangle selected, use the colour picker and **Paint** button {%- include 'btn.html', id: "btn-apply-user-colour" %} in the toolbar to assign a custom fill colour. The eraser button {%- include 'btn.html', id: "btn-clear-user-colour" %} resets to the theme default.
 
-| Control | Effect |
-|---|---|
-| **Fill opacity** | Translucency of the triangle (0 = transparent, 1 = solid) |
-| **Height (rows)** | Height of the triangle base in tip-row units (1–20) |
+{% include 'figure.html', src: "images/clade_collapsed_full.png", alt: "Collapsed clade fully expanded", maxwidth: "80%", bg: "#EAE8E1", legend: "The collapsed clade scaled to show all the tip labels. It has also been coloured using the <b>Paint</b> button." %}
 
-> [!TIP]
-> Collapse the uninteresting parts of a large tree into triangles so the important regions fill the canvas with readable labels. Double-click any triangle to re-expand it when needed. Collapsed clades can also be individually coloured to categorise groups at a glance.
+To expand the clade: click the triangle to select it and click **Expand** {%- include 'btn.html', id: "btn-expand-clade" %}. Selecting a clade and then clicking **Expand** {%- include 'btn.html', id: "btn-expand-clade" %} will expand all collapsed subclades and with no selection, all collapse clades visible on the screen.
 
----
+See the [**Collapsed Clades**](#collapsed-clades) section of the **Visual Options palette** for more controls of the collapsed clades.
 
-## Chapter 7: Selecting and Filtering
+{% tip %}
+You can double click on a collapsed clade to drill-down into the clade and make its subtree visible. On using the back {% include 'btn.html', id: "btn-back", label: "Navigation" %} or home buttons {% include 'btn.html', id: "btn-home", label: "Navigation" %}, the clade will still be shown as collaped.
+{% endtip %}
 
-### Selection Modes
-
-PearTree has two selection modes. The active mode is shown by which toolbar button is pressed.
-
-**Nodes mode** (default)
-
-- **Click a tip** — selects that tip; the status bar shows its name and divergence
-- **Click an internal node** — selects all descendant tips; a teal MRCA ring marks the node
-- **⌘-click** — add to or remove from the current selection
-- **Click and drag** — drag-select all tips within a rectangular area
-- **⌘A** — select all visible tips
-- **⌘⇧I** — invert the selection (also available as the ⇄ toolbar button)
-- **Click empty canvas** — clear the selection
-
-> <img src="images/fig6.png" style="width:440px;"/>
->
-> A group of tips selected (highlighted) with MRCA ring visible on their most recent common ancestral node.
-
-**Branches mode (⌘B)**
-
-Press **⌘B** or click the branch-mode button to switch. Click anywhere along a horizontal branch to place a precise positional marker. This mode enables exact-position rerooting (see [Chapter 10](#chapter-10-rooting)).
-
-> [!TIP]
-> Branches mode is mainly used for precise rerooting. The example EBOV tree is an explicitly-rooted BEAST tree, so rerooting is disabled for it. Use `data/varv_rooted.nwk` or `data/large_tree.tree` to practise rerooting.
-
-Press **⌘B** again to return to Nodes mode.
-
-### Filtering Tips
-
-The filter box in the toolbar instantly selects all visible tips whose labels contain the typed string.
-
-> <img src="images/filter_box.png" style="width:200px;"/>
-
-For example, type `SLE` to select all Sierra Leone EBOV tips:
-
-> <img src="images/filter_box_SLE.png" style="width:200px;"/>
-
-Press **Escape** or clear the box to remove the filter (the tip selection remains).
-
-### Node Info
-
-Select any node or tip, then press **⌘I** or click the <img src="images/get_info_button.png" style="width:28px;"/> button. The Node Info dialog lists every annotation on that node — name, divergence, branch length, posterior support, date, and any imported custom fields.
-
-> <img src="images/fig10.png" style="width:400px;"/>
->
-> Node Info dialog for a selected EBOV tip.
-
-### Applying User Colours
-
-1. Pick a colour using the colour swatch in the toolbar.
-2. Select one or more tips.
-3. Click the **Apply** button <img src="images/paint_button.png" style="width:28px;"/>.
-
-> <img src="images/fig14.png" style="width:440px;"/>
->
-> Tips dated from July–September 2015 highlighted in orange.
-
-User colours are stored as a `user_colour` annotation and are available in all *Colour by* dropdowns. When a NEXUS file is exported they travel with it.
-
-To remove: click the **Clear** button <img src="images/eraser_button.png" style="width:28px;"/>. With tips selected, clears only those tips; with nothing selected, clears all user colours in the current view.
-
-> [!TIP]
-> Click a colour swatch in a categorical legend to instantly select all tips with that annotation value, wherever they appear in the tree. **⌘-click** additional swatches to add them to the selection. Then apply a user colour, hide, or export that group.
-
----
 
 ## Chapter 8: Decorating the Tree
 
-All visual controls live in the **Visual Options palette**. Open it with the sliders button in the status bar or press **Tab**. Controls are organised into collapsible sections.
-
+{% note %}
 *This chapter uses the EBOV example tree with the `ebov.csv` annotations imported (see [Chapter 3](#chapter-3-importing-annotations)).*
+{% endnote %}
 
-### Themes
+### Applying User Colours
 
-The **Theme** section at the top of the palette provides pre-built visual presets.
+The simplest way of adding colours to the tree is to select a node or tip and use the paint brush button.
 
-> <img src="images/fig16.png" style="width:280px;"/>
->
-> The Theme section with the *MCM* theme applied.
+1. Pick a colour using the colour swatch button {%- include 'btn.html', id: "btn-colour-trigger" %} in the toolbar. You can either select a new colour using the 'Custom colour...' control, or pick one from one of the pre-defined swatches.
 
-| Control | Effect |
-|---|---|
-| Theme selector | Switch to a built-in or user-saved theme |
-| **Store** | Save the current settings as a named personal theme |
-| **Default** | Make this theme the starting point for new windows |
-| **Remove** | Delete a user-saved theme |
+{% include 'toolbar-colour-picker.html', legend: "The toolbar colour picker — choose a colour from the recent row or a palette." %}
 
-Changing any individual setting switches the selector to *Custom*. Click **Reset to defaults** at the bottom of the palette to revert to the Artic theme.
+2. Select one or more tips.
+3. Click the **Paint** button {%- include 'btn.html', id: "btn-apply-user-colour" %}.
+
+{% include 'figure.html', src: "images/tips_painted.png", alt: "Tips highlighted in orange", maxwidth: "80%", bg: "#EAE8E1", legend: "Tips selected and then painted orange using the <b>Paint</b> button." %}
+
+To remove: click the **Clear** button {%- include 'btn.html', id: "btn-clear-user-colour" %}. With tips selected, clears only those tips; with nothing selected, clears all user colours in the current view.
+
+When a tree is exported as a NEXUS file these colour annotions will be stored and then used when the tree is reloaded.
+
+{% note %}
+User colours are stored as a special annotation and are available in all *Colour by* dropdowns as 'user colour'. 
+{% endnote %}
+
+### Visual Options Control-panel
+
+All visual controls live in the **Visual Options** control-panel on the left hand side. Open it with the control-panel button {%- include 'btn.html', id: "btn-palette" %} in the toolbar or press **Tab**. 
+The control-panel can be closed again by clicking the close button {%- include 'btn.html', id: "btn-palette-close" %} or the toolbar button or by clicking on the tree. The control-panel can be fixed to stay open by clicking the pin button {%- include 'btn.html', id: "btn-palette-pin" %}. When pinned the pin button will be gold and the tree will scale horizontally to make space (unpinned, the control-panel will overlay the tree). 
+
+{% include 'figure.html', src: "images/visual_options_panel.png", alt: "The visual options panel with all the sections closed.", maxwidth: "260px", bg: "#083642", legend: "The visual options panel with all the sections closed." %}
+
+Controls are organised into collapsible sections. Click on a panel heading to open it and reveal its control. When another panel section is opened the currently open one will close. Use the pin button {%- include 'btn.html', id: "btn-palette-pin" %} to keep the panel section open.
 
 ### Tree Appearance
 
-The **Tree** section controls the canvas background, branch colour and width, and the typeface used for all labels.
+The **Tree** and **Branches** sections controls the basic visual look of the tree - the background colour and branch colour and width.
 
-> <img src="images/controls_tree.png" style="width:260px;"/>
+{% include 'palette-tree.html', legend: "Tree appearance controls." %}
 
 | Control | Effect |
 |---|---|
-| Background | Canvas fill colour |
-| Branches | Branch line colour |
-| Branch width | Stroke thickness (0.5–8 px) |
-| Typeface | Font family for all labels |
-| Neg. branches | *Draw* (as-is) or *Clamp to zero* |
+| Calibrate | Specify a date annoation that can be used to calibrate the timescale of the tree. If a date annoation exists when the tree is loaded it will be selected by default. This control will be hidden if there are no date annotations. |
+| Background | The colour of the background canvas of the tree. |
+| Root Len | This determines the length of the root branch 'stem' as a percentage of the whole tree from 0% (hidden) to 20% |
 
-> <img src="images/negative_branch.png" style="width:180px;"/> &nbsp; <img src="images/negative_clamped.png" style="width:180px;"/>
->
-> Negative branch drawn as-is (left) vs. clamped to zero (right).
+{% include 'palette-branches.html', legend: "Branch appearance controls." %}
+
+| Control | Effect |
+|---|---|
+| Colour | The colour of the branches of the tree |
+| Width | Branch line stroke thickness (0.5–8 px) |
+| Elbow radius | How curvy the corners of the branches are |
 
 ### Tip Labels
 
-> <img src="images/controls_tip_labels.png" style="width:260px;"/>
+These controls determine how the tip labels are presented. The tip labels will only be visible when the tree is sufficiently zoomed in that there is space for them (determined by the font size). 
+
+{% include 'palette-tip-labels.html', legend: "Tip Labels section of the Visual Options palette." %}
 
 | Control | Effect |
 |---|---|
 | Show | *Off* — hide all labels; *Names* — show tip name; or select an annotation key to display its values instead |
-| Layout | *Normal* (labels float at each tip) or aligned options (*Aligned*, *Dashed*, *Dots*, *Solid*) — labels line up at the rightmost tip with optional connector lines |
-| Size | Font size (1–20 pt) |
-| Colour | Default label colour |
-| Colour by | Use an annotation key for per-tip label colour |
-| Palette | Colour scheme when *Colour by* is active |
-| Spacing | Gap between the tip marker and the label text (px) |
+| Filter | Apply a saved named filter so only matching tips get labels (see [Chapter 9: Filtering](#chapter-9-filtering) for more information) |
+| Layout | *Off* (labels are adjacent to each tip) or aligned options (*Aligned*, *Dashed*, *Dots*, *Solid*) — labels align with the rightmost tip with optional connector lines |
+| Spacing | Gap between the tip marker and the label text (in pixels) |
+| Size | Font size (1–48 pt) |
+| Typeface | Font family for tip labels — *Theme* uses the typeface set in the Theme section; otherwise choose from Monospace, Sans-serif, Serif, or specific named fonts |
+| Style | Font weight and style — *Theme* inherits from the Theme section; or choose *Regular*, *Bold*, *Italic*, or *Bold Italic* |
+| Colour | The default label colour used if no user colour has been specified using the Paint option or if the `Colour by` option is being used but there is no annotation for that tip |
+| Colour by | Use an annotation key for per-tip label colour. See the Colour by section, below. |
+| Palette | A **Configure** buttoon appears when *Colour by* is active. This button will open a dialog box where a colour palette for this annoation can be selected. |
+
+### Branch Labels
+
+Branch labels display annotation values at the **midpoint of each branch** rather than at a node. This is particularly suited to branch-level annotations such as branch lengths when they should appear visually *on* the branch itself rather than at the node end. Unlike tip or node labels they are anchored to the branch midpoint and positioned above or below it.
+
+{% include 'figure.html', src: "images/branch_labels.png", alt: "Branch labels showing branch lengths", maxwidth: "80%", bg: "#EAE8E1", legend: "Branch labels showing branch lengths above the branches they refer too." %}
+
+{% include 'palette-branch-labels.html', legend: "Branch Labels section of the Visual Options palette." %}
+
+| Control | Effect |
+|---|---|
+| Show | *Off* — hide all branch labels; or select an annotation key to display |
+| Filter | Apply a saved named filter so only matching branches get labels |
+| d.p. | Decimal places for numeric annotations — *Auto* picks a sensible precision |
+| Position | *Above* or *Below* the branch midpoint |
+| Spacing | Vertical gap between the branch line and the label text (in pixels) |
+| Size | Font size (6–48 pt) |
+| Typeface | Font family — *Theme* inherits from the Theme section |
+| Style | Font weight and style — *Theme*, *Regular*, *Bold*, *Italic*, or *Bold Italic* |
+| Colour | Default label text colour |
+| Colour by | Use an annotation key for per-branch label colour |
+| Palette | **Configure** button appears when *Colour by* is active |
+
+{% note %}
+Bootstrap support values are **branch annotations** (see [Appendix B](#appendix-b-bootstrap-values-branch-annotations-and-rerooting)): they describe the branch leading from a node toward its parent, not the node itself. Using Branch Labels to display them places the values visually on the branch they belong to.
+{% endnote %}
+
+### Node Labels
+
+Annotation values are displayed as text labels at each internal node — most commonly used for bootstrap support values, posterior probabilities, clade names, or any node-level annotation. Unlike tip labels, node labels have no layout alignment option; they are always anchored to the node point.
+
+{% include 'figure.html', src: "images/node_labels.png", alt: "Node labels showing posterior support values", maxwidth: "80%", bg: "#EAE8E1", legend: "Node labels showing posterior support values to the right of the nodes they refer too." %}
+
+{% include 'palette-node-labels.html', legend: "Node Labels section of the Visual Options palette." %}
+
+| Control | Effect |
+|---|---|
+| Show | *Off* — hide all node labels; or select an annotation key to display its values |
+| Filter | Apply a saved named filter so only matching nodes get labels |
+| d.p. | Decimal places for numeric annotations — *Auto* picks a sensible precision |
+| Position | Where the label sits relative to the node point: *Right*, *Above left*, or *Below left* |
+| Spacing | Horizontal gap between the node point and the label text (px) |
+| Size | Font size (6–48 pt) |
+| Typeface | Font family — *Theme* inherits from the Theme section |
+| Style | Font weight and style — *Theme*, *Regular*, *Bold*, *Italic*, or *Bold Italic* |
+| Colour | Default label text colour |
+| Colour by | Use an annotation key for per-node label colour |
+| Palette | **Configure** button appears when *Colour by* is active |
 
 ### Label Shapes
 
-Coloured shapes can be drawn to the left of each tip label text, providing annotation colour swatches alongside each name.
+**Label shapes** are coloured shapes that are drawn to the left of each tip label text, providing additional ways of decorating tips with colours based on annotations. The shapes can be squares, circles or blocks - rectangles that fill the full height between tips to produce a continuous 'stripe'. Circles and squares are useful when the tip labels are not aligned, and blocks work best when the tips labels are aligned (whether visible or not).
+
+{% include 'figure.html', src: "images/label_shapes_1.png", alt: "Label shapes", maxwidth: "80%", bg: "#EAE8E1", legend: "Two label shapes shown next to tips – circles coloured with a categorical annotation, squares with a continuous annotation." %}
+
+{% include 'figure.html', src: "images/label_shapes_2.png", alt: "Label shapes", maxwidth: "80%", bg: "#EAE8E1", legend: "Aligned label shapes as blocks showing a continuous annotation next to tip labels." %}
+
+Label shapes are controlled by the **LABEL SHAPES** control panel and this can be cascaded to add additional label shapes and more controls.
+
+{% include 'palette-label-shapes.html', legend: "Label shape controls." %}
 
 | Control | Effect |
 |---|---|
 | Shape | *Off* / *Square* / *Circle* / *Block* |
 | Size | Shape height as % of row height |
+| Pad left | Specifies the gap on the left side of the shape (in pixels) |
 | Colour | Default fill colour |
 | Colour by | Use an annotation key for shape colour |
-| Margin left/right | Gap on each side of the shape (px) |
+| Shape 2 | Selecting a shape 2 will open up another label shape in a second column. If turned on then another option, Shape 3 will become available. |
 
 Multiple independent shape slots (up to 10) can be added to show several annotation dimensions simultaneously.
 
-> **Screenshot placeholder** — EBOV tip labels with two shape slots: `country` squares and `location` circles, demonstrating dual-annotation labelling.
 
 ### Tip Shapes
 
-> <img src="images/controls_tip_shapes.png" style="width:260px;"/>
+Tips shapes are filled circles drawn at the end of each tip branch. They can be sized and coloured in the control panel or a 'Colour by' annotation provided to control the colour. A background 'halo' effect can be specifed to outline all the tips shapes as a single layer. The tip shapes are always drawn even when the tree is fully zoomed out.
+
+{% include 'palette-tip-shapes.html', legend: "Tip shapes controls." %}
 
 | Control | Effect |
 |---|---|
 | Size | Tip circle radius (0 = hidden) |
+| Filter | Apply a saved named filter so only matching tips get shapes |
 | Colour | Stroke/fill colour |
-| Background | Halo fill colour |
-| Halo | Halo ring radius (0 = hidden) |
 | Colour by | Use an annotation key for tip colours |
-| Palette | Colour scheme when *Colour by* is active |
+| Palette | Colour scheme when *Colour by* is active (**Configure** opens annotation colour settings) |
+| Halo | Halo ring radius (0 = hidden) |
+| Halo col. | Halo fill colour |
 
 Set **Colour by** to `country` to colour each tip by sampling country:
 
-> <img src="images/fig12a.png" style="width:260px;"/>
->
-> Tip Shapes controls with **Colour by** set to `country`.
-
-> <img src="images/fig12b.png" style="width:440px;"/>
->
-> EBOV tips coloured by `country`.
+{% include 'figure.html', src: "images/tip_shapes.png", alt: "Tip Shapes set to Colour by country", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV tip shapes set with <b>Colour by</b> set to <code>country</code>." %}
 
 ### Node Shapes
 
-> <img src="images/controls_node_shapes.png" style="width:260px;"/>
+Node shapes are similar to tip shapes but are drawn on the internal nodes of the tree. The same options control them.
 
-Internal nodes can show circles coloured by a node-level annotation — useful for displaying posterior support values.
+{% include 'palette-node-shapes.html', legend: "Node shapes controls." %}
 
 | Control | Effect |
 |---|---|
 | Size | Node circle radius (0 = hidden) |
-| Colour by | Use an annotation key (e.g. `posterior`) |
-| Palette | For continuous support values, a diverging palette such as *Blue-Black-Red* works well: red = high support, blue = low |
+| Filter | Apply a saved named filter so only matching nodes get shapes |
+| Colour | Stroke/fill colour |
+| Colour by | Use an annotation key for tip colours |
+| Palette | Colour scheme when *Colour by* is active (**Configure** opens annotation colour settings) |
+| Halo | Halo ring radius (0 = hidden) |
+| Halo col. | Halo fill colour |
 
-> <img src="images/fig12c.png" style="width:260px;"/>
->
-> Node Shapes controls with size set to 3 and **Colour by** set to `posterior`.
+{% include 'figure.html', src: "images/node_shapes.png", alt: "Node Shapes set to Colour by posterior", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV node shapes set with <b>Colour by</b> set to <code>posterior</code>. The colour palette is Blue->Black->Red so nodes are coloured blue if < 0.5, red > 0.5 and black if close to 0.5." %}
 
-> <img src="images/fig12d.png" style="width:440px;"/>
->
-> EBOV tree with node shapes coloured by `posterior` support.
-
-### Node Labels
-
-Annotation values can be displayed as text labels on internal nodes — useful for bootstrap values, clade names, or any node-level string annotation.
-
-| Control | Effect |
-|---|---|
-| Annotation | Which annotation key to display |
-| Position | *Right*, *Above left*, or *Below left* |
-| Font size | Label text size |
-| Colour | Label text colour |
-| Spacing | Gap between node and label text |
-
-> **Screenshot placeholder** — EBOV tree with `posterior` node labels positioned to the right of each internal node.
+{% tip %}
+For phylogenetic support values (e.g., posterior probabilities or bootstrap values), a diverging palette such as *Blue-Black-Red* works well: red = high support, blue = low and black denotes intermediate support. **Configure** opens annotation colour settings dialog which allows the palette to be chosen and the range of the annotation. For a support value such as 'posterior' this should be set to [0, 1]. See [Colouring by Annotations](#colouring-by-annotations) for more information.
+{% endtip %}
 
 ### Node Bars
 
-*Available for trees with node-height HPD annotations — illustrated using `data/measles_genome_tree.nexus`.*
+When a BEAST tree carries height HPD (highest posterior density) annotations (e.g. `height_95%_HPD`), the **Node Bars** section appears in the palette. If no such annotations are present it shows an *unavailable* message. At present only `height_95%_HPD` annotation is recognised for use with node bars. If turned on, a horizontal bar will be shown at every node spanning time of the HPDs.
 
-When a BEAST tree carries HPD height annotations (e.g. `height_95%_HPD`), the **Node Bars** section appears in the palette:
+{% include 'figure.html', src: "images/node_bars.png", alt: "Node bars", maxwidth: "80%", bg: "#EAE8E1", legend: "A subclade of the EBOV tree showing height HPD node bars and height range whiskers" %}
+
+The options for node bars are controlled by the **NODE BARS** section of the control panel:
+
+{% include 'palette-node-bars.html', available: "true" %}
 
 | Control | Effect |
 |---|---|
-| Show | Toggle bars on/off |
-| Colour | Bar colour |
-| Bar height | Vertical thickness of each bar (px) |
-| Line | Show a line at the node *Mean*, *Median*, or neither |
-| Range whiskers | Show or hide the outer extent whiskers |
+| Show | *Off* / *On* — toggle bars on/off |
+| Filter | Apply a saved named filter so bars draw only on matching nodes |
+| Line | Draw a vertical line at the node *Mean*, *Median*, or neither |
+| Range | *Show* / *Hide* — display the full range as whisker lines either side of the bars. |
+| Size | Bar height in screen pixels (2–30) |
+| Colour | Fill and stroke colour of the bars |
+| Opacity | Translucency of the bar fill (0 = transparent, 1 = solid) |
+| Stroke | Opacity of the bar border line |
 
-> **Screenshot placeholder** — Measles genome tree (`data/measles_genome_tree.nexus`) with node bars showing 95% HPD height intervals.
+If the are no height HPDs specified in the annotations then this option is not available:
 
-### Legends
-
-Legends provide a colour key for any annotation used to colour tips, nodes, or labels. PearTree supports up to four independent legend strips simultaneously, all docked to the right side of the canvas.
-
-In the **Legend** section of the palette:
-
-1. Set **Annotation** to an annotation key (e.g. `country`).
-2. Adjust **Height %**, **Colour**, and **Font size** as desired.
-
-For categorical annotations a swatch-and-label key is drawn. For continuous numeric annotations a colour ramp with min/max labels is shown.
-
-> <img src="images/fig13.png" style="width:440px;"/>
->
-> EBOV tree with `country` legend docked to the right.
-
-**Legend 2–4:** additional legends can be configured below Legend 1. Set each legend's **Position** to *Right* (shown in the same panel as Legend 1) or *Below* (stacked vertically).
-
-Use **Height %** to control what fraction of the panel height each legend occupies.
-
-> [!TIP]
-> Use Legend 1 for a categorical annotation (e.g. country) and Legend 2 with **Position: Below** for a continuous annotation (e.g. posterior support) to display both keys simultaneously in a single neatly stacked column.
+{% include 'palette-node-bars.html', available: "false" %}
 
 ### Clade Highlights
 
-Clade highlights draw a translucent coloured shape behind a selected subtree — useful for drawing attention to named clades in publication figures or for annotating groups visually.
+Clade highlights draw a translucent coloured shape behind a selected subtree. These can be used to delineate clades visually.
 
 **Adding a highlight:**
 1. Select any internal node (its entire descendant clade is highlighted).
-2. Click the **Highlight** button <img src="images/open_button.png" style="width:28px;"/> (highlighter icon) in the toolbar.
+2. Select a colour using the colour picker {%- include 'btn.html', id: "btn-colour-trigger" %} in the toolbar
+3. Click the **Highlight** button {%- include 'btn.html', id: "btn-highlight-clade" %} in the toolbar.
 
 A translucent shape appears behind all descendants of that node. Multiple independent highlights can be active simultaneously — each is stored separately and can have its own colour.
 
@@ -629,28 +683,273 @@ A translucent shape appears behind all descendants of that node. Multiple indepe
 
 **Highlight colour:** by default each highlight uses the *Colour by* mapping set in the Clade Highlights section of the palette. Set **Colour by** to *User colour* to use the toolbar colour picker, or to any annotation key to automatically colour each highlight by the value of that annotation at the clade root.
 
+{% include 'figure.html', src: "images/clade_highlights_1.png", alt: "Clade highlights", maxwidth: "80%", bg: "#EAE8E1", legend: "A nested set of clade highlights with the rectangular style" %}
+
+The *Outline subtree* left edge combined with *Outline tips* right edge creates a tight polygon that traces the profile of the subtree.
+
+{% include 'figure.html', src: "images/clade_highlights_2.png", alt: "Clade highlights", maxwidth: "80%", bg: "#EAE8E1", legend: "A nested set of clade highlights with the <code>Outline subtree</code> and <code>Outline tips</code> options on." %}
+
 In the **Clade Highlights** section of the palette:
+
+{% include 'palette-clade-highlights.html', legend: "Clade Highlights section of the Visual Options palette." %}
 
 | Control | Effect |
 |---|---|
-| **Colour by** | *User colour* (toolbar swatch) or any annotation key |
-| **Palette** | Colour scheme when *Colour by* is an annotation key |
 | **Left edge** | *Rectangle* — straight vertical left edge at the clade-root node; *Outline subtree* — the shape hugs the left profile of every branch in the clade |
 | **Right edge** | *At tip* — ends just past the clade's rightmost tip circle; *At label left* — aligns with the global label column; *At label right* — extends to the right canvas edge; *Outline tips* — the right edge steps individually around each tip, creating a staircase silhouette |
-| **Padding** | Gap between the clade extent and the highlight border (px) |
-| **Corners** | Corner-rounding radius (px) |
+| **Padding** | Gap between the clade extent and the highlight border (in pixels) |
+| **Corners** | Corner-rounding radius (in pixels) |
+| **Colour by** | *User colour* (toolbar swatch) or any annotation key |
+| **Palette** | Colour scheme when *Colour by* is an annotation key |
 | **Opacity** | Translucency of the fill (0 = transparent, 1 = solid) |
-| **Stroke** | Opacity of the border line |
-| **Width** | Border line thickness (px) |
+| **Stroke** | Border line width (in pixels) |
+| **Opacity** | Opacity of the border line |
 
-> [!TIP]
-> The *Outline subtree* left edge combined with *Outline tips* right edge creates a tight polygon that traces the exact profile of the clade — useful for complex, non-rectangular subtrees. Collapsed clades inside the highlight are treated correctly: the shape extends to the full tip of the triangle.
+### Colouring by Annotations
 
----
+Many sections of the Visual Options palette — **Tip Labels**, **Label Shapes**, **Tip Shapes**, **Node Shapes**, **Node Labels**, **Clade Highlights**, and **Legends** — share a common **Colour by** control. This dropdown lets you drive the colour of that element from an annotation rather than a single fixed colour.
 
-## Chapter 9: The Time Axis
+When **Colour by** is set to an annotation key, a **Configure** button appears in that section. Click it to open the colour settings for that key:
 
-The axis adds a scale bar along the bottom of the canvas. Load the EBOV example tree to follow along — it carries a `date` annotation on each tip.
+{% include 'dialog-colour-settings.html', annotation: "posterior", datatype: "continuous", palette: "Blue-Black-Red", scalemode: "zero-one", maxwidth: "320px", legend: "Colour settings for a continuous annotation (posterior), using the Blue-Black-Red diverging palette with a fixed 0→1 scale." %}
+
+- **Palette** — choose a categorical swatch set (for string/boolean fields) or a continuous gradient (for numeric fields). Palettes are shared across all sections that colour by the same key.
+- **Scale mode** (numeric annotations only) — controls how the numeric range maps onto the gradient:
+
+| Scale mode | Description |
+|---|---|
+| **Auto** | Min and max of the data determine the scale endpoints |
+| **Symmetric ±0** | Scale is centred on zero; min and max are set to ±*max(|value|)* |
+| **From zero** | Scale runs from 0 to the maximum value |
+| **0 → 1** | Values are assumed to already lie in the 0–1 range |
+
+For a catagorical data type then a number of discrete colour palettes are available:
+
+{% include 'dialog-colour-settings.html', annotation: "country", datatype: "categorical", palette: "Pastel", maxwidth: "320px", legend: "Colour settings for a categorical annotation (country), using the Pastel palette." %}
+
+#### Managing Palettes
+
+Click **Manage Palettes** {%- include 'btn.html', id: "btn-manage-palettes" %} in the toolbar (also accessible using the **Palette Manager** button in the annotation Colour Settings dialog) to open the Palette Manager.
+
+{% include 'dialog-palette-manager.html', tab: "categorical", maxwidth: "860px" %}
+
+The manager has two tabs:
+
+- **Categorical** — edit discrete swatch sets: add, remove, or reorder individual colour swatches, duplicate an existing palette as a starting point
+- **Continuous** — edit gradient palettes either as colour stops or an HSB sweep, with full stop editing and duplication
+
+Built-in palettes are read-only but can be copied to make a customisable version using the **Duplicate** button {%- include 'btn.html', id: "btn-pm-duplicate" %}. User palettes are fully using the **Edit** {%- include 'btn.html', id: "btn-pm-edit" %} button, and can be deleted with the **Delete** {%- include 'btn.html', id: "btn-pm-delete" %} button. Custom palettes are stored on the local machine and can be accessed in all *Colour by* controls and in the legends. The type of palette (Categorical or Continuous) that can be selected for an annotation will depend on its data type. Dates are considered continuous type.
+
+### Legends
+
+Legends provide a colour key for any annotation used to colour tips, nodes, or labels. PearTree supports up to four independent legend strips simultaneously, all docked to the right side of the canvas.
+
+In the **Legend** section of the palette set the `Show` dropdown menu to an annotation key (e.g. `country`).
+
+The type of legend drawn will depend on the annotation type (Categorical or Continuous) and the colour key by the palette selected for that annoation (see [Managing Palettes](#managing-palettes), above).
+
+{% include 'figure.html', src: "images/legend_country.png", alt: "EBOV tree with country legend", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV tree with `country` legend shown." %}
+
+**Legend 2–4:** additional legends can be configured below Legend 1 by selecting an additional annotation for the control `Show 2`. This will reveal controls for a second legend and the `Show 3` control to add a third legend. Up to four legends can be displayed simultaneously. Set each subsequent legend's **Position** to *Right* (shown side-by-side with Legend 1) or *Below* (stacked vertically).
+
+{% include 'figure.html', src: "images/legend_side-by-side.png", alt: "EBOV tree with country legend", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV tree with a categorical `country` legend and a continuous `posterior` legend shown, side-by-side" %}
+
+Use the **Span** setting to control what vertical fraction of the panel height each legend occupies.
+
+{% include 'figure.html', src: "images/legend_above-below.png", alt: "EBOV tree with country legend", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV tree with the two legends shown above-and-below with equal height - the `country` legend only has a few categories so doesn't use its full height." %}
+
+Additional controls set the colour, size and typeface of the legend text.
+
+{% include 'palette-legend.html', legend: "Legend section of the Visual Options palette, showing a categorical legend (country) and a second continuous legend (posterior) stacked below." %}
+
+| Control | Effect |
+|---|---|
+| **Show** | Select an annotation key to display as a legend, or *Off* to hide |
+| **Span** | Height span of the legend as a percentage of the canvas height (10–100%). With multiple legends stacked, these act as relative values. |
+| **Colour** | Legend text colour |
+| **Size** | Font size for legend labels (6–48 pt) |
+| **Typeface** | Font family — *Theme* inherits from the Theme section or specify a different typeface |
+| **Style** | Font weight and style — *Theme*, *Regular*, *Bold*, *Italic*, or *Bold Italic* |
+| **Show 2–4** | Select an additional annotation for a second, third, or fourth legend |
+| **Position** | Position of the additional legend relative to the previous: *Right* (side-by-side) or *Below* (stacked) |
+
+{% tip %}
+When a categorical legend is displayed, clicking on a category in the legend will select all tips annotated with that category. For example, here the `LBR` (Liberia) category has been clicked and all the tips from this country are now selected (in blue):
+
+{% include 'figure.html', src: "images/legend_liberia_selected.png", alt: "EBOV tree with country legend", maxwidth: "80%", bg: "#EAE8E1" %}
+
+If the **Invert** {%- include 'btn.html', id: "btn-invert-selection" %} button is pressed then everything except tips from Liberia will now be selected. Pressing the **Hide** {%- include 'btn.html', id: "btn-hide" %} button will then hide these tips leaving a tree that only subtends the Liberian tips:
+
+{% include 'figure.html', src: "images/liberia_only.png", alt: "EBOV tree with country legend", maxwidth: "80%", bg: "#EAE8E1" %}
+
+{% endtip %}
+
+### Themes
+
+The **Theme** section at the top of the palette provides pre-built visual presets.
+
+{% include 'figure.html', src: "images/theme_mcm.png", alt: "Theme section with MCM theme applied", maxwidth: "80%", padding: "0", legend: "The EBOV tree with the <b>MCM</b> theme applied." %}
+
+Changing any individual visual setting switches the selector to *Custom*. Click **Reset to defaults** at the bottom of the palette to revert to the default theme (the theme with the **★** next to it). Press the **Store** button to give the current `Custom` theme a name and store it locally. This theme will then be available in the selector control. You can also **Export** and **Import** themes (if an imported theme has the same name as an existing one you will be asked to rename it).   
+
+
+{% include 'palette-theme.html', legend: "Theme section of the Visual Options palette." %}
+
+| Control | Effect |
+|---|---|
+| Theme selector | Switch to a built-in or user-saved theme |
+| **Store** | Save the current settings as a named personal theme |
+| **Default** | Make this theme the starting point for new windows |
+| **Remove** | Delete a user-saved theme |
+| **Export** | Download the current theme as a JSON file |
+| **Import** | Load a theme from a JSON file |
+| **Typeface** | Default font family used throughout the tree (overridable per section) |
+| **Style** | Default font weight/style — *Regular*, *Bold*, *Italic*, or *Bold Italic* |
+
+## Chapter 9: Filters and Filtering
+
+### Toolbar Quick Filter
+
+The filter controls in the toolbar instantly select visible tips using ad-hoc or saved rules.
+
+The ad-hoc filter has four parts:
+
+- **Search field button** {% include 'btn.html', id: "btn-fc-searchin", grp: "start" %} — choose which field to query (*Name* or an annotation key)
+
+- **Operator button** {% include 'btn.html', id: "btn-fc-op", grp: "middle" %} — choose the match rule (*contains*, *starts with*, numeric comparisons, date comparisons, regex, etc.)
+
+- **Input box** <span class="pt-filter-preview"><span class="pt-filter-group"><input type="search" class="fc-input pt-filter-input" placeholder="Name contains..." readonly style="border-radius:0" /></span></span> — type the value/pattern
+
+- **+ button** {% include 'btn.html', id: "btn-fc-add", grp: "end" %} — save the current ad-hoc query as a named filter
+
+
+For example, choose `Name` -> `contains` and type `2015` to select any tips with '2015' in the name:
+
+{% include 'filter-box.html', contents: "2015" -%}<br />
+<br />
+
+Note, however, that it is possible that '2015' will appear by chance in another field. If `date` is selected then explict options for filtering by date are provided such as `in year`:
+
+{% include 'filter-box.html', contents: "date in year..." -%}<br />
+<br />
+
+Press the clear button in the box <i class="bi bi-x-circle"></i> or the **Escape** key to remove the filter.
+
+Selecting the **Add** {% include 'btn.html', id: "btn-fc-add", grp: "end" %} button will add the current options as a Named Filter in the Filter Manager for use as a preset filter in the Toolbar and elsewhere.
+
+Click the funnel button {%- include 'btn.html', id: "btn-named-filter" %} beside the filter box on the toolbar to apply a saved named filter. Named filters can be combined with the ad-hoc filter: a tip must pass both to remain selected. See the next section for more details about the Filter Manager. 
+
+### Named Filters and the Filter Manager
+
+Use the **Manage Filters** {%- include 'btn.html', id: "btn-manage-filters" %} button to open the Filter Manager dialog. There you can:
+
+- Create filters with nested **AND/OR** groups
+- Add conditions for string, numeric, categorical, and date fields
+- Edit or delete existing filters
+- Import/export filter sets as JSON
+
+{% include 'dialog-filter-manager.html', maxwidth: "820px" %}
+
+Each condition targets one annotation field but conditions for different annotations can be combined using the **+ Condition** button. More complex sets of conditions can be created by using the **+ Group** button to create nested sets of conditions with different `AND` and `OR` operators.
+
+The operators available depend on the field's data type:
+
+#### Text / Tip Name
+
+The tip name and any free-text string annotations support these operators:
+
+| Operator | Passes if the value… |
+|---|---|
+| **contains** | contains the search string (case-insensitive by default) |
+| **not contains** | does not contain the string |
+| **starts with** | begins with the string |
+| **not starts with** | does not begin with the string |
+| **ends with** | ends with the string |
+| **not ends with** | does not end with the string |
+| **equals** | is an exact match |
+| **not equals** | is not an exact match |
+| **matches regex** | matches the regular expression |
+| **not matches regex** | does not match the regular expression |
+
+A **Aa** checkbox toggles case-sensitive matching for all string operators.
+
+#### Categorical
+
+Categorical annotations (e.g. `country`, `lineage`) use the same string operators as text fields above, plus two set-membership operators:
+
+| Operator | Passes if the value… |
+|---|---|
+| **in** | is one of a set of chosen values (enter values as chips) |
+| **not in** | is not in the set |
+
+Use **in** / **not in** to select multiple categories at once without chaining OR conditions.
+
+#### Continuous (numeric)
+
+Numeric annotations (`real`, `integer`, `proportion`, `percentage`) support comparison operators:
+
+| Operator | Passes if the value… |
+|---|---|
+| **≥** | is greater than or equal to |
+| **≤** | is less than or equal to |
+| **>** | is strictly greater than |
+| **<** | is strictly less than |
+| **= (equals)** | is exactly equal |
+| **!= (not equals)** | is not equal |
+
+#### Date
+
+Date annotations provide temporal comparison operators:
+
+| Operator | Passes if the date… |
+|---|---|
+| **before** | is earlier than the given date |
+| **after** | is later than the given date |
+| **on or before** | is on or earlier than the given date |
+| **on or after** | is on or later than the given date |
+| **is exactly** | is exactly the given date |
+| **is not exactly** | is not the given date |
+| **in year** | falls within the given calendar year (enter as `YYYY`) |
+| **not in year** | does not fall within the given year |
+| **month is** | falls in the selected month (e.g. *September*) |
+| **month is not** | does not fall in the selected month |
+
+Dates are entered in the ISO `YYYY-MM-DD` format. 
+
+The `Year` annotation is a decimal year value automatically generated from the date. This is treated as a numerical annoation for the filters.
+
+### Using filters to control the display of visual features of the tree
+
+Saved named filters can be used to restrict *where* a visual feature is drawn, independently of the toolbar selection. 
+
+The following display features have a filtering option: **Tip shapes**, **Tip labels**, **Node shapes**, **Node labels**, **Branch labels** and **Node bars**.
+
+When a **Filter** is selected for a feature the shapes, labels or bars are only shown for tips or nodes that pass the filter conditions.
+
+If a feature doesn't have a particular annotation (for example, tips will not have a `posterior` annotation) then that feature will fail the filter and not be shown.
+
+#### Example — label only the Sierra Leone tips
+
+Using the EBOV example tree, which has a `country` annotation:
+
+1. Open the Filter Manager {%- include 'btn.html', id: "btn-manage-filters" %} and create a filter named **SLE** with the condition *country is exactly SLE*.
+2. In **Visual Options → Tips**, set **Show label** to `Name`.
+3. The **Label filter** row now appears. Choose **SLE** from its dropdown.
+4. Tip labels now appear *only* on Sierra Leone tips; all other tips are unlabelled.
+
+#### Example — show node bars only on well-supported nodes (BEAST trees)
+
+For a BEAST MCC tree with a `posterior` annotation:
+
+1. Create a named filter **High posterior** with the condition *posterior ≥ 0.5*.
+2. In **Visual Options → Node Bars**, turn bars **On**.
+3. Set **Bar filter** to **High posterior**.
+4. HPD bars are suppressed on nodes with low posterior support, reducing visual clutter.
+
+
+## Chapter 10: The Tree Scale Axis
+
+The axis adds a scale bar along the bottom of the canvas. Load the EBOV example tree to follow along — it carries a `date` annotation for each tip.
 
 In the **Axis** section of the palette, set **Show** to one of four modes:
 
@@ -663,30 +962,27 @@ In the **Axis** section of the palette, set **Show** to one of four modes:
 
 ### Divergence Axes
 
-Select **Forward** or **Reverse** to draw a plain numeric scale immediately — no calibration needed. Use these when branch lengths represent substitutions-per-site or similar units.
+Select **Forward** or **Reverse** to draw a plain numeric scale immediately — no calibration needed. The units will be the same as the branch lengths supplied in the tree (e.g., substitutions-per-site or number of mutations). If the tree is a time calibrated tree then these will be in the time units used by the branches (i.e., decimal years). When the **Forward** axis is selected, the origin will align with the root node of the tree. When the **Reverse** axis is shown the origin will align with the most divergent tip and show the height above this tip.
 
 ### Time-Calibrated Axis
 
+Selecting the **Time** axis option will show an axis labelled with dates in a customisable range of formats. This option is only available if there is a tip annotation of the type 'date'. On loading the tree, PearTree will automatically detect an annotation in this format if available. Otherwise it can be loaded in a CSV file (see [Importing a CSV or TSV File](#importing-a-csv-or-tsv-file)) or by parsing a date out of the tip names (see [Parse Tip Names](#parse-tip-names)).
+
 #### Step 1 — Calibrate
 
-In the **Tree** section of the palette (above the Axis section), a **Calibrate** dropdown appears when the loaded tree has at least one annotation that PearTree recognises as a date type. Select that annotation key (e.g. `date` or `collection_date`).
-
-Once selected, a **Format** row appears:
-
-| Format code | Example output |
-|---|---|
-| `yyyy-MM-dd` | `2014-09-12` |
-| `yyyy-MMM-dd` | `2014-Sep-12` |
-| `dd MMM yyyy` | `12 Sep 2014` |
-| `dd MMMM yyyy` | `12 September 2014` |
-| `MMM dd, yyyy` | `Sep 12, 2014` |
-| `MMMM dd, yyyy` | `September 12, 2014` |
+In the **Tree** section at the top of the control panel, a **Calibrate** dropdown appears when the loaded tree has at least one annotation that PearTree recognises as a date type. Select that annotation key (e.g., `date` or `collection_date`).
 
 #### Step 2 — Set the axis to Time
 
 In **Axis → Show**, select `Time`. The axis now displays calendar dates derived from the calibration.
 
+{% note %}
+If the tips have a date annotation but the tree is not time-calibrated (the branch lengths are not in units of time) then the time axis will not accurately reflect the time scale of the tree. The time axis will be 'fitted' to the tree using a regression of divergence to the date for each tip. This regression analysis is shown in the [Root-to-Tip Panel](#chapter-12-the-root-to-tip-panel).
+{% endnote %}
+
 #### Step 3 — Configure tick intervals
+
+Two sets of options control the spacing of tick marks on the axis and the labels placed at these tick marks:
 
 | Control | Options | Notes |
 |---|---|---|
@@ -706,68 +1002,100 @@ In **Axis → Show**, select `Time`. The axis now displays calendar dates derive
 
 For Weeks ticks: *Component* shows `W01`–`W53`; *Full* and *Partial* both show `2014-W37`.
 
-> <img src="images/fig15.png" style="width:280px;"/>
->
-> EBOV tree with time axis. Major ticks = Years, labels = Partial.
+Example time axis:
+{% include 'figure.html', src: "images/axis_years-months.png", alt: "EBOV tree with country legend", maxwidth: "80%", bg: "#EAE8E1", legend: "Major ticks as years, minor ticks as months." %}
+{% include 'figure.html', src: "images/axis_years-weeks.png", alt: "EBOV tree with country legend", maxwidth: "80%", bg: "#EAE8E1", legend: "Major ticks as years, minor ticks as weeks." %}
+{% include 'figure.html', src: "images/axis_decades.png", alt: "EBOV tree with country legend", maxwidth: "80%", bg: "#EAE8E1", legend: "Major ticks as decades, minor ticks as years." %}
 
----
 
-## Chapter 10: Rooting
+The full set of controls for the Time Axis (note that the divergence axis have a subset of these):
 
-Rerooting is available for trees that are not explicitly rooted (e.g. raw IQ-TREE or RAxML output). For explicitly-rooted trees such as BEAST timed trees, rerooting is disabled.
+{% include 'palette-axis.html', legend: "Axis section of the Visual Options palette." %}
 
-*Use `data/varv_rooted.nwk` or `data/large_tree.tree` for the examples in this chapter.*
+| Control | Effect |
+|---|---|
+| **Show** | *Off* — no axis; *Forward* — divergence from root; *Reverse* — distance from the most-divergent tip; *Time* — calendar-date axis (requires a date calibration) |
+| **Colour** | Colour of the axis line and tick labels |
+| **Size** | Font size for tick labels (6–48 pt) |
+| **Typeface** | Font family for axis labels — *Theme* inherits from the Theme section |
+| **Style** | Font weight and style — *Theme*, *Regular*, *Bold*, *Italic*, or *Bold Italic* |
+| **Line** | Axis stroke thickness (0.5–4 px) |
+| **Format** | Date format for tick labels — choose from `1977-05-04`, `1977-May-04`, `04 May 1977`, `May 04, 1977`, etc. (*Time* mode only) |
+| **Major ticks** | Tick interval: *Auto* / *Millennia* / *Centuries* / *Decades* / *Years* / *Quarters* / *Months* / *Weeks* / *Days* — *Auto* gives ~5–8 ticks across the current view (*Time* mode only) |
+| **Minor ticks** | Finer tick interval between major ticks, or *Off* (*Time* mode only) |
+| **Major labels** | Label style at major ticks: *Component*, *Partial*, *Full*, or *Off* (*Time* mode only) |
+| **Minor labels** | Label style at minor ticks: *Component*, *Partial*, *Full*, or *Off* (*Time* mode only) |
+
+
+## Chapter 11: Rooting and Rerooting
+
+Rerooting is available for trees that are not explicitly rooted (e.g. raw IQ-TREE or RAxML output). For explicitly-rooted trees such as BEAST timed trees, rerooting is disabled. A tree is determined to be rooted if it has annotations for the root node in the loaded tree file. Unless the tree building method is explicitly a time-calibrate one, or an outgroup has been specified, most software will produce a tree with an arbitrary root position. PearTree has a range of options for re-rooting the tree at a more appropriate place.
+
+*Use the `Variola virus (VARV)` example data set (either in the Load dialog box or the file in `data/varv.tree`) to follow the instructions in this chapter.*
+
+{% include 'figure.html', src: "images/rooting_initial.png", alt: "VARV tree with initial rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The initial rooting of the Variola virus (VARV) tree - an arbitrary root produced by the tree building software." %}
 
 ### Midpoint Root (⌘M)
 
-Press **⌘M** or click **Midpoint** in the toolbar. The tree is rooted at the midpoint of the longest tip-to-tip path — a common exploratory starting point when no outgroup is available.
+The 'Midpoint Root' is the midpoint of the longest tip-to-tip path. In the absence of any other information about the root of the tree, this is a sensible choice is only because it will minimise the horizonal width of the tree so it will fit on the page better.
 
-> **Screenshot placeholder** — `data/large_tree.tree` before and after midpoint rerooting, with root repositioned.
+Press **⌘M** or click the **Midpoint Root** button {%- include 'btn.html', id: "btn-midpoint-root" %} in the toolbar.
+
+{% include 'figure.html', src: "images/rooting_midpoint.png", alt: "VARV tree with midpoint rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the midpoint rooting option." %}
 
 ### Rerooting at a Selected Node
 
-1. Select one or more tips (their MRCA defines the branch to root on).
-2. Click the **Reroot** button in the toolbar.
+1. Select one or more tips (their MRCA defines the branch to root on) or select an internal node directly.
+2. Click the **Reroot** button {%- include 'btn.html', id: "btn-reroot" %} in the toolbar.
 
 The root is placed at the midpoint of the branch above the MRCA node.
 
 ### Rerooting at an Exact Branch Position
 
-1. Press **⌘B** to enter **Branches** mode.
+1. Press **⌘B** or click the branch-mode button {%- include 'btn.html', id: "btn-mode-branches" %} to enter **Branches** selection mode.
 2. Click exactly where you want the new root along any branch.
-3. Click **Reroot**.
+3. Click **Reroot** {%- include 'btn.html', id: "btn-reroot" %}.
 
-> **Screenshot placeholder** — Branch position marker on `data/varv_rooted.nwk`, and the resulting tree after rerooting.
+The root is placed at the point selected on the branch.
 
 ### Temporal Root
 
-If your tree has tip dates, PearTree can find the root position that best linearises the root-to-tip regression (least-squares RTT regression).
+The temporal root method finds the root position that is most consistent with a strict molecular clock. The criterion used depends on whether the tree is heterochronous or isochronous.
 
-Click **Temporal Root** in the toolbar or press **⌘⇧M**. Two modes are available:
+**Heterochronous** trees have tips sampled at different points in time (e.g. a virus sequenced across an outbreak). Samples collected later should have accumulated more substitutions, so under a strict molecular clock root-to-tip divergence increases linearly with sampling date. The slope of that line is the substitution rate.
+
+For heterochronous trees, PearTree instead performs a least-squares linear regression of root-to-tip divergence against tip sampling date for every possible root position and selects the position that maximises R² (the proportion of variance explained by the regression). 
+
+**Isochronous** (homochronous) trees have tips all sampled at the same time — for instance species phylogenies or within-host sequences from a single time point. There is no variation in sampling date, so regression against date cannot be used. However, under a strict molecular clock all tips should be equally divergent from the root, so PearTree finds the root position that **minimises the variance** in root-to-tip divergence. The resulting root is the most clock-like position available given the data.
+
+The [Root-to-Tip Panel](#chapter-12-the-root-to-tip-panel) provides a graphical view of the regression or variance depending on the tree type.
+
+Click **Temporal Root** buttons {%- include 'btn-group.html', ids: "btn-temporal-root btn-temporal-root-global", label: "Temporal root" -%} in the toolbar. 
+Two modes are available (**⌘⇧R** {%- include 'btn.html', id: "btn-temporal-root" -%} = Local, **⌘R** {%- include 'btn.html', id: "btn-temporal-root-global" -%} = Global):
 
 | Mode | Description |
 |---|---|
-| **Local** (default) | Optimises root position only along the current root branch |
-| **Global** | Searches every branch for the best regression fit |
+| **Local** (default) | Optimises the root position only along the current root branch — fast and useful for fine-tuning |
+| **Global** | Searches every branch in the tree for the optimal root position — slower but finds the best root de novo |
 
-> [!TIP]
-> Use **Global** temporal root on a fresh unrooted tree to find the best root de novo. Use **Local** to fine-tune the position on a branch you have already identified as correct.
+{% include 'figure.html', src: "images/rooting_temporal.png", alt: "VARV tree with temporal rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the temporal rooting option with dated tips (heterochronous data)." %}
 
-> **Screenshot placeholder** — RTT plot for `data/ebov.tree` before and after temporal rooting, showing improvement in the linear relationship.
+{% tip %}
+Use **Global** temporal root on a fresh unrooted tree (or a tree rooted to another location) to find the best root. Use **Local** to fine-tune the position on a branch you have already identified as correct.
+{% endtip %}
 
 ### Bootstrap Values and Rerooting
 
-When you reroot a tree, bootstrap support values (and other branch annotations) are correctly relocated to follow their branches. See [Appendix C](#appendix-c-bootstrap-values-branch-annotations-and-rerooting) for a full explanation of how this works.
+When you reroot a tree, bootstrap support values (and any other values labelled as branch annotations) remain associated with their respective branches, not the internal nodes they were originally assigned to. See [Appendix B](#appendix-b-bootstrap-values-branch-annotations-and-rerooting) for a full explanation of how this works.
 
----
 
-## Chapter 11: The Root-to-Tip Panel
+## Chapter 12: The Root-to-Tip Panel
 
 The Root-to-Tip (RTT) panel plots each tip's root-to-tip divergence against a tip-date annotation, with a linear regression overlay. It is the standard visual tool for assessing clock-like signal in a timed phylogeny and identifying outlier sequences.
 
-*Load `data/ebov.tree` and import `data/ebov.csv` to follow along.*
+*Use the `Variola virus (VARV)` example data set (either in the Load dialog box or the file in `data/varv.tree`) to follow the instructions in this chapter.*
 
-Click the **RTT** button in the toolbar to open the panel.
+Click the **RTT** button {%- include 'btn.html', id: "btn-rtt" %} in the toolbar to open the panel.
 
 > **Screenshot placeholder** — EBOV RTT panel showing a strong linear clock signal. Points are colour-coded by country.
 
@@ -857,14 +1185,27 @@ In the **RTT** section of the Visual Options palette:
 | Format | Date format for time-calibrated x-axis |
 | Major / minor ticks | Interval and label configuration (same options as the main time axis; shown only in heterochronous mode) |
 
-> [!TIP]
-> Select outlier tips in the RTT scatter plot (click their points or drag-select a region), then click **Hide** in the main toolbar to remove them from the tree. This is the fastest way to clean a dataset for clock analysis.
+{% tip %}
+Select outlier tips in the RTT scatter plot (click their points or drag-select a region), then click **Hide** in the main toolbar to remove them from the tree. This is the fastest way to clean a dataset for clock analysis.
+{% endtip %}
 
----
+{% include 'figure.html', src: "images/rtt_initial-root.png", alt: "VARV tree with inital rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the temporal rooting option with dated tips (heterochronous data)." %}
 
-## Chapter 12: The Data Table Panel
+{% include 'figure.html', src: "images/rtt_temporal-root.png", alt: "VARV tree with inital rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the temporal rooting option with dated tips (heterochronous data)." %}
 
-The Data Table panel lists all visible tips in tree order, with one column per annotation. Open it with the table button in the toolbar.
+{% include 'figure.html', src: "images/rtt_select_C20.png", alt: "VARV tree with inital rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the temporal rooting option with dated tips (heterochronous data)." %}
+
+{% include 'figure.html', src: "images/rtt_C20_only.png", alt: "VARV tree with inital rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the temporal rooting option with dated tips (heterochronous data)." %}
+
+{% include 'figure.html', src: "images/rtt_select_outliers.png", alt: "VARV tree with inital rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the temporal rooting option with dated tips (heterochronous data)." %}
+
+{% include 'figure.html', src: "images/rtt_final_C20.png", alt: "VARV tree with inital rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the temporal rooting option with dated tips (heterochronous data)." %}
+
+{% include 'figure.html', src: "images/rtt_plot_CIs.png", alt: "VARV tree with inital rooting", maxwidth: "80%", bg: "#EAE8E1", legend: "The Variola virus (VARV) tree rooted using the temporal rooting option with dated tips (heterochronous data)." %}
+
+## Chapter 13: The Data Table Panel
+
+The Data Table panel lists all visible tips in tree order, with one column per annotation. Open it with the **Data Table** button {%- include 'btn.html', id: "btn-data-table" %} in the toolbar.
 
 > **Screenshot placeholder** — Data Table panel pinned alongside the EBOV tree, showing tip names and imported annotation columns.
 
@@ -888,20 +1229,18 @@ Collapsed clades appear as either one row per enclosed tip or a single placehold
 
 By default all annotation columns are shown. Rename keys in the Annotation Curator for cleaner column headers. When using the [embed API](embedded-api.md), pass `dataTableColumns` to show only specific columns in a fixed order.
 
-> [!TIP]
-> The Data Table is the fastest way to find a specific tip by name in a large tree. Open the panel, scan the sorted list or use your browser's in-page find (Ctrl/Cmd+F), click the row — the canvas scrolls and selects the tip automatically.
+{% tip %}
+The Data Table is the fastest way to find a specific tip by name in a large tree. Open the panel, scan the sorted list or use your browser's in-page find (Ctrl/Cmd+F), click the row — the canvas scrolls and selects the tip automatically.
+{% endtip %}
 
----
 
-## Chapter 13: Exporting
+## Chapter 14: Exporting
 
 ### Exporting the Tree File
 
-Click the **export tree** button (or press **⌘S**) to save the tree.
+Click the **export tree** button {%- include 'btn.html', id: "btn-export-tree" %} (or press **⌘S**) to save the tree.
 
-> <img src="images/fig17.png" style="width:360px;"/>
->
-> Export Tree dialog.
+{% include 'dialog-export-tree.html', maxwidth: "420px" %}
 
 | Option | Values | Notes |
 |---|---|---|
@@ -910,16 +1249,15 @@ Click the **export tree** button (or press **⌘S**) to save the tree.
 | **Annotations** | Checkboxes per annotation key | Deselect any keys you do not want to include |
 | **Embed settings** | Checkbox (NEXUS only) | Writes all current visual settings into the file |
 
-> [!TIP]
-> Always tick **Embed settings** when exporting NEXUS files for sharing or archival. The recipient's PearTree will automatically restore the full appearance — colours, legends, axis, theme — when they open the file.
+{% tip %}
+Always tick **Embed settings** when exporting NEXUS files for sharing or archival. The recipient's PearTree will automatically restore the full appearance — colours, legends, axis, theme — when they open the file.
+{% endtip %}
 
 ### Exporting a Graphic
 
-Click the **export graphic** button (or press **⌘⇧E**) to download an image.
+Click the **export graphic** button {%- include 'btn.html', id: "btn-export-graphic" %} (or press **⌘⇧E**) to download an image.
 
-> <img src="images/fig18.png" style="width:360px;"/>
->
-> Export Graphic dialog.
+{% include 'dialog-export-graphic.html', maxwidth: "400px" %}
 
 | Option | Values | Notes |
 |---|---|---|
@@ -929,9 +1267,8 @@ Click the **export graphic** button (or press **⌘⇧E**) to download an image.
 
 SVG exports include branches, labels, shapes, legend strips, and the axis as true vector elements — ideal for publication figures.
 
----
 
-## Chapter 14: Settings and Persistence
+## Chapter 15: Settings and Persistence
 
 ### Automatic Saving
 
@@ -943,7 +1280,7 @@ Click **Reset to defaults** at the bottom of the Visual Options palette to resto
 
 ### Embedding Settings in a NEXUS File
 
-Export a NEXUS file with **Embed settings** ticked (see [Chapter 13](#chapter-13-exporting)) to bundle all current visual settings with the tree data. Opening that file in PearTree on any machine restores the full appearance, making this the recommended way to share a tree with its visual configuration.
+Export a NEXUS file with **Embed settings** ticked (see [Chapter 14](#chapter-14-exporting)) to bundle all current visual settings with the tree data. Opening that file in PearTree on any machine restores the full appearance, making this the recommended way to share a tree with its visual configuration.
 
 ### Opening a File from the Command Line (Desktop App)
 
@@ -955,7 +1292,6 @@ open -a PearTree /path/to/my.nwk
 
 If PearTree is already running, the file opens in a new window. On Windows, drag the file onto the PearTree icon in the taskbar, or use **Open With** from the Explorer context menu.
 
----
 
 ## Appendix A: Keyboard Shortcuts
 
@@ -979,7 +1315,8 @@ If PearTree is already running, the file opens in a new window. On Windows, drag
 | **⌘D** | Order: larger clades toward bottom |
 | **⌘U** | Order: larger clades toward top |
 | **⌘M** | Midpoint root |
-| **⌘⇧M** | Temporal root |
+| **⌘R** | Global temporal root |
+| **⌘⇧R** | Local temporal root (optimise on current root branch) |
 | **⌘I** | Node info |
 | **⌘[** | Navigate back |
 | **⌘]** | Navigate forward |
@@ -993,188 +1330,8 @@ If PearTree is already running, the file opens in a new window. On Windows, drag
 | **⌘⇧−** | Contract lens flat zone |
 | **Escape** | Dismiss lens / close dialog / clear selection |
 
----
 
-## Appendix B: Visual Options Reference
-
-### Theme
-
-| Control | Effect |
-|---|---|
-| Theme selector | Choose a built-in or personal preset |
-| **Store** | Save the current settings as a named theme |
-| **Default** | Set selected theme as the default for new windows |
-| **Remove** | Delete a user-saved theme |
-
-<img src="images/controls_themes.png" style="width:250px;"/>
-
-### Tree
-
-| Control | Effect |
-|---|---|
-| Calibrate | Annotation key holding tip dates for time axis calibration |
-| Format | Display format for calibrated axis labels |
-| Background | Canvas background colour |
-| Branches | Branch line colour |
-| Branch width | Stroke thickness (0.5–8 px) |
-| Typeface | Font family for all labels |
-| Typeface style | Regular / Bold / Italic / Bold Italic |
-| Neg. branches | *Draw* (as-is) or *Clamp to zero* |
-| Elbow radius | Branch corner rounding (px) |
-| Root stub | Length of the root stem line (px) |
-| Root stem % | Root stem as % of total tree age (0–20) |
-| Padding | Canvas margins: top, bottom, left, right (px) |
-
-<img src="images/controls_tree.png" style="width:250px;"/>
-
-### Tip Labels
-
-| Control | Effect |
-|---|---|
-| Show | *Off* / *Names* / annotation key |
-| Layout | *Normal* / *Aligned* / *Dashed* / *Dots* / *Solid* |
-| Size | Font size (1–20 pt) |
-| Colour | Default label colour |
-| Colour by | Annotation key for per-tip label colour |
-| Palette | Colour scheme |
-| Spacing | Gap after tip marker (px) |
-| Selected style | *Normal* / *Bold* / *Italic* / *Bold Italic* for selected tips |
-
-<img src="images/controls_tip_labels.png" style="width:250px;"/>
-
-### Label Shapes
-
-| Control | Effect |
-|---|---|
-| Shape | *Off* / *Square* / *Circle* / *Block* |
-| Size | % of row height |
-| Colour | Default fill |
-| Colour by | Annotation key |
-| Margin left/right | Gap on each side (px) |
-| Spacing | Gap between multiple shape slots (px) |
-
-### Tip Shapes
-
-| Control | Effect |
-|---|---|
-| Size | Radius (0 = hidden) |
-| Colour | Stroke/fill colour |
-| Background | Halo fill colour |
-| Halo | Halo ring radius |
-| Colour by | Annotation key |
-| Palette | Colour scheme |
-
-<img src="images/controls_tip_shapes.png" style="width:250px;"/>
-
-### Node Shapes
-
-| Control | Effect |
-|---|---|
-| Size | Radius (0 = hidden) |
-| Colour | Default shape colour |
-| Background | Halo fill |
-| Colour by | Annotation key |
-| Palette | Colour scheme |
-
-<img src="images/controls_node_shapes.png" style="width:250px;"/>
-
-### Node Labels
-
-| Control | Effect |
-|---|---|
-| Annotation | Key to display as text on internal nodes |
-| Position | *Right* / *Above left* / *Below left* |
-| Font size | Text size (pt) |
-| Colour | Text colour |
-| Spacing | Gap between node and label (px) |
-
-### Node Bars *(BEAST trees only)*
-
-| Control | Effect |
-|---|---|
-| Show | On / Off |
-| Colour | Bar colour |
-| Bar height | Vertical thickness (px) |
-| Line | *Mean* / *Median* / *Off* |
-| Range whiskers | Show outer extent whiskers |
-
-### Collapsed Clades
-
-| Control | Effect |
-|---|---|
-| Fill opacity | 0 (transparent) – 1 (solid) |
-| Height (rows) | Triangle base height in tip-row units |
-
-### Clade Highlights
-
-| Control | Effect |
-|---|---|
-| Colour by | *User colour* or any annotation key |
-| Palette | Colour scheme when *Colour by* is an annotation |
-| Scale | How the numeric colour scale range is mapped (auto / symmetric ±0 / from zero / 0→1) |
-| Left edge | *Rectangle* — straight left edge at clade root; *Outline subtree* — hugs the branch profile |
-| Right edge | *At tip* / *At label left* / *At label right* / *Outline tips* (staircase per tip) |
-| Padding | Gap between clade extent and border (px) |
-| Corners | Corner-rounding radius (px) |
-| Opacity | Fill translucency |
-| Stroke | Border opacity |
-| Width | Border line thickness (px) |
-
-### Legend
-
-| Control | Effect |
-|---|---|
-| Annotation | Annotation key to show as a colour key |
-| Colour | Legend text and label colour |
-| Font size | Legend font size (pt) |
-| Height % | Fraction of canvas height this legend occupies |
-
-<img src="images/controls_legend.png" style="width:250px;"/>
-
-### Axis
-
-| Control | Effect |
-|---|---|
-| Show | *Off* / *Forward* / *Reverse* / *Time* |
-| Colour | Axis line and label colour |
-| Font size | Tick-label font size |
-| Line width | Axis stroke thickness |
-| Major ticks | Auto / Decades / Years / Quarters / Months / Weeks / Days |
-| Minor ticks | Off / (finer intervals) |
-| Major labels | *Partial* / *Full* / *Component* / *Off* |
-| Minor labels | *Off* / *Component* / *Partial* / *Full* |
-
-<img src="images/controls_axis.png" style="width:250px;"/>
-
-### RTT
-
-| Control | Effect |
-|---|---|
-| X-axis origin | *Data range* or *Root age* |
-| Aspect ratio | Fixed ratio or *fit panel* |
-| Grid lines | *Both* / *Horizontal* / *Vertical* / *Off* |
-| Reg. line | Regression / mean-line style: *Solid* / *Big dash* / *Dash* / *Dots* |
-| Reg. colour | Regression / mean line colour |
-| Reg. width | Line thickness (px) |
-| Band | *Off* / *±2σ residual* / *95% CI* — shown in both scatter and histogram modes |
-| Band style | Border style of band lines |
-| Band colour | Band border colour |
-| Band width | Band border thickness (px) |
-| Band fill | Band fill colour |
-| Band fill opacity | Band fill translucency |
-| Box bg / text | Stats box background and text colours |
-| Box font | Stats box font size |
-| Axis colour | Axis line and label colour |
-| Axis font | Tick-label font size |
-| Axis line | Axis stroke thickness |
-| Typeface / Style | Font family and style for axis labels |
-| Format | Date format (heterochronous mode only) |
-| Major / minor ticks | Tick intervals (heterochronous mode only) |
-| Major / minor labels | Label format (heterochronous mode only) |
-
----
-
-## Appendix C: Bootstrap Values, Branch Annotations, and Rerooting
+## Appendix B: Bootstrap Values, Branch Annotations, and Rerooting
 
 ### Node Annotations vs. Branch Annotations
 
@@ -1205,9 +1362,8 @@ When you reroot on a new branch, PearTree updates all branch annotation values a
 
 Multiple sequential reroots are handled correctly. BEAST trees carry posterior as a **node** annotation (not a branch annotation), and rerooting is disabled for them in any case.
 
----
 
-## Appendix D: URL Parameters and Sharing
+## Appendix C: URL Parameters and Sharing
 
 When using the PearTree web application, you can construct a URL that pre-loads a tree and applies settings automatically.
 

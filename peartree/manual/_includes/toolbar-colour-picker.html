@@ -1,0 +1,52 @@
+{%- assign _legend = legend | default: "" -%}
+<div class="pt-ui-demo pt-ui-demo--colour-picker">
+  <div class="pt-colour-pick-wrap">
+    <button id="btn-colour-trigger" title="Choose colour for selected nodes">
+      <span id="btn-colour-trigger-swatch"></span>
+    </button>
+    <div id="colour-picker-popup" class="open pt-cp-demo">
+      <div class="pt-cp-native-row">
+        <input type="color" class="pt-cp-native-input" value="#ff8800" title="Open colour picker…" disabled>
+        <span style="font-size:0.75rem;color:var(--pt-text-muted);">Custom colour…</span>
+      </div>
+      <div class="pt-cp-row">
+        <span class="pt-cp-label">Recent</span>
+        <div class="pt-cp-swatches">
+          <span class="pt-cp-swatch selected" style="background:#ff8800;"></span>
+          <span class="pt-cp-swatch" style="background:#e06961;"></span>
+          <span class="pt-cp-swatch" style="background:#2aa198;"></span>
+          <span class="pt-cp-swatch" style="background:#b58900;"></span>
+          <span class="pt-cp-swatch" style="background:#268bd2;"></span>
+        </div>
+      </div>
+      <hr class="pt-cp-divider">
+      <div class="pt-cp-row">
+        <span class="pt-cp-label">Solarized</span>
+        <div class="pt-cp-swatches">
+          <span class="pt-cp-swatch" style="background:#2aa198;"></span>
+          <span class="pt-cp-swatch" style="background:#cb4b16;"></span>
+          <span class="pt-cp-swatch" style="background:#268bd2;"></span>
+          <span class="pt-cp-swatch" style="background:#d33682;"></span>
+          <span class="pt-cp-swatch" style="background:#6c71c4;"></span>
+          <span class="pt-cp-swatch" style="background:#b58900;"></span>
+          <span class="pt-cp-swatch" style="background:#859900;"></span>
+          <span class="pt-cp-swatch" style="background:#dc322f;"></span>
+        </div>
+      </div>
+      <div class="pt-cp-row">
+        <span class="pt-cp-label">ARTIC</span>
+        <div class="pt-cp-swatches">
+          <span class="pt-cp-swatch" style="background:#19A699;"></span>
+          <span class="pt-cp-swatch" style="background:#B58901;"></span>
+          <span class="pt-cp-swatch" style="background:#E06961;"></span>
+          <span class="pt-cp-swatch" style="background:#f7eeca;"></span>
+          <span class="pt-cp-swatch" style="background:#3b9ddd;"></span>
+          <span class="pt-cp-swatch" style="background:#8eb35a;"></span>
+          <span class="pt-cp-swatch" style="background:#c97fb5;"></span>
+          <span class="pt-cp-swatch" style="background:#6bcac0;"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{%- if _legend -%}<p class="pt-ui-demo-legend pt-ui-demo--colour-picker-legend">{{ _legend }}</p>{%- endif -%}

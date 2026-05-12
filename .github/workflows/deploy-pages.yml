@@ -8,6 +8,7 @@ on:
   workflow_run:
     workflows: ["Release"]
     types: [completed]
+  workflow_dispatch:  # allow manual re-deploy from the Actions UI without a release
 
 permissions:
   contents: read
@@ -23,7 +24,7 @@ concurrency:
 
 jobs:
   deploy-pages:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -31,6 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           ref: main
           fetch-depth: 0
 
@@ -43,18 +45,21 @@ jobs:
         run: npm install
 
       - name: Set version from release tag
-        run: node scripts/set-version.js ${{ github.event.workflow_run.head_branch }}
+        run: node scripts/set-version.js ${{ github.event.workflow_run.head_branch || 'main' }}
 
       - name: Build single-file bundle
         env:
-          PEARTREE_VERSION_TAG: ${{ github.event.workflow_run.head_branch }}
+          PEARTREE_VERSION_TAG: ${{ github.event.workflow_run.head_branch || 'main' }}
         run: npm run bundle
+
+      - name: Build manual
+        run: npm run build:manual
 
       - name: Assemble site
         run: |
-          mkdir -p _site/data _site/img _site/logo _site/manual/images
+          mkdir -p _site/data _site/img _site/logo _site/manual/images _site/settings _site/js
           cp peartree/index.html                     _site/index.html
-          cp CNAME                                   _site/CNAME
+          [ -f CNAME ] && cp CNAME                  _site/CNAME || true
           cp dist/peartree.bundle.min.js             _site/peartree.bundle.min.js
           cp peartree/img/peartree.svg               _site/img/peartree.svg
           cp peartree/img/peartree.png               _site/img/peartree.png
@@ -67,8 +72,9 @@ jobs:
           cp peartree/data/ebov.csv                  _site/data/ebov.csv
           cp peartree/about.md                       _site/about.md
           cp peartree/help.md                        _site/help.md
-          cp peartree/manual/manual.md               _site/manual/manual.md
-          cp -r peartree/manual/images/.             _site/manual/images/
+          cp peartree/settings/index.html            _site/settings/index.html
+          cp peartree/js/settings-schema.js          _site/js/settings-schema.js
+          cp peartree/js/config.js                   _site/js/config.js
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

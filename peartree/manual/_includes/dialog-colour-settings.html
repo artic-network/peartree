@@ -1,0 +1,93 @@
+{%- comment -%}
+  dialog-colour-settings.html — Colour Settings dialog preview
+  Parameters:
+    annotation  (required) — annotation key shown in the title, e.g. "country" or "posterior"
+    datatype    (optional) — "categorical" (default) or "continuous"
+    palette     (optional) — displayed palette name (default: "Pastel" for categorical, "Blue-Black-Red" for continuous)
+    scalemode   (optional) — scale mode shown for continuous (default: "")
+    info        (optional) — info line shown below the title (e.g. "Type: Categorical / Categories: 8")
+    maxwidth    (optional) — CSS max-width of the wrapper (default: "320px")
+    legend      (optional) — caption text
+{%- endcomment -%}
+{%- assign _ann      = annotation | default: "annotation" -%}
+{%- assign _dtype    = datatype   | default: "categorical" -%}
+{%- assign _mw       = maxwidth   | default: "320px" -%}
+{%- assign _legend   = legend     | default: "" -%}
+{%- if _dtype == "continuous" -%}
+  {%- assign _palette  = palette   | default: "Blue-Black-Red" -%}
+  {%- assign _scalemode = scalemode | default: "" -%}
+{%- else -%}
+  {%- assign _palette  = palette   | default: "Pastel" -%}
+{%- endif -%}
+<div class="pt-ui-demo pt-ui-demo--dialog" style="max-width:{{ _mw }}">
+  <div class="pt-modal pt-modal--demo">
+    <div class="pt-modal-header">
+      <h5 class="modal-title" style="font-size:0.95rem"><i class="bi bi-palette2 me-2"></i>Colour settings: <em>{{ _ann }}</em></h5>
+      <button class="pt-modal-close-btn" title="Close">&times;</button>
+    </div>
+    <div class="pt-modal-body" style="padding:0.75rem 1rem">
+      {%- if info -%}
+      <div style="margin-bottom:8px;font-size:0.82rem;color:var(--bs-secondary-color);line-height:1.5">{{ info }}</div>
+      {%- elsif _dtype == "categorical" -%}
+      <div style="margin-bottom:8px;font-size:0.82rem;color:var(--bs-secondary-color);line-height:1.5"><strong>Type:</strong> Categorical&nbsp;&nbsp;<strong>Categories:</strong> 8</div>
+      {%- else -%}
+      <div style="margin-bottom:8px;font-size:0.82rem;color:var(--bs-secondary-color);line-height:1.5"><strong>Type:</strong> Continuous&nbsp;&nbsp;<strong>Range:</strong> 0 → 1</div>
+      {%- endif -%}
+      {%- if _dtype == "continuous" -%}
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Scale <i class="bi bi-rulers form-label-sm"></i></span>
+        <select class="pt-palette-select" disabled>
+          <option value="" {% if _scalemode == "" %}selected{% endif %}>Auto (min → max)</option>
+          <option value="symmetric-zero" {% if _scalemode == "symmetric-zero" %}selected{% endif %}>Symmetric ±0</option>
+          <option value="zero-positive" {% if _scalemode == "zero-positive" %}selected{% endif %}>From zero</option>
+          <option value="zero-one" {% if _scalemode == "zero-one" %}selected{% endif %}>0 → 1</option>
+        </select>
+      </div>
+      {%- endif -%}
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Palette <i class="bi bi-rainbow form-label-sm"></i></span>
+        <select class="pt-palette-select" disabled>
+          {%- if _dtype == "continuous" -%}
+          <option value="Teal-Red">Teal-Red</option>
+          <option value="Blue-Orange">Blue-Orange</option>
+          <option value="Viridis">Viridis</option>
+          <option value="Greyscale">Greyscale</option>
+          <option value="Blue-Black-Red" {% if _palette == "Blue-Black-Red" %}selected{% endif %}>Blue-Black-Red</option>
+          <option value="Teal-Black-Orange" {% if _palette == "Teal-Black-Orange" %}selected{% endif %}>Teal-Black-Orange</option>
+          <option value="Rainbow">Rainbow</option>
+          <option value="Sunset">Sunset</option>
+          {%- else -%}
+          <option value="Solarized">Solarized</option>
+          <option value="Bold">Bold</option>
+          <option value="Pastel" {% if _palette == "Pastel" %}selected{% endif %}>Pastel</option>
+          <option value="Tableau">Tableau</option>
+          <option value="ARTIC">ARTIC</option>
+          <option value="Wes">Wes</option>
+          {%- endif -%}
+        </select>
+      </div>
+      <!-- Colour swatch strip -->
+      {%- if _dtype == "continuous" and _palette == "Blue-Black-Red" -%}
+      <div style="margin-top:10px;height:14px;border-radius:4px;background:linear-gradient(to right,#1e70b5,#111111,#c82424);border:1px solid var(--pt-border)"></div>
+      {%- elsif _dtype == "continuous" -%}
+      <div style="margin-top:10px;height:14px;border-radius:4px;background:linear-gradient(to right,#2aa198,#dc322f);border:1px solid var(--pt-border)"></div>
+      {%- else -%}
+      <div style="margin-top:10px;display:flex;gap:3px;align-items:center">
+        <span style="width:16px;height:16px;border-radius:3px;background:#a8d8a8;border:1px solid var(--pt-border);display:inline-block"></span>
+        <span style="width:16px;height:16px;border-radius:3px;background:#f4a8a8;border:1px solid var(--pt-border);display:inline-block"></span>
+        <span style="width:16px;height:16px;border-radius:3px;background:#a8c8f4;border:1px solid var(--pt-border);display:inline-block"></span>
+        <span style="width:16px;height:16px;border-radius:3px;background:#f4d4a8;border:1px solid var(--pt-border);display:inline-block"></span>
+        <span style="width:16px;height:16px;border-radius:3px;background:#d4a8f4;border:1px solid var(--pt-border);display:inline-block"></span>
+        <span style="width:16px;height:16px;border-radius:3px;background:#f4f4a8;border:1px solid var(--pt-border);display:inline-block"></span>
+        <span style="width:16px;height:16px;border-radius:3px;background:#a8f4f4;border:1px solid var(--pt-border);display:inline-block"></span>
+        <span style="width:16px;height:16px;border-radius:3px;background:#f4a8d4;border:1px solid var(--pt-border);display:inline-block"></span>
+      </div>
+      {%- endif -%}
+    </div>
+    <div class="pt-modal-footer">
+      <button class="btn btn-sm btn-outline-secondary me-auto" disabled><i class="bi bi-palette me-1"></i>Manage Palettes…</button>
+      <button class="btn btn-sm btn-primary" disabled>Done</button>
+    </div>
+  </div>
+</div>
+{%- if _legend -%}<p class="pt-ui-demo-legend">{{ _legend }}</p>{%- endif -%}
