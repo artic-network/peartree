@@ -385,7 +385,7 @@ SVG export includes all visible elements — branches, tip labels, node/tip shap
 
 The **Visual Options palette** (toggle with **Tab** or the <i class="bi bi-sliders"></i> button) contains organized control sections for all display settings:
 
-- **Tip labels** — show/position/style tip names or annotation values
+- **Tip labels** — show/position/style tip names or annotation values; add Labels 2–4 for multi-field display
 - **Node labels** — show internal node values (e.g. bootstrap support)
 - **Branch labels** — show values at branch midpoints
 - **Node shapes** — customize tip and internal node marker appearance
@@ -395,6 +395,51 @@ The **Visual Options palette** (toggle with **Tab** or the <i class="bi bi-slide
 - **Legend** — position and style colour-by legends
 - **Theme** — switch color themes and customize palettes
 - **Panel management** — arrange side panels and export options
+
+---
+
+## Tip Labels (multi-label)
+
+The **Tip Labels** section supports displaying up to four annotation fields per tip, stacked horizontally from left to right.
+
+### Label 1 (main)
+
+The primary label is selected with the **Label 1** dropdown. Options:
+
+| Value | Effect |
+|---|---|
+| `Off` | No label drawn |
+| `names` | Display the taxon name |
+| annotation key | Display the value of that annotation |
+
+When Label 1 is on, additional controls appear:
+- **Filter** — restrict labels to tips passing a filter
+- **Alignment** — off (at tip), aligned (right-margin), or aligned with connector (dots/dashed/solid)
+- **Spacing** — gap between the tip node and the first label, and between subsequent labels
+- **Size** — font size
+- **Typeface** / **Style** / **Colour** / **Colour by**
+
+### Labels 2, 3, and 4 (extras)
+
+When Label 1 is on, **Label 2**, **Label 3**, and **Label 4** dropdowns appear, each offering the same annotation choices. Select any annotation key to add a second (or third, fourth) text field immediately to the right of the previous label.
+
+All labels share Label 1's font, size, colour, and spacing settings.
+
+**Alignment behaviour with multiple labels:**
+- When Alignment is **off**: each label appears at its natural position to the right of the previous one
+- When Alignment is **aligned**: Label 1's left edge aligns to a common right margin; Labels 2–4 each align their left edge to the right of the longest previous label plus the spacing value
+
+### Example: Show name + collection date
+
+1. Set **Label 1** = `names`
+2. Set **Label 2** = `date` (or whichever annotation holds collection dates)
+3. Set **Spacing** = 6
+4. Tips now show: `SampleA ···  2024-01-15`
+
+### Example: Show name + location + clade
+
+1. Set **Label 1** = `names`, **Label 2** = `country`, **Label 3** = `clade`
+2. Set **Alignment** = `Aligned + dashed` for clean column layout
 
 ---
 

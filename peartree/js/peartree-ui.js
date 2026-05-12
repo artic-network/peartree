@@ -60,18 +60,37 @@ function _sectionTipLabels() {
   return `
     <div class="pt-palette-section">
       <h3><i class="bi bi-tag"></i> Tip Labels</h3>
-      <div class="pt-palette-row" title="Show tip labels; choose which annotation to display"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="tip-label-show" disabled><option value="off">Off</option><option value="names" selected>names</option></select></div>
+      <div class="pt-palette-row" title="Show tip labels; choose which annotation to display"><span class="pt-palette-label">Label 1</span><select class="pt-palette-select" id="tip-label-show" disabled><option value="off">Off</option><option value="names" selected>names</option></select></div>
       <div class="pt-palette-row" title="Only draw tip labels on tips that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="tip-labels-filter" disabled><option value="">— always —</option></select></div>
       <div id="tip-label-controls" class="pt-sub-controls" style="display:none">
         <div class="pt-palette-row" id="tip-label-dp-row" style="display:none" title="Decimal places for numeric tip labels"><span class="pt-palette-label">d.p.</span><select class="pt-palette-select" id="tip-label-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
         <div class="pt-palette-row" title="Align tips to a common margin with optional connecting lines"><span class="pt-palette-label">Alignment <i class="bi bi-text-left form-label-sm"></i></span><select class="pt-palette-select" id="tip-label-align"><option value="off">Off</option><option value="aligned">Aligned</option><option value="dots">Aligned + dots</option><option value="dashed">Aligned + dashed</option><option value="solid">Aligned + solid</option></select></div>
-        <div class="pt-palette-row" title="Horizontal gap between the tip node and its label"><span class="pt-palette-label">Spacing <i class="bi bi-arrow-bar-right form-label-sm"></i></span><input type="range" class="form-range" id="tip-label-spacing-slider" min="0" max="100" step="1" value="3" /><span class="pt-val" id="tip-label-spacing-value">3</span></div>
+        <div class="pt-palette-row" title="Horizontal gap between labels or between tip node and first label"><span class="pt-palette-label">Spacing <i class="bi bi-arrow-bar-right form-label-sm"></i></span><input type="range" class="form-range" id="tip-label-spacing-slider" min="0" max="100" step="1" value="3" /><span class="pt-val" id="tip-label-spacing-value">3</span></div>
         <div class="pt-palette-row" title="Font size of tip labels"><span class="pt-palette-label">Size <i class="bi bi-fonts form-label-sm"></i></span><input type="range" class="form-range" id="font-size-slider" min="1" max="48" value="11" /><span class="pt-val" id="font-size-value">11</span></div>
         <div class="pt-palette-row" title="Typeface for tip labels"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" id="typeface-select">${_TYPEFACES}</select></div>
         <div class="pt-palette-row" title="Font style for tip labels"><span class="pt-palette-label">Style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" id="typeface-style-select"><option value="">Theme</option></select></div>
         <div class="pt-palette-row" title="Tip label text colour"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="label-color" value="#f7eeca" /></div>
         <div class="pt-palette-row" title="Colour tip labels by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="label-colour-by" disabled><option value="user_colour">user colour</option></select></div>
         <div class="pt-palette-row" id="label-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="label-configure-btn">Configure</button></div>
+        <!-- Extra tip labels 2–4 with progressive disclosure -->
+      </div>
+      <div id="tip-label2-section" class="pt-detail">
+        <div class="pt-palette-row"><span class="pt-palette-label">Label 2</span><select class="pt-palette-select" id="tip-label2-show"><option value="off" selected>Off</option><option value="names">names</option></select></div>
+        <div id="tip-label2-detail" class="pt-detail pt-sub-controls">
+          <div class="pt-palette-row" title="Layout of Label 2 relative to Label 1"><span class="pt-palette-label">Layout</span><select class="pt-palette-select" id="tip-label2-layout"><option value="append">Append</option><option value="align">Align</option><option value="join-space">Join with space</option><option value="join-pipe">Join with |</option><option value="join-slash">Join with /</option><option value="join-underscore">Join with _</option><option value="join-dash">Join with -</option></select></div>
+        </div>
+      </div>
+      <div id="tip-label3-section" class="pt-detail">
+        <div class="pt-palette-row"><span class="pt-palette-label">Label 3</span><select class="pt-palette-select" id="tip-label3-show"><option value="off" selected>Off</option><option value="names">names</option></select></div>
+        <div id="tip-label3-detail" class="pt-detail pt-sub-controls">
+          <div class="pt-palette-row" title="Layout of Label 3 relative to Label 2"><span class="pt-palette-label">Layout</span><select class="pt-palette-select" id="tip-label3-layout"><option value="append">Append</option><option value="align">Align</option><option value="join-space">Join with space</option><option value="join-pipe">Join with |</option><option value="join-slash">Join with /</option><option value="join-underscore">Join with _</option><option value="join-dash">Join with -</option></select></div>
+        </div>
+      </div>
+      <div id="tip-label4-section" class="pt-detail">
+        <div class="pt-palette-row"><span class="pt-palette-label">Label 4</span><select class="pt-palette-select" id="tip-label4-show"><option value="off" selected>Off</option><option value="names">names</option></select></div>
+        <div id="tip-label4-detail" class="pt-detail pt-sub-controls">
+          <div class="pt-palette-row" title="Layout of Label 4 relative to Label 3"><span class="pt-palette-label">Layout</span><select class="pt-palette-select" id="tip-label4-layout"><option value="append">Append</option><option value="align">Align</option><option value="join-space">Join with space</option><option value="join-pipe">Join with |</option><option value="join-slash">Join with /</option><option value="join-underscore">Join with _</option><option value="join-dash">Join with -</option></select></div>
+        </div>
       </div>
     </div>`;
 }

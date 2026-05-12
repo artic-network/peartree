@@ -428,6 +428,18 @@ async function _initCore(root = document) {
   const tipLabelShow      = $('tip-label-show');
   const tipLabelControlsEl = $('tip-label-controls');
   const tipLabelAlignEl   = $('tip-label-align');
+  const tipLabel2ShowEl    = $('tip-label2-show');
+  const tipLabel3ShowEl    = $('tip-label3-show');
+  const tipLabel4ShowEl    = $('tip-label4-show');
+  const tipLabel2LayoutEl  = $('tip-label2-layout');
+  const tipLabel3LayoutEl  = $('tip-label3-layout');
+  const tipLabel4LayoutEl  = $('tip-label4-layout');
+  const tipLabel2SectionEl = $('tip-label2-section');
+  const tipLabel3SectionEl = $('tip-label3-section');
+  const tipLabel4SectionEl = $('tip-label4-section');
+  const tipLabel2DetailEl  = $('tip-label2-detail');
+  const tipLabel3DetailEl  = $('tip-label3-detail');
+  const tipLabel4DetailEl  = $('tip-label4-detail');
   const nodeLabelShowEl         = $('node-label-show');
   const nodeLabelPositionEl     = $('node-label-position');
   const nodeLabelFontSizeSlider = $('node-label-font-size-slider');
@@ -966,6 +978,9 @@ async function _initCore(root = document) {
       rootStemPct:        rootStemPctSlider.value,
       tipLabelShow:       tipLabelShow.value,
       tipLabelAlign:      tipLabelAlignEl.value,
+      tipLabelSpacing:    tipLabelSpacingSlider.value,
+      tipLabelsExtra:     [tipLabel2ShowEl.value, tipLabel3ShowEl.value, tipLabel4ShowEl.value],
+      tipLabelsExtraLayouts: [tipLabel2LayoutEl.value, tipLabel3LayoutEl.value, tipLabel4LayoutEl.value],
       tipLabelDecimalPlaces:  tipLabelDpEl.value !== '' ? parseInt(tipLabelDpEl.value) : null,
       tipLabelShape:      tipLabelShapeEl.value,
       tipLabelShapeColor: tipLabelShapeColorEl.value,
@@ -1428,6 +1443,16 @@ async function _initCore(root = document) {
       tipLabelSpacingSlider.value = s.tipLabelSpacing;
       $('tip-label-spacing-value').textContent = s.tipLabelSpacing;
     }
+    if (Array.isArray(s.tipLabelsExtra)) {
+      [tipLabel2ShowEl, tipLabel3ShowEl, tipLabel4ShowEl].forEach((el, i) => {
+        if (el && s.tipLabelsExtra[i]) el.value = s.tipLabelsExtra[i];
+      });
+    }
+    if (Array.isArray(s.tipLabelsExtraLayouts)) {
+      [tipLabel2LayoutEl, tipLabel3LayoutEl, tipLabel4LayoutEl].forEach((el, i) => {
+        if (el && s.tipLabelsExtraLayouts[i]) el.value = s.tipLabelsExtraLayouts[i];
+      });
+    }
     if (s.tipLabelDecimalPlaces  != null && tipLabelDpEl)  tipLabelDpEl.value  = String(s.tipLabelDecimalPlaces);
     if (s.nodeLabelDecimalPlaces != null && nodeLabelDpEl) nodeLabelDpEl.value = String(s.nodeLabelDecimalPlaces);
     if (s.branchLabelPosition)    branchLabelPositionEl.value   = s.branchLabelPosition;
@@ -1748,6 +1773,8 @@ async function _initCore(root = document) {
       tipLabelsFilter:             tipLabelsFilterEl?.value    || null,
       nodeShapesFilter:            nodeShapesFilterEl?.value   || null,
       tipShapesFilter:             tipShapesFilterEl?.value    || null,
+      tipLabelsExtra:              [tipLabel2ShowEl?.value ?? 'off', tipLabel3ShowEl?.value ?? 'off', tipLabel4ShowEl?.value ?? 'off'],
+      tipLabelsExtraLayouts:       [tipLabel2LayoutEl?.value ?? 'append', tipLabel3LayoutEl?.value ?? 'append', tipLabel4LayoutEl?.value ?? 'append'],
     };
   }
 
@@ -1808,6 +1835,12 @@ async function _initCore(root = document) {
     _vis(legend4SectionEl,      legend3AnnotEl.value        !== '');
     _vis(legend4DetailEl,       legend4AnnotEl.value        !== '');
     _vis(axisDetailEl,          axisShowEl.value            !== 'off');
+    _vis(tipLabel2SectionEl,    tipLabelsOn);
+    _vis(tipLabel3SectionEl,    tipLabelsOn && tipLabel2ShowEl.value !== 'off');
+    _vis(tipLabel4SectionEl,    tipLabelsOn && tipLabel3ShowEl.value !== 'off');
+    _vis(tipLabel2DetailEl,     tipLabelsOn && tipLabel2ShowEl.value !== 'off');
+    _vis(tipLabel3DetailEl,     tipLabelsOn && tipLabel3ShowEl.value !== 'off');
+    _vis(tipLabel4DetailEl,     tipLabelsOn && tipLabel4ShowEl.value !== 'off');
   }
 
   /**
@@ -3653,6 +3686,24 @@ async function _initCore(root = document) {
       if (renderer) {
         renderer.setTipLabelsOff(tipLabelShow.value === 'off');
         if (tipLabelShow.value !== 'off') renderer.setTipLabelAnnotation(tipLabelShow.value === 'names' ? null : tipLabelShow.value);
+      }
+    }
+    // Extra tip label shows (Labels 2-4): option[0]='off', option[1]='names', then dynamic annotations.
+    {
+      const extraEls = [tipLabel2ShowEl, tipLabel3ShowEl, tipLabel4ShowEl];
+      for (const el of extraEls) {
+        if (!el) continue;
+        const prev = el.value;
+        while (el.options.length > 2) el.remove(2);
+        for (const [name, def] of schema) {
+          if (def.dataType === 'list') continue;
+          if (def.groupMember) continue;
+          if (!def.onTips) continue;
+          const opt = document.createElement('option');
+          opt.value = name; opt.textContent = def.label ?? name;
+          el.appendChild(opt);
+        }
+        el.value = [...el.options].some(o => o.value === prev) ? prev : 'off';
       }
     }
     // Node label show: first option is '' (none); then all node annotations.
@@ -6606,6 +6657,39 @@ async function _initCore(root = document) {
 
   tipLabelAlignEl.addEventListener('change', () => {
     renderer.setTipLabelAlign(tipLabelAlignEl.value);
+    saveSettings();
+  });
+
+  tipLabel2ShowEl.addEventListener('change', () => {
+    _syncControlVisibility();
+    renderer?.setSettings(_buildRendererSettings());
+    saveSettings();
+  });
+
+  tipLabel3ShowEl.addEventListener('change', () => {
+    _syncControlVisibility();
+    renderer?.setSettings(_buildRendererSettings());
+    saveSettings();
+  });
+
+  tipLabel4ShowEl.addEventListener('change', () => {
+    _syncControlVisibility();
+    renderer?.setSettings(_buildRendererSettings());
+    saveSettings();
+  });
+
+  tipLabel2LayoutEl.addEventListener('change', () => {
+    renderer?.setSettings(_buildRendererSettings());
+    saveSettings();
+  });
+
+  tipLabel3LayoutEl.addEventListener('change', () => {
+    renderer?.setSettings(_buildRendererSettings());
+    saveSettings();
+  });
+
+  tipLabel4LayoutEl.addEventListener('change', () => {
+    renderer?.setSettings(_buildRendererSettings());
     saveSettings();
   });
 

@@ -331,6 +331,15 @@ export class TreeRenderer {
     this.tipLabelAnnotation         = s.tipLabelAnnotation ?? null;
     this._tipLabelsOff               = s.tipLabelsOff ?? false;
     this._tipLabelDecimalPlaces      = s.tipLabelDecimalPlaces  ?? null;  // null = auto (schema formatter)
+    // ── Extra tip labels 2–4 (shown to the right of label 1) ────────────────
+    this._tipLabelsExtra = Array(3).fill('off');
+    if (Array.isArray(s.tipLabelsExtra)) {
+      s.tipLabelsExtra.forEach((v, i) => { if (i < 3) this._tipLabelsExtra[i] = v ?? 'off'; });
+    }
+    this._tipLabelsExtraLayouts = Array(3).fill('append');
+    if (Array.isArray(s.tipLabelsExtraLayouts)) {
+      s.tipLabelsExtraLayouts.forEach((v, i) => { if (i < 3) this._tipLabelsExtraLayouts[i] = v ?? 'append'; });
+    }
 
     // ── Tip-label shapes ─────────────────────────────────────────────────────
     this._tipLabelShape            = s.tipLabelShape            ?? 'off';
@@ -1970,6 +1979,64 @@ export class TreeRenderer {
   }
 
   /**
+   * Get all 4 tip label texts (label 1 + extras 2-4) for a node.
+   * Returns array of [text1, text2, text3, text4] where missing/off labels are null.
+   */
+  _tipLabelTexts(node) {
+    if (this._tipLabelsOff) return [null, null, null, null];
+    const texts = [
+      this._labelText(node, this.tipLabelAnnotation, this._tipLabelDecimalPlaces, node.name || null),
+      null, null, null
+    ];
+    // Add extra labels 2-4
+    for (let i = 0; i < 3; i++) {
+      const anno = this._tipLabelsExtra[i];
+      if (anno !== 'off') {
+        texts[i + 1] = this._labelText(node, anno === 'names' ? null : anno, this._tipLabelDecimalPlaces, null);
+      }
+    }
+    return texts;
+  }
+
+  _tipLabelJoinSep(mode) {
+    switch (mode) {
+      case 'join-space': return ' ';
+      case 'join-pipe': return '|';
+      case 'join-slash': return '/';
+      case 'join-underscore': return '_';
+      case 'join-dash': return '-';
+      default: return '';
+    }
+  }
+
+  /**
+   * Build render parts for tip labels.
+   * Join modes are merged into the previous part on the fly.
+   * Returns { parts: string[], modes: ('append'|'align')[] } where modes[i]
+   * is the placement mode of parts[i+1] relative to parts[i].
+   */
+  _tipLabelParts(node) {
+    const texts = this._tipLabelTexts(node);
+    if (!texts[0]) return { parts: [], modes: [] };
+
+    const parts = [texts[0]];
+    const modes = [];
+    for (let i = 1; i < 4; i++) {
+      const t = texts[i];
+      if (!t) continue;
+      const mode = this._tipLabelsExtraLayouts?.[i - 1] ?? 'append';
+      if (mode.startsWith('join-')) {
+        const sep = this._tipLabelJoinSep(mode);
+        parts[parts.length - 1] += `${sep}${t}`;
+      } else {
+        parts.push(t);
+        modes.push(mode === 'align' ? 'align' : 'append');
+      }
+    }
+    return { parts, modes };
+  }
+
+  /**
    * Returns the display text for an internal-node label.
    * Uses nodeLabelAnnotation to look up the annotation value on the node.
    * Handles the synthetic CAL_DATE_KEY / CAL_DATE_HPD_KEY / CAL_DATE_HPD_ONLY_KEY sentinels.
@@ -1989,23 +2056,46 @@ export class TreeRenderer {
   _measureLabels() {
     if (!this.nodes) return;
     // Only redo the expensive measureText scan when font/annotation settings or node data changes.
-    const cacheKey = `${this.fontSize}|${this._tipLabelTypefaceKey ?? this._typefaceKey}|${this._tipLabelTypefaceStyle ?? this._typefaceStyle}|${this.tipLabelAnnotation ?? ''}|${this._calDateFormat}|${this._tipLabelDecimalPlaces ?? ''}|${this._nodeLabelDecimalPlaces ?? ''}|${this._tipLabelsOff ? '0' : '1'}`;
+    const cacheKey = `${this.fontSize}|${this._tipLabelTypefaceKey ?? this._typefaceKey}|${this._tipLabelTypefaceStyle ?? this._typefaceStyle}|${this.tipLabelAnnotation ?? ''}|${this._tipLabelsExtra.join(',')}|${this._tipLabelsExtraLayouts.join(',')}|${this.tipLabelSpacing}|${this._calDateFormat}|${this._tipLabelDecimalPlaces ?? ''}|${this._nodeLabelDecimalPlaces ?? ''}|${this._tipLabelsOff ? '0' : '1'}`;
     if (this._labelCacheKey !== cacheKey) {
       const ctx = this.ctx;
       ctx.font = this._tipFont(this.fontSize);
       let max = 0;
       const widths = new Map();
+      const partData = new Map();
+      const segMax = [0, 0, 0, 0];
       for (const n of this.nodes) {
         if (!n.isTip) continue;
-        const t = this._tipLabelText(n);
-        if (t) {
-          const w = ctx.measureText(t).width;
-          widths.set(n.id, w);
-          if (w > max) max = w;
+        const pd = this._tipLabelParts(n);
+        if (pd.parts.length === 0) continue;
+        const ws = pd.parts.map(p => ctx.measureText(p).width);
+        for (let i = 0; i < ws.length; i++) {
+          if (ws[i] > segMax[i]) segMax[i] = ws[i];
+        }
+        partData.set(n.id, { parts: pd.parts, modes: pd.modes, widths: ws });
+      }
+      for (const [id, pd] of partData.entries()) {
+        let right = pd.widths[0] ?? 0;
+        let x = 0;
+        for (let i = 1; i < pd.parts.length; i++) {
+          const mode = pd.modes[i - 1] ?? 'append';
+          if (mode === 'align') {
+            x += (segMax[i - 1] ?? 0) + this.tipLabelSpacing;
+          } else {
+            x += (pd.widths[i - 1] ?? 0) + this.tipLabelSpacing;
+          }
+          const r = x + (pd.widths[i] ?? 0);
+          if (r > right) right = r;
+        }
+        if (right > 0) {
+          widths.set(id, right);
+          if (right > max) max = right;
         }
       }
       this._maxLabelWidth = max;
       this._tipLabelWidths = widths;
+      this._tipLabelPartData = partData;
+      this._tipLabelSegmentMax = segMax;
       this._labelCacheKey = cacheKey;
     }
     const r = this.tipRadius;
@@ -3786,9 +3876,18 @@ export class TreeRenderer {
           if (!this._passesFilter(this._tipLabelsFilterId, node)) continue;
           if (this._selectedTipIds.has(node.id)) continue;
           if (!this._showLabelAt(node.y)) continue;
-          const _t = this._tipLabelText(node);
+          const _pd = this._tipLabelPartData?.get(node.id) ?? this._tipLabelParts(node);
+          if (_pd.parts.length === 0) continue;
           const _bX = alignLabelX ?? (this._wx(node.x) + outlineR);
-          if (_t) ctx.fillText(_t, _tx(_bX), this._wy(node.y));
+          const _sy = this._wy(node.y);
+          let _px = _tx(_bX);
+          ctx.fillText(_pd.parts[0], _px, _sy);
+          for (let _i = 1; _i < _pd.parts.length; _i++) {
+            const _mode = _pd.modes[_i - 1] ?? 'append';
+            if (_mode === 'align') _px += (this._tipLabelSegmentMax?.[_i - 1] ?? 0) + tipLabelSpacing;
+            else _px += ctx.measureText(_pd.parts[_i - 1]).width + tipLabelSpacing;
+            ctx.fillText(_pd.parts[_i], _px, _sy);
+          }
         }
         // Sub-pass 3b: selected labels in bold + selected colour
         ctx.fillStyle = this.selectedLabelColor;
@@ -3797,9 +3896,18 @@ export class TreeRenderer {
           if (!this._passesFilter(this._tipLabelsFilterId, node)) continue;
           if (!this._selectedTipIds.has(node.id)) continue;
           if (!this._showLabelAt(node.y)) continue;
-          const _t = this._tipLabelText(node);
+          const _pd = this._tipLabelPartData?.get(node.id) ?? this._tipLabelParts(node);
+          if (_pd.parts.length === 0) continue;
           const _bX = alignLabelX ?? (this._wx(node.x) + outlineR);
-          if (_t) ctx.fillText(_t, _tx(_bX), this._wy(node.y));
+          const _sy = this._wy(node.y);
+          let _px = _tx(_bX);
+          ctx.fillText(_pd.parts[0], _px, _sy);
+          for (let _i = 1; _i < _pd.parts.length; _i++) {
+            const _mode = _pd.modes[_i - 1] ?? 'append';
+            if (_mode === 'align') _px += (this._tipLabelSegmentMax?.[_i - 1] ?? 0) + tipLabelSpacing;
+            else _px += ctx.measureText(_pd.parts[_i - 1]).width + tipLabelSpacing;
+            ctx.fillText(_pd.parts[_i], _px, _sy);
+          }
         }
         ctx.font = this._tipFont(this.fontSize);
       } else if (this._labelColourBy && this._labelColourScale) {
@@ -3807,21 +3915,42 @@ export class TreeRenderer {
         for (const node of this._vTips) {
           if (!this._passesFilter(this._tipLabelsFilterId, node)) continue;
           if (!this._showLabelAt(node.y)) continue;
-          const _t = this._tipLabelText(node);
-          if (!_t) continue;
+          const _pd = this._tipLabelPartData?.get(node.id) ?? this._tipLabelParts(node);
+          if (_pd.parts.length === 0) continue;
           const val = this._statValue(node, key);
           const _bX = alignLabelX ?? (this._wx(node.x) + outlineR);
+          const _sy = this._wy(node.y);
           ctx.fillStyle = this._labelColourForValue(val) ?? this.labelColor;
-          ctx.fillText(_t, _tx(_bX), this._wy(node.y));
+          let _px = _tx(_bX);
+          ctx.fillText(_pd.parts[0], _px, _sy);
+          if (_pd.parts.length > 1) {
+            ctx.fillStyle = this.labelColor;
+            for (let _i = 1; _i < _pd.parts.length; _i++) {
+              const _mode = _pd.modes[_i - 1] ?? 'append';
+              if (_mode === 'align') _px += (this._tipLabelSegmentMax?.[_i - 1] ?? 0) + tipLabelSpacing;
+              else _px += ctx.measureText(_pd.parts[_i - 1]).width + tipLabelSpacing;
+              ctx.fillText(_pd.parts[_i], _px, _sy);
+            }
+            ctx.fillStyle = this._labelColourForValue(val) ?? this.labelColor;
+          }
         }
       } else {
         ctx.fillStyle = this.labelColor;
         for (const node of this._vTips) {
           if (!this._passesFilter(this._tipLabelsFilterId, node)) continue;
           if (!this._showLabelAt(node.y)) continue;
-          const _t = this._tipLabelText(node);
+          const _pd = this._tipLabelPartData?.get(node.id) ?? this._tipLabelParts(node);
+          if (_pd.parts.length === 0) continue;
           const _bX = alignLabelX ?? (this._wx(node.x) + outlineR);
-          if (_t) ctx.fillText(_t, _tx(_bX), this._wy(node.y));
+          const _sy = this._wy(node.y);
+          let _px = _tx(_bX);
+          ctx.fillText(_pd.parts[0], _px, _sy);
+          for (let _i = 1; _i < _pd.parts.length; _i++) {
+            const _mode = _pd.modes[_i - 1] ?? 'append';
+            if (_mode === 'align') _px += (this._tipLabelSegmentMax?.[_i - 1] ?? 0) + tipLabelSpacing;
+            else _px += ctx.measureText(_pd.parts[_i - 1]).width + tipLabelSpacing;
+            ctx.fillText(_pd.parts[_i], _px, _sy);
+          }
         }
       }
 

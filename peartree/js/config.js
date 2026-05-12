@@ -142,6 +142,10 @@ export const DEFAULT_SETTINGS = {
   tipLabelShow:    'names',   // 'off' | 'names' | annotation key
   tipLabelAlign:   'off',    // 'off' | 'aligned' | 'dots' | 'dashed' | 'solid'
   tipLabelSpacing: '3',
+  // Extra tip labels 2–4 (shown immediately to the right of label 1; share label 1's styling)
+  tipLabelsExtra:  ['off', 'off', 'off'],  // array of annotation keys or 'off'/'names'
+  // Layout mode for extra labels 2–4: append | align | join-space | join-pipe | join-slash | join-underscore | join-dash
+  tipLabelsExtraLayouts: ['append', 'append', 'append'],
 
   // ── Label Shapes ────────────────────────────────────────────────────────────────────
   tipLabelShape:             'off',     // 'off' | 'square' | 'circle' | 'block'
