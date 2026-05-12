@@ -254,7 +254,7 @@ export class TreeRenderer {
     // Branch shapes (shape 1 + extra shape sets 2-4)
     this._branchShape            = 'off';   // 'off' | 'rectangle' | 'ellipse'
     this._branchShapeHeightPct   = 50;      // % of tip spacing (scaleY)
-    this._branchShapeWidth       = 8;       // px
+    this._branchShapeWidth       = 1;       // width as a multiple of shape height
     this._branchShapeAlign       = 'center'; // 'center' | 'left' | 'right'
     this._branchShapeSpacing     = 3;       // px between shapes and at edges
     this._branchShapeColor       = '#aaaaaa';
@@ -357,7 +357,7 @@ export class TreeRenderer {
     // ── Branch shapes ───────────────────────────────────────────────────────
     this._branchShape          = s.branchShape          ?? 'off';
     this._branchShapeHeightPct = +(s.branchShapeHeightPct ?? 50);
-    this._branchShapeWidth     = +(s.branchShapeWidth     ?? 8);
+    this._branchShapeWidth     = +(s.branchShapeWidth     ?? 1);
     this._branchShapeAlign     = s.branchShapeAlign     ?? 'center';
     this._branchShapeSpacing   = +(s.branchShapeSpacing   ?? 3);
     this._branchShapeColor     = s.branchShapeColor     ?? '#aaaaaa';
@@ -2760,10 +2760,12 @@ export class TreeRenderer {
     }
     if (activeSets.length === 0) return;
 
-    const shapeW = Math.max(1, this._branchShapeWidth ?? 8);
     const shapeH = this._branchShapeHeightPx();
+    const widthFactor = Math.max(0.05, Math.min(5, this._branchShapeWidth ?? 1));
+    const shapeW = Math.max(1, Math.round(shapeH * widthFactor));
     const spacing = Math.max(0, this._branchShapeSpacing ?? 0);
     const halo = Math.max(0, this._branchShapeHalo ?? 0);
+    const noGapMode = spacing === 0 && halo === 0;
 
     for (const node of this._vAll) {
       if (!node.parentId) continue;
@@ -2800,6 +2802,7 @@ export class TreeRenderer {
       } else {
         cursorX = branchMinX + (branchLen - totalSpan) / 2;
       }
+      if (noGapMode) cursorX = Math.round(cursorX);
 
       if (halo > 0) {
         ctx.strokeStyle = this._branchShapeHaloColor;

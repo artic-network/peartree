@@ -159,7 +159,7 @@ export const DEFAULT_SETTINGS = {
   // ── Branch Shapes ────────────────────────────────────────────────────────────────
   branchShape:             'off',      // 'off' | 'rectangle' | 'ellipse'
   branchShapeHeightPct:    '50',       // % of tip spacing
-  branchShapeWidth:        '8',        // px
+  branchShapeWidth:        '1',        // width as a multiple of shape height
   branchShapeAlign:        'center',   // 'center' | 'left' | 'right'
   branchShapeSpacing:      '3',        // px between shapes and at ends
   branchShapeColor:        '#aaaaaa',

@@ -603,6 +603,36 @@ async function _initCore(root = document) {
   const btnManagePalettes      = $('btn-manage-palettes');
   let filterManager            = null;  // assigned after renderer is created
   let paletteManager           = null;  // assigned after renderer is created
+
+  function _formatBranchShapeWidth(value) {
+    const n = typeof value === 'number' ? value : parseFloat(value);
+    if (!Number.isFinite(n)) return '1';
+    return n.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
+  }
+
+  const _BRANCH_SHAPE_WIDTH_MIN = 0.05;
+  const _BRANCH_SHAPE_WIDTH_MID = 1;
+  const _BRANCH_SHAPE_WIDTH_MAX = 5;
+
+  function _branchShapeWidthFromSlider(value) {
+    const position = Math.max(0, Math.min(100, typeof value === 'number' ? value : parseFloat(value) || 0)) / 100;
+    if (position <= 0.5) {
+      const t = position / 0.5;
+      return _BRANCH_SHAPE_WIDTH_MIN * Math.pow(_BRANCH_SHAPE_WIDTH_MID / _BRANCH_SHAPE_WIDTH_MIN, t);
+    }
+    const t = (position - 0.5) / 0.5;
+    return _BRANCH_SHAPE_WIDTH_MID * Math.pow(_BRANCH_SHAPE_WIDTH_MAX / _BRANCH_SHAPE_WIDTH_MID, t);
+  }
+
+  function _branchShapeWidthToSlider(value) {
+    const width = Math.max(_BRANCH_SHAPE_WIDTH_MIN, Math.min(_BRANCH_SHAPE_WIDTH_MAX, typeof value === 'number' ? value : parseFloat(value) || _BRANCH_SHAPE_WIDTH_MID));
+    if (width <= _BRANCH_SHAPE_WIDTH_MID) {
+      const t = Math.log(width / _BRANCH_SHAPE_WIDTH_MIN) / Math.log(_BRANCH_SHAPE_WIDTH_MID / _BRANCH_SHAPE_WIDTH_MIN);
+      return Math.round(Math.max(0, Math.min(50, t * 50)));
+    }
+    const t = Math.log(width / _BRANCH_SHAPE_WIDTH_MID) / Math.log(_BRANCH_SHAPE_WIDTH_MAX / _BRANCH_SHAPE_WIDTH_MID);
+    return Math.round(Math.max(50, Math.min(100, 50 + t * 50)));
+  }
   const nodeBarsFilterEl      = $('node-bars-filter');
   const nodeLabelsFilterEl    = $('node-labels-filter');
   const branchLabelsFilterEl  = $('branch-labels-filter');
@@ -1262,8 +1292,8 @@ async function _initCore(root = document) {
       $('branch-shape-height-value').textContent = s.branchShapeHeightPct;
     }
     if (branchShapeWidthSlider && s.branchShapeWidth != null) {
-      branchShapeWidthSlider.value = s.branchShapeWidth;
-      $('branch-shape-width-value').textContent = s.branchShapeWidth;
+      branchShapeWidthSlider.value = _branchShapeWidthToSlider(s.branchShapeWidth);
+      $('branch-shape-width-value').textContent = _formatBranchShapeWidth(s.branchShapeWidth);
     }
     if (branchShapeAlignEl && s.branchShapeAlign) branchShapeAlignEl.value = s.branchShapeAlign;
     if (branchShapeSpacingSlider && s.branchShapeSpacing != null) {
@@ -1513,8 +1543,8 @@ async function _initCore(root = document) {
       $('branch-shape-height-value').textContent = DEFAULT_SETTINGS.branchShapeHeightPct;
     }
     if (branchShapeWidthSlider) {
-      branchShapeWidthSlider.value = DEFAULT_SETTINGS.branchShapeWidth;
-      $('branch-shape-width-value').textContent = DEFAULT_SETTINGS.branchShapeWidth;
+      branchShapeWidthSlider.value = _branchShapeWidthToSlider(DEFAULT_SETTINGS.branchShapeWidth);
+      $('branch-shape-width-value').textContent = _formatBranchShapeWidth(DEFAULT_SETTINGS.branchShapeWidth);
     }
     if (branchShapeAlignEl) branchShapeAlignEl.value = DEFAULT_SETTINGS.branchShapeAlign;
     if (branchShapeSpacingSlider) {
@@ -1668,7 +1698,7 @@ async function _initCore(root = document) {
       tipLabelShapesExtra:      tipLabelShapeExtraEls.map(e => e.value),
       branchShape:              branchShapeEl?.value || 'off',
       branchShapeHeightPct:     parseInt(branchShapeHeightSlider?.value ?? DEFAULT_SETTINGS.branchShapeHeightPct),
-      branchShapeWidth:         parseInt(branchShapeWidthSlider?.value ?? DEFAULT_SETTINGS.branchShapeWidth),
+      branchShapeWidth:         _branchShapeWidthFromSlider(branchShapeWidthSlider?.value ?? 50),
       branchShapeAlign:         branchShapeAlignEl?.value || DEFAULT_SETTINGS.branchShapeAlign,
       branchShapeSpacing:       parseInt(branchShapeSpacingSlider?.value ?? DEFAULT_SETTINGS.branchShapeSpacing),
       branchShapeColor:         branchShapeColorEl?.value || '#aaaaaa',
@@ -2160,8 +2190,8 @@ async function _initCore(root = document) {
     $('branch-shape-height-value').textContent = _saved.branchShapeHeightPct;
   }
   if (branchShapeWidthSlider && _saved.branchShapeWidth != null) {
-    branchShapeWidthSlider.value = _saved.branchShapeWidth;
-    $('branch-shape-width-value').textContent = _saved.branchShapeWidth;
+    branchShapeWidthSlider.value = _branchShapeWidthToSlider(_saved.branchShapeWidth);
+    $('branch-shape-width-value').textContent = _formatBranchShapeWidth(_saved.branchShapeWidth);
   }
   if (branchShapeAlignEl && _saved.branchShapeAlign) branchShapeAlignEl.value = _saved.branchShapeAlign;
   if (branchShapeSpacingSlider && _saved.branchShapeSpacing != null) {
@@ -6832,7 +6862,7 @@ async function _initCore(root = document) {
     _applyBranchShapeSettings({ markTheme: true });
   });
   branchShapeWidthSlider?.addEventListener('input', () => {
-    $('branch-shape-width-value').textContent = branchShapeWidthSlider.value;
+    $('branch-shape-width-value').textContent = _formatBranchShapeWidth(_branchShapeWidthFromSlider(branchShapeWidthSlider.value));
     _applyBranchShapeSettings({ markTheme: true });
   });
   branchShapeAlignEl?.addEventListener('change', () => _applyBranchShapeSettings({ markTheme: true }));
