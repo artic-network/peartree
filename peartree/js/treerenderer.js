@@ -251,6 +251,23 @@ export class TreeRenderer {
     this._tipLabelShapesExtra         = Array(9).fill('off');  // shape type per extra slot
     this._tipLabelShapeExtraColourBys = Array(9).fill(null);   // annotation key per extra slot
     this._tipLabelShapeExtraColourScales = Array(9).fill(null); // colour scale per extra slot
+    // Branch shapes (shape 1 + extra shape sets 2-4)
+    this._branchShape            = 'off';   // 'off' | 'rectangle' | 'ellipse'
+    this._branchShapeHeightPct   = 50;      // % of tip spacing (scaleY)
+    this._branchShapeWidth       = 8;       // px
+    this._branchShapeAlign       = 'center'; // 'center' | 'left' | 'right'
+    this._branchShapeSpacing     = 3;       // px between shapes and at edges
+    this._branchShapeColor       = '#aaaaaa';
+    this._branchShapeColourBy    = null;
+    this._branchShapeColourScale = null;
+    this._branchShapeCountBy     = null;    // integer annotation key controlling count (0-99)
+    this._branchShapeHalo        = 0;       // px
+    this._branchShapeHaloColor   = '#02292e';
+    this._branchShapesExtra            = Array(3).fill('off');
+    this._branchShapesExtraColors      = Array(3).fill('#aaaaaa');
+    this._branchShapesExtraColourBys   = Array(3).fill(null);
+    this._branchShapesExtraColourScales= Array(3).fill(null);
+    this._branchShapesExtraCountBys    = Array(3).fill(null);
     this._crossfadeAlpha    = 0;      // 1→0; 0 = not animating
 
     // Legend (drawing delegated to LegendRenderer; registered via setLegendRenderer)
@@ -335,6 +352,50 @@ export class TreeRenderer {
     } else if (s.tipLabelShape2) {
       // Backward compat: old single shape-2 setting
       this._tipLabelShapesExtra[0] = s.tipLabelShape2;
+    }
+
+    // ── Branch shapes ───────────────────────────────────────────────────────
+    this._branchShape          = s.branchShape          ?? 'off';
+    this._branchShapeHeightPct = +(s.branchShapeHeightPct ?? 50);
+    this._branchShapeWidth     = +(s.branchShapeWidth     ?? 8);
+    this._branchShapeAlign     = s.branchShapeAlign     ?? 'center';
+    this._branchShapeSpacing   = +(s.branchShapeSpacing   ?? 3);
+    this._branchShapeColor     = s.branchShapeColor     ?? '#aaaaaa';
+    this._branchShapeHalo      = +(s.branchShapeHalo      ?? 0);
+    this._branchShapeHaloColor = s.branchShapeHaloColor ?? '#02292e';
+    this._branchShapeCountBy   = s.branchShapeCountBy   || null;
+    this._branchShapeColourBy  = s.branchShapeColourBy  || null;
+    this._branchShapeColourScale = this._branchShapeColourBy
+      ? this._buildColourScale(this._branchShapeColourBy)
+      : null;
+
+    this._branchShapesExtra = Array(3).fill('off');
+    if (Array.isArray(s.branchShapesExtra)) {
+      s.branchShapesExtra.forEach((v, i) => { if (i < 3) this._branchShapesExtra[i] = v ?? 'off'; });
+    }
+    this._branchShapesExtraColors = Array(3).fill('#aaaaaa');
+    if (Array.isArray(s.branchShapesExtraColors)) {
+      s.branchShapesExtraColors.forEach((v, i) => { if (i < 3 && v) this._branchShapesExtraColors[i] = v; });
+    }
+    if (!Array.isArray(this._branchShapesExtraColourBys) || this._branchShapesExtraColourBys.length !== 3) {
+      this._branchShapesExtraColourBys = Array(3).fill(null);
+    }
+    if (!Array.isArray(this._branchShapesExtraColourScales) || this._branchShapesExtraColourScales.length !== 3) {
+      this._branchShapesExtraColourScales = Array(3).fill(null);
+    }
+    if (Array.isArray(s.branchShapesExtraColourBys)) {
+      s.branchShapesExtraColourBys.forEach((v, i) => {
+        if (i < 3) {
+          this._branchShapesExtraColourBys[i] = v || null;
+          this._branchShapesExtraColourScales[i] = this._branchShapesExtraColourBys[i]
+            ? this._buildColourScale(this._branchShapesExtraColourBys[i])
+            : null;
+        }
+      });
+    }
+    this._branchShapesExtraCountBys = Array(3).fill(null);
+    if (Array.isArray(s.branchShapesExtraCountBys)) {
+      s.branchShapesExtraCountBys.forEach((v, i) => { if (i < 3) this._branchShapesExtraCountBys[i] = v || null; });
     }
 
     // ── Layout geometry ─────────────────────────────────────────────────────
@@ -451,6 +512,7 @@ export class TreeRenderer {
     this._nodeBarsFilterId      = 'nodeBarsFilter'       in s ? (s.nodeBarsFilter       ?? null) : (this._nodeBarsFilterId      ?? null);
     this._nodeLabelsFilterId    = 'nodeLabelsFilter'     in s ? (s.nodeLabelsFilter     ?? null) : (this._nodeLabelsFilterId    ?? null);
     this._branchLabelsFilterId  = 'branchLabelsFilter'   in s ? (s.branchLabelsFilter   ?? null) : (this._branchLabelsFilterId  ?? null);
+    this._branchShapesFilterId  = 'branchShapesFilter'   in s ? (s.branchShapesFilter   ?? null) : (this._branchShapesFilterId  ?? null);
     this._tipLabelsFilterId     = 'tipLabelsFilter'      in s ? (s.tipLabelsFilter      ?? null) : (this._tipLabelsFilterId     ?? null);
     this._nodeShapesFilterId    = 'nodeShapesFilter'     in s ? (s.nodeShapesFilter     ?? null) : (this._nodeShapesFilterId    ?? null);
     this._tipShapesFilterId     = 'tipShapesFilter'      in s ? (s.tipShapesFilter      ?? null) : (this._tipShapesFilterId     ?? null);
@@ -1134,9 +1196,14 @@ export class TreeRenderer {
     if (this._nodeLabelColourBy)      this._nodeLabelColourScale      = this._buildColourScale(this._nodeLabelColourBy);
     if (this._branchLabelColourBy)    this._branchLabelColourScale    = this._buildColourScale(this._branchLabelColourBy);
     if (this._tipLabelShapeColourBy)  this._tipLabelShapeColourScale  = this._buildColourScale(this._tipLabelShapeColourBy);
+    if (this._branchShapeColourBy)    this._branchShapeColourScale    = this._buildColourScale(this._branchShapeColourBy);
     for (let i = 0; i < this._tipLabelShapeExtraColourBys.length; i++) {
       if (this._tipLabelShapeExtraColourBys[i])
         this._tipLabelShapeExtraColourScales[i] = this._buildColourScale(this._tipLabelShapeExtraColourBys[i]);
+    }
+    for (let i = 0; i < this._branchShapesExtraColourBys.length; i++) {
+      if (this._branchShapesExtraColourBys[i])
+        this._branchShapesExtraColourScales[i] = this._buildColourScale(this._branchShapesExtraColourBys[i]);
     }
     this._legendRenderer?.setAnnotationSchema(schema);
     this._legendRenderer?.setPaletteOverrides(this._annotationPaletteOverrides);
@@ -1276,9 +1343,14 @@ export class TreeRenderer {
     if (this._nodeLabelColourBy      === key) this._nodeLabelColourScale      = this._buildColourScale(key);
     if (this._branchLabelColourBy    === key) this._branchLabelColourScale    = this._buildColourScale(key);
     if (this._tipLabelShapeColourBy  === key) this._tipLabelShapeColourScale  = this._buildColourScale(key);
+    if (this._branchShapeColourBy    === key) this._branchShapeColourScale    = this._buildColourScale(key);
     for (let i = 0; i < this._tipLabelShapeExtraColourBys.length; i++) {
       if (this._tipLabelShapeExtraColourBys[i] === key)
         this._tipLabelShapeExtraColourScales[i] = this._buildColourScale(key);
+    }
+    for (let i = 0; i < this._branchShapesExtraColourBys.length; i++) {
+      if (this._branchShapesExtraColourBys[i] === key)
+        this._branchShapesExtraColourScales[i] = this._buildColourScale(key);
     }
     // Propagate to legend so it redraws with the new palette.
     this._legendRenderer?.setPaletteOverrides(this._annotationPaletteOverrides);
@@ -1304,9 +1376,14 @@ export class TreeRenderer {
     if (this._nodeLabelColourBy      === key) this._nodeLabelColourScale      = this._buildColourScale(key);
     if (this._branchLabelColourBy    === key) this._branchLabelColourScale    = this._buildColourScale(key);
     if (this._tipLabelShapeColourBy  === key) this._tipLabelShapeColourScale  = this._buildColourScale(key);
+    if (this._branchShapeColourBy    === key) this._branchShapeColourScale    = this._buildColourScale(key);
     for (let i = 0; i < this._tipLabelShapeExtraColourBys.length; i++) {
       if (this._tipLabelShapeExtraColourBys[i] === key)
         this._tipLabelShapeExtraColourScales[i] = this._buildColourScale(key);
+    }
+    for (let i = 0; i < this._branchShapesExtraColourBys.length; i++) {
+      if (this._branchShapesExtraColourBys[i] === key)
+        this._branchShapesExtraColourScales[i] = this._buildColourScale(key);
     }
     this._legendRenderer?.setScaleModeOverrides(this._annotationScaleModes);
     this._pushLiveRangesToLegend();
@@ -1411,9 +1488,14 @@ export class TreeRenderer {
     this._nodeLabelColourScale   = rebuild(this._nodeLabelColourBy,   this._nodeLabelColourScale);
     this._branchLabelColourScale = rebuild(this._branchLabelColourBy, this._branchLabelColourScale);
     this._tipLabelShapeColourScale = rebuild(this._tipLabelShapeColourBy, this._tipLabelShapeColourScale);
+    this._branchShapeColourScale = rebuild(this._branchShapeColourBy, this._branchShapeColourScale);
     for (let i = 0; i < this._tipLabelShapeExtraColourBys.length; i++) {
       this._tipLabelShapeExtraColourScales[i] =
         rebuild(this._tipLabelShapeExtraColourBys[i], this._tipLabelShapeExtraColourScales[i]);
+    }
+    for (let i = 0; i < this._branchShapesExtraColourBys.length; i++) {
+      this._branchShapesExtraColourScales[i] =
+        rebuild(this._branchShapesExtraColourBys[i], this._branchShapesExtraColourScales[i]);
     }
     this._pushLiveRangesToLegend();
   }
@@ -1435,8 +1517,12 @@ export class TreeRenderer {
     addRange(this._nodeLabelColourBy,     this._nodeLabelColourScale);
     addRange(this._branchLabelColourBy,   this._branchLabelColourScale);
     addRange(this._tipLabelShapeColourBy, this._tipLabelShapeColourScale);
+    addRange(this._branchShapeColourBy,   this._branchShapeColourScale);
     for (let i = 0; i < this._tipLabelShapeExtraColourBys.length; i++) {
       addRange(this._tipLabelShapeExtraColourBys[i], this._tipLabelShapeExtraColourScales[i]);
+    }
+    for (let i = 0; i < this._branchShapesExtraColourBys.length; i++) {
+      addRange(this._branchShapesExtraColourBys[i], this._branchShapesExtraColourScales[i]);
     }
     this._legendRenderer.setLiveRanges(ranges);
   }
@@ -1470,6 +1556,8 @@ export class TreeRenderer {
   _branchLabelColourForValue(value)     { return this._colourFromScale(value, this._branchLabelColourScale); }
   _tipLabelShapeColourForValue(value)   { return this._colourFromScale(value, this._tipLabelShapeColourScale); }
   _tipLabelShapeExtraColourForValue(i, value) { return this._colourFromScale(value, this._tipLabelShapeExtraColourScales[i]); }
+  _branchShapeColourForValue(value)     { return this._colourFromScale(value, this._branchShapeColourScale); }
+  _branchShapeExtraColourForValue(i, value) { return this._colourFromScale(value, this._branchShapesExtraColourScales[i]); }
 
   /**
    * Aggregate descendant tip annotation values for a node (internal or collapsed).
@@ -1526,6 +1614,18 @@ export class TreeRenderer {
       return Math.max(1, sizePercent);  // absolute px width, independent of row spacing
     }
     return Math.max(2, Math.round(this.scaleY * sizePercent / 100));
+  }
+
+  _branchShapeHeightPx() {
+    return Math.max(1, Math.round(this.scaleY * (this._branchShapeHeightPct ?? 50) / 100));
+  }
+
+  _branchShapeCount(node, countKey) {
+    if (!countKey) return 1;
+    const raw = this._statValue(node, countKey);
+    const n = Number.isFinite(raw) ? raw : Number(raw);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(99, Math.round(n)));
   }
 
   /**
@@ -2610,6 +2710,7 @@ export class TreeRenderer {
     this._drawCladeHighlights(yWorldMin, yWorldMax);
     this._drawNodeBars(yWorldMin, yWorldMax);
     this._drawBranches(yWorldMin, yWorldMax);
+    this._drawBranchShapes(yWorldMin, yWorldMax);
     this._drawCollapsedClades(yWorldMin, yWorldMax);
     this._drawNodesAndLabels(yWorldMin, yWorldMax);
     this._drawSelectionAndHover(yWorldMin, yWorldMax);
@@ -2627,6 +2728,106 @@ export class TreeRenderer {
       ctx.drawImage(this._crossfadeSnapshot, 0, 0, cW, cH);
       ctx.globalAlpha = 1;
     }
+  }
+
+  _drawBranchShapes(yWorldMin, yWorldMax) {
+    if (!this.nodes) return;
+    if (this._branchShape === 'off') return;
+
+    const ctx = this.ctx;
+    const baseShape = this._branchShape;
+    const shapeSets = [{
+      shape: baseShape,
+      color: this._branchShapeColor,
+      colourBy: this._branchShapeColourBy,
+      colourFn: (node) => this._branchShapeColourForValue(this._statValue(node, this._branchShapeColourBy)),
+      countBy: this._branchShapeCountBy,
+    }];
+    for (let i = 0; i < 3; i++) {
+      shapeSets.push({
+        shape: this._branchShapesExtra[i],
+        color: this._branchShapesExtraColors[i] ?? this._branchShapeColor,
+        colourBy: this._branchShapesExtraColourBys[i],
+        colourFn: (node) => this._branchShapeExtraColourForValue(i, this._statValue(node, this._branchShapesExtraColourBys[i])),
+        countBy: this._branchShapesExtraCountBys[i],
+      });
+    }
+
+    const activeSets = [];
+    for (const set of shapeSets) {
+      if (set.shape === 'off') break;
+      activeSets.push(set);
+    }
+    if (activeSets.length === 0) return;
+
+    const shapeW = Math.max(1, this._branchShapeWidth ?? 8);
+    const shapeH = this._branchShapeHeightPx();
+    const spacing = Math.max(0, this._branchShapeSpacing ?? 0);
+    const halo = Math.max(0, this._branchShapeHalo ?? 0);
+
+    for (const node of this._vAll) {
+      if (!node.parentId) continue;
+      if (node.y < yWorldMin || node.y > yWorldMax) continue;
+      if (!this._passesFilter(this._branchShapesFilterId, node)) continue;
+
+      const parent = this.nodeMap.get(node.parentId);
+      if (!parent) continue;
+
+      const x1 = this._wx(parent.x);
+      const x2 = this._wx(node.x);
+      const branchMinX = Math.min(x1, x2);
+      const branchMaxX = Math.max(x1, x2);
+      const branchLen = branchMaxX - branchMinX;
+      if (branchLen <= 0) continue;
+
+      const y = this._wy(node.y);
+      const laidOutSets = [];
+      let totalCount = 0;
+      for (const set of activeSets) {
+        const count = this._branchShapeCount(node, set.countBy);
+        if (count <= 0) continue;
+        laidOutSets.push({ ...set, count });
+        totalCount += count;
+      }
+      if (totalCount <= 0) continue;
+
+      const totalSpan = totalCount * shapeW + Math.max(0, totalCount - 1) * spacing;
+      let cursorX;
+      if (this._branchShapeAlign === 'left') {
+        cursorX = branchMinX + spacing;
+      } else if (this._branchShapeAlign === 'right') {
+        cursorX = branchMaxX - spacing - totalSpan;
+      } else {
+        cursorX = branchMinX + (branchLen - totalSpan) / 2;
+      }
+
+      if (halo > 0) {
+        ctx.strokeStyle = this._branchShapeHaloColor;
+        ctx.lineWidth = halo * 2;
+      }
+
+      let drawnCount = 0;
+      for (const set of laidOutSets) {
+        const fillColor = (set.colourBy ? (set.colourFn(node) ?? set.color) : set.color) || this._branchShapeColor;
+        ctx.fillStyle = fillColor;
+
+        for (let i = 0; i < set.count; i++) {
+          const x = cursorX + drawnCount * (shapeW + spacing);
+          if (set.shape === 'ellipse') {
+            ctx.beginPath();
+            ctx.ellipse(x + shapeW / 2, y, shapeW / 2, shapeH / 2, 0, 0, Math.PI * 2);
+            if (halo > 0) ctx.stroke();
+            ctx.fill();
+          } else {
+            const top = y - shapeH / 2;
+            if (halo > 0) ctx.strokeRect(x, top, shapeW, shapeH);
+            ctx.fillRect(x, top, shapeW, shapeH);
+          }
+          drawnCount++;
+        }
+      }
+    }
+    if (halo > 0) ctx.lineWidth = 1;
   }
 
   /**

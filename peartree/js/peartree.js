@@ -463,6 +463,26 @@ async function _initCore(root = document) {
   const tipLabelShapeSpacingSlider     = $('tip-label-shape-spacing-slider');
   const tipLabelShapeSizeSlider        = $('tip-label-shape-size-slider');
   const tipLabelShapeDetailEl        = $('tip-label-shape-detail');
+  const branchShapeEl                 = $('branch-shape');
+  const branchShapeDetailEl           = $('branch-shape-detail');
+  const branchShapeHeightSlider       = $('branch-shape-height-slider');
+  const branchShapeWidthSlider        = $('branch-shape-width-slider');
+  const branchShapeAlignEl            = $('branch-shape-align');
+  const branchShapeSpacingSlider      = $('branch-shape-spacing-slider');
+  const branchShapeColorEl            = $('branch-shape-color');
+  const branchShapeColourByEl         = $('branch-shape-colour-by');
+  const branchShapeCountByEl          = $('branch-shape-count-by');
+  const branchShapeHaloSlider         = $('branch-shape-halo-slider');
+  const branchShapeHaloColorEl        = $('branch-shape-halo-color');
+  const branchShapeConfigureRow       = $('branch-shape-configure-row');
+  const branchShapeExtraEls           = [2, 3, 4].map(n => $(`branch-shape-${n}`));
+  const branchShapeExtraColors        = [2, 3, 4].map(n => $(`branch-shape-${n}-color`));
+  const branchShapeExtraColourBys     = [2, 3, 4].map(n => $(`branch-shape-${n}-colour-by`));
+  const branchShapeExtraCountBys      = [2, 3, 4].map(n => $(`branch-shape-${n}-count-by`));
+  const branchShapeExtraConfigureRows = [2, 3, 4].map(n => $(`branch-shape-${n}-configure-row`));
+  const branchShapeExtraConfigureBtns = [2, 3, 4].map(n => $(`branch-shape-${n}-configure-btn`));
+  const branchShapeExtraSectionEls    = [2, 3, 4].map(n => $(`branch-shape-${n}-section`));
+  const branchShapeExtraDetailEls     = [2, 3, 4].map(n => $(`branch-shape-${n}-detail`));
   // Extra label shapes 2–10 (indices 0–8 correspond to shape numbers 2–10)
   const EXTRA_SHAPE_COUNT = 9;
   const tipLabelShapeExtraEls           = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}`));
@@ -586,6 +606,7 @@ async function _initCore(root = document) {
   const nodeBarsFilterEl      = $('node-bars-filter');
   const nodeLabelsFilterEl    = $('node-labels-filter');
   const branchLabelsFilterEl  = $('branch-labels-filter');
+  const branchShapesFilterEl  = $('branch-shapes-filter');
   const tipLabelsFilterEl     = $('tip-labels-filter');
   const nodeShapesFilterEl    = $('node-shapes-filter');
   const tipShapesFilterEl     = $('tip-shapes-filter');
@@ -783,6 +804,12 @@ async function _initCore(root = document) {
       nodeHaloSize:     nodeHaloSlider.value,
       nodeShapeColor:   nodeShapeColorEl.value,
       nodeShapeBgColor: nodeShapeBgEl.value,
+      // Branch shapes colours
+      branchShapeColor:  branchShapeColorEl.value,
+      branchShapeHaloColor: branchShapeHaloColorEl.value,
+      branchShape2Color: branchShapeExtraColors[0]?.value || '#aaaaaa',
+      branchShape3Color: branchShapeExtraColors[1]?.value || '#aaaaaa',
+      branchShape4Color: branchShapeExtraColors[2]?.value || '#aaaaaa',
       // Node bars (colour only — width/opacity are in full settings only)
       nodeBarsColor:    nodeBarsColorEl.value,
       // Hover colours
@@ -918,6 +945,20 @@ async function _initCore(root = document) {
       tipLabelShapeSpacing:     tipLabelShapeSpacingSlider.value,
       tipLabelShapesExtra:        tipLabelShapeExtraEls.map(e => e.value),
       tipLabelShapeExtraColourBys: tipLabelShapeExtraColourBys.map(e => e.value),
+      branchShape:                 branchShapeEl?.value || 'off',
+      branchShapeHeightPct:        branchShapeHeightSlider?.value ?? DEFAULT_SETTINGS.branchShapeHeightPct,
+      branchShapeWidth:            branchShapeWidthSlider?.value ?? DEFAULT_SETTINGS.branchShapeWidth,
+      branchShapeAlign:            branchShapeAlignEl?.value || DEFAULT_SETTINGS.branchShapeAlign,
+      branchShapeSpacing:          branchShapeSpacingSlider?.value ?? DEFAULT_SETTINGS.branchShapeSpacing,
+      branchShapeColor:            branchShapeColorEl?.value || '#aaaaaa',
+      branchShapeColourBy:         branchShapeColourByEl?.value || 'user_colour',
+      branchShapeCountBy:          branchShapeCountByEl?.value || '',
+      branchShapeHalo:             branchShapeHaloSlider?.value ?? DEFAULT_SETTINGS.branchShapeHalo,
+      branchShapeHaloColor:        branchShapeHaloColorEl?.value || '#02292e',
+      branchShapesExtra:           branchShapeExtraEls.map(e => e?.value || 'off'),
+      branchShapesExtraColors:     branchShapeExtraColors.map(e => e?.value || '#aaaaaa'),
+      branchShapesExtraColourBys:  branchShapeExtraColourBys.map(e => e?.value || 'user_colour'),
+      branchShapesExtraCountBys:   branchShapeExtraCountBys.map(e => e?.value || ''),
       nodeLabelAnnotation: nodeLabelShowEl.value,
       nodeLabelPosition:   nodeLabelPositionEl.value,
       nodeLabelFontSize:   nodeLabelFontSizeSlider.value,
@@ -954,6 +995,7 @@ async function _initCore(root = document) {
       nodeBarsFilter:              nodeBarsFilterEl?.value     || null,
       nodeLabelsFilter:            nodeLabelsFilterEl?.value   || null,
       branchLabelsFilter:          branchLabelsFilterEl?.value || null,
+      branchShapesFilter:          branchShapesFilterEl?.value || null,
       tipLabelsFilter:             tipLabelsFilterEl?.value    || null,
       nodeShapesFilter:            nodeShapesFilterEl?.value   || null,
       tipShapesFilter:             tipShapesFilterEl?.value    || null,
@@ -1214,6 +1256,40 @@ async function _initCore(root = document) {
     if (Array.isArray(s.tipLabelShapeExtraColourBys)) {
       s.tipLabelShapeExtraColourBys.forEach((v, i) => { if (tipLabelShapeExtraColourBys[i]) tipLabelShapeExtraColourBys[i].value = v; });
     }
+    if (branchShapeEl && s.branchShape) branchShapeEl.value = s.branchShape;
+    if (branchShapeHeightSlider && s.branchShapeHeightPct != null) {
+      branchShapeHeightSlider.value = s.branchShapeHeightPct;
+      $('branch-shape-height-value').textContent = s.branchShapeHeightPct;
+    }
+    if (branchShapeWidthSlider && s.branchShapeWidth != null) {
+      branchShapeWidthSlider.value = s.branchShapeWidth;
+      $('branch-shape-width-value').textContent = s.branchShapeWidth;
+    }
+    if (branchShapeAlignEl && s.branchShapeAlign) branchShapeAlignEl.value = s.branchShapeAlign;
+    if (branchShapeSpacingSlider && s.branchShapeSpacing != null) {
+      branchShapeSpacingSlider.value = s.branchShapeSpacing;
+      $('branch-shape-spacing-value').textContent = s.branchShapeSpacing;
+    }
+    if (branchShapeColorEl && s.branchShapeColor) branchShapeColorEl.value = s.branchShapeColor;
+    if (branchShapeColourByEl && s.branchShapeColourBy) branchShapeColourByEl.value = s.branchShapeColourBy;
+    if (branchShapeCountByEl && s.branchShapeCountBy != null) branchShapeCountByEl.value = s.branchShapeCountBy;
+    if (branchShapeHaloSlider && s.branchShapeHalo != null) {
+      branchShapeHaloSlider.value = s.branchShapeHalo;
+      $('branch-shape-halo-value').textContent = s.branchShapeHalo;
+    }
+    if (branchShapeHaloColorEl && s.branchShapeHaloColor) branchShapeHaloColorEl.value = s.branchShapeHaloColor;
+    if (Array.isArray(s.branchShapesExtra)) {
+      s.branchShapesExtra.forEach((v, i) => { if (branchShapeExtraEls[i]) branchShapeExtraEls[i].value = v; });
+    }
+    if (Array.isArray(s.branchShapesExtraColors)) {
+      s.branchShapesExtraColors.forEach((v, i) => { if (branchShapeExtraColors[i] && v) branchShapeExtraColors[i].value = v; });
+    }
+    if (Array.isArray(s.branchShapesExtraColourBys)) {
+      s.branchShapesExtraColourBys.forEach((v, i) => { if (branchShapeExtraColourBys[i]) branchShapeExtraColourBys[i].value = v; });
+    }
+    if (Array.isArray(s.branchShapesExtraCountBys)) {
+      s.branchShapesExtraCountBys.forEach((v, i) => { if (branchShapeExtraCountBys[i]) branchShapeExtraCountBys[i].value = v; });
+    }
     if (s.nodeSize       != null) {
       nodeSlider.value = s.nodeSize;
       $('node-size-value').textContent = s.nodeSize;
@@ -1431,6 +1507,32 @@ async function _initCore(root = document) {
     tipLabelShapeExtraEls.forEach(e => { e.value = 'off'; });
     tipLabelShapeExtraColourBys.forEach(e => { e.value = 'user_colour'; });
     _cascadeMemory.fill(null);
+    if (branchShapeEl) branchShapeEl.value = DEFAULT_SETTINGS.branchShape;
+    if (branchShapeHeightSlider) {
+      branchShapeHeightSlider.value = DEFAULT_SETTINGS.branchShapeHeightPct;
+      $('branch-shape-height-value').textContent = DEFAULT_SETTINGS.branchShapeHeightPct;
+    }
+    if (branchShapeWidthSlider) {
+      branchShapeWidthSlider.value = DEFAULT_SETTINGS.branchShapeWidth;
+      $('branch-shape-width-value').textContent = DEFAULT_SETTINGS.branchShapeWidth;
+    }
+    if (branchShapeAlignEl) branchShapeAlignEl.value = DEFAULT_SETTINGS.branchShapeAlign;
+    if (branchShapeSpacingSlider) {
+      branchShapeSpacingSlider.value = DEFAULT_SETTINGS.branchShapeSpacing;
+      $('branch-shape-spacing-value').textContent = DEFAULT_SETTINGS.branchShapeSpacing;
+    }
+    if (branchShapeColorEl) branchShapeColorEl.value = DEFAULT_SETTINGS.branchShapeColor;
+    if (branchShapeColourByEl) branchShapeColourByEl.value = DEFAULT_SETTINGS.branchShapeColourBy;
+    if (branchShapeCountByEl) branchShapeCountByEl.value = DEFAULT_SETTINGS.branchShapeCountBy;
+    if (branchShapeHaloSlider) {
+      branchShapeHaloSlider.value = DEFAULT_SETTINGS.branchShapeHalo;
+      $('branch-shape-halo-value').textContent = DEFAULT_SETTINGS.branchShapeHalo;
+    }
+    if (branchShapeHaloColorEl) branchShapeHaloColorEl.value = DEFAULT_SETTINGS.branchShapeHaloColor;
+    branchShapeExtraEls.forEach(e => { if (e) e.value = 'off'; });
+    branchShapeExtraColors.forEach((e, i) => { if (e) e.value = DEFAULT_SETTINGS.branchShapesExtraColors?.[i] || '#aaaaaa'; });
+    branchShapeExtraColourBys.forEach(e => { if (e) e.value = 'user_colour'; });
+    branchShapeExtraCountBys.forEach(e => { if (e) e.value = ''; });
 
     if (renderer) {
       renderer.setTipColourBy('user_colour');
@@ -1564,6 +1666,20 @@ async function _initCore(root = document) {
       tipLabelShapeMarginLeft:  parseInt(tipLabelShapeMarginLeftSlider.value),
       tipLabelShapeSpacing:     parseInt(tipLabelShapeSpacingSlider.value),
       tipLabelShapesExtra:      tipLabelShapeExtraEls.map(e => e.value),
+      branchShape:              branchShapeEl?.value || 'off',
+      branchShapeHeightPct:     parseInt(branchShapeHeightSlider?.value ?? DEFAULT_SETTINGS.branchShapeHeightPct),
+      branchShapeWidth:         parseInt(branchShapeWidthSlider?.value ?? DEFAULT_SETTINGS.branchShapeWidth),
+      branchShapeAlign:         branchShapeAlignEl?.value || DEFAULT_SETTINGS.branchShapeAlign,
+      branchShapeSpacing:       parseInt(branchShapeSpacingSlider?.value ?? DEFAULT_SETTINGS.branchShapeSpacing),
+      branchShapeColor:         branchShapeColorEl?.value || '#aaaaaa',
+      branchShapeColourBy:      branchShapeColourByEl?.value || null,
+      branchShapeCountBy:       branchShapeCountByEl?.value || null,
+      branchShapeHalo:          parseInt(branchShapeHaloSlider?.value ?? DEFAULT_SETTINGS.branchShapeHalo),
+      branchShapeHaloColor:     branchShapeHaloColorEl?.value || '#02292e',
+      branchShapesExtra:        branchShapeExtraEls.map(e => e?.value || 'off'),
+      branchShapesExtraColors:  branchShapeExtraColors.map(e => e?.value || '#aaaaaa'),
+      branchShapesExtraColourBys: branchShapeExtraColourBys.map(e => e?.value || null),
+      branchShapesExtraCountBys: branchShapeExtraCountBys.map(e => e?.value || null),
       tipLabelTypefaceKey:   tipLabelTypefaceEl?.value || null,
       tipLabelTypefaceStyle: typefaceStyleEl?.value   || null,
       nodeLabelAnnotation: nodeLabelShowEl.value || null,
@@ -1598,6 +1714,7 @@ async function _initCore(root = document) {
       nodeBarsFilter:              nodeBarsFilterEl?.value     || null,
       nodeLabelsFilter:            nodeLabelsFilterEl?.value   || null,
       branchLabelsFilter:          branchLabelsFilterEl?.value || null,
+      branchShapesFilter:          branchShapesFilterEl?.value || null,
       tipLabelsFilter:             tipLabelsFilterEl?.value    || null,
       nodeShapesFilter:            nodeShapesFilterEl?.value   || null,
       tipShapesFilter:             tipShapesFilterEl?.value    || null,
@@ -1621,6 +1738,7 @@ async function _initCore(root = document) {
     const nodeLabelsOn   = nodeLabelShowEl.value !== '';
     const branchLabelsOn = branchLabelShowEl.value !== '';
     const nodeBarsOn     = nodeBarsShowEl.value === 'on';
+    const branchShapesOn = branchShapeEl?.value !== 'off';
 
     _showRowForControl(tipShapesFilterEl, tipShapesOn);
     _showRowForControl(nodeShapesFilterEl, nodeShapesOn);
@@ -1628,6 +1746,7 @@ async function _initCore(root = document) {
     _showRowForControl(nodeLabelsFilterEl, nodeLabelsOn);
     _showRowForControl(branchLabelsFilterEl, branchLabelsOn);
     _showRowForControl(nodeBarsFilterEl, nodeBarsOn);
+    _showRowForControl(branchShapesFilterEl, branchShapesOn);
 
     _vis(tipShapeDetailEl,      tipShapesOn);
     _vis(nodeShapeDetailEl,     nodeShapesOn);
@@ -1641,6 +1760,12 @@ async function _initCore(root = document) {
       const prevValue = i === 0 ? tipLabelShapeEl.value : tipLabelShapeExtraEls[i - 1].value;
       _vis(tipLabelShapeExtraSectionEls[i], _shapeOneOn && prevValue !== 'off');
       _vis(tipLabelShapeExtraDetailEls[i],  _shapeOneOn && tipLabelShapeExtraEls[i].value !== 'off');
+    }
+    _vis(branchShapeDetailEl, branchShapesOn);
+    for (let i = 0; i < branchShapeExtraSectionEls.length; i++) {
+      const prevValue = i === 0 ? branchShapeEl.value : branchShapeExtraEls[i - 1]?.value;
+      _vis(branchShapeExtraSectionEls[i], branchShapesOn && prevValue !== 'off');
+      _vis(branchShapeExtraDetailEls[i],  branchShapesOn && branchShapeExtraEls[i]?.value !== 'off');
     }
     _vis(nodeLabelDetailEl,     nodeLabelsOn);
     _vis(branchLabelDetailEl,   branchLabelsOn);
@@ -1768,6 +1893,11 @@ async function _initCore(root = document) {
     if (collapsedCladeTypefaceEl) collapsedCladeTypefaceEl.value = t.collapsedCladeTypefaceKey || '';
     _populateStyleSelect(collapsedCladeTypefaceEl?.value || fontFamilyEl.value, collapsedCladeTypefaceStyleEl, t.collapsedCladeTypefaceStyle || '', true);
     tipLabelShapeColorEl.value  = t.tipLabelShapeColor  || t.tipShapeColor;
+    if (branchShapeColorEl) branchShapeColorEl.value = t.branchShapeColor || '#aaaaaa';
+    if (branchShapeHaloColorEl) branchShapeHaloColorEl.value = t.branchShapeHaloColor || '#02292e';
+    if (branchShapeExtraColors[0]) branchShapeExtraColors[0].value = t.branchShape2Color || '#aaaaaa';
+    if (branchShapeExtraColors[1]) branchShapeExtraColors[1].value = t.branchShape3Color || '#aaaaaa';
+    if (branchShapeExtraColors[2]) branchShapeExtraColors[2].value = t.branchShape4Color || '#aaaaaa';
     // RTT plot colours — rttAxisColor and rttRegressionColor default to '' (inherit)
     if (t.rttAxisColor)       rttAxisColorEl.value       = t.rttAxisColor;
     rttStatsBgColorEl.value    = t.rttStatsBgColor;
@@ -2024,6 +2154,38 @@ async function _initCore(root = document) {
     tipLabelShapeSizeSlider.value = _saved.tipLabelShapeSize;
     $('tip-label-shape-size-value').textContent = _saved.tipLabelShapeSize;
   }
+  if (branchShapeEl && _saved.branchShape) branchShapeEl.value = _saved.branchShape;
+  if (branchShapeHeightSlider && _saved.branchShapeHeightPct != null) {
+    branchShapeHeightSlider.value = _saved.branchShapeHeightPct;
+    $('branch-shape-height-value').textContent = _saved.branchShapeHeightPct;
+  }
+  if (branchShapeWidthSlider && _saved.branchShapeWidth != null) {
+    branchShapeWidthSlider.value = _saved.branchShapeWidth;
+    $('branch-shape-width-value').textContent = _saved.branchShapeWidth;
+  }
+  if (branchShapeAlignEl && _saved.branchShapeAlign) branchShapeAlignEl.value = _saved.branchShapeAlign;
+  if (branchShapeSpacingSlider && _saved.branchShapeSpacing != null) {
+    branchShapeSpacingSlider.value = _saved.branchShapeSpacing;
+    $('branch-shape-spacing-value').textContent = _saved.branchShapeSpacing;
+  }
+  if (branchShapeColorEl && _saved.branchShapeColor) branchShapeColorEl.value = _saved.branchShapeColor;
+  if (branchShapeHaloSlider && _saved.branchShapeHalo != null) {
+    branchShapeHaloSlider.value = _saved.branchShapeHalo;
+    $('branch-shape-halo-value').textContent = _saved.branchShapeHalo;
+  }
+  if (branchShapeHaloColorEl && _saved.branchShapeHaloColor) branchShapeHaloColorEl.value = _saved.branchShapeHaloColor;
+  if (Array.isArray(_saved.branchShapesExtra)) {
+    _saved.branchShapesExtra.forEach((v, i) => { if (branchShapeExtraEls[i]) branchShapeExtraEls[i].value = v; });
+  }
+  if (Array.isArray(_saved.branchShapesExtraColors)) {
+    _saved.branchShapesExtraColors.forEach((v, i) => { if (branchShapeExtraColors[i] && v) branchShapeExtraColors[i].value = v; });
+  }
+  if (Array.isArray(_saved.branchShapesExtraColourBys)) {
+    _saved.branchShapesExtraColourBys.forEach((v, i) => { if (branchShapeExtraColourBys[i]) branchShapeExtraColourBys[i].value = v; });
+  }
+  if (Array.isArray(_saved.branchShapesExtraCountBys)) {
+    _saved.branchShapesExtraCountBys.forEach((v, i) => { if (branchShapeExtraCountBys[i]) branchShapeExtraCountBys[i].value = v; });
+  }
   if (_saved.nodeSize       != null) {
     nodeSlider.value = _saved.nodeSize;
     $('node-size-value').textContent = _saved.nodeSize;
@@ -2141,8 +2303,8 @@ async function _initCore(root = document) {
   // Restore filter manager state
   // (only select values here — filterManager itself is created later;
   //  the definitions are loaded into it after creation below)
-  const _filterSelectIds = ['nodeBarsFilter', 'nodeLabelsFilter', 'branchLabelsFilter', 'tipLabelsFilter', 'nodeShapesFilter', 'tipShapesFilter'];
-  const _filterSelectEls = [nodeBarsFilterEl, nodeLabelsFilterEl, branchLabelsFilterEl, tipLabelsFilterEl, nodeShapesFilterEl, tipShapesFilterEl];
+  const _filterSelectIds = ['nodeBarsFilter', 'nodeLabelsFilter', 'branchLabelsFilter', 'branchShapesFilter', 'tipLabelsFilter', 'nodeShapesFilter', 'tipShapesFilter'];
+  const _filterSelectEls = [nodeBarsFilterEl, nodeLabelsFilterEl, branchLabelsFilterEl, branchShapesFilterEl, tipLabelsFilterEl, nodeShapesFilterEl, tipShapesFilterEl];
   for (let i = 0; i < _filterSelectIds.length; i++) {
     const val = _saved[_filterSelectIds[i]];
     if (val && _filterSelectEls[i]) _filterSelectEls[i].value = val;
@@ -2718,6 +2880,7 @@ async function _initCore(root = document) {
       renderer.setNodeColourBy(nodeColourBy.value    || null);
       renderer.setLabelColourBy(labelColourBy.value  || null);
       renderer.setTipLabelShapeColourBy(tipLabelShapeColourBy.value || null);
+      renderer.setSettings(_buildRendererSettings());
       for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++)
         renderer.setTipLabelShapeExtraColourBy(_i, tipLabelShapeExtraColourBys[_i].value || null);
       renderer.setTipLabelsOff(tipLabelShow.value === 'off');
@@ -2818,7 +2981,7 @@ async function _initCore(root = document) {
   function _refreshFilterUIs(filterMap) {
     const selects = [
       nodeBarsFilterEl, nodeLabelsFilterEl, branchLabelsFilterEl,
-      tipLabelsFilterEl, nodeShapesFilterEl, tipShapesFilterEl,
+      branchShapesFilterEl, tipLabelsFilterEl, nodeShapesFilterEl, tipShapesFilterEl,
     ];
     for (const sel of selects) {
       if (!sel) continue;
@@ -2845,6 +3008,7 @@ async function _initCore(root = document) {
   nodeBarsFilterEl?.addEventListener('change',     _onFilterSelectChange);
   nodeLabelsFilterEl?.addEventListener('change',   _onFilterSelectChange);
   branchLabelsFilterEl?.addEventListener('change', _onFilterSelectChange);
+  branchShapesFilterEl?.addEventListener('change', _onFilterSelectChange);
   tipLabelsFilterEl?.addEventListener('change',    _onFilterSelectChange);
   nodeShapesFilterEl?.addEventListener('change',   _onFilterSelectChange);
   tipShapesFilterEl?.addEventListener('change',    _onFilterSelectChange);
@@ -3388,6 +3552,27 @@ async function _initCore(root = document) {
       sel.value = [...sel.options].some(o => o.value === prev) ? prev
                   : (isLegend ? '' : 'user_colour');
     }
+
+    function repopulateCountBy(sel, { filter = 'all' } = {}) {
+      if (!sel) return;
+      const prev = sel.value;
+      while (sel.options.length > 1) sel.remove(1); // keep static "Off" option
+      for (const [name, def] of schema) {
+        if (name === 'user_colour') continue;
+        if (def.groupMember) continue;
+        if (def.dataType !== 'integer') continue;
+        if (filter === 'tips' && !def.onTips) continue;
+        if (filter === 'nodes' && !def.onNodes) continue;
+        const lo = Number.isFinite(def.observedMin) ? def.observedMin : (Number.isFinite(def.min) ? def.min : null);
+        const hi = Number.isFinite(def.observedMax) ? def.observedMax : (Number.isFinite(def.max) ? def.max : null);
+        if (lo != null && hi != null && (hi < 0 || lo > 99)) continue;
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = def.label ?? name;
+        sel.appendChild(opt);
+      }
+      sel.disabled = false;
+      sel.value = [...sel.options].some(o => o.value === prev) ? prev : '';
+    }
     repopulate(tipColourBy,          { filter: 'tips'  });
     repopulate(nodeColourBy,         { filter: 'nodesAndTipAvg' });
     repopulate(labelColourBy,        { filter: 'tips'  });
@@ -3400,6 +3585,10 @@ async function _initCore(root = document) {
     for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) {
       repopulate(tipLabelShapeExtraColourBys[i], { filter: 'tips' });
     }
+    repopulate(branchShapeColourByEl, { filter: 'nodesAndTipAvg' });
+    branchShapeExtraColourBys.forEach(sel => repopulate(sel, { filter: 'nodesAndTipAvg' }));
+    repopulateCountBy(branchShapeCountByEl, { filter: 'nodesAndTipAvg' });
+    branchShapeExtraCountBys.forEach(sel => repopulateCountBy(sel, { filter: 'nodesAndTipAvg' }));
     repopulate(legendAnnotEl,        { isLegend: true  });
     repopulate(legend2AnnotEl,       { isLegend: true  });
     repopulate(legend3AnnotEl,       { isLegend: true  });
@@ -3487,6 +3676,8 @@ async function _initCore(root = document) {
     for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) {
       _updateConfigureBtn(tipLabelShapeExtraConfigureRows[i], tipLabelShapeExtraColourBys[i].value);
     }
+    _updateConfigureBtn(branchShapeConfigureRow, branchShapeColourByEl?.value || 'user_colour');
+    branchShapeExtraConfigureRows.forEach((row, i) => _updateConfigureBtn(row, branchShapeExtraColourBys[i]?.value || 'user_colour'));
     _updateConfigureBtn(cladeHighlightConfigureRow, cladeHighlightColourByEl?.value ?? 'user_colour');
     _updateConfigureBtn(collapsedCladeConfigureRow, collapsedCladeColourByEl?.value ?? 'user_colour');
     if (nodeLabelColourBy)   _updateConfigureBtn(nodeLabelConfigureRow,   nodeLabelColourBy.value);
@@ -3824,8 +4015,31 @@ async function _initCore(root = document) {
       _populateColourBy(labelColourBy,        'tips');
       _populateColourBy(tipLabelShapeColourBy, 'tips');
       for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++) _populateColourBy(tipLabelShapeExtraColourBys[_i], 'tips');
+      _populateColourBy(branchShapeColourByEl, 'nodesAndTipAvg');
+      branchShapeExtraColourBys.forEach(sel => _populateColourBy(sel, 'nodesAndTipAvg'));
       if (nodeLabelColourBy)   _populateColourBy(nodeLabelColourBy,   'nodesAndTipAvg');
       if (branchLabelColourBy) _populateColourBy(branchLabelColourBy, 'nodesAndTipAvg');
+
+      function _populateCountBy(sel, filter = 'all') {
+        if (!sel) return;
+        while (sel.options.length > 1) sel.remove(1);
+        for (const [name, def] of schema) {
+          if (name === 'user_colour') continue;
+          if (def.groupMember) continue;
+          if (def.dataType !== 'integer') continue;
+          if (filter === 'tips' && !def.onTips) continue;
+          if (filter === 'nodes' && !def.onNodes) continue;
+          const lo = Number.isFinite(def.observedMin) ? def.observedMin : (Number.isFinite(def.min) ? def.min : null);
+          const hi = Number.isFinite(def.observedMax) ? def.observedMax : (Number.isFinite(def.max) ? def.max : null);
+          if (lo != null && hi != null && (hi < 0 || lo > 99)) continue;
+          const opt = document.createElement('option');
+          opt.value = name; opt.textContent = def.label ?? name;
+          sel.appendChild(opt);
+        }
+        sel.disabled = false;
+      }
+      _populateCountBy(branchShapeCountByEl, 'nodesAndTipAvg');
+      branchShapeExtraCountBys.forEach(sel => _populateCountBy(sel, 'nodesAndTipAvg'));
       if (cladeHighlightColourByEl) {
         while (cladeHighlightColourByEl.options.length > 0) cladeHighlightColourByEl.remove(0);
         const _chUc = document.createElement('option');
@@ -3988,6 +4202,9 @@ async function _initCore(root = document) {
       nodeColourBy.value         = _hasOpt(nodeColourBy,         _eff.nodeColourBy)          ? _eff.nodeColourBy          : 'user_colour';
       labelColourBy.value        = _hasOpt(labelColourBy,        _eff.labelColourBy)         ? _eff.labelColourBy         : 'user_colour';
       tipLabelShapeColourBy.value = _hasOpt(tipLabelShapeColourBy, _eff.tipLabelShapeColourBy) ? _eff.tipLabelShapeColourBy : 'user_colour';
+      if (branchShapeColourByEl) {
+        branchShapeColourByEl.value = _hasOpt(branchShapeColourByEl, _eff.branchShapeColourBy) ? _eff.branchShapeColourBy : 'user_colour';
+      }
       if (Array.isArray(_eff.tipLabelShapeExtraColourBys)) {
         _eff.tipLabelShapeExtraColourBys.forEach((v, i) => {
           if (tipLabelShapeExtraColourBys[i])
@@ -3996,6 +4213,19 @@ async function _initCore(root = document) {
       } else if (_eff.tipLabelShape2ColourBy) {
         // Backward compat: old single tipLabelShape2ColourBy key
         tipLabelShapeExtraColourBys[0].value = _hasOpt(tipLabelShapeExtraColourBys[0], _eff.tipLabelShape2ColourBy) ? _eff.tipLabelShape2ColourBy : 'user_colour';
+      }
+      if (Array.isArray(_eff.branchShapesExtraColourBys)) {
+        _eff.branchShapesExtraColourBys.forEach((v, i) => {
+          if (branchShapeExtraColourBys[i])
+            branchShapeExtraColourBys[i].value = _hasOpt(branchShapeExtraColourBys[i], v) ? v : 'user_colour';
+        });
+      }
+      const _hasCountOpt = (sel, key) => key && [...sel.options].some(o => o.value === key);
+      if (branchShapeCountByEl) branchShapeCountByEl.value = _hasCountOpt(branchShapeCountByEl, _eff.branchShapeCountBy) ? _eff.branchShapeCountBy : '';
+      if (Array.isArray(_eff.branchShapesExtraCountBys)) {
+        _eff.branchShapesExtraCountBys.forEach((v, i) => {
+          if (branchShapeExtraCountBys[i]) branchShapeExtraCountBys[i].value = _hasCountOpt(branchShapeExtraCountBys[i], v) ? v : '';
+        });
       }
       legendAnnotEl.value        = _hasOpt(legendAnnotEl,        _eff.legendAnnotation)      ? _eff.legendAnnotation      : '';
       legend2AnnotEl.value       = _hasOpt(legend2AnnotEl,       _eff.legendAnnotation2)     ? _eff.legendAnnotation2     : '';
@@ -4049,6 +4279,7 @@ async function _initCore(root = document) {
       renderer.setNodeColourBy(nodeColourBy.value   || null);
       renderer.setLabelColourBy(labelColourBy.value || null);
       renderer.setTipLabelShapeColourBy(tipLabelShapeColourBy.value || null);
+      renderer.setSettings(_buildRendererSettings());
       for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++)
         renderer.setTipLabelShapeExtraColourBy(_i, tipLabelShapeExtraColourBys[_i].value || null);
       renderer.setTipLabelsOff(tipLabelShow.value === 'off');
@@ -4064,6 +4295,8 @@ async function _initCore(root = document) {
       _updateConfigureBtn(tipLabelShapeConfigureRow,      tipLabelShapeColourBy.value);
       for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++)
         _updateConfigureBtn(tipLabelShapeExtraConfigureRows[_i], tipLabelShapeExtraColourBys[_i].value);
+      _updateConfigureBtn(branchShapeConfigureRow,      branchShapeColourByEl?.value || 'user_colour');
+      branchShapeExtraConfigureRows.forEach((row, i) => _updateConfigureBtn(row, branchShapeExtraColourBys[i]?.value || 'user_colour'));
       if (nodeLabelColourBy)   _updateConfigureBtn(nodeLabelConfigureRow,   nodeLabelColourBy.value);
       if (branchLabelColourBy) _updateConfigureBtn(branchLabelConfigureRow, branchLabelColourBy.value);
       _updateConfigureBtn(cladeHighlightConfigureRow, cladeHighlightColourByEl?.value ?? 'user_colour');
@@ -6582,6 +6815,54 @@ async function _initCore(root = document) {
     renderer.setTipLabelShapeSize(v);
     saveSettings(); _markCustomTheme();
   });
+
+  // ── Branch-shape controls ────────────────────────────────────────────────
+
+  const _applyBranchShapeSettings = ({ markTheme = false } = {}) => {
+    if (!renderer) return;
+    renderer.setSettings(_buildRendererSettings());
+    _syncControlVisibility();
+    saveSettings();
+    if (markTheme) _markCustomTheme();
+  };
+
+  branchShapeEl?.addEventListener('change', () => _applyBranchShapeSettings({ markTheme: true }));
+  branchShapeHeightSlider?.addEventListener('input', () => {
+    $('branch-shape-height-value').textContent = branchShapeHeightSlider.value;
+    _applyBranchShapeSettings({ markTheme: true });
+  });
+  branchShapeWidthSlider?.addEventListener('input', () => {
+    $('branch-shape-width-value').textContent = branchShapeWidthSlider.value;
+    _applyBranchShapeSettings({ markTheme: true });
+  });
+  branchShapeAlignEl?.addEventListener('change', () => _applyBranchShapeSettings({ markTheme: true }));
+  branchShapeSpacingSlider?.addEventListener('input', () => {
+    $('branch-shape-spacing-value').textContent = branchShapeSpacingSlider.value;
+    _applyBranchShapeSettings({ markTheme: true });
+  });
+  branchShapeColorEl?.addEventListener('input', () => _applyBranchShapeSettings({ markTheme: true }));
+  branchShapeHaloSlider?.addEventListener('input', () => {
+    $('branch-shape-halo-value').textContent = branchShapeHaloSlider.value;
+    _applyBranchShapeSettings({ markTheme: true });
+  });
+  branchShapeHaloColorEl?.addEventListener('input', () => _applyBranchShapeSettings({ markTheme: true }));
+  branchShapeColourByEl?.addEventListener('change', () => {
+    _updateConfigureBtn(branchShapeConfigureRow, branchShapeColourByEl.value);
+    _applyBranchShapeSettings();
+  });
+  branchShapeCountByEl?.addEventListener('change', () => _applyBranchShapeSettings());
+  $('branch-shape-configure-btn')?.addEventListener('click', () => openAnnotConfig(branchShapeColourByEl?.value));
+
+  for (let i = 0; i < branchShapeExtraEls.length; i++) {
+    branchShapeExtraEls[i]?.addEventListener('change', () => _applyBranchShapeSettings({ markTheme: true }));
+    branchShapeExtraColors[i]?.addEventListener('input', () => _applyBranchShapeSettings({ markTheme: true }));
+    branchShapeExtraColourBys[i]?.addEventListener('change', () => {
+      _updateConfigureBtn(branchShapeExtraConfigureRows[i], branchShapeExtraColourBys[i].value);
+      _applyBranchShapeSettings();
+    });
+    branchShapeExtraCountBys[i]?.addEventListener('change', () => _applyBranchShapeSettings());
+    branchShapeExtraConfigureBtns[i]?.addEventListener('click', () => openAnnotConfig(branchShapeExtraColourBys[i]?.value));
+  }
 
   // ── Legend controls ───────────────────────────────────────────────────────
 

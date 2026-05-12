@@ -29,6 +29,12 @@ export const DEFAULT_THEME = {
         "nodeShapeColor": "#4b4b49",
         "nodeHaloSize": "1",
         "nodeShapeBgColor": "#ebe8e2",
+        // Branch Shapes
+        "branchShapeColor": "#aaaaaa",
+        "branchShapeHaloColor": "#ebe8e2",
+        "branchShape2Color": "#aaaaaa",
+        "branchShape3Color": "#aaaaaa",
+        "branchShape4Color": "#aaaaaa",
         // Node Labels
         "nodeLabelFontSize": "9",
         "nodeLabelTypefaceKey": "",

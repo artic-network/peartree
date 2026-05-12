@@ -76,6 +76,8 @@ export const REQUIRED_THEME_KEYS = [
   'tipSize', 'tipShapeColor', 'tipHaloSize', 'tipShapeBgColor',
   // Node Shapes
   'nodeSize', 'nodeShapeColor', 'nodeHaloSize', 'nodeShapeBgColor',
+  // Branch Shapes
+  'branchShapeColor', 'branchShapeHaloColor', 'branchShape2Color', 'branchShape3Color', 'branchShape4Color',
   // Node Labels
   'nodeLabelFontSize', 'nodeLabelTypefaceKey', 'nodeLabelTypefaceStyle',
   'nodeLabelColor', 'nodeLabelSpacing',
@@ -153,6 +155,24 @@ export const DEFAULT_SETTINGS = {
   // ── Node Labels ───────────────────────────────────────────────────────────────────
   nodeLabelAnnotation: '',          // '' = off | annotation key
   nodeLabelPosition:   'right',     // 'right' | 'above-left' | 'below-left'
+
+  // ── Branch Shapes ────────────────────────────────────────────────────────────────
+  branchShape:             'off',      // 'off' | 'rectangle' | 'ellipse'
+  branchShapeHeightPct:    '50',       // % of tip spacing
+  branchShapeWidth:        '8',        // px
+  branchShapeAlign:        'center',   // 'center' | 'left' | 'right'
+  branchShapeSpacing:      '3',        // px between shapes and at ends
+  branchShapeColor:        '#aaaaaa',
+  branchShapeColourBy:     'user_colour',
+  branchShapeCountBy:      '',         // '' = fixed one shape per branch
+  branchShapeHalo:         '0',        // px
+  branchShapeHaloColor:    '#02292e',
+  branchShapesFilter:      null,
+  // Extra branch shape sets 2–4 (share shape 1 geometry/halo/filter)
+  branchShapesExtra:         ['off', 'off', 'off'],
+  branchShapesExtraColors:   ['#aaaaaa', '#aaaaaa', '#aaaaaa'],
+  branchShapesExtraColourBys:['user_colour', 'user_colour', 'user_colour'],
+  branchShapesExtraCountBys: ['', '', ''],
 
   // ── Branch Labels ─────────────────────────────────────────────────────────────────
   branchLabelAnnotation: '',        // '' = off | annotation key

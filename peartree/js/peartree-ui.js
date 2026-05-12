@@ -171,6 +171,37 @@ function _sectionNodeShapes() {
     </div>`;
 }
 
+function _sectionBranchShapes() {
+  return `
+    <div class="pt-palette-section">
+      <h3><i class="bi bi-diagram-2"></i> Branch Shapes</h3>
+      <div class="pt-palette-row" title="Shape drawn along each branch"><span class="pt-palette-label">Shape</span><select class="pt-palette-select" id="branch-shape"><option value="off">Off</option><option value="rectangle">Rectangle</option><option value="ellipse">Ellipse</option></select></div>
+      <div class="pt-palette-row" title="Only draw branch shapes on branches that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="branch-shapes-filter" disabled><option value="">— always —</option></select></div>
+      <div id="branch-shape-detail" class="pt-detail pt-sub-controls">
+        <div class="pt-palette-row" title="Shape height as a percentage of tip spacing"><span class="pt-palette-label">Height <i class="bi bi-arrows-vertical form-label-sm"></i></span><input type="range" class="form-range" id="branch-shape-height-slider" min="1" max="100" step="1" value="50" /><span class="pt-val" id="branch-shape-height-value">50</span></div>
+        <div class="pt-palette-row" title="Shape width in screen pixels"><span class="pt-palette-label">Width <i class="bi bi-arrows-expand form-label-sm"></i></span><input type="range" class="form-range" id="branch-shape-width-slider" min="1" max="100" step="1" value="8" /><span class="pt-val" id="branch-shape-width-value">8</span></div>
+        <div class="pt-palette-row" title="Horizontal alignment of shape groups along the branch"><span class="pt-palette-label">Align <i class="bi bi-distribute-horizontal form-label-sm"></i></span><select class="pt-palette-select" id="branch-shape-align"><option value="center">Centre</option><option value="left">Left</option><option value="right">Right</option></select></div>
+        <div class="pt-palette-row" title="Gap between shapes and branch-edge padding in pixels"><span class="pt-palette-label">Spacing <i class="bi bi-arrows form-label-sm"></i></span><input type="range" class="form-range" id="branch-shape-spacing-slider" min="0" max="30" step="1" value="3" /><span class="pt-val" id="branch-shape-spacing-value">3</span></div>
+        <div class="pt-palette-row" title="Fill colour of branch shapes"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="branch-shape-color" value="#aaaaaa" /></div>
+        <div class="pt-palette-row" title="Colour branch shapes by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="branch-shape-colour-by" disabled><option value="user_colour">user colour</option></select></div>
+        <div class="pt-palette-row" id="branch-shape-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="branch-shape-configure-btn">Configure</button></div>
+        <div class="pt-palette-row" title="Integer annotation key controlling shapes per branch (0–99)"><span class="pt-palette-label">No. <i class="bi bi-123 form-label-sm"></i></span><select class="pt-palette-select" id="branch-shape-count-by" disabled><option value="">Fixed 1</option></select></div>
+        <div class="pt-palette-row" title="Halo width around branch shapes in pixels"><span class="pt-palette-label">Halo <i class="bi bi-bounding-box form-label-sm"></i></span><input type="range" class="form-range" id="branch-shape-halo-slider" min="0" max="8" step="1" value="0" /><span class="pt-val" id="branch-shape-halo-value">0</span></div>
+        <div class="pt-palette-row" title="Halo colour behind branch shapes"><span class="pt-palette-label">Halo col. <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="branch-shape-halo-color" value="#02292e" /></div>
+      </div>
+      ${[2,3,4].map(n => `
+      <div id="branch-shape-${n}-section" class="pt-detail">
+        <div class="pt-palette-row" title="Additional branch shape group ${n}"><span class="pt-palette-label">Shape ${n}</span><select class="pt-palette-select" id="branch-shape-${n}"><option value="off">Off</option><option value="rectangle">Rectangle</option><option value="ellipse">Ellipse</option></select></div>
+        <div id="branch-shape-${n}-detail" class="pt-detail pt-sub-controls">
+          <div class="pt-palette-row" title="Fill colour for branch shape group ${n}"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="branch-shape-${n}-color" value="#aaaaaa" /></div>
+          <div class="pt-palette-row" title="Colour branch shape group ${n} by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="branch-shape-${n}-colour-by" disabled><option value="user_colour">user colour</option></select></div>
+          <div class="pt-palette-row" id="branch-shape-${n}-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="branch-shape-${n}-configure-btn">Configure</button></div>
+          <div class="pt-palette-row" title="Integer annotation key controlling number of shapes in group ${n} (0–99)"><span class="pt-palette-label">No. <i class="bi bi-123 form-label-sm"></i></span><select class="pt-palette-select" id="branch-shape-${n}-count-by" disabled><option value="">Fixed 1</option></select></div>
+        </div>
+      </div>`).join('')}
+    </div>`;
+}
+
 function _sectionNodeBars() {
   return `
     <div class="pt-palette-section" id="node-bars-section">
@@ -386,6 +417,7 @@ const _SECTION_BUILDERS = {
   labelShapes:     _sectionLabelShapes,
   tipShapes:       _sectionTipShapes,
   nodeShapes:      _sectionNodeShapes,
+  branchShapes:    _sectionBranchShapes,
   nodeLabels:      _sectionNodeLabels,
   nodeBars:        _sectionNodeBars,
   cladeHighlights: _sectionCladeHighlights,
@@ -398,7 +430,7 @@ const _SECTION_BUILDERS = {
 };
 
 const _ALL_SECTIONS = [
-  'tree', 'branches', 'tipLabels', 'branchLabels', 'nodeLabels', 'labelShapes', 'tipShapes', 'nodeShapes',
+  'tree', 'branches', 'tipLabels', 'branchLabels', 'nodeLabels', 'labelShapes', 'tipShapes', 'nodeShapes', 'branchShapes',
   'nodeBars', 'cladeHighlights', 'collapsedClades', 'legend', 'axis', 'rtt', 'theme',
   'selectionHover', 
 ];
