@@ -141,6 +141,15 @@ The lists below are a quick grouped view.
 - `branchLabelAnnotation`
 - `branchLabelPosition`
 - `branchLabelDecimalPlaces`
+- `branchShape`
+- `branchShapeHeightPct`
+- `branchShapeWidth`
+- `branchShapeAlign`
+- `branchShapeSpacing`
+- `branchShapeFilter`
+- `branchShapeColorBy`
+- `branchShapeCountBy`
+- `branchShapesExtra`
 - `nodeBarsEnabled`
 - `nodeBarsLine`
 - `nodeBarsRange`
@@ -212,6 +221,11 @@ The lists below are a quick grouped view.
 - `branchLabelTypefaceStyle`
 - `branchLabelColor`
 - `branchLabelSpacing`
+- `branchShapeColor`
+- `branchShapeHaloColor`
+- `branchShape2Color`
+- `branchShape3Color`
+- `branchShape4Color`
 - `nodeBarsColor`
 - `nodeBarsWidth`
 - `nodeBarsFillOpacity`

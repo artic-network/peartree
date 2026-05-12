@@ -27,6 +27,21 @@ Canonical reference for settings keys accepted in the `settings` object (URL `se
 | `branchLabelSpacing` | number or numeric string | `4` |
 | `branchLabelTypefaceKey` | string | `n/a` |
 | `branchLabelTypefaceStyle` | string | `n/a` |
+| `branchShape` | 'off' \| 'rectangle' \| 'ellipse' | `off` |
+| `branchShape2Color` | CSS color string | `#aaaaaa` |
+| `branchShape3Color` | CSS color string | `#aaaaaa` |
+| `branchShape4Color` | CSS color string | `#aaaaaa` |
+| `branchShapeAlign` | 'left' \| 'center' \| 'right' | `center` |
+| `branchShapeColor` | CSS color string | `#aaaaaa` |
+| `branchShapeColorBy` | string or 'off' | `off` |
+| `branchShapeCountBy` | string or 'off' | `off` |
+| `branchShapeFilter` | string or null | `null` |
+| `branchShapeHaloColor` | CSS color string | `#ffffff` |
+| `branchShapeHaloSize` | number or numeric string | `0` |
+| `branchShapeHeightPct` | number (0..100, step 1) | `50` |
+| `branchShapeSpacing` | number or numeric string | `3` |
+| `branchShapesExtra` | array | `["off","off","off"]` |
+| `branchShapeWidth` | number or numeric string (height factor, 0.05..5.0) | `1.0` |
 | `branchWidth` | number or numeric string | `1.5` |
 | `canvasBgColor` | CSS color string | `#ebe8e2` |
 | `cladeHighlightColour` | CSS color string | `#ffaa00` |

@@ -381,6 +381,66 @@ SVG export includes all visible elements — branches, tip labels, node/tip shap
 
 ---
 
+## Visual Options Palette
+
+The **Visual Options palette** (toggle with **Tab** or the <i class="bi bi-sliders"></i> button) contains organized control sections for all display settings:
+
+- **Tip labels** — show/position/style tip names or annotation values
+- **Node labels** — show internal node values (e.g. bootstrap support)
+- **Branch labels** — show values at branch midpoints
+- **Node shapes** — customize tip and internal node marker appearance
+- **Branch shapes** — overlay configurable shapes on branches to represent metadata
+- **Axis** — show a divergence or time scale
+- **Node bars** — show BEAST HPD credible intervals
+- **Legend** — position and style colour-by legends
+- **Theme** — switch color themes and customize palettes
+- **Panel management** — arrange side panels and export options
+
+---
+
+## Branch Shapes
+
+Use **Branch Shapes** to overlay geometric markers (rectangles or ellipses) on the tree to visualize metadata values or counts per branch.
+
+### Main Controls
+
+| Control | Purpose |
+|---|---|
+| **Shape** | Select off, rectangle, or ellipse |
+| **Filter** | Restrict rendering to a subset of branches (optional) |
+| **Height** | Height of shapes as a percentage of branch length (0–100) |
+| **Width** | Width relative to height (0.05–5.0; 1.0 = square) |
+| **Alignment** | Position shapes left, center, or right along the branch |
+| **Spacing** | Gap between adjacent shapes (pixels) |
+| **Colour** | Default fill colour; override with *Colour by* |
+| **Colour by** | Optional annotation key to colour shapes by category |
+| **Count by** | Optional integer annotation to determine the number of shapes per branch |
+| **Halo** | Outline size around shapes (pixels); 0 for no outline |
+| **Halo colour** | Outline colour |
+
+### Example Workflows
+
+**Colour shapes by divergence category:**
+1. Set **Shape** = rectangle, **Height** = 30%
+2. Set **Colour by** = category annotation (e.g. "region")
+3. Shapes now reflect geographic or categorical data per branch
+
+**Show count of tips with a trait below:**
+1. Set **Shape** = ellipse, **Height** = 40%
+2. Set **Count by** = integer annotation (e.g. "num_tips_with_trait")
+3. Each branch draws 0–N shapes representing the count value
+
+**Highlight specific branches:**
+1. Create a filter (Annotations Manager → Filters tab)
+2. Set **Filter** = your filter name
+3. Shapes appear only on branches passing the filter
+
+### Extra Shapes (2–4)
+
+After configuring the primary shape, you can enable up to three additional shape rows using the expandable detail sections for **Shape 2**, **Shape 3**, and **Shape 4**. Each row supports the same controls and stacks left-to-right. This allows you to simultaneously visualize multiple metadata dimensions per branch.
+
+---
+
 ## Data Table Panel
 
 Click the <i class="bi bi-layout-sidebar-reverse"></i> button in the toolbar to open a scrollable panel listing all visible tips in tree order. The data columns shown can be selected in the Annotations Manager window. Values can be edited by double-clicking the cell.
