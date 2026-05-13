@@ -80,8 +80,8 @@ fn build_app_menu(
     ])?;
 
     let paste_tree    = MenuItem::with_id(manager, "paste-tree",    "Paste Tree",       true,  Some("CmdOrCtrl+V"))?;
-    let copy_tree     = MenuItem::with_id(manager, "copy-tree",     "Copy Tree",        false, Some("CmdOrCtrl+C"))?;
-    let copy_tips     = MenuItem::with_id(manager, "copy-tips",     "Copy Tips",        false, Some("CmdOrCtrl+Shift+C"))?;
+    let copy_tree     = MenuItem::with_id(manager, "copy-tree",     "Copy Tree",        false, Some("CmdOrCtrl+Shift+C"))?;
+    let copy_tips     = MenuItem::with_id(manager, "copy-tips",     "Copy Tips",        false, Some("CmdOrCtrl+C"))?;
     let select_all    = MenuItem::with_id(manager, "select-all",    "Select All",       true, Some("CmdOrCtrl+A"))?;
     let select_invert = MenuItem::with_id(manager, "select-invert", "Invert Selection", true, Some("CmdOrCtrl+Shift+I"))?;
 

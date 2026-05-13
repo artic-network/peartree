@@ -18,8 +18,8 @@ export const COMMAND_DEFS = [
 
   // Edit
   { id: 'paste-tree',    label: 'Paste Tree',           shortcut: 'CmdOrCtrl+V',             group: 'edit', enabled: true  },
-  { id: 'copy-tree',     label: 'Copy Tree',            shortcut: 'CmdOrCtrl+C',             group: 'edit', enabled: false },
-  { id: 'copy-tips',     label: 'Copy Tips',            shortcut: 'CmdOrCtrl+Shift+C',       group: 'edit', enabled: false },
+  { id: 'copy-tree',     label: 'Copy Tree',            shortcut: 'CmdOrCtrl+Shift+C',       group: 'edit', enabled: false },
+  { id: 'copy-tips',     label: 'Copy Tips',            shortcut: 'CmdOrCtrl+C',             group: 'edit', enabled: false },
   { id: 'select-all',    label: 'Select All',           shortcut: 'CmdOrCtrl+A',             group: 'edit', enabled: true  },
   { id: 'select-invert', label: 'Invert Selection',     shortcut: 'CmdOrCtrl+Shift+I',       group: 'edit', enabled: true  },
 

@@ -159,8 +159,8 @@ The **Filter tips…** search box in the toolbar searches tip labels as currentl
 | **⌘⇧O** | Open *Open Tree* dialog (File / URL / Example tabs) |
 | **⌘N** | New window |
 | **⌘V** | Paste a tree from the clipboard |
-| **⌘C** | Copy the current tree to the clipboard using the exported tip-label naming rules |
-| **⌘⇧C** | Copy displayed tip labels to the clipboard |
+| **⌘⇧C** | Copy the current tree to the clipboard using the exported tip-label naming rules |
+| **⌘C** | Copy displayed tip labels to the clipboard |
 | **⌘⇧A** | Import annotation file |
 | **⌘E** | Export tree file |
 | **⌘⇧E** | Export graphic |
@@ -389,8 +389,8 @@ When this checkbox is ticked (on by default) PearTree appends a `[peartree={…}
 
 ### Copying Trees and Tip Labels
 
-- **⌘C / Copy** uses the same leaf-name rule as **Export Tree**. If later labels are joined onto the first displayed tip label, they are included in copied/exported tree tip names.
-- **⌘⇧C / Copy tip labels** copies the displayed label fields. Joined labels stay merged into the previous field; non-joined later labels are copied as additional tab-separated columns.
+- **⌘⇧C / Copy** uses the same leaf-name rule as **Export Tree**. If later labels are joined onto the first displayed tip label, they are included in copied/exported tree tip names.
+- **⌘C / Copy tip labels** copies the displayed label fields. Joined labels stay merged into the previous field; non-joined later labels are copied as additional tab-separated columns.
 - **CSV metadata export** uses the same name source in its `name` column as the exported tree tip names.
 
 ---
