@@ -315,7 +315,7 @@ The lists below are a quick grouped view.
     "axisShow": "time",
     "fontSize": "13",
     "tipLabelShow": "names",
-    "selectedTheme": "Artic"
+    "selectedTheme": "ARTIC"
   }
 }
 ```

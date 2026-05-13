@@ -7857,7 +7857,7 @@ async function _initCore(root = document) {
     /**
      * Apply a named built-in or user theme by name.
      * Same effect as the user selecting a theme from the theme drop-down.
-     * @param {string} name  e.g. 'Artic', 'Dark', 'Custom'
+     * @param {string} name  e.g. 'ARTIC', 'Dark', 'Custom'
      */
     applyTheme: (name) => _applyTheme(name),
 
