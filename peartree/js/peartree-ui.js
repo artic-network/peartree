@@ -40,9 +40,9 @@ function _sectionTree() {
   return `
     <div class="pt-palette-section">
       <h3><i class="bi bi-tree"></i> Tree</h3>
-      <div class="pt-palette-row" id="axis-date-row" style="display:none" title="Calibrate the axis to calendar dates using the selected annotation"><span class="pt-palette-label">Calibrate <i class="bi bi-calendar3 form-label-sm"></i></span><select class="pt-palette-select" id="axis-date-annotation"><option value="">(none)</option></select></div>
       <div class="pt-palette-row" title="Canvas background colour"><span class="pt-palette-label">Background <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="canvas-bg-color" value="#02292e" /></div>
       <div class="pt-palette-row" title="Length of the root stem as a percentage of tree width"><span class="pt-palette-label">Root len <i class="bi bi-arrows form-label-sm"></i></span><input type="range" class="form-range" id="root-stem-pct-slider" min="0" max="20" step="1" value="1" /><span class="pt-val" id="root-stem-pct-value" style="width:30px">1%</span></div>
+      <div class="pt-palette-row" id="axis-date-row" title="Calibrate the axis to calendar dates using the selected annotation"><span class="pt-palette-label">Calibrate <i class="bi bi-calendar3 form-label-sm"></i></span><select class="pt-palette-select" id="axis-date-annotation"><option value="">(none)</option></select></div>
     </div>`;
 }
 

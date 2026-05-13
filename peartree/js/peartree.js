@@ -544,7 +544,6 @@ async function _initCore(root = document) {
   const axisCanvas             = $('axis-canvas');
   const axisShowEl             = $('axis-show');
   const axisDateAnnotEl        = $('axis-date-annotation');
-  const axisDateRow            = $('axis-date-row');
   const axisDateFmtEl          = $('axis-date-format');
   const axisDateFmtRow         = $('axis-date-format-row');
   const axisMajorIntervalEl    = $('axis-major-interval');
@@ -3803,7 +3802,6 @@ async function _initCore(root = document) {
         }
       }
       const _hasDate = axisDateAnnotEl.options.length > 1;
-      axisDateRow.style.display = _hasDate ? '' : 'none';
       axisDateAnnotEl.disabled  = !_hasDate;
       // Restore the previous selection if it still exists; otherwise auto-select the
       // first available date annotation so the Calibrate control is never left blank
@@ -4423,7 +4421,6 @@ async function _initCore(root = document) {
       }
       // Show the date row whenever a tree is loaded; only hide if no usable annotations exist.
       const _hasDateAnnotations = axisDateAnnotEl.options.length > 1;
-      axisDateRow.style.display = _hasDateAnnotations ? '' : 'none';
       axisDateAnnotEl.disabled  = !_hasDateAnnotations;
 
       // Restore date annotation (file settings take priority over saved prefs).
@@ -4697,16 +4694,14 @@ async function _initCore(root = document) {
 
   function applyTemporalRoot() {
     if (!graph) return;
-    const dates = _buildTipDates();
-    if (!dates) return;
+    const dates = _buildTipDates();  // null = isochronous (minimise root-to-tip variance)
     const { childNodeId, distFromParent } = optimiseRootEdge(graph, dates);
     applyReroot(childNodeId, distFromParent);
   }
 
   function applyTemporalRootGlobal() {
     if (!graph) return;
-    const dates = _buildTipDates();
-    if (!dates) return;
+    const dates = _buildTipDates();  // null = isochronous (minimise root-to-tip variance)
     const { childNodeId, distFromParent } = temporalRootGraph(graph, dates);
     applyReroot(childNodeId, distFromParent);
   }
