@@ -2,7 +2,7 @@
 // Extracted from peartree.js to keep the app controller focused.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { AxisRenderer } from './axisrenderer.js';
+import { AxisRenderer } from './axis-renderer.js';
 import { isNumericType, TreeCalibration } from './phylograph.js';
 import { getSequentialPalette,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
