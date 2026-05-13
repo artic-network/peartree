@@ -5,7 +5,7 @@
 import { htmlEsc as esc, downloadBlob } from '@artic-network/pearcore/utils.js';
 import { isNumericType } from './phylograph.js';
 import { graphToNewick } from '@artic-network/pearcore/tree-io.js';
-import { viewportDims, compositeViewPng, buildGraphicSVG } from './graphicsio.js';
+import { viewportDims, compositeViewPng, buildGraphicSVG } from './graphics-io.js';
 import { createGraphicsExporter } from '@artic-network/pearcore/graphics-export.js';
 
 /**

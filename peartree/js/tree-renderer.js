@@ -2,12 +2,14 @@
 // Canvas renderer
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { computeLayoutFromGraph } from './treeutils.js';
+import { computeLayoutFromGraph } from './tree-utils.js';
 import { dateToDecimalYear, isNumericType, TreeCalibration } from './phylograph.js';
 import { getSequentialPalette, lerpSequential,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
          MISSING_DATA_COLOUR, buildCategoricalColourMap } from '@artic-network/pearcore/palettes.js';
 import { buildFont, TYPEFACES } from '@artic-network/pearcore/typefaces.js';
+import { CircleShapeRenderer }  from './shape-renderer.js';
+import { AnnotationLabelRenderer } from './label-renderer.js';
 
 // Sentinel annotation keys for calendar-date synthetic node/tip labels.
 // peartree.js imports these to populate the label dropdowns.
@@ -126,6 +128,13 @@ export class TreeRenderer {
     this.labelRightPad   = 200;
     this._labelCacheKey  = null;  // invalidated when data or font/radius settings change
     this._maxLabelWidth  = 0;     // cached result of the measureText scan
+
+    // Sub-renderers for tip/node circles and node/branch labels.
+    // These are updated in setSettings() and in colour-by setters.
+    this._tipCircleRenderer   = new CircleShapeRenderer();
+    this._nodeCircleRenderer  = new CircleShapeRenderer();
+    this._nodeLabelRenderer   = new AnnotationLabelRenderer();
+    this._branchLabelRenderer = new AnnotationLabelRenderer();
 
     // Apply all rendering settings supplied by the caller (no built-in defaults).
     this.setSettings(settings, /*redraw*/ false);
@@ -529,6 +538,12 @@ export class TreeRenderer {
 
     // Propagate bg colour to an attached legend renderer.
     this._legendRenderer?.setBgColor(this.bgColor, this._skipBg);
+
+    // Sync sub-renderers with the updated settings.
+    this._syncTipCircleRenderer();
+    this._syncNodeCircleRenderer();
+    this._syncNodeLabelRenderer();
+    this._syncBranchLabelRenderer();
 
     if (redraw && this.nodes) {
       this._measureLabels();
@@ -1229,6 +1244,7 @@ export class TreeRenderer {
   setTipColourBy(key) {
     this._tipColourBy    = key || null;
     this._tipColourScale = this._tipColourBy ? this._buildColourScale(this._tipColourBy) : null;
+    this._syncTipCircleRenderer();
     this._aggregateTipValueCache?.clear();
     this._dirty = true;
   }
@@ -1236,6 +1252,7 @@ export class TreeRenderer {
   setNodeColourBy(key) {
     this._nodeColourBy    = key || null;
     this._nodeColourScale = this._nodeColourBy ? this._buildColourScale(this._nodeColourBy) : null;
+    this._syncNodeCircleRenderer();
     this._aggregateTipValueCache?.clear();
     this._dirty = true;
   }
@@ -1250,6 +1267,7 @@ export class TreeRenderer {
   setNodeLabelColourBy(key) {
     this._nodeLabelColourBy    = key || null;
     this._nodeLabelColourScale = this._nodeLabelColourBy ? this._buildColourScale(this._nodeLabelColourBy) : null;
+    this._syncNodeLabelRenderer();
     this._aggregateTipValueCache?.clear();
     this._dirty = true;
   }
@@ -1257,6 +1275,7 @@ export class TreeRenderer {
   setBranchLabelColourBy(key) {
     this._branchLabelColourBy    = key || null;
     this._branchLabelColourScale = this._branchLabelColourBy ? this._buildColourScale(this._branchLabelColourBy) : null;
+    this._syncBranchLabelRenderer();
     this._aggregateTipValueCache?.clear();
     this._dirty = true;
   }
@@ -2830,6 +2849,113 @@ export class TreeRenderer {
     }
   }
 
+  // ── Sub-renderer sync helpers ─────────────────────────────────────────────
+  // Each method rebuilds the corresponding sub-renderer's settings from the
+  // current TreeRenderer state.  Called at the end of setSettings() and by any
+  // individual setter that affects only that sub-renderer's appearance.
+
+  /** Maps user-facing node-label position names to compass directions. */
+  static _nodePositionToCompass(pos) {
+    switch (pos) {
+      case 'right':      return 'E';
+      case 'above-left': return 'NW';
+      case 'below-left': return 'SW';
+      default:           return 'E';
+    }
+  }
+
+  _syncTipCircleRenderer() {
+    const hasTipColour = this._tipColourBy && this._tipColourScale;
+    this._tipCircleRenderer.update({
+      radius:   this.tipRadius,
+      color:    this.tipShapeColor,
+      bgColor:  this.tipShapeBgColor,
+      haloSize: this.tipHaloSize,
+      perNodeColorFn: hasTipColour
+        ? (node) => this._tipColourForValue(this._statValue(node, this._tipColourBy))
+        : null,
+      filterFn: (node) => this._passesFilter(this._tipShapesFilterId, node),
+    });
+  }
+
+  _syncNodeCircleRenderer() {
+    const hasNodeColour = this._nodeColourBy && this._nodeColourScale;
+    this._nodeCircleRenderer.update({
+      radius:   this.nodeRadius,
+      color:    this.nodeShapeColor,
+      bgColor:  this.nodeShapeBgColor,
+      haloSize: this.nodeHaloSize,
+      perNodeColorFn: hasNodeColour
+        ? (node) => {
+            const def     = this._annotationSchema?.get(this._nodeColourBy);
+            const tipOnly = def && !def.onNodes && def.onTips && this._nodeColourBy !== 'user_colour';
+            const val     = tipOnly
+              ? this._aggregateTipValue(node, this._nodeColourBy)
+              : this._statValue(node, this._nodeColourBy);
+            return this._nodeColourForValue(val);
+          }
+        : null,
+      filterFn: (node) => this._passesFilter(this._nodeShapesFilterId, node),
+    });
+  }
+
+  _syncNodeLabelRenderer() {
+    const hasColour = this._nodeLabelColourBy && this._nodeLabelColourScale;
+    this._nodeLabelRenderer.update({
+      position:     TreeRenderer._nodePositionToCompass(this.nodeLabelPosition),
+      anchorRadius: Math.max(this.nodeRadius, 0),
+      spacing:      this.nodeLabelSpacing,
+      fontSize:     this.nodeLabelFontSize,
+      color:        this.nodeLabelColor,
+      typefaceKey:  this._nodeLabelTypefaceKey,
+      typefaceStyle: this._nodeLabelTypefaceStyle,
+      colorFn: hasColour
+        ? (node) => {
+            const def     = this._annotationSchema?.get(this._nodeLabelColourBy);
+            const tipOnly = def && !def.onNodes && def.onTips && this._nodeLabelColourBy !== 'user_colour';
+            const val     = tipOnly
+              ? this._aggregateTipValue(node, this._nodeLabelColourBy)
+              : this._statValue(node, this._nodeLabelColourBy);
+            return this._nodeLabelColourForValue(val);
+          }
+        : null,
+      filterFn:  (node) => this._passesFilter(this._nodeLabelsFilterId, node),
+      getLabel:  (node) => this._nodeLabelText(node),
+      getAnchor: (node) => ({ x: node.x, y: node.y }),
+      fontFn:    (size, key, style) => this._font(size, key, style),
+    });
+  }
+
+  _syncBranchLabelRenderer() {
+    const hasColour = this._branchLabelColourBy && this._branchLabelColourScale;
+    this._branchLabelRenderer.update({
+      position:     this.branchLabelPosition === 'below' ? 'S' : 'N',
+      anchorRadius: 0,  // branch midpoint — no radius offset
+      spacing:      this.branchLabelSpacing,
+      fontSize:     this.branchLabelFontSize,
+      color:        this.branchLabelColor,
+      typefaceKey:  this._branchLabelTypefaceKey,
+      typefaceStyle: this._branchLabelTypefaceStyle,
+      colorFn: hasColour
+        ? (node) => {
+            const def     = this._annotationSchema?.get(this._branchLabelColourBy);
+            const tipOnly = def && !def.onNodes && def.onTips && this._branchLabelColourBy !== 'user_colour';
+            const val     = (node.isTip || !tipOnly)
+              ? this._statValue(node, this._branchLabelColourBy)
+              : this._aggregateTipValue(node, this._branchLabelColourBy);
+            return this._branchLabelColourForValue(val);
+          }
+        : null,
+      filterFn:  (node) => !!node.parentId && this._passesFilter(this._branchLabelsFilterId, node),
+      getLabel:  (node) => this._branchLabelText(node),
+      getAnchor: (node) => {
+        const parent = this.nodeMap?.get(node.parentId);
+        return parent ? { x: (parent.x + node.x) / 2, y: node.y } : null;
+      },
+      fontFn:    (size, key, style) => this._font(size, key, style),
+    });
+  }
+
   _drawBranchShapes(yWorldMin, yWorldMax) {
     if (!this.nodes) return;
     if (this._branchShape === 'off') return;
@@ -3691,11 +3817,8 @@ export class TreeRenderer {
 
     // ── Node shape rendering ───────────────────────────────────────────────────
     const r     = this.tipRadius;       // tip shape radius  (0 = invisible)
-    const nodeR = this.nodeRadius;      // internal node shape radius (0 = invisible)
-
     // Halo stroke extends tipHaloSize px outward from the shape edge.
     const tipHalo  = this.tipHaloSize;
-    const nodeHalo = this.nodeHaloSize;
 
     // Label x-offset: leave at least 5 px even when tip shapes are hidden.
     const outlineR = Math.max(r + tipHalo, 5);
@@ -3707,88 +3830,14 @@ export class TreeRenderer {
     // In hyperbolic-stretch mode labels are assessed per-node (see _showLabelAt).
     const showLabels = this.scaleY >= this.fontSize * 0.5 || this._hypFocusScreenY !== null;
 
-    // Pass 1 – halo strokes for internal node shapes
-    if (nodeR > 0 && nodeHalo > 0) {
-      ctx.strokeStyle = this.nodeShapeBgColor;
-      ctx.lineWidth   = nodeHalo * 2;
-      ctx.beginPath();
-      for (const node of this._vInner) {
-        if (!this._passesFilter(this._nodeShapesFilterId, node)) continue;
-        ctx.moveTo(this._wx(node.x) + nodeR, this._wy(node.y));
-        ctx.arc(this._wx(node.x), this._wy(node.y), nodeR, 0, Math.PI * 2);
-      }
-      ctx.stroke();
-      ctx.lineWidth = 1;
-    }
-
-    // Pass 1b – halo strokes for tip shapes (stroke centered on radius → extends haloSize outward)
-    if (r > 0 && tipHalo > 0) {
-      ctx.strokeStyle = this.tipShapeBgColor;
-      ctx.lineWidth   = tipHalo * 2;
-      ctx.beginPath();
-      for (const node of this._vTips) {
-        if (!this._passesFilter(this._tipShapesFilterId, node)) continue;
-        ctx.moveTo(this._wx(node.x) + r, this._wy(node.y));
-        ctx.arc(this._wx(node.x), this._wy(node.y), r, 0, Math.PI * 2);
-      }
-      ctx.stroke();
-      ctx.lineWidth = 1;
-    }
-    if (nodeR > 0) {
-      if (this._nodeColourBy && this._nodeColourScale) {
-        const key    = this._nodeColourBy;
-        const def    = this._annotationSchema?.get(key);
-        // user_colour is a direct brush colour assigned per-node; never aggregate
-        // tip colours up to ancestors – internal nodes without an explicit value
-        // should stay at the default nodeShapeColor.
-        const tipOnly = def && !def.onNodes && def.onTips && key !== 'user_colour';
-        for (const node of this._vInner) {
-          if (!this._passesFilter(this._nodeShapesFilterId, node)) continue;
-          const val = tipOnly
-            ? this._aggregateTipValue(node, key)
-            : this._statValue(node, key);
-          ctx.fillStyle = this._nodeColourForValue(val) ?? this.nodeShapeColor;
-          ctx.beginPath();
-          ctx.arc(this._wx(node.x), this._wy(node.y), nodeR, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      } else {
-        ctx.fillStyle = this.nodeShapeColor;
-        ctx.beginPath();
-        for (const node of this._vInner) {
-          if (!this._passesFilter(this._nodeShapesFilterId, node)) continue;
-          ctx.moveTo(this._wx(node.x) + nodeR, this._wy(node.y));
-          ctx.arc(this._wx(node.x), this._wy(node.y), nodeR, 0, Math.PI * 2);
-        }
-        ctx.fill();
-      }
-    }
-
-    // Pass 2b – fill circles for tip shapes
-    if (r > 0) {
-      if (this._tipColourBy && this._tipColourScale) {
-        // Per-tip colour: draw each circle individually.
-        const key = this._tipColourBy;
-        for (const node of this._vTips) {
-          if (!this._passesFilter(this._tipShapesFilterId, node)) continue;
-          const val   = this._statValue(node, key);
-          const col   = this._tipColourForValue(val) ?? this.tipShapeColor;
-          ctx.fillStyle = col;
-          ctx.beginPath();
-          ctx.arc(this._wx(node.x), this._wy(node.y), r, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      } else {
-        ctx.fillStyle = this.tipShapeColor;
-        ctx.beginPath();
-        for (const node of this._vTips) {
-          if (!this._passesFilter(this._tipShapesFilterId, node)) continue;
-          ctx.moveTo(this._wx(node.x) + r, this._wy(node.y));
-          ctx.arc(this._wx(node.x), this._wy(node.y), r, 0, Math.PI * 2);
-        }
-        ctx.fill();
-      }
-    }
+    // ── Node and tip circle shapes ────────────────────────────────────────────
+    // Halos are drawn before fills so halo rings sit visually behind all fills.
+    const wx = x => this._wx(x);
+    const wy = y => this._wy(y);
+    this._nodeCircleRenderer.drawHalos(ctx, this._vInner, wx, wy);
+    this._tipCircleRenderer.drawHalos(ctx, this._vTips, wx, wy);
+    this._nodeCircleRenderer.drawFills(ctx, this._vInner, wx, wy);
+    this._tipCircleRenderer.drawFills(ctx, this._vTips, wx, wy);
 
     // Shape / label variables – hoisted before the labels pass so shapes can
     // be drawn even when tip labels are hidden due to density.
@@ -4353,57 +4402,9 @@ export class TreeRenderer {
   _drawNodeLabels(yWorldMin, yWorldMax) {
     if (!this.nodeLabelAnnotation || !this.nodes) return;
     if (this._introPhase !== null) return;  // skip during intro: all nodes pile at rootY → _vInner is huge
-    const minScale = this.nodeLabelFontSize * 0.5;
-    if (this.scaleY < minScale) return;
-
-    const ctx     = this.ctx;
-    const nodeR   = Math.max(this.nodeRadius, 0);
-    const spacing = this.nodeLabelSpacing;
-    const pos     = this.nodeLabelPosition;
-
-    ctx.save();
-    ctx.font      = this._font(this.nodeLabelFontSize, this._nodeLabelTypefaceKey, this._nodeLabelTypefaceStyle);
-    ctx.fillStyle = this.nodeLabelColor;
-    if (pos === 'right') {
-      ctx.textBaseline = 'middle';
-      ctx.textAlign    = 'left';
-    } else if (pos === 'below-left') {
-      ctx.textBaseline = 'top';
-      ctx.textAlign    = 'right';
-    } else { // 'above-left'
-      ctx.textBaseline = 'bottom';
-      ctx.textAlign    = 'right';
-    }
-
-    const _nlcBy = this._nodeLabelColourBy && this._nodeLabelColourScale;
-    const _nlDef = _nlcBy ? this._annotationSchema?.get(this._nodeLabelColourBy) : null;
-    const _nlTipOnly = _nlDef && !_nlDef.onNodes && _nlDef.onTips && this._nodeLabelColourBy !== 'user_colour';
-    for (const node of this._vInner) {
-      if (!this._passesFilter(this._nodeLabelsFilterId, node)) continue;
-      const label = this._nodeLabelText(node);
-      if (!label) continue;
-      if (_nlcBy) {
-        const val = _nlTipOnly
-          ? this._aggregateTipValue(node, this._nodeLabelColourBy)
-          : this._statValue(node, this._nodeLabelColourBy);
-        ctx.fillStyle = this._nodeLabelColourForValue(val) ?? this.nodeLabelColor;
-      }
-      const nx = this._wx(node.x);
-      const ny = this._wy(node.y);
-      let tx, ty;
-      if (pos === 'right') {
-        tx = nx + nodeR + spacing;
-        ty = ny;
-      } else if (pos === 'below-left') {
-        tx = nx - nodeR - spacing;
-        ty = ny + spacing;
-      } else { // 'above-left'
-        tx = nx - nodeR - spacing;
-        ty = ny - spacing;
-      }
-      ctx.fillText(label, tx, ty);
-    }
-    ctx.restore();
+    const wx = x => this._wx(x);
+    const wy = y => this._wy(y);
+    this._nodeLabelRenderer.draw(this.ctx, this._vInner, wx, wy, this.scaleY);
   }
 
   /**
@@ -4414,45 +4415,9 @@ export class TreeRenderer {
   _drawBranchLabels(yWorldMin, yWorldMax) {
     if (!this.branchLabelAnnotation || !this.nodes) return;
     if (this._introPhase !== null) return;  // skip during intro: all nodes pile at rootY → _vInner is huge
-    const minScale = this.branchLabelFontSize * 0.5;
-    if (this.scaleY < minScale) return;
-
-    const ctx     = this.ctx;
-    const spacing = this.branchLabelSpacing;
-    const above   = this.branchLabelPosition !== 'below';
-
-    ctx.save();
-    ctx.font      = this._font(this.branchLabelFontSize, this._branchLabelTypefaceKey, this._branchLabelTypefaceStyle);
-    ctx.fillStyle = this.branchLabelColor;
-    ctx.textAlign = 'center';
-    if (above) {
-      ctx.textBaseline = 'bottom';
-    } else {
-      ctx.textBaseline = 'top';
-    }
-
-    const _blcBy = this._branchLabelColourBy && this._branchLabelColourScale;
-    const _blDef = _blcBy ? this._annotationSchema?.get(this._branchLabelColourBy) : null;
-    const _blTipOnly = _blDef && !_blDef.onNodes && _blDef.onTips && this._branchLabelColourBy !== 'user_colour';
-    for (const node of this._vAll) {
-      if (!this._passesFilter(this._branchLabelsFilterId, node)) continue;
-      if (!node.parentId) continue;  // skip root
-      const label = this._branchLabelText(node);
-      if (!label) continue;
-      const parent = this.nodeMap.get(node.parentId);
-      if (!parent) continue;
-      if (_blcBy) {
-        const val = (node.isTip || !_blTipOnly)
-          ? this._statValue(node, this._branchLabelColourBy)
-          : this._aggregateTipValue(node, this._branchLabelColourBy);
-        ctx.fillStyle = this._branchLabelColourForValue(val) ?? this.branchLabelColor;
-      }
-      const mx = (this._wx(parent.x) + this._wx(node.x)) / 2;
-      const my = this._wy(node.y);
-      const ty = above ? my - spacing : my + spacing;
-      ctx.fillText(label, mx, ty);
-    }
-    ctx.restore();
+    const wx = x => this._wx(x);
+    const wy = y => this._wy(y);
+    this._branchLabelRenderer.draw(this.ctx, this._vAll, wx, wy, this.scaleY);
   }
 
   /**

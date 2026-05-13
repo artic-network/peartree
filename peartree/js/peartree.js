@@ -1,11 +1,11 @@
 import { parseNexus, parseNewick, graphToNewick, parseDelimited } from '@artic-network/pearcore/tree-io.js';
-import { computeLayoutFromGraph, graphVisibleTipCount, graphSubtreeHasHidden } from './treeutils.js';
+import { computeLayoutFromGraph, graphVisibleTipCount, graphSubtreeHasHidden } from './tree-utils.js';
 import { fromNestedRoot, rerootOnGraph, reorderGraph, rotateNodeGraph, midpointRootGraph, temporalRootGraph, optimiseRootEdge, buildAnnotationSchema } from '@artic-network/pearcore/tree-graph.js';
 import { injectBuiltinStats, isNumericType, TreeCalibration, computeTemporalResiduals } from './phylograph.js';
 import { htmlEsc as _esc, downloadBlob as _downloadBlob, wireDropZone as _wireDropZone } from '@artic-network/pearcore/utils.js';
-import { TreeRenderer, CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY } from './treerenderer.js';
-import { LegendRenderer } from './legendrenderer.js';
-import { AxisRenderer  } from './axisrenderer.js';
+import { TreeRenderer, CAL_DATE_KEY, CAL_DATE_HPD_KEY, CAL_DATE_HPD_ONLY_KEY } from './tree-renderer.js';
+import { LegendRenderer } from './legend-renderer.js';
+import { AxisRenderer  } from './axis-renderer.js';
 import { THEMES, DEFAULT_THEME, SETTINGS_KEY, USER_THEMES_KEY } from './themes.js';
 import { TYPEFACES, buildFont } from '@artic-network/pearcore/typefaces.js';
 import { CATEGORICAL_PALETTES, SEQUENTIAL_PALETTES,
@@ -18,8 +18,8 @@ import { createAnnotCurator  } from '@artic-network/pearcore/annotation-manager.
 import { createFilterControl } from './filter-control.js';
 import { createFilterManager } from './filter-manager.js';
 import { createPaletteManager } from '@artic-network/pearcore/palette-manager.js';
-import { createDataTableRenderer } from './datatablerenderer.js';
-import { createRTTChart          } from './rttchart.js';
+import { createDataTableRenderer } from './datatable-renderer.js';
+import { createRTTChart          } from './rtt-chart.js';
 import { createCommands } from '@artic-network/pearcore/commands.js';
 import { COMMAND_DEFS } from './peartree-commands.js';
 import { createExportController } from './export-controller.js';

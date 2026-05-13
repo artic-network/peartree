@@ -9,7 +9,7 @@
 // Called from peartree.js immediately after the TreeRenderer is created.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { RTTRenderer }      from './rttrenderer.js';
+import { RTTRenderer }      from './rtt-renderer.js';
 import { TreeCalibration }  from './phylograph.js';
 import { computeOLS, ciHalfWidth } from '@artic-network/pearcore/regression.js';
 import { downloadBlob, htmlEsc as esc } from '@artic-network/pearcore/utils.js';
