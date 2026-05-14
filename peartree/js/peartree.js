@@ -4510,6 +4510,10 @@ async function _initCore(root = document) {
         if (btnRtt)       btnRtt.disabled       = false;
         // Hide the empty-state overlay
         emptyStateEl.classList.add('hidden');
+        // Warn on page reload/navigation once a tree is loaded (browser only — Tauri handles this natively).
+        if (!window.__TAURI__) {
+          window.addEventListener('beforeunload', e => { e.preventDefault(); });
+        }
         // Show the axis canvas now if axis was already configured to be visible.
         if (axisShowEl.value !== 'off') axisCanvas.style.display = 'block';
         // Enable commands — registry syncs both the button .disabled and the native menu.
