@@ -7514,16 +7514,20 @@ async function _initCore(root = document) {
 
   // paste-tree: when no tree is loaded, read clipboard text and attempt to load it as a tree.
   commands.get('paste-tree').exec = async () => {
-    if (treeLoaded) return;  // only active before first load
+    if (treeLoaded) return;
     let text;
     try {
       text = await navigator.clipboard.readText();
     } catch {
-      return;  // clipboard access denied or empty
+      await showAlertDialog('Clipboard error', 'Could not read from the clipboard.');
+      return;
     }
-    if (!text?.trim()) return;
-    openModal();
-    loadTree(text, 'clipboard');
+    if (!text?.trim()) {
+      await showAlertDialog('Clipboard empty', 'The clipboard does not contain any text.');
+      return;
+    }
+    // Load directly without opening the modal; errors surface in the empty-state panel.
+    await loadTree(text, 'clipboard');
   };
 
   // copy-tree: copies current view as NEXUS; if 2+ tips selected, copies subtending subtree;

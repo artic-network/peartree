@@ -1,3 +1,11 @@
+## v1.1.0
+### Features
+- Copy trees and taxon labels to clipboard
+- Paste trees into an empty page/window
+- Export can select tip and node labels to use
+- Tip labels can now add multiple fields
+- Branch shapes are available for showing events on a branch
+
 ## v1.0.0
 ### Features
 - New Palette manager interface for creating and editing colour palettes.
