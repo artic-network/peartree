@@ -84,7 +84,9 @@ const jsResult = await esbuild.build({
   platform:    'browser',
   target:      ['es2020'],
   external:    [],
-  define:      { 'import.meta.url': 'document.currentScript?.src??""' },
+  // Capture script src before the IIFE closure seals, then replace import.meta.url with it.
+  banner:      { js: 'var __peartreeScriptSrc__=typeof document!=="undefined"&&document.currentScript?document.currentScript.src:"";' },
+  define:      { 'import.meta.url': '__peartreeScriptSrc__' },
   write:       false,
 });
 const jsCode = Buffer.from(jsResult.outputFiles[0].contents).toString('utf8');
