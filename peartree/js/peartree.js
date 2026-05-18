@@ -274,7 +274,7 @@ async function _initCore(root = document) {
       }
       if (_br) {
         _outerEl.style.borderRadius = typeof _br === 'number' ? `${_br}px` : _br;
-        if (!(root instanceof Document)) _outerEl.style.overflow = 'hidden';
+        _outerEl.style.overflow = 'hidden';
       }
     }
   }
