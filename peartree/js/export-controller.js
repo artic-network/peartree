@@ -534,8 +534,15 @@ export function createExportController({
           node.annotations._pt_highlight = colour ?? 'true';
           _ptInjected.push({ node, keys: ['_pt_highlight'] });
         }
+        for (const nodeId of graph.hiddenNodeIds) {
+          const idx = graph.origIdToIdx.get(nodeId);
+          if (idx === undefined) continue;
+          const node = graph.nodes[idx];
+          node.annotations._pt_hidden = 'true';
+          _ptInjected.push({ node, keys: ['_pt_hidden'] });
+        }
         if (_ptInjected.length > 0) {
-          finalAnnotKeys = [...annotKeys, '_pt_collapsed', '_pt_collapsed_colour', '_pt_highlight'];
+          finalAnnotKeys = [...annotKeys, '_pt_collapsed', '_pt_collapsed_colour', '_pt_highlight', '_pt_hidden'];
         }
       }
       const result = graphToNewick(graph, subtreeId, finalAnnotKeys, nodeLabelKey, tipNameFn);

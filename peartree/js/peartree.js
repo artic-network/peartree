@@ -4003,14 +4003,19 @@ async function _initCore(root = document) {
           if (typeof node.annotations._pt_highlight === 'string') {
             _ptHighlights.push({ id: node.origId, colour: node.annotations._pt_highlight });
           }
+          if (node.annotations._pt_hidden === 'true' || node.annotations._pt_hidden === true) {
+            graph.hiddenNodeIds.add(node.origId);
+          }
           delete node.annotations._pt_collapsed;
           delete node.annotations._pt_collapsed_colour;
           delete node.annotations._pt_highlight;
+          delete node.annotations._pt_hidden;
         }
         // Remove _pt_* keys from the schema so they don't appear in dropdowns or export grids.
         graph.annotationSchema.delete('_pt_collapsed');
         graph.annotationSchema.delete('_pt_collapsed_colour');
         graph.annotationSchema.delete('_pt_highlight');
+        graph.annotationSchema.delete('_pt_hidden');
         if (_ptHighlights.length > 0) {
           renderer.setCladeHighlightsData(_ptHighlights);
         }
