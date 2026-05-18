@@ -248,6 +248,14 @@ async function _initCore(root = document) {
       _cfg[def.name] = _coerceUiFlag(_raw, !!def.extended);
     }
   }
+  // Resolve canvas padding from window.peartreeConfig.ui / configUrl ui block.
+  // These have no DOM controls and cannot be set via the settings path.
+  const _uiCfg = (window.peartreeConfig || {}).ui || {};
+  const _cfgPaddingLeft   = parseInt(_uiCfg.paddingLeft   ?? _fetchedUI?.paddingLeft   ?? DEFAULT_SETTINGS.paddingLeft,   10);
+  const _cfgPaddingRight  = parseInt(_uiCfg.paddingRight  ?? _fetchedUI?.paddingRight  ?? DEFAULT_SETTINGS.paddingRight,  10);
+  const _cfgPaddingTop    = parseInt(_uiCfg.paddingTop    ?? _fetchedUI?.paddingTop    ?? DEFAULT_SETTINGS.paddingTop,    10);
+  const _cfgPaddingBottom = parseInt(_uiCfg.paddingBottom ?? _fetchedUI?.paddingBottom ?? DEFAULT_SETTINGS.paddingBottom, 10);
+
   // Apply UI restrictions immediately so hidden elements never flash visible.
   if (!_cfg.showPalette)   $('btn-palette')        ?.classList.add('d-none');
   if (!_cfg.showToolbar)   root.querySelector('.pt-toolbar')          ?.classList.add('d-none');
@@ -1660,10 +1668,10 @@ async function _initCore(root = document) {
       nodeShapeBgColor: nodeShapeBgEl.value,
       labelColor:       labelColorEl.value,
       selectedLabelStyle: selectedLabelStyleEl.value,
-      paddingLeft:      parseInt(DEFAULT_SETTINGS.paddingLeft),
-      paddingRight:     parseInt(DEFAULT_SETTINGS.paddingRight),
-      paddingTop:       parseInt(DEFAULT_SETTINGS.paddingTop),
-      paddingBottom:    parseInt(DEFAULT_SETTINGS.paddingBottom),
+      paddingLeft:      _cfgPaddingLeft,
+      paddingRight:     _cfgPaddingRight,
+      paddingTop:       _cfgPaddingTop,
+      paddingBottom:    _cfgPaddingBottom,
       rootStubLength:   parseFloat(DEFAULT_SETTINGS.rootStubLength),
       rootStemPct:      parseFloat(rootStemPctSlider.value),
       tipHoverFillColor:      tipHoverFillEl.value,
