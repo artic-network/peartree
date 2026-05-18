@@ -84,6 +84,7 @@ const jsResult = await esbuild.build({
   platform:    'browser',
   target:      ['es2020'],
   external:    [],
+  define:      { 'import.meta.url': 'document.currentScript?.src??""' },
   write:       false,
 });
 const jsCode = Buffer.from(jsResult.outputFiles[0].contents).toString('utf8');

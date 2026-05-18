@@ -1017,7 +1017,6 @@ async function _initCore(root = document) {
       nodeLabelColor:      nodeLabelColorEl.value,
       nodeLabelSpacing:    nodeLabelSpacingSlider.value,
       nodeLabelColourBy:   nodeLabelColourBy.value,
-      tipLabelSpacing:     tipLabelSpacingSlider.value,
       nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
       branchLabelAnnotation: branchLabelShowEl.value,
       branchLabelPosition:   branchLabelPositionEl.value,
