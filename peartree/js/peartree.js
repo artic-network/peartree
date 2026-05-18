@@ -256,6 +256,29 @@ async function _initCore(root = document) {
   const _cfgPaddingTop    = parseInt(_uiCfg.paddingTop    ?? _fetchedUI?.paddingTop    ?? DEFAULT_SETTINGS.paddingTop,    10);
   const _cfgPaddingBottom = parseInt(_uiCfg.paddingBottom ?? _fetchedUI?.paddingBottom ?? DEFAULT_SETTINGS.paddingBottom, 10);
 
+  // Resolve border from window.peartreeConfig.ui / configUrl ui block.
+  // Intended for embedding/iframe use. Off (0) by default.
+  {
+    const _bwRaw = _uiCfg.borderWidth  ?? _fetchedUI?.borderWidth  ?? 0;
+    const _bcRaw = _uiCfg.borderColor  ?? _fetchedUI?.borderColor  ?? null;
+    const _brRaw = _uiCfg.borderRadius ?? _fetchedUI?.borderRadius ?? 0;
+    const _bw = parseFloat(_bwRaw) || 0;
+    const _br = typeof _brRaw === 'string' && isNaN(parseFloat(_brRaw))
+      ? _brRaw : (parseFloat(_brRaw) || 0);
+    if (_bw > 0 || _br) {
+      const _outerEl = root instanceof Document ? root.documentElement : root;
+      if (_bw > 0) {
+        _outerEl.style.borderWidth = `${_bw}px`;
+        _outerEl.style.borderStyle = 'solid';
+        _outerEl.style.borderColor = _bcRaw ? String(_bcRaw) : 'currentColor';
+      }
+      if (_br) {
+        _outerEl.style.borderRadius = typeof _br === 'number' ? `${_br}px` : _br;
+        if (!(root instanceof Document)) _outerEl.style.overflow = 'hidden';
+      }
+    }
+  }
+
   // Apply UI restrictions immediately so hidden elements never flash visible.
   if (!_cfg.showPalette)   $('btn-palette')        ?.classList.add('d-none');
   if (!_cfg.showToolbar)   root.querySelector('.pt-toolbar')          ?.classList.add('d-none');
