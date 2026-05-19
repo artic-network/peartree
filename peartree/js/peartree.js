@@ -3465,6 +3465,11 @@ async function _initCore(root = document) {
         for (const field of NODE_TOOLTIP_FIELDS) {
           if (isTip  && field.onTips  === false) continue;
           if (!isTip && field.onNodes === false) continue;
+          // Calendar date is only meaningful for time trees or near-perfect-clock RTT trees.
+          if (field.key === '__cal_date__') {
+            const calR2 = calibration?.regression?.r2 ?? 0;
+            if (!_axisIsTimedTree && calR2 < 0.9999) continue;
+          }
           const def = schema?.get(field.key);
           const raw = renderer._statValue(node, field.key);
           if (raw == null) continue;
@@ -3621,7 +3626,7 @@ async function _initCore(root = document) {
       renderer._rttZScoresMap   = residualData.zscoreMap;
       renderer._rttOutliersMap  = residualData.outlierMap;
       injectBuiltinStats(schema, renderer.nodes, renderer.maxX, renderer.maxY,
-                         calibration?.isActive ? calibration : null, residualData);
+                         calibration?.isActive ? calibration : null, residualData, _axisIsTimedTree);
       renderer.setAnnotationSchema(schema);
     }
     // filter: 'tips' → onTips, 'nodes' → onNodes, 'all' → no filter,
@@ -4496,7 +4501,7 @@ async function _initCore(root = document) {
           tipLabelShow.value = _eff.tipLabelShow;
           renderer.setTipLabelAnnotation(_eff.tipLabelShow);
         }
-        if (_calKeys.includes(_eff.nodeLabelAnnotation)) {
+        if (_axisIsTimedTree && _calKeys.includes(_eff.nodeLabelAnnotation)) {
           nodeLabelShowEl.value = _eff.nodeLabelAnnotation;
           renderer.setNodeLabelAnnotation(_eff.nodeLabelAnnotation);
         }
@@ -5972,7 +5977,12 @@ async function _initCore(root = document) {
       rows.push(['Age',          height.toFixed(6)]);
       rows.push(['Branch length', branchLen.toFixed(6)]);
       // ── Calendar date (computed from calibration) ──────────────────────
-      if (calibration?.isActive) {
+      // Calendar date is only meaningful when the tree is time-calibrated: either a BEAST-style
+      // tree with explicit height annotations, or an RTT-calibrated tree whose root-to-tip
+      // regression is essentially perfect (R²≥0.9999), indicating a strict molecular clock.
+      const _calDateMeaningful = calibration?.isActive &&
+        (_axisIsTimedTree || (calibration.regression?.r2 ?? 0) >= 0.9999);
+      if (_calDateMeaningful) {
         const calFmt = axisDateFmtEl.value || 'yyyy-MM-dd';
         rows.push(['Calendar date', calibration.heightToDateString(height, 'full', calFmt)]);
         // HPD interval, if present

@@ -406,7 +406,7 @@ export const BUILTIN_STAT_KEYS = new Set([
  * @param {TreeCalibration|null} cal           – calibration object, or null
  * @param {object|null}          [residualData] – result of computeTemporalResiduals(), or null
  */
-export function injectBuiltinStats(schema, nodes, maxX, maxY, cal, residualData = null) {
+export function injectBuiltinStats(schema, nodes, maxX, maxY, cal, residualData = null, isTimedTree = false) {
   // Remove any previously injected builtin entries.
   for (const k of BUILTIN_STAT_KEYS) schema.delete(k);
   if (!nodes || !nodes.length) return;
@@ -503,7 +503,7 @@ export function injectBuiltinStats(schema, nodes, maxX, maxY, cal, residualData 
       name: '__cal_date__', label: 'Year',
       dataType: 'real', min: minDecYear, max: maxDecYear,
       observedMin: minDecYear, observedMax: maxDecYear,
-      onTips: true, onNodes: true, builtin: true,
+      onTips: true, onNodes: isTimedTree, builtin: true,
     };
     attachFmt(def);
     schema.set('__cal_date__', def);
