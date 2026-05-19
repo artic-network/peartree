@@ -862,17 +862,17 @@ async function _initCore(root = document) {
       branchColor:      branchColorEl.value,
       branchWidth:      branchWidthSlider.value,
       elbowRadius:      elbowRadiusSlider?.value ?? DEFAULT_THEME.elbowRadius,
-      fontSize:         fontSlider.value,
+      tipLabelFontSize: fontSlider.value,
       typeface:         fontFamilyEl.value,
       typefaceStyle:    fontTypefaceStyleEl?.value || '',
-      labelColor:       labelColorEl.value,
+      tipLabelColor:    labelColorEl.value,
       // Tip shape/size
       tipSize:          tipSlider.value,
       tipHaloSize:      tipHaloSlider.value,
       tipShapeColor:    tipShapeColorEl.value,
       tipShapeBgColor:  tipShapeBgEl.value,
       // Node shape/size
-      nodeSize:         nodeSlider.value,
+      nodeShapeSize:    nodeSlider.value,
       nodeHaloSize:     nodeHaloSlider.value,
       nodeShapeColor:   nodeShapeColorEl.value,
       nodeShapeBgColor: nodeShapeBgEl.value,
@@ -1172,7 +1172,10 @@ async function _initCore(root = document) {
       branchWidthSlider.value = s.branchWidth;
       $('branch-width-value').textContent = s.branchWidth;
     }
-    if (s.fontSize       != null) {
+    if (s.tipLabelFontSize != null) {
+      fontSlider.value = s.tipLabelFontSize;
+      $('font-size-value').textContent = s.tipLabelFontSize;
+    } else if (s.fontSize != null) {  // backward compat
       fontSlider.value = s.fontSize;
       $('font-size-value').textContent = s.fontSize;
     }
@@ -1205,7 +1208,8 @@ async function _initCore(root = document) {
     if (rttAxisTypefaceStyleEl) {
       _populateStyleSelect(rttAxisFontFamilyEl?.value || fontFamilyEl.value, rttAxisTypefaceStyleEl, s.rttAxisTypefaceStyle, true);
     }
-    if (s.labelColor)            labelColorEl.value       = s.labelColor;
+    if (s.tipLabelColor != null)  labelColorEl.value       = s.tipLabelColor;
+    else if (s.labelColor)         labelColorEl.value       = s.labelColor;  // backward compat
     if (s.selectedLabelStyle)    selectedLabelStyleEl.value = s.selectedLabelStyle;
     if (s.selectedTipStrokeColor)     selectedTipStrokeEl.value  = s.selectedTipStrokeColor;
     if (s.selectedNodeStrokeColor)         selectedNodeStrokeEl.value      = s.selectedNodeStrokeColor;
@@ -1364,7 +1368,10 @@ async function _initCore(root = document) {
     if (Array.isArray(s.branchShapesExtraCountBys)) {
       s.branchShapesExtraCountBys.forEach((v, i) => { if (branchShapeExtraCountBys[i]) branchShapeExtraCountBys[i].value = v; });
     }
-    if (s.nodeSize       != null) {
+    if (s.nodeShapeSize != null) {
+      nodeSlider.value = s.nodeShapeSize;
+      $('node-size-value').textContent = s.nodeShapeSize;
+    } else if (s.nodeSize != null) {  // backward compat
       nodeSlider.value = s.nodeSize;
       $('node-size-value').textContent = s.nodeSize;
     }
@@ -1679,7 +1686,7 @@ async function _initCore(root = document) {
       branchColor:      branchColorEl.value,
       branchWidth:      parseFloat(branchWidthSlider.value),
       elbowRadius:      parseFloat(elbowRadiusSlider?.value ?? DEFAULT_THEME.elbowRadius),
-      fontSize:         parseInt(fontSlider.value),
+      tipLabelFontSize: parseInt(fontSlider.value),
       tipRadius:        parseInt(tipSlider.value),
       tipHaloSize:      parseInt(tipHaloSlider.value),
       tipShapeColor:    tipShapeColorEl.value,
@@ -1688,7 +1695,7 @@ async function _initCore(root = document) {
       nodeHaloSize:     parseInt(nodeHaloSlider.value),
       nodeShapeColor:   nodeShapeColorEl.value,
       nodeShapeBgColor: nodeShapeBgEl.value,
-      labelColor:       labelColorEl.value,
+      tipLabelColor:    labelColorEl.value,
       selectedLabelStyle: selectedLabelStyleEl.value,
       paddingLeft:      _cfgPaddingLeft,
       paddingRight:     _cfgPaddingRight,
@@ -1912,9 +1919,9 @@ async function _initCore(root = document) {
       elbowRadiusSlider.value = t.elbowRadius;
       $('elbow-radius-value').textContent = t.elbowRadius;
     }
-    fontSlider.value        = t.fontSize;
-    $('font-size-value').textContent    = t.fontSize;
-    labelColorEl.value         = t.labelColor;
+    fontSlider.value        = t.tipLabelFontSize ?? t.fontSize;
+    $('font-size-value').textContent    = t.tipLabelFontSize ?? t.fontSize;
+    labelColorEl.value         = t.tipLabelColor ?? t.labelColor;
     selectedLabelStyleEl.value = t.selectedLabelStyle;
     selectedTipStrokeEl.value  = t.selectedTipStrokeColor;
     selectedNodeStrokeEl.value = t.selectedNodeStrokeColor;
@@ -1930,8 +1937,8 @@ async function _initCore(root = document) {
     $('tip-halo-value').textContent     = t.tipHaloSize;
     tipShapeColorEl.value   = t.tipShapeColor;
     tipShapeBgEl.value      = t.tipShapeBgColor;
-    nodeSlider.value        = t.nodeSize;
-    $('node-size-value').textContent    = t.nodeSize;
+    nodeSlider.value        = t.nodeShapeSize ?? t.nodeSize;
+    $('node-size-value').textContent    = t.nodeShapeSize ?? t.nodeSize;
     nodeHaloSlider.value    = t.nodeHaloSize;
     $('node-halo-value').textContent    = t.nodeHaloSize;
     nodeShapeColorEl.value  = t.nodeShapeColor;
@@ -1967,8 +1974,8 @@ async function _initCore(root = document) {
     legendFontSizeSlider.value = t.legendFontSize; $('legend-font-size-value').textContent = t.legendFontSize;
     legendTypefaceEl.value   = t.legendTypefaceKey ?? t.legendFontFamily ?? ''; // bwc
     nodeBarsColorEl.value = t.nodeBarsColor;
-    // legendTextColor falls back to labelColor for themes that don't define it explicitly.
-    const legendColor = t.legendTextColor || t.labelColor;
+    // legendTextColor falls back to tipLabelColor for themes that don't define it explicitly.
+    const legendColor = t.legendTextColor || t.tipLabelColor || t.labelColor;
     legendTextColorEl.value = legendColor;
     fontFamilyEl.value = t.typeface;
     // Populate typeface style selects for the new theme
@@ -2125,7 +2132,8 @@ async function _initCore(root = document) {
   _populateStyleSelect(nodeLabelTypefaceEl?.value || fontFamilyEl.value, nodeLabelTypefaceStyleEl, _saved.nodeLabelTypefaceStyle, true);
   if (_saved.collapsedCladeTypefaceKey && collapsedCladeTypefaceEl) collapsedCladeTypefaceEl.value = _saved.collapsedCladeTypefaceKey;
   _populateStyleSelect(collapsedCladeTypefaceEl?.value || fontFamilyEl.value, collapsedCladeTypefaceStyleEl, _saved.collapsedCladeTypefaceStyle, true);
-  if (_saved.labelColor)           labelColorEl.value       = _saved.labelColor;
+  if (_saved.tipLabelColor)        labelColorEl.value       = _saved.tipLabelColor;
+  else if (_saved.labelColor)      labelColorEl.value       = _saved.labelColor;  // backward compat
   if (_saved.selectedLabelStyle)   selectedLabelStyleEl.value = _saved.selectedLabelStyle;
   if (_saved.selectedTipStrokeColor)    selectedTipStrokeEl.value  = _saved.selectedTipStrokeColor;
   if (_saved.selectedNodeStrokeColor)        selectedNodeStrokeEl.value      = _saved.selectedNodeStrokeColor;
@@ -2281,7 +2289,10 @@ async function _initCore(root = document) {
   if (Array.isArray(_saved.branchShapesExtraCountBys)) {
     _saved.branchShapesExtraCountBys.forEach((v, i) => { if (branchShapeExtraCountBys[i]) branchShapeExtraCountBys[i].value = v; });
   }
-  if (_saved.nodeSize       != null) {
+  if (_saved.nodeShapeSize != null) {
+    nodeSlider.value = _saved.nodeShapeSize;
+    $('node-size-value').textContent = _saved.nodeShapeSize;
+  } else if (_saved.nodeSize != null) {  // backward compat
     nodeSlider.value = _saved.nodeSize;
     $('node-size-value').textContent = _saved.nodeSize;
   }
@@ -7741,8 +7752,8 @@ async function _initCore(root = document) {
    * Only keys present in `s` are applied — everything else is left unchanged.
    *
    * Supported keys (subset of full settings most useful programmatically):
-   *   theme, canvasBgColor, branchColor, branchWidth, fontSize, labelColor,
-   *   tipSize, tipHaloSize, nodeSize, nodeHaloSize,
+   *   theme, canvasBgColor, branchColor, branchWidth, tipLabelFontSize, tipLabelColor,
+   *   tipSize, tipHaloSize, nodeShapeSize, nodeHaloSize,
    *   tipLabelShow, axisShow, axisDateFormat, axisMajorInterval, axisMinorInterval,
    *   axisMajorLabelFormat, axisMinorLabelFormat, clampNegBranches,
    *   nodeLabelAnnotation, legendShow, legendTextColor
@@ -7767,13 +7778,14 @@ async function _initCore(root = document) {
       if (treeLoaded) _syncCanvasWrapperBg(s.canvasBgColor);
     }
     if (s.branchColor  != null) branchColorEl.value = s.branchColor;
-    if (s.labelColor   != null) labelColorEl.value  = s.labelColor;
+    if (s.tipLabelColor != null) labelColorEl.value  = s.tipLabelColor;
+    else if (s.labelColor != null) labelColorEl.value = s.labelColor;  // backward compat
     _setSlider(branchWidthSlider, 'branch-width-value', s.branchWidth);
     _setSlider(elbowRadiusSlider,  'elbow-radius-value',  s.elbowRadius);
-    _setSlider(fontSlider,        'font-size-value',    s.fontSize);
+    _setSlider(fontSlider,        'font-size-value',    s.tipLabelFontSize ?? s.fontSize);
     _setSlider(tipSlider,         'tip-size-value',     s.tipSize);
     _setSlider(tipHaloSlider,     'tip-halo-value',     s.tipHaloSize);
-    _setSlider(nodeSlider,        'node-size-value',    s.nodeSize);
+    _setSlider(nodeSlider,        'node-size-value',    s.nodeShapeSize ?? s.nodeSize);
     _setSlider(nodeHaloSlider,    'node-halo-value',    s.nodeHaloSize);
 
     if (s.tipLabelShow != null && tipLabelShow) tipLabelShow.value = s.tipLabelShow;
@@ -7793,13 +7805,184 @@ async function _initCore(root = document) {
     if (s.axisMinorLabelFormat != null) axisMinorLabelEl.value     = s.axisMinorLabelFormat;
 
     if (s.nodeLabelAnnotation != null && nodeLabelShowEl)  nodeLabelShowEl.value   = s.nodeLabelAnnotation;
+    if (s.nodeLabelPosition   != null && nodeLabelPositionEl)  nodeLabelPositionEl.value  = s.nodeLabelPosition;
     if (s.branchLabelAnnotation != null && branchLabelShowEl) branchLabelShowEl.value = s.branchLabelAnnotation;
+    if (s.branchLabelPosition != null && branchLabelPositionEl) branchLabelPositionEl.value = s.branchLabelPosition;
     if (s.nodeLabelColourBy   != null && nodeLabelColourBy)   { nodeLabelColourBy.value   = s.nodeLabelColourBy;   renderer?.setNodeLabelColourBy(s.nodeLabelColourBy || null); }
     if (s.branchLabelColourBy != null && branchLabelColourBy) { branchLabelColourBy.value = s.branchLabelColourBy; renderer?.setBranchLabelColourBy(s.branchLabelColourBy || null); }
     if (s.legendTextColor != null && legendTextColorEl) {
       legendTextColorEl.value = s.legendTextColor;
       legendRenderer?.setTextColor?.(s.legendTextColor);
     }
+
+    // Tip / node shape colours.
+    if (s.tipShapeColor   != null) tipShapeColorEl.value  = s.tipShapeColor;
+    if (s.tipShapeBgColor != null) tipShapeBgEl.value     = s.tipShapeBgColor;
+    if (s.nodeShapeColor  != null) nodeShapeColorEl.value = s.nodeShapeColor;
+    if (s.nodeShapeBgColor != null) nodeShapeBgEl.value   = s.nodeShapeBgColor;
+
+    // Selected state.
+    if (s.selectedLabelStyle   != null) selectedLabelStyleEl.value = s.selectedLabelStyle;
+    if (s.selectedTipFillColor   != null) selectedTipFillEl.value   = s.selectedTipFillColor;
+    if (s.selectedTipStrokeColor != null) selectedTipStrokeEl.value = s.selectedTipStrokeColor;
+    _setSlider(selectedTipGrowthSlider,    'selected-tip-growth-value',    s.selectedTipGrowthFactor);
+    _setSlider(selectedTipMinSizeSlider,   'selected-tip-min-size-value',  s.selectedTipMinSize);
+    _setSlider(selectedTipFillOpacitySlider,   'selected-tip-fill-opacity-value',   s.selectedTipFillOpacity);
+    _setSlider(selectedTipStrokeWidthSlider,   'selected-tip-stroke-width-value',   s.selectedTipStrokeWidth);
+    _setSlider(selectedTipStrokeOpacitySlider, 'selected-tip-stroke-opacity-value', s.selectedTipStrokeOpacity);
+    if (s.selectedNodeFillColor   != null) selectedNodeFillEl.value   = s.selectedNodeFillColor;
+    if (s.selectedNodeStrokeColor != null) selectedNodeStrokeEl.value = s.selectedNodeStrokeColor;
+    _setSlider(selectedNodeGrowthSlider,    'selected-node-growth-value',    s.selectedNodeGrowthFactor);
+    _setSlider(selectedNodeMinSizeSlider,   'selected-node-min-size-value',  s.selectedNodeMinSize);
+    _setSlider(selectedNodeFillOpacitySlider,   'selected-node-fill-opacity-value',   s.selectedNodeFillOpacity);
+    _setSlider(selectedNodeStrokeWidthSlider,   'selected-node-stroke-width-value',   s.selectedNodeStrokeWidth);
+    _setSlider(selectedNodeStrokeOpacitySlider, 'selected-node-stroke-opacity-value', s.selectedNodeStrokeOpacity);
+
+    // Hover state.
+    if (s.tipHoverFillColor   != null) tipHoverFillEl.value   = s.tipHoverFillColor;
+    if (s.tipHoverStrokeColor != null) tipHoverStrokeEl.value = s.tipHoverStrokeColor;
+    _setSlider(tipHoverGrowthSlider,    'tip-hover-growth-value',    s.tipHoverGrowthFactor);
+    _setSlider(tipHoverMinSizeSlider,   'tip-hover-min-size-value',  s.tipHoverMinSize);
+    _setSlider(tipHoverFillOpacitySlider,   'tip-hover-fill-opacity-value',   s.tipHoverFillOpacity);
+    _setSlider(tipHoverStrokeWidthSlider,   'tip-hover-stroke-width-value',   s.tipHoverStrokeWidth);
+    _setSlider(tipHoverStrokeOpacitySlider, 'tip-hover-stroke-opacity-value', s.tipHoverStrokeOpacity);
+    if (s.nodeHoverFillColor   != null) nodeHoverFillEl.value   = s.nodeHoverFillColor;
+    if (s.nodeHoverStrokeColor != null) nodeHoverStrokeEl.value = s.nodeHoverStrokeColor;
+    _setSlider(nodeHoverGrowthSlider,    'node-hover-growth-value',    s.nodeHoverGrowthFactor);
+    _setSlider(nodeHoverMinSizeSlider,   'node-hover-min-size-value',  s.nodeHoverMinSize);
+    _setSlider(nodeHoverFillOpacitySlider,   'node-hover-fill-opacity-value',   s.nodeHoverFillOpacity);
+    _setSlider(nodeHoverStrokeWidthSlider,   'node-hover-stroke-width-value',   s.nodeHoverStrokeWidth);
+    _setSlider(nodeHoverStrokeOpacitySlider, 'node-hover-stroke-opacity-value', s.nodeHoverStrokeOpacity);
+
+    // Tip label detail.
+    if (s.tipLabelAlign != null && tipLabelAlignEl) tipLabelAlignEl.value = s.tipLabelAlign;
+    _setSlider(tipLabelSpacingSlider, 'tip-label-spacing-value', s.tipLabelSpacing);
+    if (s.tipLabelDecimalPlaces != null && tipLabelDpEl) tipLabelDpEl.value = String(s.tipLabelDecimalPlaces);
+    if (s.tipLabelShape      != null && tipLabelShapeEl)      tipLabelShapeEl.value      = s.tipLabelShape;
+    if (s.tipLabelShapeColor != null && tipLabelShapeColorEl) tipLabelShapeColorEl.value = s.tipLabelShapeColor;
+    _setSlider(tipLabelShapeSizeSlider,       'tip-label-shape-size-value',        s.tipLabelShapeSize);
+    _setSlider(tipLabelShapeMarginLeftSlider, 'tip-label-shape-margin-left-value', s.tipLabelShapeMarginLeft);
+    _setSlider(tipLabelShapeSpacingSlider,    'tip-label-shape-spacing-value',     s.tipLabelShapeSpacing);
+    if (Array.isArray(s.tipLabelShapesExtra)) {
+      s.tipLabelShapesExtra.forEach((v, i) => { if (tipLabelShapeExtraEls[i]) tipLabelShapeExtraEls[i].value = v; });
+    }
+    if (Array.isArray(s.tipLabelShapeExtraColourBys)) {
+      s.tipLabelShapeExtraColourBys.forEach((v, i) => { if (tipLabelShapeExtraColourBys[i]) tipLabelShapeExtraColourBys[i].value = v; });
+    }
+    if (Array.isArray(s.tipLabelsExtra)) {
+      [tipLabel2ShowEl, tipLabel3ShowEl, tipLabel4ShowEl].forEach((el, i) => {
+        if (el && s.tipLabelsExtra[i] != null) el.value = s.tipLabelsExtra[i];
+      });
+    }
+    if (Array.isArray(s.tipLabelsExtraLayouts)) {
+      [tipLabel2LayoutEl, tipLabel3LayoutEl, tipLabel4LayoutEl].forEach((el, i) => {
+        if (el && s.tipLabelsExtraLayouts[i] != null) el.value = s.tipLabelsExtraLayouts[i];
+      });
+    }
+
+    // Node label detail.
+    _setSlider(nodeLabelFontSizeSlider, 'node-label-font-size-value', s.nodeLabelFontSize);
+    if (s.nodeLabelColor != null && nodeLabelColorEl) nodeLabelColorEl.value = s.nodeLabelColor;
+    _setSlider(nodeLabelSpacingSlider, 'node-label-spacing-value', s.nodeLabelSpacing);
+    if (s.nodeLabelDecimalPlaces != null && nodeLabelDpEl) nodeLabelDpEl.value = String(s.nodeLabelDecimalPlaces);
+
+    // Branch label detail.
+    _setSlider(branchLabelFontSizeSlider, 'branch-label-font-size-value', s.branchLabelFontSize);
+    if (s.branchLabelColor != null && branchLabelColorEl) branchLabelColorEl.value = s.branchLabelColor;
+    _setSlider(branchLabelSpacingSlider, 'branch-label-spacing-value', s.branchLabelSpacing);
+    if (s.branchLabelDecimalPlaces != null && branchLabelDpEl) branchLabelDpEl.value = String(s.branchLabelDecimalPlaces);
+
+    // Branch shapes.
+    if (s.branchShape          != null && branchShapeEl)          branchShapeEl.value          = s.branchShape;
+    if (s.branchShapeColor     != null && branchShapeColorEl)     branchShapeColorEl.value     = s.branchShapeColor;
+    if (s.branchShapeHaloColor != null && branchShapeHaloColorEl) branchShapeHaloColorEl.value = s.branchShapeHaloColor;
+    if (s.branchShapeAlign     != null && branchShapeAlignEl)     branchShapeAlignEl.value     = s.branchShapeAlign;
+    if (s.branchShapeColourBy  != null && branchShapeColourByEl)  branchShapeColourByEl.value  = s.branchShapeColourBy;
+    if (s.branchShapeCountBy   != null && branchShapeCountByEl)   branchShapeCountByEl.value   = s.branchShapeCountBy;
+    if (branchShapeHeightSlider && s.branchShapeHeightPct != null) {
+      branchShapeHeightSlider.value = s.branchShapeHeightPct;
+      const _lbl = $('branch-shape-height-value'); if (_lbl) _lbl.textContent = s.branchShapeHeightPct;
+    }
+    if (branchShapeWidthSlider && s.branchShapeWidth != null) {
+      branchShapeWidthSlider.value = _branchShapeWidthToSlider(s.branchShapeWidth);
+      const _lbl = $('branch-shape-width-value'); if (_lbl) _lbl.textContent = _formatBranchShapeWidth(s.branchShapeWidth);
+    }
+    _setSlider(branchShapeSpacingSlider, 'branch-shape-spacing-value', s.branchShapeSpacing);
+    _setSlider(branchShapeHaloSlider,    'branch-shape-halo-value',    s.branchShapeHalo);
+    if (Array.isArray(s.branchShapesExtra)) {
+      s.branchShapesExtra.forEach((v, i) => { if (branchShapeExtraEls[i]) branchShapeExtraEls[i].value = v; });
+    }
+    if (Array.isArray(s.branchShapesExtraColors)) {
+      s.branchShapesExtraColors.forEach((v, i) => { if (branchShapeExtraColors[i] && v) branchShapeExtraColors[i].value = v; });
+    }
+    if (Array.isArray(s.branchShapesExtraColourBys)) {
+      s.branchShapesExtraColourBys.forEach((v, i) => { if (branchShapeExtraColourBys[i]) branchShapeExtraColourBys[i].value = v; });
+    }
+    if (Array.isArray(s.branchShapesExtraCountBys)) {
+      s.branchShapesExtraCountBys.forEach((v, i) => { if (branchShapeExtraCountBys[i]) branchShapeExtraCountBys[i].value = v; });
+    }
+
+    // Node bars.
+    if (s.nodeBarsEnabled != null && nodeBarsShowEl)  nodeBarsShowEl.value  = s.nodeBarsEnabled;
+    if (s.nodeBarsColor   != null && nodeBarsColorEl) nodeBarsColorEl.value = s.nodeBarsColor;
+    _setSlider(nodeBarsWidthSlider,         'node-bars-width-value',          s.nodeBarsWidth);
+    _setSlider(nodeBarsFillOpacitySlider,   'node-bars-fill-opacity-value',   s.nodeBarsFillOpacity);
+    _setSlider(nodeBarsStrokeOpacitySlider, 'node-bars-stroke-opacity-value', s.nodeBarsStrokeOpacity);
+    if (s.nodeBarsLine  != null && nodeBarsLineEl)  nodeBarsLineEl.value  = s.nodeBarsLine;
+    if (s.nodeBarsRange != null && nodeBarsRangeEl) nodeBarsRangeEl.value = s.nodeBarsRange;
+
+    // Axis colour / size.
+    if (s.axisColor != null) { axisColorEl.value = s.axisColor; axisRenderer.setColor(s.axisColor); }
+    if (s.axisFontSize != null) {
+      axisFontSizeSlider.value = s.axisFontSize;
+      const _lbl = $('axis-font-size-value'); if (_lbl) _lbl.textContent = s.axisFontSize;
+      axisRenderer.setFontSize(parseInt(s.axisFontSize));
+    }
+    if (s.axisLineWidth != null) {
+      axisLineWidthSlider.value = s.axisLineWidth;
+      const _lbl = $('axis-line-width-value'); if (_lbl) _lbl.textContent = s.axisLineWidth;
+      axisRenderer.setLineWidth(parseFloat(s.axisLineWidth));
+    }
+
+    // Legend detail.
+    _setSlider(legendFontSizeSlider, 'legend-font-size-value', s.legendFontSize);
+    if (s.legendHeightPct != null && legendHeightPctSlider) {
+      legendHeightPctSlider.value = s.legendHeightPct;
+      const _lbl = $('legend-height-pct-value'); if (_lbl) _lbl.textContent = s.legendHeightPct + '%';
+    }
+    if (s.legend2Position  != null && legend2ShowEl) legend2ShowEl.value = s.legend2Position;
+    if (s.legendHeightPct2 != null && legend2HeightPctSlider) {
+      legend2HeightPctSlider.value = s.legendHeightPct2;
+      const _lbl = $('legend2-height-pct-value'); if (_lbl) _lbl.textContent = s.legendHeightPct2 + '%';
+    }
+    if (s.legend3Position  != null && legend3ShowEl) legend3ShowEl.value = s.legend3Position;
+    if (s.legendHeightPct3 != null && legend3HeightPctSlider) {
+      legend3HeightPctSlider.value = s.legendHeightPct3;
+      const _lbl = $('legend3-height-pct-value'); if (_lbl) _lbl.textContent = s.legendHeightPct3 + '%';
+    }
+    if (s.legend4Position  != null && legend4ShowEl) legend4ShowEl.value = s.legend4Position;
+    if (s.legendHeightPct4 != null && legend4HeightPctSlider) {
+      legend4HeightPctSlider.value = s.legendHeightPct4;
+      const _lbl = $('legend4-height-pct-value'); if (_lbl) _lbl.textContent = s.legendHeightPct4 + '%';
+    }
+
+    // Collapsed clade detail.
+    _setSlider(collapsedCladeFontSizeSlider, 'collapsed-clade-font-size-value', s.collapsedCladeFontSize);
+    _setSlider(collapsedStrokeWidthSlider,   'collapsed-stroke-width-value',   s.collapsedCladeStrokeWidth);
+    _setSlider(collapsedStrokeOpacitySlider, 'collapsed-stroke-opacity-value', s.collapsedCladeStrokeOpacity);
+
+    // Typeface.
+    if (s.typeface != null && fontFamilyEl) {
+      fontFamilyEl.value = s.typeface;
+      if (fontTypefaceStyleEl) _populateStyleSelect(fontFamilyEl.value, fontTypefaceStyleEl, s.typefaceStyle);
+    }
+
+    // Root stem / paint colour.
+    if (s.rootStemPct != null && rootStemPctSlider) {
+      rootStemPctSlider.value = s.rootStemPct;
+      const _lbl = $('root-stem-pct-value'); if (_lbl) _lbl.textContent = s.rootStemPct + '%';
+    }
+    if (s.paintColour != null && paintColourPickerEl) paintColourPickerEl.value = s.paintColour;
 
     // Push updated DOM values to the renderer and persist.
     if (renderer) renderer.setSettings(_buildRendererSettings());
@@ -7969,8 +8152,8 @@ async function _initCore(root = document) {
 
     /**
      * Apply a partial settings object at runtime.
-     * Supported keys: theme, canvasBgColor, branchColor, branchWidth, fontSize,
-     * labelColor, tipSize, tipHaloSize, nodeSize, nodeHaloSize, tipLabelShow,
+     * Supported keys: theme, canvasBgColor, branchColor, branchWidth, tipLabelFontSize,
+     * tipLabelColor, tipSize, tipHaloSize, nodeShapeSize, nodeHaloSize, tipLabelShow,
      * axisShow, axisDateFormat, axisMajorInterval, axisMinorInterval,
      * axisMajorLabelFormat, axisMinorLabelFormat, clampNegBranches,
      * nodeLabelAnnotation, legendShow, legendTextColor.

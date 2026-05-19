@@ -61,9 +61,9 @@ Canonical reference for settings keys accepted in the `settings` object (URL `se
 | `dataTablePinned` | true \| false | `false` |
 | `defaultTheme` | Built-in or user theme name | `Artic` |
 | `elbowRadius` | number or numeric string | `2` |
-| `fontSize` | number (6..48, step 1) | `11` |
+| `tipLabelFontSize` | number (6..48, step 1) | `11` |
 | `introAnimation` | 'x-then-y' \| 'y-then-x' \| 'simultaneous' \| 'from-bottom' \| 'from-top' \| 'none' | `x-then-y` |
-| `labelColor` | CSS color string | `#4b4b49` |
+| `tipLabelColor` | CSS color string | `#4b4b49` |
 | `legend2Position` | 'right' \| 'below' | `right` |
 | `legend3Position` | 'right' \| 'below' | `right` |
 | `legend4Position` | 'right' \| 'below' | `right` |
@@ -104,7 +104,7 @@ Canonical reference for settings keys accepted in the `settings` object (URL `se
 | `nodeLabelTypefaceStyle` | string | `n/a` |
 | `nodeShapeBgColor` | CSS color string | `#ebe8e2` |
 | `nodeShapeColor` | CSS color string | `#4b4b49` |
-| `nodeSize` | number (0..30, step 1) | `3` |
+| `nodeShapeSize` | number (0..30, step 1) | `3` |
 | `paddingBottom` | number (0..100, step 1) | `20` |
 | `paddingLeft` | number (0..100, step 1) | `20` |
 | `paddingRight` | number (0..100, step 1) | `20` |

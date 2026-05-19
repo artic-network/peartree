@@ -310,7 +310,7 @@ export class TreeRenderer {
     this.bgColor           = s.bgColor;
     this.branchColor       = s.branchColor;
     this.branchWidth       = s.branchWidth;
-    this.fontSize          = s.fontSize;
+    this.fontSize          = s.tipLabelFontSize ?? s.fontSize;  // accept both; tipLabelFontSize is canonical
     this._typefaceKey      = s.typefaceKey      ?? 'Monospace';
     this.fontFamily        = TYPEFACES[this._typefaceKey]?.family ?? this._typefaceKey ?? 'monospace';
     this._typefaceStyle    = s.typefaceStyle    ?? (TYPEFACES[this._typefaceKey]?.defaultStyle ?? 'Regular');
@@ -332,8 +332,8 @@ export class TreeRenderer {
     // ── Labels ──────────────────────────────────────────────────────────────
     // dimLabelColor and selectedLabelColor are derived from labelColor when not
     // explicitly supplied, matching the logic in setLabelColor().
-    const { dim: _dim, selected: _sel } = TreeRenderer._deriveLabelColors(s.labelColor);
-    this.labelColor         = s.labelColor;
+    const { dim: _dim, selected: _sel } = TreeRenderer._deriveLabelColors(s.tipLabelColor ?? s.labelColor);
+    this.labelColor         = s.tipLabelColor ?? s.labelColor;
     this.dimLabelColor      = s.dimLabelColor      ?? _dim;
     this.selectedLabelColor = s.selectedLabelColor ?? _sel;
     this.selectedLabelStyle = s.selectedLabelStyle ?? 'bold';

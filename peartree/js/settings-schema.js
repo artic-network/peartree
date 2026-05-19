@@ -171,7 +171,7 @@ export const SETTINGS_SCHEMA = [
     desc: 'Array of three layout modes: append, align, join-space, join-pipe, join-slash, join-underscore, join-dash.',
   },
   {
-    key: 'fontSize',
+    key: 'tipLabelFontSize',
     label: 'Tip label font size (px)',
     group: 'Tip labels',
     type: 'number',
@@ -248,7 +248,7 @@ export const SETTINGS_SCHEMA = [
     desc: 'Size of tip markers.',
   },
   {
-    key: 'nodeSize',
+    key: 'nodeShapeSize',
     label: 'Node shape size (px)',
     group: 'Shapes',
     type: 'number',
