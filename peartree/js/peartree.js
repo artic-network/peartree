@@ -205,15 +205,16 @@ async function _initCore(root = document) {
   async function _fetchJsonFromParam(paramName) {
     const raw = _p.get(paramName);
     if (!raw) return null;
+    let resolvedUrl = raw;
     try {
-      const url = _normalizeConfigJsonUrl(raw);
-      const resp = await fetch(url);
-      if (!resp.ok) throw new Error('HTTP ' + resp.status + ' – ' + url);
+      resolvedUrl = _normalizeConfigJsonUrl(raw);
+      const resp = await fetch(resolvedUrl);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status + ' – ' + resolvedUrl);
       const obj = await resp.json();
       if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('Expected JSON object');
       return obj;
     } catch (err) {
-      console.warn('peartree: ignoring invalid ' + paramName + ' –', err.message);
+      console.warn('peartree: ignoring invalid ' + paramName + ' (' + resolvedUrl + ') –', err.message);
       return null;
     }
   }
