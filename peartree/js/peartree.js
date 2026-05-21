@@ -3527,6 +3527,14 @@ async function _initCore(root = document) {
     canvas, axisCanvas, legendRightCanvas, legend2RightCanvas,
     axisRenderer,
     getSettingsSnapshot: () => { const s = _buildSnapshot(); delete s.paintColour; return s; },
+    getConfigSnapshot:   () => ({
+      settings: (() => { const s = _buildSnapshot(); delete s.paintColour; return s; })(),
+      ui:       Object.fromEntries(PT_UI_FLAG_DEFS.map(def => [def.uiKey, _cfg[def.name]])),
+    }),
+    getDefaultConfig:    () => ({
+      settings: DEFAULT_SETTINGS,
+      ui:       Object.fromEntries(PT_UI_FLAG_DEFS.map(def => [def.uiKey, true])),
+    }),
   });
 
   /** Show/hide a decimal-places row based on whether the chosen label annotation is numeric. */
