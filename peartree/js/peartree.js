@@ -4571,6 +4571,24 @@ async function _initCore(root = document) {
       // Now that filterControl exists (created in bindControls on first load),
       // populate its column picker from the current tree's schema, then enable it.
       filterControl?.setSchema(schema);
+      // (Re-)load filter definitions from the effective tree settings.
+      // This ensures filters embedded in the tree file or supplied via configUrl
+      // are applied even when localStorage is empty or disabled (nostore=1).
+      if (filterManager && _treeEffectiveSettings.filters) {
+        try {
+          const _fArr = JSON.parse(_treeEffectiveSettings.filters);
+          if (Array.isArray(_fArr) && _fArr.length > 0) {
+            const _fMap = new Map(_fArr.map(f => [f.id, f]));
+            filterManager.setAll(_fMap);
+            _refreshFilterUIs(_fMap);
+            // Re-apply filter select values from the effective settings.
+            for (let _fi = 0; _fi < _filterSelectIds.length; _fi++) {
+              const _fv = _treeEffectiveSettings[_filterSelectIds[_fi]];
+              if (_fv && _filterSelectEls[_fi]) _filterSelectEls[_fi].value = _fv;
+            }
+          }
+        } catch (_) { /* corrupt filter data — skip */ }
+      }
       // Populate the named-filter popup with any already-restored saved filters.
       if (filterManager) {
         const fm = filterManager.getAll();
