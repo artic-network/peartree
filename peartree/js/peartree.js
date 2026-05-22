@@ -3014,7 +3014,7 @@ async function _initCore(root = document) {
   // Restore saved filter definitions now that filterManager exists
   if (_saved.filters) {
     try {
-      const arr = JSON.parse(_saved.filters);
+      const arr = Array.isArray(_saved.filters) ? _saved.filters : JSON.parse(_saved.filters);
       if (Array.isArray(arr)) {
         const map = new Map(arr.map(f => [f.id, f]));
         filterManager.setAll(map);
@@ -4576,7 +4576,9 @@ async function _initCore(root = document) {
       // are applied even when localStorage is empty or disabled (nostore=1).
       if (filterManager && _treeEffectiveSettings.filters) {
         try {
-          const _fArr = JSON.parse(_treeEffectiveSettings.filters);
+          const _fArr = Array.isArray(_treeEffectiveSettings.filters)
+            ? _treeEffectiveSettings.filters
+            : JSON.parse(_treeEffectiveSettings.filters);
           if (Array.isArray(_fArr) && _fArr.length > 0) {
             const _fMap = new Map(_fArr.map(f => [f.id, f]));
             filterManager.setAll(_fMap);
