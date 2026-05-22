@@ -853,31 +853,38 @@ export class TreeRenderer {
     this.tipRadius = r;
     this._measureLabels(); // label offset depends on tip radius
     this._updateScaleX();
+    this._syncTipCircleRenderer();
     this._dirty = true;
   }
 
   setNodeRadius(r) {
     this.nodeRadius = r;
+    this._syncNodeCircleRenderer();
+    this._syncNodeLabelRenderer(); // anchorRadius uses nodeRadius
     this._dirty = true;
   }
 
   setTipShapeColor(c) {
     this.tipShapeColor = c;
+    this._syncTipCircleRenderer();
     this._dirty = true;
   }
 
   setNodeShapeColor(c) {
     this.nodeShapeColor = c;
+    this._syncNodeCircleRenderer();
     this._dirty = true;
   }
 
   setTipShapeBgColor(c) {
     this.tipShapeBgColor = c;
+    this._syncTipCircleRenderer();
     this._dirty = true;
   }
 
   setNodeShapeBgColor(c) {
     this.nodeShapeBgColor = c;
+    this._syncNodeCircleRenderer();
     this._dirty = true;
   }
 
@@ -885,11 +892,13 @@ export class TreeRenderer {
     this.tipHaloSize = n;
     this._measureLabels();
     this._updateScaleX();
+    this._syncTipCircleRenderer();
     this._dirty = true;
   }
 
   setNodeHaloSize(n) {
     this.nodeHaloSize = n;
+    this._syncNodeCircleRenderer();
     this._dirty = true;
   }
 
@@ -900,21 +909,25 @@ export class TreeRenderer {
 
   setNodeLabelPosition(pos) {
     this.nodeLabelPosition = pos;
+    this._syncNodeLabelRenderer();
     this._dirty = true;
   }
 
   setNodeLabelFontSize(sz) {
     this.nodeLabelFontSize = +sz;
+    this._syncNodeLabelRenderer();
     this._dirty = true;
   }
 
   setNodeLabelColor(c) {
     this.nodeLabelColor = c;
+    this._syncNodeLabelRenderer();
     this._dirty = true;
   }
 
   setNodeLabelSpacing(n) {
     this.nodeLabelSpacing = +n;
+    this._syncNodeLabelRenderer();
     this._dirty = true;
   }
 
@@ -925,21 +938,25 @@ export class TreeRenderer {
 
   setBranchLabelPosition(pos) {
     this.branchLabelPosition = pos;
+    this._syncBranchLabelRenderer();
     this._dirty = true;
   }
 
   setBranchLabelFontSize(sz) {
     this.branchLabelFontSize = +sz;
+    this._syncBranchLabelRenderer();
     this._dirty = true;
   }
 
   setBranchLabelColor(c) {
     this.branchLabelColor = c;
+    this._syncBranchLabelRenderer();
     this._dirty = true;
   }
 
   setBranchLabelSpacing(n) {
     this.branchLabelSpacing = +n;
+    this._syncBranchLabelRenderer();
     this._dirty = true;
   }
 

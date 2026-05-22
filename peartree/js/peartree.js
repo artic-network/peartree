@@ -205,15 +205,16 @@ async function _initCore(root = document) {
   async function _fetchJsonFromParam(paramName) {
     const raw = _p.get(paramName);
     if (!raw) return null;
+    let resolvedUrl = raw;
     try {
-      const url = _normalizeConfigJsonUrl(raw);
-      const resp = await fetch(url);
-      if (!resp.ok) throw new Error('HTTP ' + resp.status + ' – ' + url);
+      resolvedUrl = _normalizeConfigJsonUrl(raw);
+      const resp = await fetch(resolvedUrl);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status + ' – ' + resolvedUrl);
       const obj = await resp.json();
       if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('Expected JSON object');
       return obj;
     } catch (err) {
-      console.warn('peartree: ignoring invalid ' + paramName + ' –', err.message);
+      console.warn('peartree: ignoring invalid ' + paramName + ' (' + resolvedUrl + ') –', err.message);
       return null;
     }
   }
@@ -3053,7 +3054,7 @@ async function _initCore(root = document) {
   // Restore saved filter definitions now that filterManager exists
   if (_saved.filters) {
     try {
-      const arr = JSON.parse(_saved.filters);
+      const arr = Array.isArray(_saved.filters) ? _saved.filters : JSON.parse(_saved.filters);
       if (Array.isArray(arr)) {
         const map = new Map(arr.map(f => [f.id, f]));
         filterManager.setAll(map);
@@ -3572,6 +3573,14 @@ async function _initCore(root = document) {
     canvas, axisCanvas, legendRightCanvas, legend2RightCanvas,
     axisRenderer,
     getSettingsSnapshot: () => { const s = _buildSnapshot(); delete s.paintColour; return s; },
+    getConfigSnapshot:   () => ({
+      settings: (() => { const s = _buildSnapshot(); delete s.paintColour; return s; })(),
+      ui:       Object.fromEntries(PT_UI_FLAG_DEFS.map(def => [def.uiKey, _cfg[def.name]])),
+    }),
+    getDefaultConfig:    () => ({
+      settings: DEFAULT_SETTINGS,
+      ui:       Object.fromEntries(PT_UI_FLAG_DEFS.map(def => [def.uiKey, true])),
+    }),
   });
 
   /** Show/hide a decimal-places row based on whether the chosen label annotation is numeric. */
@@ -4074,11 +4083,20 @@ async function _initCore(root = document) {
       // Apply effective settings for this tree load.
       // Precedence (low -> high): saved/local, file-embedded, init(URL/embed).
       // This guarantees URL settings always win over tree-embedded values.
+      // null values in initSettings are treated as "not specified" (not as explicit
+      // overrides), so a configUrl that exports null filter assignments does not
+      // wipe out filter assignments embedded in the tree file.
+      const _initSettingsNonNull = {};
+      for (const [_k, _v] of Object.entries(_cfg.initSettings || {})) {
+        if (_v !== null && _v !== undefined) _initSettingsNonNull[_k] = _v;
+      }
+      console.log('[PT filter debug] _cfg.initSettings.filters=', _cfg.initSettings?.filters, ' _fileSettings.nodeLabelsFilter=', _fileSettings?.nodeLabelsFilter);
+      console.log('[PT filter debug] _initSettingsNonNull has filters?', 'filters' in _initSettingsNonNull, ' nodeLabelsFilter=', _initSettingsNonNull.nodeLabelsFilter);
       const _treeEffectiveSettings = Object.assign(
         {},
         _saved || {},
         _fileSettings || {},
-        _cfg.initSettings || {},
+        _initSettingsNonNull,
       );
       // If init/URL explicitly requested a theme, apply that theme and then only
       // apply explicit init visual overrides on top. This prevents file-embedded
@@ -4614,9 +4632,35 @@ async function _initCore(root = document) {
       // Now that filterControl exists (created in bindControls on first load),
       // populate its column picker from the current tree's schema, then enable it.
       filterControl?.setSchema(schema);
+      // (Re-)load filter definitions from the effective tree settings.
+      // This ensures filters embedded in the tree file or supplied via configUrl
+      // are applied even when localStorage is empty or disabled (nostore=1).
+      console.log('[PT filter debug] _treeEffectiveSettings.filters=', _treeEffectiveSettings.filters, ' nodeLabelsFilter=', _treeEffectiveSettings.nodeLabelsFilter, ' branchLabelsFilter=', _treeEffectiveSettings.branchLabelsFilter);
+      if (filterManager && _treeEffectiveSettings.filters) {
+        try {
+          const _fArr = Array.isArray(_treeEffectiveSettings.filters)
+            ? _treeEffectiveSettings.filters
+            : JSON.parse(_treeEffectiveSettings.filters);
+          console.log('[PT filter debug] _fArr=', _fArr);
+          if (Array.isArray(_fArr) && _fArr.length > 0) {
+            const _fMap = new Map(_fArr.map(f => [f.id, f]));
+            filterManager.setAll(_fMap);
+            _refreshFilterUIs(_fMap);
+            // Re-apply filter select values from the effective settings.
+            for (let _fi = 0; _fi < _filterSelectIds.length; _fi++) {
+              const _fv = _treeEffectiveSettings[_filterSelectIds[_fi]];
+              console.log('[PT filter debug] select[' + _filterSelectIds[_fi] + '] effective=', _fv, ' el=', _filterSelectEls[_fi]);
+              if (_fv && _filterSelectEls[_fi]) _filterSelectEls[_fi].value = _fv;
+            }
+          }
+        } catch (_err) { console.error('[PT filter debug] parse error', _err); }
+      } else {
+        console.log('[PT filter debug] skipped: filterManager=', !!filterManager, ' filters key present=', !!_treeEffectiveSettings.filters);
+      }
       // Populate the named-filter popup with any already-restored saved filters.
       if (filterManager) {
         const fm = filterManager.getAll();
+        console.log('[PT filter debug] filterManager.getAll() size=', fm.size, ' nodeLabelsFilterEl.value=', nodeLabelsFilterEl?.value);
         filterControl?.setNamedFilters(fm);
         if (fm.size > 0) {
           renderer.setFilterDefinitions(fm);

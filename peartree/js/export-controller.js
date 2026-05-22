@@ -44,6 +44,8 @@ export function createExportController({
   legend2RightCanvas,
   axisRenderer,
   getSettingsSnapshot,
+  getConfigSnapshot = null,
+  getDefaultConfig  = null,
 }) {
   const $ = id => root.querySelector('#' + id);
 
@@ -140,6 +142,7 @@ export function createExportController({
           <label class="exp-radio-opt"><input type="radio" name="exp-format" value="nexus" checked>&nbsp;NEXUS <span style="color:var(--bs-secondary-color);font-size:0.78rem">(.nexus)</span></label>
           <label class="exp-radio-opt"><input type="radio" name="exp-format" value="newick">&nbsp;Newick <span style="color:var(--bs-secondary-color);font-size:0.78rem">(.nwk)</span></label>
           <label class="exp-radio-opt"><input type="radio" name="exp-format" value="csv">&nbsp;CSV metadata <span style="color:var(--bs-secondary-color);font-size:0.78rem">(.csv)</span></label>
+          <label class="exp-radio-opt"><input type="radio" name="exp-format" value="config-json">&nbsp;Config JSON <span style="color:var(--bs-secondary-color);font-size:0.78rem">(.json)</span></label>
         </div>
       </div>
       <div class="exp-section" id="exp-settings-row">
@@ -154,13 +157,25 @@ export function createExportController({
           <span>Embed view state (collapsed clades, highlights)</span>
         </label>
       </div>
-      <div class="exp-section">
+      <div class="exp-section" id="exp-scope-section">
         <span class="exp-section-label">Scope</span>
         <div class="exp-radio-group">
           <label class="exp-radio-opt"><input type="radio" name="exp-scope" value="full" checked>&nbsp;Entire tree</label>
           <label class="exp-radio-opt${!hasSubtree ? ' exp-disabled' : ''}">
             <input type="radio" name="exp-scope" value="subtree"${!hasSubtree ? ' disabled' : ''}>&nbsp;Current subtree view
           </label>
+        </div>
+      </div>
+      <div class="exp-section" id="exp-config-section" style="display:none">
+        <span class="exp-section-label">Settings</span>
+        <div class="exp-radio-group">
+          <label class="exp-radio-opt"><input type="radio" name="exp-cfg-settings" value="all" checked>&nbsp;All settings</label>
+          <label class="exp-radio-opt"><input type="radio" name="exp-cfg-settings" value="diff">&nbsp;Changed from defaults only</label>
+        </div>
+        <span class="exp-section-label" style="margin-top:0.6rem">UI flags</span>
+        <div class="exp-radio-group">
+          <label class="exp-radio-opt"><input type="radio" name="exp-cfg-ui" value="all" checked>&nbsp;All flags</label>
+          <label class="exp-radio-opt"><input type="radio" name="exp-cfg-ui" value="diff">&nbsp;Changed from defaults only</label>
         </div>
       </div>
       ${annotKeys.length > 0 ? `
@@ -294,7 +309,7 @@ export function createExportController({
       const warn = $('exp-tip-label-warn');
       const warnText = $('exp-tip-label-warn-text');
       if (!row || !warn || !warnText) return;
-      if (fmt === 'csv') {
+      if (fmt === 'csv' || fmt === 'config-json') {
         row.style.display = 'none';
         warn.style.display = 'none';
         return;
@@ -322,11 +337,16 @@ export function createExportController({
     // regardless of whether annotations are present.
     root.querySelectorAll('input[name="exp-format"]').forEach(radio =>
       radio.addEventListener('change', () => {
-        const fmt         = root.querySelector('input[name="exp-format"]:checked')?.value;
-        const settingsRow = $('exp-settings-row');
-        const stateRow    = $('exp-state-row');
-        if (settingsRow) settingsRow.style.display = fmt === 'nexus' ? '' : 'none';
-        if (stateRow)    stateRow.style.display    = fmt === 'nexus' ? '' : 'none';
+        const fmt           = root.querySelector('input[name="exp-format"]:checked')?.value;
+        const settingsRow   = $('exp-settings-row');
+        const stateRow      = $('exp-state-row');
+        const scopeRow      = $('exp-scope-section');
+        const configSection = $('exp-config-section');
+        const isConfig      = fmt === 'config-json';
+        if (settingsRow)   settingsRow.style.display   = fmt === 'nexus' ? '' : 'none';
+        if (stateRow)      stateRow.style.display      = fmt === 'nexus' ? '' : 'none';
+        if (scopeRow)      scopeRow.style.display      = isConfig ? 'none' : '';
+        if (configSection) configSection.style.display = isConfig ? '' : 'none';
         _syncTipLabelWarning();
       }));
 
@@ -354,34 +374,52 @@ export function createExportController({
         const tipLabelRow    = $('exp-tip-label-section');
         const csvIdRow       = $('exp-csv-id-section');
         const nodeLabelRow   = $('exp-node-label-section');
+        const scopeRow       = $('exp-scope-section');
+        const configSection  = $('exp-config-section');
         $('exp-newick-warn')?.remove();
-        if (fmt === 'csv') {
+        if (fmt === 'config-json') {
+          treeGrid.style.display = 'none';
+          csvGrid.style.display  = 'none';
+          if (settingsRow)   settingsRow.style.display   = 'none';
+          if (stateRow)      stateRow.style.display      = 'none';
+          if (tipLabelRow)   tipLabelRow.style.display   = 'none';
+          if (csvIdRow)      csvIdRow.style.display      = 'none';
+          if (nodeLabelRow)  nodeLabelRow.style.display  = 'none';
+          if (scopeRow)      scopeRow.style.display      = 'none';
+          if (configSection) configSection.style.display = '';
+        } else if (fmt === 'csv') {
           treeGrid.style.display = 'none';
           csvGrid.style.display  = '';
           csvGrid.querySelectorAll('.exp-annot-cb').forEach(cb => { cb.checked = true; });
-          if (settingsRow)  settingsRow.style.display  = 'none';
-          if (stateRow)     stateRow.style.display     = 'none';
-          if (tipLabelRow)  tipLabelRow.style.display  = 'none';
-          if (csvIdRow)    csvIdRow.style.display     = '';
-          if (nodeLabelRow) nodeLabelRow.style.display = 'none';
+          if (settingsRow)   settingsRow.style.display   = 'none';
+          if (stateRow)      stateRow.style.display      = 'none';
+          if (tipLabelRow)   tipLabelRow.style.display   = 'none';
+          if (csvIdRow)      csvIdRow.style.display      = '';
+          if (nodeLabelRow)  nodeLabelRow.style.display  = 'none';
+          if (scopeRow)      scopeRow.style.display      = '';
+          if (configSection) configSection.style.display = 'none';
         } else if (fmt === 'newick') {
           treeGrid.style.display = '';
           csvGrid.style.display  = 'none';
           treeGrid.querySelectorAll('.exp-annot-cb').forEach(cb => { cb.checked = false; });
-          if (settingsRow)  settingsRow.style.display  = 'none';
-          if (stateRow)     stateRow.style.display     = 'none';
-          if (tipLabelRow)  tipLabelRow.style.display  = '';
-          if (csvIdRow)    csvIdRow.style.display     = 'none';
-          if (nodeLabelRow) nodeLabelRow.style.display = '';
+          if (settingsRow)   settingsRow.style.display   = 'none';
+          if (stateRow)      stateRow.style.display      = 'none';
+          if (tipLabelRow)   tipLabelRow.style.display   = '';
+          if (csvIdRow)      csvIdRow.style.display      = 'none';
+          if (nodeLabelRow)  nodeLabelRow.style.display  = '';
+          if (scopeRow)      scopeRow.style.display      = '';
+          if (configSection) configSection.style.display = 'none';
         } else {
           treeGrid.style.display = '';
           csvGrid.style.display  = 'none';
           treeGrid.querySelectorAll('.exp-annot-cb').forEach(cb => { cb.checked = true; });
-          if (settingsRow)  settingsRow.style.display  = '';
-          if (stateRow)     stateRow.style.display     = '';
-          if (tipLabelRow)  tipLabelRow.style.display  = '';
-          if (csvIdRow)    csvIdRow.style.display     = 'none';
-          if (nodeLabelRow) nodeLabelRow.style.display = '';
+          if (settingsRow)   settingsRow.style.display   = '';
+          if (stateRow)      stateRow.style.display      = '';
+          if (tipLabelRow)   tipLabelRow.style.display   = '';
+          if (csvIdRow)      csvIdRow.style.display      = 'none';
+          if (nodeLabelRow)  nodeLabelRow.style.display  = '';
+          if (scopeRow)      scopeRow.style.display      = '';
+          if (configSection) configSection.style.display = 'none';
         }
         _syncTipLabelWarning();
         _syncCsvIdWarning();
@@ -426,11 +464,42 @@ export function createExportController({
     return /[,"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   }
 
+  /**
+   * Return only the entries in `obj` whose value differs from `defaults[key]`.
+   * Keys absent from `defaults` are always included.
+   */
+  function _diffFromDefaults(obj, defaults) {
+    const out = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (JSON.stringify(v) !== JSON.stringify(defaults[k])) out[k] = v;
+    }
+    return out;
+  }
+
   function _doExport() {
     const renderer  = getRenderer();
     const graph     = getGraph();
     const format    = root.querySelector('input[name="exp-format"]:checked')?.value || 'nexus';
-    const scope     = root.querySelector('input[name="exp-scope"]:checked')?.value  || 'full';
+
+    // ── Config JSON export ────────────────────────────────────────────────────
+    if (format === 'config-json') {
+      const cfg      = getConfigSnapshot?.() ?? {};
+      const defaults = getDefaultConfig?.()  ?? {};
+      const cfgMode  = root.querySelector('input[name="exp-cfg-settings"]:checked')?.value || 'all';
+      const uiMode   = root.querySelector('input[name="exp-cfg-ui"]:checked')?.value       || 'all';
+      const settingsOut = cfgMode === 'diff'
+        ? _diffFromDefaults(cfg.settings ?? {}, defaults.settings ?? {})
+        : (cfg.settings ?? {});
+      const uiOut = uiMode === 'diff'
+        ? _diffFromDefaults(cfg.ui ?? {}, defaults.ui ?? {})
+        : (cfg.ui ?? {});
+      const content = JSON.stringify({ settings: settingsOut, ui: uiOut }, null, 2);
+      downloadBlob(content, 'application/json', 'peartree-config.json');
+      _closeExportDialog();
+      return;
+    }
+
+    const scope         = root.querySelector('input[name="exp-scope"]:checked')?.value  || 'full';
     const storeSettings = format === 'nexus' && $('exp-store-settings')?.checked;
     const subtreeId = scope === 'subtree' ? renderer._viewSubtreeRootId : null;
     const gridId    = format === 'csv' ? '#exp-annot-grid-csv' : '#exp-annot-grid-tree';
