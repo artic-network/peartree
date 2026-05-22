@@ -4034,11 +4034,18 @@ async function _initCore(root = document) {
       // Apply effective settings for this tree load.
       // Precedence (low -> high): saved/local, file-embedded, init(URL/embed).
       // This guarantees URL settings always win over tree-embedded values.
+      // null values in initSettings are treated as "not specified" (not as explicit
+      // overrides), so a configUrl that exports null filter assignments does not
+      // wipe out filter assignments embedded in the tree file.
+      const _initSettingsNonNull = {};
+      for (const [_k, _v] of Object.entries(_cfg.initSettings || {})) {
+        if (_v !== null && _v !== undefined) _initSettingsNonNull[_k] = _v;
+      }
       const _treeEffectiveSettings = Object.assign(
         {},
         _saved || {},
         _fileSettings || {},
-        _cfg.initSettings || {},
+        _initSettingsNonNull,
       );
       // If init/URL explicitly requested a theme, apply that theme and then only
       // apply explicit init visual overrides on top. This prevents file-embedded
