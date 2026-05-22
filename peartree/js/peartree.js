@@ -4041,6 +4041,8 @@ async function _initCore(root = document) {
       for (const [_k, _v] of Object.entries(_cfg.initSettings || {})) {
         if (_v !== null && _v !== undefined) _initSettingsNonNull[_k] = _v;
       }
+      console.log('[PT filter debug] _cfg.initSettings.filters=', _cfg.initSettings?.filters, ' _fileSettings.nodeLabelsFilter=', _fileSettings?.nodeLabelsFilter);
+      console.log('[PT filter debug] _initSettingsNonNull has filters?', 'filters' in _initSettingsNonNull, ' nodeLabelsFilter=', _initSettingsNonNull.nodeLabelsFilter);
       const _treeEffectiveSettings = Object.assign(
         {},
         _saved || {},
@@ -4581,11 +4583,13 @@ async function _initCore(root = document) {
       // (Re-)load filter definitions from the effective tree settings.
       // This ensures filters embedded in the tree file or supplied via configUrl
       // are applied even when localStorage is empty or disabled (nostore=1).
+      console.log('[PT filter debug] _treeEffectiveSettings.filters=', _treeEffectiveSettings.filters, ' nodeLabelsFilter=', _treeEffectiveSettings.nodeLabelsFilter, ' branchLabelsFilter=', _treeEffectiveSettings.branchLabelsFilter);
       if (filterManager && _treeEffectiveSettings.filters) {
         try {
           const _fArr = Array.isArray(_treeEffectiveSettings.filters)
             ? _treeEffectiveSettings.filters
             : JSON.parse(_treeEffectiveSettings.filters);
+          console.log('[PT filter debug] _fArr=', _fArr);
           if (Array.isArray(_fArr) && _fArr.length > 0) {
             const _fMap = new Map(_fArr.map(f => [f.id, f]));
             filterManager.setAll(_fMap);
@@ -4593,14 +4597,18 @@ async function _initCore(root = document) {
             // Re-apply filter select values from the effective settings.
             for (let _fi = 0; _fi < _filterSelectIds.length; _fi++) {
               const _fv = _treeEffectiveSettings[_filterSelectIds[_fi]];
+              console.log('[PT filter debug] select[' + _filterSelectIds[_fi] + '] effective=', _fv, ' el=', _filterSelectEls[_fi]);
               if (_fv && _filterSelectEls[_fi]) _filterSelectEls[_fi].value = _fv;
             }
           }
-        } catch (_) { /* corrupt filter data — skip */ }
+        } catch (_err) { console.error('[PT filter debug] parse error', _err); }
+      } else {
+        console.log('[PT filter debug] skipped: filterManager=', !!filterManager, ' filters key present=', !!_treeEffectiveSettings.filters);
       }
       // Populate the named-filter popup with any already-restored saved filters.
       if (filterManager) {
         const fm = filterManager.getAll();
+        console.log('[PT filter debug] filterManager.getAll() size=', fm.size, ' nodeLabelsFilterEl.value=', nodeLabelsFilterEl?.value);
         filterControl?.setNamedFilters(fm);
         if (fm.size > 0) {
           renderer.setFilterDefinitions(fm);
