@@ -427,6 +427,10 @@ Both `embed()` and `embedFrame()` return a **controller object** that lets you i
 | Method | Description |
 |--------|-------------|
 | `onTreeLoad(fn)` | Register a callback that fires every time a tree finishes loading. Returns an unsubscribe function — call it to deregister. |
+| `onSelectionChanged(fn, annotationKey?)` | Register a callback fired whenever the selected tips change. By default `fn` receives an array of selected tip names. If `annotationKey` is provided, it receives an array of that annotation value (or `null`) for each selected tip. |
+| `onVisibleChanged(fn, annotationKey?)` | Register a callback fired whenever visible tips in the current view change (hide/show, drill/climb navigation, layout changes). By default `fn` receives tip names; with `annotationKey`, it receives annotation values. |
+| `onNodeHover(fn, annotationKey?)` | Register a callback fired when internal-node hover changes. By default `fn` receives the hovered node info object (including `annotations`) or `null`; with `annotationKey`, it receives that annotation value or `null`. |
+| `onTipHover(fn, annotationKey?)` | Register a callback fired when tip hover changes. By default `fn` receives the hovered tip info object (including `annotations`) or `null`; with `annotationKey`, it receives that annotation value or `null`. |
 | `loadTree(text, filename?)` | Load a tree from an inline Newick or NEXUS string. Pass an optional `filename` hint (e.g. `'my.nwk'`) so PearTree picks the correct parser. |
 | `sort(order)` | Sort clades by size. `order` is `'asc'` or `'desc'`. |
 | `midpointRoot()` | Re-root the tree at its midpoint. |
@@ -453,6 +457,20 @@ const unsub = controller.onTreeLoad(() => {
   console.log('tree loaded:', controller.getSettings());
 });
 // Later: unsub() to stop listening
+
+// React to selection and hover
+const unsubSelection = controller.onSelectionChanged((tips) => {
+  console.log('selected tip names:', tips);
+});
+const unsubVisible = controller.onVisibleChanged((countries) => {
+  console.log('visible tip countries:', countries);
+}, 'country');
+const unsubNodeHover = controller.onNodeHover((node) => {
+  console.log('hovered internal node:', node);
+});
+const unsubTipHover = controller.onTipHover((lineage) => {
+  console.log('hovered tip lineage:', lineage);
+}, 'lineage');
 
 // Sort or reroot programmatically
 controller.sort('asc');

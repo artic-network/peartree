@@ -1673,6 +1673,100 @@ async function _initCore(root = document) {
   const _isTipNameValue = (value) => value === 'name' || value === 'names';
   const _normalizeTipNameValue = (value) => _isTipNameValue(value) ? 'name' : value;
 
+  // Embed listeners (instance-scoped): selection, visible tips, and hover states.
+  const _selectionChangedListeners = new Set(); // { fn, annotationKey }
+  const _visibleChangedListeners   = new Set(); // { fn, annotationKey }
+  const _nodeHoverListeners        = new Set(); // { fn, annotationKey }
+  const _tipHoverListeners         = new Set(); // { fn, annotationKey }
+
+  function _postParentEmbedEvent(type, payload = {}) {
+    if (window.parent === window) return;
+    try { window.parent.postMessage({ type, ...payload }, '*'); } catch (_) {}
+  }
+
+  function _tipValueForListener(node, annotationKey = null) {
+    if (!node) return null;
+    if (!annotationKey || _isTipNameValue(annotationKey)) {
+      return node.name ?? node.id;
+    }
+    return node.annotations?.[annotationKey] ?? null;
+  }
+
+  function _selectedTipNodes() {
+    if (!renderer?.nodeMap || !renderer?._selectedTipIds) return [];
+    const out = [];
+    for (const id of renderer._selectedTipIds) {
+      const n = renderer.nodeMap.get(id);
+      if (n?.isTip) out.push(n);
+    }
+    return out;
+  }
+
+  function _visibleTipNodes() {
+    if (!renderer?.nodes) return [];
+    return renderer.nodes.filter(n => n.isTip && !n.isCollapsed);
+  }
+
+  function _emitSelectionChanged() {
+    const tips = _selectedTipNodes();
+    const tipInfos = tips.map(n => _nodeInfoForListener(n));
+    _postParentEmbedEvent('pt:selectionChanged', { tips: tipInfos });
+    if (_selectionChangedListeners.size === 0) return;
+    for (const l of _selectionChangedListeners) {
+      try {
+        l.fn(tips.map(n => _tipValueForListener(n, l.annotationKey)));
+      } catch (_) { /* listener errors must not break app flow */ }
+    }
+  }
+
+  function _emitVisibleChanged() {
+    const tips = _visibleTipNodes();
+    const tipInfos = tips.map(n => _nodeInfoForListener(n));
+    _postParentEmbedEvent('pt:visibleChanged', { tips: tipInfos });
+    if (_visibleChangedListeners.size === 0) return;
+    for (const l of _visibleChangedListeners) {
+      try {
+        l.fn(tips.map(n => _tipValueForListener(n, l.annotationKey)));
+      } catch (_) { /* listener errors must not break app flow */ }
+    }
+  }
+
+  function _nodeInfoForListener(node) {
+    if (!node) return null;
+    return {
+      id: node.id,
+      origId: node.origId ?? node.id,
+      name: node.name ?? null,
+      parentId: node.parentId ?? null,
+      isTip: !!node.isTip,
+      isCollapsed: !!node.isCollapsed,
+      x: node.x,
+      y: node.y,
+      annotations: node.annotations ? { ...node.annotations } : {},
+    };
+  }
+
+  function _hoverValueForListener(nodeInfo, annotationKey = null) {
+    if (!nodeInfo) return null;
+    if (!annotationKey || _isTipNameValue(annotationKey)) return nodeInfo;
+    return nodeInfo.annotations?.[annotationKey] ?? null;
+  }
+
+  function _emitHoverChanged(nodeId) {
+    const node = nodeId ? (renderer?.nodeMap?.get(nodeId) || null) : null;
+    const nodeInfo = _nodeInfoForListener(node);
+    _postParentEmbedEvent('pt:hoverChanged', { node: nodeInfo });
+    if (_nodeHoverListeners.size === 0 && _tipHoverListeners.size === 0) return;
+    const nodePayload = nodeInfo && !nodeInfo.isTip ? nodeInfo : null;
+    const tipPayload  = nodeInfo &&  nodeInfo.isTip ? nodeInfo : null;
+    for (const l of _nodeHoverListeners) {
+      try { l.fn(_hoverValueForListener(nodePayload, l.annotationKey)); } catch (_) { /* listener errors must not break app flow */ }
+    }
+    for (const l of _tipHoverListeners) {
+      try { l.fn(_hoverValueForListener(tipPayload, l.annotationKey)); } catch (_) { /* listener errors must not break app flow */ }
+    }
+  }
+
   function _buildRendererSettings() {
     return {
       bgColor:          canvasBgColorEl.value,
@@ -2739,6 +2833,7 @@ async function _initCore(root = document) {
     // Always keep axis bounds in sync with the current tree layout.
     _syncAxisSubtreeParams(maxX, viewSubtreeRootId, viewNodes);
     if (axisShowEl.value !== 'off') _applyAxisRange();
+    _emitVisibleChanged();
   };
 
   // Restore axis visibility from saved settings (map legacy 'on' to 'forward')
@@ -3540,6 +3635,7 @@ async function _initCore(root = document) {
     const _origOnHoverChange = renderer._onHoverChange;
     renderer._onHoverChange = id => {
       _origOnHoverChange?.(id);
+      _emitHoverChanged(id);
       if (!id || !renderer._altHeld) { _hideTooltip(); return; }
       const node = renderer.nodeMap?.get(id);
       if (node) _showTooltip(node, _ttMouseX, _ttMouseY);
@@ -5009,6 +5105,7 @@ async function _initCore(root = document) {
       dataTableRenderer.syncSelection(renderer._selectedTipIds);
       rttChart?.notifySelectionChange?.();
       _syncLegendSelection();
+      _emitSelectionChanged();
     };
 
     btnBack?.addEventListener('click',    () => renderer.navigateBack());
@@ -8148,6 +8245,67 @@ async function _initCore(root = document) {
       root.addEventListener('peartree-tree-loaded', handler);
       return () => root.removeEventListener('peartree-tree-loaded', handler);
     },
+
+    /**
+     * Register a callback invoked when selected tips change.
+     * fn(values[]) where values are tip names by default, or annotation values
+     * when annotationKey is provided.
+     * Returns an unsubscribe function.
+     * @param {(values:any[]) => void} fn
+     * @param {string|null} [annotationKey=null]
+     */
+    onSelectionChanged(fn, annotationKey = null) {
+      if (typeof fn !== 'function') return () => {};
+      const entry = { fn, annotationKey };
+      _selectionChangedListeners.add(entry);
+      return () => _selectionChangedListeners.delete(entry);
+    },
+
+    /**
+     * Register a callback invoked when visible tips in the current view change
+     * (hide/show, subtree navigation, tree load/layout updates).
+     * fn(values[]) where values are tip names by default, or annotation values
+     * when annotationKey is provided.
+     * Returns an unsubscribe function.
+     * @param {(values:any[]) => void} fn
+     * @param {string|null} [annotationKey=null]
+     */
+    onVisibleChanged(fn, annotationKey = null) {
+      if (typeof fn !== 'function') return () => {};
+      const entry = { fn, annotationKey };
+      _visibleChangedListeners.add(entry);
+      return () => _visibleChangedListeners.delete(entry);
+    },
+
+    /**
+     * Register a callback invoked when internal-node hover changes.
+     * fn(nodeInfo|null) by default, or fn(annotationValue|null) when
+     * annotationKey is provided.
+     * Returns an unsubscribe function.
+     * @param {(nodeInfoOrValue:object|any|null) => void} fn
+     * @param {string|null} [annotationKey=null]
+     */
+    onNodeHover(fn, annotationKey = null) {
+      if (typeof fn !== 'function') return () => {};
+      const entry = { fn, annotationKey };
+      _nodeHoverListeners.add(entry);
+      return () => _nodeHoverListeners.delete(entry);
+    },
+
+    /**
+     * Register a callback invoked when tip hover changes.
+     * fn(nodeInfo|null) by default, or fn(annotationValue|null) when
+     * annotationKey is provided.
+     * Returns an unsubscribe function.
+     * @param {(nodeInfoOrValue:object|any|null) => void} fn
+     * @param {string|null} [annotationKey=null]
+     */
+    onTipHover(fn, annotationKey = null) {
+      if (typeof fn !== 'function') return () => {};
+      const entry = { fn, annotationKey };
+      _tipHoverListeners.add(entry);
+      return () => _tipHoverListeners.delete(entry);
+    },
   };
 
   // ── postMessage API (iframe embedding) ────────────────────────────────────
@@ -8418,6 +8576,14 @@ function _buildDirectController(instance) {
      * @param {() => void} fn
      */
     onTreeLoad:    (fn)       => instance.onTreeLoad(fn),
+    /** Register a callback for tip selection changes. */
+    onSelectionChanged: (fn, annotationKey) => instance.onSelectionChanged(fn, annotationKey),
+    /** Register a callback for visible-tip changes in the current view. */
+    onVisibleChanged: (fn, annotationKey) => instance.onVisibleChanged(fn, annotationKey),
+    /** Register a callback for internal-node hover changes. */
+    onNodeHover: (fn, annotationKey) => instance.onNodeHover(fn, annotationKey),
+    /** Register a callback for tip hover changes. */
+    onTipHover: (fn, annotationKey) => instance.onTipHover(fn, annotationKey),
   };
 }
 
@@ -8428,6 +8594,20 @@ function _buildDirectController(instance) {
  */
 function _buildFrameController(iframe) {
   const _send = (msg) => iframe.contentWindow?.postMessage(msg, '*');
+  const _isTipNameValue = (value) => value === 'name' || value === 'names';
+  const _tipValuesFromMsg = (msgData, annotationKey = null) => {
+    const tips = Array.isArray(msgData?.tips) ? msgData.tips : [];
+    if (!annotationKey || _isTipNameValue(annotationKey)) {
+      return tips.map(t => t?.name ?? t?.id ?? null);
+    }
+    return tips.map(t => t?.annotations?.[annotationKey] ?? null);
+  };
+  const _hoverValueFromNodeInfo = (nodeInfo, annotationKey = null) => {
+    if (!nodeInfo) return null;
+    if (!annotationKey) return nodeInfo;
+    if (_isTipNameValue(annotationKey)) return nodeInfo.name ?? nodeInfo.id ?? null;
+    return nodeInfo.annotations?.[annotationKey] ?? null;
+  };
   return {
     sort:          (order)    => _send({ type: 'pt:command',       action: 'sort', order }),
     midpointRoot:  ()         => _send({ type: 'pt:command',       action: 'midpointRoot' }),
@@ -8447,6 +8627,70 @@ function _buildFrameController(iframe) {
     onTreeLoad(fn) {
       const handler = (e) => {
         if (e.source === iframe.contentWindow && e.data?.type === 'pt:treeLoaded') fn();
+      };
+      window.addEventListener('message', handler);
+      return () => window.removeEventListener('message', handler);
+    },
+    /**
+     * Register a callback invoked when selected tips change.
+     * fn(values[]) where values are tip names by default, or annotation values
+     * when annotationKey is provided.
+     * Returns an unsubscribe function.
+     */
+    onSelectionChanged(fn, annotationKey = null) {
+      const handler = (e) => {
+        if (e.source !== iframe.contentWindow || e.data?.type !== 'pt:selectionChanged') return;
+        try { fn(_tipValuesFromMsg(e.data, annotationKey)); } catch (_) {}
+      };
+      window.addEventListener('message', handler);
+      return () => window.removeEventListener('message', handler);
+    },
+    /**
+     * Register a callback invoked when visible tips in the current view change.
+     * fn(values[]) where values are tip names by default, or annotation values
+     * when annotationKey is provided.
+     * Returns an unsubscribe function.
+     */
+    onVisibleChanged(fn, annotationKey = null) {
+      const handler = (e) => {
+        if (e.source !== iframe.contentWindow || e.data?.type !== 'pt:visibleChanged') return;
+        try { fn(_tipValuesFromMsg(e.data, annotationKey)); } catch (_) {}
+      };
+      window.addEventListener('message', handler);
+      return () => window.removeEventListener('message', handler);
+    },
+    /**
+     * Register a callback invoked when internal-node hover changes.
+     * fn(nodeInfo|null) by default, or fn(annotationValue|null) when
+     * annotationKey is provided.
+     * Returns an unsubscribe function.
+     */
+    onNodeHover(fn, annotationKey = null) {
+      const handler = (e) => {
+        if (e.source !== iframe.contentWindow || e.data?.type !== 'pt:hoverChanged') return;
+        const node = e.data?.node ?? null;
+        const payload = (node && !node.isTip)
+          ? _hoverValueFromNodeInfo(node, annotationKey)
+          : null;
+        try { fn(payload); } catch (_) {}
+      };
+      window.addEventListener('message', handler);
+      return () => window.removeEventListener('message', handler);
+    },
+    /**
+     * Register a callback invoked when tip hover changes.
+     * fn(nodeInfo|null) by default, or fn(annotationValue|null) when
+     * annotationKey is provided.
+     * Returns an unsubscribe function.
+     */
+    onTipHover(fn, annotationKey = null) {
+      const handler = (e) => {
+        if (e.source !== iframe.contentWindow || e.data?.type !== 'pt:hoverChanged') return;
+        const node = e.data?.node ?? null;
+        const payload = (node && node.isTip)
+          ? _hoverValueFromNodeInfo(node, annotationKey)
+          : null;
+        try { fn(payload); } catch (_) {}
       };
       window.addEventListener('message', handler);
       return () => window.removeEventListener('message', handler);
