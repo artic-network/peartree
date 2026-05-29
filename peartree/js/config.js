@@ -238,6 +238,7 @@ export const DEFAULT_SETTINGS = {
   dataTablePinned: false,   // true = Data Table panel is pinned (docked; implies open)
   rttOpen:         false,   // true = Root-to-Tip panel starts open
   rttPinned:       false,   // true = Root-to-Tip panel is pinned (docked; implies open)
+  rttPanelWidth:   null,    // null = CSS default; string like '40%' or '350px'
   paletteOpen:     false,   // true = Settings panel starts open
   palettePinned:   false,   // true = Settings panel is pinned (docked; implies open)
 

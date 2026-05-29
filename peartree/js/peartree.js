@@ -1036,6 +1036,7 @@ async function _initCore(root = document) {
       dataTablePinned:     dataTableRenderer?.isPinned() ?? false,
       rttOpen:             rttChart?.isOpen()    ?? false,
       rttPinned:           rttChart?.isPinned()  ?? false,
+      rttPanelWidth:       rttChart?.getPanelWidth() ?? null,
       rttStatsBoxCorner:   rttChart?.getStatsBoxCorner() ?? 'tl',
       paletteOpen:         !!root.querySelector('#palette-panel')?.classList.contains('open'),
       palettePinned:       !!root.querySelector('#palette-panel')?.classList.contains('pinned'),
@@ -3525,6 +3526,7 @@ async function _initCore(root = document) {
       _resizeDuringTransition();
       saveSettings();
     },
+    onWidthChange: () => saveSettings(),
     onStatsBoxCornerChange: () => saveSettings(),
   });
 
@@ -4734,6 +4736,7 @@ async function _initCore(root = document) {
         if (_saved.dataTablePinned)   dataTableRenderer?.pin();
         if (_saved.rttOpen)           rttChart?.open();
         if (_saved.rttPinned)         rttChart?.setPin(true);
+        if (_saved.rttPanelWidth)     rttChart?.setPanelWidth(_saved.rttPanelWidth);
         if (_saved.rttStatsBoxCorner) rttChart?.setStatsBoxCorner(_saved.rttStatsBoxCorner);
       }
 

@@ -68,12 +68,14 @@ export function createRTTChart({
   onCalibrationChange,
   onClose,
   onPinChange,
+  onWidthChange,
   onStatsBoxCornerChange,
 }) {
   const rtt = new RTTRenderer(canvas);
 
-  let _open   = false;
-  let _pinned = false;
+  let _open        = false;
+  let _pinned      = false;
+  let _panelWidth  = null;
 
   // ── Header buttons ─────────────────────────────────────────────────────────
   const btnPin      = panel.querySelector('#rtt-btn-pin');
@@ -525,11 +527,13 @@ export function createRTTChart({
     // (still-animating) size and the bitmap ends up CSS-stretched.
     panel.style.transition = 'none';
     panel.style.width = `${newW}px`;
+    _panelWidth = `${newW}px`;
     document.documentElement.style.setProperty('--rtt-panel-w', `${newW}px`);
     // Force a synchronous layout reflow so canvas.clientWidth reflects newW.
     void panel.offsetWidth;
     rtt._resize();
     getRenderer()?._resize?.();
+    if (onWidthChange) onWidthChange(`${newW}px`);
     // Re-enable the transition on the next frame so future open/close animations work.
     requestAnimationFrame(() => { panel.style.transition = ''; });
   });
@@ -783,6 +787,23 @@ export function createRTTChart({
 
     /** Resize the canvas (call during window resize or panel-pin transitions). */
     resize() { rtt._resize(); },
+
+    /** Get the last explicitly set panel width string (e.g. '40%' or '350px'), or null. */
+    getPanelWidth() { return _panelWidth; },
+
+    /**
+     * Programmatically set the panel width (e.g. to restore from saved settings).
+     * Accepts a percentage string ('40%'), a pixel string ('350px'), or a plain
+     * number which is treated as a percentage.
+     */
+    setPanelWidth(w) {
+      if (w == null) return;
+      const val = (typeof w === 'number') ? `${w}%` : String(w);
+      _panelWidth = val;
+      panel.style.width = val;
+      document.documentElement.style.setProperty('--rtt-panel-w', val);
+      if (_open) { rtt._resize(); getRenderer()?._resize?.(); }
+    },
 
     /** Call when the visible tip set or tree layout changes. */
     notifyLayoutChange() { _update(); },
