@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { AxisRenderer } from './axis-renderer.js';
+import { Axis } from './axis.js';
 import { isNumericType, TreeCalibration } from './phylograph.js';
 import { getSequentialPalette,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
@@ -873,9 +874,9 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
         minorTicks = all.filter(t => !ms.has(t.toFixed(8)));
       }
     } else {
-      majorTicks = AxisRenderer._niceTicks(leftVal, rightVal, targetMajor);
+      majorTicks = Axis.niceTicks(leftVal, rightVal, targetMajor);
       const minorAll = majorTicks.length > 1
-        ? AxisRenderer._niceTicks(leftVal, rightVal, targetMajor * 5) : [];
+        ? Axis.niceTicks(leftVal, rightVal, targetMajor * 5) : [];
       const ms = new Set(majorTicks.map(t => t.toPrecision(10)));
       minorTicks = minorAll.filter(t => !ms.has(t.toPrecision(10)));
     }
@@ -923,7 +924,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
           const effMajorFmt = majorLabelFmt === 'auto' ? 'partial' : majorLabelFmt;
           label = ar._calibration.decYearToString(val, effMajorFmt, ar._dateFormat, effMajorInterval);
         } else {
-          label = AxisRenderer._formatValue(val);
+          label = Axis.formatValue(val);
         }
         const tw  = approxW(label, afs);
         const lx2 = Math.max(plotLeft + AX + tw / 2 + 1, Math.min(plotRight + AX - tw / 2 - 1, sx));

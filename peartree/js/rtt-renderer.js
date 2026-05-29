@@ -13,36 +13,9 @@ import { TreeCalibration } from './phylograph.js';
 import { ciHalfWidth, tQuantile } from '@artic-network/pearcore/regression.js';
 import { overlapsZones }   from '@artic-network/pearcore/utils.js';
 import { buildFont, TYPEFACES } from '@artic-network/pearcore/typefaces.js';
+import { Axis } from './axis.js';
 
-// ─── Tick helpers ─────────────────────────────────────────────────────────────
-
-/** Pick a nice step size (decimal years) giving ~5-7 ticks over the range. */
-function _niceYearStep(range) {
-  const steps = [1/365, 7/365, 1/12, 2/12, 3/12, 6/12, 1, 2, 5, 10, 25, 50, 100,
-                 500, 1000, 2000, 5000, 10000, 25000, 50000, 100000];
-  const raw   = range / 6;
-  return steps.find(s => s >= raw) ?? 100000;
-}
-
-/** Nice linear step for a value range (Y axis). */
-function _niceStep(range) {
-  if (range <= 0) return 1e-6;
-  const mag  = Math.pow(10, Math.floor(Math.log10(range / 5)));
-  const norm = (range / mag) / 5;
-  if (norm < 1.5) return mag;
-  if (norm < 3.5) return 2 * mag;
-  if (norm < 7.5) return 5 * mag;
-  return 10 * mag;
-}
-
-/** Decimal places needed to show `step` without trailing zeros. */
-function _stepDp(step) {
-  if (step >= 1)     return 0;
-  if (step >= 0.1)   return 1;
-  if (step >= 0.01)  return 2;
-  if (step >= 0.001) return 3;
-  return 4;
-}
+// ─── Tick helpers ──────────────────────────────────────────────────────────
 
 /**
  * Format a decimal year as label lines for the X axis, given the tick step.
@@ -57,7 +30,7 @@ function _fmtDecYear(dy, step, cal, fmt) {
     }
     return [cal.decYearToString(dy, 'full', fmt)];
   }
-  return [dy.toFixed(_stepDp(step))];
+  return [dy.toFixed(Axis.decimalPlacesForStep(step))];
 }
 
 // ─── RTTRenderer ──────────────────────────────────────────────────────────────
@@ -173,6 +146,10 @@ export class RTTRenderer {
     // Deterministic vertical jitter for homochronous strip (id → float in [-1,+1])
     this._jitterMap   = new Map();
 
+    // Shared axis math core (generic; renderer keeps drawing/layout decisions).
+    this._xAxis = new Axis({ orientation: 'x', type: 'continuous', timeTransform: 'linear' });
+    this._yAxis = new Axis({ orientation: 'y', type: 'continuous', timeTransform: 'linear' });
+
     // ── Callbacks ──────────────────────────────────────────────────────────
     this.onSelectionChange       = null;  // (Set<id>) => void
     this.onHoverChange           = null;  // (id|null) => void
@@ -283,12 +260,47 @@ export class RTTRenderer {
   }
 
   _xToScreen(v, rect) {
-    const span = this._xMax - this._xMin;
-    return span === 0 ? rect.x + rect.w / 2 : rect.x + (v - this._xMin) / span * rect.w;
+    this._syncAxes(rect);
+    return this._xAxis.valueToCanvas(v);
   }
   _yToScreen(v, rect) {
-    const span = this._yMax - this._yMin;
-    return span === 0 ? rect.y + rect.h / 2 : rect.y + rect.h - (v - this._yMin) / span * rect.h;
+    this._syncAxes(rect);
+    return this._yAxis.valueToCanvas(v);
+  }
+
+  /** Sync shared Axis objects from current RTT bounds + plot rectangle. */
+  _syncAxes(rect) {
+    if (!rect) return;
+
+    const xSpan = this._xMax - this._xMin;
+    if (xSpan === 0) {
+      this._xAxis.setType(this._calibration ? 'time' : 'continuous');
+      this._xAxis.setTimeTransform('linear');
+      this._xAxis.setRange(this._xMin, this._xMax);
+      this._xAxis.setTickOptions(this.tickOptions ?? {});
+      this._xAxis.setTransform({ scale: 0, offset: rect.x + rect.w / 2, paddingLeft: 0 });
+    } else {
+      const sx = rect.w / xSpan;
+      const ox = rect.x - this._xMin * sx;
+      this._xAxis.setType(this._calibration ? 'time' : 'continuous');
+      this._xAxis.setTimeTransform('linear');
+      this._xAxis.setRange(this._xMin, this._xMax);
+      this._xAxis.setTickOptions(this.tickOptions ?? {});
+      this._xAxis.setTransform({ scale: sx, offset: ox, paddingLeft: 0 });
+    }
+
+    const ySpan = this._yMax - this._yMin;
+    if (ySpan === 0) {
+      this._yAxis.setType('continuous');
+      this._yAxis.setRange(this._yMin, this._yMax);
+      this._yAxis.setTransform({ scale: 0, offset: rect.y + rect.h / 2, paddingLeft: 0 });
+    } else {
+      const sy = -rect.h / ySpan;
+      const oy = rect.y + rect.h - this._yMin * sy;
+      this._yAxis.setType('continuous');
+      this._yAxis.setRange(this._yMin, this._yMax);
+      this._yAxis.setTransform({ scale: sy, offset: oy, paddingLeft: 0 });
+    }
   }
 
   // ─── Bounds & regression ──────────────────────────────────────────────────
@@ -442,7 +454,7 @@ export class RTTRenderer {
     if (!drawV) {
       xMajTks = [];
     } else if (isHisto) {
-      const xStep  = _niceStep(this._xMax - this._xMin);
+      const xStep  = Axis.niceStepForRange(this._xMax - this._xMin);
       const xStart = Math.ceil(this._xMin / xStep - 1e-9) * xStep;
       xMajTks = [];
       for (let v = xStart; v <= this._xMax + xStep * 0.001; v += xStep)
@@ -471,49 +483,27 @@ export class RTTRenderer {
   // ─── Axes ─────────────────────────────────────────────────────────────────
 
   _yTicksInfo() {
-    const step  = _niceStep(this._yMax - this._yMin);
-    const start = Math.ceil(this._yMin / step) * step;
-    const ticks = [];
-    for (let v = start; v <= this._yMax + step * 0.001; v += step) ticks.push(v);
+    this._yAxis.setType('continuous');
+    this._yAxis.setRange(this._yMin, this._yMax);
+    const { majorTicks: ticks } = this._yAxis.getTicks(5);
+    const step = ticks.length >= 2 ? Math.abs(ticks[1] - ticks[0]) : Axis.niceStepForRange(this._yMax - this._yMin);
     return { ticks, step };
   }
 
   _xTicksInfo(rect = null) {
     const cal = this._calibration;
     if (cal) {
-      // Use the same calendar tick logic as AxisRenderer so tick/label options apply.
+      // Use the shared Axis calendar tick logic so tree and RTT stay aligned.
       const targetMajor = rect
         ? Math.max(2, Math.round((rect.w / this._dpr) / 80))
         : Math.max(2, Math.round(this._canvas.clientWidth / 80));
       const opts          = this.tickOptions ?? {};
       const majorInterval = opts.majorInterval || 'auto';
-      const minorInterval = opts.minorInterval || 'off';
-      let majorTicks, minorTicks;
-      if (majorInterval === 'auto' && minorInterval === 'auto') {
-        // Use the paired helper so major and minor are on a consistent calendar
-        // hierarchy (e.g. yearly major → monthly minor).
-        const pair = TreeCalibration.autoCalendarTickPair(this._xMin, this._xMax, targetMajor);
-        majorTicks = pair.majorTicks;
-        minorTicks = pair.minorTicks;
-      } else {
-        majorTicks = (majorInterval === 'auto')
-          ? TreeCalibration.niceCalendarTicks(this._xMin, this._xMax, targetMajor)
-          : TreeCalibration.calendarTicksForInterval(this._xMin, this._xMax, majorInterval);
-        minorTicks = [];
-        if (minorInterval !== 'off') {
-          const majorSet = new Set(majorTicks.map(t => t.toFixed(8)));
-          let allMinor;
-          if (minorInterval === 'auto') {
-            const derivedInt = TreeCalibration.derivedMinorInterval(majorTicks);
-            allMinor = derivedInt
-              ? TreeCalibration.calendarTicksForInterval(this._xMin, this._xMax, derivedInt)
-              : [];
-          } else {
-            allMinor = TreeCalibration.calendarTicksForInterval(this._xMin, this._xMax, minorInterval);
-          }
-          minorTicks = allMinor.filter(t => !majorSet.has(t.toFixed(8)));
-        }
-      }
+      this._xAxis.setType('time');
+      this._xAxis.setTimeTransform('linear');
+      this._xAxis.setRange(this._xMin, this._xMax);
+      this._xAxis.setTickOptions(opts);
+      const { majorTicks, minorTicks } = this._xAxis.getTicks(targetMajor);
       // When the interval was auto-selected, infer the effective calendar interval
       // from the actual tick spacing for correct partial label formatting.
       const effectiveMajorInterval = (majorInterval === 'auto')
@@ -522,7 +512,7 @@ export class RTTRenderer {
       return { majorTicks, minorTicks, step: null, majorInterval: effectiveMajorInterval };
     }
     // Fallback: plain decimal-year / divergence steps
-    const step  = _niceYearStep(this._xMax - this._xMin);
+    const step  = Axis.niceYearStepForRange(this._xMax - this._xMin);
     const start = Math.ceil(this._xMin / step) * step;
     const majorTicks = [];
     for (let v = start; v <= this._xMax + step * 0.001; v += step) majorTicks.push(v);
@@ -550,7 +540,7 @@ export class RTTRenderer {
     ctx.stroke();
 
     // ── Y axis ─────────────────────────────────────────────────────────────
-    const dp = _stepDp(yStep);
+    const dp = Axis.decimalPlacesForStep(yStep);
     ctx.font = font;
     ctx.fillStyle    = lblC;
     ctx.textBaseline = 'middle';
@@ -1170,12 +1160,12 @@ export class RTTRenderer {
     const tc    = Math.round(4 * d);
     // Use _niceStep for divergence X axis (better resolution than _niceYearStep)
     const xRange = this._xMax - this._xMin;
-    const xStep  = _niceStep(xRange);
+    const xStep  = Axis.niceStepForRange(xRange);
     const xStart = Math.ceil(this._xMin / xStep - 1e-9) * xStep;
     const xTks   = [];
     for (let v = xStart; v <= this._xMax + xStep * 0.001; v += xStep)
       xTks.push(parseFloat(v.toPrecision(10)));
-    const xDp = _stepDp(xStep);
+    const xDp = Axis.decimalPlacesForStep(xStep);
     const { ticks: yTks } = this._yTicksInfo();
     ctx.save();
     // Axis border lines

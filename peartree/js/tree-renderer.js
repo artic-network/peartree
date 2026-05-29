@@ -213,6 +213,7 @@ export class TreeRenderer {
     // Set by setAxisRangeOverride() when the user specifies an explicit axis range.
     this._axisWorldLeft  = null;
     this._axisWorldRight = null;
+    this._axisScaleFactor = 1;
     this._reorderFromY          = null;   // Map<id, oldY> during reorder animation
     this._reorderToY            = null;   // Map<id, newY>
     this._reorderFromCollapsedN = null;   // Map<id, oldCollapsedTipCount>
@@ -1058,12 +1059,31 @@ export class TreeRenderer {
    * Apply an axis range override so the tree is scaled to fit the specified range.
    * @param {number|null} worldLeft   World-X of the axis left bound (null = no override)
    * @param {number|null} worldRight  World-X of the axis right bound (null = no override)
+   * @param {number} [scaleFactor=1]  Multiplicative scale factor provided by axis logic
    */
-  setAxisRangeOverride(worldLeft, worldRight) {
+  setAxisRangeOverride(worldLeft, worldRight, scaleFactor = 1) {
     this._axisWorldLeft  = (worldLeft  != null && isFinite(worldLeft))  ? worldLeft  : null;
     this._axisWorldRight = (worldRight != null && isFinite(worldRight)) ? worldRight : null;
+    this._axisScaleFactor = (scaleFactor != null && isFinite(scaleFactor) && scaleFactor > 0)
+      ? Math.min(1, scaleFactor)
+      : 1;
     this._updateScaleX(true);
     if (this.nodes) this._dirty = true;
+  }
+
+  /**
+   * Base tree world extent before any axis override extension.
+   * Used by axis logic to derive explicit scale factors.
+   */
+  getAxisTreeWorldExtent() {
+    const barPad = this.nodeBarsEnabled ? this._nodeBarsLeftPad() : 0;
+    const stemWorld = (this._viewSubtreeRootId === null)
+      ? (this.rootStemPct ?? 0) / 100 * this.maxX
+      : 0;
+    return {
+      worldLeft: -(barPad + stemWorld),
+      worldRight: this.maxX,
+    };
   }
 
   /** Update only the date format used for calendar-date labels. */
@@ -2204,16 +2224,27 @@ export class TreeRenderer {
 
     // Axis range override: extend the effective span if the user-set range
     // extends beyond the tree, so the tree scales down to fit the full range.
-    const axisLeftPad  = (this._axisWorldLeft  != null) ? Math.max(0, -this._axisWorldLeft)  : 0;
-    const axisRightExt = (this._axisWorldRight != null) ? Math.max(0,  this._axisWorldRight) : 0;
-    const effectiveLeftPad  = Math.max(barPad + stemWorld, axisLeftPad);
-    const effectiveRightExt = Math.max(this.maxX, axisRightExt);
+    const treeLeftPad   = barPad + stemWorld;
+    const treeRightExt  = this.maxX;
+
+    // If axis bounds are explicitly provided, honor them directly on each side.
+    // Otherwise fall back to tree-derived auto bounds.
+    const hasAxisLeft   = this._axisWorldLeft  != null;
+    const hasAxisRight  = this._axisWorldRight != null;
+    const effectiveLeftPad  = hasAxisLeft
+      ? Math.max(0, -this._axisWorldLeft)
+      : treeLeftPad;
+    const effectiveRightExt = hasAxisRight
+      ? Math.max(0, this._axisWorldRight)
+      : treeRightExt;
+    const effectiveSpan = effectiveRightExt + effectiveLeftPad;
+    const treeSpan = treeRightExt + treeLeftPad;
 
     let targetScaleX;
     if (!labelsVisible) {
       // Labels are hidden at this zoom level — fill the full plot width so the
       // tree uses all available space without reserving label room.
-      targetScaleX = plotWNoLabels / (effectiveRightExt + effectiveLeftPad);
+      targetScaleX = plotWNoLabels / effectiveSpan;
     } else if (this.tipLabelAlign === 'off' && this._tipLabelWidths?.size > 0) {
       // Non-aligned labels: each tip's label starts at its own branch-tip x.
       // Binding constraint per tip:
@@ -2230,18 +2261,18 @@ export class TreeRenderer {
         if (nx <= 0) continue;
         const lw = this._tipLabelWidths.get(n.id) ?? 0;
         if (lw === 0) continue;
-        const s = (base - overhead - lw) / (barPad + stemWorld + nx);
+        const s = (base - overhead - lw) / (treeLeftPad + nx);
         if (s < minScale) minScale = s;
       }
-      targetScaleX = isFinite(minScale) ? minScale : plotWNoLabels / (this.maxX + barPad + stemWorld);
-      // Axis range override: ensure the tree does not scale larger than the range allows.
-      const axisRangeScaleX = plotWNoLabels / (effectiveRightExt + effectiveLeftPad);
+      targetScaleX = isFinite(minScale) ? minScale : plotWNoLabels / treeSpan;
+      // Axis range provides an upper bound on scale; keep label-fit as lower bound.
+      const axisRangeScaleX = plotWNoLabels / effectiveSpan;
       if (axisRangeScaleX < targetScaleX) targetScaleX = axisRangeScaleX;
     } else {
       // Aligned labels all land at the same right-hand column — use the
       // maxLabelWidth-based labelRightPad which is exact for this case.
       const plotW = W - this.paddingLeft - this.labelRightPad;
-      targetScaleX = plotW / (effectiveRightExt + effectiveLeftPad);
+      targetScaleX = plotW / effectiveSpan;
     }
     this._targetScaleX  = targetScaleX;
     // Shift the origin right so bars/stem (and any axis left-overhang) remain visible.
