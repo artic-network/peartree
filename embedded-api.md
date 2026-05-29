@@ -291,14 +291,14 @@ PearTreeEmbed.embed({
 
     // ── Tip markers ────────────────────────────────────────────────────────
     tipShapeSize:              '2',       // radius (px)
-    tipHaloSize:               '1',       // halo width (px)
+    tipShapeHaloSize:          '1',       // halo width (px)
     tipShapeColor:             '#ffffff',
     tipShapeBgColor:           '#000000',
     tipOutlineColor:           '#033940',
 
     // ── Node markers ───────────────────────────────────────────────────────
     nodeShapeSize:             '0',       // radius (px); 0 = hidden
-    nodeHaloSize:              '1',
+    nodeShapeHaloSize:         '1',
     nodeShapeColor:            '#000000',
     nodeShapeBgColor:          '#000000',
 

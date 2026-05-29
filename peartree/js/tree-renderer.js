@@ -324,13 +324,13 @@ export class TreeRenderer {
 
     // ── Tip shape ───────────────────────────────────────────────────────────
     this.tipRadius         = s.tipRadius;
-    this.tipHaloSize       = s.tipHaloSize;
+    this.tipHaloSize       = s.tipShapeHaloSize;
     this.tipShapeColor     = s.tipShapeColor;
     this.tipShapeBgColor   = s.tipShapeBgColor;
 
     // ── Node shape ──────────────────────────────────────────────────────────
     this.nodeRadius        = s.nodeRadius;
-    this.nodeHaloSize      = s.nodeHaloSize;
+    this.nodeHaloSize      = s.nodeShapeHaloSize;
     this.nodeShapeColor    = s.nodeShapeColor;
     this.nodeShapeBgColor  = s.nodeShapeBgColor;
 

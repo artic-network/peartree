@@ -73,9 +73,9 @@ export const REQUIRED_THEME_KEYS = [
   // Label Shapes
   'tipLabelShapeColor',
   // Tip Shapes
-  'tipShapeSize', 'tipShapeColor', 'tipHaloSize', 'tipShapeBgColor',
+  'tipShapeSize', 'tipShapeColor', 'tipShapeHaloSize', 'tipShapeBgColor',
   // Node Shapes
-  'nodeShapeSize', 'nodeShapeColor', 'nodeHaloSize', 'nodeShapeBgColor',
+  'nodeShapeSize', 'nodeShapeColor', 'nodeShapeHaloSize', 'nodeShapeBgColor',
   // Branch Shapes
   'branchShapeColor', 'branchShapeHaloColor', 'branchShape2Color', 'branchShape3Color', 'branchShape4Color',
   // Node Labels

@@ -86,7 +86,7 @@ Canonical reference for settings keys accepted in the `settings` object (URL `se
 | `nodeBarsRange` | 'off' \| 'on' | `off` |
 | `nodeBarsStrokeOpacity` | number or numeric string (typically 0..1) | `0.55` |
 | `nodeBarsWidth` | number or numeric string | `6` |
-| `nodeHaloSize` | number or numeric string | `1` |
+| `nodeShapeHaloSize` | number or numeric string | `1` |
 | `nodeHoverFillColor` | CSS color string | `#f5a700` |
 | `nodeHoverFillOpacity` | number or numeric string (typically 0..1) | `0.5` |
 | `nodeHoverGrowthFactor` | number or numeric string | `2.5` |
@@ -157,7 +157,7 @@ Canonical reference for settings keys accepted in the `settings` object (URL `se
 | `selectedTipStrokeColor` | CSS color string | `#00364a` |
 | `selectedTipStrokeOpacity` | number or numeric string (typically 0..1) | `0.5` |
 | `selectedTipStrokeWidth` | number or numeric string | `1` |
-| `tipHaloSize` | number or numeric string | `1` |
+| `tipShapeHaloSize` | number or numeric string | `1` |
 | `tipHoverFillColor` | CSS color string | `#f5a700` |
 | `tipHoverFillOpacity` | number or numeric string (typically 0..1) | `0.5` |
 | `tipHoverGrowthFactor` | number or numeric string | `2.5` |

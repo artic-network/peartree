@@ -850,12 +850,12 @@ async function _initCore(root = document) {
       tipLabelColor:    labelColorEl.value,
       // Tip shape/size
       tipShapeSize:     tipSlider.value,
-      tipHaloSize:      tipHaloSlider.value,
+      tipShapeHaloSize: tipHaloSlider.value,
       tipShapeColor:    tipShapeColorEl.value,
       tipShapeBgColor:  tipShapeBgEl.value,
       // Node shape/size
       nodeShapeSize:    nodeSlider.value,
-      nodeHaloSize:     nodeHaloSlider.value,
+      nodeShapeHaloSize: nodeHaloSlider.value,
       nodeShapeColor:   nodeShapeColorEl.value,
       nodeShapeBgColor: nodeShapeBgEl.value,
       // Branch shapes colours
@@ -1282,9 +1282,9 @@ async function _initCore(root = document) {
       tipSlider.value = s.tipShapeSize;
       $('tip-size-value').textContent = s.tipShapeSize;
     }
-    if (s.tipHaloSize    != null) {
-      tipHaloSlider.value = s.tipHaloSize;
-      $('tip-halo-value').textContent = s.tipHaloSize;
+    if (s.tipShapeHaloSize != null) {
+      tipHaloSlider.value = s.tipShapeHaloSize;
+      $('tip-halo-value').textContent = s.tipShapeHaloSize;
     }
     if (s.tipShapeColor)         tipShapeColorEl.value    = s.tipShapeColor;
     if (s.tipShapeBgColor)       tipShapeBgEl.value       = s.tipShapeBgColor;
@@ -1351,9 +1351,9 @@ async function _initCore(root = document) {
       nodeSlider.value = s.nodeShapeSize;
       $('node-size-value').textContent = s.nodeShapeSize;
     }
-    if (s.nodeHaloSize   != null) {
-      nodeHaloSlider.value = s.nodeHaloSize;
-      $('node-halo-value').textContent = s.nodeHaloSize;
+    if (s.nodeShapeHaloSize != null) {
+      nodeHaloSlider.value = s.nodeShapeHaloSize;
+      $('node-halo-value').textContent = s.nodeShapeHaloSize;
     }
     if (s.nodeShapeColor)        nodeShapeColorEl.value   = s.nodeShapeColor;
     if (s.nodeShapeBgColor)      nodeShapeBgEl.value      = s.nodeShapeBgColor;
@@ -1681,11 +1681,11 @@ async function _initCore(root = document) {
       elbowRadius:      parseFloat(elbowRadiusSlider?.value ?? DEFAULT_THEME.elbowRadius),
       tipLabelFontSize: parseInt(fontSlider.value),
       tipRadius:        parseInt(tipSlider.value),
-      tipHaloSize:      parseInt(tipHaloSlider.value),
+      tipShapeHaloSize: parseInt(tipHaloSlider.value),
       tipShapeColor:    tipShapeColorEl.value,
       tipShapeBgColor:  tipShapeBgEl.value,
       nodeRadius:       parseInt(nodeSlider.value),
-      nodeHaloSize:     parseInt(nodeHaloSlider.value),
+      nodeShapeHaloSize: parseInt(nodeHaloSlider.value),
       nodeShapeColor:   nodeShapeColorEl.value,
       nodeShapeBgColor: nodeShapeBgEl.value,
       tipLabelColor:    labelColorEl.value,
@@ -1926,14 +1926,14 @@ async function _initCore(root = document) {
     nodeHoverStrokeEl.value    = t.nodeHoverStrokeColor;
     tipSlider.value         = t.tipShapeSize;
     $('tip-size-value').textContent     = t.tipShapeSize;
-    tipHaloSlider.value     = t.tipHaloSize;
-    $('tip-halo-value').textContent     = t.tipHaloSize;
+    tipHaloSlider.value     = t.tipShapeHaloSize;
+    $('tip-halo-value').textContent     = t.tipShapeHaloSize;
     tipShapeColorEl.value   = t.tipShapeColor;
     tipShapeBgEl.value      = t.tipShapeBgColor;
     nodeSlider.value        = t.nodeShapeSize;
     $('node-size-value').textContent    = t.nodeShapeSize;
-    nodeHaloSlider.value    = t.nodeHaloSize;
-    $('node-halo-value').textContent    = t.nodeHaloSize;
+    nodeHaloSlider.value    = t.nodeShapeHaloSize;
+    $('node-halo-value').textContent    = t.nodeShapeHaloSize;
     nodeShapeColorEl.value  = t.nodeShapeColor;
     nodeShapeBgEl.value     = t.nodeShapeBgColor;
     // Hover state
@@ -2219,9 +2219,9 @@ async function _initCore(root = document) {
     tipSlider.value = _saved.tipShapeSize;
     $('tip-size-value').textContent = _saved.tipShapeSize;
   }
-  if (_saved.tipHaloSize    != null) {
-    tipHaloSlider.value = _saved.tipHaloSize;
-    $('tip-halo-value').textContent = _saved.tipHaloSize;
+  if (_saved.tipShapeHaloSize != null) {
+    tipHaloSlider.value = _saved.tipShapeHaloSize;
+    $('tip-halo-value').textContent = _saved.tipShapeHaloSize;
   }
   if (_saved.tipShapeColor)        tipShapeColorEl.value    = _saved.tipShapeColor;
   if (_saved.tipShapeBgColor)      tipShapeBgEl.value       = _saved.tipShapeBgColor;
@@ -2285,9 +2285,9 @@ async function _initCore(root = document) {
     nodeSlider.value = _saved.nodeShapeSize;
     $('node-size-value').textContent = _saved.nodeShapeSize;
   }
-  if (_saved.nodeHaloSize   != null) {
-    nodeHaloSlider.value = _saved.nodeHaloSize;
-    $('node-halo-value').textContent = _saved.nodeHaloSize;
+  if (_saved.nodeShapeHaloSize != null) {
+    nodeHaloSlider.value = _saved.nodeShapeHaloSize;
+    $('node-halo-value').textContent = _saved.nodeShapeHaloSize;
   }
   if (_saved.nodeShapeColor)       nodeShapeColorEl.value   = _saved.nodeShapeColor;
   if (_saved.nodeShapeBgColor)     nodeShapeBgEl.value      = _saved.nodeShapeBgColor;
@@ -7876,7 +7876,7 @@ async function _initCore(root = document) {
    *
     * Supported keys (subset of full settings most useful programmatically):
     *   theme, canvasBgColor, branchColor, branchWidth, tipLabelFontSize, tipLabelColor,
-    *   tipShapeSize, tipHaloSize, nodeShapeSize, nodeHaloSize,
+    *   tipShapeSize, tipShapeHaloSize, nodeShapeSize, nodeShapeHaloSize,
    *   tipLabelShow, axisShow, axisDateFormat, axisMajorInterval, axisMinorInterval,
    *   axisMajorLabelFormat, axisMinorLabelFormat, clampNegBranches,
    *   nodeLabelAnnotation, legendShow, legendTextColor
@@ -7906,9 +7906,9 @@ async function _initCore(root = document) {
     _setSlider(elbowRadiusSlider,  'elbow-radius-value',  s.elbowRadius);
     _setSlider(fontSlider,        'font-size-value',    s.tipLabelFontSize);
     _setSlider(tipSlider,         'tip-size-value',     s.tipShapeSize);
-    _setSlider(tipHaloSlider,     'tip-halo-value',     s.tipHaloSize);
+    _setSlider(tipHaloSlider,     'tip-halo-value',     s.tipShapeHaloSize);
     _setSlider(nodeSlider,        'node-size-value',    s.nodeShapeSize);
-    _setSlider(nodeHaloSlider,    'node-halo-value',    s.nodeHaloSize);
+    _setSlider(nodeHaloSlider,    'node-halo-value',    s.nodeShapeHaloSize);
 
     if (s.tipLabelShow != null && tipLabelShow) tipLabelShow.value = s.tipLabelShow;
 
@@ -8104,7 +8104,7 @@ async function _initCore(root = document) {
     /**
     * Apply a partial settings object at runtime.
     * Supported keys: theme, canvasBgColor, branchColor, branchWidth, tipLabelFontSize,
-    * tipLabelColor, tipShapeSize, tipHaloSize, nodeShapeSize, nodeHaloSize, tipLabelShow,
+    * tipLabelColor, tipShapeSize, tipShapeHaloSize, nodeShapeSize, nodeShapeHaloSize, tipLabelShow,
      * axisShow, axisDateFormat, axisMajorInterval, axisMinorInterval,
      * axisMajorLabelFormat, axisMinorLabelFormat, clampNegBranches,
      * nodeLabelAnnotation, legendShow, legendTextColor.

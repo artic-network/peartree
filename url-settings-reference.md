@@ -207,11 +207,11 @@ The lists below are a quick grouped view.
 - `tipLabelShapeColor`
 - `tipShapeSize`
 - `tipShapeColor`
-- `tipHaloSize`
+- `tipShapeHaloSize`
 - `tipShapeBgColor`
 - `nodeShapeSize`
 - `nodeShapeColor`
-- `nodeHaloSize`
+- `nodeShapeHaloSize`
 - `nodeShapeBgColor`
 - `nodeLabelFontSize`
 - `nodeLabelTypefaceKey`
