@@ -23,7 +23,7 @@ import { createRTTChart          } from './rtt-chart.js';
 import { createCommands } from '@artic-network/pearcore/commands.js';
 import { COMMAND_DEFS } from './peartree-commands.js';
 import { createExportController } from './export-controller.js';
-import { EXAMPLE_TREE_PATH, EXAMPLE_DATASETS, PEARTREE_BASE_URL, DEFAULT_SETTINGS, REQUIRED_THEME_KEYS, NODE_TOOLTIP_FIELDS } from './config.js';
+import { EXAMPLE_TREE_PATH, EXAMPLE_DATASETS, PEARTREE_BASE_URL, DEFAULT_SETTINGS, REQUIRED_THEME_KEYS, NON_PERSISTENT_SETTINGS, NODE_TOOLTIP_FIELDS } from './config.js';
 import { createToolbarColourPicker, upgradeAllPaletteColourPickers } from '@artic-network/pearcore/colorpicker.js';
 import { createThemeManager, resolveEmbedConfig, initSectionAccordion,
          ensureStylesheet, loadScript, resolveAssetBases } from '@artic-network/pearcore/pearcore-app.js';
@@ -544,6 +544,8 @@ async function _initCore(root = document) {
   const _legendMemory    = [null, null, null];
   const axisCanvas             = $('axis-canvas');
   const axisShowEl             = $('axis-show');
+  const axisRangeLeftEl        = $('axis-range-left');
+  const axisRangeRightEl       = $('axis-range-right');
   const axisDateAnnotEl        = $('axis-date-annotation');
   const axisDateRow            = $('axis-date-row');
   const axisDateFmtEl          = $('axis-date-format');
@@ -560,6 +562,15 @@ async function _initCore(root = document) {
   const axisFontSizeSlider    = $('axis-font-size-slider');
   const axisTypefaceEl      = $('axis-font-family-select');
   const axisLineWidthSlider   = $('axis-line-width-slider');
+
+  // Per-axis-mode range state (tree-only settings — not saved to localStorage).
+  // Defaults: forward left=0; reverse right=0; time both auto (empty).
+  let _axisRangeByMode = {
+    time:    { left: '',  right: '' },
+    forward: { left: '0', right: '' },
+    reverse: { left: '',  right: '0' },
+  };
+  let _prevAxisMode = null;  // tracks previous mode so we can save range on switch
   const rttXOriginEl           = $('rtt-x-origin');
   const rttGridLinesEl          = $('rtt-grid-lines');
   const rttAspectRatioEl        = $('rtt-aspect-ratio');
@@ -1476,6 +1487,23 @@ async function _initCore(root = document) {
       renderer.setSettings(_buildRendererSettings());
       if (s.axisColor) axisRenderer.setColor(s.axisColor);
     }
+    // Restore per-mode axis ranges (tree-only settings — not stored in localStorage).
+    // Reset to defaults first, then override with any values from the file.
+    _axisRangeByMode = {
+      time:    { left: '',  right: '' },
+      forward: { left: '0', right: '' },
+      reverse: { left: '',  right: '0' },
+    };
+    if (s.axisRangeTimeLeft     != null) _axisRangeByMode.time.left     = s.axisRangeTimeLeft;
+    if (s.axisRangeTimeRight    != null) _axisRangeByMode.time.right    = s.axisRangeTimeRight;
+    if (s.axisRangeForwardLeft  != null) _axisRangeByMode.forward.left  = s.axisRangeForwardLeft;
+    if (s.axisRangeForwardRight != null) _axisRangeByMode.forward.right = s.axisRangeForwardRight;
+    if (s.axisRangeReverseLeft  != null) _axisRangeByMode.reverse.left  = s.axisRangeReverseLeft;
+    if (s.axisRangeReverseRight != null) _axisRangeByMode.reverse.right = s.axisRangeReverseRight;
+    // Populate range inputs for the current mode (tree params not yet set — don't apply)
+    const _rangeMode = axisShowEl.value;
+    if (_rangeMode !== 'off') _loadAxisRangeForMode(_rangeMode);
+    _prevAxisMode = _rangeMode !== 'off' ? _rangeMode : null;
     _syncControlVisibility();
   }
 
@@ -3527,9 +3555,9 @@ async function _initCore(root = document) {
     getLegendRenderer:   () => legendRenderer,
     canvas, axisCanvas, legendRightCanvas, legend2RightCanvas,
     axisRenderer,
-    getSettingsSnapshot: () => { const s = _buildSnapshot(); delete s.paintColour; return s; },
+    getSettingsSnapshot: () => { const s = _buildSnapshot(); delete s.paintColour; Object.assign(s, _getAxisRangeSettings()); return s; }, // tree-only keys added via TREE_ONLY_SETTING_KEYS
     getConfigSnapshot:   () => ({
-      settings: (() => { const s = _buildSnapshot(); delete s.paintColour; return s; })(),
+      settings: (() => { const s = _buildSnapshot(); delete s.paintColour; Object.assign(s, _getAxisRangeSettings()); return s; })(), // tree-only keys added via TREE_ONLY_SETTING_KEYS
       ui:       Object.fromEntries(PT_UI_FLAG_DEFS.map(def => [def.uiKey, _cfg[def.name]])),
     }),
     getDefaultConfig:    () => ({
@@ -7154,9 +7182,98 @@ async function _initCore(root = document) {
     }
   }
 
+  /** Parse a user-typed axis range value string. Returns null (auto), a number, or NaN (invalid). */
+  function _parseAxisRangeValue(str, mode) {
+    if (!str || str.trim() === '' || str.trim().toLowerCase() === 'auto') return null;
+    if (mode === 'time') {
+      const v = TreeCalibration.parseDateToDecYear(str.trim());
+      return v != null ? v : NaN;
+    }
+    const v = parseFloat(str.trim());
+    return isFinite(v) ? v : NaN;
+  }
+
+  /** Load the stored range for mode into the range input elements. */
+  function _loadAxisRangeForMode(mode) {
+    if (!mode || mode === 'off' || !axisRangeLeftEl) return;
+    const r = _axisRangeByMode[mode] || { left: '', right: '' };
+    axisRangeLeftEl.value  = r.left  ?? '';
+    axisRangeRightEl.value = r.right ?? '';
+    axisRangeLeftEl.classList.remove('is-invalid');
+    axisRangeRightEl.classList.remove('is-invalid');
+  }
+
+  /** Save the current range input values into _axisRangeByMode for the given mode. */
+  function _saveAxisRangeForMode(mode) {
+    if (!mode || mode === 'off' || !axisRangeLeftEl) return;
+    _axisRangeByMode[mode] = { left: axisRangeLeftEl.value, right: axisRangeRightEl.value };
+  }
+
+  /** Return an object with all six per-mode axis range settings (for tree file serialization). */
+  function _getAxisRangeSettings() {
+    // Capture current mode's inputs before snapshotting
+    const mode = axisShowEl.value;
+    if (mode !== 'off') _saveAxisRangeForMode(mode);
+    return {
+      axisRangeTimeLeft:     _axisRangeByMode.time.left,
+      axisRangeTimeRight:    _axisRangeByMode.time.right,
+      axisRangeForwardLeft:  _axisRangeByMode.forward.left,
+      axisRangeForwardRight: _axisRangeByMode.forward.right,
+      axisRangeReverseLeft:  _axisRangeByMode.reverse.left,
+      axisRangeReverseRight: _axisRangeByMode.reverse.right,
+    };
+  }
+
+  /**
+   * Validate, apply, and render the current axis range inputs.
+   * Marks inputs invalid (red border) if the values are bad but does not apply.
+   */
+  function _applyAxisRange() {
+    if (!axisRenderer || !axisRangeLeftEl) return;
+    const mode = axisShowEl.value;
+    if (mode === 'off') {
+      renderer?.setAxisRangeOverride(null, null);
+      return;
+    }
+    const leftStr  = axisRangeLeftEl.value.trim();
+    const rightStr = axisRangeRightEl.value.trim();
+    const leftVal  = _parseAxisRangeValue(leftStr,  mode);
+    const rightVal = _parseAxisRangeValue(rightStr, mode);
+
+    const leftBad  = leftVal  !== null && isNaN(leftVal);
+    const rightBad = rightVal !== null && isNaN(rightVal);
+    let orderBad = false;
+    if (!leftBad && !rightBad && leftVal !== null && rightVal !== null) {
+      if (mode === 'time' || mode === 'forward') orderBad = leftVal >= rightVal;
+      else                                       orderBad = leftVal <= rightVal;
+    }
+    const fwdBoundBad = mode === 'forward' && leftVal  !== null && !leftBad  && leftVal  < 0;
+    const revBoundBad = mode === 'reverse' && rightVal !== null && !rightBad && rightVal < 0;
+
+    const invalid = leftBad || rightBad || orderBad || fwdBoundBad || revBoundBad;
+    axisRangeLeftEl.classList.toggle('is-invalid',  leftBad  || orderBad || fwdBoundBad);
+    axisRangeRightEl.classList.toggle('is-invalid', rightBad || orderBad || revBoundBad);
+    if (invalid) return;
+
+    axisRenderer.setRange(leftVal, rightVal);
+    if (renderer) {
+      const ext = axisRenderer.getWorldExtent();
+      if (ext) renderer.setAxisRangeOverride(ext.worldLeft, ext.worldRight);
+      axisRenderer.update(
+        renderer.scaleX, renderer.offsetX, renderer.paddingLeft,
+        renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
+        window.devicePixelRatio || 1,
+      );
+    }
+  }
+
   function applyAxis() {
     const val = axisShowEl.value;
     const on  = val !== 'off';
+    // Save range for the previous mode before switching
+    if (_prevAxisMode && _prevAxisMode !== 'off' && _prevAxisMode !== val) {
+      _saveAxisRangeForMode(_prevAxisMode);
+    }
     axisCanvas.style.display = on ? 'block' : 'none';
     if (val === 'time') {
       axisRenderer.setCalibration(calibration.isActive ? calibration : null);
@@ -7169,6 +7286,14 @@ async function _initCore(root = document) {
     axisDateFmtRow.style.display = (val === 'time' && calibration.isActive) ? '' : 'none';
     _showDateTickRows(calibration.isActive && !!axisDateAnnotEl.value);
     _showRttDateTickRows(calibration.isActive && !!axisDateAnnotEl.value);
+    // Load the range for the new mode and apply it to the renderers
+    if (on) {
+      _loadAxisRangeForMode(val);
+      _applyAxisRange();
+    } else {
+      axisRenderer.setRange(null, null);
+      renderer?.setAxisRangeOverride(null, null);
+    }
     // Resize the tree canvas so it fills the remaining space above/below the axis.
     renderer._resize();
     if (on) {
@@ -7179,11 +7304,22 @@ async function _initCore(root = document) {
         window.devicePixelRatio || 1,
       );
     }
+    _prevAxisMode = val;
     saveSettings();
     _syncControlVisibility();
   }
 
   axisShowEl.addEventListener('change', applyAxis);
+
+  // Range inputs: save on change and reapply
+  if (axisRangeLeftEl) {
+    axisRangeLeftEl.addEventListener('change',  () => { _saveAxisRangeForMode(axisShowEl.value); _applyAxisRange(); });
+    axisRangeLeftEl.addEventListener('keydown', e => { if (e.key === 'Enter') { _saveAxisRangeForMode(axisShowEl.value); _applyAxisRange(); } });
+  }
+  if (axisRangeRightEl) {
+    axisRangeRightEl.addEventListener('change',  () => { _saveAxisRangeForMode(axisShowEl.value); _applyAxisRange(); });
+    axisRangeRightEl.addEventListener('keydown', e => { if (e.key === 'Enter') { _saveAxisRangeForMode(axisShowEl.value); _applyAxisRange(); } });
+  }
 
   // ── Minor-interval options (depend on major) ──────────────────────────────
 

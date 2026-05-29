@@ -250,4 +250,38 @@ export const DEFAULT_SETTINGS = {
   defaultTheme:  'ARTIC',
   // Last-active theme name; restored on reload. Falls back to defaultTheme.
   selectedTheme: 'ARTIC',
+
+  // ── Axis range (not persistent — see NON_PERSISTENT_SETTINGS below) ───────────────────────
+  // '' / null = auto.  Forward left defaults to '0'; reverse right defaults to '0'.
+  axisRangeTimeLeft:     '',
+  axisRangeTimeRight:    '',
+  axisRangeForwardLeft:  '0',
+  axisRangeForwardRight: '',
+  axisRangeReverseLeft:  '',
+  axisRangeReverseRight: '0',
 };
+
+/**
+ * Setting keys that belong in the tree file but must NOT be written to
+ * localStorage.  These values are per-tree (they depend on the specific tree
+ * data) rather than per-user, so persisting them across different trees would
+ * produce confusing results.
+ *
+ * Usage:
+ *   • _buildSnapshot()          — must OMIT all keys listed here.
+ *   • getSettingsSnapshot()     — must ADD these keys on top of _buildSnapshot().
+ *   • _applyVisualSettingsFromFile() — must read and apply these keys.
+ *
+ * When adding a new tree-only setting, add its key here AND supply a
+ * fallback value in DEFAULT_SETTINGS above so that _applyVisualSettingsFromFile
+ * can apply a safe default when opening a tree file that predates the setting.
+ */
+export const NON_PERSISTENT_SETTINGS = [
+  // Axis range: explicit left/right bound per axis mode ('' = auto).
+  'axisRangeTimeLeft',
+  'axisRangeTimeRight',
+  'axisRangeForwardLeft',
+  'axisRangeForwardRight',
+  'axisRangeReverseLeft',
+  'axisRangeReverseRight',
+];

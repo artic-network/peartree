@@ -52,6 +52,10 @@ export class AxisRenderer {
     // Direction for non-timed, non-date trees: 'forward' (0→maxX) or 'reverse' (maxX→0)
     this._direction = 'forward';
 
+    // User-set axis range bounds in axis coordinate space (null = auto)
+    this._rangeLeft  = null;
+    this._rangeRight = null;
+
     // ── Style overrides ───────────────────────────────────────────────────
     this._axisColor          = null;   // hex string; null → use built-in default colours
     this._axisLineWidth      = 1;      // stroke width for ticks and baseline
@@ -175,7 +179,7 @@ export class AxisRenderer {
     // Only auto-sync font size from tree if the user hasn't explicitly set one
     if (!this._axisFontSizeManual) this._fontSize = Math.max(7, fontSize - 1);
 
-    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${paddingLeft}|${labelRightPad}|${bgColor}|${this._fontSize}|${this._fontFamily}|${this._typefaceKey ?? ''}|${this._typefaceStyle ?? ''}|${this._axisColor ?? ''}|${this._axisLineWidth}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._calibration?.anchorDecYear ?? ''}|${this._calibration?.anchorH ?? ''}|${this._calibration?.rate ?? ''}|${this._viewMinTipH}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}|${this._dateFormat}|${this._direction}`;
+    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${paddingLeft}|${labelRightPad}|${bgColor}|${this._fontSize}|${this._fontFamily}|${this._typefaceKey ?? ''}|${this._typefaceStyle ?? ''}|${this._axisColor ?? ''}|${this._axisLineWidth}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._calibration?.anchorDecYear ?? ''}|${this._calibration?.anchorH ?? ''}|${this._calibration?.rate ?? ''}|${this._viewMinTipH}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}|${this._dateFormat}|${this._direction}|${this._rangeLeft ?? ''}|${this._rangeRight ?? ''}`;
     if (hash === this._lastHash) return;
     this._lastHash = hash;
 
@@ -252,6 +256,47 @@ export class AxisRenderer {
     this._lastHash  = '';
   }
 
+  /**
+   * Set explicit axis range bounds in axis coordinate space.
+   * For date mode: decimal years (number). For forward/reverse: divergence units (number).
+   * Pass null for either endpoint to use automatic ranging for that side.
+   * @param {number|null} leftVal
+   * @param {number|null} rightVal
+   */
+  setRange(leftVal, rightVal) {
+    this._rangeLeft  = (leftVal  != null && isFinite(leftVal))  ? leftVal  : null;
+    this._rangeRight = (rightVal != null && isFinite(rightVal)) ? rightVal : null;
+    this._lastHash   = '';
+  }
+
+  /**
+   * Returns { worldLeft, worldRight } — the world-X coordinates of the current axis
+   * range endpoints (user-set or auto). Used by tree-renderer to compute axis-aware scaleX.
+   * Returns null if tree parameters are not yet set.
+   */
+  getWorldExtent() {
+    if (this._maxX == null) return null;
+    let autoLeft, autoRight;
+    if (this._calibration?.isActive) {
+      const rootH = Math.max(this._rootHeight, this._maxX);
+      autoLeft    = this._calibration.heightToDecYear(rootH);
+      autoRight   = this._calibration.heightToDecYear(this._viewMinTipH);
+    } else if (this._direction === 'forward') {
+      autoLeft  = 0;
+      autoRight = this._maxX;
+    } else {
+      const span = this._timed ? this._rootHeight : this._maxX;
+      autoLeft   = span;
+      autoRight  = 0;
+    }
+    const leftVal  = this._rangeLeft  != null ? this._rangeLeft  : autoLeft;
+    const rightVal = this._rangeRight != null ? this._rangeRight : autoRight;
+    return {
+      worldLeft:  this._valToWorldX(leftVal),
+      worldRight: this._valToWorldX(rightVal),
+    };
+  }
+
   // ── Drawing ──────────────────────────────────────────────────────────────
 
   _draw() {
@@ -265,16 +310,16 @@ export class AxisRenderer {
 
     if (!this._scaleX || this._maxX === 0) return;
 
-    // For forward (divergence) axis the root is at offsetX — the baseline must
-    // start exactly there so it aligns with the 0.0 tick.  For reverse and time
-    // axes, extend left to paddingLeft to cover any node-bar/whisker overhang.
-    const plotLeft  = (this._direction === 'forward' && !this._dateMode)
-      ? this._offsetX
-      : Math.min(this._offsetX, this._paddingLeft);
-    const plotRight = this._offsetX + this._maxX * this._scaleX;
-    if (plotRight <= plotLeft) return;
-
     const { leftVal, rightVal } = this._valueDomain();
+
+    // The baseline runs exactly from the left range endpoint to the right range endpoint.
+    // In auto mode _valueDomain() already includes bar/stem overhang via extraH.
+    const rangeScreenLeft  = this._valToScreenX(leftVal);
+    const rangeScreenRight = this._valToScreenX(rightVal);
+    const plotLeft  = rangeScreenLeft;
+    const plotRight = rangeScreenRight;
+
+    if (plotRight <= plotLeft) return;
     const minVal = Math.min(leftVal, rightVal);
     const maxVal = Math.max(leftVal, rightVal);
     const targetMajor = Math.max(2, Math.round((plotRight - plotLeft) / 90));
@@ -450,28 +495,34 @@ export class AxisRenderer {
     }
   }
 
-  /** Returns {leftVal, rightVal} = the axis values at worldX=0 and worldX=maxX */
+  /** Returns {leftVal, rightVal} = the axis values at the range endpoints (auto or user-set). */
   _valueDomain() {
     // Extra height units covered by any node-bar/whisker overhang to the left of the root.
     const extraH = this._scaleX > 0
       ? Math.max(0, this._offsetX - this._paddingLeft) / this._scaleX
       : 0;
+    let leftVal, rightVal;
     if (this._calibration?.isActive) {
       // Root height in the current view = max(rootHeight, maxX):
       //   - Full tree: _rootHeight is 0 for non-BEAST trees, so _maxX (= layout.maxX) wins.
       //   - Subtree:   _rootHeight = viewRootH > _maxX (= viewRootH − minTipH), so _rootHeight wins.
-      const rootH    = Math.max(this._rootHeight, this._maxX);
-      const leftVal  = this._calibration.heightToDecYear(rootH + extraH);
-      const rightVal = this._calibration.heightToDecYear(this._viewMinTipH);
-      return { leftVal, rightVal };
+      const rootH = Math.max(this._rootHeight, this._maxX);
+      leftVal  = this._calibration.heightToDecYear(rootH + extraH);
+      rightVal = this._calibration.heightToDecYear(this._viewMinTipH);
+    } else if (this._direction === 'forward') {
+      // Forward: origin at root (0), divergence increases toward tips (maxX).
+      leftVal  = 0;
+      rightVal = this._maxX;
+    } else {
+      // Reverse: 0 at tips, rootHeight (or maxX) at root — values decrease left to right.
+      const span = this._timed ? this._rootHeight : this._maxX;
+      leftVal  = span + extraH;
+      rightVal = 0;
     }
-    // Forward: origin at root (0), divergence increases toward tips (maxX). Always respected.
-    if (this._direction === 'forward') {
-      return { leftVal: 0, rightVal: this._maxX };
-    }
-    // Reverse: 0 at tips, rootHeight (or maxX) at root — values decrease left to right.
-    const span = this._timed ? this._rootHeight : this._maxX;
-    return { leftVal: span + extraH, rightVal: 0 };
+    // Apply user range overrides
+    if (this._rangeLeft  != null) leftVal  = this._rangeLeft;
+    if (this._rangeRight != null) rightVal = this._rangeRight;
+    return { leftVal, rightVal };
   }
 
   _valToWorldX(val) {
