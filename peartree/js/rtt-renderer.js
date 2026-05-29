@@ -963,7 +963,7 @@ export class RTTRenderer {
     const d   = this._dpr;
     const cal = this._calibration;
     const fmt = this._dateFormat;
-    const fsz = Math.max(9, Math.round(this.statsBoxFontSize * 0.9 * d));
+    const fsz = Math.max(6, Math.round(this.statsBoxFontSize * 0.9 * d));
     const lh  = Math.round(fsz * 1.6);
     const pad = Math.round(7 * d);
     const boxW   = Math.round(148 * (this.statsBoxFontSize / 11) * d);
@@ -1299,7 +1299,7 @@ export class RTTRenderer {
     const sd = Math.sqrt(variance);
     const fmt = v => parseFloat(v.toPrecision(4)).toString();
     const d   = this._dpr;
-    const fsz = Math.max(9, Math.round(this.statsBoxFontSize * 0.9 * d));
+    const fsz = Math.max(6, Math.round(this.statsBoxFontSize * 0.9 * d));
     const lh  = Math.round(fsz * 1.6);
     const pad = Math.round(7 * d);
     const boxW   = Math.round(148 * (this.statsBoxFontSize / 11) * d);
