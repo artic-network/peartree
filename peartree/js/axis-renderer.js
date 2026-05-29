@@ -1,6 +1,7 @@
 import { TreeCalibration } from './phylograph.js';
 import { overlapsZones }   from '@artic-network/pearcore/utils.js';
 import { buildFont, TYPEFACES } from '@artic-network/pearcore/typefaces.js';
+import { Axis } from './axis.js';
 
 /**
  * AxisRenderer — draws an x-axis below the tree canvas.
@@ -63,7 +64,33 @@ export class AxisRenderer {
     this._heightFormatter    = null;   // (v:number)=>string from annotation def.fmt, for non-date ticks
     this._paddingTop         = 3;      // gap (px) above the baseline line
 
+    // Shared axis math core (domain, transforms, tick proposals).
+    this._axis = new Axis({ orientation: 'x', type: 'continuous' });
+
     this.setSettings(settings, /*redraw*/ false);
+  }
+
+  /** Sync Axis core state from renderer-owned fields. */
+  _syncAxisCoreState() {
+    this._axis.setType(this._dateMode ? 'time' : 'continuous');
+    this._axis.setGeometry({
+      maxValue: this._maxX,
+      timed: this._timed,
+      rootValue: this._rootHeight,
+      viewMinValue: this._viewMinTipH,
+    });
+    this._axis.setCalibration(this._calibration);
+    this._axis.setDirection(this._direction);
+    this._axis.setRange(this._rangeLeft, this._rangeRight);
+    this._axis.setTransform({
+      scale: this._scaleX,
+      offset: this._offsetX,
+      paddingLeft: this._paddingLeft,
+    });
+    this._axis.setTickOptions({
+      majorInterval: this._majorInterval,
+      minorInterval: this._minorInterval,
+    });
   }
 
   // ── Public API ──────────────────────────────────────────────────────────
@@ -276,25 +303,20 @@ export class AxisRenderer {
    */
   getWorldExtent() {
     if (this._maxX == null) return null;
-    let autoLeft, autoRight;
-    if (this._calibration?.isActive) {
-      const rootH = Math.max(this._rootHeight, this._maxX);
-      autoLeft    = this._calibration.heightToDecYear(rootH);
-      autoRight   = this._calibration.heightToDecYear(this._viewMinTipH);
-    } else if (this._direction === 'forward') {
-      autoLeft  = 0;
-      autoRight = this._maxX;
-    } else {
-      const span = this._timed ? this._rootHeight : this._maxX;
-      autoLeft   = span;
-      autoRight  = 0;
-    }
-    const leftVal  = this._rangeLeft  != null ? this._rangeLeft  : autoLeft;
-    const rightVal = this._rangeRight != null ? this._rangeRight : autoRight;
-    return {
-      worldLeft:  this._valToWorldX(leftVal),
-      worldRight: this._valToWorldX(rightVal),
-    };
+    this._syncAxisCoreState();
+    return this._axis.getWorldExtent();
+  }
+
+  /**
+   * Return the multiplicative X-scale factor needed for the current axis range
+   * to fit the given tree world range.
+   *
+   * @param {number} treeWorldLeft
+   * @param {number} treeWorldRight
+   */
+  getScaleFactor(treeWorldLeft, treeWorldRight) {
+    this._syncAxisCoreState();
+    return this._axis.getScaleFactorForTreeRange(treeWorldLeft, treeWorldRight);
   }
 
   // ── Drawing ──────────────────────────────────────────────────────────────
@@ -310,7 +332,8 @@ export class AxisRenderer {
 
     if (!this._scaleX || this._maxX === 0) return;
 
-    const { leftVal, rightVal } = this._valueDomain();
+    this._syncAxisCoreState();
+    const { leftVal, rightVal } = this._axis.getValueDomain();
 
     // The baseline runs exactly from the left range endpoint to the right range endpoint.
     // In auto mode _valueDomain() already includes bar/stem overhang via extraH.
@@ -325,53 +348,7 @@ export class AxisRenderer {
     const targetMajor = Math.max(2, Math.round((plotRight - plotLeft) / 90));
 
     // ── Build tick arrays ──────────────────────────────────────────────────
-    let majorTicks, minorTicks;
-    if (this._dateMode) {
-      const majorInt = this._majorInterval;
-      const minorInt = this._minorInterval;
-      if (majorInt === 'auto' && minorInt === 'auto') {
-        // Use the paired helper so major and minor are on a consistent calendar
-        // hierarchy (e.g. yearly major → monthly minor, not independently-picked
-        // steps that may not subdivide each other cleanly).
-        const pair = TreeCalibration.autoCalendarTickPair(minVal, maxVal, targetMajor);
-        majorTicks = pair.majorTicks;
-        minorTicks = pair.minorTicks;
-      } else {
-        majorTicks = (majorInt === 'auto')
-          ? TreeCalibration.niceCalendarTicks(minVal, maxVal, targetMajor)
-          : TreeCalibration.calendarTicksForInterval(minVal, maxVal, majorInt);
-        if (minorInt === 'off') {
-          minorTicks = [];
-        } else if (minorInt === 'auto') {
-          const derivedInt = TreeCalibration.derivedMinorInterval(majorTicks);
-          const majorSet   = new Set(majorTicks.map(t => t.toFixed(8)));
-          if (derivedInt) {
-            const minorAll = TreeCalibration.calendarTicksForInterval(minVal, maxVal, derivedInt);
-            minorTicks = minorAll.filter(t => !majorSet.has(t.toFixed(8)));
-          } else {
-            minorTicks = [];
-          }
-        } else {
-          const minorAll = TreeCalibration.calendarTicksForInterval(minVal, maxVal, minorInt);
-          const majorSet = new Set(majorTicks.map(t => t.toFixed(8)));
-          minorTicks = minorAll.filter(t => !majorSet.has(t.toFixed(8)));
-        }
-      }
-    } else {
-      // Always compute ticks in ascending order (minVal → maxVal) so that both
-      // forward and reverse directions produce an identical set of tick values.
-      majorTicks = AxisRenderer._niceTicks(minVal, maxVal, targetMajor);
-      const minorAll = majorTicks.length > 1
-        ? AxisRenderer._niceTicks(minVal, maxVal, targetMajor * 5) : [];
-      const majorSet = new Set(majorTicks.map(t => t.toPrecision(10)));
-      minorTicks = minorAll.filter(t => !majorSet.has(t.toPrecision(10)));
-      // For the reverse-direction axis, flip both arrays so tick order matches
-      // the visual direction (high→low left→right).
-      if (this._direction === 'reverse') {
-        majorTicks.reverse();
-        minorTicks.reverse();
-      }
-    }
+    const { majorTicks, minorTicks } = this._axis.getTicks(targetMajor);
 
     // ── Layout constants ──────────────────────────────────────────────────
     const Y_BASE      = this._paddingTop ?? 3;
@@ -425,7 +402,7 @@ export class AxisRenderer {
         if (sx < plotLeft - 1 || sx > plotRight + 1) continue;
         const label = this._dateMode
           ? this._calibration?.decYearToString(val, majorLabelFmt === 'auto' ? 'partial' : majorLabelFmt, this._dateFormat, effMajorInterval)
-          : AxisRenderer._formatValue(val, _majorStep);
+          : Axis.formatValue(val, _majorStep);
         if (!label) continue;
         const tw = ctx.measureText(label).width;
         const lx = Math.max(plotLeft + tw / 2 + 1, Math.min(W - tw / 2 - 2, sx));
@@ -480,7 +457,7 @@ export class AxisRenderer {
           const effMajorFmt = (majorLabelFmt === 'auto') ? 'partial' : majorLabelFmt;
           label = this._calibration.decYearToString(val, effMajorFmt, this._dateFormat, effMajorInterval);
         } else {
-          label = AxisRenderer._formatValue(val, _majorStep);
+          label = Axis.formatValue(val, _majorStep);
         }
         const tw = ctx.measureText(label).width;
         // Allow labels to extend to the canvas edge (W) rather than being hard-clamped
@@ -497,50 +474,18 @@ export class AxisRenderer {
 
   /** Returns {leftVal, rightVal} = the axis values at the range endpoints (auto or user-set). */
   _valueDomain() {
-    // Extra height units covered by any node-bar/whisker overhang to the left of the root.
-    const extraH = this._scaleX > 0
-      ? Math.max(0, this._offsetX - this._paddingLeft) / this._scaleX
-      : 0;
-    let leftVal, rightVal;
-    if (this._calibration?.isActive) {
-      // Root height in the current view = max(rootHeight, maxX):
-      //   - Full tree: _rootHeight is 0 for non-BEAST trees, so _maxX (= layout.maxX) wins.
-      //   - Subtree:   _rootHeight = viewRootH > _maxX (= viewRootH − minTipH), so _rootHeight wins.
-      const rootH = Math.max(this._rootHeight, this._maxX);
-      leftVal  = this._calibration.heightToDecYear(rootH + extraH);
-      rightVal = this._calibration.heightToDecYear(this._viewMinTipH);
-    } else if (this._direction === 'forward') {
-      // Forward: origin at root (0), divergence increases toward tips (maxX).
-      leftVal  = 0;
-      rightVal = this._maxX;
-    } else {
-      // Reverse: 0 at tips, rootHeight (or maxX) at root — values decrease left to right.
-      const span = this._timed ? this._rootHeight : this._maxX;
-      leftVal  = span + extraH;
-      rightVal = 0;
-    }
-    // Apply user range overrides
-    if (this._rangeLeft  != null) leftVal  = this._rangeLeft;
-    if (this._rangeRight != null) rightVal = this._rangeRight;
-    return { leftVal, rightVal };
+    this._syncAxisCoreState();
+    return this._axis.getValueDomain();
   }
 
   _valToWorldX(val) {
-    if (this._calibration?.isActive) {
-      // For timed trees (rate = 1): worldX = val − decYear(rootH)  (year offset = tree units)
-      // For divergence trees (rate ≠ 1): multiply by rate to convert year-offset → substitution
-      // units that match the tree canvas coordinate space.
-      const rootH = Math.max(this._rootHeight, this._maxX);
-      return (val - this._calibration.heightToDecYear(rootH)) * this._calibration.rate;
-    }
-    if (this._direction === 'forward')     return val;
-    // Reverse: worldX = span − val (span = rootHeight for timed, maxX for non-timed)
-    const span = this._timed ? this._rootHeight : this._maxX;
-    return span - val;
+    this._syncAxisCoreState();
+    return this._axis.valueToWorldX(val);
   }
 
   _valToScreenX(val) {
-    return this._offsetX + this._valToWorldX(val) * this._scaleX;
+    this._syncAxisCoreState();
+    return this._axis.valueToCanvas(val);
   }
 
   // ── Static helpers ────────────────────────────────────────────────────────
@@ -557,53 +502,4 @@ export class AxisRenderer {
     return `rgba(${r},${g},${b},${alpha})`;
   }
 
-  /**
-   * Generate nicely-spaced ticks within [min, max].
-   * Works for any real-valued axis (divergence or height).
-   */
-  static _niceTicks(min, max, targetCount = 5) {
-    const range = max - min;
-    if (range === 0) return [min];
-    if (targetCount < 1) targetCount = 1;
-
-    const roughStep = range / targetCount;
-    const mag       = Math.pow(10, Math.floor(Math.log10(Math.abs(roughStep))));
-    const norm      = roughStep / mag;
-    let niceStep;
-    if (norm < 1.5)      niceStep = 1 * mag;
-    else if (norm < 3)   niceStep = 2 * mag;
-    else if (norm < 7)   niceStep = 5 * mag;
-    else                 niceStep = 10 * mag;
-
-    const [lo, hi] = min < max ? [min, max] : [max, min];
-    const start    = Math.ceil(lo / niceStep - 1e-9) * niceStep;
-    const ticks    = [];
-    for (let t = start; t <= hi + niceStep * 1e-9; t += niceStep) {
-      const rounded = parseFloat(t.toPrecision(10));
-      ticks.push(rounded);
-    }
-    // Reverse for height axis (which goes high→low left→right) so labels read correctly
-    if (min > max) ticks.reverse();
-    return ticks;
-  }
-
-  /** Format a plain numeric value (divergence or height).
-   * @param {number} v    – the tick value to format
-   * @param {number} step – the interval between ticks; drives required decimal precision
-   */
-  static _formatValue(v, step) {
-    if (v === 0 && (!step || step >= 1)) return '0';
-    // Decimal places needed = enough to distinguish ticks spaced `step` apart.
-    if (step > 0) {
-      const dp = Math.max(0, -Math.floor(Math.log10(step) + 1e-9));
-      return v.toFixed(dp);
-    }
-    // Fallback when step is unavailable: magnitude-based heuristic.
-    const abs = Math.abs(v);
-    if (abs >= 100)  return v.toFixed(0);
-    if (abs >= 10)   return v.toFixed(1);
-    if (abs >= 1)    return v.toFixed(2);
-    if (abs >= 0.01) return v.toFixed(3);
-    return v.toExponential(2);
-  }
 }

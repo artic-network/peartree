@@ -223,7 +223,7 @@ export const DEFAULT_SETTINGS = {
 
   // ── Root-to-tip ──────────────────────────────────────────────────────────────────────
   rttResidBandShow:     'residual',      // 'off' | 'residual' | 'ci'
-  rttXOrigin:           'root',     // 'data' | 'root'
+  rttXOrigin:           'root',     // 'data' | 'root' | 'interval'
   rttGridLines:         'off',     // 'both' | 'horizontal' | 'vertical' | 'off'
   rttAspectRatio:       'fit',      // 'fit' | '1:1' | '4:3' | '3:2' | '16:9'
   rttDateFormat:        'yyyy-MM-dd',

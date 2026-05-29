@@ -140,7 +140,7 @@ Canonical reference for settings keys accepted in the `settings` object (URL `se
 | `rttStatsBgColor` | CSS color string | `#bfbcb9` |
 | `rttStatsFontSize` | number or numeric string | `11` |
 | `rttStatsTextColor` | CSS color string | `#4b4b49` |
-| `rttXOrigin` | 'data' \| 'root' | `root` |
+| `rttXOrigin` | 'data' \| 'root' \| 'interval' | `root` |
 | `selectedLabelStyle` | 'normal' \| 'bold' \| 'italic' \| 'bold italic' | `bold` |
 | `selectedNodeFillColor` | CSS color string | `#831100` |
 | `selectedNodeFillOpacity` | number or numeric string (typically 0..1) | `0.5` |

@@ -2693,6 +2693,36 @@ async function _initCore(root = document) {
     dataTableRenderer?.syncView();
   };
 
+  function _syncAxisSubtreeParams(maxX, viewSubtreeRootId, viewNodes) {
+    // Only date-axis mode needs calibrated root/min-tip heights.
+    const usingDateAxis = axisShowEl.value === 'time' && calibration?.isActive;
+    if (!usingDateAxis) {
+      axisRenderer.setSubtreeParams({
+        maxX,
+        rootHeight: 0,
+        minTipH: 0,
+      });
+      return;
+    }
+
+    const hMap = renderer._globalHeightMap;
+    const rootLayoutNode = viewNodes.find(n => !n.parentId);
+    const rootH = rootLayoutNode ? (hMap.get(rootLayoutNode.id) ?? 0) : 0;
+    const viewRootH = viewSubtreeRootId ? (hMap.get(viewSubtreeRootId) ?? rootH) : rootH;
+    let minTipH = Infinity;
+    for (const n of viewNodes) {
+      if (!n.isTip) continue;
+      const h = hMap.get(n.id);
+      if (h != null && h < minTipH) minTipH = h;
+    }
+    if (!isFinite(minTipH)) minTipH = 0;
+    axisRenderer.setSubtreeParams({
+      maxX:       viewRootH - minTipH,
+      rootHeight: viewRootH,
+      minTipH:    minTipH,
+    });
+  }
+
   // Update axis time span whenever navigation drills into or out of a subtree.
   // Reads renderer._globalHeightMap directly so the values are always current,
   // even after rerooting (which rebuilds the map via _buildGlobalHeightMap).
@@ -2706,26 +2736,9 @@ async function _initCore(root = document) {
     // Sync RTT plot with new visible tip set
     rttChart?.notifyLayoutChange?.();
 
-    if (!_axisIsTimedTree && !(axisShowEl.value === 'time' && axisDateAnnotEl.value)) return;
-    const hMap = renderer._globalHeightMap;
-    // The current layout root (x=0) always has height = maxX of the full-tree layout.
-    const rootLayoutNode = viewNodes.find(n => !n.parentId);
-    const rootH = rootLayoutNode ? (hMap.get(rootLayoutNode.id) ?? 0) : 0;
-    // For subtree navigation, get the global height of the subtree root node.
-    const viewRootH = viewSubtreeRootId ? (hMap.get(viewSubtreeRootId) ?? rootH) : rootH;
-    // Minimum computed height among visible tips — defines the right axis boundary.
-    let minTipH = Infinity;
-    for (const n of viewNodes) {
-      if (!n.isTip) continue;
-      const h = hMap.get(n.id);
-      if (h != null && h < minTipH) minTipH = h;
-    }
-    if (!isFinite(minTipH)) minTipH = 0;
-    axisRenderer.setSubtreeParams({
-      maxX:       viewRootH - minTipH,
-      rootHeight: viewRootH,
-      minTipH:    minTipH,
-    });
+    // Always keep axis bounds in sync with the current tree layout.
+    _syncAxisSubtreeParams(maxX, viewSubtreeRootId, viewNodes);
+    if (axisShowEl.value !== 'off') _applyAxisRange();
   };
 
   // Restore axis visibility from saved settings (map legacy 'on' to 'forward')
@@ -3352,6 +3365,7 @@ async function _initCore(root = document) {
       minorLabelFormat: rttMinorLabelEl.value,
     }),
     getIsTimedTree: () => _axisIsTimedTree,
+    getXAxisOrigin: () => rttXOriginEl.value || 'root',
     getShowRootAge: () => rttXOriginEl.value === 'root',
     getGridLines:   () => rttGridLinesEl.value,
     getAspectRatio: () => rttAspectRatioEl.value,
@@ -7232,7 +7246,7 @@ async function _initCore(root = document) {
     if (!axisRenderer || !axisRangeLeftEl) return;
     const mode = axisShowEl.value;
     if (mode === 'off') {
-      renderer?.setAxisRangeOverride(null, null);
+      renderer?.setAxisRangeOverride(null, null, 1);
       return;
     }
     const leftStr  = axisRangeLeftEl.value.trim();
@@ -7257,8 +7271,17 @@ async function _initCore(root = document) {
 
     axisRenderer.setRange(leftVal, rightVal);
     if (renderer) {
-      const ext = axisRenderer.getWorldExtent();
-      if (ext) renderer.setAxisRangeOverride(ext.worldLeft, ext.worldRight);
+      // No explicit range override: keep tree scaling tree-driven (factor = 1).
+      if (leftVal == null && rightVal == null) {
+        renderer.setAxisRangeOverride(null, null, 1);
+      } else {
+        const ext = axisRenderer.getWorldExtent();
+        if (ext) {
+          const treeExt = renderer.getAxisTreeWorldExtent();
+          const scaleFactor = axisRenderer.getScaleFactor(treeExt.worldLeft, treeExt.worldRight);
+          renderer.setAxisRangeOverride(ext.worldLeft, ext.worldRight, scaleFactor);
+        }
+      }
       axisRenderer.update(
         renderer.scaleX, renderer.offsetX, renderer.paddingLeft,
         renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
@@ -7288,11 +7311,13 @@ async function _initCore(root = document) {
     _showRttDateTickRows(calibration.isActive && !!axisDateAnnotEl.value);
     // Load the range for the new mode and apply it to the renderers
     if (on) {
+      const viewNodes = renderer.nodes || [];
+      _syncAxisSubtreeParams(renderer.maxX, renderer._viewSubtreeRootId, viewNodes);
       _loadAxisRangeForMode(val);
       _applyAxisRange();
     } else {
       axisRenderer.setRange(null, null);
-      renderer?.setAxisRangeOverride(null, null);
+      renderer?.setAxisRangeOverride(null, null, 1);
     }
     // Resize the tree canvas so it fills the remaining space above/below the axis.
     renderer._resize();

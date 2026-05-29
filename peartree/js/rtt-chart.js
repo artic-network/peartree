@@ -26,6 +26,7 @@ import { createGraphicsExporter } from '@artic-network/pearcore/graphics-export.
  * @param {Function} opts.getDateAnnotKey   – () => string (e.g. "date") or ''
  * @param {Function} opts.getDateFormat     – () => string (e.g. 'yyyy-MM-dd')
  * @param {Function} [opts.getIsTimedTree]  – () => boolean
+ * @param {Function} [opts.getXAxisOrigin]  – () => 'data' | 'root' | 'interval'
  * @param {Function} [opts.getShowRootAge]  – () => boolean
  * @param {Function} [opts.getGridLines]    – () => 'both'|'horizontal'|'vertical'|'off'
  * @param {Function} [opts.getAspectRatio]  – () => 'fit'|'1:1'|'4:3'|'3:2'|'16:9'
@@ -60,6 +61,7 @@ export function createRTTChart({
   getResidBandWidth,
   getResidBandFillColor,
   getResidBandFillOpacity,
+  getXAxisOrigin,
   getShowRootAge,
   getGridLines,
   getAspectRatio,
@@ -649,7 +651,9 @@ export function createRTTChart({
       const { key, style } = getAxisTypeface();
       rtt.setTypeface(key, style);
     }
-    rtt.showRootAge   = getShowRootAge?.()  ?? false;
+    rtt.xAxisOrigin   = getXAxisOrigin?.() ?? ((getShowRootAge?.() ?? false) ? 'root' : 'data');
+    // Backward compatibility with any code that still reads this flag.
+    rtt.showRootAge   = rtt.xAxisOrigin !== 'data';
     rtt.gridLines     = getGridLines?.()    ?? 'both';
     rtt.aspectRatio   = getAspectRatio?.()  ?? 'fit';
   }
