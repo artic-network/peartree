@@ -4929,35 +4929,40 @@ async function _initCore(root = document) {
     const btnNodeInfo     = $('btn-node-info');
 
     // ── Tip filter ────────────────────────────────────────────────────────────
-    filterControl = createFilterControl($('tip-filter-mount'), {
-      getNodeMap:            () => renderer?.nodeMap ?? null,
-      getNodeAnnotationValue: (n, col) => col === '__name__' ? (n.name ?? '') : (n.annotations?.[col] ?? null),
-      passesNamedFilter:     (id, node) => renderer?._passesFilter(id, node) ?? true,
-      showPrompt:  (title, msg, def)    => showPromptDialog(title, msg, def ?? ''),
-      showConfirm: (title, msg, opts)   => showConfirmDialog(title, msg, { okLabel: 'OK', cancelLabel: 'Cancel', ...opts }),
-      onMatchChange:         (matches) => {
-        if (!matches) {
-          renderer._selectedTipIds.clear();
+    const tipFilterMount = $('tip-filter-mount');
+    if (tipFilterMount) {
+      filterControl = createFilterControl(tipFilterMount, {
+        getNodeMap:            () => renderer?.nodeMap ?? null,
+        getNodeAnnotationValue: (n, col) => col === '__name__' ? (n.name ?? '') : (n.annotations?.[col] ?? null),
+        passesNamedFilter:     (id, node) => renderer?._passesFilter(id, node) ?? true,
+        showPrompt:  (title, msg, def)    => showPromptDialog(title, msg, def ?? ''),
+        showConfirm: (title, msg, opts)   => showConfirmDialog(title, msg, { okLabel: 'OK', cancelLabel: 'Cancel', ...opts }),
+        onMatchChange:         (matches) => {
+          if (!matches) {
+            renderer._selectedTipIds.clear();
+            renderer._mrcaNodeId = null;
+            if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(false);
+            _updateStatusSelect(0);
+            renderer._dirty = true;
+            return;
+          }
+          renderer._selectedTipIds = new Set(matches.map(n => n.id));
           renderer._mrcaNodeId = null;
-          if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(false);
-          _updateStatusSelect(0);
+          if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(matches.length > 0);
+          _updateStatusSelect(matches.length);
           renderer._dirty = true;
-          return;
-        }
-        renderer._selectedTipIds = new Set(matches.map(n => n.id));
-        renderer._mrcaNodeId = null;
-        if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(matches.length > 0);
-        _updateStatusSelect(matches.length);
-        renderer._dirty = true;
-        // Scroll topmost matching tip into view when tree is zoomed
-        if (matches.length > 0 && renderer._targetScaleY > renderer.minScaleY * 1.01) {
-          const top = matches.reduce((a, b) => a.y < b.y ? a : b);
-          const newOffsetY = renderer.paddingTop + 10 - top.y * renderer._targetScaleY;
-          renderer._setTarget(newOffsetY, renderer._targetScaleY, false);
-        }
-      },
-      getFilterManager:      () => filterManager,
-    });
+          // Scroll topmost matching tip into view when tree is zoomed
+          if (matches.length > 0 && renderer._targetScaleY > renderer.minScaleY * 1.01) {
+            const top = matches.reduce((a, b) => a.y < b.y ? a : b);
+            const newOffsetY = renderer.paddingTop + 10 - top.y * renderer._targetScaleY;
+            renderer._setTarget(newOffsetY, renderer._targetScaleY, false);
+          }
+        },
+        getFilterManager:      () => filterManager,
+      });
+    } else {
+      filterControl = null;
+    }
 
     // ── Hide/Show helpers ─────────────────────────────────────────────────────
     function _selectedNodeId() {
