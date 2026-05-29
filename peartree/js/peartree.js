@@ -23,7 +23,7 @@ import { createRTTChart          } from './rtt-chart.js';
 import { createCommands } from '@artic-network/pearcore/commands.js';
 import { COMMAND_DEFS } from './peartree-commands.js';
 import { createExportController } from './export-controller.js';
-import { EXAMPLE_TREE_PATH, EXAMPLE_DATASETS, PEARTREE_BASE_URL, DEFAULT_SETTINGS, REQUIRED_THEME_KEYS, NODE_TOOLTIP_FIELDS } from './config.js';
+import { EXAMPLE_TREE_PATH, EXAMPLE_DATASETS, PEARTREE_BASE_URL, DEFAULT_SETTINGS, REQUIRED_THEME_KEYS, NON_PERSISTENT_SETTINGS, NODE_TOOLTIP_FIELDS } from './config.js';
 import { createToolbarColourPicker, upgradeAllPaletteColourPickers } from '@artic-network/pearcore/colorpicker.js';
 import { createThemeManager, resolveEmbedConfig, initSectionAccordion,
          ensureStylesheet, loadScript, resolveAssetBases } from '@artic-network/pearcore/pearcore-app.js';
@@ -3555,9 +3555,9 @@ async function _initCore(root = document) {
     getLegendRenderer:   () => legendRenderer,
     canvas, axisCanvas, legendRightCanvas, legend2RightCanvas,
     axisRenderer,
-    getSettingsSnapshot: () => { const s = _buildSnapshot(); delete s.paintColour; Object.assign(s, _getAxisRangeSettings()); return s; },
+    getSettingsSnapshot: () => { const s = _buildSnapshot(); delete s.paintColour; Object.assign(s, _getAxisRangeSettings()); return s; }, // tree-only keys added via TREE_ONLY_SETTING_KEYS
     getConfigSnapshot:   () => ({
-      settings: (() => { const s = _buildSnapshot(); delete s.paintColour; Object.assign(s, _getAxisRangeSettings()); return s; })(),
+      settings: (() => { const s = _buildSnapshot(); delete s.paintColour; Object.assign(s, _getAxisRangeSettings()); return s; })(), // tree-only keys added via TREE_ONLY_SETTING_KEYS
       ui:       Object.fromEntries(PT_UI_FLAG_DEFS.map(def => [def.uiKey, _cfg[def.name]])),
     }),
     getDefaultConfig:    () => ({
