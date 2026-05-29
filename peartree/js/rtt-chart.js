@@ -800,9 +800,17 @@ export function createRTTChart({
       if (w == null) return;
       const val = (typeof w === 'number') ? `${w}%` : String(w);
       _panelWidth = val;
+      // Suppress any CSS flex-basis / transform transition so clientWidth
+      // reflects the target width immediately (same approach as drag handler).
+      panel.style.transition = 'none';
       panel.style.width = val;
       document.documentElement.style.setProperty('--rtt-panel-w', val);
-      if (_open) { rtt._resize(); getRenderer()?._resize?.(); }
+      if (_open) {
+        void panel.offsetWidth; // force reflow so clientWidth reflects the new width
+        rtt._resize();
+        getRenderer()?._resize?.();
+      }
+      requestAnimationFrame(() => { panel.style.transition = ''; });
     },
 
     /** Call when the visible tip set or tree layout changes. */
