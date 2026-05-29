@@ -180,7 +180,7 @@ Canonical reference for settings keys accepted in the `settings` object (URL `se
 | `tipLabelsExtraLayouts` | array of 3 values ('append' \| 'align' \| 'join-space' \| 'join-pipe' \| 'join-slash' \| 'join-underscore' \| 'join-dash') | `['append','append','append']` |
 | `tipShapeBgColor` | CSS color string | `#4b4b49` |
 | `tipShapeColor` | CSS color string | `#ebe8e2` |
-| `tipSize` | number (0..30, step 1) | `3` |
+| `tipShapeSize` | number (0..30, step 1) | `3` |
 | `typeface` | string | `Monospace` |
 | `typefaceStyle` | 'Regular' \| 'Bold' \| 'Italic' \| 'Bold Italic' | `Regular` |
 

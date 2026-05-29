@@ -335,10 +335,10 @@ export class TreeRenderer {
     this.nodeShapeBgColor  = s.nodeShapeBgColor;
 
     // ── Labels ──────────────────────────────────────────────────────────────
-    // dimLabelColor and selectedLabelColor are derived from labelColor when not
-    // explicitly supplied, matching the logic in setLabelColor().
-    const { dim: _dim, selected: _sel } = TreeRenderer._deriveLabelColors(s.tipLabelColor ?? s.labelColor);
-    this.labelColor         = s.tipLabelColor ?? s.labelColor;
+    // dimLabelColor and selectedLabelColor are derived from tipLabelColor when
+    // not explicitly supplied, matching the logic in setLabelColor().
+    const { dim: _dim, selected: _sel } = TreeRenderer._deriveLabelColors(s.tipLabelColor);
+    this.labelColor         = s.tipLabelColor;
     this.dimLabelColor      = s.dimLabelColor      ?? _dim;
     this.selectedLabelColor = s.selectedLabelColor ?? _sel;
     this.selectedLabelStyle = s.selectedLabelStyle ?? 'bold';

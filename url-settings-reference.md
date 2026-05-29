@@ -203,13 +203,13 @@ The lists below are a quick grouped view.
 - `branchWidth`
 - `elbowRadius`
 - `tipLabelFontSize`
-- `labelColor`
+- `tipLabelColor`
 - `tipLabelShapeColor`
-- `tipSize`
+- `tipShapeSize`
 - `tipShapeColor`
 - `tipHaloSize`
 - `tipShapeBgColor`
-- `nodeSize`
+- `nodeShapeSize`
 - `nodeShapeColor`
 - `nodeHaloSize`
 - `nodeShapeBgColor`

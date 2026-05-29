@@ -277,7 +277,7 @@ PearTreeEmbed.embed({
     branchColor:               '#444444',
     branchWidth:               '1',       // px
     tipLabelFontSize:          '11',      // tip label font size (px)
-    labelColor:                '#000000',
+    tipLabelColor:             '#000000',
     typeface:                  'Monospace',    // font family key
     typefaceStyle:             'Regular',      // 'Regular' | 'Bold' | 'Italic' | 'Bold Italic'
     elbowRadius:               '2',       // branch elbow rounding (px)
@@ -290,14 +290,14 @@ PearTreeEmbed.embed({
     introAnimation:            'x-then-y', // 'y-then-x' | 'x-then-y' | 'simultaneous' | 'from-bottom' | 'from-top' | 'none'
 
     // ── Tip markers ────────────────────────────────────────────────────────
-    tipSize:                   '2',       // radius (px)
+    tipShapeSize:              '2',       // radius (px)
     tipHaloSize:               '1',       // halo width (px)
     tipShapeColor:             '#ffffff',
     tipShapeBgColor:           '#000000',
     tipOutlineColor:           '#033940',
 
     // ── Node markers ───────────────────────────────────────────────────────
-    nodeSize:                  '0',       // radius (px); 0 = hidden
+    nodeShapeSize:             '0',       // radius (px); 0 = hidden
     nodeHaloSize:              '1',
     nodeShapeColor:            '#000000',
     nodeShapeBgColor:          '#000000',

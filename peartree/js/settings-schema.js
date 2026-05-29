@@ -240,7 +240,7 @@ export const SETTINGS_SCHEMA = [
 
   // ── Shapes ──────────────────────────────────────────────────────────────
   {
-    key: 'tipSize',
+    key: 'tipShapeSize',
     label: 'Tip shape size (px)',
     group: 'Shapes',
     type: 'number',

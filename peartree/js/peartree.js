@@ -847,14 +847,14 @@ async function _initCore(root = document) {
       tipLabelFontSize: fontSlider.value,
       typeface:         fontFamilyEl.value,
       typefaceStyle:    fontTypefaceStyleEl?.value || '',
-      labelColor:       labelColorEl.value,
+      tipLabelColor:    labelColorEl.value,
       // Tip shape/size
-      tipSize:          tipSlider.value,
+      tipShapeSize:     tipSlider.value,
       tipHaloSize:      tipHaloSlider.value,
       tipShapeColor:    tipShapeColorEl.value,
       tipShapeBgColor:  tipShapeBgEl.value,
       // Node shape/size
-      nodeSize:         nodeSlider.value,
+      nodeShapeSize:    nodeSlider.value,
       nodeHaloSize:     nodeHaloSlider.value,
       nodeShapeColor:   nodeShapeColorEl.value,
       nodeShapeBgColor: nodeShapeBgEl.value,
@@ -1188,7 +1188,7 @@ async function _initCore(root = document) {
     if (rttAxisTypefaceStyleEl) {
       _populateStyleSelect(rttAxisFontFamilyEl?.value || fontFamilyEl.value, rttAxisTypefaceStyleEl, s.rttAxisTypefaceStyle, true);
     }
-    if (s.labelColor)            labelColorEl.value       = s.labelColor;
+    if (s.tipLabelColor)         labelColorEl.value       = s.tipLabelColor;
     if (s.selectedLabelStyle)    selectedLabelStyleEl.value = s.selectedLabelStyle;
     if (s.selectedTipStrokeColor)     selectedTipStrokeEl.value  = s.selectedTipStrokeColor;
     if (s.selectedNodeStrokeColor)         selectedNodeStrokeEl.value      = s.selectedNodeStrokeColor;
@@ -1278,9 +1278,9 @@ async function _initCore(root = document) {
       nodeHoverStrokeOpacitySlider.value = s.nodeHoverStrokeOpacity;
       $('node-hover-stroke-opacity-value').textContent = s.nodeHoverStrokeOpacity;
     }
-    if (s.tipSize        != null) {
-      tipSlider.value = s.tipSize;
-      $('tip-size-value').textContent = s.tipSize;
+    if (s.tipShapeSize   != null) {
+      tipSlider.value = s.tipShapeSize;
+      $('tip-size-value').textContent = s.tipShapeSize;
     }
     if (s.tipHaloSize    != null) {
       tipHaloSlider.value = s.tipHaloSize;
@@ -1347,9 +1347,9 @@ async function _initCore(root = document) {
     if (Array.isArray(s.branchShapesExtraCountBys)) {
       s.branchShapesExtraCountBys.forEach((v, i) => { if (branchShapeExtraCountBys[i]) branchShapeExtraCountBys[i].value = v; });
     }
-    if (s.nodeSize       != null) {
-      nodeSlider.value = s.nodeSize;
-      $('node-size-value').textContent = s.nodeSize;
+    if (s.nodeShapeSize  != null) {
+      nodeSlider.value = s.nodeShapeSize;
+      $('node-size-value').textContent = s.nodeShapeSize;
     }
     if (s.nodeHaloSize   != null) {
       nodeHaloSlider.value = s.nodeHaloSize;
@@ -1688,7 +1688,7 @@ async function _initCore(root = document) {
       nodeHaloSize:     parseInt(nodeHaloSlider.value),
       nodeShapeColor:   nodeShapeColorEl.value,
       nodeShapeBgColor: nodeShapeBgEl.value,
-      labelColor:       labelColorEl.value,
+      tipLabelColor:    labelColorEl.value,
       selectedLabelStyle: selectedLabelStyleEl.value,
       paddingLeft:      parseInt(DEFAULT_SETTINGS.paddingLeft),
       paddingRight:     parseInt(DEFAULT_SETTINGS.paddingRight),
@@ -1914,7 +1914,7 @@ async function _initCore(root = document) {
     }
     fontSlider.value        = t.tipLabelFontSize;
     $('font-size-value').textContent    = t.tipLabelFontSize;
-    labelColorEl.value         = t.labelColor;
+    labelColorEl.value         = t.tipLabelColor;
     selectedLabelStyleEl.value = t.selectedLabelStyle;
     selectedTipStrokeEl.value  = t.selectedTipStrokeColor;
     selectedNodeStrokeEl.value = t.selectedNodeStrokeColor;
@@ -1924,14 +1924,14 @@ async function _initCore(root = document) {
     selectedNodeFillEl.value   = t.selectedNodeFillColor;
     tipHoverStrokeEl.value     = t.tipHoverStrokeColor;
     nodeHoverStrokeEl.value    = t.nodeHoverStrokeColor;
-    tipSlider.value         = t.tipSize;
-    $('tip-size-value').textContent     = t.tipSize;
+    tipSlider.value         = t.tipShapeSize;
+    $('tip-size-value').textContent     = t.tipShapeSize;
     tipHaloSlider.value     = t.tipHaloSize;
     $('tip-halo-value').textContent     = t.tipHaloSize;
     tipShapeColorEl.value   = t.tipShapeColor;
     tipShapeBgEl.value      = t.tipShapeBgColor;
-    nodeSlider.value        = t.nodeSize;
-    $('node-size-value').textContent    = t.nodeSize;
+    nodeSlider.value        = t.nodeShapeSize;
+    $('node-size-value').textContent    = t.nodeShapeSize;
     nodeHaloSlider.value    = t.nodeHaloSize;
     $('node-halo-value').textContent    = t.nodeHaloSize;
     nodeShapeColorEl.value  = t.nodeShapeColor;
@@ -1967,8 +1967,8 @@ async function _initCore(root = document) {
     legendFontSizeSlider.value = t.legendFontSize; $('legend-font-size-value').textContent = t.legendFontSize;
     legendTypefaceEl.value   = t.legendTypefaceKey ?? t.legendFontFamily ?? ''; // bwc
     nodeBarsColorEl.value = t.nodeBarsColor;
-    // legendTextColor falls back to labelColor for themes that don't define it explicitly.
-    const legendColor = t.legendTextColor || t.labelColor;
+    // legendTextColor falls back to tipLabelColor for themes that don't define it explicitly.
+    const legendColor = t.legendTextColor || t.tipLabelColor;
     legendTextColorEl.value = legendColor;
     fontFamilyEl.value = t.typeface;
     // Populate typeface style selects for the new theme
@@ -2125,7 +2125,7 @@ async function _initCore(root = document) {
   _populateStyleSelect(nodeLabelTypefaceEl?.value || fontFamilyEl.value, nodeLabelTypefaceStyleEl, _saved.nodeLabelTypefaceStyle, true);
   if (_saved.collapsedCladeTypefaceKey && collapsedCladeTypefaceEl) collapsedCladeTypefaceEl.value = _saved.collapsedCladeTypefaceKey;
   _populateStyleSelect(collapsedCladeTypefaceEl?.value || fontFamilyEl.value, collapsedCladeTypefaceStyleEl, _saved.collapsedCladeTypefaceStyle, true);
-  if (_saved.labelColor)           labelColorEl.value       = _saved.labelColor;
+  if (_saved.tipLabelColor)        labelColorEl.value       = _saved.tipLabelColor;
   if (_saved.selectedLabelStyle)   selectedLabelStyleEl.value = _saved.selectedLabelStyle;
   if (_saved.selectedTipStrokeColor)    selectedTipStrokeEl.value  = _saved.selectedTipStrokeColor;
   if (_saved.selectedNodeStrokeColor)        selectedNodeStrokeEl.value      = _saved.selectedNodeStrokeColor;
@@ -2215,9 +2215,9 @@ async function _initCore(root = document) {
     nodeHoverStrokeOpacitySlider.value = _saved.nodeHoverStrokeOpacity;
     $('node-hover-stroke-opacity-value').textContent = _saved.nodeHoverStrokeOpacity;
   }
-  if (_saved.tipSize        != null) {
-    tipSlider.value = _saved.tipSize;
-    $('tip-size-value').textContent = _saved.tipSize;
+  if (_saved.tipShapeSize   != null) {
+    tipSlider.value = _saved.tipShapeSize;
+    $('tip-size-value').textContent = _saved.tipShapeSize;
   }
   if (_saved.tipHaloSize    != null) {
     tipHaloSlider.value = _saved.tipHaloSize;
@@ -2281,9 +2281,9 @@ async function _initCore(root = document) {
   if (Array.isArray(_saved.branchShapesExtraCountBys)) {
     _saved.branchShapesExtraCountBys.forEach((v, i) => { if (branchShapeExtraCountBys[i]) branchShapeExtraCountBys[i].value = v; });
   }
-  if (_saved.nodeSize       != null) {
-    nodeSlider.value = _saved.nodeSize;
-    $('node-size-value').textContent = _saved.nodeSize;
+  if (_saved.nodeShapeSize  != null) {
+    nodeSlider.value = _saved.nodeShapeSize;
+    $('node-size-value').textContent = _saved.nodeShapeSize;
   }
   if (_saved.nodeHaloSize   != null) {
     nodeHaloSlider.value = _saved.nodeHaloSize;
@@ -7874,9 +7874,9 @@ async function _initCore(root = document) {
    * Keys correspond to DEFAULT_SETTINGS / _buildSnapshot() keys.
    * Only keys present in `s` are applied — everything else is left unchanged.
    *
-  * Supported keys (subset of full settings most useful programmatically):
-  *   theme, canvasBgColor, branchColor, branchWidth, tipLabelFontSize, labelColor,
-   *   tipSize, tipHaloSize, nodeSize, nodeHaloSize,
+    * Supported keys (subset of full settings most useful programmatically):
+    *   theme, canvasBgColor, branchColor, branchWidth, tipLabelFontSize, tipLabelColor,
+    *   tipShapeSize, tipHaloSize, nodeShapeSize, nodeHaloSize,
    *   tipLabelShow, axisShow, axisDateFormat, axisMajorInterval, axisMinorInterval,
    *   axisMajorLabelFormat, axisMinorLabelFormat, clampNegBranches,
    *   nodeLabelAnnotation, legendShow, legendTextColor
@@ -7900,14 +7900,14 @@ async function _initCore(root = document) {
       canvasBgColorEl.value = s.canvasBgColor;
       if (treeLoaded) _syncCanvasWrapperBg(s.canvasBgColor);
     }
-    if (s.branchColor  != null) branchColorEl.value = s.branchColor;
-    if (s.labelColor   != null) labelColorEl.value  = s.labelColor;
+    if (s.branchColor    != null) branchColorEl.value = s.branchColor;
+    if (s.tipLabelColor  != null) labelColorEl.value  = s.tipLabelColor;
     _setSlider(branchWidthSlider, 'branch-width-value', s.branchWidth);
     _setSlider(elbowRadiusSlider,  'elbow-radius-value',  s.elbowRadius);
     _setSlider(fontSlider,        'font-size-value',    s.tipLabelFontSize);
-    _setSlider(tipSlider,         'tip-size-value',     s.tipSize);
+    _setSlider(tipSlider,         'tip-size-value',     s.tipShapeSize);
     _setSlider(tipHaloSlider,     'tip-halo-value',     s.tipHaloSize);
-    _setSlider(nodeSlider,        'node-size-value',    s.nodeSize);
+    _setSlider(nodeSlider,        'node-size-value',    s.nodeShapeSize);
     _setSlider(nodeHaloSlider,    'node-halo-value',    s.nodeHaloSize);
 
     if (s.tipLabelShow != null && tipLabelShow) tipLabelShow.value = s.tipLabelShow;
@@ -8102,9 +8102,9 @@ async function _initCore(root = document) {
     fitLabels() { renderer?.fitLabels(); },
 
     /**
-     * Apply a partial settings object at runtime.
-     * Supported keys: theme, canvasBgColor, branchColor, branchWidth, tipLabelFontSize,
-     * labelColor, tipSize, tipHaloSize, nodeSize, nodeHaloSize, tipLabelShow,
+    * Apply a partial settings object at runtime.
+    * Supported keys: theme, canvasBgColor, branchColor, branchWidth, tipLabelFontSize,
+    * tipLabelColor, tipShapeSize, tipHaloSize, nodeShapeSize, nodeHaloSize, tipLabelShow,
      * axisShow, axisDateFormat, axisMajorInterval, axisMinorInterval,
      * axisMajorLabelFormat, axisMinorLabelFormat, clampNegBranches,
      * nodeLabelAnnotation, legendShow, legendTextColor.
