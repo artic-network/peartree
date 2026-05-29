@@ -4866,6 +4866,11 @@ async function _initCore(root = document) {
     renderer.setDataCrossfade(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
     dataTableRenderer?.setTips(layout.nodes.filter(n => n.isTip));
     rttChart?.notifyLayoutChange?.();
+
+    // setDataCrossfade() uses setData(), which does not fire _onLayoutChange.
+    // Recompute axis subtree params/range so tree+axis x-scaling stays in sync.
+    _syncAxisSubtreeParams(renderer.maxX, renderer._viewSubtreeRootId, renderer.nodes || []);
+    if (axisShowEl.value !== 'off') _applyAxisRange();
   }
 
   /** Apply a midpoint root and refresh the layout. */
