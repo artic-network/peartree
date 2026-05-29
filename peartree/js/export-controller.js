@@ -145,11 +145,13 @@ export function createExportController({
           <label class="exp-radio-opt"><input type="radio" name="exp-format" value="config-json">&nbsp;Config JSON <span style="color:var(--bs-secondary-color);font-size:0.78rem">(.json)</span></label>
         </div>
       </div>
-      <div class="exp-section" id="exp-settings-row">
-        <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;cursor:pointer">
-          <input type="checkbox" id="exp-store-settings" checked>
-          <span>Embed current visual settings in file</span>
-        </label>
+      <div class="exp-section" id="exp-settings-row" style="display:flex;align-items:center;gap:0.6rem">
+        <span class="exp-section-label" style="margin-bottom:0">Store settings with tree:</span>
+        <select id="exp-store-settings-mode" style="font-size:0.85rem;padding:0.15rem 0.4rem;border:1px solid var(--bs-border-color);border-radius:4px;background:var(--bs-body-bg);color:var(--bs-body-color)">
+          <option value="none">None</option>
+          <option value="changed">Changed from defaults</option>
+          <option value="all" selected>All</option>
+        </select>
       </div>
       <div class="exp-section" id="exp-state-row">
         <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;cursor:pointer">
@@ -500,7 +502,7 @@ export function createExportController({
     }
 
     const scope         = root.querySelector('input[name="exp-scope"]:checked')?.value  || 'full';
-    const storeSettings = format === 'nexus' && $('exp-store-settings')?.checked;
+    const storeSettingsMode = format === 'nexus' ? ($('exp-store-settings-mode')?.value || 'all') : 'none';
     const subtreeId = scope === 'subtree' ? renderer._viewSubtreeRootId : null;
     const gridId    = format === 'csv' ? '#exp-annot-grid-csv' : '#exp-annot-grid-tree';
     const annotKeys = [...root.querySelectorAll(`${gridId} .exp-annot-cb:checked`)].map(cb => cb.value);
@@ -619,9 +621,15 @@ export function createExportController({
     let content, ext;
     if (format === 'nexus') {
       const rootedTag    = annotKeys.length > 0 ? '[&R] ' : '';
-      const settingsLine = storeSettings
-        ? `\t[peartree=${JSON.stringify(getSettingsSnapshot(), null, 2)}]\n`
-        : '';
+      let settingsLine = '';
+      if (storeSettingsMode !== 'none') {
+        const snap     = getSettingsSnapshot();
+        const defaults = getDefaultConfig?.()?.settings ?? {};
+        const settingsOut = storeSettingsMode === 'changed'
+          ? _diffFromDefaults(snap, defaults)
+          : snap;
+        settingsLine = `\t[peartree=${JSON.stringify(settingsOut, null, 2)}]\n`;
+      }
       content = `#NEXUS\nBEGIN TREES;\n\ttree TREE1 = ${rootedTag}${newick}\n${settingsLine}END;\n`;
       ext     = 'nexus';
     } else {
