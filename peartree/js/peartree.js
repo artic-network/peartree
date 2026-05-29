@@ -844,7 +844,7 @@ async function _initCore(root = document) {
       branchColor:      branchColorEl.value,
       branchWidth:      branchWidthSlider.value,
       elbowRadius:      elbowRadiusSlider?.value ?? DEFAULT_THEME.elbowRadius,
-      fontSize:         fontSlider.value,
+      tipLabelFontSize: fontSlider.value,
       typeface:         fontFamilyEl.value,
       typefaceStyle:    fontTypefaceStyleEl?.value || '',
       labelColor:       labelColorEl.value,
@@ -1155,9 +1155,9 @@ async function _initCore(root = document) {
       branchWidthSlider.value = s.branchWidth;
       $('branch-width-value').textContent = s.branchWidth;
     }
-    if (s.fontSize       != null) {
-      fontSlider.value = s.fontSize;
-      $('font-size-value').textContent = s.fontSize;
+    if (s.tipLabelFontSize != null) {
+      fontSlider.value = s.tipLabelFontSize;
+      $('font-size-value').textContent = s.tipLabelFontSize;
     }
     if (s.typeface)              fontFamilyEl.value       = s.typeface;
     if (fontTypefaceStyleEl) {
@@ -1679,7 +1679,7 @@ async function _initCore(root = document) {
       branchColor:      branchColorEl.value,
       branchWidth:      parseFloat(branchWidthSlider.value),
       elbowRadius:      parseFloat(elbowRadiusSlider?.value ?? DEFAULT_THEME.elbowRadius),
-      fontSize:         parseInt(fontSlider.value),
+      tipLabelFontSize: parseInt(fontSlider.value),
       tipRadius:        parseInt(tipSlider.value),
       tipHaloSize:      parseInt(tipHaloSlider.value),
       tipShapeColor:    tipShapeColorEl.value,
@@ -1912,8 +1912,8 @@ async function _initCore(root = document) {
       elbowRadiusSlider.value = t.elbowRadius;
       $('elbow-radius-value').textContent = t.elbowRadius;
     }
-    fontSlider.value        = t.fontSize;
-    $('font-size-value').textContent    = t.fontSize;
+    fontSlider.value        = t.tipLabelFontSize;
+    $('font-size-value').textContent    = t.tipLabelFontSize;
     labelColorEl.value         = t.labelColor;
     selectedLabelStyleEl.value = t.selectedLabelStyle;
     selectedTipStrokeEl.value  = t.selectedTipStrokeColor;
@@ -2113,9 +2113,9 @@ async function _initCore(root = document) {
     elbowRadiusSlider.value = _saved.elbowRadius;
     $('elbow-radius-value').textContent = _saved.elbowRadius;
   }
-  if (_saved.fontSize       != null) {
-    fontSlider.value = _saved.fontSize;
-    $('font-size-value').textContent = _saved.fontSize;
+  if (_saved.tipLabelFontSize       != null) {
+    fontSlider.value = _saved.tipLabelFontSize;
+    $('font-size-value').textContent = _saved.tipLabelFontSize;
   }
   if (_saved.typeface)             fontFamilyEl.value       = _saved.typeface;
   _populateStyleSelect(fontFamilyEl.value, fontTypefaceStyleEl, _saved.typefaceStyle);
@@ -2673,7 +2673,7 @@ async function _initCore(root = document) {
 
   // applyTheme sets a complete visual baseline (including font sizes).
   // Re-apply explicit saved/init visual keys afterwards so URL-provided
-  // overrides like settings.fontSize win over the selected theme defaults.
+  // overrides like settings.tipLabelFontSize win over the selected theme defaults.
   _applyVisualSettingsFromFile(_saved);
 
   // Always sync legend/axis font families after renderer init — applyTheme does
@@ -7874,8 +7874,8 @@ async function _initCore(root = document) {
    * Keys correspond to DEFAULT_SETTINGS / _buildSnapshot() keys.
    * Only keys present in `s` are applied — everything else is left unchanged.
    *
-   * Supported keys (subset of full settings most useful programmatically):
-   *   theme, canvasBgColor, branchColor, branchWidth, fontSize, labelColor,
+  * Supported keys (subset of full settings most useful programmatically):
+  *   theme, canvasBgColor, branchColor, branchWidth, tipLabelFontSize, labelColor,
    *   tipSize, tipHaloSize, nodeSize, nodeHaloSize,
    *   tipLabelShow, axisShow, axisDateFormat, axisMajorInterval, axisMinorInterval,
    *   axisMajorLabelFormat, axisMinorLabelFormat, clampNegBranches,
@@ -7904,7 +7904,7 @@ async function _initCore(root = document) {
     if (s.labelColor   != null) labelColorEl.value  = s.labelColor;
     _setSlider(branchWidthSlider, 'branch-width-value', s.branchWidth);
     _setSlider(elbowRadiusSlider,  'elbow-radius-value',  s.elbowRadius);
-    _setSlider(fontSlider,        'font-size-value',    s.fontSize);
+    _setSlider(fontSlider,        'font-size-value',    s.tipLabelFontSize);
     _setSlider(tipSlider,         'tip-size-value',     s.tipSize);
     _setSlider(tipHaloSlider,     'tip-halo-value',     s.tipHaloSize);
     _setSlider(nodeSlider,        'node-size-value',    s.nodeSize);
@@ -8103,7 +8103,7 @@ async function _initCore(root = document) {
 
     /**
      * Apply a partial settings object at runtime.
-     * Supported keys: theme, canvasBgColor, branchColor, branchWidth, fontSize,
+     * Supported keys: theme, canvasBgColor, branchColor, branchWidth, tipLabelFontSize,
      * labelColor, tipSize, tipHaloSize, nodeSize, nodeHaloSize, tipLabelShow,
      * axisShow, axisDateFormat, axisMajorInterval, axisMinorInterval,
      * axisMajorLabelFormat, axisMinorLabelFormat, clampNegBranches,

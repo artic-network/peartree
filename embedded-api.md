@@ -276,7 +276,7 @@ PearTreeEmbed.embed({
     canvasBgColor:             '#ffffff',
     branchColor:               '#444444',
     branchWidth:               '1',       // px
-    fontSize:                  '11',      // tip label font size (px)
+    tipLabelFontSize:          '11',      // tip label font size (px)
     labelColor:                '#000000',
     typeface:                  'Monospace',    // font family key
     typefaceStyle:             'Regular',      // 'Regular' | 'Bold' | 'Italic' | 'Bold Italic'

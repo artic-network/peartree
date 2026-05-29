@@ -202,7 +202,7 @@ The lists below are a quick grouped view.
 - `branchColor`
 - `branchWidth`
 - `elbowRadius`
-- `fontSize`
+- `tipLabelFontSize`
 - `labelColor`
 - `tipLabelShapeColor`
 - `tipSize`
@@ -313,7 +313,7 @@ The lists below are a quick grouped view.
   },
   "settings": {
     "axisShow": "time",
-    "fontSize": "13",
+    "tipLabelFontSize": "13",
     "tipLabelShow": "names",
     "selectedTheme": "ARTIC"
   }
