@@ -428,6 +428,7 @@ Both `embed()` and `embedFrame()` return a **controller object** that lets you i
 |--------|-------------|
 | `onTreeLoad(fn)` | Register a callback that fires every time a tree finishes loading. Returns an unsubscribe function — call it to deregister. |
 | `onSelectionChanged(fn, annotationKey?)` | Register a callback fired whenever the selected tips change. By default `fn` receives an array of selected tip names. If `annotationKey` is provided, it receives an array of that annotation value (or `null`) for each selected tip. |
+| `getSelectionChangedListener(annotationKey?)` | Return a listener function you can attach elsewhere. Calling it with `values` selects matching tips in this tree; calling it with `null` clears selection. Without `annotationKey`, `values` are treated as tip names. With `annotationKey`, `values` are matched against that tip annotation. |
 | `onVisibleChanged(fn, annotationKey?)` | Register a callback fired whenever visible tips in the current view change (hide/show, drill/climb navigation, layout changes). By default `fn` receives tip names; with `annotationKey`, it receives annotation values. |
 | `onNodeHover(fn, annotationKey?)` | Register a callback fired when internal-node hover changes. By default `fn` receives the hovered node info object (including `annotations`) or `null`; with `annotationKey`, it receives that annotation value or `null`. |
 | `onTipHover(fn, annotationKey?)` | Register a callback fired when tip hover changes. By default `fn` receives the hovered tip info object (including `annotations`) or `null`; with `annotationKey`, it receives that annotation value or `null`. |
@@ -471,6 +472,16 @@ const unsubNodeHover = controller.onNodeHover((node) => {
 const unsubTipHover = controller.onTipHover((lineage) => {
   console.log('hovered tip lineage:', lineage);
 }, 'lineage');
+
+// Mirror selection from one embed into another
+const source = PearTreeEmbed.embed({ container: 'tree-a', treeUrl: 'a.tree' });
+const target = PearTreeEmbed.embed({ container: 'tree-b', treeUrl: 'b.tree' });
+const applyToTarget = target.getSelectionChangedListener();
+source.onSelectionChanged(applyToTarget);
+
+// Mirror by annotation value instead of names
+const applyByLineage = target.getSelectionChangedListener('lineage');
+source.onSelectionChanged(applyByLineage, 'lineage');
 
 // Sort or reroot programmatically
 controller.sort('asc');

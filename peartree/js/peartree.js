@@ -1702,6 +1702,29 @@ async function _initCore(root = document) {
     return out;
   }
 
+  function _applySelectionByValues(values, annotationKey = null) {
+    if (!renderer?.nodeMap) return;
+
+    if (values == null) {
+      renderer._selectedTipIds = new Set();
+    } else {
+      const wanted = new Set(Array.isArray(values) ? values : [values]);
+      const selected = new Set();
+      for (const [id, n] of renderer.nodeMap) {
+        if (!n?.isTip) continue;
+        const v = _tipValueForListener(n, annotationKey);
+        if (wanted.has(v)) selected.add(id);
+      }
+      renderer._selectedTipIds = selected;
+    }
+
+    renderer._mrcaNodeId = null;
+    renderer._updateMRCA();
+    renderer._notifyStats();
+    if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(renderer._selectedTipIds.size > 0);
+    renderer._dirty = true;
+  }
+
   function _visibleTipNodes() {
     if (!renderer?.nodes) return [];
     return renderer.nodes.filter(n => n.isTip && !n.isCollapsed);
@@ -8262,6 +8285,18 @@ async function _initCore(root = document) {
     },
 
     /**
+     * Return a listener function that applies incoming selection values to this tree.
+     * Pass `null` to clear selection.
+     * Without annotationKey, values are treated as tip names.
+     * With annotationKey, values are matched against tip annotations[annotationKey].
+     * @param {string|null} [annotationKey=null]
+     * @returns {(values:any[]|any|null)=>void}
+     */
+    getSelectionChangedListener(annotationKey = null) {
+      return (values) => _applySelectionByValues(values, annotationKey);
+    },
+
+    /**
      * Register a callback invoked when visible tips in the current view change
      * (hide/show, subtree navigation, tree load/layout updates).
      * fn(values[]) where values are tip names by default, or annotation values
@@ -8347,6 +8382,11 @@ async function _initCore(root = document) {
         else if (msg.action === 'fitLabels')   window.peartree.fitLabels();
       } else if (msg.type === 'pt:applySettings' && msg.settings && typeof msg.settings === 'object') {
         _applySettingsRuntime(msg.settings);
+      } else if (msg.type === 'pt:setSelection') {
+        const key = (typeof msg.annotationKey === 'string' && msg.annotationKey !== '')
+          ? msg.annotationKey
+          : null;
+        _applySelectionByValues(msg.values ?? null, key);
       }
     } catch (_) { /* never propagate errors back to caller */ }
   });
@@ -8578,6 +8618,8 @@ function _buildDirectController(instance) {
     onTreeLoad:    (fn)       => instance.onTreeLoad(fn),
     /** Register a callback for tip selection changes. */
     onSelectionChanged: (fn, annotationKey) => instance.onSelectionChanged(fn, annotationKey),
+    /** Return a listener function that applies incoming selection values to this tree. */
+    getSelectionChangedListener: (annotationKey) => instance.getSelectionChangedListener(annotationKey),
     /** Register a callback for visible-tip changes in the current view. */
     onVisibleChanged: (fn, annotationKey) => instance.onVisibleChanged(fn, annotationKey),
     /** Register a callback for internal-node hover changes. */
@@ -8644,6 +8686,19 @@ function _buildFrameController(iframe) {
       };
       window.addEventListener('message', handler);
       return () => window.removeEventListener('message', handler);
+    },
+    /**
+     * Return a listener function that applies incoming selection values to the iframe tree.
+     * Pass `null` to clear selection.
+     * Without annotationKey, values are treated as tip names.
+     * With annotationKey, values are matched against tip annotations[annotationKey].
+     */
+    getSelectionChangedListener(annotationKey = null) {
+      return (values) => _send({
+        type: 'pt:setSelection',
+        values: values ?? null,
+        annotationKey,
+      });
     },
     /**
      * Register a callback invoked when visible tips in the current view change.
