@@ -81,7 +81,7 @@ export class Axis {
     return this.type === 'time';
   }
 
-  _computeValueDomain(includeTransformExtra = true) {
+  getValueDomain() {
     // Do not derive domain span from screen transform. That coupling can explode
     // ranges when scale is small and causes unstable forward/reverse/time axes.
     const extra = 0;
@@ -108,14 +108,6 @@ export class Axis {
     return { leftVal, rightVal };
   }
 
-  getValueDomain() {
-    return this._computeValueDomain(true);
-  }
-
-  getScaleDomain() {
-    return this._computeValueDomain(false);
-  }
-
   valueToWorldX(val) {
     if (this.isTimeAxis && this._timeTransform === 'calibrated' && this._calibration?.isActive) {
       const rootV = Math.max(this._rootValue, this._maxValue);
@@ -130,11 +122,9 @@ export class Axis {
     return this._offset + this.valueToWorldX(val) * this._scale;
   }
 
-  getWorldExtent(includeTransformExtra = true) {
+  getWorldExtent() {
     if (this._maxValue == null) return null;
-    const { leftVal, rightVal } = includeTransformExtra
-      ? this.getValueDomain()
-      : this.getScaleDomain();
+    const { leftVal, rightVal } = this.getValueDomain();
     return {
       worldLeft: this.valueToWorldX(leftVal),
       worldRight: this.valueToWorldX(rightVal),
@@ -151,7 +141,7 @@ export class Axis {
   getScaleFactorForTreeRange(treeWorldLeft, treeWorldRight) {
     if (!isFinite(treeWorldLeft) || !isFinite(treeWorldRight)) return 1;
 
-    const axisExtent = this.getWorldExtent(false);
+    const axisExtent = this.getWorldExtent();
     if (!axisExtent) return 1;
 
     const treeMin = Math.min(treeWorldLeft, treeWorldRight);

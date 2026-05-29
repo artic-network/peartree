@@ -3365,6 +3365,7 @@ async function _initCore(root = document) {
       minorLabelFormat: rttMinorLabelEl.value,
     }),
     getIsTimedTree: () => _axisIsTimedTree,
+    getXAxisOrigin: () => rttXOriginEl.value || 'root',
     getShowRootAge: () => rttXOriginEl.value === 'root',
     getGridLines:   () => rttGridLinesEl.value,
     getAspectRatio: () => rttAspectRatioEl.value,

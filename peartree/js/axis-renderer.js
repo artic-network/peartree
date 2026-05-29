@@ -304,7 +304,7 @@ export class AxisRenderer {
   getWorldExtent() {
     if (this._maxX == null) return null;
     this._syncAxisCoreState();
-    return this._axis.getWorldExtent(false);
+    return this._axis.getWorldExtent();
   }
 
   /**

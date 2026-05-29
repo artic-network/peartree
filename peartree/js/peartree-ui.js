@@ -338,7 +338,7 @@ function _sectionRtt() {
   return `
     <div class="pt-palette-section" id="rtt-section">
       <h3><i class="bi bi-graph-up"></i> Root-to-tip</h3>
-      <div class="pt-palette-row" title="Starting point of the root-to-tip X axis"><span class="pt-palette-label">X-axis origin <i class="bi bi-arrow-down-left form-label-sm"></i></span><select class="pt-palette-select" id="rtt-x-origin"><option value="data">data range</option><option value="root">root age</option></select></div>
+      <div class="pt-palette-row" title="Starting point of the root-to-tip X axis"><span class="pt-palette-label">X-axis origin <i class="bi bi-arrow-down-left form-label-sm"></i></span><select class="pt-palette-select" id="rtt-x-origin"><option value="data">data range</option><option value="root">root age</option><option value="interval">interval range</option></select></div>
       <div class="pt-palette-row" title="Aspect ratio of the root-to-tip chart panel"><span class="pt-palette-label">Aspect ratio <i class="bi bi-aspect-ratio form-label-sm"></i></span><select class="pt-palette-select" id="rtt-aspect-ratio"><option value="fit">fit panel</option><option value="1:1">1 : 1 (square)</option><option value="4:3">4 : 3</option><option value="3:2">3 : 2</option><option value="16:9">16 : 9</option></select></div>
       <div class="pt-palette-row" title="Grid lines to show on the root-to-tip chart"><span class="pt-palette-label">Grid lines <i class="bi bi-border-inner form-label-sm"></i></span><select class="pt-palette-select" id="rtt-grid-lines"><option value="both">both</option><option value="horizontal">horizontal</option><option value="vertical">vertical</option><option value="off">off</option></select></div>
       <div class="pt-palette-subhead">Regression line</div>

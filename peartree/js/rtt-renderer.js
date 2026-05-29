@@ -108,8 +108,11 @@ export class RTTRenderer {
     // { majorInterval, minorInterval, majorLabelFormat, minorLabelFormat }
     this.tickOptions  = null;
 
-    // When true the x-axis left edge extends to the regression x-intercept (root age)
-    this.showRootAge  = false;
+    // RTT X-axis origin mode: 'data' | 'root' | 'interval'.
+    // 'interval' extends to the left interval-curve root-date bound.
+    this.xAxisOrigin  = 'root';
+    // Backward compatibility alias; prefer xAxisOrigin.
+    this.showRootAge  = true;
 
     // Grid line visibility: 'both' | 'horizontal' | 'vertical' | 'off'
     this.gridLines    = 'both';
@@ -334,20 +337,74 @@ export class RTTRenderer {
     const dataRange = xMax - xMin;
     const xPad = Math.max(dataRange * 0.06, 1e-9);
     const yPad = Math.max(yMax * 0.08, 1e-12);
-    // When showRootAge is on, extend the left edge to the regression x-intercept
-    // (the estimated root age) so the full regression line is visible.
+    // Extend left bound according to origin mode.
+    // data:      data min with padding
+    // root:      include regression x-intercept (root age)
+    // interval:  include left interval-curve intercept (older root-date bound)
     let xLeft = xMin - xPad;
-    if (this.showRootAge) {
+    const originMode = this.xAxisOrigin || (this.showRootAge ? 'root' : 'data');
+    if (originMode === 'root' || originMode === 'interval') {
       const xInt = this._calibration?.regression?.xInt;
       if (xInt != null && isFinite(xInt) && xInt < xMin) {
         const fullRange = xMax - xInt;
         xLeft = xInt - Math.max(fullRange * 0.04, xPad);
       }
     }
+    if (originMode === 'interval') {
+      const xIntLeft = this._leftIntervalCurveX(xMin, xMax);
+      if (xIntLeft != null && isFinite(xIntLeft) && xIntLeft < xLeft) {
+        const fullRange = xMax - xIntLeft;
+        xLeft = xIntLeft - Math.max(fullRange * 0.04, xPad);
+      }
+    }
     this._xMin = xLeft;
     this._xMax = xMax + xPad;
     this._yMin = 0;
     this._yMax = yMax + yPad;
+  }
+
+  _leftIntervalCurveX(xMin, xMax) {
+    const reg = this._calibration?.regression;
+    if (!reg) return null;
+    const a = reg.a;
+    const b = reg.b;
+    if (!isFinite(a) || a === 0 || !isFinite(b)) return null;
+
+    if (this.residBandShow === 'residual') {
+      const rmse = reg.rmse;
+      if (!(rmse > 0)) return null;
+      const x = (-b - 2 * rmse) / a;
+      return isFinite(x) ? x : null;
+    }
+
+    if (this.residBandShow === 'ci') {
+      if (!(reg.n >= 3) || !(reg.ssxx > 0) || reg.rms == null || !isFinite(reg.xInt)) return null;
+      const f = (x) => a * x + b + ciHalfWidth(x, reg);
+
+      const hi0 = reg.xInt;
+      const fHi = f(hi0);
+      if (!(fHi > 0)) return null;
+
+      let span = Math.max(xMax - xMin, 1);
+      let lo = hi0 - span;
+      let fLo = f(lo);
+      for (let i = 0; i < 40 && !(fLo < 0); i++) {
+        span *= 2;
+        lo = hi0 - span;
+        fLo = f(lo);
+      }
+      if (!(fLo < 0)) return null;
+
+      let hi = hi0;
+      for (let i = 0; i < 80; i++) {
+        const mid = (lo + hi) / 2;
+        if (f(mid) > 0) hi = mid;
+        else lo = mid;
+      }
+      return (lo + hi) / 2;
+    }
+
+    return null;
   }
 
   // ─── Render loop ──────────────────────────────────────────────────────────
