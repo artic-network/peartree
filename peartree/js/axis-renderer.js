@@ -312,19 +312,12 @@ export class AxisRenderer {
 
     const { leftVal, rightVal } = this._valueDomain();
 
-    // For forward (divergence) axis the root is at offsetX — the baseline must
-    // start exactly there so it aligns with the 0.0 tick.  For reverse and time
-    // axes, extend left to paddingLeft to cover any node-bar/whisker overhang.
-    const autoPlotLeft  = (this._direction === 'forward' && !this._dateMode)
-      ? this._offsetX
-      : Math.min(this._offsetX, this._paddingLeft);
-    const autoPlotRight = this._offsetX + this._maxX * this._scaleX;
-
-    // Extend baseline to cover user-set range endpoints (ticks drawn beyond tree extent).
+    // The baseline runs exactly from the left range endpoint to the right range endpoint.
+    // In auto mode _valueDomain() already includes bar/stem overhang via extraH.
     const rangeScreenLeft  = this._valToScreenX(leftVal);
     const rangeScreenRight = this._valToScreenX(rightVal);
-    const plotLeft  = Math.min(autoPlotLeft,  rangeScreenLeft);
-    const plotRight = Math.max(autoPlotRight, rangeScreenRight);
+    const plotLeft  = rangeScreenLeft;
+    const plotRight = rangeScreenRight;
 
     if (plotRight <= plotLeft) return;
     const minVal = Math.min(leftVal, rightVal);
