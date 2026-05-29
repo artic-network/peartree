@@ -620,7 +620,7 @@ export function createExportController({
     if (format === 'nexus') {
       const rootedTag    = annotKeys.length > 0 ? '[&R] ' : '';
       const settingsLine = storeSettings
-        ? `\t[peartree=${JSON.stringify(getSettingsSnapshot())}]\n`
+        ? `\t[peartree=${JSON.stringify(getSettingsSnapshot(), null, 2)}]\n`
         : '';
       content = `#NEXUS\nBEGIN TREES;\n\ttree TREE1 = ${rootedTag}${newick}\n${settingsLine}END;\n`;
       ext     = 'nexus';
