@@ -146,24 +146,12 @@
       viewerB.fitLabels();
     });
 
-    // Bidirectional selection link with re-entrancy guard to avoid echo loops.
-    let syncing = false;
     const applyToA = viewerA.getSelectionChangedListener();
     const applyToB = viewerB.getSelectionChangedListener();
 
-    viewerA.onSelectionChanged((tipNames) => {
-      if (syncing) return;
-      syncing = true;
-      try { applyToB(tipNames); }
-      finally { syncing = false; }
-    });
+    viewerA.onSelectionChanged(applyToB);
 
-    viewerB.onSelectionChanged((tipNames) => {
-      if (syncing) return;
-      syncing = true;
-      try { applyToA(tipNames); }
-      finally { syncing = false; }
-    });
+    viewerB.onSelectionChanged(applyToA);
   </script>
 </body>
 </html>

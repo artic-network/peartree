@@ -1705,24 +1705,36 @@ async function _initCore(root = document) {
   function _applySelectionByValues(values, annotationKey = null) {
     if (!renderer?.nodeMap) return;
 
+    const current = renderer._selectedTipIds ?? new Set();
+    let next;
     if (values == null) {
-      renderer._selectedTipIds = new Set();
+      next = new Set();
     } else {
       const wanted = new Set(Array.isArray(values) ? values : [values]);
-      const selected = new Set();
+      next = new Set();
       for (const [id, n] of renderer.nodeMap) {
         if (!n?.isTip) continue;
         const v = _tipValueForListener(n, annotationKey);
-        if (wanted.has(v)) selected.add(id);
+        if (wanted.has(v)) next.add(id);
       }
-      renderer._selectedTipIds = selected;
     }
+
+    if (current.size === next.size) {
+      let same = true;
+      for (const id of current) {
+        if (!next.has(id)) { same = false; break; }
+      }
+      if (same) return false;
+    }
+
+    renderer._selectedTipIds = next;
 
     renderer._mrcaNodeId = null;
     renderer._updateMRCA();
     renderer._notifyStats();
     if (renderer._onNodeSelectChange) renderer._onNodeSelectChange(renderer._selectedTipIds.size > 0);
     renderer._dirty = true;
+    return true;
   }
 
   function _visibleTipNodes() {
