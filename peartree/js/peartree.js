@@ -1370,6 +1370,18 @@ async function _initCore(root = document) {
     if (axisTypefaceStyleEl) {
       _populateStyleSelect(axisTypefaceEl?.value || fontFamilyEl.value, axisTypefaceStyleEl, s.axisTypefaceStyle, true);
     }
+    // RTT chart appearance — these are theme keys set by applyTheme(); must be
+    // re-applied here so that saved/init values win over the theme defaults.
+    if (s.rttStatsFontSize != null) { rttStatsFontSizeSlider.value = s.rttStatsFontSize; $('rtt-stats-font-size-value').textContent = s.rttStatsFontSize; }
+    if (s.rttAxisFontSize  != null) { rttAxisFontSizeSlider.value  = s.rttAxisFontSize;  $('rtt-axis-font-size-value').textContent  = s.rttAxisFontSize;  }
+    if (s.rttAxisLineWidth != null) { rttAxisLineWidthSlider.value = s.rttAxisLineWidth; $('rtt-axis-line-width-value').textContent = s.rttAxisLineWidth; }
+    if (s.rttRegressionStyle) rttRegressionStyleEl.value = s.rttRegressionStyle;
+    if (s.rttRegressionWidth != null) { rttRegressionWidthSlider.value = s.rttRegressionWidth; $('rtt-regression-width-value').textContent = s.rttRegressionWidth; }
+    if (s.rttResidBandColor)       rttResidBandColorEl.value       = s.rttResidBandColor;
+    if (s.rttResidBandFillColor)   rttResidBandFillColorEl.value   = s.rttResidBandFillColor;
+    if (s.rttResidBandStyle)       rttResidBandStyleEl.value       = s.rttResidBandStyle;
+    if (s.rttResidBandWidth      != null) { rttResidBandWidthSlider.value       = s.rttResidBandWidth;       $('rtt-resid-band-width-value').textContent       = s.rttResidBandWidth; }
+    if (s.rttResidBandFillOpacity != null) { rttResidBandFillOpacitySlider.value = s.rttResidBandFillOpacity; $('rtt-resid-band-fill-opacity-value').textContent = s.rttResidBandFillOpacity; }
     if (s.legendTextColor) legendTextColorEl.value = s.legendTextColor;
     if (s.legendFontSize != null) {
       legendFontSizeSlider.value = s.legendFontSize;
