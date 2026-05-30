@@ -131,6 +131,11 @@ export const DEFAULT_SETTINGS = {
   paddingRight:   '20',
   paddingTop:     '20',
   paddingBottom:  '20',
+  // Canvas border (applied as CSS to #canvas-container; null = no border).
+  // Useful for iframe embeds where the border frames the tree as a figure.
+  borderWidth:    null,   // px, e.g. '1.5'
+  borderColor:    null,   // CSS colour, e.g. '#F1F0E7'
+  borderRadius:   null,   // px, e.g. '4'
   // Axis canvas vertical padding (px) — gap above the baseline line
   axisPaddingTop: '3',
   rootStubLength: '10',

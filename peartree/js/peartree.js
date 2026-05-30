@@ -1517,6 +1517,8 @@ async function _initCore(root = document) {
     const _rangeMode = axisShowEl.value;
     if (_rangeMode !== 'off') _loadAxisRangeForMode(_rangeMode);
     _prevAxisMode = _rangeMode !== 'off' ? _rangeMode : null;
+    // Apply canvas border CSS from settings (borderWidth, borderColor, borderRadius).
+    _syncCanvasBorder(s);
     _syncControlVisibility();
   }
 
@@ -2015,6 +2017,21 @@ async function _initCore(root = document) {
     _vis(tipLabel2DetailEl,     tipLabelsOn && tipLabel2ShowEl.value !== 'off');
     _vis(tipLabel3DetailEl,     tipLabelsOn && tipLabel3ShowEl.value !== 'off');
     _vis(tipLabel4DetailEl,     tipLabelsOn && tipLabel4ShowEl.value !== 'off');
+  }
+
+  /**
+   * Apply border settings from a settings object to #canvas-container.
+   * borderWidth + borderColor together produce a solid CSS border;
+   * borderRadius rounds the corners (overflow:hidden on the element clips the canvas).
+   */
+  function _syncCanvasBorder(s) {
+    const el = $('canvas-container');
+    if (!el) return;
+    const w = s.borderWidth  != null ? parseFloat(s.borderWidth)  : null;
+    const c = s.borderColor  != null ? String(s.borderColor)      : null;
+    const r = s.borderRadius != null ? parseFloat(s.borderRadius) : null;
+    el.style.border       = (w != null && !isNaN(w) && c) ? `${w}px solid ${c}` : '';
+    el.style.borderRadius = (r != null && !isNaN(r))       ? `${r}px`           : '';
   }
 
   /**
