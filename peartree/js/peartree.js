@@ -238,9 +238,10 @@ async function _initCore(root = document) {
         dataTableColumns: Array.isArray(wc.dataTableColumns) ? wc.dataTableColumns : null,
         initSettings: _resolveInitSettings({ fetchedSettings: _fetchedSettings, params: _p, windowConfig: wc }),
         // Non-flag container CSS properties sourced from the ui: config block.
-        borderWidth:    _ui.borderWidth    ?? null,
-        borderColor:    _ui.borderColor    ?? null,
-        borderRadius:   _ui.borderRadius   ?? null,
+        borderWidth:     _ui.borderWidth     ?? null,
+        borderColor:     _ui.borderColor     ?? null,
+        borderRadius:    _ui.borderRadius    ?? null,
+        backgroundColor: _ui.backgroundColor ?? null,
         paddingTop:     _ui.paddingTop     ?? null,
         paddingRight:   _ui.paddingRight   ?? null,
         paddingBottom:  _ui.paddingBottom  ?? null,
@@ -265,9 +266,10 @@ async function _initCore(root = document) {
       _cfg[def.name] = _coerceUiFlag(_raw, !!def.extended);
     }
     // Border + spacing CSS properties: fetchedUI provides defaults when not set by window.peartreeConfig.ui
-    if (_wcUi.borderWidth   == null && _fetchedUI.borderWidth   != null) _cfg.borderWidth   = _fetchedUI.borderWidth;
-    if (_wcUi.borderColor   == null && _fetchedUI.borderColor   != null) _cfg.borderColor   = _fetchedUI.borderColor;
-    if (_wcUi.borderRadius  == null && _fetchedUI.borderRadius  != null) _cfg.borderRadius  = _fetchedUI.borderRadius;
+    if (_wcUi.borderWidth    == null && _fetchedUI.borderWidth    != null) _cfg.borderWidth    = _fetchedUI.borderWidth;
+    if (_wcUi.borderColor    == null && _fetchedUI.borderColor    != null) _cfg.borderColor    = _fetchedUI.borderColor;
+    if (_wcUi.borderRadius   == null && _fetchedUI.borderRadius   != null) _cfg.borderRadius   = _fetchedUI.borderRadius;
+    if (_wcUi.backgroundColor == null && _fetchedUI.backgroundColor != null) _cfg.backgroundColor = _fetchedUI.backgroundColor;
     if (_wcUi.paddingTop    == null && _fetchedUI.paddingTop    != null) _cfg.paddingTop    = _fetchedUI.paddingTop;
     if (_wcUi.paddingRight  == null && _fetchedUI.paddingRight  != null) _cfg.paddingRight  = _fetchedUI.paddingRight;
     if (_wcUi.paddingBottom == null && _fetchedUI.paddingBottom != null) _cfg.paddingBottom = _fetchedUI.paddingBottom;
@@ -2048,18 +2050,21 @@ async function _initCore(root = document) {
   }
 
   /**
-   * Apply border settings from a settings object to #canvas-container.
+   * Apply border/padding/margin settings from a settings object to document.body.
+   * Targeting body makes these effective for iframe embeds where the host page
+   * controls the frame dimensions; they have no effect in the standalone app.
    * borderWidth + borderColor together produce a solid CSS border;
-   * borderRadius rounds the corners (overflow:hidden on the element clips the canvas).
+   * borderRadius rounds the corners.
    */
   function _syncCanvasBorder(s) {
-    const el = $('canvas-container');
+    const el = root.ownerDocument?.body ?? document.body;
     if (!el) return;
     const w = s.borderWidth  != null ? parseFloat(s.borderWidth)  : null;
     const c = s.borderColor  != null ? String(s.borderColor)      : null;
     const r = s.borderRadius != null ? parseFloat(s.borderRadius) : null;
     el.style.border       = (w != null && !isNaN(w) && c) ? `${w}px solid ${c}` : '';
-    el.style.borderRadius = (r != null && !isNaN(r))       ? `${r}px`           : '';
+    el.style.borderRadius   = (r != null && !isNaN(r))       ? `${r}px`           : '';
+    el.style.backgroundColor = s.backgroundColor != null ? String(s.backgroundColor) : '';
 
     const _px = (v) => { const n = parseFloat(v); return (v != null && !isNaN(n)) ? `${n}px` : ''; };
     el.style.paddingTop    = _px(s.paddingTop);
@@ -3774,9 +3779,10 @@ async function _initCore(root = document) {
       settings: (() => { const s = _buildSnapshot(); delete s.paintColour; Object.assign(s, _getAxisRangeSettings()); return s; })(), // tree-only keys added via TREE_ONLY_SETTING_KEYS
       ui:       Object.fromEntries([
         ...PT_UI_FLAG_DEFS.map(def => [def.uiKey, _cfg[def.name]]),
-        ['borderWidth',   _cfg.borderWidth],
-        ['borderColor',   _cfg.borderColor],
-        ['borderRadius',  _cfg.borderRadius],
+        ['borderWidth',    _cfg.borderWidth],
+        ['borderColor',    _cfg.borderColor],
+        ['borderRadius',   _cfg.borderRadius],
+        ['backgroundColor', _cfg.backgroundColor],
         ['paddingTop',    _cfg.paddingTop],
         ['paddingRight',  _cfg.paddingRight],
         ['paddingBottom', _cfg.paddingBottom],
@@ -3791,9 +3797,10 @@ async function _initCore(root = document) {
       settings: DEFAULT_SETTINGS,
       ui:       Object.fromEntries([
         ...PT_UI_FLAG_DEFS.map(def => [def.uiKey, true]),
-        ['borderWidth',   null],
-        ['borderColor',   null],
-        ['borderRadius',  null],
+        ['borderWidth',    null],
+        ['borderColor',    null],
+        ['borderRadius',   null],
+        ['backgroundColor', null],
         ['paddingTop',    null],
         ['paddingRight',  null],
         ['paddingBottom', null],
@@ -8932,9 +8939,10 @@ export async function embed(options = {}) {
       tbColour:    ui.tbColour,
       tbFilter:    ui.tbFilter,
       tbPanels:    ui.tbPanels,
-      borderWidth:    ui.borderWidth,
-      borderColor:    ui.borderColor,
-      borderRadius:   ui.borderRadius,
+      borderWidth:     ui.borderWidth,
+      borderColor:     ui.borderColor,
+      borderRadius:    ui.borderRadius,
+      backgroundColor: ui.backgroundColor,
       paddingTop:     ui.paddingTop,
       paddingRight:   ui.paddingRight,
       paddingBottom:  ui.paddingBottom,

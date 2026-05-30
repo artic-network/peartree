@@ -48,11 +48,12 @@ export const DEFAULT_UI_APP = {
   themeToggle:     true,
   brand:           true,
 
-  // Container CSS (applied to #canvas-container; null = not set)
-  // Useful for iframe embeds where the border frames the tree as a figure.
+  // Container CSS (applied to body; null = not set)
+  // Useful for iframe embeds where the host page frames the tree.
   borderWidth:     null,   // px, e.g. '1.5'
   borderColor:     null,   // CSS colour, e.g. '#F1F0E7'
   borderRadius:    null,   // px, e.g. '4'
+  backgroundColor: null,   // CSS colour, e.g. '#ffffff'
   paddingTop:      null,   // px
   paddingRight:    null,   // px
   paddingBottom:   null,   // px
