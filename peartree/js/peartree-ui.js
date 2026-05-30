@@ -700,8 +700,8 @@ function _buildToolbar(tbSections) {
 function _buildCanvasContainer() {
   return `
 <div id="canvas-container">
-  <div id="canvas-and-axis-wrapper">
-    <div id="canvas-wrapper">
+  <div id="tree-axis-wrapper">
+    <div id="tree-wrapper">
       <div id="empty-state">
         <div style="text-align:center">
           <img src="img/peartree.svg" class="pt-empty-icon" alt="PearTree">
@@ -717,12 +717,16 @@ function _buildCanvasContainer() {
       <canvas id="tree-canvas"></canvas>
       <div id="tooltip"></div>
     </div>
-    <canvas id="axis-canvas"></canvas>
+    <div id="axis-wrapper">
+      <canvas id="axis-canvas"></canvas>
+    </div>
   </div>
-  <canvas id="legend-right-canvas" class="pt-legend-canvas right"></canvas>
-  <canvas id="legend2-right-canvas" class="pt-legend-canvas right"></canvas>
-  <canvas id="legend3-right-canvas" class="pt-legend-canvas right"></canvas>
-  <canvas id="legend4-right-canvas" class="pt-legend-canvas right"></canvas>
+  <div id="legend-right-wrapper">
+    <canvas id="legend-right-canvas" class="pt-legend-canvas right"></canvas>
+    <canvas id="legend2-right-canvas" class="pt-legend-canvas right"></canvas>
+    <canvas id="legend3-right-canvas" class="pt-legend-canvas right"></canvas>
+    <canvas id="legend4-right-canvas" class="pt-legend-canvas right"></canvas>
+  </div>
   <div id="data-table-panel">
     <div id="data-table-resize-handle"></div>
     <div id="dt-num-col">

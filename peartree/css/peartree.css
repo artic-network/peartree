@@ -117,7 +117,7 @@
   /* Animate the left indent that makes room for the pinned palette panel */
   transition: margin-left 0.22s cubic-bezier(.4,0,.2,1);
 }
-#canvas-wrapper {
+#tree-wrapper {
   flex: 1;
   position: relative;
   overflow: hidden;
@@ -127,8 +127,11 @@
   /* Match the default canvas background so nothing flickers through before JS draws */
   background: var(--pt-bg-deepest);
 }
-#axis-canvas {
+#axis-wrapper {
   flex-shrink: 0;
+  overflow: hidden;
+}
+#axis-canvas {
   display: none;
   width: 100%;
   margin: 0;
@@ -187,13 +190,19 @@ canvas.grabbing   { cursor: grabbing; }
 }
 
 /* ── Palette panel: tree-specific layout hooks ── */
-#canvas-and-axis-wrapper {
+#tree-axis-wrapper {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 0;
   overflow: hidden;
   min-width: 0;
+}
+#legend-right-wrapper {
+  display: none;
+  flex-shrink: 0;
+  flex-direction: row;
+  overflow: hidden;
 }
 body.palette-pinned #canvas-container {
   margin-left: 240px;

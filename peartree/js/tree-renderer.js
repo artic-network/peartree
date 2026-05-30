@@ -423,7 +423,7 @@ export class TreeRenderer {
     }
 
     // ── Layout geometry ─────────────────────────────────────────────────────
-    // Canvas spacing is handled via CSS padding on #canvas-and-axis-wrapper;
+    // Canvas spacing is handled via CSS padding on #tree-axis-wrapper;
     // the renderer always fills the canvas edge-to-edge.
     this.treePaddingLeft   = 0;
     this.treePaddingRight  = 0;

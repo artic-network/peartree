@@ -59,12 +59,18 @@ export const DEFAULT_UI_APP = {
   paddingBottom:   null,   // px
   paddingLeft:     null,   // px
 
-  // Canvas area padding (px) — CSS padding on #canvas-and-axis-wrapper; spaces the tree
+  // Canvas area padding (px) — CSS padding on #tree-axis-wrapper; spaces the tree
   // and axis canvases away from the container edges without any internal renderer margin.
-  treePaddingTop:    '0',
-  treePaddingRight:  '0',
-  treePaddingBottom: '0',
-  treePaddingLeft:   '0',
+  treePaddingTop:    '8',
+  treePaddingRight:  '8',
+  treePaddingBottom: '8',
+  treePaddingLeft:   '8',
+
+  // Legend area padding (px) — CSS padding on #legend-right-wrapper.
+  legendPaddingTop:    8,
+  legendPaddingRight:  8,
+  legendPaddingBottom: 8,
+  legendPaddingLeft:   null,
 
   // Toolbar sub-sections
   tbFileOps:       true,

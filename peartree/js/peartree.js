@@ -251,6 +251,11 @@ async function _initCore(root = document) {
         treePaddingRight:  _ui.treePaddingRight  ?? DEFAULT_UI_APP.treePaddingRight,
         treePaddingBottom: _ui.treePaddingBottom ?? DEFAULT_UI_APP.treePaddingBottom,
         treePaddingLeft:   _ui.treePaddingLeft   ?? DEFAULT_UI_APP.treePaddingLeft,
+        // Legend area padding — CSS padding on #legend-right-wrapper.
+        legendPaddingTop:    _ui.legendPaddingTop    ?? DEFAULT_UI_APP.legendPaddingTop,
+        legendPaddingRight:  _ui.legendPaddingRight  ?? DEFAULT_UI_APP.legendPaddingRight,
+        legendPaddingBottom: _ui.legendPaddingBottom ?? DEFAULT_UI_APP.legendPaddingBottom,
+        legendPaddingLeft:   _ui.legendPaddingLeft   ?? DEFAULT_UI_APP.legendPaddingLeft,
       };
     },
   });
@@ -279,6 +284,10 @@ async function _initCore(root = document) {
     if (_wcUi.treePaddingRight  == null && _fetchedUI.treePaddingRight  != null) _cfg.treePaddingRight  = _fetchedUI.treePaddingRight;
     if (_wcUi.treePaddingBottom == null && _fetchedUI.treePaddingBottom != null) _cfg.treePaddingBottom = _fetchedUI.treePaddingBottom;
     if (_wcUi.treePaddingLeft   == null && _fetchedUI.treePaddingLeft   != null) _cfg.treePaddingLeft   = _fetchedUI.treePaddingLeft;
+    if (_wcUi.legendPaddingTop    == null && _fetchedUI.legendPaddingTop    != null) _cfg.legendPaddingTop    = _fetchedUI.legendPaddingTop;
+    if (_wcUi.legendPaddingRight  == null && _fetchedUI.legendPaddingRight  != null) _cfg.legendPaddingRight  = _fetchedUI.legendPaddingRight;
+    if (_wcUi.legendPaddingBottom == null && _fetchedUI.legendPaddingBottom != null) _cfg.legendPaddingBottom = _fetchedUI.legendPaddingBottom;
+    if (_wcUi.legendPaddingLeft   == null && _fetchedUI.legendPaddingLeft   != null) _cfg.legendPaddingLeft   = _fetchedUI.legendPaddingLeft;
   }
   // Apply canvas border CSS from the UI config before any tree loads.
   _syncCanvasBorder(_cfg);
@@ -2070,12 +2079,19 @@ async function _initCore(root = document) {
     htm.style.paddingBottom = _px(s.paddingBottom);
     htm.style.paddingLeft   = _px(s.paddingLeft);
 
-    const caw = $('canvas-and-axis-wrapper');
+    const caw = $('tree-axis-wrapper');
     if (caw) {
       caw.style.paddingTop    = _px(s.treePaddingTop);
       caw.style.paddingRight  = _px(s.treePaddingRight);
       caw.style.paddingBottom = _px(s.treePaddingBottom);
       caw.style.paddingLeft   = _px(s.treePaddingLeft);
+    }
+    const lrw = $('legend-right-wrapper');
+    if (lrw) {
+      lrw.style.paddingTop    = _px(s.legendPaddingTop);
+      lrw.style.paddingRight  = _px(s.legendPaddingRight);
+      lrw.style.paddingBottom = _px(s.legendPaddingBottom);
+      lrw.style.paddingLeft   = _px(s.legendPaddingLeft);
     }
   }
 
@@ -2087,10 +2103,7 @@ async function _initCore(root = document) {
    */
   function _syncCanvasWrapperBg(color) {
     if (!treeLoaded) return;
-    $('canvas-container').style.background        = color;
-    $('canvas-wrapper').style.background          = color;
-    $('canvas-and-axis-wrapper').style.background = color;
-    // Data table panel keeps the UI theme background, independent of the tree theme.
+    $('canvas-container').style.background = color;
   }
 
   /** Apply a named theme: hydrate all visual DOM controls and push to renderer. */
@@ -7343,6 +7356,9 @@ async function _initCore(root = document) {
 
     legend4RightCanvas.style.display = beside4 ? 'block' : 'none';
     legend4RightCanvas.style.width   = W4 + 'px';
+
+    const lrw = $('legend-right-wrapper');
+    if (lrw) lrw.style.display = (show || beside2 || beside3 || beside4) ? 'flex' : 'none';
 
     renderer._resize();   // recalculates tree canvas width after legend canvases shown/hidden
     saveSettings();

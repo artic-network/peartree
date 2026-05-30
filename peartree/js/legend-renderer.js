@@ -149,12 +149,6 @@ export class LegendRenderer {
     if (s.textColor  != null) this.textColor  = s.textColor;
     if (s.bgColor    != null) {
       this.bgColor = s.bgColor;
-      for (const lc of [this._rightCanvas,
-                        this._rightCanvas2,
-                        this._rightCanvas3,
-                        this._rightCanvas4]) {
-        if (lc) lc.style.backgroundColor = s.bgColor;
-      }
     }
     if (s.skipBg       != null) this.skipBg        = s.skipBg;
     if (s.paddingLeft   != null) this._paddingLeft   = s.paddingLeft;
@@ -315,8 +309,7 @@ export class LegendRenderer {
   }
 
   /**
-   * Update the background colour.  Also sets the CSS backgroundColor of both
-   * legend canvases so there is no bleed-through around the drawn content.
+   * Update the background colour used when painting the legend content.
    * @param {string}  color
    * @param {boolean} skipBg — when true the background rect is not painted
    *                           (matches TreeRenderer._skipBg for Tauri captures)
@@ -324,12 +317,6 @@ export class LegendRenderer {
   setBgColor(color, skipBg = false) {
     this.bgColor = color;
     this.skipBg  = skipBg;
-    for (const lc of [this._rightCanvas,
-                      this._rightCanvas2,
-                      this._rightCanvas3,
-                      this._rightCanvas4]) {
-      if (lc) lc.style.backgroundColor = color;
-    }
     this.draw();
   }
 
@@ -375,30 +362,44 @@ export class LegendRenderer {
     this.draw();
   }
 
+  /**
+   * Content height of lc's parent wrapper, excluding vertical padding.
+   * Mirrors parentElement.clientWidth for the axis canvas: both strip padding
+   * so the percentage calculation is relative to the drawable area.
+   */
+  _containerH(lc) {
+    const el = lc.parentElement;
+    if (!el) return lc.clientHeight || 0;
+    const s = getComputedStyle(el);
+    return el.clientHeight
+      - parseFloat(s.paddingTop  || '0')
+      - parseFloat(s.paddingBottom || '0');
+  }
+
   /** Legend-1 canvas height in CSS px. */
   _computeHeight(lc) {
-    const containerH = lc.parentElement?.clientHeight ?? lc.clientHeight ?? 0;
+    const containerH = this._containerH(lc);
     if (!containerH) return lc.clientHeight || 0;
     return Math.round(containerH * Math.min(this._heightPct, 100) / 100);
   }
 
   /** Legend-2 side-canvas height in CSS px. */
   _computeHeight2(lc) {
-    const containerH = lc.parentElement?.clientHeight ?? lc.clientHeight ?? 0;
+    const containerH = this._containerH(lc);
     if (!containerH) return lc.clientHeight || 0;
     return Math.round(containerH * Math.min(this._heightPct2, 100) / 100);
   }
 
   /** Legend-3 side-canvas height in CSS px. */
   _computeHeight3(lc) {
-    const containerH = lc.parentElement?.clientHeight ?? lc.clientHeight ?? 0;
+    const containerH = this._containerH(lc);
     if (!containerH) return lc.clientHeight || 0;
     return Math.round(containerH * Math.min(this._heightPct3, 100) / 100);
   }
 
   /** Legend-4 side-canvas height in CSS px. */
   _computeHeight4(lc) {
-    const containerH = lc.parentElement?.clientHeight ?? lc.clientHeight ?? 0;
+    const containerH = this._containerH(lc);
     if (!containerH) return lc.clientHeight || 0;
     return Math.round(containerH * Math.min(this._heightPct4, 100) / 100);
   }
@@ -411,7 +412,7 @@ export class LegendRenderer {
    * Returns {total, h1, h2, h3, h4}.
    */
   _computeStackedHeights(lc) {
-    const containerH = lc.parentElement?.clientHeight ?? lc.clientHeight ?? 0;
+    const containerH = this._containerH(lc);
     if (!containerH) return { total: lc.clientHeight || 0, h1: lc.clientHeight || 0, h2: 0, h3: 0, h4: 0 };
     const pct1 = Math.max(1, this._heightPct);
     const pct2 = (!!this._annotation2 && this._position2 === 'below') ? Math.max(1, this._heightPct2) : 0;

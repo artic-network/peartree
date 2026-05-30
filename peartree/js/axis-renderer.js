@@ -188,7 +188,7 @@ export class AxisRenderer {
    */
   update(scaleX, offsetX, spacingLeft, labelRightPad, bgColor, fontSize, dpr = 1) {
     if (!this._visible) return;
-    const W = this._canvas.clientWidth;
+    const W = (this._canvas.parentElement?.clientWidth ?? this._canvas.clientWidth) || 0;
     if (W === 0) return;
 
     // Auto-sync font size from tree renderer (unless manually overridden)
