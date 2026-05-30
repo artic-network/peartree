@@ -555,8 +555,7 @@ export class TreeRenderer {
 
     if (redraw && this.nodes) {
       this._measureLabels();
-      this._updateScaleX();
-      this._updateMinScaleY();
+      this._applyOverheadChange();
       this._dirty = true;
     }
   }
@@ -860,13 +859,14 @@ export class TreeRenderer {
   setTipRadius(r) {
     this.tipRadius = r;
     this._measureLabels(); // label offset depends on tip radius
-    this._updateScaleX();
+    this._applyOverheadChange();
     this._syncTipCircleRenderer();
     this._dirty = true;
   }
 
   setNodeRadius(r) {
     this.nodeRadius = r;
+    this._applyOverheadChange();
     this._syncNodeCircleRenderer();
     this._syncNodeLabelRenderer(); // anchorRadius uses nodeRadius
     this._dirty = true;
@@ -899,13 +899,14 @@ export class TreeRenderer {
   setTipHaloSize(n) {
     this.tipHaloSize = n;
     this._measureLabels();
-    this._updateScaleX();
+    this._applyOverheadChange();
     this._syncTipCircleRenderer();
     this._dirty = true;
   }
 
   setNodeHaloSize(n) {
     this.nodeHaloSize = n;
+    this._applyOverheadChange();
     this._syncNodeCircleRenderer();
     this._dirty = true;
   }
@@ -2200,7 +2201,9 @@ export class TreeRenderer {
         + (i < _activeExtras.length - 1 ? this._tipLabelShapeSpacing : 0);
     }
     // _labelOverhead: the fixed non-text portion added to every tip's label clearance.
-    this._labelOverhead = Math.max(tipOuterR, 5) + 5 + this.tipLabelSpacing + shapeExtra + shapesExtraWidth + (this.treePaddingRight ?? 10);
+    // treePaddingRight is set dynamically in _updateScaleX (= tipOuterR) and is
+    // NOT included here — it is only used for the no-labels plotWNoLabels path.
+    this._labelOverhead = Math.max(tipOuterR, 5) + 5 + this.tipLabelSpacing + shapeExtra + shapesExtraWidth;
     this.labelRightPad  = this._maxLabelWidth + this._labelOverhead;
   }
 
@@ -2208,6 +2211,17 @@ export class TreeRenderer {
    *  immediate=true (default) snaps instantly; false animates via _targetScaleX. */
   _updateScaleX(immediate = true) {
     const W = this.canvas.clientWidth;
+    // Reserve left-side pixel clearance:
+    // • Root node circle extends nodeOuterR px left of the root (world x = 0).
+    // • Subtree view shows a fixed-pixel ancestor stub; whole-tree stem is in
+    //   world units (stemWorld) and already in effectiveLeftPad.
+    const nodeOuterR = this.nodeRadius > 0 ? this.nodeRadius + (this.nodeHaloSize ?? 0) : 0;
+    const subtreeStubPx = this._viewSubtreeRootId !== null ? (this.rootStubLength ?? 0) : 0;
+    this.treePaddingLeft = nodeOuterR + subtreeStubPx;
+    // Reserve right-side pixel clearance for tip circles / halos, which extend
+    // tipOuterR px to the right of the rightmost tip's world position.
+    const tipOuterR = this.tipRadius > 0 ? this.tipRadius + (this.tipHaloSize ?? 0) : 0;
+    this.treePaddingRight = tipOuterR;
     // Use the TARGET scaleY (where the animation is heading) rather than the
     // current (mid-animation) scaleY.  This ensures that callers such as
     // fitToWindow() and setData(), which set _targetScaleY before calling here,
@@ -2338,12 +2352,48 @@ export class TreeRenderer {
       : this.maxX;
   }
 
+  /**
+   * Pixel overhead (px) needed above/below the first/last tip row to keep
+   * shapes, node bars, and branch labels within the canvas bounds.
+   */
+  _vertOverheadPx() {
+    const tipOuterR  = this.tipRadius  > 0 ? this.tipRadius  + (this.tipHaloSize  ?? 0) : 0;
+    const nodeOuterR = this.nodeRadius > 0 ? this.nodeRadius + (this.nodeHaloSize ?? 0) : 0;
+    const barsHalfH  = this.nodeBarsEnabled ? (this.nodeBarsWidth ?? 0) / 2 : 0;
+    // Branch labels at 'N' (above) or 'S' (below) extend by fontSize + spacing.
+    const branchLblH = this.branchLabelAnnotation
+      ? this.branchLabelFontSize + this.branchLabelSpacing
+      : 0;
+    return Math.ceil(Math.max(tipOuterR, nodeOuterR, barsHalfH, branchLblH));
+  }
+
   /** Recompute the minimum scaleY (tree fits the viewport vertically). */
   _updateMinScaleY() {
     const H = this.canvas.clientHeight;
-    const plotH = H - this.treePaddingTop - this.treePaddingBottom;
+    // Reserve pixel margins for shapes and labels above/below the tip rows.
+    // Setting treePaddingTop/Bottom ensures all callers (fitToWindow,
+    // _clampedOffsetY, setData, etc.) automatically preserve this margin.
+    const extra = this._vertOverheadPx();
+    this.treePaddingTop    = extra;
+    this.treePaddingBottom = extra;
+    const plotH = Math.max(0, H - 2 * extra);
     // tips sit at world y = 1 … maxY; add 1 unit of spacing total
     this.minScaleY = plotH / (this.maxY + 1);
+  }
+
+  /**
+   * Called after any change that affects _vertOverheadPx() (shape/halo sizes,
+   * node bars width). Preserves the current vertical zoom factor:
+   *   - If at fit-to-window (zoomRatio ≈ 1), refits to the new minScaleY.
+   *   - If zoomed in, keeps the same ratio relative to the new minScaleY.
+   * Mirrors the pattern used in _resize().
+   */
+  _applyOverheadChange() {
+    const zoomRatio = this.minScaleY > 0 ? this._targetScaleY / this.minScaleY : 1;
+    this._updateScaleX();
+    this._updateMinScaleY();
+    const newScaleY = Math.max(this.minScaleY, this.minScaleY * zoomRatio);
+    this._setTarget(this._targetOffsetY, newScaleY, /*immediate*/ true);
   }
 
   // _clampOffsetY is replaced by _clampedOffsetY (pure) + _setTarget.

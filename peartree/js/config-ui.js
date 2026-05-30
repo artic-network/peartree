@@ -61,10 +61,10 @@ export const DEFAULT_UI_APP = {
 
   // Canvas area padding (px) — CSS padding on #canvas-and-axis-wrapper; spaces the tree
   // and axis canvases away from the container edges without any internal renderer margin.
-  treePaddingTop:    '20',
-  treePaddingRight:  '20',
-  treePaddingBottom: '20',
-  treePaddingLeft:   '20',
+  treePaddingTop:    '0',
+  treePaddingRight:  '0',
+  treePaddingBottom: '0',
+  treePaddingLeft:   '0',
 
   // Toolbar sub-sections
   tbFileOps:       true,

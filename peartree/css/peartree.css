@@ -129,7 +129,6 @@
 }
 #axis-canvas {
   flex-shrink: 0;
-  height: 36px;
   display: none;
   width: 100%;
   margin: 0;

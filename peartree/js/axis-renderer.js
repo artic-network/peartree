@@ -189,8 +189,18 @@ export class AxisRenderer {
   update(scaleX, offsetX, spacingLeft, labelRightPad, bgColor, fontSize, dpr = 1) {
     if (!this._visible) return;
     const W = this._canvas.clientWidth;
-    const H = this._canvas.clientHeight;
-    if (W === 0 || H === 0) return;
+    if (W === 0) return;
+
+    // Auto-sync font size from tree renderer (unless manually overridden)
+    if (!this._axisFontSizeManual) this._fontSize = Math.max(7, fontSize - 1);
+
+    // Resize canvas height to fit content: spacingTop + baseline(1) + tickH(9) + gap(2) + fontSize + margin(3)
+    const reqH = Math.ceil(this._spacingTop + this._fontSize + 15);
+    if (this._canvas.style.height !== reqH + 'px') {
+      this._canvas.style.height = reqH + 'px';
+    }
+    const H = reqH;
+    if (H === 0) return;
 
     // DPR-aware sizing
     const wPx = Math.round(W * dpr);
@@ -199,12 +209,8 @@ export class AxisRenderer {
       this._canvas.width  = wPx;
       this._canvas.height = hPx;
       this._canvas.style.width  = W + 'px';
-      this._canvas.style.height = H + 'px';
       this._ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
-
-    // Only auto-sync font size from tree if the user hasn't explicitly set one
-    if (!this._axisFontSizeManual) this._fontSize = Math.max(7, fontSize - 1);
 
     const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${spacingLeft}|${labelRightPad}|${bgColor}|${this._fontSize}|${this._fontFamily}|${this._typefaceKey ?? ''}|${this._typefaceStyle ?? ''}|${this._axisColor ?? ''}|${this._axisLineWidth}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._calibration?.anchorDecYear ?? ''}|${this._calibration?.anchorH ?? ''}|${this._calibration?.rate ?? ''}|${this._viewMinTipH}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}|${this._dateFormat}|${this._direction}|${this._rangeLeft ?? ''}|${this._rangeRight ?? ''}`;
     if (hash === this._lastHash) return;

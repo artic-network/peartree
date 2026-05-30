@@ -24,7 +24,7 @@ import { createCommands } from '@artic-network/pearcore/commands.js';
 import { COMMAND_DEFS } from './peartree-commands.js';
 import { createExportController } from './export-controller.js';
 import { EXAMPLE_TREE_PATH, EXAMPLE_DATASETS, PEARTREE_BASE_URL, DEFAULT_SETTINGS, REQUIRED_THEME_KEYS, NON_PERSISTENT_SETTINGS, NODE_TOOLTIP_FIELDS } from './config.js';
-import { DEFAULT_UI_EMBED, DEFAULT_UI_EMBEDFRAME } from './config-ui.js';
+import { DEFAULT_UI_APP, DEFAULT_UI_EMBED, DEFAULT_UI_EMBEDFRAME } from './config-ui.js';
 import { createToolbarColourPicker, upgradeAllPaletteColourPickers } from '@artic-network/pearcore/colorpicker.js';
 import { createThemeManager, resolveEmbedConfig, initSectionAccordion,
          ensureStylesheet, loadScript, resolveAssetBases } from '@artic-network/pearcore/pearcore-app.js';
@@ -246,11 +246,11 @@ async function _initCore(root = document) {
         paddingRight:   _ui.paddingRight   ?? null,
         paddingBottom:  _ui.paddingBottom  ?? null,
         paddingLeft:    _ui.paddingLeft    ?? null,
-        // Canvas area padding — defaults to 20px on all sides.
-        treePaddingTop:    _ui.treePaddingTop    ?? '20',
-        treePaddingRight:  _ui.treePaddingRight  ?? '20',
-        treePaddingBottom: _ui.treePaddingBottom ?? '20',
-        treePaddingLeft:   _ui.treePaddingLeft   ?? '20',
+        // Canvas area padding — renderer dynamically reserves margin for shapes/labels.
+        treePaddingTop:    _ui.treePaddingTop    ?? DEFAULT_UI_APP.treePaddingTop,
+        treePaddingRight:  _ui.treePaddingRight  ?? DEFAULT_UI_APP.treePaddingRight,
+        treePaddingBottom: _ui.treePaddingBottom ?? DEFAULT_UI_APP.treePaddingBottom,
+        treePaddingLeft:   _ui.treePaddingLeft   ?? DEFAULT_UI_APP.treePaddingLeft,
       };
     },
   });

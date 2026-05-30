@@ -127,7 +127,7 @@ export const DEFAULT_SETTINGS = {
   // ── Tree ────────────────────────────────────────────────────────────────────────────
   rootStemPct:    '1',    // whole-tree root-stem length as % of tree age (0–20)
   // Axis canvas vertical spacing (px) — gap above the baseline line
-  axisSpacingTop: '3',
+  axisSpacingTop: '0',
   rootStubLength: '10',
   // Intro animation played when a tree is first loaded.
   // Options: 'y-then-x' | 'x-then-y' | 'simultaneous' | 'from-bottom' | 'from-top' | 'none'
