@@ -195,18 +195,24 @@ export const DEFAULT_SETTINGS = {
   // ── Legend ───────────────────────────────────────────────────────────────────────────
   // Legend canvas height as % of the canvas area (1–100, pinned to top)
   legendHeightPct: '100',
+  // Shared spacing (px) applied between stacked legend rows and legend columns.
+  legendSpacing: '0',
+  legendDecimalPlaces: null,
   // Second legend
   legendAnnotation2: '',
   legend2Position:   'right',   // 'right' (beside L1) | 'below' (stacked under L1)
   legendHeightPct2:  '50',
+  legendDecimalPlaces2: null,
   // Third legend
   legendAnnotation3: '',
   legend3Position:   'right',  // 'right' (beside L2) | 'below' (stacked under L2)
   legendHeightPct3:  '50',
+  legendDecimalPlaces3: null,
   // Fourth legend
   legendAnnotation4: '',
   legend4Position:   'right',  // 'right' (beside L3) | 'below' (stacked under L3)
   legendHeightPct4:  '50',
+  legendDecimalPlaces4: null,
 
   // ── Axis ─────────────────────────────────────────────────────────────────────────────
   axisShow:             'forward',  // 'off' | 'forward' | 'reverse' | 'time'

@@ -7,6 +7,7 @@ import { dateToDecimalYear, isNumericType, TreeCalibration } from './phylograph.
 import { getSequentialPalette, lerpSequential,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
          MISSING_DATA_COLOUR, buildCategoricalColourMap } from '@artic-network/pearcore/palettes.js';
+import { formatNumericAnnotationValue } from '@artic-network/pearcore/utils.js';
 import { buildFont, TYPEFACES } from '@artic-network/pearcore/typefaces.js';
 import { CircleShapeRenderer }  from './shape-renderer.js';
 import { AnnotationLabelRenderer } from './label-renderer.js';
@@ -1999,9 +2000,11 @@ export class TreeRenderer {
       const val = this._statValue(node, key);
       if (val == null) return nameFallback;
       const def = this._annotationSchema?.get(key);
-      if (decimalPlaces != null) return val.toFixed(decimalPlaces);
-      if (def?.fmtValue) return def.fmtValue(val);
-      return val.toFixed(6);
+      return formatNumericAnnotationValue(val, def, decimalPlaces, {
+        autoFormatter: 'fmtValue',
+        fallback: 'fixed',
+        fallbackDp: 6,
+      });
     }
     if (key === '__tips_below__') {
       const val = this._statValue(node, key);
@@ -2042,9 +2045,16 @@ export class TreeRenderer {
     if (val == null || val === '') return nameFallback;
     if (Array.isArray(val)) return val.join(', ');
     if (typeof val === 'number') {
-      if (decimalPlaces != null) return val.toFixed(decimalPlaces);
-      if (def?.fmtValue) return def.fmtValue(val);
-      if (def?.fmt)      return def.fmt(val);
+      if (def?.fmt && !def?.fmtValue) {
+        return formatNumericAnnotationValue(val, def, decimalPlaces, {
+          autoFormatter: 'fmt',
+          fallback: 'string',
+        });
+      }
+      return formatNumericAnnotationValue(val, def, decimalPlaces, {
+        autoFormatter: 'fmtValue',
+        fallback: 'string',
+      });
     }
     return String(val);
   }

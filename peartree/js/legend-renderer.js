@@ -21,6 +21,7 @@ import { getSequentialPalette,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
          MISSING_DATA_COLOUR, buildCategoricalColourMap } from '@artic-network/pearcore/palettes.js';
 import { dateToDecimalYear, isNumericType } from './phylograph.js';
+import { formatNumericAnnotationValue, formatDateLabelISO } from '@artic-network/pearcore/utils.js';
 import { buildFont, TYPEFACES } from '@artic-network/pearcore/typefaces.js';
 
 export class LegendRenderer {
@@ -51,6 +52,10 @@ export class LegendRenderer {
     this._annotation4  = null;    // fourth legend annotation key | null
     this._position4    = 'right'; // 'right' (beside) | 'below' (stacked)
     this._heightPct4   = 50;      // legend 4 height as % of canvas-container
+    this._decimalPlaces  = null;  // legend 1 numeric tick decimal places (null=auto)
+    this._decimalPlaces2 = null;  // legend 2 numeric tick decimal places (null=auto)
+    this._decimalPlaces3 = null;  // legend 3 numeric tick decimal places (null=auto)
+    this._decimalPlaces4 = null;  // legend 4 numeric tick decimal places (null=auto)
 
     this.skipBg = false;
     this._dpr   = window.devicePixelRatio || 1;
@@ -131,6 +136,7 @@ export class LegendRenderer {
     this._paddingRight  = 0;
     this._paddingTop    = 0;
     this._paddingBottom = 0;
+    this._layoutSpacing = 0;
     this._heightPct  = 100;  // legend 1 height as % of the canvas-container (1–100)
 
     this.setSettings(settings, /*redraw*/ false);
@@ -155,11 +161,34 @@ export class LegendRenderer {
     if (s.paddingRight  != null) this._paddingRight  = s.paddingRight;
     if (s.paddingTop    != null) this._paddingTop    = s.paddingTop;
     if (s.paddingBottom != null) this._paddingBottom = s.paddingBottom;
+    if (s.layoutSpacing != null) {
+      const spacing = parseInt(s.layoutSpacing);
+      this._layoutSpacing = Number.isFinite(spacing) ? Math.max(0, spacing) : 0;
+    }
     if (s.heightPct  != null) this._heightPct  = s.heightPct;
     if (s.heightPct2 != null) this._heightPct2 = s.heightPct2;
     if (s.heightPct3 != null) this._heightPct3 = s.heightPct3;
     if (s.heightPct4 != null) this._heightPct4 = s.heightPct4;
+    if (s.decimalPlaces  !== undefined) this._decimalPlaces  = s.decimalPlaces;
+    if (s.decimalPlaces2 !== undefined) this._decimalPlaces2 = s.decimalPlaces2;
+    if (s.decimalPlaces3 !== undefined) this._decimalPlaces3 = s.decimalPlaces3;
+    if (s.decimalPlaces4 !== undefined) this._decimalPlaces4 = s.decimalPlaces4;
     if (redraw) this.draw();
+  }
+
+  _legendDecimalPlaces(legendN) {
+    if (legendN === 2) return this._decimalPlaces2;
+    if (legendN === 3) return this._decimalPlaces3;
+    if (legendN === 4) return this._decimalPlaces4;
+    return this._decimalPlaces;
+  }
+
+  _numericFormatter(def, legendN) {
+    const fixedDp = this._legendDecimalPlaces(legendN);
+    return (v) => formatNumericAnnotationValue(v, def, fixedDp, {
+      autoFormatter: 'fmt',
+      fallback: 'string',
+    });
   }
 
   /**
@@ -326,38 +355,27 @@ export class LegendRenderer {
    */
   resize() {
     this._dpr = window.devicePixelRatio || 1;
-    const below2 = !!this._annotation2 && this._position2 === 'below';
-    const below3 = !!this._annotation3 && this._position3 === 'below';
-    const below4 = !!this._annotation4 && this._position4 === 'below';
-    const hasAnyBelow = below2 || below3 || below4;
-    const active = this._position === 'right' ? this._rightCanvas : null;
-
-    if (active && active.style.display !== 'none') {
-      const lc = active;
+    const { col2, col3, col4 } = this._resolveColumns();
+    const canvasForCol = [this._rightCanvas, this._rightCanvas2, this._rightCanvas3, this._rightCanvas4];
+    const legendEntries = [
+      { col: 0,    key: this._annotation,  pct: this._heightPct,  isL1: true  },
+      { col: col2, key: this._annotation2, pct: this._heightPct2, isL1: false },
+      { col: col3, key: this._annotation3, pct: this._heightPct3, isL1: false },
+      { col: col4, key: this._annotation4, pct: this._heightPct4, isL1: false },
+    ];
+    for (let c = 0; c <= 3; c++) {
+      const lc = canvasForCol[c];
+      if (!lc || lc.style.display === 'none') continue;
+      const inCol = legendEntries.filter(e => e.col === c);
+      if (inCol.length === 0) continue;
+      const entries = inCol.map(e => ({ pct: e.pct, hasKey: !!e.key || e.isL1 }));
+      const { total } = this._computeColumnStackedHeights(lc, entries);
       const LW = lc.clientWidth;
-      const LH = (hasAnyBelow)
-        ? this._computeStackedHeights(lc).total
-        : this._computeHeight(lc);
+      const LH = total || lc.clientHeight || 0;
       lc.style.height = LH + 'px';
       lc.width  = LW * this._dpr;
       lc.height = LH * this._dpr;
       lc.getContext('2d').setTransform(this._dpr, 0, 0, this._dpr, 0, 0);
-    }
-
-    // Side canvases for legends 2, 3, 4.
-    for (const [hasL, notBelow, rc, computeH] of [
-      [!!this._annotation2, !below2, this._rightCanvas2, lc => this._computeHeight2(lc)],
-      [!!this._annotation3, !below3, this._rightCanvas3, lc => this._computeHeight3(lc)],
-      [!!this._annotation4, !below4, this._rightCanvas4, lc => this._computeHeight4(lc)],
-    ]) {
-      if (hasL && notBelow && rc && rc.style.display !== 'none') {
-        const LW = rc.clientWidth;
-        const LH = computeH(rc);
-        rc.style.height = LH + 'px';
-        rc.width  = LW * this._dpr;
-        rc.height = LH * this._dpr;
-        rc.getContext('2d').setTransform(this._dpr, 0, 0, this._dpr, 0, 0);
-      }
     }
     this.draw();
   }
@@ -376,62 +394,51 @@ export class LegendRenderer {
       - parseFloat(s.paddingBottom || '0');
   }
 
-  /** Legend-1 canvas height in CSS px. */
-  _computeHeight(lc) {
-    const containerH = this._containerH(lc);
-    if (!containerH) return lc.clientHeight || 0;
-    return Math.round(containerH * Math.min(this._heightPct, 100) / 100);
-  }
-
-  /** Legend-2 side-canvas height in CSS px. */
-  _computeHeight2(lc) {
-    const containerH = this._containerH(lc);
-    if (!containerH) return lc.clientHeight || 0;
-    return Math.round(containerH * Math.min(this._heightPct2, 100) / 100);
-  }
-
-  /** Legend-3 side-canvas height in CSS px. */
-  _computeHeight3(lc) {
-    const containerH = this._containerH(lc);
-    if (!containerH) return lc.clientHeight || 0;
-    return Math.round(containerH * Math.min(this._heightPct3, 100) / 100);
-  }
-
-  /** Legend-4 side-canvas height in CSS px. */
-  _computeHeight4(lc) {
-    const containerH = this._containerH(lc);
-    if (!containerH) return lc.clientHeight || 0;
-    return Math.round(containerH * Math.min(this._heightPct4, 100) / 100);
+  /**
+   * Resolve which column (0–3) each legend occupies.
+   * Position is relative to the preceding legend:
+   *   'below' → same column as predecessor
+   *   'right' → predecessor's column + 1 (capped at 3)
+   * Column 0 maps to _rightCanvas, column 1 to _rightCanvas2, etc.
+   */
+  _resolveColumns() {
+    const col2 = this._position2 === 'right' ? 1 : 0;
+    const col3 = this._position3 === 'right' ? Math.min(col2 + 1, 3) : col2;
+    const col4 = this._position4 === 'right' ? Math.min(col3 + 1, 3) : col3;
+    return { col2, col3, col4 };
   }
 
   /**
-   * For the 'below' stacked layout: compute heights for all stacked legends.
-   * Legends whose position is not 'below' contribute 0.
-   * • sum of active pcts < 100 → independent percentages.
-   * • sum of active pcts ≥ 100 → proportional share of full height.
-   * Returns {total, h1, h2, h3, h4}.
+   * Compute per-legend heights for legends stacked in one column canvas.
+   * entries: [{pct, hasKey}] top-to-bottom.
+   * • sumPct < 100 → independent pct-of-container heights
+   * • sumPct ≥ 100 → proportional share of full containerH
+   * @returns {{total: number, heights: number[]}}
    */
-  _computeStackedHeights(lc) {
+  _computeColumnStackedHeights(lc, entries) {
     const containerH = this._containerH(lc);
-    if (!containerH) return { total: lc.clientHeight || 0, h1: lc.clientHeight || 0, h2: 0, h3: 0, h4: 0 };
-    const pct1 = Math.max(1, this._heightPct);
-    const pct2 = (!!this._annotation2 && this._position2 === 'below') ? Math.max(1, this._heightPct2) : 0;
-    const pct3 = (!!this._annotation3 && this._position3 === 'below') ? Math.max(1, this._heightPct3) : 0;
-    const pct4 = (!!this._annotation4 && this._position4 === 'below') ? Math.max(1, this._heightPct4) : 0;
-    const sumPct = pct1 + pct2 + pct3 + pct4;
-    let h1, h2, h3, h4;
+    if (!containerH) return { total: lc.clientHeight || 0, heights: entries.map(() => 0) };
+    const pcts   = entries.map(e => e.hasKey ? Math.max(1, e.pct) : 0);
+    const active = pcts.filter(p => p > 0).length;
+    const gapPx = Math.max(0, this._layoutSpacing || 0);
+    const totalGap = Math.max(0, active - 1) * gapPx;
+    const usableH = Math.max(0, containerH - totalGap);
+    const sumPct = pcts.reduce((a, b) => a + b, 0);
+    if (sumPct === 0) return { total: 0, heights: entries.map(() => 0) };
+    let heights;
     if (sumPct < 100) {
-      h1 = Math.round(containerH * pct1 / 100);
-      h2 = Math.round(containerH * pct2 / 100);
-      h3 = Math.round(containerH * pct3 / 100);
-      h4 = Math.round(containerH * pct4 / 100);
-      return { total: h1 + h2 + h3 + h4, h1, h2, h3, h4 };
+      heights = pcts.map(p => Math.round(usableH * p / 100));
+    } else {
+      heights = pcts.map(p => Math.round(usableH * p / sumPct));
+      // Absorb rounding remainder in the last non-zero entry.
+      const sum = heights.reduce((a, b) => a + b, 0);
+      if (sum !== usableH) {
+        for (let i = heights.length - 1; i >= 0; i--) {
+          if (heights[i] > 0) { heights[i] += usableH - sum; break; }
+        }
+      }
     }
-    h1 = Math.round(containerH * pct1 / sumPct);
-    h2 = Math.round(containerH * pct2 / sumPct);
-    h3 = Math.round(containerH * pct3 / sumPct);
-    h4 = containerH - h1 - h2 - h3;  // absorb rounding remainder
-    return { total: containerH, h1, h2, h3, h4 };
+    return { total: heights.reduce((a, b) => a + b, 0) + totalGap, heights };
   }
 
   /** Maximum auto-sized legend width (CSS px). Labels wider than this are truncated with '…'. */
@@ -462,7 +469,7 @@ export class LegendRenderer {
    * @param {string|null} key
    * @returns {number}
    */
-  _measureWidthForKey(key) {
+  _measureWidthForKey(key, legendN = 1) {
     const def = key && this._schema?.get(key);
     if (!def) return 120;
 
@@ -476,7 +483,7 @@ export class LegendRenderer {
       return ctx.measureText(text).width;
     };
 
-    let contentW = measure(key, true);
+    let contentW = measure(def.label ?? key, true);
     if (def.dataType === 'categorical' || def.dataType === 'ordinal') {
       const SWATCH = Math.max(8, lfs);
       for (const v of (def.values || [])) {
@@ -488,7 +495,29 @@ export class LegendRenderer {
       if (def.dataType === 'date') {
         const vals = def.values || [];
         for (let i = 0; i < Math.min(tickCount, vals.length); i++) {
-          contentW = Math.max(contentW, BAR_W + 6 + measure(String(vals[i])));
+          contentW = Math.max(contentW, BAR_W + 6 + measure(formatDateLabelISO(vals[i])));
+        }
+      } else if (isNumericType(def.dataType)) {
+        // Match draw-time numeric scale logic so measured width always fits ticks.
+        const _mode = this._scaleModeOverrides?.get(key) ?? '';
+        const _live = this._liveRanges?.get(key);
+        let effMin = _live?.min ?? def.min ?? 0;
+        let effMax = _live?.max ?? def.max ?? 1;
+        if (_mode === 'symmetric-zero') {
+          const maxAbs = Math.max(Math.abs(effMin), Math.abs(effMax));
+          effMin = -maxAbs;
+          effMax = +maxAbs;
+        } else if (_mode === 'zero-positive') {
+          effMin = 0;
+        } else if (_mode === 'zero-one') {
+          effMin = Math.min(effMin, 0);
+          effMax = Math.max(effMax, 1);
+        }
+        const range = effMax - effMin;
+        const fmt = this._numericFormatter(def, legendN);
+        for (let i = 0; i < tickCount; i++) {
+          const val = effMax - (i / (tickCount - 1)) * range;
+          contentW = Math.max(contentW, BAR_W + 6 + measure(fmt(val)));
         }
       } else {
         const fmt = def.fmt ?? (v => String(v));
@@ -500,20 +529,23 @@ export class LegendRenderer {
         }
       }
     }
-    return Math.min(LegendRenderer.MAX_LEGEND_W, Math.ceil(L + contentW + R));
+    const measuredW = Math.ceil(L + contentW + R);
+    // Date ticks should always be fully visible.
+    if (def.dataType === 'date') return measuredW;
+    return Math.min(LegendRenderer.MAX_LEGEND_W, measuredW);
   }
 
   /** Minimum canvas width for legend 1. */
-  measureWidth()  { return this._measureWidthForKey(this._annotation); }
+  measureWidth()  { return this._measureWidthForKey(this._annotation, 1); }
 
   /** Minimum canvas width for legend 2. */
-  measureWidth2() { return this._measureWidthForKey(this._annotation2); }
+  measureWidth2() { return this._measureWidthForKey(this._annotation2, 2); }
 
   /** Minimum canvas width for legend 3. */
-  measureWidth3() { return this._measureWidthForKey(this._annotation3); }
+  measureWidth3() { return this._measureWidthForKey(this._annotation3, 3); }
 
   /** Minimum canvas width for legend 4. */
-  measureWidth4() { return this._measureWidthForKey(this._annotation4); }
+  measureWidth4() { return this._measureWidthForKey(this._annotation4, 4); }
 
   /**
    * Paint the colour legend(s) onto the canvas(es).
@@ -541,71 +573,45 @@ export class LegendRenderer {
     if (!key || !this._schema) return;
 
     const dpr = this._dpr;
-    const W   = activeCanvas.width / dpr;
-    const ctx = activeCanvas.getContext('2d');
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const below2 = !!key2 && this._position2 === 'below';
-    const below3 = !!key3 && this._position3 === 'below';
-    const below4 = !!key4 && this._position4 === 'below';
-    const hasAnyBelow = below2 || below3 || below4;
-    let h1 = activeCanvas.height / dpr;
-    let h2 = 0, h3 = 0, h4 = 0;
-    if (hasAnyBelow) {
-      const s = this._computeStackedHeights(activeCanvas);
-      h1 = s.h1; h2 = s.h2; h3 = s.h3; h4 = s.h4;
-    }
+    // Assign each legend to a column, then draw all legends stacked within each column.
+    const { col2, col3, col4 } = this._resolveColumns();
+    const canvasForCol = [this._rightCanvas, this._rightCanvas2, this._rightCanvas3, this._rightCanvas4];
+    const legendSpecs = [
+      { col: 0,    key,       pct: this._heightPct,  selVals: this._selectedValues1, flag: null,        legendN: 1 },
+      { col: col2, key: key2, pct: this._heightPct2, selVals: this._selectedValues2, flag: 'isLegend2', legendN: 2 },
+      { col: col3, key: key3, pct: this._heightPct3, selVals: this._selectedValues3, flag: 'isLegend3', legendN: 3 },
+      { col: col4, key: key4, pct: this._heightPct4, selVals: this._selectedValues4, flag: 'isLegend4', legendN: 4 },
+    ];
 
-    // Draw legend 1.
-    this._hitRegions = this._drawContent(ctx, W, h1, key, 0, this._selectedValues1);
-
-    // Draw legend 2 — stacked below (shared canvas).
-    this._hitRegions2 = [];
-    if (below2 && key2 && h2 > 0) {
-      ctx.fillStyle = (this.textColor ?? '#ffffff') + '44';
-      ctx.fillRect(0, h1, W, 1);
-      const regs2 = this._drawContent(ctx, W, h2, key2, h1, this._selectedValues2);
-      this._hitRegions2 = regs2.map(r => ({ ...r, isLegend2: true }));
-      for (const r of this._hitRegions2) this._hitRegions.push(r);
-    }
-
-    // Draw legend 3 — stacked below (shared canvas).
-    this._hitRegions3 = [];
-    if (below3 && key3 && h3 > 0) {
-      const offset3 = h1 + h2;
-      ctx.fillStyle = (this.textColor ?? '#ffffff') + '44';
-      ctx.fillRect(0, offset3, W, 1);
-      const regs3 = this._drawContent(ctx, W, h3, key3, offset3, this._selectedValues3);
-      this._hitRegions3 = regs3.map(r => ({ ...r, isLegend3: true }));
-      for (const r of this._hitRegions3) this._hitRegions.push(r);
-    }
-
-    // Draw legend 4 — stacked below (shared canvas).
-    this._hitRegions4 = [];
-    if (below4 && key4 && h4 > 0) {
-      const offset4 = h1 + h2 + h3;
-      ctx.fillStyle = (this.textColor ?? '#ffffff') + '44';
-      ctx.fillRect(0, offset4, W, 1);
-      const regs4 = this._drawContent(ctx, W, h4, key4, offset4, this._selectedValues4);
-      this._hitRegions4 = regs4.map(r => ({ ...r, isLegend4: true }));
-      for (const r of this._hitRegions4) this._hitRegions.push(r);
-    }
-
-    // Draw legends 2, 3, 4 — beside (own canvases).
-    for (const [notBelow, k, rc, regsProp, flag, selVals] of [
-      [!below2, key2, this._rightCanvas2, '_hitRegions2', 'isLegend2', this._selectedValues2],
-      [!below3, key3, this._rightCanvas3, '_hitRegions3', 'isLegend3', this._selectedValues3],
-      [!below4, key4, this._rightCanvas4, '_hitRegions4', 'isLegend4', this._selectedValues4],
-    ]) {
-      if (notBelow && k) {
-        if (rc && rc.style.display !== 'none') {
-          const ctx2 = rc.getContext('2d');
-          ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
-          this[regsProp] = this._drawContent(ctx2, rc.width / dpr, rc.height / dpr, k, 0, selVals)
-                               .map(r => ({ ...r, [flag]: true }));
-        }
+    const canvasHitRegions = [[], [], [], []];
+    for (let c = 0; c <= 3; c++) {
+      const lc = canvasForCol[c];
+      if (!lc || lc.style.display === 'none') continue;
+      const specs = legendSpecs.filter(s => s.col === c && s.key);
+      if (specs.length === 0) continue;
+      const W   = lc.width / dpr;
+      const ctx = lc.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const { heights } = this._computeColumnStackedHeights(lc, specs.map(s => ({ pct: s.pct, hasKey: true })));
+      const gapPx = Math.max(0, this._layoutSpacing || 0);
+      let offsetY = 0;
+      for (let i = 0; i < specs.length; i++) {
+        const spec = specs[i];
+        const h    = heights[i];
+        if (h <= 0) continue;
+        const regions = this._drawContent(ctx, W, h, spec.key, offsetY, spec.selVals, spec.legendN);
+        const flagged = spec.flag ? regions.map(r => ({ ...r, [spec.flag]: true })) : regions;
+        for (const r of flagged) canvasHitRegions[c].push(r);
+        offsetY += h;
+        if (i < specs.length - 1) offsetY += gapPx;
       }
     }
+
+    this._hitRegions  = canvasHitRegions[0];
+    this._hitRegions2 = canvasHitRegions[1];
+    this._hitRegions3 = canvasHitRegions[2];
+    this._hitRegions4 = canvasHitRegions[3];
   }
 
   /**
@@ -614,7 +620,7 @@ export class LegendRenderer {
    * relative to the canvas origin (already include offsetY).
    * @private
    */
-  _drawContent(ctx, W, H, key, offsetY, selectedValues = null) {
+  _drawContent(ctx, W, H, key, offsetY, selectedValues = null, legendN = 1) {
     const hitRegions = [];
     if (!key || !this._schema) return hitRegions;
     const def = this._schema.get(key);
@@ -633,13 +639,15 @@ export class LegendRenderer {
       ctx.fillRect(0, offsetY, W, H);
     }
 
-    let y = offsetY + T;
+    const TITLE_TOP_GAP = 6;
+    const TITLE_CONTENT_GAP = 4;
+    let y = offsetY + T + TITLE_TOP_GAP;
 
     // Title.
     ctx.font = `700 ${lfs}px ${this._fontFamily ?? 'monospace'}`; ctx.fillStyle = ltc;
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
     ctx.fillText(this._truncateText(ctx, def.label ?? key, W - L - R), L, y);
-    y += lfs + 10;
+    y += lfs + TITLE_CONTENT_GAP;
 
     if (def.dataType === 'categorical' || def.dataType === 'ordinal') {
       const paletteName = this._paletteOverrides?.get(key);
@@ -718,7 +726,7 @@ export class LegendRenderer {
         for (const v of vals) { const d = Math.abs(dateToDecimalYear(v) - targetDec); if (d < best) { best = d; label = v; } }
         ctx.fillRect(L + BAR_W, tickY - 0.5, 4, 1);
         ctx.textBaseline = i === 0 ? 'top' : (i === tc - 1 ? 'bottom' : 'middle');
-        ctx.fillText(this._truncateText(ctx, label, LABEL_W), LABEL_X, tickY);
+        ctx.fillText(formatDateLabelISO(label), LABEL_X, tickY);
       }
     } else if (isNumericType(def.dataType)) {
       const BAR_W = 14;
@@ -750,7 +758,7 @@ export class LegendRenderer {
       const LABEL_X = L + BAR_W + 6;
       const LABEL_W = W - LABEL_X - R;
       const tc  = Math.max(2, Math.min(6, Math.floor(BAR_H / (lfs + 6))));
-      const fmt = def.fmt ?? (v => String(v));
+      const fmt = this._numericFormatter(def, legendN);
       ctx.font = this._font(lfs); ctx.fillStyle = ltc; ctx.textAlign = 'left';
       for (let i = 0; i < tc; i++) {
         const t = i / (tc - 1);

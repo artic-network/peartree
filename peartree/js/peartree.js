@@ -561,6 +561,7 @@ async function _initCore(root = document) {
   const legendAnnotEl         = $('legend-annotation');
   const legendTextColorEl     = $('legend-text-color');
   const legendFontSizeSlider   = $('legend-font-size-slider');
+  const legendSpacingSlider    = $('legend-spacing-slider');
   const legendHeightPctSlider  = $('legend-height-pct-slider');
   const legendTypefaceEl     = $('legend-font-family-select');
   const legendRightCanvas  = $('legend-right-canvas');
@@ -572,16 +573,28 @@ async function _initCore(root = document) {
   const legend2HeightPctSlider  = $('legend2-height-pct-slider');
   const legend2DetailEl         = $('legend2-detail');
   const legend2SectionEl        = $('legend2-section');
+  const legendDpRowEl           = $('legend-dp-row');
+  const legendDpEl              = $('legend-decimal-places');
+  const legend2DpRowEl          = $('legend2-dp-row');
+  const legend2DpEl             = $('legend2-decimal-places');
   const legend3AnnotEl          = $('legend-annotation-3');
   const legend3ShowEl           = $('legend3-show');
   const legend3HeightPctSlider  = $('legend3-height-pct-slider');
   const legend3DetailEl         = $('legend3-detail');
   const legend3SectionEl        = $('legend3-section');
+  const legend3DpRowEl          = $('legend3-dp-row');
+  const legend3DpEl             = $('legend3-decimal-places');
   const legend4AnnotEl          = $('legend-annotation-4');
   const legend4ShowEl           = $('legend4-show');
   const legend4HeightPctSlider  = $('legend4-height-pct-slider');
   const legend4DetailEl         = $('legend4-detail');
   const legend4SectionEl        = $('legend4-section');
+  const legend4DpRowEl          = $('legend4-dp-row');
+  const legend4DpEl             = $('legend4-decimal-places');
+  const legendConfigureRow       = $('legend-configure-row');
+  const legend2ConfigureRow      = $('legend2-configure-row');
+  const legend3ConfigureRow      = $('legend3-configure-row');
+  const legend4ConfigureRow      = $('legend4-configure-row');
   // Cascade memory for legends 2–4 (index 0=legend2, 1=legend3, 2=legend4)
   const _legendAnnotEls  = [legend2AnnotEl, legend3AnnotEl, legend4AnnotEl];
   const _legendMemory    = [null, null, null];
@@ -983,15 +996,20 @@ async function _initCore(root = document) {
       annotationPalettes: Object.fromEntries(annotationPalettes),
       annotationScaleModes: Object.fromEntries(annotationScaleModes),
       legendAnnotation:  legendAnnotEl.value,
+      legendSpacing: legendSpacingSlider.value,
+      legendDecimalPlaces: legendDpEl.value !== '' ? parseInt(legendDpEl.value) : null,
       legendAnnotation2: legend2AnnotEl.value,
       legend2Position:   legend2ShowEl.value,
       legendHeightPct2:  legend2HeightPctSlider.value,
+      legendDecimalPlaces2: legend2DpEl.value !== '' ? parseInt(legend2DpEl.value) : null,
       legendAnnotation3: legend3AnnotEl.value,
       legend3Position:   legend3ShowEl.value,
       legendHeightPct3:  legend3HeightPctSlider.value,
+      legendDecimalPlaces3: legend3DpEl.value !== '' ? parseInt(legend3DpEl.value) : null,
       legendAnnotation4: legend4AnnotEl.value,
       legend4Position:   legend4ShowEl.value,
       legendHeightPct4:  legend4HeightPctSlider.value,
+      legendDecimalPlaces4: legend4DpEl.value !== '' ? parseInt(legend4DpEl.value) : null,
       legendHeightPct:   legendHeightPctSlider.value,
       axisShow:           axisShowEl.value,
       axisDateAnnotation: axisDateAnnotEl.value,
@@ -1430,10 +1448,15 @@ async function _initCore(root = document) {
       legendFontSizeSlider.value = s.legendFontSize;
       $('legend-font-size-value').textContent = s.legendFontSize;
     }
+    if (s.legendSpacing != null) {
+      legendSpacingSlider.value = s.legendSpacing;
+      $('legend-spacing-value').textContent = s.legendSpacing;
+    }
     if (s.legendHeightPct != null) {
       legendHeightPctSlider.value = s.legendHeightPct;
       $('legend-height-pct-value').textContent = s.legendHeightPct + '%';
     }
+    if (s.legendDecimalPlaces != null && legendDpEl) legendDpEl.value = String(s.legendDecimalPlaces);
     if (s.legendTypefaceKey)     legendTypefaceEl.value = s.legendTypefaceKey;
     else if (s.legendFontFamily) legendTypefaceEl.value = s.legendFontFamily; // bwc
     if (legendTypefaceStyleEl) {
@@ -1444,16 +1467,19 @@ async function _initCore(root = document) {
       legend2HeightPctSlider.value = s.legendHeightPct2;
       $('legend2-height-pct-value').textContent = s.legendHeightPct2 + '%';
     }
+    if (s.legendDecimalPlaces2 != null && legend2DpEl) legend2DpEl.value = String(s.legendDecimalPlaces2);
     if (s.legend3Position)        legend3ShowEl.value      = s.legend3Position;
     if (s.legendHeightPct3 != null) {
       legend3HeightPctSlider.value = s.legendHeightPct3;
       $('legend3-height-pct-value').textContent = s.legendHeightPct3 + '%';
     }
+    if (s.legendDecimalPlaces3 != null && legend3DpEl) legend3DpEl.value = String(s.legendDecimalPlaces3);
     if (s.legend4Position)        legend4ShowEl.value      = s.legend4Position;
     if (s.legendHeightPct4 != null) {
       legend4HeightPctSlider.value = s.legendHeightPct4;
       $('legend4-height-pct-value').textContent = s.legendHeightPct4 + '%';
     }
+    if (s.legendDecimalPlaces4 != null && legend4DpEl) legend4DpEl.value = String(s.legendDecimalPlaces4);
     // Note: legendAnnotation2/3/4 are annotation-dependent and restored later in loadTree.
     // Node bars settings
     if (s.nodeBarsEnabled)  nodeBarsShowEl.value  = s.nodeBarsEnabled;
@@ -1581,15 +1607,19 @@ async function _initCore(root = document) {
     legend2ShowEl.value      = DEFAULT_SETTINGS.legend2Position;
     legend2HeightPctSlider.value = DEFAULT_SETTINGS.legendHeightPct2;
     $('legend2-height-pct-value').textContent = DEFAULT_SETTINGS.legendHeightPct2 + '%';
+    if (legend2DpEl) legend2DpEl.value = '';
     legend3AnnotEl.value     = '';
     legend3ShowEl.value      = DEFAULT_SETTINGS.legend3Position;
     legend3HeightPctSlider.value = DEFAULT_SETTINGS.legendHeightPct3;
     $('legend3-height-pct-value').textContent = DEFAULT_SETTINGS.legendHeightPct3 + '%';
+    if (legend3DpEl) legend3DpEl.value = '';
     legend4AnnotEl.value     = '';
     _legendMemory.fill(null);
     legend4ShowEl.value      = DEFAULT_SETTINGS.legend4Position;
     legend4HeightPctSlider.value = DEFAULT_SETTINGS.legendHeightPct4;
     $('legend4-height-pct-value').textContent = DEFAULT_SETTINGS.legendHeightPct4 + '%';
+    if (legendDpEl) legendDpEl.value = '';
+    if (legend4DpEl) legend4DpEl.value = '';
     // legendTextColor is set by applyTheme(defaultTheme) above — do not override with a hardcoded default.
     axisShowEl.value         = DEFAULT_SETTINGS.axisShow;
     // Calibrate (axisDateAnnotation) is tree-specific / auto-set — not reset here.
@@ -1622,6 +1652,8 @@ async function _initCore(root = document) {
     $('clade-highlight-radius-value').textContent  = DEFAULT_SETTINGS.cladeHighlightRadius;
     legendHeightPctSlider.value = DEFAULT_SETTINGS.legendHeightPct;
     $('legend-height-pct-value').textContent = DEFAULT_SETTINGS.legendHeightPct + '%';
+    legendSpacingSlider.value = DEFAULT_SETTINGS.legendSpacing;
+    $('legend-spacing-value').textContent = DEFAULT_SETTINGS.legendSpacing;
     rootStemPctSlider.value = DEFAULT_SETTINGS.rootStemPct ?? '0';
     $('root-stem-pct-value').textContent = (DEFAULT_SETTINGS.rootStemPct ?? '0') + '%';
     nodeLabelShowEl.value     = DEFAULT_SETTINGS.nodeLabelAnnotation;
@@ -2047,6 +2079,11 @@ async function _initCore(root = document) {
     _vis(legend3DetailEl,       legend3AnnotEl.value        !== '');
     _vis(legend4SectionEl,      legend3AnnotEl.value        !== '');
     _vis(legend4DetailEl,       legend4AnnotEl.value        !== '');
+    const _schema = graph?.annotationSchema ?? new Map();
+    _updateLabelDpRow(legendDpRowEl,  legendAnnotEl.value,  _schema);
+    _updateLabelDpRow(legend2DpRowEl, legend2AnnotEl.value, _schema);
+    _updateLabelDpRow(legend3DpRowEl, legend3AnnotEl.value, _schema);
+    _updateLabelDpRow(legend4DpRowEl, legend4AnnotEl.value, _schema);
     _vis(axisDetailEl,          axisShowEl.value            !== 'off');
     _vis(tipLabel2SectionEl,    tipLabelsOn);
     _vis(tipLabel3SectionEl,    tipLabelsOn && tipLabel2ShowEl.value !== 'off');
@@ -2525,6 +2562,10 @@ async function _initCore(root = document) {
     legendFontSizeSlider.value = _saved.legendFontSize;
     $('legend-font-size-value').textContent = _saved.legendFontSize;
   }
+  if (_saved.legendSpacing != null) {
+    legendSpacingSlider.value = _saved.legendSpacing;
+    $('legend-spacing-value').textContent = _saved.legendSpacing;
+  }
   if (_saved.legendHeightPct != null) {
     legendHeightPctSlider.value = _saved.legendHeightPct;
     $('legend-height-pct-value').textContent = _saved.legendHeightPct + '%';
@@ -2718,10 +2759,15 @@ async function _initCore(root = document) {
       fontSize:       parseInt(legendFontSizeSlider.value),
       textColor:      legendTextColorEl.value,
       bgColor:        canvasBgColorEl.value,
+      layoutSpacing:  parseInt(DEFAULT_SETTINGS.legendSpacing),
       heightPct:      parseInt(DEFAULT_SETTINGS.legendHeightPct),
       heightPct2:  parseInt(DEFAULT_SETTINGS.legendHeightPct2),
       heightPct3:  parseInt(DEFAULT_SETTINGS.legendHeightPct3),
       heightPct4:  parseInt(DEFAULT_SETTINGS.legendHeightPct4),
+      decimalPlaces:  DEFAULT_SETTINGS.legendDecimalPlaces,
+      decimalPlaces2: DEFAULT_SETTINGS.legendDecimalPlaces2,
+      decimalPlaces3: DEFAULT_SETTINGS.legendDecimalPlaces3,
+      decimalPlaces4: DEFAULT_SETTINGS.legendDecimalPlaces4,
     },
   );
   renderer.setLegendRenderer(legendRenderer);
@@ -4144,6 +4190,10 @@ async function _initCore(root = document) {
     _updateConfigureBtn(collapsedCladeConfigureRow, collapsedCladeColourByEl?.value ?? 'user_colour');
     if (nodeLabelColourBy)   _updateConfigureBtn(nodeLabelConfigureRow,   nodeLabelColourBy.value);
     if (branchLabelColourBy) _updateConfigureBtn(branchLabelConfigureRow, branchLabelColourBy.value);
+    _updateConfigureBtn(legendConfigureRow,  legendAnnotEl?.value);
+    _updateConfigureBtn(legend2ConfigureRow, legend2AnnotEl?.value);
+    _updateConfigureBtn(legend3ConfigureRow, legend3AnnotEl?.value);
+    _updateConfigureBtn(legend4ConfigureRow, legend4AnnotEl?.value);
     // Sync clear-user-colour button: enabled only when at least one node has been coloured.
     if (btnClearUserColour) {
       commands.setEnabled('tree-clear-colours', schema.has('user_colour'));
@@ -4770,6 +4820,10 @@ async function _initCore(root = document) {
       if (branchLabelColourBy) _updateConfigureBtn(branchLabelConfigureRow, branchLabelColourBy.value);
       _updateConfigureBtn(cladeHighlightConfigureRow, cladeHighlightColourByEl?.value ?? 'user_colour');
       _updateConfigureBtn(collapsedCladeConfigureRow, collapsedCladeColourByEl?.value ?? 'user_colour');
+      _updateConfigureBtn(legendConfigureRow,  legendAnnotEl?.value);
+      _updateConfigureBtn(legend2ConfigureRow, legend2AnnotEl?.value);
+      _updateConfigureBtn(legend3ConfigureRow, legend3AnnotEl?.value);
+      _updateConfigureBtn(legend4ConfigureRow, legend4AnnotEl?.value);
       applyLegend();   // rebuild legend with new data (may clear it)
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
       // setData() does not fire _onLayoutChange (unlike setDataAnimated), so
@@ -7410,43 +7464,75 @@ async function _initCore(root = document) {
     const pos2 = legend2ShowEl.value;           // 'right' | 'below'
     const pos3 = legend3ShowEl.value;           // 'right' | 'below'
     const pos4 = legend4ShowEl.value;           // 'right' | 'below'
-    const beside2 = show && !!key2 && pos2 === 'right';
-    const beside3 = show && !!key3 && pos3 === 'right';
-    const beside4 = show && !!key4 && pos4 === 'right';
+    // Resolve columns: 'below' = same column as predecessor, 'right' = predecessor's column + 1.
+    const col2 = pos2 === 'right' ? 1 : 0;
+    const col3 = pos3 === 'right' ? Math.min(col2 + 1, 3) : col2;
+    const col4 = pos4 === 'right' ? Math.min(col3 + 1, 3) : col3;
 
     // Set annotation + font first so measureWidth() has the right state.
     legendRenderer.setFontSize(parseInt(legendFontSizeSlider.value));
     legendRenderer.setTextColor(legendTextColorEl.value);
     legendRenderer.setSettings({
+      layoutSpacing: parseInt(legendSpacingSlider.value),
       heightPct:  parseInt(legendHeightPctSlider.value),
       heightPct2: parseInt(legend2HeightPctSlider.value),
       heightPct3: parseInt(legend3HeightPctSlider.value),
       heightPct4: parseInt(legend4HeightPctSlider.value),
+      decimalPlaces:  legendDpEl.value  !== '' ? parseInt(legendDpEl.value)  : null,
+      decimalPlaces2: legend2DpEl.value !== '' ? parseInt(legend2DpEl.value) : null,
+      decimalPlaces3: legend3DpEl.value !== '' ? parseInt(legend3DpEl.value) : null,
+      decimalPlaces4: legend4DpEl.value !== '' ? parseInt(legend4DpEl.value) : null,
     }, /*redraw*/ false);
     legendRenderer.setAnnotation(show ? 'right' : null, key);
     legendRenderer.setAnnotation2(key2 ? pos2 : 'right', key2);
     legendRenderer.setAnnotation3(key3 ? pos3 : 'right', key3);
     legendRenderer.setAnnotation4(key4 ? pos4 : 'right', key4);
 
-    const W  = show    ? legendRenderer.measureWidth()  : 0;
-    const W2 = beside2 ? legendRenderer.measureWidth2() : 0;
-    const W3 = beside3 ? legendRenderer.measureWidth3() : 0;
-    const W4 = beside4 ? legendRenderer.measureWidth4() : 0;
+    // Canvas N is visible when at least one legend with an annotation is in column N.
+    const hasCol1 = show && ((col2 === 1 && !!key2) || (col3 === 1 && !!key3) || (col4 === 1 && !!key4));
+    const hasCol2 = show && ((col2 === 2 && !!key2) || (col3 === 2 && !!key3) || (col4 === 2 && !!key4));
+    const hasCol3 = show && ((col2 === 3 && !!key2) || (col3 === 3 && !!key3) || (col4 === 3 && !!key4));
+
+    const W  = show ? legendRenderer.measureWidth() : 0;
+    // Width of each column canvas = widest legend assigned to it.
+    const W2 = hasCol1 ? Math.max(
+      col2 === 1 && key2 ? legendRenderer.measureWidth2() : 0,
+      col3 === 1 && key3 ? legendRenderer.measureWidth3() : 0,
+      col4 === 1 && key4 ? legendRenderer.measureWidth4() : 0,
+    ) : 0;
+    const W3 = hasCol2 ? Math.max(
+      col2 === 2 && key2 ? legendRenderer.measureWidth2() : 0,
+      col3 === 2 && key3 ? legendRenderer.measureWidth3() : 0,
+      col4 === 2 && key4 ? legendRenderer.measureWidth4() : 0,
+    ) : 0;
+    const W4 = hasCol3 ? Math.max(
+      col2 === 3 && key2 ? legendRenderer.measureWidth2() : 0,
+      col3 === 3 && key3 ? legendRenderer.measureWidth3() : 0,
+      col4 === 3 && key4 ? legendRenderer.measureWidth4() : 0,
+    ) : 0;
 
     legendRightCanvas.style.display = show    ? 'block' : 'none';
     legendRightCanvas.style.width   = W + 'px';
 
-    legend2RightCanvas.style.display = beside2 ? 'block' : 'none';
+    legend2RightCanvas.style.display = hasCol1 ? 'block' : 'none';
     legend2RightCanvas.style.width   = W2 + 'px';
 
-    legend3RightCanvas.style.display = beside3 ? 'block' : 'none';
+    legend3RightCanvas.style.display = hasCol2 ? 'block' : 'none';
     legend3RightCanvas.style.width   = W3 + 'px';
 
-    legend4RightCanvas.style.display = beside4 ? 'block' : 'none';
+    legend4RightCanvas.style.display = hasCol3 ? 'block' : 'none';
     legend4RightCanvas.style.width   = W4 + 'px';
 
     const lrw = $('legend-right-wrapper');
-    if (lrw) lrw.style.display = (show || beside2 || beside3 || beside4) ? 'flex' : 'none';
+    if (lrw) {
+      lrw.style.display = (show || hasCol1 || hasCol2 || hasCol3) ? 'flex' : 'none';
+      lrw.style.gap = `${parseInt(legendSpacingSlider.value)}px`;
+    }
+
+    _updateConfigureBtn(legendConfigureRow, key);
+    _updateConfigureBtn(legend2ConfigureRow, key2);
+    _updateConfigureBtn(legend3ConfigureRow, key3);
+    _updateConfigureBtn(legend4ConfigureRow, key4);
 
     renderer._resize();   // recalculates tree canvas width after legend canvases shown/hidden
     saveSettings();
@@ -7504,6 +7590,15 @@ async function _initCore(root = document) {
     $('legend4-height-pct-value').textContent = legend4HeightPctSlider.value + '%';
     applyLegend();
   });
+  legendDpEl.addEventListener('change', applyLegend);
+  legend2DpEl.addEventListener('change', applyLegend);
+  legend3DpEl.addEventListener('change', applyLegend);
+  legend4DpEl.addEventListener('change', applyLegend);
+
+  $('legend-configure-btn')?.addEventListener('click', () => openAnnotConfig(legendAnnotEl?.value));
+  $('legend2-configure-btn')?.addEventListener('click', () => openAnnotConfig(legend2AnnotEl?.value));
+  $('legend3-configure-btn')?.addEventListener('click', () => openAnnotConfig(legend3AnnotEl?.value));
+  $('legend4-configure-btn')?.addEventListener('click', () => openAnnotConfig(legend4AnnotEl?.value));
 
   legendTextColorEl.addEventListener('input', () => {
     _markCustomTheme();
@@ -7513,6 +7608,10 @@ async function _initCore(root = document) {
   legendFontSizeSlider.addEventListener('input', () => {
     $('legend-font-size-value').textContent = legendFontSizeSlider.value;
     _markCustomTheme();
+    applyLegend();
+  });
+  legendSpacingSlider.addEventListener('input', () => {
+    $('legend-spacing-value').textContent = legendSpacingSlider.value;
     applyLegend();
   });
   legendHeightPctSlider.addEventListener('input', () => {
