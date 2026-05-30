@@ -1,3 +1,9 @@
+## Unreleased
+### Features
+- Legend controls: per-legend decimal places for legends 1-4.
+- Legend controls: per-legend palette configure buttons for legends 1-4.
+- Legend controls: shared spacing slider for row and column spacing (0-50).
+
 ## v1.1.0
 ### Features
 - Copy trees and taxon labels to clipboard

@@ -71,10 +71,15 @@ Canonical reference for settings keys accepted in the `settings` object (URL `se
 | `legendAnnotation3` | string | `n/a` |
 | `legendAnnotation4` | string | `n/a` |
 | `legendFontSize` | number or numeric string | `11` |
+| `legendSpacing` | number (0..50, step 1) or numeric string | `0` |
 | `legendHeightPct` | number or numeric string | `100` |
 | `legendHeightPct2` | number or numeric string | `50` |
 | `legendHeightPct3` | number or numeric string | `50` |
 | `legendHeightPct4` | number or numeric string | `50` |
+| `legendDecimalPlaces` | integer >= 0, or null/omitted for auto | `null (auto)` |
+| `legendDecimalPlaces2` | integer >= 0, or null/omitted for auto | `null (auto)` |
+| `legendDecimalPlaces3` | integer >= 0, or null/omitted for auto | `null (auto)` |
+| `legendDecimalPlaces4` | integer >= 0, or null/omitted for auto | `null (auto)` |
 | `legendPadding` | number or numeric string | `12` |
 | `legendTextColor` | CSS color string | `#4b4b49` |
 | `legendTypefaceKey` | string | `n/a` |

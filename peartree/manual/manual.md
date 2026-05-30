@@ -756,16 +756,25 @@ The type of legend drawn will depend on the annotation type (Categorical or Cont
 
 Use the **Span** setting to control what vertical fraction of the panel height each legend occupies.
 
+Use the **Spacing** control to add whitespace between legend columns and between legends stacked in the same column. This can be useful when showing three or four legends at once.
+
 {% include 'figure.html', src: "images/legend_above-below.png", alt: "EBOV tree with country legend", maxwidth: "80%", bg: "#EAE8E1", legend: "EBOV tree with the two legends shown above-and-below with equal height - the `country` legend only has a few categories so doesn't use its full height." %}
 
 Additional controls set the colour, size and typeface of the legend text.
+
+For numeric or date-like legends, each legend level also has its own **d.p.** setting (Auto or fixed decimal places) so continuous values can be shown with consistent precision.
+
+Each legend level includes a **Palette → Configure** button (shown when an annotation is selected), which opens the annotation colour settings dialog for that legend's annotation.
 
 {% include 'palette-legend.html', legend: "Legend section of the Visual Options palette, showing a categorical legend (country) and a second continuous legend (posterior) stacked below." %}
 
 | Control | Effect |
 |---|---|
 | **Show** | Select an annotation key to display as a legend, or *Off* to hide |
+| **Palette** | **Configure** button opens annotation colour settings for the selected legend annotation |
+| **d.p.** | Decimal places for numeric legend labels — *Auto* picks a sensible precision |
 | **Span** | Height span of the legend as a percentage of the canvas height (10–100%). With multiple legends stacked, these act as relative values. |
+| **Spacing** | Gap between legend columns and between stacked legends (0–50 px) |
 | **Colour** | Legend text colour |
 | **Size** | Font size for legend labels (6–48 pt) |
 | **Typeface** | Font family — *Theme* inherits from the Theme section or specify a different typeface |
