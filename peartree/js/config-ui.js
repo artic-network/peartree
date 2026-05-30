@@ -48,20 +48,16 @@ export const DEFAULT_UI_APP = {
   themeToggle:     true,
   brand:           true,
 
-  // Container CSS (applied to body; null = not set)
-  // Useful for iframe embeds where the host page frames the tree.
+  // Container CSS (applied to <html>; null = not set)
+  // Useful for iframe embeds — everything targets the document root element.
   borderWidth:     null,   // px, e.g. '1.5'
   borderColor:     null,   // CSS colour, e.g. '#F1F0E7'
-  borderRadius:    null,   // px, e.g. '4'
+  borderRadius:    null,   // px — also sets overflow:hidden on <html> to clip content
   backgroundColor: null,   // CSS colour, e.g. '#ffffff'
-  paddingTop:      null,   // px
+  paddingTop:      null,   // px — inset between border and tree content
   paddingRight:    null,   // px
   paddingBottom:   null,   // px
   paddingLeft:     null,   // px
-  marginTop:       null,   // px
-  marginRight:     null,   // px
-  marginBottom:    null,   // px
-  marginLeft:      null,   // px
 
   // Toolbar sub-sections
   tbFileOps:       true,

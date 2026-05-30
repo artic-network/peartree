@@ -246,10 +246,6 @@ async function _initCore(root = document) {
         paddingRight:   _ui.paddingRight   ?? null,
         paddingBottom:  _ui.paddingBottom  ?? null,
         paddingLeft:    _ui.paddingLeft    ?? null,
-        marginTop:      _ui.marginTop      ?? null,
-        marginRight:    _ui.marginRight    ?? null,
-        marginBottom:   _ui.marginBottom   ?? null,
-        marginLeft:     _ui.marginLeft     ?? null,
       };
     },
   });
@@ -274,10 +270,6 @@ async function _initCore(root = document) {
     if (_wcUi.paddingRight  == null && _fetchedUI.paddingRight  != null) _cfg.paddingRight  = _fetchedUI.paddingRight;
     if (_wcUi.paddingBottom == null && _fetchedUI.paddingBottom != null) _cfg.paddingBottom = _fetchedUI.paddingBottom;
     if (_wcUi.paddingLeft   == null && _fetchedUI.paddingLeft   != null) _cfg.paddingLeft   = _fetchedUI.paddingLeft;
-    if (_wcUi.marginTop     == null && _fetchedUI.marginTop     != null) _cfg.marginTop     = _fetchedUI.marginTop;
-    if (_wcUi.marginRight   == null && _fetchedUI.marginRight   != null) _cfg.marginRight   = _fetchedUI.marginRight;
-    if (_wcUi.marginBottom  == null && _fetchedUI.marginBottom  != null) _cfg.marginBottom  = _fetchedUI.marginBottom;
-    if (_wcUi.marginLeft    == null && _fetchedUI.marginLeft    != null) _cfg.marginLeft    = _fetchedUI.marginLeft;
   }
   // Apply canvas border CSS from the UI config before any tree loads.
   _syncCanvasBorder(_cfg);
@@ -2050,31 +2042,28 @@ async function _initCore(root = document) {
   }
 
   /**
-   * Apply border/padding/margin settings from a settings object to document.body.
-   * Targeting body makes these effective for iframe embeds where the host page
-   * controls the frame dimensions; they have no effect in the standalone app.
-   * borderWidth + borderColor together produce a solid CSS border;
-   * borderRadius rounds the corners.
+   * Apply border/padding/background settings to <html> for iframe embed styling.
+   * Everything goes on the <html> element — it's the document root whose box
+   * maps to the iframe viewport.  overflow:hidden clips rendered content to the
+   * border-radius so rounded corners work without any host-page changes.
    */
   function _syncCanvasBorder(s) {
-    const el = root.ownerDocument?.body ?? document.body;
-    if (!el) return;
+    const doc = root.ownerDocument ?? document;
+    const htm = doc.documentElement;
+    if (!htm) return;
     const w = s.borderWidth  != null ? parseFloat(s.borderWidth)  : null;
     const c = s.borderColor  != null ? String(s.borderColor)      : null;
     const r = s.borderRadius != null ? parseFloat(s.borderRadius) : null;
-    el.style.border       = (w != null && !isNaN(w) && c) ? `${w}px solid ${c}` : '';
-    el.style.borderRadius   = (r != null && !isNaN(r))       ? `${r}px`           : '';
-    el.style.backgroundColor = s.backgroundColor != null ? String(s.backgroundColor) : '';
+    htm.style.border          = (w != null && !isNaN(w) && c) ? `${w}px solid ${c}` : '';
+    htm.style.borderRadius    = (r != null && !isNaN(r))       ? `${r}px`           : '';
+    htm.style.overflow        = (r != null && !isNaN(r))       ? 'hidden'           : '';
+    htm.style.backgroundColor = s.backgroundColor != null ? String(s.backgroundColor) : '';
 
     const _px = (v) => { const n = parseFloat(v); return (v != null && !isNaN(n)) ? `${n}px` : ''; };
-    el.style.paddingTop    = _px(s.paddingTop);
-    el.style.paddingRight  = _px(s.paddingRight);
-    el.style.paddingBottom = _px(s.paddingBottom);
-    el.style.paddingLeft   = _px(s.paddingLeft);
-    el.style.marginTop     = _px(s.marginTop);
-    el.style.marginRight   = _px(s.marginRight);
-    el.style.marginBottom  = _px(s.marginBottom);
-    el.style.marginLeft    = _px(s.marginLeft);
+    htm.style.paddingTop    = _px(s.paddingTop);
+    htm.style.paddingRight  = _px(s.paddingRight);
+    htm.style.paddingBottom = _px(s.paddingBottom);
+    htm.style.paddingLeft   = _px(s.paddingLeft);
   }
 
   /**
@@ -3787,10 +3776,6 @@ async function _initCore(root = document) {
         ['paddingRight',  _cfg.paddingRight],
         ['paddingBottom', _cfg.paddingBottom],
         ['paddingLeft',   _cfg.paddingLeft],
-        ['marginTop',     _cfg.marginTop],
-        ['marginRight',   _cfg.marginRight],
-        ['marginBottom',  _cfg.marginBottom],
-        ['marginLeft',    _cfg.marginLeft],
       ]),
     }),
     getDefaultConfig:    () => ({
@@ -3805,10 +3790,6 @@ async function _initCore(root = document) {
         ['paddingRight',  null],
         ['paddingBottom', null],
         ['paddingLeft',   null],
-        ['marginTop',     null],
-        ['marginRight',   null],
-        ['marginBottom',  null],
-        ['marginLeft',    null],
       ]),
     }),
   });
@@ -8947,10 +8928,6 @@ export async function embed(options = {}) {
       paddingRight:   ui.paddingRight,
       paddingBottom:  ui.paddingBottom,
       paddingLeft:    ui.paddingLeft,
-      marginTop:      ui.marginTop,
-      marginRight:    ui.marginRight,
-      marginBottom:   ui.marginBottom,
-      marginLeft:     ui.marginLeft,
       theme:       _theme,
     },
     storageKey:       options.storageKey ?? null,  // null by default — embeds don't persist settings
