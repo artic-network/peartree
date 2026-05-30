@@ -53,6 +53,14 @@ export const DEFAULT_UI_APP = {
   borderWidth:     null,   // px, e.g. '1.5'
   borderColor:     null,   // CSS colour, e.g. '#F1F0E7'
   borderRadius:    null,   // px, e.g. '4'
+  paddingTop:      null,   // px
+  paddingRight:    null,   // px
+  paddingBottom:   null,   // px
+  paddingLeft:     null,   // px
+  marginTop:       null,   // px
+  marginRight:     null,   // px
+  marginBottom:    null,   // px
+  marginLeft:      null,   // px
 
   // Toolbar sub-sections
   tbFileOps:       true,
