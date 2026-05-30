@@ -2,6 +2,9 @@
  *  @deprecated Use EXAMPLE_DATASETS[0].path instead. */
 export const EXAMPLE_TREE_PATH = 'data/ebov.tree';
 
+/** Key used for the embedded settings block in saved NEXUS files: [peartree={...}] */
+export const APP_SETTINGS_KEY = 'peartree';
+
 /**
  * Fields shown in the Alt/Option-hover node tooltip, in order from top to bottom.
  *

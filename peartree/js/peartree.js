@@ -23,7 +23,7 @@ import { createRTTChart          } from './rtt-chart.js';
 import { createCommands } from '@artic-network/pearcore/commands.js';
 import { COMMAND_DEFS } from './peartree-commands.js';
 import { createExportController } from './export-controller.js';
-import { EXAMPLE_TREE_PATH, EXAMPLE_DATASETS, PEARTREE_BASE_URL, DEFAULT_SETTINGS, REQUIRED_THEME_KEYS, NON_PERSISTENT_SETTINGS, NODE_TOOLTIP_FIELDS } from './config.js';
+import { EXAMPLE_TREE_PATH, EXAMPLE_DATASETS, PEARTREE_BASE_URL, DEFAULT_SETTINGS, REQUIRED_THEME_KEYS, NON_PERSISTENT_SETTINGS, NODE_TOOLTIP_FIELDS, APP_SETTINGS_KEY } from './config.js';
 import { DEFAULT_UI_APP, DEFAULT_UI_EMBED, DEFAULT_UI_EMBEDFRAME } from './config-ui.js';
 import { createToolbarColourPicker, upgradeAllPaletteColourPickers } from '@artic-network/pearcore/colorpicker.js';
 import { createThemeManager, resolveEmbedConfig, initSectionAccordion,
@@ -4237,8 +4237,8 @@ async function _initCore(root = document) {
       let parsedRoot = null;
 
       // Try NEXUS first; fall back to bare Newick
-      const nexusTrees = parseNexus(text);
-      const _fileSettings = nexusTrees.length > 0 ? (nexusTrees[0].peartreeSettings || null) : null;
+      const nexusTrees = parseNexus(text, { appName: APP_SETTINGS_KEY });
+      const _fileSettings = nexusTrees.length > 0 ? (nexusTrees[0].appSettings || null) : null;
       if (nexusTrees.length > 0) {
         parsedRoot = nexusTrees[0].root;
         // Warn the user if any tree tips had no matching entry in the taxa block.

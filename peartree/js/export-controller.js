@@ -4,9 +4,10 @@
 
 import { htmlEsc as esc, downloadBlob } from '@artic-network/pearcore/utils.js';
 import { isNumericType } from './phylograph.js';
-import { graphToNewick } from '@artic-network/pearcore/tree-io.js';
+import { graphToNewick, buildNexus } from '@artic-network/pearcore/tree-io.js';
 import { viewportDims, compositeViewPng, buildGraphicSVG } from './graphics-io.js';
 import { createGraphicsExporter } from '@artic-network/pearcore/graphics-export.js';
+import { APP_SETTINGS_KEY } from './config.js';
 
 /**
  * Create the export controller — manages tree export and graphics export
@@ -626,17 +627,16 @@ export function createExportController({
 
     let content, ext;
     if (format === 'nexus') {
-      const rootedTag    = annotKeys.length > 0 ? '[&R] ' : '';
-      let settingsLine = '';
+      const rooted = annotKeys.length > 0;
+      let settings = null;
       if (storeSettingsMode !== 'none') {
         const snap     = getSettingsSnapshot();
         const defaults = getDefaultConfig?.()?.settings ?? {};
-        const settingsOut = storeSettingsMode === 'changed'
+        settings = storeSettingsMode === 'changed'
           ? _diffFromDefaults(snap, defaults)
           : snap;
-        settingsLine = `\t[peartree=${JSON.stringify(settingsOut, null, 2)}]\n`;
       }
-      content = `#NEXUS\nBEGIN TREES;\n\ttree TREE1 = ${rootedTag}${newick}\n${settingsLine}END;\n`;
+      content = buildNexus(newick, { rooted, appName: APP_SETTINGS_KEY, settings });
       ext     = 'nexus';
     } else {
       content = newick + '\n';

@@ -1106,6 +1106,7 @@ function initPearTreeUIBindings(root, opts = {}) {
                     && _cfg.storageKey === null;
 
   const { palette, helpAbout } = initCoreUIBindings(root, {
+    appName:              'peartree',
     palettePinned:        opts.palettePinned,
     paletteOpen:          opts.paletteOpen,
     paletteEnabled:       _ui.palette !== false,
