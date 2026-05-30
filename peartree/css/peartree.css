@@ -598,7 +598,7 @@ body.palette-pinned #canvas-container {
 #rtt-panel.pinned {
   position: relative;
   flex: 0 0 var(--rtt-panel-w, 380px);
-  transform: none !important;
+  transform: translateX(0) !important;
   transition: flex-basis 0.22s cubic-bezier(.4,0,.2,1);
   box-shadow: none;
   z-index: auto;
