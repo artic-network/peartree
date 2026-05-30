@@ -127,7 +127,10 @@ export class LegendRenderer {
       lc.addEventListener('mouseleave', () => { lc.style.cursor = 'default'; });
     }
 
-    this._padding    = 12;   // internal pad around legend content (px)
+    this._paddingLeft   = 0;
+    this._paddingRight  = 0;
+    this._paddingTop    = 0;
+    this._paddingBottom = 0;
     this._heightPct  = 100;  // legend 1 height as % of the canvas-container (1–100)
 
     this.setSettings(settings, /*redraw*/ false);
@@ -137,7 +140,7 @@ export class LegendRenderer {
 
   /**
    * Apply rendering settings.  Recognised keys: fontSize (number), textColor (string),
-   * bgColor (string), skipBg (boolean), padding (number).
+   * bgColor (string), skipBg (boolean), paddingLeft/Right/Top/Bottom (number).
    * @param {object}  s
    * @param {boolean} redraw  When true (default) triggers a repaint.
    */
@@ -153,8 +156,11 @@ export class LegendRenderer {
         if (lc) lc.style.backgroundColor = s.bgColor;
       }
     }
-    if (s.skipBg    != null) this.skipBg     = s.skipBg;
-    if (s.padding   != null) this._padding   = s.padding;
+    if (s.skipBg       != null) this.skipBg        = s.skipBg;
+    if (s.paddingLeft   != null) this._paddingLeft   = s.paddingLeft;
+    if (s.paddingRight  != null) this._paddingRight  = s.paddingRight;
+    if (s.paddingTop    != null) this._paddingTop    = s.paddingTop;
+    if (s.paddingBottom != null) this._paddingBottom = s.paddingBottom;
     if (s.heightPct  != null) this._heightPct  = s.heightPct;
     if (s.heightPct2 != null) this._heightPct2 = s.heightPct2;
     if (s.heightPct3 != null) this._heightPct3 = s.heightPct3;
@@ -459,7 +465,8 @@ export class LegendRenderer {
     const def = key && this._schema?.get(key);
     if (!def) return 120;
 
-    const PAD   = this._padding ?? 12;
+    const L     = this._paddingLeft   ?? 0;
+    const R     = this._paddingRight  ?? 0;
     const lfs   = this.fontSize  ?? 11;
     const mc  = document.createElement('canvas');
     const ctx = mc.getContext('2d');
@@ -492,7 +499,7 @@ export class LegendRenderer {
         }
       }
     }
-    return Math.min(LegendRenderer.MAX_LEGEND_W, Math.ceil(PAD + contentW + PAD));
+    return Math.min(LegendRenderer.MAX_LEGEND_W, Math.ceil(L + contentW + R));
   }
 
   /** Minimum canvas width for legend 1. */
@@ -612,22 +619,25 @@ export class LegendRenderer {
     const def = this._schema.get(key);
     if (!def) return hitRegions;
 
-    const PAD  = this._padding ?? 12;
+    const L    = this._paddingLeft   ?? 0;
+    const R    = this._paddingRight  ?? 0;
+    const T    = this._paddingTop    ?? 0;
+    const B    = this._paddingBottom ?? 0;
     const lfs  = this.fontSize;
     const ltc  = this.textColor;
-    const maxY = offsetY + H - PAD;
+    const maxY = offsetY + H - B;
 
     if (!this.skipBg) {
       ctx.fillStyle = this.bgColor;
       ctx.fillRect(0, offsetY, W, H);
     }
 
-    let y = offsetY + PAD;
+    let y = offsetY + T;
 
     // Title.
     ctx.font = `700 ${lfs}px ${this._fontFamily ?? 'monospace'}`; ctx.fillStyle = ltc;
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-    ctx.fillText(this._truncateText(ctx, def.label ?? key, W - PAD * 2), PAD, y);
+    ctx.fillText(this._truncateText(ctx, def.label ?? key, W - L - R), L, y);
     y += lfs + 10;
 
     if (def.dataType === 'categorical' || def.dataType === 'ordinal') {
@@ -655,19 +665,19 @@ export class LegendRenderer {
           ctx.fillRect(0, y - 2, W, effectiveRowH);
         }
         ctx.fillStyle = colourMap.get(val) ?? MISSING_DATA_COLOUR;
-        ctx.fillRect(PAD, y, effectiveSwatch, effectiveSwatch);
+        ctx.fillRect(L, y, effectiveSwatch, effectiveSwatch);
         // Border on swatch for selected rows.
         if (isSelected) {
           ctx.save();
           ctx.strokeStyle = this._selStrokeColor;
           ctx.lineWidth   = 2;
-          ctx.strokeRect(PAD + 1, y + 1, effectiveSwatch - 2, effectiveSwatch - 2);
+          ctx.strokeRect(L + 1, y + 1, effectiveSwatch - 2, effectiveSwatch - 2);
           ctx.restore();
         }
         ctx.fillStyle = isSelected ? this._selStrokeColor : ltc;
         ctx.textAlign = 'left';
-        const _labelAvail = W - PAD * 2 - effectiveSwatch - 6;
-        ctx.fillText(this._truncateText(ctx, String(val), _labelAvail), PAD + effectiveSwatch + 6, y + effectiveSwatch / 2);
+        const _labelAvail = W - L - R - effectiveSwatch - 6;
+        ctx.fillText(this._truncateText(ctx, String(val), _labelAvail), L + effectiveSwatch + 6, y + effectiveSwatch / 2);
         hitRegions.push({ value: val, y0: y, y1: y + effectiveRowH });
         y += effectiveRowH;
       });
@@ -678,7 +688,7 @@ export class LegendRenderer {
         ctx.globalAlpha = 0.6;
         ctx.textAlign    = 'left';
         ctx.textBaseline = 'bottom';
-        ctx.fillText('…', PAD, maxY + PAD);
+        ctx.fillText('…', L, maxY + B);
         ctx.restore();
       }
     } else if (def.dataType === 'date') {
@@ -690,9 +700,9 @@ export class LegendRenderer {
       const ns = stops.length;
       for (let i = 0; i < ns; i++) grad.addColorStop(i / (ns - 1), stops[ns - 1 - i]);
       ctx.fillStyle = grad;
-      ctx.fillRect(PAD, BAR_Y, BAR_W, BAR_H);
-      const LABEL_X = PAD + BAR_W + 6;
-      const LABEL_W = W - LABEL_X - PAD;
+      ctx.fillRect(L, BAR_Y, BAR_W, BAR_H);
+      const LABEL_X = L + BAR_W + 6;
+      const LABEL_W = W - LABEL_X - R;
       const tc = Math.max(2, Math.min(6, Math.floor(BAR_H / (lfs + 6))));
       const vals = def.values || [];
       const minDec = dateToDecimalYear(def.min);
@@ -705,7 +715,7 @@ export class LegendRenderer {
         const targetDec = maxDec - t * range;
         let label = vals[0] ?? def.min; let best = Infinity;
         for (const v of vals) { const d = Math.abs(dateToDecimalYear(v) - targetDec); if (d < best) { best = d; label = v; } }
-        ctx.fillRect(PAD + BAR_W, tickY - 0.5, 4, 1);
+        ctx.fillRect(L + BAR_W, tickY - 0.5, 4, 1);
         ctx.textBaseline = i === 0 ? 'top' : (i === tc - 1 ? 'bottom' : 'middle');
         ctx.fillText(this._truncateText(ctx, label, LABEL_W), LABEL_X, tickY);
       }
@@ -718,7 +728,7 @@ export class LegendRenderer {
       const ns = stops.length;
       for (let i = 0; i < ns; i++) grad.addColorStop(i / (ns - 1), stops[ns - 1 - i]);
       ctx.fillStyle = grad;
-      ctx.fillRect(PAD, BAR_Y, BAR_W, BAR_H);
+      ctx.fillRect(L, BAR_Y, BAR_W, BAR_H);
       // Compute effective range from scale mode.
       const _mode = this._scaleModeOverrides?.get(key) ?? '';
       // Prefer live range (computed from visible nodes) over schema bounds.
@@ -736,15 +746,15 @@ export class LegendRenderer {
         effMax = Math.max(effMax, 1);
       }
       const range = effMax - effMin;
-      const LABEL_X = PAD + BAR_W + 6;
-      const LABEL_W = W - LABEL_X - PAD;
+      const LABEL_X = L + BAR_W + 6;
+      const LABEL_W = W - LABEL_X - R;
       const tc  = Math.max(2, Math.min(6, Math.floor(BAR_H / (lfs + 6))));
       const fmt = def.fmt ?? (v => String(v));
       ctx.font = this._font(lfs); ctx.fillStyle = ltc; ctx.textAlign = 'left';
       for (let i = 0; i < tc; i++) {
         const t = i / (tc - 1);
         const tickY = BAR_Y + t * BAR_H;
-        ctx.fillRect(PAD + BAR_W, tickY - 0.5, 4, 1);
+        ctx.fillRect(L + BAR_W, tickY - 0.5, 4, 1);
         ctx.textBaseline = i === 0 ? 'top' : (i === tc - 1 ? 'bottom' : 'middle');
         ctx.fillText(this._truncateText(ctx, fmt(effMax - t * range), LABEL_W), LABEL_X, tickY);
       }

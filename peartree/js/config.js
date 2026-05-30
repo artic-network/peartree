@@ -126,11 +126,6 @@ export const REQUIRED_THEME_KEYS = [
 export const DEFAULT_SETTINGS = {
   // ── Tree ────────────────────────────────────────────────────────────────────────────
   rootStemPct:    '1',    // whole-tree root-stem length as % of tree age (0–20)
-  // Layout geometry (no DOM controls — passed directly to TreeRenderer)
-  spacingLeft:    '20',
-  spacingRight:   '20',
-  spacingTop:     '20',
-  spacingBottom:  '20',
   // Axis canvas vertical spacing (px) — gap above the baseline line
   axisSpacingTop: '3',
   rootStubLength: '10',
@@ -195,8 +190,6 @@ export const DEFAULT_SETTINGS = {
   cladeHighlightRadius:    '4',
 
   // ── Legend ───────────────────────────────────────────────────────────────────────────
-  // Legend canvas internal padding (px) — controls spacing inside the legend panel
-  legendPadding:   '12',
   // Legend canvas height as % of the canvas area (1–100, pinned to top)
   legendHeightPct: '100',
   // Second legend
@@ -286,10 +279,6 @@ export const NON_PERSISTENT_SETTINGS = [
   'axisRangeReverseLeft',
   'axisRangeReverseRight',
   'rootStemPct',
-  'spacingLeft',
-  'spacingRight',
-  'spacingTop',
-  'spacingBottom',
   'axisSpacingTop',
   'rootStubLength',
   'introAnimation',

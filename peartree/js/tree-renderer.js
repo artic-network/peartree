@@ -141,8 +141,8 @@ export class TreeRenderer {
 
     // X scale: always fills the viewport width – recomputed on resize / font change.
     this.scaleX = 1;
-    this.offsetX = this.spacingLeft;      // animated x origin (normally = spacingLeft)
-    this._targetOffsetX = this.spacingLeft;
+    this.offsetX = this.treePaddingLeft;      // animated x origin (normally = spacingLeft)
+    this._targetOffsetX = this.treePaddingLeft;
 
     // Y scale: user-adjustable vertical zoom.
     //   minScaleY = fit-to-window (never allowed to go below this).
@@ -423,10 +423,12 @@ export class TreeRenderer {
     }
 
     // ── Layout geometry ─────────────────────────────────────────────────────
-    this.spacingLeft            = s.spacingLeft;
-    this.spacingRight           = s.spacingRight ?? 10;
-    this.spacingTop             = s.spacingTop;
-    this.spacingBottom          = s.spacingBottom;
+    // Canvas spacing is handled via CSS padding on #canvas-and-axis-wrapper;
+    // the renderer always fills the canvas edge-to-edge.
+    this.treePaddingLeft   = 0;
+    this.treePaddingRight  = 0;
+    this.treePaddingTop    = 0;
+    this.treePaddingBottom = 0;
     this.elbowRadius            = s.elbowRadius;
     this.rootStubLength         = s.rootStubLength;
     this.rootStemPct            = +(s.rootStemPct ?? 0);  // whole-tree stem as % of tree age
@@ -608,9 +610,9 @@ export class TreeRenderer {
     if (nodes.length > 60000) {
       this._fitLabelsMode = false;
       this._updateMinScaleY();       // recomputes this.minScaleY
-      const plotH     = this.canvas.clientHeight - this.spacingTop - this.spacingBottom;
+      const plotH     = this.canvas.clientHeight - this.treePaddingTop - this.treePaddingBottom;
       const landingY  = Math.max(this.minScaleY, plotH / 500);  // show ~500 rows
-      const offsetY   = this.spacingTop + landingY * 0.5;
+      const offsetY   = this.treePaddingTop + landingY * 0.5;
       // Set _targetScaleY first so _updateScaleX evaluates label visibility at
       // landingY (immediate=true also snaps scaleY = landingY directly).
       this._setTarget(offsetY, landingY, /*immediate*/ true);
@@ -696,7 +698,7 @@ export class TreeRenderer {
       // pre-jump to the final scale before the first animation frame, causing a
       // visible one-frame flash and making subsequent drags start from the wrong
       // position because the "from" snapshot would pick up the pre-jumped value).
-      const rawOffsetY           = this.spacingTop + this.minScaleY * 0.5;
+      const rawOffsetY           = this.treePaddingTop + this.minScaleY * 0.5;
       this._reorderToScaleY      = Math.max(this.minScaleY, this.minScaleY);  // = minScaleY
       this._reorderToOffsetY     = this._clampedOffsetY(rawOffsetY, this._reorderToScaleY);
       // Keep the spring target in sync so it doesn't re-animate after the
@@ -1768,7 +1770,7 @@ export class TreeRenderer {
     // Compute new layout rooted at this node (x = 0).
     this._computeAndInstallLayout(layoutNodeId);
     const newScaleY  = Math.max(this.minScaleY, this._targetScaleY);
-    const newOffsetY = this.spacingTop + newScaleY * 0.5;
+    const newOffsetY = this.treePaddingTop + newScaleY * 0.5;
     this._setTarget(newOffsetY, newScaleY, false);
 
     // Seed the animation START so the new root appears at the old screen position.
@@ -1853,7 +1855,7 @@ export class TreeRenderer {
     const fwdSubtreeRootId = state.subtreeRootId;
 
     const fromNode = fwdSubtreeRootId && this.nodeMap ? this.nodeMap.get(fwdSubtreeRootId) : null;
-    const px_old   = fromNode ? this.offsetX + fromNode.x * this.scaleX : this.spacingLeft;
+    const px_old   = fromNode ? this.offsetX + fromNode.x * this.scaleX : this.treePaddingLeft;
     const py_old   = fromNode ? this.offsetY + fromNode.y * this.scaleY : this.canvas.clientHeight / 2;
 
     this._navStack.push(this._currentViewState());
@@ -1898,7 +1900,7 @@ export class TreeRenderer {
 
     this._computeAndInstallLayout(null);
     // Fit the whole tree into view.
-    const newOffsetY = this.spacingTop + this.minScaleY * 0.5;
+    const newOffsetY = this.treePaddingTop + this.minScaleY * 0.5;
     this._setTarget(newOffsetY, this.minScaleY, false);
 
     // Seed animation: the node we were rooted at slides from its current screen
@@ -1953,7 +1955,7 @@ export class TreeRenderer {
     this._mrcaNodeId = null;
 
     this._computeAndInstallLayout(newSubtreeRootId);
-    const newOffsetY = this.spacingTop + this.minScaleY * 0.5;
+    const newOffsetY = this.treePaddingTop + this.minScaleY * 0.5;
     this._setTarget(newOffsetY, this.minScaleY, false);
 
     // Seed animation: old root slides rightward to its natural x in the new layout.
@@ -1961,8 +1963,8 @@ export class TreeRenderer {
       const restoredNode = this.nodeMap.get(curRootId);
       if (restoredNode) {
         // x: start displaced so old root still appears at spacingLeft, animate to spacingLeft
-        this._rootShiftFromX = this.spacingLeft - restoredNode.x * this.scaleX;
-        this._rootShiftToX   = this.spacingLeft; // = _targetOffsetX
+        this._rootShiftFromX = this.treePaddingLeft - restoredNode.x * this.scaleX;
+        this._rootShiftToX   = this.treePaddingLeft; // = _targetOffsetX
         this._rootShiftAlpha = 0;
         this.offsetX = this._rootShiftFromX;
         // y: old root appears at same screen y, then eases to fit-window position
@@ -2198,7 +2200,7 @@ export class TreeRenderer {
         + (i < _activeExtras.length - 1 ? this._tipLabelShapeSpacing : 0);
     }
     // _labelOverhead: the fixed non-text portion added to every tip's label clearance.
-    this._labelOverhead = Math.max(tipOuterR, 5) + 5 + this.tipLabelSpacing + shapeExtra + shapesExtraWidth + (this.spacingRight ?? 10);
+    this._labelOverhead = Math.max(tipOuterR, 5) + 5 + this.tipLabelSpacing + shapeExtra + shapesExtraWidth + (this.treePaddingRight ?? 10);
     this.labelRightPad  = this._maxLabelWidth + this._labelOverhead;
   }
 
@@ -2220,7 +2222,7 @@ export class TreeRenderer {
       ? (this.rootStemPct ?? 0) / 100 * this.maxX
       : 0;
     // Available plot width when labels are hidden: full canvas minus spacing only.
-    const plotWNoLabels = W - this.spacingLeft - (this.spacingRight ?? 10);
+    const plotWNoLabels = W - this.treePaddingLeft - (this.treePaddingRight ?? 10);
 
     // Axis range override: extend the effective span if the user-set range
     // extends beyond the tree, so the tree scales down to fit the full range.
@@ -2253,7 +2255,7 @@ export class TreeRenderer {
       // During the intro animation n.x is temporarily 0; use _introFinalX (the
       // real final positions) so the scale is computed correctly from frame one.
       const overhead = this._labelOverhead ?? (this.labelRightPad - this._maxLabelWidth);
-      const base = W - this.spacingLeft;
+      const base = W - this.treePaddingLeft;
       let minScale = Infinity;
       for (const n of this.nodes) {
         if (!n.isTip) continue;
@@ -2271,12 +2273,12 @@ export class TreeRenderer {
     } else {
       // Aligned labels all land at the same right-hand column — use the
       // maxLabelWidth-based labelRightPad which is exact for this case.
-      const plotW = W - this.spacingLeft - this.labelRightPad;
+      const plotW = W - this.treePaddingLeft - this.labelRightPad;
       targetScaleX = plotW / effectiveSpan;
     }
     this._targetScaleX  = targetScaleX;
     // Shift the origin right so bars/stem (and any axis left-overhang) remain visible.
-    this._targetOffsetX = this.spacingLeft + effectiveLeftPad * this._targetScaleX;
+    this._targetOffsetX = this.treePaddingLeft + effectiveLeftPad * this._targetScaleX;
     if (immediate) {
       this.scaleX  = this._targetScaleX;
       this.offsetX = this._targetOffsetX;
@@ -2339,7 +2341,7 @@ export class TreeRenderer {
   /** Recompute the minimum scaleY (tree fits the viewport vertically). */
   _updateMinScaleY() {
     const H = this.canvas.clientHeight;
-    const plotH = H - this.spacingTop - this.spacingBottom;
+    const plotH = H - this.treePaddingTop - this.treePaddingBottom;
     // tips sit at world y = 1 … maxY; add 1 unit of spacing total
     this.minScaleY = plotH / (this.maxY + 1);
   }
@@ -2350,7 +2352,7 @@ export class TreeRenderer {
     if (!this.nodes) return;
     this._fitLabelsMode = false;
     this._updateMinScaleY();
-    const newOffsetY = this.spacingTop + this.minScaleY * 0.5;
+    const newOffsetY = this.treePaddingTop + this.minScaleY * 0.5;
     // Set _targetScaleY BEFORE calling _updateScaleX so that the label-
     // visibility check inside _updateScaleX evaluates the landing zoom level
     // (minScaleY) rather than the current mid-animation scaleY.
@@ -2424,13 +2426,13 @@ export class TreeRenderer {
    */
   renderFull(offscreenCanvas, targetW, targetH, skipBg = false) {
     if (!this.nodes) return;
-    const plotW = targetW - this.spacingLeft - this.labelRightPad;
-    const plotH = targetH - this.spacingTop  - this.spacingBottom;
+    const plotW = targetW - this.treePaddingLeft - this.labelRightPad;
+    const plotH = targetH - this.treePaddingTop  - this.treePaddingBottom;
     const stemWorld = (this.rootStemPct ?? 0) / 100 * (this.maxX || 1);
     const sx = plotW / ((this.maxX || 1) + stemWorld);
     const sy = plotH / ((this.maxY || 1) + 1);
-    const ox = this.spacingLeft + stemWorld * sx;
-    const oy = this.spacingTop + sy * 0.5;
+    const ox = this.treePaddingLeft + stemWorld * sx;
+    const oy = this.treePaddingTop + sy * 0.5;
 
     // Stash current rendering state.
     const s_ctx = this.ctx, s_canvas = this.canvas;
@@ -2488,8 +2490,8 @@ export class TreeRenderer {
    */
   _clampedOffsetY(offsetY, scaleY) {
     const H = this.canvas.clientHeight;
-    const maxOY = this.spacingTop - scaleY * 0.5;
-    const minOY = (H - this.spacingBottom) - (this.maxY + 0.5) * scaleY;
+    const maxOY = this.treePaddingTop - scaleY * 0.5;
+    const minOY = (H - this.treePaddingBottom) - (this.maxY + 0.5) * scaleY;
     if (minOY > maxOY) return (minOY + maxOY) / 2; // tree fits – centre it
     return Math.min(maxOY, Math.max(minOY, offsetY));
   }
@@ -2624,7 +2626,7 @@ export class TreeRenderer {
   }
 
   _viewHash() {
-    return `${this.scaleX.toFixed(4)}|${this.offsetX.toFixed(2)}|${this.spacingLeft}|${this.labelRightPad}|${this.bgColor}|${this.fontSize}|${this.canvas.clientWidth}|${this.canvas.clientHeight}`;
+    return `${this.scaleX.toFixed(4)}|${this.offsetX.toFixed(2)}|${this.treePaddingLeft}|${this.labelRightPad}|${this.bgColor}|${this.fontSize}|${this.canvas.clientWidth}|${this.canvas.clientHeight}`;
   }
 
   _resize() {
@@ -2848,7 +2850,7 @@ export class TreeRenderer {
     }
     if (this._onViewChange && (this._animating || this._reorderAlpha < 1 || this._rootShiftAlpha < 1 || this._crossfadeAlpha > 0 || this._introPhase !== null || !this._lastViewHash || this._lastViewHash !== this._viewHash())) {
       this._lastViewHash = this._viewHash();
-      this._onViewChange(this.scaleX, this.offsetX, this.spacingLeft, this.labelRightPad, this.bgColor, this.fontSize, window.devicePixelRatio || 1);
+      this._onViewChange(this.scaleX, this.offsetX, this.treePaddingLeft, this.labelRightPad, this.bgColor, this.fontSize, window.devicePixelRatio || 1);
     }
     this._rafId = requestAnimationFrame(() => this._loop());
   }
@@ -3191,7 +3193,7 @@ export class TreeRenderer {
       switch (rightMode) {
         case 'atTips':        return sx + outlineR + pad;
         case 'atLabels':      return tipMaxSX + outlineR;
-        case 'atLabelsRight': return this.canvas.clientWidth - (this.spacingRight ?? 10);
+        case 'atLabelsRight': return this.canvas.clientWidth - (this.treePaddingRight ?? 10);
         default:           return tipMaxSX + outlineR + lblSpacing + shapeW + pad;
       }
     };
@@ -4754,15 +4756,15 @@ export class TreeRenderer {
     const sy = this._targetScaleY;
     if (scrolledDown) {
       // First fully-visible tip from the top
-      const topWorldY = (this.spacingTop - this._targetOffsetY) / sy;
+      const topWorldY = (this.treePaddingTop - this._targetOffsetY) / sy;
       const tipY = Math.max(1, Math.min(this.maxY, Math.ceil(topWorldY)));
-      this._targetOffsetY = this._clampedOffsetY(this.spacingTop - tipY * sy, sy);
+      this._targetOffsetY = this._clampedOffsetY(this.treePaddingTop - tipY * sy, sy);
     } else {
       // Last fully-visible tip from the bottom
-      const botWorldY = (H - this.spacingBottom - this._targetOffsetY) / sy;
+      const botWorldY = (H - this.treePaddingBottom - this._targetOffsetY) / sy;
       const tipY = Math.max(1, Math.min(this.maxY, Math.floor(botWorldY)));
       this._targetOffsetY = this._clampedOffsetY(
-        (H - this.spacingBottom) - tipY * sy, sy
+        (H - this.treePaddingBottom) - tipY * sy, sy
       );
     }
     this._animating = true;

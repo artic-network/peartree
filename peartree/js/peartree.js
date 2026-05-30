@@ -1856,10 +1856,6 @@ async function _initCore(root = document) {
       nodeShapeBgColor: nodeShapeBgEl.value,
       tipLabelColor:    labelColorEl.value,
       selectedLabelStyle: selectedLabelStyleEl.value,
-      spacingLeft:      parseInt(DEFAULT_SETTINGS.spacingLeft),
-      spacingRight:     parseInt(DEFAULT_SETTINGS.spacingRight),
-      spacingTop:       parseInt(DEFAULT_SETTINGS.spacingTop),
-      spacingBottom:    parseInt(DEFAULT_SETTINGS.spacingBottom),
       rootStubLength:   parseFloat(DEFAULT_SETTINGS.rootStubLength),
       rootStemPct:      parseFloat(rootStemPctSlider.value),
       tipHoverFillColor:      tipHoverFillEl.value,
@@ -2064,6 +2060,14 @@ async function _initCore(root = document) {
     htm.style.paddingRight  = _px(s.paddingRight);
     htm.style.paddingBottom = _px(s.paddingBottom);
     htm.style.paddingLeft   = _px(s.paddingLeft);
+
+    const caw = $('canvas-and-axis-wrapper');
+    if (caw) {
+      caw.style.paddingTop    = _px(s.treePaddingTop);
+      caw.style.paddingRight  = _px(s.treePaddingRight);
+      caw.style.paddingBottom = _px(s.treePaddingBottom);
+      caw.style.paddingLeft   = _px(s.treePaddingLeft);
+    }
   }
 
   /**
@@ -2688,11 +2692,10 @@ async function _initCore(root = document) {
     legend3RightCanvas,
     legend4RightCanvas,
     {
-      fontSize:    parseInt(legendFontSizeSlider.value),
-      textColor:   legendTextColorEl.value,
-      bgColor:     canvasBgColorEl.value,
-      padding:     parseInt(DEFAULT_SETTINGS.legendPadding),
-      heightPct:   parseInt(DEFAULT_SETTINGS.legendHeightPct),
+      fontSize:       parseInt(legendFontSizeSlider.value),
+      textColor:      legendTextColorEl.value,
+      bgColor:        canvasBgColorEl.value,
+      heightPct:      parseInt(DEFAULT_SETTINGS.legendHeightPct),
       heightPct2:  parseInt(DEFAULT_SETTINGS.legendHeightPct2),
       heightPct3:  parseInt(DEFAULT_SETTINGS.legendHeightPct3),
       heightPct4:  parseInt(DEFAULT_SETTINGS.legendHeightPct4),
@@ -3569,7 +3572,7 @@ async function _initCore(root = document) {
       if (renderer) renderer.setCalibration(calibration.isActive ? calibration : null, axisDateFmtEl.value);
       if (axisShowEl.value === 'time') {
         axisRenderer.setCalibration(calibration.isActive ? calibration : null);
-        axisRenderer.update(renderer.scaleX, renderer.offsetX, renderer.spacingLeft,
+        axisRenderer.update(renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft,
                             renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
                             window.devicePixelRatio || 1);
       }
@@ -5055,7 +5058,7 @@ async function _initCore(root = document) {
           // Scroll topmost matching tip into view when tree is zoomed
           if (matches.length > 0 && renderer._targetScaleY > renderer.minScaleY * 1.01) {
             const top = matches.reduce((a, b) => a.y < b.y ? a : b);
-            const newOffsetY = renderer.spacingTop + 10 - top.y * renderer._targetScaleY;
+            const newOffsetY = renderer.treePaddingTop + 10 - top.y * renderer._targetScaleY;
             renderer._setTarget(newOffsetY, renderer._targetScaleY, false);
           }
         },
@@ -7509,7 +7512,7 @@ async function _initCore(root = document) {
         }
       }
       axisRenderer.update(
-        renderer.scaleX, renderer.offsetX, renderer.spacingLeft,
+        renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft,
         renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
         window.devicePixelRatio || 1,
       );
@@ -7550,7 +7553,7 @@ async function _initCore(root = document) {
     if (on) {
       // Draw immediately with current view state.
       axisRenderer.update(
-        renderer.scaleX, renderer.offsetX, renderer.spacingLeft,
+        renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft,
         renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
         window.devicePixelRatio || 1,
       );
@@ -7609,7 +7612,7 @@ async function _initCore(root = document) {
       minorLabelFormat: axisMinorLabelEl.value,
     });
     axisRenderer.update(
-      renderer.scaleX, renderer.offsetX, renderer.spacingLeft,
+      renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft,
       renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
       window.devicePixelRatio || 1,
     );
@@ -7622,7 +7625,7 @@ async function _initCore(root = document) {
     axisRenderer.setFontSize(parseInt(axisFontSizeSlider.value));
     _applyAxisTypeface();
     axisRenderer.update(
-      renderer.scaleX, renderer.offsetX, renderer.spacingLeft,
+      renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft,
       renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
       window.devicePixelRatio || 1,
     );
