@@ -120,10 +120,10 @@ function _subtreeMaxX(gnodes, hiddenNodeIds, collapsedCladeIds, startIdx, fromId
         if (hiddenNodeIds.has(childOrigId)) continue;
         const nextX = x + (clampNeg ? Math.max(0, len) : len);
         if (nextX > maxX) maxX = nextX;
-        // Don't descend into already-collapsed sub-clades beyond their apex
-        if (!collapsedCladeIds.has(childOrigId)) {
-          stack.push({ ni: adjIdx, fi: ni, x: nextX });
-        }
+        // Always descend into nested collapsed clades: their tips may extend
+        // further right than their own apex, and the outer shape's right extent
+        // must reach the furthest tip inside (including through inner clades).
+        stack.push({ ni: adjIdx, fi: ni, x: nextX });
       }
     }
   }
