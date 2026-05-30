@@ -83,6 +83,7 @@ const PT_UI_FLAG_DEFS = [
   { name: 'showToolbarFilter',   uiKey: 'tbFilter',        param: 'tbfilter' },
   { name: 'showToolbarPanels',   uiKey: 'tbPanels',        param: 'tbpanels' },
   { name: 'enableKeyboard',      uiKey: 'keyboard',        param: 'keyboard' },
+  { name: 'showScrollBar',       uiKey: 'scrollBar',       param: 'scrollbar' },
 ];
 
 function _coerceUiFlag(val, extended = false) {
@@ -2907,7 +2908,94 @@ async function _initCore(root = document) {
     _syncCanvasWrapperBg(bgColor);
     // Keep data table rows aligned with the tree canvas.
     dataTableRenderer?.syncView();
+    _updateScrollY();
   };
+
+  // ── Vertical scrollbar ────────────────────────────────────────────────────
+
+  function _updateScrollY() {
+    const sb = $('tree-scroll-y');
+    if (!sb || !renderer.nodes || !_cfg.showScrollBar) { sb?.style && (sb.style.display = 'none'); return; }
+    const H      = renderer.canvas.clientHeight;
+    const scaleY = renderer.scaleY;
+    const maxOY  = renderer.treePaddingTop    - scaleY * 0.5;
+    const minOY  = (H - renderer.treePaddingBottom) - (renderer.maxY + 0.5) * scaleY;
+    const range  = maxOY - minOY;
+    if (range <= 1) { sb.style.display = 'none'; return; }
+    const tw = $('tree-wrapper');
+    sb.style.display = 'block';
+    sb.style.top    = (tw ? tw.offsetTop : 0) + 'px';
+    sb.style.height = renderer.canvas.clientHeight + 'px';
+    const trackH  = sb.clientHeight;
+    const viewH   = H - renderer.treePaddingTop - renderer.treePaddingBottom;
+    const totalH  = (renderer.maxY + 1) * scaleY;
+    const thumbH  = Math.max(20, Math.round(Math.min(trackH, trackH * viewH / totalH)));
+    const scrollableTrack = trackH - thumbH;
+    const fraction = scrollableTrack > 0 ? (maxOY - renderer.offsetY) / range : 0;
+    const thumbTop = Math.round(Math.max(0, Math.min(scrollableTrack, fraction * scrollableTrack)));
+    const thumb = $('tree-scroll-y-thumb');
+    if (thumb) { thumb.style.height = thumbH + 'px'; thumb.style.top = thumbTop + 'px'; }
+  }
+
+  (function _initScrollY() {
+    const sb    = $('tree-scroll-y');
+    const thumb = $('tree-scroll-y-thumb');
+    if (!sb || !thumb) return;
+
+    let _dragStartClientY = null, _dragStartOffsetY = null;
+
+    thumb.addEventListener('pointerdown', e => {
+      _dragStartClientY = e.clientY;
+      _dragStartOffsetY = renderer._targetOffsetY;
+      thumb.setPointerCapture(e.pointerId);
+      thumb.classList.add('dragging');
+      e.stopPropagation();
+      e.preventDefault();
+    });
+    thumb.addEventListener('pointermove', e => {
+      if (_dragStartClientY === null) return;
+      const dy = e.clientY - _dragStartClientY;
+      const H      = renderer.canvas.clientHeight;
+      const scaleY = renderer._targetScaleY;
+      const maxOY  = renderer.treePaddingTop    - scaleY * 0.5;
+      const minOY  = (H - renderer.treePaddingBottom) - (renderer.maxY + 0.5) * scaleY;
+      const range  = maxOY - minOY;
+      if (range <= 0) return;
+      const trackH = sb.clientHeight;
+      const viewH  = H - renderer.treePaddingTop - renderer.treePaddingBottom;
+      const totalH = (renderer.maxY + 1) * scaleY;
+      const thumbH = Math.max(20, Math.round(Math.min(trackH, trackH * viewH / totalH)));
+      const scrollableTrack = trackH - thumbH;
+      if (scrollableTrack <= 0) return;
+      renderer._setTarget(_dragStartOffsetY - (dy / scrollableTrack) * range,
+                          renderer._targetScaleY, /*immediate*/ true);
+      _updateScrollY();
+    });
+    thumb.addEventListener('pointerup', () => {
+      _dragStartClientY = null;
+      thumb.classList.remove('dragging');
+    });
+
+    // Click on track: jump scroll position
+    sb.addEventListener('pointerdown', e => {
+      if (e.target === thumb) return;
+      const rect   = sb.getBoundingClientRect();
+      const clickY = e.clientY - rect.top;
+      const trackH = rect.height;
+      const H      = renderer.canvas.clientHeight;
+      const scaleY = renderer._targetScaleY;
+      const maxOY  = renderer.treePaddingTop    - scaleY * 0.5;
+      const minOY  = (H - renderer.treePaddingBottom) - (renderer.maxY + 0.5) * scaleY;
+      const range  = maxOY - minOY;
+      if (range <= 0) return;
+      const viewH  = H - renderer.treePaddingTop - renderer.treePaddingBottom;
+      const totalH = (renderer.maxY + 1) * scaleY;
+      const thumbH = Math.max(20, Math.round(Math.min(trackH, trackH * viewH / totalH)));
+      const scrollableTrack = trackH - thumbH;
+      const fraction = scrollableTrack > 0 ? (clickY - thumbH / 2) / scrollableTrack : 0;
+      renderer._setTarget(maxOY - fraction * range, renderer._targetScaleY, /*immediate*/ false);
+    });
+  })();
 
   function _syncAxisSubtreeParams(maxX, viewSubtreeRootId, viewNodes) {
     // Only date-axis mode needs calibrated root/min-tip heights.

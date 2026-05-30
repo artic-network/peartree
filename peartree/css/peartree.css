@@ -127,6 +127,24 @@
   /* Match the default canvas background so nothing flickers through before JS draws */
   background: var(--pt-bg-deepest);
 }
+#tree-scroll-y {
+  position: absolute;
+  right: 0;
+  width: 8px;
+  display: none;
+  z-index: 10;
+}
+#tree-scroll-y-thumb {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  border-radius: 3px;
+  background: rgba(128, 128, 128, 0.45);
+  transition: background 0.15s;
+  min-height: 20px;
+}
+#tree-scroll-y-thumb:hover,
+#tree-scroll-y-thumb.dragging { background: rgba(128, 128, 128, 0.75); }
 #axis-wrapper {
   flex-shrink: 0;
   overflow: hidden;
@@ -197,6 +215,7 @@ canvas.grabbing   { cursor: grabbing; }
   gap: 0;
   overflow: hidden;
   min-width: 0;
+  position: relative;
 }
 #legend-right-wrapper {
   display: none;

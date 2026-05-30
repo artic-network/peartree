@@ -717,6 +717,7 @@ function _buildCanvasContainer() {
       <canvas id="tree-canvas"></canvas>
       <div id="tooltip"></div>
     </div>
+    <div id="tree-scroll-y"><div id="tree-scroll-y-thumb"></div></div>
     <div id="axis-wrapper">
       <canvas id="axis-canvas"></canvas>
     </div>

@@ -88,6 +88,9 @@ export const DEFAULT_UI_APP = {
 
   // Keyboard shortcuts
   keyboard:        true,
+
+  // Vertical scrollbar on the tree canvas
+  scrollBar:       true,
 };
 
 // ── embed() ───────────────────────────────────────────────────────────────────
