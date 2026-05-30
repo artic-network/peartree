@@ -246,6 +246,11 @@ async function _initCore(root = document) {
         paddingRight:   _ui.paddingRight   ?? null,
         paddingBottom:  _ui.paddingBottom  ?? null,
         paddingLeft:    _ui.paddingLeft    ?? null,
+        // Canvas area padding — defaults to 20px on all sides.
+        treePaddingTop:    _ui.treePaddingTop    ?? '20',
+        treePaddingRight:  _ui.treePaddingRight  ?? '20',
+        treePaddingBottom: _ui.treePaddingBottom ?? '20',
+        treePaddingLeft:   _ui.treePaddingLeft   ?? '20',
       };
     },
   });
@@ -270,6 +275,10 @@ async function _initCore(root = document) {
     if (_wcUi.paddingRight  == null && _fetchedUI.paddingRight  != null) _cfg.paddingRight  = _fetchedUI.paddingRight;
     if (_wcUi.paddingBottom == null && _fetchedUI.paddingBottom != null) _cfg.paddingBottom = _fetchedUI.paddingBottom;
     if (_wcUi.paddingLeft   == null && _fetchedUI.paddingLeft   != null) _cfg.paddingLeft   = _fetchedUI.paddingLeft;
+    if (_wcUi.treePaddingTop    == null && _fetchedUI.treePaddingTop    != null) _cfg.treePaddingTop    = _fetchedUI.treePaddingTop;
+    if (_wcUi.treePaddingRight  == null && _fetchedUI.treePaddingRight  != null) _cfg.treePaddingRight  = _fetchedUI.treePaddingRight;
+    if (_wcUi.treePaddingBottom == null && _fetchedUI.treePaddingBottom != null) _cfg.treePaddingBottom = _fetchedUI.treePaddingBottom;
+    if (_wcUi.treePaddingLeft   == null && _fetchedUI.treePaddingLeft   != null) _cfg.treePaddingLeft   = _fetchedUI.treePaddingLeft;
   }
   // Apply canvas border CSS from the UI config before any tree loads.
   _syncCanvasBorder(_cfg);
