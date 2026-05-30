@@ -24,6 +24,7 @@ import { createCommands } from '@artic-network/pearcore/commands.js';
 import { COMMAND_DEFS } from './peartree-commands.js';
 import { createExportController } from './export-controller.js';
 import { EXAMPLE_TREE_PATH, EXAMPLE_DATASETS, PEARTREE_BASE_URL, DEFAULT_SETTINGS, REQUIRED_THEME_KEYS, NON_PERSISTENT_SETTINGS, NODE_TOOLTIP_FIELDS } from './config.js';
+import { DEFAULT_UI_EMBED, DEFAULT_UI_EMBEDFRAME } from './config-ui.js';
 import { createToolbarColourPicker, upgradeAllPaletteColourPickers } from '@artic-network/pearcore/colorpicker.js';
 import { createThemeManager, resolveEmbedConfig, initSectionAccordion,
          ensureStylesheet, loadScript, resolveAssetBases } from '@artic-network/pearcore/pearcore-app.js';
@@ -231,10 +232,17 @@ async function _initCore(root = document) {
     configKey: 'peartreeConfig',
     settingsKeyDefault: SETTINGS_KEY,
     flagDefs: PT_UI_FLAG_DEFS,
-    extras: (wc, _p) => ({
-      dataTableColumns: Array.isArray(wc.dataTableColumns) ? wc.dataTableColumns : null,
-      initSettings: _resolveInitSettings({ fetchedSettings: _fetchedSettings, params: _p, windowConfig: wc }),
-    }),
+    extras: (wc, _p) => {
+      const _ui = wc.ui || {};
+      return {
+        dataTableColumns: Array.isArray(wc.dataTableColumns) ? wc.dataTableColumns : null,
+        initSettings: _resolveInitSettings({ fetchedSettings: _fetchedSettings, params: _p, windowConfig: wc }),
+        // Non-flag container CSS properties sourced from the ui: config block.
+        borderWidth:  _ui.borderWidth  ?? null,
+        borderColor:  _ui.borderColor  ?? null,
+        borderRadius: _ui.borderRadius ?? null,
+      };
+    },
   });
 
   // Apply fetched UI defaults only when not explicitly set by window config
@@ -248,7 +256,13 @@ async function _initCore(root = document) {
       if (_raw === undefined) continue;
       _cfg[def.name] = _coerceUiFlag(_raw, !!def.extended);
     }
+    // Border CSS properties: fetchedUI provides defaults when not set by window.peartreeConfig.ui
+    if (_wcUi.borderWidth  == null && _fetchedUI.borderWidth  != null) _cfg.borderWidth  = _fetchedUI.borderWidth;
+    if (_wcUi.borderColor  == null && _fetchedUI.borderColor  != null) _cfg.borderColor  = _fetchedUI.borderColor;
+    if (_wcUi.borderRadius == null && _fetchedUI.borderRadius != null) _cfg.borderRadius = _fetchedUI.borderRadius;
   }
+  // Apply canvas border CSS from the UI config before any tree loads.
+  _syncCanvasBorder(_cfg);
   // Apply UI restrictions immediately so hidden elements never flash visible.
   if (!_cfg.showPalette)   $('btn-palette')        ?.classList.add('d-none');
   if (!_cfg.showToolbar)   root.querySelector('.pt-toolbar')          ?.classList.add('d-none');
@@ -1517,8 +1531,6 @@ async function _initCore(root = document) {
     const _rangeMode = axisShowEl.value;
     if (_rangeMode !== 'off') _loadAxisRangeForMode(_rangeMode);
     _prevAxisMode = _rangeMode !== 'off' ? _rangeMode : null;
-    // Apply canvas border CSS from settings (borderWidth, borderColor, borderRadius).
-    _syncCanvasBorder(s);
     _syncControlVisibility();
   }
 
@@ -3734,11 +3746,21 @@ async function _initCore(root = document) {
     getSettingsSnapshot: () => { const s = _buildSnapshot(); delete s.paintColour; Object.assign(s, _getAxisRangeSettings()); return s; }, // tree-only keys added via TREE_ONLY_SETTING_KEYS
     getConfigSnapshot:   () => ({
       settings: (() => { const s = _buildSnapshot(); delete s.paintColour; Object.assign(s, _getAxisRangeSettings()); return s; })(), // tree-only keys added via TREE_ONLY_SETTING_KEYS
-      ui:       Object.fromEntries(PT_UI_FLAG_DEFS.map(def => [def.uiKey, _cfg[def.name]])),
+      ui:       Object.fromEntries([
+        ...PT_UI_FLAG_DEFS.map(def => [def.uiKey, _cfg[def.name]]),
+        ['borderWidth',  _cfg.borderWidth],
+        ['borderColor',  _cfg.borderColor],
+        ['borderRadius', _cfg.borderRadius],
+      ]),
     }),
     getDefaultConfig:    () => ({
       settings: DEFAULT_SETTINGS,
-      ui:       Object.fromEntries(PT_UI_FLAG_DEFS.map(def => [def.uiKey, true])),
+      ui:       Object.fromEntries([
+        ...PT_UI_FLAG_DEFS.map(def => [def.uiKey, true]),
+        ['borderWidth',  null],
+        ['borderColor',  null],
+        ['borderRadius', null],
+      ]),
     }),
   });
 
@@ -8819,39 +8841,7 @@ export async function embed(options = {}) {
 
   const base = typeof options.base === 'string' ? options.base : _selfBase;
 
-  const ui = Object.assign({
-    palette:     true,
-    toolbar:     true,
-    openTree:    false,
-    import:      false,
-    export:      true,
-    rtt:         false,
-    rttHeader:   true,
-    dataTable:   false,
-    dataTableHeader: true,
-    statusBar:   true,
-    statusStats: true,
-    statusSelect: true,
-    statusMessage: true,
-    statusShare: true,
-    keyboard:    false,
-    help:        false,
-    about:       false,
-    themeToggle: false,
-    brand:       false,
-    tbFileOps:   true,
-    tbAnnotations: true,
-    tbNodeInfo:  true,
-    tbNavigation: true,
-    tbZoom:      true,
-    tbOrder:     true,
-    tbRotate:    true,
-    tbReroot:    true,
-    tbHideShow:  true,
-    tbColour:    true,
-    tbFilter:    true,
-    tbPanels:    true,
-  }, options.ui || {});
+  const ui = Object.assign({}, DEFAULT_UI_EMBED, options.ui || {});
   if (ui.openTree === false) ui.import   = false;
   if (ui.import   === false) ui.openTree = false;
 
@@ -8900,6 +8890,9 @@ export async function embed(options = {}) {
       tbColour:    ui.tbColour,
       tbFilter:    ui.tbFilter,
       tbPanels:    ui.tbPanels,
+      borderWidth:  ui.borderWidth,
+      borderColor:  ui.borderColor,
+      borderRadius: ui.borderRadius,
       theme:       _theme,
     },
     storageKey:       options.storageKey ?? null,  // null by default — embeds don't persist settings
@@ -9012,38 +9005,7 @@ export function embedFrame(options = {}) {
     ? options.ui.theme
     : (options.theme || 'dark');
 
-  const ui = Object.assign({
-    palette:   true,
-    toolbar:   true,
-    openTree:  false,
-    import:    false,
-    export:    true,
-    rtt:       false,
-    rttHeader: true,
-    dataTable: false,
-    dataTableHeader: true,
-    statusBar: true,
-    statusStats: true,
-    statusSelect: true,
-    statusMessage: true,
-    statusShare: true,
-    help: true,
-    about: true,
-    themeToggle: true,
-    brand: true,
-    tbFileOps: true,
-    tbAnnotations: true,
-    tbNodeInfo: true,
-    tbNavigation: true,
-    tbZoom: true,
-    tbOrder: true,
-    tbRotate: true,
-    tbReroot: true,
-    tbHideShow: true,
-    tbColour: true,
-    tbFilter: true,
-    tbPanels: true,
-  }, options.ui || {});
+  const ui = Object.assign({}, DEFAULT_UI_EMBEDFRAME, options.ui || {});
   if (ui.openTree === false) ui.import   = false;
   if (ui.import   === false) ui.openTree = false;
 
