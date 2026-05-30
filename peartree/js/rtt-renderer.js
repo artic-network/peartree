@@ -281,7 +281,7 @@ export class RTTRenderer {
       this._xAxis.setTimeTransform('linear');
       this._xAxis.setRange(this._xMin, this._xMax);
       this._xAxis.setTickOptions(this.tickOptions ?? {});
-      this._xAxis.setTransform({ scale: 0, offset: rect.x + rect.w / 2, paddingLeft: 0 });
+      this._xAxis.setTransform({ scale: 0, offset: rect.x + rect.w / 2, spacingLeft: 0 });
     } else {
       const sx = rect.w / xSpan;
       const ox = rect.x - this._xMin * sx;
@@ -289,20 +289,20 @@ export class RTTRenderer {
       this._xAxis.setTimeTransform('linear');
       this._xAxis.setRange(this._xMin, this._xMax);
       this._xAxis.setTickOptions(this.tickOptions ?? {});
-      this._xAxis.setTransform({ scale: sx, offset: ox, paddingLeft: 0 });
+      this._xAxis.setTransform({ scale: sx, offset: ox, spacingLeft: 0 });
     }
 
     const ySpan = this._yMax - this._yMin;
     if (ySpan === 0) {
       this._yAxis.setType('continuous');
       this._yAxis.setRange(this._yMin, this._yMax);
-      this._yAxis.setTransform({ scale: 0, offset: rect.y + rect.h / 2, paddingLeft: 0 });
+      this._yAxis.setTransform({ scale: 0, offset: rect.y + rect.h / 2, spacingLeft: 0 });
     } else {
       const sy = -rect.h / ySpan;
       const oy = rect.y + rect.h - this._yMin * sy;
       this._yAxis.setType('continuous');
       this._yAxis.setRange(this._yMin, this._yMax);
-      this._yAxis.setTransform({ scale: sy, offset: oy, paddingLeft: 0 });
+      this._yAxis.setTransform({ scale: sy, offset: oy, spacingLeft: 0 });
     }
   }
 

@@ -80,7 +80,7 @@ export function compositeViewPng(ctx, targetW, targetH, fullTree = false, transp
   const { totalW, lrW, ttW, ttH, axH, lrVisible, axVisible } = viewportDims(ctx);
   // Full tree: panel height is determined by current scaleY over all tips.
   const ttH_eff    = fullTree
-    ? (renderer.paddingTop + renderer.paddingBottom + (renderer.maxY + 1) * renderer.scaleY)
+    ? (renderer.spacingTop + renderer.spacingBottom + (renderer.maxY + 1) * renderer.scaleY)
     : ttH;
   const totalH_eff = ttH_eff + (axVisible ? axH : 0);
   const sx = targetW / totalW;
@@ -165,10 +165,10 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   const sx  = renderer.scaleX,  ox = renderer.offsetX;
   // Full tree: keep current scaleY so zoom level is preserved; shift oy so root sits at top.
   const sy  = renderer.scaleY;
-  const oy  = fullTree ? renderer.paddingTop + renderer.scaleY * 0.5 : renderer.offsetY;
+  const oy  = fullTree ? renderer.spacingTop + renderer.scaleY * 0.5 : renderer.offsetY;
   // Effective tree-panel height and total SVG height.
   const ttH_eff    = fullTree
-    ? Math.round(renderer.paddingTop + renderer.paddingBottom + (renderer.maxY + 1) * renderer.scaleY)
+    ? Math.round(renderer.spacingTop + renderer.spacingBottom + (renderer.maxY + 1) * renderer.scaleY)
     : ttH;
   const totalH_eff = ttH_eff + (axVisible ? axH : 0);
   const bg  = renderer.bgColor;

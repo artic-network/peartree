@@ -127,12 +127,12 @@ export const DEFAULT_SETTINGS = {
   // ── Tree ────────────────────────────────────────────────────────────────────────────
   rootStemPct:    '1',    // whole-tree root-stem length as % of tree age (0–20)
   // Layout geometry (no DOM controls — passed directly to TreeRenderer)
-  paddingLeft:    '20',
-  paddingRight:   '20',
-  paddingTop:     '20',
-  paddingBottom:  '20',
-  // Axis canvas vertical padding (px) — gap above the baseline line
-  axisPaddingTop: '3',
+  spacingLeft:    '20',
+  spacingRight:   '20',
+  spacingTop:     '20',
+  spacingBottom:  '20',
+  // Axis canvas vertical spacing (px) — gap above the baseline line
+  axisSpacingTop: '3',
   rootStubLength: '10',
   // Intro animation played when a tree is first loaded.
   // Options: 'y-then-x' | 'x-then-y' | 'simultaneous' | 'from-bottom' | 'from-top' | 'none'
@@ -286,11 +286,11 @@ export const NON_PERSISTENT_SETTINGS = [
   'axisRangeReverseLeft',
   'axisRangeReverseRight',
   'rootStemPct',
-  'paddingLeft',
-  'paddingRight',
-  'paddingTop',
-  'paddingBottom',
-  'axisPaddingTop',
+  'spacingLeft',
+  'spacingRight',
+  'spacingTop',
+  'spacingBottom',
+  'axisSpacingTop',
   'rootStubLength',
   'introAnimation',
 ];

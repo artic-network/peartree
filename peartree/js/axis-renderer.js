@@ -62,7 +62,7 @@ export class AxisRenderer {
     this._axisLineWidth      = 1;      // stroke width for ticks and baseline
     this._axisFontSizeManual = false;  // true once setFontSize() has been called
     this._heightFormatter    = null;   // (v:number)=>string from annotation def.fmt, for non-date ticks
-    this._paddingTop         = 3;      // gap (px) above the baseline line
+    this._spacingTop         = 3;      // gap (px) above the baseline line
 
     // Shared axis math core (domain, transforms, tick proposals).
     this._axis = new Axis({ orientation: 'x', type: 'continuous' });
@@ -85,7 +85,7 @@ export class AxisRenderer {
     this._axis.setTransform({
       scale: this._scaleX,
       offset: this._offsetX,
-      paddingLeft: this._paddingLeft,
+      spacingLeft: this._spacingLeft,
     });
     this._axis.setTickOptions({
       majorInterval: this._majorInterval,
@@ -105,7 +105,7 @@ export class AxisRenderer {
     if (s.axisColor  != null) this.setColor(s.axisColor);
     if (s.fontSize   != null) this.setFontSize(s.fontSize);
     if (s.lineWidth  != null) this.setLineWidth(s.lineWidth);
-    if (s.paddingTop != null) { this._paddingTop = s.paddingTop; this._lastHash = ''; }
+    if (s.spacingTop != null) { this._spacingTop = s.spacingTop; this._lastHash = ''; }
     if (redraw) this._lastHash = '';
   }
 
@@ -186,7 +186,7 @@ export class AxisRenderer {
    * Called every animation frame (from renderer._onViewChange).
    * Redraws if view state has changed.
    */
-  update(scaleX, offsetX, paddingLeft, labelRightPad, bgColor, fontSize, dpr = 1) {
+  update(scaleX, offsetX, spacingLeft, labelRightPad, bgColor, fontSize, dpr = 1) {
     if (!this._visible) return;
     const W = this._canvas.clientWidth;
     const H = this._canvas.clientHeight;
@@ -206,13 +206,13 @@ export class AxisRenderer {
     // Only auto-sync font size from tree if the user hasn't explicitly set one
     if (!this._axisFontSizeManual) this._fontSize = Math.max(7, fontSize - 1);
 
-    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${paddingLeft}|${labelRightPad}|${bgColor}|${this._fontSize}|${this._fontFamily}|${this._typefaceKey ?? ''}|${this._typefaceStyle ?? ''}|${this._axisColor ?? ''}|${this._axisLineWidth}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._calibration?.anchorDecYear ?? ''}|${this._calibration?.anchorH ?? ''}|${this._calibration?.rate ?? ''}|${this._viewMinTipH}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}|${this._dateFormat}|${this._direction}|${this._rangeLeft ?? ''}|${this._rangeRight ?? ''}`;
+    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${spacingLeft}|${labelRightPad}|${bgColor}|${this._fontSize}|${this._fontFamily}|${this._typefaceKey ?? ''}|${this._typefaceStyle ?? ''}|${this._axisColor ?? ''}|${this._axisLineWidth}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._calibration?.anchorDecYear ?? ''}|${this._calibration?.anchorH ?? ''}|${this._calibration?.rate ?? ''}|${this._viewMinTipH}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}|${this._dateFormat}|${this._direction}|${this._rangeLeft ?? ''}|${this._rangeRight ?? ''}`;
     if (hash === this._lastHash) return;
     this._lastHash = hash;
 
     this._scaleX       = scaleX;
     this._offsetX      = offsetX;
-    this._paddingLeft  = paddingLeft;
+    this._spacingLeft  = spacingLeft;
     this._labelRightPad = labelRightPad;
     this._bgColor      = bgColor;
     this._W            = W;
@@ -351,7 +351,7 @@ export class AxisRenderer {
     const { majorTicks, minorTicks } = this._axis.getTicks(targetMajor);
 
     // ── Layout constants ──────────────────────────────────────────────────
-    const Y_BASE      = this._paddingTop ?? 3;
+    const Y_BASE      = this._spacingTop ?? 3;
     const MAJOR_H     = 9;
     const MINOR_H     = 5;
     const axC = this._axisColor;

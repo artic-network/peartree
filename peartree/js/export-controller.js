@@ -81,7 +81,7 @@ export function createExportController({
       const d = viewportDims({ canvas, axisCanvas, legendRightCanvas });
       return {
         width:  d.totalW,
-        height: r.paddingTop + r.paddingBottom +
+        height: r.spacingTop + r.spacingBottom +
                 (r.maxY + 1) * r.scaleY + (d.axVisible ? d.axH : 0),
       };
     },

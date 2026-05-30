@@ -31,7 +31,7 @@ export class Axis {
     // Screen transform context
     this._scale = 1;
     this._offset = 0;
-    this._paddingLeft = 0;
+    this._spacingLeft = 0;
 
     // Tick options for time mode
     this._majorInterval = 'auto';
@@ -66,10 +66,10 @@ export class Axis {
     this._rangeRight = (rightVal != null && isFinite(rightVal)) ? rightVal : null;
   }
 
-  setTransform({ scale, offset, paddingLeft }) {
+  setTransform({ scale, offset, spacingLeft }) {
     if (scale != null) this._scale = scale;
     if (offset != null) this._offset = offset;
-    if (paddingLeft != null) this._paddingLeft = paddingLeft;
+    if (spacingLeft != null) this._spacingLeft = spacingLeft;
   }
 
   setTickOptions({ majorInterval, minorInterval }) {
