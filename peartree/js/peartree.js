@@ -2044,6 +2044,16 @@ async function _initCore(root = document) {
     const r = s.borderRadius != null ? parseFloat(s.borderRadius) : null;
     el.style.border       = (w != null && !isNaN(w) && c) ? `${w}px solid ${c}` : '';
     el.style.borderRadius = (r != null && !isNaN(r))       ? `${r}px`           : '';
+
+    const _px = (v) => { const n = parseFloat(v); return (v != null && !isNaN(n)) ? `${n}px` : ''; };
+    el.style.paddingTop    = _px(s.paddingTop);
+    el.style.paddingRight  = _px(s.paddingRight);
+    el.style.paddingBottom = _px(s.paddingBottom);
+    el.style.paddingLeft   = _px(s.paddingLeft);
+    el.style.marginTop     = _px(s.marginTop);
+    el.style.marginRight   = _px(s.marginRight);
+    el.style.marginBottom  = _px(s.marginBottom);
+    el.style.marginLeft    = _px(s.marginLeft);
   }
 
   /**
