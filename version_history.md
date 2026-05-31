@@ -1,4 +1,4 @@
-## Unreleased
+## v1.2.0
 ### Features
 - Legend controls: per-legend decimal places for legends 1-4.
 - Legend controls: per-legend palette configure buttons for legends 1-4.

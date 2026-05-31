@@ -1,5 +1,11 @@
 # Change Log
 
+## v1.2.0
+
+- Add per-legend spacing controls for stacked and side-by-side legends.
+- Add per-legend decimal-place controls and Palette Configure buttons.
+- Add a Help panel section-jump dropdown generated from markdown headings.
+
 ## v1.1.0
 
 - Add axis range controls, including explicit range overrides.
