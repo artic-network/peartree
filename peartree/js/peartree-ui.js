@@ -1014,7 +1014,7 @@ function _buildHelpAbout() {
   return buildHelpAboutHTML({
     help: showHelp,
     about: showAbout,
-    helpTitle: 'PearTree Help',
+    helpTitle: 'Help',
     aboutTitle: 'About PearTree',
     aboutLogo: '<img src="img/peartree.svg" class="pt-brand-logo me-2" alt="">',
   });

@@ -1,6 +1,4 @@
-# PearTree Help
-
-PearTree is a phylogenetic tree viewer that runs entirely in the browser. No data is ever uploaded to any server — all processing is local.
+> PearTree is a phylogenetic tree viewer that runs entirely in the browser. No data is ever uploaded to any server — all processing is local.
 
 ---
 
@@ -104,12 +102,6 @@ Supported formats: **NEXUS** (`.nex`, `.nexus`, `.tre`, `.tree`, `.treefile`) an
 | <i class="bi bi-arrows-collapse"></i> Collapse | ⌘1 | Collapse the selected clade to a filled triangle symbol |
 | <i class="bi bi-arrows-expand"></i> Expand | ⌘⇧1 | Expand a collapsed triangle back to its full subtree |
 
-### Node Info
-
-| Button | Shortcut | Description |
-|---|---|---|
-| <i class="bi bi-info-square"></i> Node Info | ⌘I | Open a dialog showing all annotations on the selected node |
-
 ### User Colour
 
 | Button | Shortcut | Description |
@@ -118,6 +110,22 @@ Supported formats: **NEXUS** (`.nex`, `.nexus`, `.tre`, `.tree`, `.treefile`) an
 | <i class="bi bi-eraser"></i> Clear colours | ⌘⇧K | Remove all user-assigned colours from the tree |
 | <i class="bi bi-highlighter"></i> Highlight clade | ⌘⇧L | Apply a background highlight to the selected clade (persists even when selection changes) |
 | <i class="bi bi-eraser"></i> Remove highlight | — | Remove the clade highlight |
+
+## Highlighting Clades
+
+Clade highlighting draws a translucent background behind the descendants of the selected node. This is useful when you want to mark a clade visually without changing its branch order or colouring the tips themselves.
+
+To highlight a clade, select a node or subtree and click **Highlight clade** {%- include 'btn.html', id: "btn-paint-highlight" %} in the toolbar, or use **⌘⇧L**. The highlight stays in place even after you change the current selection.
+
+You can set the highlight colour in the **Clade Highlights** section of the Visual Options palette. That section also lets you adjust the edge style, padding, corner radius, opacity, and stroke width. Multiple clade highlights can be active at once.
+
+Use **Remove highlight** to clear the current highlight from the selected clade.
+
+### Node Info
+
+| Button | Shortcut | Description |
+|---|---|---|
+| <i class="bi bi-info-square"></i> Node Info | ⌘I | Open a dialog showing all annotations on the selected node |
 
 ### Tip Search / Filter
 
@@ -261,7 +269,7 @@ Hold the **\`** (backtick/tilde) key to activate a fisheye lens that expands the
 2. Click on any branch to place a marker at the desired position
 3. Click **Reroot** — the root is placed at exactly the clicked position
 
-## Midpoint Root (⌘M)
+### Midpoint Root (⌘M)
 PearTree finds the two tips with the greatest path length and places the root at the exact midpoint:
 
 > **Note:** Explicitly rooted trees (where the root node carries annotations) have rerooting disabled.
@@ -323,7 +331,7 @@ After import, the new annotation keys appear in the **Colour by** dropdowns and 
 
 ---
 
-## Annotation Curator
+## Annotation Manager
 
 Click the <i class="bi bi-tags"></i> button to open the Annotation Curator, which lets you review and fine-tune every annotation key in the loaded tree:
 
