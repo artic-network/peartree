@@ -27,7 +27,8 @@ import { EXAMPLE_TREE_PATH, EXAMPLE_DATASETS, PEARTREE_BASE_URL, DEFAULT_SETTING
 import { DEFAULT_UI_APP, DEFAULT_UI_EMBED, DEFAULT_UI_EMBEDFRAME } from './config-ui.js';
 import { createToolbarColourPicker, upgradeAllPaletteColourPickers } from '@artic-network/pearcore/colorpicker.js';
 import { createThemeManager, resolveEmbedConfig, initSectionAccordion,
-         ensureStylesheet, loadScript, resolveAssetBases } from '@artic-network/pearcore/pearcore-app.js';
+         ensureStylesheet, loadScript, resolveAssetBases,
+         createSidePanelStackManager } from '@artic-network/pearcore/pearcore-app.js';
 
 /**
  * Fetch a file by relative path, falling back to the absolute GitHub Pages URL
@@ -1749,6 +1750,10 @@ async function _initCore(root = document) {
   // reference them in saveSettings() → _buildSnapshot() without hitting TDZ.
   let rttChart;
   let dataTableRenderer;
+  const _sidePanelStack = createSidePanelStackManager({
+    targetEl: document.documentElement,
+    policy: 'accumulate',
+  });
 
   /** Options object for computeLayoutFromGraph — centralised so every call site is consistent. */
   function _layoutOptions() {
@@ -2112,6 +2117,10 @@ async function _initCore(root = document) {
     htm.style.backgroundColor = s.backgroundColor != null ? String(s.backgroundColor) : '';
 
     const _px = (v) => { const n = parseFloat(v); return (v != null && !isNaN(n)) ? `${n}px` : ''; };
+    const _pxOr0 = (v) => {
+      const n = parseFloat(v);
+      return (v != null && !isNaN(n)) ? `${n}px` : '0px';
+    };
     htm.style.paddingTop    = _px(s.paddingTop);
     htm.style.paddingRight  = _px(s.paddingRight);
     htm.style.paddingBottom = _px(s.paddingBottom);
@@ -2120,9 +2129,9 @@ async function _initCore(root = document) {
     const caw = $('tree-axis-wrapper');
     if (caw) {
       caw.style.paddingTop    = _px(s.treePaddingTop);
-      caw.style.paddingRight  = _px(s.treePaddingRight);
+      caw.style.paddingRight  = `calc(${_pxOr0(s.treePaddingRight)} + var(--pt-side-right-w, 0px))`;
       caw.style.paddingBottom = _px(s.treePaddingBottom);
-      caw.style.paddingLeft   = _px(s.treePaddingLeft);
+      caw.style.paddingLeft   = `calc(${_pxOr0(s.treePaddingLeft)} + var(--pt-side-left-w, 0px))`;
     }
     const lrw = $('legend-right-wrapper');
     if (lrw) {
@@ -3488,18 +3497,24 @@ async function _initCore(root = document) {
     numBodyEl:    $('dt-num-body'),
     onClose: () => {
       btnDataTable?.classList.remove('active');
+      _syncSidePanelStack();
       saveSettings();
       _syncDtLabel?.();
     },
     onPinChange: (pinned) => {
       document.body.classList.toggle('dt-pinned', pinned);
       _syncDtLabel?.();
+      _syncSidePanelStack();
       // Drive renderer._resize() through the full transition so the canvas
       // smoothly gains or releases the space the panel occupies.
       _resizeDuringTransition();
       saveSettings();
     },
     onAutoResize: () => _resizeDuringTransition(),
+    onWidthChange: () => {
+      _syncSidePanelStack();
+      saveSettings();
+    },
     onRowSelect: (selectedIds) => {
       renderer._selectedTipIds = new Set(selectedIds);
       renderer._updateMRCA();
@@ -3581,6 +3596,40 @@ async function _initCore(root = document) {
     })();
   }
 
+  // Controls both pinned-stack placement and overlap precedence for side panels.
+  // Higher order means more inward placement on the same side.
+  const SIDE_PANEL_PRIORITY = {
+    palette: 5,
+    rtt: 10,
+    dataTable: 20,
+  };
+
+  function _syncSidePanelStack() {
+    const _pal = root.querySelector('#palette-panel');
+    _sidePanelStack.setPanelState('palette', {
+      side: 'left',
+      panel: _pal,
+      open: !!_pal?.classList.contains('open'),
+      pinned: !!_pal?.classList.contains('pinned'),
+      order: SIDE_PANEL_PRIORITY.palette,
+    });
+    _sidePanelStack.setPanelState('dt', {
+      side: 'right',
+      panel: $('data-table-panel'),
+      open: !!dataTableRenderer?.isOpen?.(),
+      pinned: !!dataTableRenderer?.isPinned?.(),
+      order: SIDE_PANEL_PRIORITY.dataTable,
+    });
+    _sidePanelStack.setPanelState('rtt', {
+      side: 'right',
+      panel: $('rtt-panel'),
+      open: !!rttChart?.isOpen?.(),
+      pinned: !!rttChart?.isPinned?.(),
+      widthValue: rttChart?.getPanelWidth?.() || null,
+      order: SIDE_PANEL_PRIORITY.rtt,
+    });
+  }
+
   // Wire the data-table toggle button
   btnDataTable?.addEventListener('click', () => {
     if (dataTableRenderer.isOpen()) {
@@ -3592,66 +3641,16 @@ async function _initCore(root = document) {
       // In overlay mode the canvas doesn't resize on open; in pinned mode the
       // onPinChange callback already drives _resizeDuringTransition.
     }
+    _syncSidePanelStack();
     _syncDtLabel?.();
   });
-
-  // Wire the resize handle
-  const _dtResizeHandle = $('data-table-resize-handle');
-  const _dtPanel        = $('data-table-panel');
-  if (_dtResizeHandle && _dtPanel) {
-    // Ghost-line pattern: show a 2px line while dragging; commit on mouseup
-    // (same approach as the RTT resize handle — no live canvas resize on every
-    // mousemove event, which avoids expensive forced-layout recalculations).
-    const _dtGhost = document.createElement('div');
-    _dtGhost.id = 'dt-resize-ghost';
-    document.body.appendChild(_dtGhost);
-
-    let _dtDragging = false;
-    let _dtStartX   = 0;
-    let _dtStartW   = 0;
-
-    _dtResizeHandle.addEventListener('mousedown', e => {
-      _dtDragging = true;
-      _dtStartX   = e.clientX;
-      _dtStartW   = _dtPanel.offsetWidth;
-      _dtGhost.style.left    = `${e.clientX}px`;
-      _dtGhost.style.display = 'block';
-      document.body.style.cursor = 'ew-resize';
-      e.preventDefault();
-    });
-    window.addEventListener('mousemove', e => {
-      if (!_dtDragging) return;
-      const delta = _dtStartX - e.clientX;  // dragging left increases width
-      const newW  = Math.max(100, Math.min(700, _dtStartW + delta));
-      // Move the ghost to what will become the panel's left edge.
-      const panelRight = _dtPanel.getBoundingClientRect().right;
-      _dtGhost.style.left = `${panelRight - newW}px`;
-    });
-    window.addEventListener('mouseup', e => {
-      if (!_dtDragging) return;
-      _dtDragging = false;
-      _dtGhost.style.display = 'none';
-      document.body.style.cursor = '';
-      // Commit the resize on release — suppress the CSS transition so the
-      // canvas snaps to the final width immediately.
-      const delta = _dtStartX - e.clientX;
-      const newW  = Math.max(100, Math.min(700, _dtStartW + delta));
-      _dtPanel.style.transition = 'none';
-      _dtPanel.style.width = `${newW}px`;
-      document.documentElement.style.setProperty('--dt-panel-w', `${newW}px`);
-      void _dtPanel.offsetWidth;  // force reflow so clientWidth is correct
-      renderer._resize();
-      // Let the table renderer know the user chose a custom width.
-      if (dataTableRenderer.isPinned()) dataTableRenderer.notifyUserResized();
-      requestAnimationFrame(() => { _dtPanel.style.transition = ''; });
-    });
-  }
 
   // Fixed mode: force open + pinned immediately, disable the toggle button.
   if (_cfg.showDataTable === 'fixed') {
     dataTableRenderer.open();
     dataTableRenderer.pin();
     $('data-table-resize-handle')?.style.setProperty('pointer-events', 'none');
+    _syncSidePanelStack();
   }
   // Apply programmatic column list if provided (works for both fixed and normal modes).
   if (_cfg.dataTableColumns) {
@@ -3737,16 +3736,21 @@ async function _initCore(root = document) {
     },
     onClose: () => {
       btnRtt?.classList.remove('active');
+      _syncSidePanelStack();
       saveSettings();
       _syncRttLabel?.();
     },
     onPinChange: (pinned) => {
       document.body.classList.toggle('rtt-pinned', pinned);
       _syncRttLabel?.();
+      _syncSidePanelStack();
       _resizeDuringTransition();
       saveSettings();
     },
-    onWidthChange: () => saveSettings(),
+    onWidthChange: () => {
+      _syncSidePanelStack();
+      saveSettings();
+    },
     onStatsBoxCornerChange: () => saveSettings(),
   });
 
@@ -3762,7 +3766,10 @@ async function _initCore(root = document) {
   if (_cfg.showRTT === 'fixed') {
     rttChart.open();
     rttChart.setPin(true);
+    _syncSidePanelStack();
   }
+
+  _syncSidePanelStack();
 
   // Tree hover → RTT hover
   renderer._onHoverChange = id => rttChart.notifyHoverChange(id);
@@ -3903,10 +3910,12 @@ async function _initCore(root = document) {
     if (rttChart.isOpen()) {
       rttChart.close();
       btnRtt?.classList.remove('active');
+      _syncSidePanelStack();
       saveSettings();
     } else {
       rttChart.open();
       btnRtt?.classList.add('active');
+      _syncSidePanelStack();
       saveSettings();
     }
     _syncRttLabel?.();
@@ -8765,7 +8774,10 @@ async function _initCore(root = document) {
   const _uiBindings = window.initPearTreeUIBindings?.(root, {
     palettePinned:        _saved.palettePinned ?? DEFAULT_SETTINGS.palettePinned,
     paletteOpen:          _saved.paletteOpen   ?? DEFAULT_SETTINGS.paletteOpen,
-    onPaletteStateChange: saveSettings,
+    onPaletteStateChange: () => {
+      _syncSidePanelStack();
+      saveSettings();
+    },
   });
 
   // ── Panel-toggle menu commands (Options Panel, RTT Plot, Data Table) ─────────────
@@ -8791,10 +8803,15 @@ async function _initCore(root = document) {
         _uiBindings.palette.pin();
       }
     };
-    _uiBindings.palette.onChange(_syncOptPanelLabel);
+    _uiBindings.palette.onChange(() => {
+      _syncOptPanelLabel();
+      _syncSidePanelStack();
+    });
     // Sync label for the initial pinned-on-startup case.
     _syncOptPanelLabel();
   }
+
+  _syncSidePanelStack();
 
   commands.get('view-rtt-plot').exec = () => {
     if (rttChart?.isOpen()) {
@@ -8805,6 +8822,7 @@ async function _initCore(root = document) {
       rttChart.setPin(true);
       btnRtt?.classList.add('active');
     }
+    _syncSidePanelStack();
     _syncRttLabel();
   };
 
@@ -8816,6 +8834,7 @@ async function _initCore(root = document) {
       dataTableRenderer.pin();
       btnDataTable?.classList.add('active');
     }
+    _syncSidePanelStack();
     _syncDtLabel();
   };
 

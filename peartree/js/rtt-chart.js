@@ -14,6 +14,7 @@ import { TreeCalibration }  from './phylograph.js';
 import { computeOLS, ciHalfWidth } from '@artic-network/pearcore/regression.js';
 import { downloadBlob, htmlEsc as esc } from '@artic-network/pearcore/utils.js';
 import { createGraphicsExporter } from '@artic-network/pearcore/graphics-export.js';
+import { syncPanelPinButtonState, createPanelResizeController } from '@artic-network/pearcore/pearcore-app.js';
 
 /**
  * Create the Root-to-Tip panel controller.
@@ -100,21 +101,21 @@ export function createRTTChart({
   };
 
   function _syncPinIcon() {
-    const icon = btnPin?.querySelector('i');
-    if (icon) icon.className = _pinned ? 'bi bi-pin-angle-fill' : 'bi bi-pin-angle';
-    if (btnPin) btnPin.title = _pinned ? 'Unpin panel' : 'Pin panel open';
+    syncPanelPinButtonState(btnPin, _pinned, {
+      titlePinned: 'Unpin panel',
+      titleUnpinned: 'Pin panel open',
+    });
   }
 
-  btnPin.addEventListener('click', () => {
+  btnPin?.addEventListener('click', () => {
     _pinned = !_pinned;
     panel.classList.toggle('pinned', _pinned);
-    btnPin.classList.toggle('active', _pinned);
     _syncPinIcon();
     if (onPinChange) onPinChange(_pinned);
     rtt._resize();
   });
 
-  btnClose.addEventListener('click', () => {
+  btnClose?.addEventListener('click', () => {
     close();
     if (onClose) onClose();
   });
@@ -483,59 +484,21 @@ export function createRTTChart({
   }
 
   // ── Resize-handle drag ─────────────────────────────────────────────────────
-  const handle = panel.querySelector('#rtt-resize-handle');
-
-  // Ghost line element — created once, appended to body.
-  const ghost = document.createElement('div');
-  ghost.id = 'rtt-resize-ghost';
-  document.body.appendChild(ghost);
-
-  let _drg = false, _drgX0 = 0, _drgW0 = 0;
-
-  if (handle) {
-    handle.addEventListener('mousedown', e => {
-      _drg   = true;
-      _drgX0 = e.clientX;
-      _drgW0 = panel.offsetWidth;
-      // Show ghost at the handle's current position.
-      ghost.style.left    = `${e.clientX}px`;
-      ghost.style.display = 'block';
-      document.body.style.cursor = 'ew-resize';
-      e.preventDefault();
-    });
-  }
-
-  window.addEventListener('mousemove', e => {
-    if (!_drg) return;
-    const delta = _drgX0 - e.clientX;
-    const newW  = Math.max(200, Math.min(900, _drgW0 + delta));
-    // Position the ghost at what will become the panel's left edge.
-    const panelRight = panel.getBoundingClientRect().right;
-    ghost.style.left = `${panelRight - newW}px`;
-  });
-
-  window.addEventListener('mouseup', e => {
-    if (!_drg) return;
-    _drg = false;
-    ghost.style.display = 'none';
-    document.body.style.cursor = '';
-    // Commit the resize now that the drag is done.
-    const delta = _drgX0 - e.clientX;
-    const newW  = Math.max(200, Math.min(900, _drgW0 + delta));
-    // Suppress the CSS flex-basis transition so the layout snaps to the final
-    // width immediately. Without this, canvas.clientWidth returns the old
-    // (still-animating) size and the bitmap ends up CSS-stretched.
-    panel.style.transition = 'none';
-    panel.style.width = `${newW}px`;
-    _panelWidth = `${newW}px`;
-    document.documentElement.style.setProperty('--rtt-panel-w', `${newW}px`);
-    // Force a synchronous layout reflow so canvas.clientWidth reflects newW.
-    void panel.offsetWidth;
-    rtt._resize();
-    getRenderer()?._resize?.();
-    if (onWidthChange) onWidthChange(`${newW}px`);
-    // Re-enable the transition on the next frame so future open/close animations work.
-    requestAnimationFrame(() => { panel.style.transition = ''; });
+  createPanelResizeController({
+    panel,
+    handle: panel.querySelector('#rtt-resize-handle'),
+    side: 'right',
+    minWidth: 200,
+    maxWidth: 900,
+    ghostId: 'rtt-resize-ghost',
+    cssVarName: '--rtt-panel-w',
+    isEnabled: () => _pinned,
+    onCommit: (_newWidthPx, cssW) => {
+      _panelWidth = cssW;
+      rtt._resize();
+      getRenderer()?._resize?.();
+      if (onWidthChange) onWidthChange(cssW);
+    },
   });
 
   // ── Bidirectional selection sync ───────────────────────────────────────────
@@ -753,7 +716,6 @@ export function createRTTChart({
     /** Programmatically set the pin state (e.g. to restore from saved settings). */
     setPin(pinned) {
       _pinned = !!pinned;
-      btnPin.classList.toggle('active', _pinned);
       _syncPinIcon();
       // Only update the DOM layout if the panel is currently open.
       if (_open) {

@@ -471,13 +471,18 @@ function buildPalettePanel(sections) {
     .map(k => _SECTION_BUILDERS[k]())
     .join('');
   return `<div id="palette-panel">
-  <div id="palette-panel-header">
-    <h2><i class="bi bi-sliders me-1"></i>Visual Options</h2>
-    <div class="palette-pin-btns">
-      <button id="btn-palette-pin" title="Pin panel open"><i class="bi bi-pin-angle"></i></button>
-      <button id="btn-palette-close" title="Close">&times;</button>
-    </div>
-  </div>
+  ${window.buildSidePanelHeaderHTML({
+    id: 'palette-panel-header',
+    headerClass: 'pt-side-panel-header',
+    height: 34,
+    side: 'left',
+    buttonOrder: 'pin-close',
+    leftHTML: '<h2><i class="bi bi-sliders me-1"></i>Visual Options</h2>',
+    pinButtonId: 'btn-palette-pin',
+    closeButtonId: 'btn-palette-close',
+    pinTitle: 'Pin panel open',
+    closeTitle: 'Close',
+  })}
   <div id="palette-panel-body">
     ${body}
   </div>
@@ -740,10 +745,17 @@ function _buildCanvasContainer() {
   <div id="data-table-panel">
     <div id="data-table-resize-handle"></div>
     <div id="dt-num-col">
-      <div id="dt-num-header">
-        <button id="dt-btn-pin" title="Pin table"><i class="bi bi-pin-angle"></i></button>
-        <button id="dt-btn-close" title="Close table"><i class="bi bi-x-lg"></i></button>
-      </div>
+      ${window.buildSidePanelHeaderHTML({
+        id: 'dt-num-header',
+        headerClass: 'pt-side-panel-header',
+        height: 24,
+        side: 'right',
+        buttonOrder: 'close-pin',
+        pinButtonId: 'dt-btn-pin',
+        closeButtonId: 'dt-btn-close',
+        pinTitle: 'Pin table',
+        closeTitle: 'Close table',
+      })}
       <div id="dt-num-body"></div>
     </div>
     <div id="dt-scroll-area">
@@ -753,14 +765,21 @@ function _buildCanvasContainer() {
   </div>
   <div id="rtt-panel">
     <div id="rtt-resize-handle"></div>
-    <div id="rtt-header">
-      <button id="rtt-btn-pin" title="Pin panel open"><i class="bi bi-pin-angle"></i></button>
-      <button id="rtt-btn-close" title="Close"><i class="bi bi-x-lg"></i></button>
-      <span class="rtt-title"></span>
-      <button id="rtt-btn-download" class="btn btn-sm btn-outline-info" title="Download RTT data as CSV"><i class="bi bi-download"></i></button>
-      <button id="rtt-btn-image" class="btn btn-sm btn-outline-warning" title="Export plot as image (SVG or PNG)"><i class="bi bi-image"></i></button>
-      <button id="rtt-btn-stats" class="btn btn-sm btn-outline-secondary active" title="Show/hide statistics box"><i class="bi bi-info-circle"></i></button>
-    </div>
+    ${window.buildSidePanelHeaderHTML({
+      id: 'rtt-header',
+      headerClass: 'pt-side-panel-header',
+      height: 24,
+      side: 'right',
+      buttonOrder: 'close-pin',
+      leftHTML: '<span class="rtt-title"></span>',
+      actionsHTML: '<button id="rtt-btn-download" class="btn btn-sm btn-outline-info" title="Download RTT data as CSV"><i class="bi bi-download"></i></button>'
+        + '<button id="rtt-btn-image" class="btn btn-sm btn-outline-warning" title="Export plot as image (SVG or PNG)"><i class="bi bi-image"></i></button>'
+        + '<button id="rtt-btn-stats" class="btn btn-sm btn-outline-secondary active" title="Show/hide statistics box"><i class="bi bi-info-circle"></i></button>',
+      pinButtonId: 'rtt-btn-pin',
+      closeButtonId: 'rtt-btn-close',
+      pinTitle: 'Pin panel open',
+      closeTitle: 'Close',
+    })}
     <canvas id="rtt-canvas"></canvas>
   </div>
 </div>`;

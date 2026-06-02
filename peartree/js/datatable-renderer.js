@@ -23,6 +23,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { htmlEsc as _esc } from '@artic-network/pearcore/utils.js';
+import { syncPanelPinButtonState, createPanelResizeController } from '@artic-network/pearcore/pearcore-app.js';
 
 /** Shared offscreen canvas used only for text measurement. */
 const _measureCanvas = document.createElement('canvas');
@@ -46,7 +47,7 @@ const HEADER_H = 24;
  * @param {HTMLElement} opts.numBodyEl      – #dt-num-body   (number cells go here)
  */
 export function createDataTableRenderer({
-  getRenderer, onEditCommit, onRowSelect, onPinChange, onClose, onAutoResize,
+  getRenderer, onEditCommit, onRowSelect, onPinChange, onClose, onAutoResize, onWidthChange,
   panel, headerEl, bodyEl, numHeaderEl, numBodyEl,
 }) {
   let _columns        = [];       // annotation keys to display (never '__names__')
@@ -155,11 +156,10 @@ export function createDataTableRenderer({
 
   function _syncPinButton() {
     const btn = numHeaderEl?.querySelector('#dt-btn-pin');
-    if (!btn) return;
-    const icon = btn.querySelector('i');
-    if (icon) icon.className = _pinned ? 'bi bi-pin-angle-fill' : 'bi bi-pin-angle';
-    btn.classList.toggle('active', _pinned);
-    btn.title = _pinned ? 'Unpin table' : 'Pin table';
+    syncPanelPinButtonState(btn, _pinned, {
+      titlePinned: 'Unpin table',
+      titleUnpinned: 'Pin table',
+    });
   }
 
   /**
@@ -740,6 +740,22 @@ export function createDataTableRenderer({
     if (btnPin)   btnPin.addEventListener('click',   () => _setPin(!_pinned));
     if (btnClose) btnClose.addEventListener('click', () => close());
   }
+
+  createPanelResizeController({
+    panel,
+    handle: panel.querySelector('#data-table-resize-handle'),
+    side: 'right',
+    minWidth: 100,
+    maxWidth: 700,
+    ghostId: 'dt-resize-ghost',
+    cssVarName: '--dt-panel-w',
+    isEnabled: () => _pinned,
+    onCommit: (_newWidthPx, cssW) => {
+      _userResized = true;
+      getRenderer()?._resize?.();
+      onWidthChange?.(cssW);
+    },
+  });
 
   // Render an empty-state header on construction
   _renderHeader();
