@@ -37,101 +37,628 @@ const _TYPEFACES = `<option value="">Theme</option>
 <option value="Menlo">Menlo</option>`;
 
 function _sectionTree() {
-  return `
-    <div class="pt-palette-section">
-      <h3><i class="bi bi-tree"></i> Tree</h3>
-      <div class="pt-palette-row" title="Canvas background colour"><span class="pt-palette-label">Background <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="canvas-bg-color" value="#02292e" /></div>
-      <div class="pt-palette-row" title="Length of the root stem as a percentage of tree width"><span class="pt-palette-label">Root len <i class="bi bi-arrows form-label-sm"></i></span><input type="range" class="form-range" id="root-stem-pct-slider" min="0" max="20" step="1" value="1" /><span class="pt-val" id="root-stem-pct-value" style="width:30px">1%</span></div>
-      <div class="pt-palette-row" id="axis-date-row" title="Calibrate the axis to calendar dates using the selected annotation"><span class="pt-palette-label">Calibrate <i class="bi bi-calendar3 form-label-sm"></i></span><select class="pt-palette-select" id="axis-date-annotation"><option value="">(none)</option></select></div>
-    </div>`;
+  return window.buildPaletteSectionHTML({
+    icon: 'bi bi-tree',
+    title: 'Tree',
+    rows: [
+      {
+        kind: 'color',
+        id: 'canvas-bg-color',
+        value: '#02292e',
+        title: 'Canvas background colour',
+        label: 'Background',
+        labelIcon: 'bi bi-palette form-label-sm',
+      },
+      {
+        kind: 'range',
+        id: 'root-stem-pct-slider',
+        min: 0,
+        max: 20,
+        step: 1,
+        value: 1,
+        valueId: 'root-stem-pct-value',
+        valueText: '1%',
+        valueStyle: 'width:30px',
+        title: 'Length of the root stem as a percentage of tree width',
+        label: 'Root len',
+        labelIcon: 'bi bi-arrows form-label-sm',
+      },
+      {
+        kind: 'select',
+        rowId: 'axis-date-row',
+        id: 'axis-date-annotation',
+        options: [{ value: '', label: '(none)' }],
+        title: 'Calibrate the axis to calendar dates using the selected annotation',
+        label: 'Calibrate',
+        labelIcon: 'bi bi-calendar3 form-label-sm',
+      },
+    ],
+  });
 }
 
 function _sectionBranches() {
-  return `
-    <div class="pt-palette-section">
-      <h3><i class="bi bi-diagram-2-fill bi-rotate-270"></i> Branches</h3>
-      <div class="pt-palette-row" title="Branch line colour"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="branch-color" value="#f2f1e6" /></div>
-      <div class="pt-palette-row" title="Branch line thickness in screen pixels"><span class="pt-palette-label">Width <i class="bi bi-arrows-expand form-label-sm"></i></span><input type="range" class="form-range" id="branch-width-slider" min="0.5" max="8" step="0.5" value="1" /><span class="pt-val" id="branch-width-value">1</span></div>
-      <div class="pt-palette-row" title="Rounded corner radius on branch elbows"><span class="pt-palette-label">Elbow Radius <i class="bi bi-radar form-label-sm"></i></span><input type="range" class="form-range" id="elbow-radius-slider" min="0" max="20" step="1" value="2" /><span class="pt-val" id="elbow-radius-value">2</span></div>
-    </div>`;
+  return window.buildPaletteSectionHTML({
+    icon: 'bi bi-diagram-2-fill bi-rotate-270',
+    title: 'Branches',
+    rows: [
+      {
+        kind: 'color',
+        id: 'branch-color',
+        value: '#f2f1e6',
+        title: 'Branch line colour',
+        label: 'Colour',
+        labelIcon: 'bi bi-palette form-label-sm',
+      },
+      {
+        kind: 'range',
+        id: 'branch-width-slider',
+        min: 0.5,
+        max: 8,
+        step: 0.5,
+        value: 1,
+        valueId: 'branch-width-value',
+        valueText: '1',
+        title: 'Branch line thickness in screen pixels',
+        label: 'Width',
+        labelIcon: 'bi bi-arrows-expand form-label-sm',
+      },
+      {
+        kind: 'range',
+        id: 'elbow-radius-slider',
+        min: 0,
+        max: 20,
+        step: 1,
+        value: 2,
+        valueId: 'elbow-radius-value',
+        valueText: '2',
+        title: 'Rounded corner radius on branch elbows',
+        label: 'Elbow Radius',
+        labelIcon: 'bi bi-radar form-label-sm',
+      },
+    ],
+  });
 }
 
 function _sectionTipLabels() {
-  return `
-    <div class="pt-palette-section">
-      <h3><i class="bi bi-tag"></i> Tip Labels</h3>
-      <div class="pt-palette-row" title="Show tip labels; choose which annotation to display"><span class="pt-palette-label">Label 1</span><select class="pt-palette-select" id="tip-label-show" disabled><option value="off">Off</option><option value="name" selected>name</option></select></div>
-      <div class="pt-palette-row" title="Only draw tip labels on tips that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="tip-labels-filter" disabled><option value="">— always —</option></select></div>
-      <div id="tip-label-controls" class="pt-sub-controls" style="display:none">
-        <div class="pt-palette-row" id="tip-label-dp-row" style="display:none" title="Decimal places for numeric tip labels"><span class="pt-palette-label">d.p.</span><select class="pt-palette-select" id="tip-label-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
-        <div class="pt-palette-row" title="Align tips to a common margin with optional connecting lines"><span class="pt-palette-label">Alignment <i class="bi bi-text-left form-label-sm"></i></span><select class="pt-palette-select" id="tip-label-align"><option value="off">Off</option><option value="aligned">Aligned</option><option value="dots">Aligned + dots</option><option value="dashed">Aligned + dashed</option><option value="solid">Aligned + solid</option></select></div>
-        <div class="pt-palette-row" title="Horizontal gap between labels or between tip node and first label"><span class="pt-palette-label">Spacing <i class="bi bi-arrow-bar-right form-label-sm"></i></span><input type="range" class="form-range" id="tip-label-spacing-slider" min="0" max="100" step="1" value="3" /><span class="pt-val" id="tip-label-spacing-value">3</span></div>
-        <div class="pt-palette-row" title="Font size of tip labels"><span class="pt-palette-label">Size <i class="bi bi-fonts form-label-sm"></i></span><input type="range" class="form-range" id="font-size-slider" min="1" max="48" value="11" /><span class="pt-val" id="font-size-value">11</span></div>
-        <div class="pt-palette-row" title="Typeface for tip labels"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" id="typeface-select">${_TYPEFACES}</select></div>
-        <div class="pt-palette-row" title="Font style for tip labels"><span class="pt-palette-label">Style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" id="typeface-style-select"><option value="">Theme</option></select></div>
-        <div class="pt-palette-row" title="Tip label text colour"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="label-color" value="#f7eeca" /></div>
-        <div class="pt-palette-row" title="Colour tip labels by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="label-colour-by" disabled><option value="user_colour">user colour</option></select></div>
-        <div class="pt-palette-row" id="label-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="label-configure-btn">Configure</button></div>
-        <!-- Extra tip labels 2–4 with progressive disclosure -->
-      </div>
-      <div id="tip-label2-section" class="pt-detail">
-        <div class="pt-palette-row"><span class="pt-palette-label">Label 2</span><select class="pt-palette-select" id="tip-label2-show"><option value="off" selected>Off</option><option value="name">name</option></select></div>
-        <div id="tip-label2-detail" class="pt-detail pt-sub-controls">
-          <div class="pt-palette-row" title="Layout of Label 2 relative to Label 1"><span class="pt-palette-label">Layout</span><select class="pt-palette-select" id="tip-label2-layout"><option value="append">Append</option><option value="align">Align</option><option value="join-space">Join with space</option><option value="join-pipe">Join with |</option><option value="join-slash">Join with /</option><option value="join-underscore">Join with _</option><option value="join-dash">Join with -</option></select></div>
-        </div>
-      </div>
-      <div id="tip-label3-section" class="pt-detail">
-        <div class="pt-palette-row"><span class="pt-palette-label">Label 3</span><select class="pt-palette-select" id="tip-label3-show"><option value="off" selected>Off</option><option value="name">name</option></select></div>
-        <div id="tip-label3-detail" class="pt-detail pt-sub-controls">
-          <div class="pt-palette-row" title="Layout of Label 3 relative to Label 2"><span class="pt-palette-label">Layout</span><select class="pt-palette-select" id="tip-label3-layout"><option value="append">Append</option><option value="align">Align</option><option value="join-space">Join with space</option><option value="join-pipe">Join with |</option><option value="join-slash">Join with /</option><option value="join-underscore">Join with _</option><option value="join-dash">Join with -</option></select></div>
-        </div>
-      </div>
-      <div id="tip-label4-section" class="pt-detail">
-        <div class="pt-palette-row"><span class="pt-palette-label">Label 4</span><select class="pt-palette-select" id="tip-label4-show"><option value="off" selected>Off</option><option value="name">name</option></select></div>
-        <div id="tip-label4-detail" class="pt-detail pt-sub-controls">
-          <div class="pt-palette-row" title="Layout of Label 4 relative to Label 3"><span class="pt-palette-label">Layout</span><select class="pt-palette-select" id="tip-label4-layout"><option value="append">Append</option><option value="align">Align</option><option value="join-space">Join with space</option><option value="join-pipe">Join with |</option><option value="join-slash">Join with /</option><option value="join-underscore">Join with _</option><option value="join-dash">Join with -</option></select></div>
-        </div>
-      </div>
-    </div>`;
+  const _tipLabelLayoutOptions = [
+    { value: 'append', label: 'Append' },
+    { value: 'align', label: 'Align' },
+    { value: 'join-space', label: 'Join with space' },
+    { value: 'join-pipe', label: 'Join with |' },
+    { value: 'join-slash', label: 'Join with /' },
+    { value: 'join-underscore', label: 'Join with _' },
+    { value: 'join-dash', label: 'Join with -' },
+  ];
+
+  return window.buildPaletteSectionHTML({
+    icon: 'bi bi-tag',
+    title: 'Tip Labels',
+    rows: [
+      {
+        kind: 'select',
+        id: 'tip-label-show',
+        disabled: true,
+        options: [
+          { value: 'off', label: 'Off' },
+          { value: 'name', label: 'name', selected: true },
+        ],
+        title: 'Show tip labels; choose which annotation to display',
+        label: 'Label 1',
+      },
+      {
+        kind: 'select',
+        id: 'tip-labels-filter',
+        disabled: true,
+        options: [{ value: '', label: '— always —' }],
+        title: 'Only draw tip labels on tips that pass this filter',
+        label: 'Filter',
+        labelIcon: 'bi bi-funnel form-label-sm',
+      },
+    ],
+    items: [
+      {
+        type: 'group',
+        id: 'tip-label-controls',
+        className: 'pt-sub-controls',
+        style: 'display:none',
+        items: [
+          {
+            type: 'row',
+            kind: 'select',
+            rowId: 'tip-label-dp-row',
+            rowStyle: 'display:none',
+            id: 'tip-label-decimal-places',
+            options: [
+              { value: '', label: 'Auto' },
+              { value: '0', label: '0' },
+              { value: '1', label: '1' },
+              { value: '2', label: '2' },
+              { value: '3', label: '3' },
+              { value: '4', label: '4' },
+              { value: '5', label: '5' },
+              { value: '6', label: '6' },
+            ],
+            title: 'Decimal places for numeric tip labels',
+            label: 'd.p.',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'tip-label-align',
+            options: [
+              { value: 'off', label: 'Off' },
+              { value: 'aligned', label: 'Aligned' },
+              { value: 'dots', label: 'Aligned + dots' },
+              { value: 'dashed', label: 'Aligned + dashed' },
+              { value: 'solid', label: 'Aligned + solid' },
+            ],
+            title: 'Align tips to a common margin with optional connecting lines',
+            label: 'Alignment',
+            labelIcon: 'bi bi-text-left form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'tip-label-spacing-slider',
+            min: 0,
+            max: 100,
+            step: 1,
+            value: 3,
+            valueId: 'tip-label-spacing-value',
+            valueText: '3',
+            title: 'Horizontal gap between labels or between tip node and first label',
+            label: 'Spacing',
+            labelIcon: 'bi bi-arrow-bar-right form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'font-size-slider',
+            min: 1,
+            max: 48,
+            value: 11,
+            valueId: 'font-size-value',
+            valueText: '11',
+            title: 'Font size of tip labels',
+            label: 'Size',
+            labelIcon: 'bi bi-fonts form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'typeface-select',
+            optionsHTML: _TYPEFACES,
+            title: 'Typeface for tip labels',
+            label: 'Typeface',
+            labelIcon: 'bi bi-type form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'typeface-style-select',
+            options: [{ value: '', label: 'Theme' }],
+            title: 'Font style for tip labels',
+            label: 'Style',
+            labelIcon: 'bi bi-type-italic form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'color',
+            id: 'label-color',
+            value: '#f7eeca',
+            title: 'Tip label text colour',
+            label: 'Colour',
+            labelIcon: 'bi bi-palette form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'label-colour-by',
+            disabled: true,
+            options: [{ value: 'user_colour', label: 'user colour' }],
+            title: 'Colour tip labels by an annotation attribute',
+            label: 'Colour by',
+            labelIcon: 'bi bi-paint-bucket form-label-sm',
+          },
+          {
+            type: 'row',
+            rowId: 'label-configure-row',
+            rowStyle: 'display:none',
+            kind: 'button',
+            id: 'label-configure-btn',
+            buttonText: 'Configure',
+            title: '',
+            label: 'Palette',
+            labelIcon: 'bi bi-palette2 form-label-sm',
+          },
+        ],
+      },
+      {
+        type: 'group',
+        id: 'tip-label2-section',
+        className: 'pt-detail',
+        items: [
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'tip-label2-show',
+            options: [
+              { value: 'off', label: 'Off', selected: true },
+              { value: 'name', label: 'name' },
+            ],
+            title: '',
+            label: 'Label 2',
+          },
+          {
+            type: 'group',
+            id: 'tip-label2-detail',
+            className: 'pt-detail pt-sub-controls',
+            items: [
+              {
+                type: 'row',
+                kind: 'select',
+                id: 'tip-label2-layout',
+                options: _tipLabelLayoutOptions,
+                title: 'Layout of Label 2 relative to Label 1',
+                label: 'Layout',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        type: 'group',
+        id: 'tip-label3-section',
+        className: 'pt-detail',
+        items: [
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'tip-label3-show',
+            options: [
+              { value: 'off', label: 'Off', selected: true },
+              { value: 'name', label: 'name' },
+            ],
+            title: '',
+            label: 'Label 3',
+          },
+          {
+            type: 'group',
+            id: 'tip-label3-detail',
+            className: 'pt-detail pt-sub-controls',
+            items: [
+              {
+                type: 'row',
+                kind: 'select',
+                id: 'tip-label3-layout',
+                options: _tipLabelLayoutOptions,
+                title: 'Layout of Label 3 relative to Label 2',
+                label: 'Layout',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        type: 'group',
+        id: 'tip-label4-section',
+        className: 'pt-detail',
+        items: [
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'tip-label4-show',
+            options: [
+              { value: 'off', label: 'Off', selected: true },
+              { value: 'name', label: 'name' },
+            ],
+            title: '',
+            label: 'Label 4',
+          },
+          {
+            type: 'group',
+            id: 'tip-label4-detail',
+            className: 'pt-detail pt-sub-controls',
+            items: [
+              {
+                type: 'row',
+                kind: 'select',
+                id: 'tip-label4-layout',
+                options: _tipLabelLayoutOptions,
+                title: 'Layout of Label 4 relative to Label 3',
+                label: 'Layout',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  });
 }
 
 function _sectionBranchLabels() {
-  return `
-    <div class="pt-palette-section">
-      <h3><i class="bi bi-tag"></i> Branch Labels</h3>
-      <div class="pt-palette-row" title="Show labels at the midpoint of each branch; choose which annotation to display"><span class="pt-palette-label">Label</span><select class="pt-palette-select" id="branch-label-show" disabled><option value="">Off</option></select></div>
-      <div class="pt-palette-row" title="Only draw branch labels on nodes that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="branch-labels-filter" disabled><option value="">— always —</option></select></div>
-      <div id="branch-label-detail" class="pt-detail pt-sub-controls">
-        <div class="pt-palette-row" id="branch-label-dp-row" style="display:none" title="Decimal places for numeric branch labels"><span class="pt-palette-label">d.p. <i class="bi bi-three-dots form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
-        <div class="pt-palette-row" title="Position of branch labels relative to the branch midpoint"><span class="pt-palette-label">Position <i class="bi bi-justify-left form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-position"><option value="above">Above</option><option value="below">Below</option></select></div>
-        <div class="pt-palette-row" title="Vertical offset of branch labels from the branch midpoint"><span class="pt-palette-label">Spacing <i class="bi bi-arrow-bar-up form-label-sm"></i></span><input type="range" class="form-range" id="branch-label-spacing-slider" min="0" max="20" step="1" value="4" /><span class="pt-val" id="branch-label-spacing-value">4</span></div>
-        <div class="pt-palette-row" title="Font size of branch labels"><span class="pt-palette-label">Size <i class="bi bi-fonts form-label-sm"></i></span><input type="range" class="form-range" id="branch-label-font-size-slider" min="6" max="48" value="9" /><span class="pt-val" id="branch-label-font-size-value">9</span></div>
-        <div class="pt-palette-row" title="Typeface for branch labels"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-typeface-select">${_TYPEFACES}</select></div>
-        <div class="pt-palette-row" title="Font style for branch labels"><span class="pt-palette-label">Style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-typeface-style-select"><option value="">Theme</option></select></div>
-        <div class="pt-palette-row" title="Branch label text colour"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="branch-label-color" value="#aaaaaa" /></div>
-        <div class="pt-palette-row" title="Colour branch labels by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="branch-label-colour-by" disabled><option value="user_colour">user colour</option></select></div>
-        <div class="pt-palette-row" id="branch-label-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="branch-label-configure-btn">Configure</button></div>
-      </div>
-    </div>`;
+  return window.buildPaletteSectionHTML({
+    icon: 'bi bi-tag',
+    title: 'Branch Labels',
+    rows: [
+      {
+        kind: 'select',
+        id: 'branch-label-show',
+        disabled: true,
+        options: [{ value: '', label: 'Off' }],
+        title: 'Show labels at the midpoint of each branch; choose which annotation to display',
+        label: 'Label',
+      },
+      {
+        kind: 'select',
+        id: 'branch-labels-filter',
+        disabled: true,
+        options: [{ value: '', label: '— always —' }],
+        title: 'Only draw branch labels on nodes that pass this filter',
+        label: 'Filter',
+        labelIcon: 'bi bi-funnel form-label-sm',
+      },
+    ],
+    items: [
+      {
+        type: 'group',
+        id: 'branch-label-detail',
+        className: 'pt-detail pt-sub-controls',
+        items: [
+          {
+            type: 'row',
+            kind: 'select',
+            rowId: 'branch-label-dp-row',
+            rowStyle: 'display:none',
+            id: 'branch-label-decimal-places',
+            options: [
+              { value: '', label: 'Auto' },
+              { value: '0', label: '0' },
+              { value: '1', label: '1' },
+              { value: '2', label: '2' },
+              { value: '3', label: '3' },
+              { value: '4', label: '4' },
+              { value: '5', label: '5' },
+              { value: '6', label: '6' },
+            ],
+            title: 'Decimal places for numeric branch labels',
+            label: 'd.p.',
+            labelIcon: 'bi bi-three-dots form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'branch-label-position',
+            options: [
+              { value: 'above', label: 'Above' },
+              { value: 'below', label: 'Below' },
+            ],
+            title: 'Position of branch labels relative to the branch midpoint',
+            label: 'Position',
+            labelIcon: 'bi bi-justify-left form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'branch-label-spacing-slider',
+            min: 0,
+            max: 20,
+            step: 1,
+            value: 4,
+            valueId: 'branch-label-spacing-value',
+            valueText: '4',
+            title: 'Vertical offset of branch labels from the branch midpoint',
+            label: 'Spacing',
+            labelIcon: 'bi bi-arrow-bar-up form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'branch-label-font-size-slider',
+            min: 6,
+            max: 48,
+            value: 9,
+            valueId: 'branch-label-font-size-value',
+            valueText: '9',
+            title: 'Font size of branch labels',
+            label: 'Size',
+            labelIcon: 'bi bi-fonts form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'branch-label-typeface-select',
+            optionsHTML: _TYPEFACES,
+            title: 'Typeface for branch labels',
+            label: 'Typeface',
+            labelIcon: 'bi bi-type form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'branch-label-typeface-style-select',
+            options: [{ value: '', label: 'Theme' }],
+            title: 'Font style for branch labels',
+            label: 'Style',
+            labelIcon: 'bi bi-type-italic form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'color',
+            id: 'branch-label-color',
+            value: '#aaaaaa',
+            title: 'Branch label text colour',
+            label: 'Colour',
+            labelIcon: 'bi bi-palette form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'branch-label-colour-by',
+            disabled: true,
+            options: [{ value: 'user_colour', label: 'user colour' }],
+            title: 'Colour branch labels by an annotation attribute',
+            label: 'Colour by',
+            labelIcon: 'bi bi-paint-bucket form-label-sm',
+          },
+          {
+            type: 'row',
+            rowId: 'branch-label-configure-row',
+            rowStyle: 'display:none',
+            kind: 'button',
+            id: 'branch-label-configure-btn',
+            buttonText: 'Configure',
+            title: '',
+            label: 'Palette',
+            labelIcon: 'bi bi-palette2 form-label-sm',
+          },
+        ],
+      },
+    ],
+  });
 }
 
-function _sectionNodeLabels() {  return `
-    <div class="pt-palette-section">
-      <h3><i class="bi bi-tag-fill"></i> Node Labels</h3>
-      <div class="pt-palette-row" title="Show labels at internal nodes; choose which annotation to display"><span class="pt-palette-label">Label</span><select class="pt-palette-select" id="node-label-show" disabled><option value="">Off</option></select></div>
-      <div class="pt-palette-row" title="Only draw node labels on nodes that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="node-labels-filter" disabled><option value="">— always —</option></select></div>
-      <div id="node-label-detail" class="pt-detail pt-sub-controls">
-        <div class="pt-palette-row" id="node-label-dp-row" style="display:none" title="Decimal places for numeric node labels"><span class="pt-palette-label">d.p. <i class="bi bi-three-dots form-label-sm"></i></span><select class="pt-palette-select" id="node-label-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
-        <div class="pt-palette-row" title="Position of node labels relative to the node point"><span class="pt-palette-label">Position <i class="bi bi-diagram-2-fill form-label-sm bi-rotate-90"></i></span><select class="pt-palette-select" id="node-label-position"><option value="right">Right</option><option value="above-left">Above left</option><option value="below-left">Below left</option></select></div>
-        <div class="pt-palette-row" title="Horizontal offset of node labels from the node point"><span class="pt-palette-label">Spacing <i class="bi bi-arrow-bar-right form-label-sm"></i></span><input type="range" class="form-range" id="node-label-spacing-slider" min="0" max="20" step="1" value="4" /><span class="pt-val" id="node-label-spacing-value">4</span></div>
-        <div class="pt-palette-row" title="Font size of node labels"><span class="pt-palette-label">Size <i class="bi bi-fonts form-label-sm"></i></span><input type="range" class="form-range" id="node-label-font-size-slider" min="6" max="48" value="9" /><span class="pt-val" id="node-label-font-size-value">9</span></div>
-        <div class="pt-palette-row" title="Typeface for node labels"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" id="node-label-typeface-select">${_TYPEFACES}</select></div>
-        <div class="pt-palette-row" title="Font style for node labels"><span class="pt-palette-label">Style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" id="node-label-typeface-style-select"><option value="">Theme</option></select></div>
-        <div class="pt-palette-row" title="Node label text colour"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="node-label-color" value="#aaaaaa" /></div>
-        <div class="pt-palette-row" title="Colour node labels by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="node-label-colour-by" disabled><option value="user_colour">user colour</option></select></div>
-        <div class="pt-palette-row" id="node-label-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="node-label-configure-btn">Configure</button></div>
-      </div>
-    </div>`;
+function _sectionNodeLabels() {
+  return window.buildPaletteSectionHTML({
+    icon: 'bi bi-tag-fill',
+    title: 'Node Labels',
+    rows: [
+      {
+        kind: 'select',
+        id: 'node-label-show',
+        disabled: true,
+        options: [{ value: '', label: 'Off' }],
+        title: 'Show labels at internal nodes; choose which annotation to display',
+        label: 'Label',
+      },
+      {
+        kind: 'select',
+        id: 'node-labels-filter',
+        disabled: true,
+        options: [{ value: '', label: '— always —' }],
+        title: 'Only draw node labels on nodes that pass this filter',
+        label: 'Filter',
+        labelIcon: 'bi bi-funnel form-label-sm',
+      },
+    ],
+    items: [
+      {
+        type: 'group',
+        id: 'node-label-detail',
+        className: 'pt-detail pt-sub-controls',
+        items: [
+          {
+            type: 'row',
+            kind: 'select',
+            rowId: 'node-label-dp-row',
+            rowStyle: 'display:none',
+            id: 'node-label-decimal-places',
+            options: [
+              { value: '', label: 'Auto' },
+              { value: '0', label: '0' },
+              { value: '1', label: '1' },
+              { value: '2', label: '2' },
+              { value: '3', label: '3' },
+              { value: '4', label: '4' },
+              { value: '5', label: '5' },
+              { value: '6', label: '6' },
+            ],
+            title: 'Decimal places for numeric node labels',
+            label: 'd.p.',
+            labelIcon: 'bi bi-three-dots form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'node-label-position',
+            options: [
+              { value: 'right', label: 'Right' },
+              { value: 'above-left', label: 'Above left' },
+              { value: 'below-left', label: 'Below left' },
+            ],
+            title: 'Position of node labels relative to the node point',
+            label: 'Position',
+            labelIcon: 'bi bi-diagram-2-fill form-label-sm bi-rotate-90',
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'node-label-spacing-slider',
+            min: 0,
+            max: 20,
+            step: 1,
+            value: 4,
+            valueId: 'node-label-spacing-value',
+            valueText: '4',
+            title: 'Horizontal offset of node labels from the node point',
+            label: 'Spacing',
+            labelIcon: 'bi bi-arrow-bar-right form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'node-label-font-size-slider',
+            min: 6,
+            max: 48,
+            value: 9,
+            valueId: 'node-label-font-size-value',
+            valueText: '9',
+            title: 'Font size of node labels',
+            label: 'Size',
+            labelIcon: 'bi bi-fonts form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'node-label-typeface-select',
+            optionsHTML: _TYPEFACES,
+            title: 'Typeface for node labels',
+            label: 'Typeface',
+            labelIcon: 'bi bi-type form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'node-label-typeface-style-select',
+            options: [{ value: '', label: 'Theme' }],
+            title: 'Font style for node labels',
+            label: 'Style',
+            labelIcon: 'bi bi-type-italic form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'color',
+            id: 'node-label-color',
+            value: '#aaaaaa',
+            title: 'Node label text colour',
+            label: 'Colour',
+            labelIcon: 'bi bi-palette form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'node-label-colour-by',
+            disabled: true,
+            options: [{ value: 'user_colour', label: 'user colour' }],
+            title: 'Colour node labels by an annotation attribute',
+            label: 'Colour by',
+            labelIcon: 'bi bi-paint-bucket form-label-sm',
+          },
+          {
+            type: 'row',
+            rowId: 'node-label-configure-row',
+            rowStyle: 'display:none',
+            kind: 'button',
+            id: 'node-label-configure-btn',
+            buttonText: 'Configure',
+            title: '',
+            label: 'Palette',
+            labelIcon: 'bi bi-palette2 form-label-sm',
+          },
+        ],
+      },
+    ],
+  });
 }
 
 function _sectionLabelShapes() {
@@ -466,30 +993,13 @@ const _ALL_SECTIONS = [
 
 function buildPalettePanel(sections) {
   const keys = (!sections || sections === 'all') ? _ALL_SECTIONS : sections;
-  const body = keys
+  const sectionHTML = keys
     .filter(k => _SECTION_BUILDERS[k])
     .map(k => _SECTION_BUILDERS[k]())
     .join('');
-  return `<div id="palette-panel">
-  ${window.buildSidePanelHeaderHTML({
-    id: 'palette-panel-header',
-    headerClass: 'pt-side-panel-header',
-    height: 34,
-    side: 'left',
-    buttonOrder: 'pin-close',
-    leftHTML: '<h2><i class="bi bi-sliders me-1"></i>Visual Options</h2>',
-    pinButtonId: 'btn-palette-pin',
-    closeButtonId: 'btn-palette-close',
-    pinTitle: 'Pin panel open',
-    closeTitle: 'Close',
-  })}
-  <div id="palette-panel-body">
-    ${body}
-  </div>
-  <div id="palette-panel-footer">
-    <button id="btn-reset-settings" title="Reset all visual settings to their defaults"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset to defaults</button>
-  </div>
-</div>`;
+  return window.buildPalettePanelFromDefinition({
+    sections: [sectionHTML],
+  });
 }
 
 // ══════════════════════════════════════════════════════════════════════════

@@ -28,7 +28,7 @@ import { DEFAULT_UI_APP, DEFAULT_UI_EMBED, DEFAULT_UI_EMBEDFRAME } from './confi
 import { createToolbarColourPicker, upgradeAllPaletteColourPickers } from '@artic-network/pearcore/colorpicker.js';
 import { createThemeManager, resolveEmbedConfig, initSectionAccordion,
          ensureStylesheet, loadScript, resolveAssetBases,
-         createSidePanelStackManager } from '@artic-network/pearcore/pearcore-app.js';
+         createSidePanelStackManager, createPaletteController } from '@artic-network/pearcore/pearcore-app.js';
 
 /**
  * Fetch a file by relative path, falling back to the absolute GitHub Pages URL
@@ -540,6 +540,7 @@ async function _initCore(root = document) {
   const branchShapeExtraConfigureBtns = [2, 3, 4].map(n => $(`branch-shape-${n}-configure-btn`));
   const branchShapeExtraSectionEls    = [2, 3, 4].map(n => $(`branch-shape-${n}-section`));
   const branchShapeExtraDetailEls     = [2, 3, 4].map(n => $(`branch-shape-${n}-detail`));
+  const paletteController = createPaletteController({ root, scopeSelector: '#palette-panel' });
   // Extra label shapes 2–10 (indices 0–8 correspond to shape numbers 2–10)
   const EXTRA_SHAPE_COUNT = 9;
   const tipLabelShapeExtraEls           = Array.from({length: EXTRA_SHAPE_COUNT}, (_, i) => $(`tip-label-shape-${i + 2}`));
@@ -1084,7 +1085,6 @@ async function _initCore(root = document) {
       nodeLabelColor:      nodeLabelColorEl.value,
       nodeLabelSpacing:    nodeLabelSpacingSlider.value,
       nodeLabelColourBy:   nodeLabelColourBy.value,
-      tipLabelSpacing:     tipLabelSpacingSlider.value,
       nodeLabelDecimalPlaces: nodeLabelDpEl.value !== '' ? parseInt(nodeLabelDpEl.value) : null,
       branchLabelAnnotation: branchLabelShowEl.value,
       branchLabelPosition:   branchLabelPositionEl.value,
@@ -3473,13 +3473,13 @@ async function _initCore(root = document) {
   // Wire filter dropdown change events
   function _onFilterSelectChange() { _applyFilterSelects(); saveSettings(); }
 
-  nodeBarsFilterEl?.addEventListener('change',     _onFilterSelectChange);
-  nodeLabelsFilterEl?.addEventListener('change',   _onFilterSelectChange);
-  branchLabelsFilterEl?.addEventListener('change', _onFilterSelectChange);
-  branchShapesFilterEl?.addEventListener('change', _onFilterSelectChange);
-  tipLabelsFilterEl?.addEventListener('change',    _onFilterSelectChange);
-  nodeShapesFilterEl?.addEventListener('change',   _onFilterSelectChange);
-  tipShapesFilterEl?.addEventListener('change',    _onFilterSelectChange);
+  paletteController.on('node-bars-filter', _onFilterSelectChange);
+  paletteController.on('node-labels-filter', _onFilterSelectChange);
+  paletteController.on('branch-labels-filter', _onFilterSelectChange);
+  paletteController.on('branch-shapes-filter', _onFilterSelectChange);
+  paletteController.on('tip-labels-filter', _onFilterSelectChange);
+  paletteController.on('node-shapes-filter', _onFilterSelectChange);
+  paletteController.on('tip-shapes-filter', _onFilterSelectChange);
 
   function _applyFilterSelects() {
     if (!renderer) return;
@@ -6135,43 +6135,48 @@ async function _initCore(root = document) {
     });
 
     // Style change listeners
-    cladeHighlightLeftEdgeEl?.addEventListener('change', () => {
+    paletteController.on('clade-highlight-left-edge', () => {
       renderer?.setCladeHighlightStyle({ cladeHighlightLeftEdge: cladeHighlightLeftEdgeEl.value });
       saveSettings();
     });
-    cladeHighlightRightEdgeEl?.addEventListener('change', () => {
+    paletteController.on('clade-highlight-right-edge', () => {
       renderer?.setCladeHighlightStyle({ cladeHighlightRightEdge: cladeHighlightRightEdgeEl.value });
       saveSettings();
     });
-    cladeHighlightPaddingSlider?.addEventListener('input', () => {
+    paletteController.on('clade-highlight-padding', ({ type }) => {
+      if (type !== 'input') return;
       const v = cladeHighlightPaddingSlider.value;
       const valEl = $('clade-highlight-padding-value');
       if (valEl) valEl.textContent = v;
       renderer?.setCladeHighlightStyle({ cladeHighlightPadding: parseFloat(v) });
       saveSettings();
     });
-    cladeHighlightRadiusSlider?.addEventListener('input', () => {
+    paletteController.on('clade-highlight-radius', ({ type }) => {
+      if (type !== 'input') return;
       const v = cladeHighlightRadiusSlider.value;
       const valEl = $('clade-highlight-radius-value');
       if (valEl) valEl.textContent = v;
       renderer?.setCladeHighlightStyle({ cladeHighlightRadius: parseFloat(v) });
       saveSettings();
     });
-    cladeHighlightFillOpacitySlider?.addEventListener('input', () => {
+    paletteController.on('clade-highlight-fill-opacity', ({ type }) => {
+      if (type !== 'input') return;
       const v = cladeHighlightFillOpacitySlider.value;
       const valEl = $('clade-highlight-fill-opacity-value');
       if (valEl) valEl.textContent = v;
       renderer?.setCladeHighlightStyle({ cladeHighlightFillOpacity: parseFloat(v) });
       saveSettings();
     });
-    cladeHighlightStrokeOpacitySlider?.addEventListener('input', () => {
+    paletteController.on('clade-highlight-stroke-opacity', ({ type }) => {
+      if (type !== 'input') return;
       const v = cladeHighlightStrokeOpacitySlider.value;
       const valEl = $('clade-highlight-stroke-opacity-value');
       if (valEl) valEl.textContent = v;
       renderer?.setCladeHighlightStyle({ cladeHighlightStrokeOpacity: parseFloat(v) });
       saveSettings();
     });
-    cladeHighlightStrokeWidthSlider?.addEventListener('input', () => {
+    paletteController.on('clade-highlight-stroke-width', ({ type }) => {
+      if (type !== 'input') return;
       const v = cladeHighlightStrokeWidthSlider.value;
       const valEl = $('clade-highlight-stroke-width-value');
       if (valEl) valEl.textContent = v;
@@ -6179,21 +6184,23 @@ async function _initCore(root = document) {
       saveSettings();
     });
 
-    cladeHighlightColourByEl?.addEventListener('change', () => {
+    paletteController.on('clade-highlight-colour-by', () => {
       _updateConfigureBtn(cladeHighlightConfigureRow, cladeHighlightColourByEl.value);
       _recolourAllHighlights();
     });
 
-    $('clade-highlight-configure-btn')?.addEventListener('click', () => {
+    paletteController.on('clade-highlight-configure-btn', ({ type }) => {
+      if (type !== 'click') return;
       openAnnotConfig(cladeHighlightColourByEl?.value);
     });
 
-    collapsedCladeColourByEl?.addEventListener('change', () => {
+    paletteController.on('collapsed-clade-colour-by', () => {
       _updateConfigureBtn(collapsedCladeConfigureRow, collapsedCladeColourByEl.value);
       _recolourAllCollapsed();
     });
 
-    $('collapsed-clade-configure-btn')?.addEventListener('click', () => {
+    paletteController.on('collapsed-clade-configure-btn', ({ type }) => {
+      if (type !== 'click') return;
       openAnnotConfig(collapsedCladeColourByEl?.value);
     });
 
@@ -6720,12 +6727,13 @@ async function _initCore(root = document) {
 
   // ── Always-active bindings ────────────────────────────────────────────────
 
-  themeSelect?.addEventListener('change', () => {
+  paletteController.on('theme-select', () => {
     if (themeSelect.value !== 'custom') applyTheme(themeSelect.value);
     else _syncThemeButtons();
   });
 
-  canvasBgColorEl.addEventListener('input', () => {
+  paletteController.on('canvas-bg-color', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setBgColor(canvasBgColorEl.value);
     _syncCanvasWrapperBg(canvasBgColorEl.value);
@@ -6733,20 +6741,23 @@ async function _initCore(root = document) {
     saveSettings();
   });
 
-  branchColorEl.addEventListener('input', () => {
+  paletteController.on('branch-color', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setBranchColor(branchColorEl.value);
     saveSettings();
   });
 
-  branchWidthSlider.addEventListener('input', () => {
+  paletteController.on('branch-width-slider', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('branch-width-value').textContent = branchWidthSlider.value;
     renderer.setBranchWidth(parseFloat(branchWidthSlider.value));
     saveSettings();
   });
 
-  elbowRadiusSlider?.addEventListener('input', () => {
+  paletteController.on('elbow-radius-slider', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('elbow-radius-value').textContent = elbowRadiusSlider.value;
     renderer.elbowRadius = parseFloat(elbowRadiusSlider.value);
@@ -6754,13 +6765,14 @@ async function _initCore(root = document) {
     saveSettings();
   });
 
-  fontSlider.addEventListener('input', () => {
+  paletteController.on('font-size-slider', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setFontSize(parseInt(fontSlider.value));
     saveSettings();
   });
 
-  fontFamilyEl.addEventListener('change', () => {
+  paletteController.on('font-family-select', () => {
     _markCustomTheme();
     _populateStyleSelect(fontFamilyEl.value, fontTypefaceStyleEl, '');
     // Repopulate all sub-element style selects whose typeface is currently 'Theme'
@@ -6776,14 +6788,14 @@ async function _initCore(root = document) {
     saveSettings();
   });
 
-  legendTypefaceEl.addEventListener('change', () => {
+  paletteController.on('legend-font-family-select', () => {
     _markCustomTheme();
     _populateStyleSelect(legendTypefaceEl.value || fontFamilyEl.value, legendTypefaceStyleEl, '', true);
     _applyLegendTypeface();
     saveSettings();
   });
 
-  axisTypefaceEl.addEventListener('change', () => {
+  paletteController.on('axis-font-family-select', () => {
     _markCustomTheme();
     _populateStyleSelect(axisTypefaceEl.value || fontFamilyEl.value, axisTypefaceStyleEl, '', true);
     applyAxisStyle();
@@ -6791,7 +6803,7 @@ async function _initCore(root = document) {
   });
 
   // Typeface style change listeners
-  fontTypefaceStyleEl?.addEventListener('change', () => {
+  paletteController.on('font-typeface-style-select', () => {
     _markCustomTheme();
     renderer.setSettings(_buildRendererSettings());
     _applyAxisTypeface();
@@ -6799,254 +6811,284 @@ async function _initCore(root = document) {
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
-  tipLabelTypefaceEl?.addEventListener('change', () => {
+  paletteController.on('typeface-select', () => {
     _markCustomTheme();
     const tKey = tipLabelTypefaceEl.value || fontFamilyEl.value;
     _populateStyleSelect(tKey, typefaceStyleEl, '', true);
     renderer.setSettings(_buildRendererSettings());
     saveSettings();
   });
-  typefaceStyleEl?.addEventListener('change', () => {
+  paletteController.on('typeface-style-select', () => {
     _markCustomTheme();
     renderer.setSettings(_buildRendererSettings());
     saveSettings();
   });
-  legendTypefaceStyleEl?.addEventListener('change', () => {
+  paletteController.on('legend-typeface-style-select', () => {
     _markCustomTheme();
     _applyLegendTypeface();
     saveSettings();
   });
-  axisTypefaceStyleEl?.addEventListener('change', () => {
+  paletteController.on('axis-typeface-style-select', () => {
     _markCustomTheme();
     applyAxisStyle();
     saveSettings();
   });
-  nodeLabelTypefaceEl?.addEventListener('change', () => {
+  paletteController.on('node-label-typeface-select', () => {
     _markCustomTheme();
     const nKey = nodeLabelTypefaceEl.value || fontFamilyEl.value;
     _populateStyleSelect(nKey, nodeLabelTypefaceStyleEl, '', true);
     renderer.setSettings(_buildRendererSettings());
     saveSettings();
   });
-  nodeLabelTypefaceStyleEl?.addEventListener('change', () => {
+  paletteController.on('node-label-typeface-style-select', () => {
     _markCustomTheme();
     renderer.setSettings(_buildRendererSettings());
     saveSettings();
   });
-  collapsedCladeTypefaceEl?.addEventListener('change', () => {
+  paletteController.on('collapsed-clade-typeface-select', () => {
     _markCustomTheme();
     const cKey = collapsedCladeTypefaceEl.value || fontFamilyEl.value;
     _populateStyleSelect(cKey, collapsedCladeTypefaceStyleEl, '', true);
     renderer.setSettings(_buildRendererSettings());
     saveSettings();
   });
-  collapsedCladeTypefaceStyleEl?.addEventListener('change', () => {
+  paletteController.on('collapsed-clade-typeface-style-select', () => {
     _markCustomTheme();
     renderer.setSettings(_buildRendererSettings());
     saveSettings();
   });
 
-  labelColorEl.addEventListener('input', () => {
+  paletteController.on('label-color', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setLabelColor(labelColorEl.value);
     saveSettings();
   });
 
-  selectedLabelStyleEl.addEventListener('change', () => {
+  paletteController.on('selected-label-style', () => {
     _markCustomTheme();
     renderer.setSelectedLabelStyle(selectedLabelStyleEl.value);
     saveSettings();
   });
 
-  selectedTipStrokeEl.addEventListener('input', () => {
+  paletteController.on('selected-tip-stroke', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setSelectedTipStrokeColor(selectedTipStrokeEl.value);
     saveSettings();
   });
 
-  selectedNodeStrokeEl.addEventListener('input', () => {
+  paletteController.on('selected-node-stroke', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setSelectedNodeStrokeColor(selectedNodeStrokeEl.value);
     saveSettings();
   });
 
-  tipHoverFillEl.addEventListener('input', () => {
+  paletteController.on('tip-hover-fill', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setTipHoverFillColor(tipHoverFillEl.value);
     saveSettings();
   });
 
-  nodeHoverFillEl.addEventListener('input', () => {
+  paletteController.on('node-hover-fill', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setNodeHoverFillColor(nodeHoverFillEl.value);
     saveSettings();
   });
 
-  selectedTipFillEl.addEventListener('input', () => {
+  paletteController.on('selected-tip-fill', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setSelectedTipFillColor(selectedTipFillEl.value);
     saveSettings();
   });
 
-  selectedTipGrowthSlider.addEventListener('input', () => {
+  paletteController.on('selected-tip-growth', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('selected-tip-growth-value').textContent = selectedTipGrowthSlider.value;
     renderer.setSelectedTipGrowthFactor(parseFloat(selectedTipGrowthSlider.value));
     saveSettings();
   });
 
-  selectedTipMinSizeSlider.addEventListener('input', () => {
+  paletteController.on('selected-tip-min-size', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('selected-tip-min-size-value').textContent = selectedTipMinSizeSlider.value;
     renderer.setSelectedTipMinSize(parseFloat(selectedTipMinSizeSlider.value));
     saveSettings();
   });
 
-  selectedTipFillOpacitySlider.addEventListener('input', () => {
+  paletteController.on('selected-tip-fill-opacity', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('selected-tip-fill-opacity-value').textContent = selectedTipFillOpacitySlider.value;
     renderer.setSelectedTipFillOpacity(parseFloat(selectedTipFillOpacitySlider.value));
     saveSettings();
   });
 
-  selectedTipStrokeWidthSlider.addEventListener('input', () => {
+  paletteController.on('selected-tip-stroke-width', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('selected-tip-stroke-width-value').textContent = selectedTipStrokeWidthSlider.value;
     renderer.setSelectedTipStrokeWidth(parseFloat(selectedTipStrokeWidthSlider.value));
     saveSettings();
   });
 
-  selectedTipStrokeOpacitySlider.addEventListener('input', () => {
+  paletteController.on('selected-tip-stroke-opacity', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('selected-tip-stroke-opacity-value').textContent = selectedTipStrokeOpacitySlider.value;
     renderer.setSelectedTipStrokeOpacity(parseFloat(selectedTipStrokeOpacitySlider.value));
     saveSettings();
   });
 
-  selectedNodeFillEl.addEventListener('input', () => {
+  paletteController.on('selected-node-fill', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setSelectedNodeFillColor(selectedNodeFillEl.value);
     saveSettings();
   });
 
-  selectedNodeGrowthSlider.addEventListener('input', () => {
+  paletteController.on('selected-node-growth', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('selected-node-growth-value').textContent = selectedNodeGrowthSlider.value;
     renderer.setSelectedNodeGrowthFactor(parseFloat(selectedNodeGrowthSlider.value));
     saveSettings();
   });
 
-  selectedNodeMinSizeSlider.addEventListener('input', () => {
+  paletteController.on('selected-node-min-size', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('selected-node-min-size-value').textContent = selectedNodeMinSizeSlider.value;
     renderer.setSelectedNodeMinSize(parseFloat(selectedNodeMinSizeSlider.value));
     saveSettings();
   });
 
-  selectedNodeFillOpacitySlider.addEventListener('input', () => {
+  paletteController.on('selected-node-fill-opacity', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('selected-node-fill-opacity-value').textContent = selectedNodeFillOpacitySlider.value;
     renderer.setSelectedNodeFillOpacity(parseFloat(selectedNodeFillOpacitySlider.value));
     saveSettings();
   });
 
-  selectedNodeStrokeWidthSlider.addEventListener('input', () => {
+  paletteController.on('selected-node-stroke-width', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('selected-node-stroke-width-value').textContent = selectedNodeStrokeWidthSlider.value;
     renderer.setSelectedNodeStrokeWidth(parseFloat(selectedNodeStrokeWidthSlider.value));
     saveSettings();
   });
 
-  selectedNodeStrokeOpacitySlider.addEventListener('input', () => {
+  paletteController.on('selected-node-stroke-opacity', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('selected-node-stroke-opacity-value').textContent = selectedNodeStrokeOpacitySlider.value;
     renderer.setSelectedNodeStrokeOpacity(parseFloat(selectedNodeStrokeOpacitySlider.value));
     saveSettings();
   });
 
-  tipHoverStrokeEl.addEventListener('input', () => {
+  paletteController.on('tip-hover-stroke', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setTipHoverStrokeColor(tipHoverStrokeEl.value);
     saveSettings();
   });
 
-  tipHoverGrowthSlider.addEventListener('input', () => {
+  paletteController.on('tip-hover-growth', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('tip-hover-growth-value').textContent = tipHoverGrowthSlider.value;
     renderer.setTipHoverGrowthFactor(parseFloat(tipHoverGrowthSlider.value));
     saveSettings();
   });
 
-  tipHoverMinSizeSlider.addEventListener('input', () => {
+  paletteController.on('tip-hover-min-size', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('tip-hover-min-size-value').textContent = tipHoverMinSizeSlider.value;
     renderer.setTipHoverMinSize(parseFloat(tipHoverMinSizeSlider.value));
     saveSettings();
   });
 
-  tipHoverFillOpacitySlider.addEventListener('input', () => {
+  paletteController.on('tip-hover-fill-opacity', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('tip-hover-fill-opacity-value').textContent = tipHoverFillOpacitySlider.value;
     renderer.setTipHoverFillOpacity(parseFloat(tipHoverFillOpacitySlider.value));
     saveSettings();
   });
 
-  tipHoverStrokeWidthSlider.addEventListener('input', () => {
+  paletteController.on('tip-hover-stroke-width', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('tip-hover-stroke-width-value').textContent = tipHoverStrokeWidthSlider.value;
     renderer.setTipHoverStrokeWidth(parseFloat(tipHoverStrokeWidthSlider.value));
     saveSettings();
   });
 
-  tipHoverStrokeOpacitySlider.addEventListener('input', () => {
+  paletteController.on('tip-hover-stroke-opacity', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('tip-hover-stroke-opacity-value').textContent = tipHoverStrokeOpacitySlider.value;
     renderer.setTipHoverStrokeOpacity(parseFloat(tipHoverStrokeOpacitySlider.value));
     saveSettings();
   });
 
-  nodeHoverStrokeEl.addEventListener('input', () => {
+  paletteController.on('node-hover-stroke', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setNodeHoverStrokeColor(nodeHoverStrokeEl.value);
     saveSettings();
   });
 
-  nodeHoverGrowthSlider.addEventListener('input', () => {
+  paletteController.on('node-hover-growth', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('node-hover-growth-value').textContent = nodeHoverGrowthSlider.value;
     renderer.setNodeHoverGrowthFactor(parseFloat(nodeHoverGrowthSlider.value));
     saveSettings();
   });
 
-  nodeHoverMinSizeSlider.addEventListener('input', () => {
+  paletteController.on('node-hover-min-size', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('node-hover-min-size-value').textContent = nodeHoverMinSizeSlider.value;
     renderer.setNodeHoverMinSize(parseFloat(nodeHoverMinSizeSlider.value));
     saveSettings();
   });
 
-  nodeHoverFillOpacitySlider.addEventListener('input', () => {
+  paletteController.on('node-hover-fill-opacity', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('node-hover-fill-opacity-value').textContent = nodeHoverFillOpacitySlider.value;
     renderer.setNodeHoverFillOpacity(parseFloat(nodeHoverFillOpacitySlider.value));
     saveSettings();
   });
 
-  nodeHoverStrokeWidthSlider.addEventListener('input', () => {
+  paletteController.on('node-hover-stroke-width', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('node-hover-stroke-width-value').textContent = nodeHoverStrokeWidthSlider.value;
     renderer.setNodeHoverStrokeWidth(parseFloat(nodeHoverStrokeWidthSlider.value));
     saveSettings();
   });
 
-  nodeHoverStrokeOpacitySlider.addEventListener('input', () => {
+  paletteController.on('node-hover-stroke-opacity', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('node-hover-stroke-opacity-value').textContent = nodeHoverStrokeOpacitySlider.value;
     renderer.setNodeHoverStrokeOpacity(parseFloat(nodeHoverStrokeOpacitySlider.value));
     saveSettings();
   });
 
-  tipSlider.addEventListener('input', () => {
+  paletteController.on('tip-size-slider', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setTipRadius(parseInt(tipSlider.value));
     saveSettings();
@@ -7054,7 +7096,8 @@ async function _initCore(root = document) {
     rttChart?.notifyStyleChange?.();
   });
 
-  tipHaloSlider.addEventListener('input', () => {
+  paletteController.on('tip-halo-slider', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('tip-halo-value').textContent = tipHaloSlider.value;
     renderer.setTipHaloSize(parseInt(tipHaloSlider.value));
@@ -7062,72 +7105,87 @@ async function _initCore(root = document) {
     rttChart?.notifyStyleChange?.();
   });
 
-  nodeSlider.addEventListener('input', () => {
+  paletteController.on('node-size-slider', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setNodeRadius(parseInt(nodeSlider.value));
     saveSettings();
     _syncControlVisibility();
   });
 
-  nodeHaloSlider.addEventListener('input', () => {
+  paletteController.on('node-halo-slider', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     $('node-halo-value').textContent = nodeHaloSlider.value;
     renderer.setNodeHaloSize(parseInt(nodeHaloSlider.value));
     saveSettings();
   });
 
-  tipShapeColorEl.addEventListener('input', () => {
+  paletteController.on('tip-shape-color', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setTipShapeColor(tipShapeColorEl.value);
     saveSettings();
     rttChart?.notifyStyleChange?.();
   });
 
-  tipShapeBgEl.addEventListener('input', () => {
+  paletteController.on('tip-shape-bg-color', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setTipShapeBgColor(tipShapeBgEl.value);
     saveSettings();
     rttChart?.notifyStyleChange?.();
   });
 
-  nodeShapeColorEl.addEventListener('input', () => {
+  paletteController.on('node-shape-color', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setNodeShapeColor(nodeShapeColorEl.value);
     saveSettings();
   });
 
-  nodeShapeBgEl.addEventListener('input', () => {
+  paletteController.on('node-shape-bg-color', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     renderer.setNodeShapeBgColor(nodeShapeBgEl.value);
     saveSettings();
   });
 
-  nodeColourBy.addEventListener('change', () => {
+  paletteController.on('node-colour-by', () => {
     renderer.setNodeColourBy(nodeColourBy.value || null);
     _updateConfigureBtn(nodeConfigureRow, nodeColourBy.value);
     saveSettings();
   });
 
-  $('node-configure-btn')?.addEventListener('click', () => openAnnotConfig(nodeColourBy.value));
+  paletteController.on('node-configure-btn', ({ type }) => {
+    if (type !== 'click') return;
+    openAnnotConfig(nodeColourBy.value);
+  });
 
-  tipColourBy.addEventListener('change', () => {
+  paletteController.on('tip-colour-by', () => {
     renderer.setTipColourBy(tipColourBy.value || null);
     _updateConfigureBtn(tipConfigureRow, tipColourBy.value);
     saveSettings();
     rttChart?.notifyStyleChange?.();
   });
 
-  $('tip-configure-btn')?.addEventListener('click', () => openAnnotConfig(tipColourBy.value));
+  paletteController.on('tip-configure-btn', ({ type }) => {
+    if (type !== 'click') return;
+    openAnnotConfig(tipColourBy.value);
+  });
 
-  labelColourBy.addEventListener('change', () => {
+  paletteController.on('label-colour-by', () => {
     renderer.setLabelColourBy(labelColourBy.value || null);
     _updateConfigureBtn(labelConfigureRow, labelColourBy.value);
     saveSettings();
   });
 
-  $('label-configure-btn')?.addEventListener('click', () => openAnnotConfig(labelColourBy.value));
+  paletteController.on('label-configure-btn', ({ type }) => {
+    if (type !== 'click') return;
+    openAnnotConfig(labelColourBy.value);
+  });
 
-  tipLabelShow.addEventListener('change', () => {
+  paletteController.on('tip-label-show', () => {
     const isOff = tipLabelShow.value === 'off';
     tipLabelControlsEl.style.display = isOff ? 'none' : '';
     const schema = renderer?._annotationSchema ?? new Map();
@@ -7138,60 +7196,60 @@ async function _initCore(root = document) {
     _syncControlVisibility();
   });
 
-  tipLabelAlignEl.addEventListener('change', () => {
+  paletteController.on('tip-label-align', () => {
     renderer.setTipLabelAlign(tipLabelAlignEl.value);
     saveSettings();
   });
 
-  tipLabel2ShowEl.addEventListener('change', () => {
+  paletteController.on('tip-label2-show', () => {
     _syncControlVisibility();
     renderer?.setSettings(_buildRendererSettings());
     saveSettings();
   });
 
-  tipLabel3ShowEl.addEventListener('change', () => {
+  paletteController.on('tip-label3-show', () => {
     _syncControlVisibility();
     renderer?.setSettings(_buildRendererSettings());
     saveSettings();
   });
 
-  tipLabel4ShowEl.addEventListener('change', () => {
+  paletteController.on('tip-label4-show', () => {
     _syncControlVisibility();
     renderer?.setSettings(_buildRendererSettings());
     saveSettings();
   });
 
-  tipLabel2LayoutEl.addEventListener('change', () => {
+  paletteController.on('tip-label2-layout', () => {
     renderer?.setSettings(_buildRendererSettings());
     saveSettings();
   });
 
-  tipLabel3LayoutEl.addEventListener('change', () => {
+  paletteController.on('tip-label3-layout', () => {
     renderer?.setSettings(_buildRendererSettings());
     saveSettings();
   });
 
-  tipLabel4LayoutEl.addEventListener('change', () => {
+  paletteController.on('tip-label4-layout', () => {
     renderer?.setSettings(_buildRendererSettings());
     saveSettings();
   });
 
-  tipLabelDpEl.addEventListener('change', () => {
+  paletteController.on('tip-label-decimal-places', () => {
     renderer?.setSettings(_buildRendererSettings());
     saveSettings();
   });
 
-  nodeLabelDpEl.addEventListener('change', () => {
+  paletteController.on('node-label-decimal-places', () => {
     renderer?.setSettings(_buildRendererSettings());
     saveSettings(); _markCustomTheme();
   });
 
-  branchLabelDpEl.addEventListener('change', () => {
+  paletteController.on('branch-label-decimal-places', () => {
     renderer?.setSettings(_buildRendererSettings());
     saveSettings(); _markCustomTheme();
   });
 
-  branchLabelShowEl.addEventListener('change', () => {
+  paletteController.on('branch-label-show', () => {
     const schema = renderer?._annotationSchema ?? new Map();
     _updateLabelDpRow(branchLabelDpRowEl, branchLabelShowEl.value, schema);
     renderer?.setBranchLabelAnnotation(branchLabelShowEl.value || null);
@@ -7199,42 +7257,45 @@ async function _initCore(root = document) {
     _syncControlVisibility();
   });
 
-  branchLabelPositionEl.addEventListener('change', () => {
+  paletteController.on('branch-label-position', () => {
     renderer?.setBranchLabelPosition(branchLabelPositionEl.value);
     saveSettings(); _markCustomTheme();
   });
 
-  branchLabelFontSizeSlider.addEventListener('input', () => {
+  paletteController.on('branch-label-font-size-slider', ({ type }) => {
+    if (type !== 'input') return;
     const v = parseInt(branchLabelFontSizeSlider.value);
     $('branch-label-font-size-value').textContent = v;
     renderer?.setBranchLabelFontSize(v);
     saveSettings(); _markCustomTheme();
   });
 
-  branchLabelColorEl.addEventListener('input', () => {
+  paletteController.on('branch-label-color', ({ type }) => {
+    if (type !== 'input') return;
     renderer?.setBranchLabelColor(branchLabelColorEl.value);
     saveSettings(); _markCustomTheme();
   });
 
-  branchLabelSpacingSlider.addEventListener('input', () => {
+  paletteController.on('branch-label-spacing-slider', ({ type }) => {
+    if (type !== 'input') return;
     const v = parseInt(branchLabelSpacingSlider.value);
     $('branch-label-spacing-value').textContent = v;
     renderer?.setBranchLabelSpacing(v);
     saveSettings(); _markCustomTheme();
   });
 
-  branchLabelTypefaceEl?.addEventListener('change', () => {
+  paletteController.on('branch-label-typeface-select', () => {
     _populateStyleSelect(branchLabelTypefaceEl.value || fontFamilyEl.value, branchLabelTypefaceStyleEl, '', true);
     renderer?.setSettings(_buildRendererSettings());
     saveSettings(); _markCustomTheme();
   });
 
-  branchLabelTypefaceStyleEl?.addEventListener('change', () => {
+  paletteController.on('branch-label-typeface-style-select', () => {
     renderer?.setSettings(_buildRendererSettings());
     saveSettings(); _markCustomTheme();
   });
 
-  nodeLabelShowEl.addEventListener('change', () => {
+  paletteController.on('node-label-show', () => {
     const schema = renderer?._annotationSchema ?? new Map();
     _updateLabelDpRow(nodeLabelDpRowEl, nodeLabelShowEl.value, schema);
     renderer?.setNodeLabelAnnotation(nodeLabelShowEl.value || null);
@@ -7242,47 +7303,57 @@ async function _initCore(root = document) {
     _syncControlVisibility();
   });
 
-  nodeLabelPositionEl.addEventListener('change', () => {
+  paletteController.on('node-label-position', () => {
     renderer?.setNodeLabelPosition(nodeLabelPositionEl.value);
     saveSettings(); _markCustomTheme();
   });
 
-  nodeLabelFontSizeSlider.addEventListener('input', () => {
+  paletteController.on('node-label-font-size-slider', ({ type }) => {
+    if (type !== 'input') return;
     const v = parseInt(nodeLabelFontSizeSlider.value);
     $('node-label-font-size-value').textContent = v;
     renderer?.setNodeLabelFontSize(v);
     saveSettings(); _markCustomTheme();
   });
 
-  nodeLabelColorEl.addEventListener('input', () => {
+  paletteController.on('node-label-color', ({ type }) => {
+    if (type !== 'input') return;
     renderer?.setNodeLabelColor(nodeLabelColorEl.value);
     saveSettings(); _markCustomTheme();
   });
 
-  nodeLabelSpacingSlider.addEventListener('input', () => {
+  paletteController.on('node-label-spacing-slider', ({ type }) => {
+    if (type !== 'input') return;
     const v = parseInt(nodeLabelSpacingSlider.value);
     $('node-label-spacing-value').textContent = v;
     renderer?.setNodeLabelSpacing(v);
     saveSettings(); _markCustomTheme();
   });
 
-  nodeLabelColourBy?.addEventListener('change', () => {
+  paletteController.on('node-label-colour-by', () => {
     renderer?.setNodeLabelColourBy(nodeLabelColourBy.value || null);
     _updateConfigureBtn(nodeLabelConfigureRow, nodeLabelColourBy.value);
     saveSettings();
   });
 
-  $('node-label-configure-btn')?.addEventListener('click', () => openAnnotConfig(nodeLabelColourBy?.value));
+  paletteController.on('node-label-configure-btn', ({ type }) => {
+    if (type !== 'click') return;
+    openAnnotConfig(nodeLabelColourBy?.value);
+  });
 
-  branchLabelColourBy?.addEventListener('change', () => {
+  paletteController.on('branch-label-colour-by', () => {
     renderer?.setBranchLabelColourBy(branchLabelColourBy.value || null);
     _updateConfigureBtn(branchLabelConfigureRow, branchLabelColourBy.value);
     saveSettings();
   });
 
-  $('branch-label-configure-btn')?.addEventListener('click', () => openAnnotConfig(branchLabelColourBy?.value));
+  paletteController.on('branch-label-configure-btn', ({ type }) => {
+    if (type !== 'click') return;
+    openAnnotConfig(branchLabelColourBy?.value);
+  });
 
-  tipLabelSpacingSlider.addEventListener('input', () => {
+  paletteController.on('tip-label-spacing-slider', ({ type }) => {
+    if (type !== 'input') return;
     const v = parseInt(tipLabelSpacingSlider.value);
     $('tip-label-spacing-value').textContent = v;
     renderer?.setTipLabelSpacing(v);
@@ -7350,7 +7421,7 @@ async function _initCore(root = document) {
     }
   }
 
-  tipLabelShapeEl.addEventListener('change', () => {
+  paletteController.on('tip-label-shape', () => {
     renderer.setTipLabelShape(tipLabelShapeEl.value);
     if (tipLabelShapeEl.value === 'off') _resetExtraShapesFrom(0);
     else _restoreExtraShapesFrom(0);
@@ -7358,27 +7429,33 @@ async function _initCore(root = document) {
     saveSettings(); _markCustomTheme();
   });
 
-  tipLabelShapeColorEl.addEventListener('input', () => {
+  paletteController.on('tip-label-shape-color', ({ type }) => {
+    if (type !== 'input') return;
     renderer.setTipLabelShapeColor(tipLabelShapeColorEl.value);
     saveSettings(); _markCustomTheme();
   });
 
-  tipLabelShapeColourBy.addEventListener('change', () => {
+  paletteController.on('tip-label-shape-colour-by', () => {
     renderer.setTipLabelShapeColourBy(tipLabelShapeColourBy.value || null);
     _updateConfigureBtn(tipLabelShapeConfigureRow, tipLabelShapeColourBy.value);
     saveSettings();
   });
 
-  $('tip-label-shape-configure-btn')?.addEventListener('click', () => openAnnotConfig(tipLabelShapeColourBy.value));
+  paletteController.on('tip-label-shape-configure-btn', ({ type }) => {
+    if (type !== 'click') return;
+    openAnnotConfig(tipLabelShapeColourBy.value);
+  });
 
-  tipLabelShapeMarginLeftSlider.addEventListener('input', () => {
+  paletteController.on('tip-label-shape-margin-left-slider', ({ type }) => {
+    if (type !== 'input') return;
     const v = parseInt(tipLabelShapeMarginLeftSlider.value);
     $('tip-label-shape-margin-left-value').textContent = v;
     renderer.setTipLabelShapeMarginLeft(v);
     saveSettings(); _markCustomTheme();
   });
 
-  tipLabelShapeSpacingSlider.addEventListener('input', () => {
+  paletteController.on('tip-label-shape-spacing-slider', ({ type }) => {
+    if (type !== 'input') return;
     const v = parseInt(tipLabelShapeSpacingSlider.value);
     $('tip-label-shape-spacing-value').textContent = v;
     renderer.setTipLabelShapeSpacing(v);
@@ -7389,24 +7466,32 @@ async function _initCore(root = document) {
 
   for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++) {
     const _idx = _i;
-    tipLabelShapeExtraEls[_idx].addEventListener('change', () => {
+    const _shapeId = `tip-label-shape-${_idx + 2}`;
+    const _colourById = `tip-label-shape-${_idx + 2}-colour-by`;
+    const _configureId = `tip-label-shape-${_idx + 2}-configure-btn`;
+
+    paletteController.on(_shapeId, () => {
       renderer.setTipLabelShapeExtra(_idx, tipLabelShapeExtraEls[_idx].value);
       if (tipLabelShapeExtraEls[_idx].value === 'off') _resetExtraShapesFrom(_idx + 1);
       else _restoreExtraShapesFrom(_idx + 1);
       _syncControlVisibility();
       saveSettings(); _markCustomTheme();
     });
-    tipLabelShapeExtraColourBys[_idx].addEventListener('change', () => {
+
+    paletteController.on(_colourById, () => {
       renderer.setTipLabelShapeExtraColourBy(_idx, tipLabelShapeExtraColourBys[_idx].value || null);
       _updateConfigureBtn(tipLabelShapeExtraConfigureRows[_idx], tipLabelShapeExtraColourBys[_idx].value);
       saveSettings();
     });
-    tipLabelShapeExtraConfigureBtns[_idx]?.addEventListener('click', () => {
+
+    paletteController.on(_configureId, ({ type }) => {
+      if (type !== 'click') return;
       openAnnotConfig(tipLabelShapeExtraColourBys[_idx].value);
     });
   }
 
-  tipLabelShapeSizeSlider.addEventListener('input', () => {
+  paletteController.on('tip-label-shape-size-slider', ({ type }) => {
+    if (type !== 'input') return;
     const v = parseInt(tipLabelShapeSizeSlider.value);
     $('tip-label-shape-size-value').textContent = v;
     renderer.setTipLabelShapeSize(v);
@@ -7423,42 +7508,68 @@ async function _initCore(root = document) {
     if (markTheme) _markCustomTheme();
   };
 
-  branchShapeEl?.addEventListener('change', () => _applyBranchShapeSettings({ markTheme: true }));
-  branchShapeHeightSlider?.addEventListener('input', () => {
+  paletteController.on('branch-shape', () => _applyBranchShapeSettings({ markTheme: true }));
+  paletteController.on('branch-shape-height-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('branch-shape-height-value').textContent = branchShapeHeightSlider.value;
     _applyBranchShapeSettings({ markTheme: true });
   });
-  branchShapeWidthSlider?.addEventListener('input', () => {
+  paletteController.on('branch-shape-width-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('branch-shape-width-value').textContent = _formatBranchShapeWidth(_branchShapeWidthFromSlider(branchShapeWidthSlider.value));
     _applyBranchShapeSettings({ markTheme: true });
   });
-  branchShapeAlignEl?.addEventListener('change', () => _applyBranchShapeSettings({ markTheme: true }));
-  branchShapeSpacingSlider?.addEventListener('input', () => {
+  paletteController.on('branch-shape-align', () => _applyBranchShapeSettings({ markTheme: true }));
+  paletteController.on('branch-shape-spacing-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('branch-shape-spacing-value').textContent = branchShapeSpacingSlider.value;
     _applyBranchShapeSettings({ markTheme: true });
   });
-  branchShapeColorEl?.addEventListener('input', () => _applyBranchShapeSettings({ markTheme: true }));
-  branchShapeHaloSlider?.addEventListener('input', () => {
+  paletteController.on('branch-shape-color', ({ type }) => {
+    if (type !== 'input') return;
+    _applyBranchShapeSettings({ markTheme: true });
+  });
+  paletteController.on('branch-shape-halo-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('branch-shape-halo-value').textContent = branchShapeHaloSlider.value;
     _applyBranchShapeSettings({ markTheme: true });
   });
-  branchShapeHaloColorEl?.addEventListener('input', () => _applyBranchShapeSettings({ markTheme: true }));
-  branchShapeColourByEl?.addEventListener('change', () => {
+  paletteController.on('branch-shape-halo-color', ({ type }) => {
+    if (type !== 'input') return;
+    _applyBranchShapeSettings({ markTheme: true });
+  });
+  paletteController.on('branch-shape-colour-by', () => {
     _updateConfigureBtn(branchShapeConfigureRow, branchShapeColourByEl.value);
     _applyBranchShapeSettings();
   });
-  branchShapeCountByEl?.addEventListener('change', () => _applyBranchShapeSettings());
-  $('branch-shape-configure-btn')?.addEventListener('click', () => openAnnotConfig(branchShapeColourByEl?.value));
+  paletteController.on('branch-shape-count-by', () => _applyBranchShapeSettings());
+  paletteController.on('branch-shape-configure-btn', ({ type }) => {
+    if (type !== 'click') return;
+    openAnnotConfig(branchShapeColourByEl?.value);
+  });
 
   for (let i = 0; i < branchShapeExtraEls.length; i++) {
-    branchShapeExtraEls[i]?.addEventListener('change', () => _applyBranchShapeSettings({ markTheme: true }));
-    branchShapeExtraColors[i]?.addEventListener('input', () => _applyBranchShapeSettings({ markTheme: true }));
-    branchShapeExtraColourBys[i]?.addEventListener('change', () => {
+    const n = i + 2;
+    const shapeId = `branch-shape-${n}`;
+    const colorId = `branch-shape-${n}-color`;
+    const colourById = `branch-shape-${n}-colour-by`;
+    const countById = `branch-shape-${n}-count-by`;
+    const configureId = `branch-shape-${n}-configure-btn`;
+
+    paletteController.on(shapeId, () => _applyBranchShapeSettings({ markTheme: true }));
+    paletteController.on(colorId, ({ type }) => {
+      if (type !== 'input') return;
+      _applyBranchShapeSettings({ markTheme: true });
+    });
+    paletteController.on(colourById, () => {
       _updateConfigureBtn(branchShapeExtraConfigureRows[i], branchShapeExtraColourBys[i].value);
       _applyBranchShapeSettings();
     });
-    branchShapeExtraCountBys[i]?.addEventListener('change', () => _applyBranchShapeSettings());
-    branchShapeExtraConfigureBtns[i]?.addEventListener('click', () => openAnnotConfig(branchShapeExtraColourBys[i]?.value));
+    paletteController.on(countById, () => _applyBranchShapeSettings());
+    paletteController.on(configureId, ({ type }) => {
+      if (type !== 'click') return;
+      openAnnotConfig(branchShapeExtraColourBys[i]?.value);
+    });
   }
 
   // ── Legend controls ───────────────────────────────────────────────────────
@@ -7568,62 +7679,81 @@ async function _initCore(root = document) {
     }
   }
 
-  legendAnnotEl.addEventListener('change', () => {
+  paletteController.on('legend-annotation', () => {
     if (!legendAnnotEl.value) _resetLegendFrom(0);
     else _restoreLegendFrom(0);
     applyLegend();
   });
-  legend2AnnotEl.addEventListener('change', () => {
+  paletteController.on('legend-annotation-2', () => {
     if (!legend2AnnotEl.value) _resetLegendFrom(1);
     else _restoreLegendFrom(1);
     applyLegend();
   });
-  legend2ShowEl .addEventListener('change', applyLegend);
-  legend2HeightPctSlider.addEventListener('input', () => {
+  paletteController.on('legend2-show', applyLegend);
+  paletteController.on('legend2-height-pct-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('legend2-height-pct-value').textContent = legend2HeightPctSlider.value + '%';
     applyLegend();
   });
-  legend3AnnotEl.addEventListener('change', () => {
+  paletteController.on('legend-annotation-3', () => {
     if (!legend3AnnotEl.value) _resetLegendFrom(2);
     else _restoreLegendFrom(2);
     applyLegend();
   });
-  legend3ShowEl .addEventListener('change', applyLegend);
-  legend3HeightPctSlider.addEventListener('input', () => {
+  paletteController.on('legend3-show', applyLegend);
+  paletteController.on('legend3-height-pct-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('legend3-height-pct-value').textContent = legend3HeightPctSlider.value + '%';
     applyLegend();
   });
-  legend4AnnotEl.addEventListener('change', applyLegend);
-  legend4ShowEl .addEventListener('change', applyLegend);
-  legend4HeightPctSlider.addEventListener('input', () => {
+  paletteController.on('legend-annotation-4', applyLegend);
+  paletteController.on('legend4-show', applyLegend);
+  paletteController.on('legend4-height-pct-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('legend4-height-pct-value').textContent = legend4HeightPctSlider.value + '%';
     applyLegend();
   });
-  legendDpEl.addEventListener('change', applyLegend);
-  legend2DpEl.addEventListener('change', applyLegend);
-  legend3DpEl.addEventListener('change', applyLegend);
-  legend4DpEl.addEventListener('change', applyLegend);
+  paletteController.on('legend-decimal-places', applyLegend);
+  paletteController.on('legend2-decimal-places', applyLegend);
+  paletteController.on('legend3-decimal-places', applyLegend);
+  paletteController.on('legend4-decimal-places', applyLegend);
 
-  $('legend-configure-btn')?.addEventListener('click', () => openAnnotConfig(legendAnnotEl?.value));
-  $('legend2-configure-btn')?.addEventListener('click', () => openAnnotConfig(legend2AnnotEl?.value));
-  $('legend3-configure-btn')?.addEventListener('click', () => openAnnotConfig(legend3AnnotEl?.value));
-  $('legend4-configure-btn')?.addEventListener('click', () => openAnnotConfig(legend4AnnotEl?.value));
+  paletteController.on('legend-configure-btn', ({ type }) => {
+    if (type !== 'click') return;
+    openAnnotConfig(legendAnnotEl?.value);
+  });
+  paletteController.on('legend2-configure-btn', ({ type }) => {
+    if (type !== 'click') return;
+    openAnnotConfig(legend2AnnotEl?.value);
+  });
+  paletteController.on('legend3-configure-btn', ({ type }) => {
+    if (type !== 'click') return;
+    openAnnotConfig(legend3AnnotEl?.value);
+  });
+  paletteController.on('legend4-configure-btn', ({ type }) => {
+    if (type !== 'click') return;
+    openAnnotConfig(legend4AnnotEl?.value);
+  });
 
-  legendTextColorEl.addEventListener('input', () => {
+  paletteController.on('legend-text-color', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     legendRenderer.setTextColor(legendTextColorEl.value);
     saveSettings();
   });
-  legendFontSizeSlider.addEventListener('input', () => {
+  paletteController.on('legend-font-size-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('legend-font-size-value').textContent = legendFontSizeSlider.value;
     _markCustomTheme();
     applyLegend();
   });
-  legendSpacingSlider.addEventListener('input', () => {
+  paletteController.on('legend-spacing-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('legend-spacing-value').textContent = legendSpacingSlider.value;
     applyLegend();
   });
-  legendHeightPctSlider.addEventListener('input', () => {
+  paletteController.on('legend-height-pct-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('legend-height-pct-value').textContent = legendHeightPctSlider.value + '%';
     applyLegend();
   });
@@ -7784,15 +7914,15 @@ async function _initCore(root = document) {
     _syncControlVisibility();
   }
 
-  axisShowEl.addEventListener('change', applyAxis);
+  paletteController.on('axis-show', applyAxis);
 
   // Range inputs: save on change and reapply
   if (axisRangeLeftEl) {
-    axisRangeLeftEl.addEventListener('change',  () => { _saveAxisRangeForMode(axisShowEl.value); _applyAxisRange(); });
+    paletteController.on('axis-range-left', () => { _saveAxisRangeForMode(axisShowEl.value); _applyAxisRange(); });
     axisRangeLeftEl.addEventListener('keydown', e => { if (e.key === 'Enter') { _saveAxisRangeForMode(axisShowEl.value); _applyAxisRange(); } });
   }
   if (axisRangeRightEl) {
-    axisRangeRightEl.addEventListener('change',  () => { _saveAxisRangeForMode(axisShowEl.value); _applyAxisRange(); });
+    paletteController.on('axis-range-right', () => { _saveAxisRangeForMode(axisShowEl.value); _applyAxisRange(); });
     axisRangeRightEl.addEventListener('keydown', e => { if (e.key === 'Enter') { _saveAxisRangeForMode(axisShowEl.value); _applyAxisRange(); } });
   }
 
@@ -7854,112 +7984,130 @@ async function _initCore(root = document) {
     saveSettings();
   }
 
-  axisColorEl.addEventListener('input', () => { _markCustomTheme(); applyAxisStyle(); });
-  axisFontSizeSlider.addEventListener('input', () => {
+  paletteController.on('axis-color', ({ type }) => {
+    if (type !== 'input') return;
+    _markCustomTheme();
+    applyAxisStyle();
+  });
+  paletteController.on('axis-font-size-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('axis-font-size-value').textContent = axisFontSizeSlider.value;
     _markCustomTheme();
     applyAxisStyle();
   });
-  axisLineWidthSlider.addEventListener('input', () => {
+  paletteController.on('axis-line-width-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('axis-line-width-value').textContent = axisLineWidthSlider.value;
     _markCustomTheme();
     applyAxisStyle();
   });
 
-  rttXOriginEl.addEventListener('change', () => {
+  paletteController.on('rtt-x-origin', () => {
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
 
-  rttGridLinesEl.addEventListener('change', () => {
+  paletteController.on('rtt-grid-lines', () => {
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
 
-  rttAspectRatioEl.addEventListener('change', () => {
+  paletteController.on('rtt-aspect-ratio', () => {
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
 
-  rttAxisColorEl.addEventListener('input', () => {
+  paletteController.on('rtt-axis-color', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
-  rttStatsBgColorEl.addEventListener('input', () => {
+  paletteController.on('rtt-stats-bg-color', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
-  rttStatsTextColorEl.addEventListener('input', () => {
+  paletteController.on('rtt-stats-text-color', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
-  rttRegressionStyleEl.addEventListener('change', () => {
+  paletteController.on('rtt-regression-style', () => {
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
-  rttRegressionColorEl.addEventListener('input', () => {
+  paletteController.on('rtt-regression-color', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
-  rttRegressionWidthSlider.addEventListener('input', () => {
+  paletteController.on('rtt-regression-width-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('rtt-regression-width-value').textContent = rttRegressionWidthSlider.value;
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
-  rttResidBandShowEl.addEventListener('change', () => {
+  paletteController.on('rtt-resid-band-show', () => {
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
-  rttResidBandStyleEl.addEventListener('change', () => {
+  paletteController.on('rtt-resid-band-style', () => {
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
-  rttResidBandColorEl.addEventListener('input', () => {
+  paletteController.on('rtt-resid-band-color', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
-  rttResidBandWidthSlider.addEventListener('input', () => {
+  paletteController.on('rtt-resid-band-width-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('rtt-resid-band-width-value').textContent = rttResidBandWidthSlider.value;
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
-  rttResidBandFillColorEl.addEventListener('input', () => {
+  paletteController.on('rtt-resid-band-fill-color', ({ type }) => {
+    if (type !== 'input') return;
     _markCustomTheme();
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
-  rttResidBandFillOpacitySlider.addEventListener('input', () => {
+  paletteController.on('rtt-resid-band-fill-opacity-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('rtt-resid-band-fill-opacity-value').textContent = rttResidBandFillOpacitySlider.value;
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
-  rttAxisFontSizeSlider.addEventListener('input', () => {
+  paletteController.on('rtt-axis-font-size-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('rtt-axis-font-size-value').textContent = rttAxisFontSizeSlider.value;
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
-  rttStatsFontSizeSlider.addEventListener('input', () => {
+  paletteController.on('rtt-stats-font-size-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('rtt-stats-font-size-value').textContent = rttStatsFontSizeSlider.value;
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
-  rttAxisFontFamilyEl.addEventListener('change', () => {
+  paletteController.on('rtt-axis-font-family-select', () => {
     _markCustomTheme();
     _populateStyleSelect(rttAxisFontFamilyEl.value || fontFamilyEl.value, rttAxisTypefaceStyleEl, '', true);
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
-  rttAxisTypefaceStyleEl?.addEventListener('change', () => {
+  paletteController.on('rtt-axis-typeface-style-select', () => {
     _markCustomTheme();
     rttChart?.notifyStyleChange?.();
     saveSettings();
   });
-  rttAxisLineWidthSlider.addEventListener('input', () => {
+  paletteController.on('rtt-axis-line-width-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('rtt-axis-line-width-value').textContent = rttAxisLineWidthSlider.value;
     rttChart?.notifyStyleChange?.();
     saveSettings();
@@ -7976,39 +8124,50 @@ async function _initCore(root = document) {
     _syncControlVisibility();
   }
 
-  nodeBarsShowEl.addEventListener('change', applyNodeBars);
-  nodeBarsColorEl.addEventListener('input', () => { _markCustomTheme(); applyNodeBars(); });
-  nodeBarsWidthSlider.addEventListener('input', () => {
+  paletteController.on('node-bars-show', applyNodeBars);
+  paletteController.on('node-bars-color', ({ type }) => {
+    if (type !== 'input') return;
+    _markCustomTheme();
+    applyNodeBars();
+  });
+  paletteController.on('node-bars-width-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('node-bars-width-value').textContent = nodeBarsWidthSlider.value;
     applyNodeBars();
   });
-  nodeBarsFillOpacitySlider.addEventListener('input', () => {
+  paletteController.on('node-bars-fill-opacity', ({ type }) => {
+    if (type !== 'input') return;
     $('node-bars-fill-opacity-value').textContent = nodeBarsFillOpacitySlider.value;
     applyNodeBars();
   });
-  nodeBarsStrokeOpacitySlider.addEventListener('input', () => {
+  paletteController.on('node-bars-stroke-opacity', ({ type }) => {
+    if (type !== 'input') return;
     $('node-bars-stroke-opacity-value').textContent = nodeBarsStrokeOpacitySlider.value;
     applyNodeBars();
   });
-  nodeBarsLineEl.addEventListener('change', applyNodeBars);
-  nodeBarsRangeEl.addEventListener('change', applyNodeBars);
+  paletteController.on('node-bars-median', applyNodeBars);
+  paletteController.on('node-bars-range', applyNodeBars);
 
-  collapsedOpacitySlider.addEventListener('input', () => {
+  paletteController.on('collapsed-opacity-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('collapsed-opacity-value').textContent = collapsedOpacitySlider.value;
     if (renderer) { renderer.setSettings(_buildRendererSettings()); renderer._dirty = true; }
     saveSettings();
   });
-  collapsedStrokeWidthSlider.addEventListener('input', () => {
+  paletteController.on('collapsed-stroke-width-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('collapsed-stroke-width-value').textContent = collapsedStrokeWidthSlider.value;
     if (renderer) { renderer.setSettings(_buildRendererSettings()); renderer._dirty = true; }
     saveSettings();
   });
-  collapsedStrokeOpacitySlider.addEventListener('input', () => {
+  paletteController.on('collapsed-stroke-opacity-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('collapsed-stroke-opacity-value').textContent = collapsedStrokeOpacitySlider.value;
     if (renderer) { renderer.setSettings(_buildRendererSettings()); renderer._dirty = true; }
     saveSettings();
   });
-  collapsedHeightNSlider.addEventListener('input', () => {
+  paletteController.on('collapsed-height-n-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('collapsed-height-n-value').textContent = collapsedHeightNSlider.value;
     if (renderer && graph) {
       renderer.setSettings(_buildRendererSettings());
@@ -8017,13 +8176,15 @@ async function _initCore(root = document) {
     }
     saveSettings();
   });
-  collapsedCladeFontSizeSlider.addEventListener('input', () => {
+  paletteController.on('collapsed-clade-font-size-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('collapsed-clade-font-size-value').textContent = collapsedCladeFontSizeSlider.value;
     if (renderer) { renderer.setSettings(_buildRendererSettings()); renderer._dirty = true; }
     saveSettings();
   });
 
-  rootStemPctSlider.addEventListener('input', () => {
+  paletteController.on('root-stem-pct-slider', ({ type }) => {
+    if (type !== 'input') return;
     $('root-stem-pct-value').textContent = rootStemPctSlider.value + '%';
     if (!renderer) { saveSettings(); return; }
     renderer.rootStemPct = parseFloat(rootStemPctSlider.value);
@@ -8073,26 +8234,26 @@ async function _initCore(root = document) {
     rttMinorIntervalEl.value = list.some(o => o[0] === keepVal) ? keepVal : 'off';
   }
 
-  axisMajorIntervalEl.addEventListener('change', () => {
+  paletteController.on('axis-major-interval', () => {
     _updateMinorOptions(axisMajorIntervalEl.value, axisMinorIntervalEl.value);
     applyTickOptions();
   });
-  axisMinorIntervalEl.addEventListener('change', applyTickOptions);
-  axisMajorLabelEl   .addEventListener('change', applyTickOptions);
-  axisMinorLabelEl   .addEventListener('change', applyTickOptions);
-  axisDateFmtEl      .addEventListener('change', applyTickOptions);
+  paletteController.on('axis-minor-interval', applyTickOptions);
+  paletteController.on('axis-major-label', applyTickOptions);
+  paletteController.on('axis-minor-label', applyTickOptions);
+  paletteController.on('axis-date-format', applyTickOptions);
 
-  rttDateFmtEl.addEventListener('change', () => { rttChart?.notifyCalibrationChange?.(); saveSettings(); });
-  rttMajorIntervalEl.addEventListener('change', () => {
+  paletteController.on('rtt-date-format', () => { rttChart?.notifyCalibrationChange?.(); saveSettings(); });
+  paletteController.on('rtt-major-interval', () => {
     _updateRttMinorOptions(rttMajorIntervalEl.value, rttMinorIntervalEl.value);
     rttChart?.notifyCalibrationChange?.();
     saveSettings();
   });
-  rttMinorIntervalEl.addEventListener('change', () => { rttChart?.notifyCalibrationChange?.(); saveSettings(); });
-  rttMajorLabelEl   .addEventListener('change', () => { rttChart?.notifyCalibrationChange?.(); saveSettings(); });
-  rttMinorLabelEl   .addEventListener('change', () => { rttChart?.notifyCalibrationChange?.(); saveSettings(); });
+  paletteController.on('rtt-minor-interval', () => { rttChart?.notifyCalibrationChange?.(); saveSettings(); });
+  paletteController.on('rtt-major-label', () => { rttChart?.notifyCalibrationChange?.(); saveSettings(); });
+  paletteController.on('rtt-minor-label', () => { rttChart?.notifyCalibrationChange?.(); saveSettings(); });
 
-  axisDateAnnotEl.addEventListener('change', () => {
+  paletteController.on('axis-date-annotation', () => {
     // Recompute OLS calibration; onCalibrationChange syncs axisDateFmtRow, _updateTimeOption,
     // clamp-row, _showDateTickRows, renderer.setCalibration, and the axis renderer.
     rttChart?.recomputeCalibration?.();
