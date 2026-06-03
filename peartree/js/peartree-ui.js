@@ -662,27 +662,147 @@ function _sectionNodeLabels() {
 }
 
 function _sectionLabelShapes() {
+  const shapeOptions = [
+    { value: 'off', label: 'Off' },
+    { value: 'square', label: 'Square' },
+    { value: 'circle', label: 'Circle' },
+    { value: 'block', label: 'Block' },
+  ];
+
   return window.buildPaletteSectionHTML({
     icon: 'bi bi-square-fill',
     title: 'Label Shapes',
-    bodyHTML: `
-      <div class="pt-palette-row" title="Shape drawn alongside each tip label"><span class="pt-palette-label">Shape</span><select class="pt-palette-select" id="tip-label-shape"><option value="off">Off</option><option value="square">Square</option><option value="circle">Circle</option><option value="block">Block</option></select></div>
-      <div id="tip-label-shape-detail" class="pt-detail pt-sub-controls">
-        <div class="pt-palette-row" title="Size of the label shape as a percentage of tip spacing"><span class="pt-palette-label">Size <i class="bi bi-box-arrow-up-right form-label-sm"></i></span><input type="range" class="form-range" id="tip-label-shape-size-slider" min="1" max="100" step="1" value="50" /><span class="pt-val" id="tip-label-shape-size-value">50</span></div>
-        <div class="pt-palette-row" title="Left padding between the tip node and the shape"><span class="pt-palette-label">Pad left <i class="bi bi-arrow-bar-right form-label-sm"></i></span><input type="range" class="form-range" id="tip-label-shape-margin-left-slider" min="0" max="100" value="2" /><span class="pt-val" id="tip-label-shape-margin-left-value">2</span></div>
-        <div class="pt-palette-row" id="tip-label-shape-spacing-row" style="display:none" title="Spacing between shapes in block layout mode"><span class="pt-palette-label">Spacing <i class="bi bi-arrows form-label-sm"></i></span><input type="range" class="form-range" id="tip-label-shape-spacing-slider" min="0" max="50" value="3" /><span class="pt-val" id="tip-label-shape-spacing-value">3</span></div>
-        <div class="pt-palette-row" title="Fill colour of the tip label shape"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="tip-label-shape-color" value="#aaaaaa" /></div>
-        <div class="pt-palette-row" title="Colour tip label shapes by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="tip-label-shape-colour-by" disabled><option value="user_colour">user colour</option></select></div>
-        <div class="pt-palette-row" id="tip-label-shape-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="tip-label-shape-configure-btn">Configure</button></div>
-      </div>
-      ${[2,3,4,5,6,7,8,9,10].map(n => `
-      <div id="tip-label-shape-${n}-section" class="pt-detail">
-        <div class="pt-palette-row" title="Additional shape column ${n} for tip labels"><span class="pt-palette-label">Shape ${n}</span><select class="pt-palette-select" id="tip-label-shape-${n}"><option value="off">Off</option><option value="square">Square</option><option value="circle">Circle</option><option value="block">Block</option></select></div>
-        <div id="tip-label-shape-${n}-detail" class="pt-detail pt-sub-controls">
-          <div class="pt-palette-row" title="Colour shape ${n} by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="tip-label-shape-${n}-colour-by" disabled><option value="user_colour">user colour</option></select></div>
-          <div class="pt-palette-row" id="tip-label-shape-${n}-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="tip-label-shape-${n}-configure-btn">Configure</button></div>
-        </div>
-      </div>`).join('')}`,
+    rows: [
+      {
+        kind: 'select',
+        id: 'tip-label-shape',
+        title: 'Shape drawn alongside each tip label',
+        label: 'Shape',
+        options: shapeOptions,
+      },
+    ],
+    items: [
+      {
+        type: 'group',
+        id: 'tip-label-shape-detail',
+        className: 'pt-detail pt-sub-controls',
+        items: [
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'tip-label-shape-size-slider',
+            min: 1,
+            max: 100,
+            step: 1,
+            value: 50,
+            valueId: 'tip-label-shape-size-value',
+            valueText: '50',
+            title: 'Size of the label shape as a percentage of tip spacing',
+            label: 'Size',
+            labelIcon: 'bi bi-box-arrow-up-right form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'tip-label-shape-margin-left-slider',
+            min: 0,
+            max: 100,
+            value: 2,
+            valueId: 'tip-label-shape-margin-left-value',
+            valueText: '2',
+            title: 'Left padding between the tip node and the shape',
+            label: 'Pad left',
+            labelIcon: 'bi bi-arrow-bar-right form-label-sm',
+          },
+          {
+            type: 'row',
+            rowId: 'tip-label-shape-spacing-row',
+            rowStyle: 'display:none',
+            kind: 'range',
+            id: 'tip-label-shape-spacing-slider',
+            min: 0,
+            max: 50,
+            value: 3,
+            valueId: 'tip-label-shape-spacing-value',
+            valueText: '3',
+            title: 'Spacing between shapes in block layout mode',
+            label: 'Spacing',
+            labelIcon: 'bi bi-arrows form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'color',
+            id: 'tip-label-shape-color',
+            value: '#aaaaaa',
+            title: 'Fill colour of the tip label shape',
+            label: 'Colour',
+            labelIcon: 'bi bi-palette form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'tip-label-shape-colour-by',
+            disabled: true,
+            title: 'Colour tip label shapes by an annotation attribute',
+            label: 'Colour by',
+            labelIcon: 'bi bi-paint-bucket form-label-sm',
+            options: [{ value: 'user_colour', label: 'user colour' }],
+          },
+          {
+            type: 'row',
+            rowId: 'tip-label-shape-configure-row',
+            rowStyle: 'display:none',
+            kind: 'button',
+            id: 'tip-label-shape-configure-btn',
+            buttonText: 'Configure',
+            label: 'Palette',
+            labelIcon: 'bi bi-palette2 form-label-sm',
+          },
+        ],
+      },
+      ...[2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => ({
+        type: 'group',
+        id: `tip-label-shape-${n}-section`,
+        className: 'pt-detail',
+        items: [
+          {
+            type: 'row',
+            kind: 'select',
+            id: `tip-label-shape-${n}`,
+            title: `Additional shape column ${n} for tip labels`,
+            label: `Shape ${n}`,
+            options: shapeOptions,
+          },
+          {
+            type: 'group',
+            id: `tip-label-shape-${n}-detail`,
+            className: 'pt-detail pt-sub-controls',
+            items: [
+              {
+                type: 'row',
+                kind: 'select',
+                id: `tip-label-shape-${n}-colour-by`,
+                disabled: true,
+                title: `Colour shape ${n} by an annotation attribute`,
+                label: 'Colour by',
+                labelIcon: 'bi bi-paint-bucket form-label-sm',
+                options: [{ value: 'user_colour', label: 'user colour' }],
+              },
+              {
+                type: 'row',
+                rowId: `tip-label-shape-${n}-configure-row`,
+                rowStyle: 'display:none',
+                kind: 'button',
+                id: `tip-label-shape-${n}-configure-btn`,
+                buttonText: 'Configure',
+                label: 'Palette',
+                labelIcon: 'bi bi-palette2 form-label-sm',
+              },
+            ],
+          },
+        ],
+      })),
+    ],
   });
 }
 
@@ -690,16 +810,89 @@ function _sectionTipShapes() {
   return window.buildPaletteSectionHTML({
     icon: 'bi bi-circle-fill',
     title: 'Tip Shapes',
-    bodyHTML: `
-      <div class="pt-palette-row" title="Radius of the circle drawn at each tip node"><span class="pt-palette-label">Size <i class="bi bi-arrow-up-right-circle-fill form-label-sm"></i></span><input type="range" class="form-range" id="tip-size-slider" min="0" max="24" value="3" /><span class="pt-val" id="tip-size-value">3</span></div>
-      <div class="pt-palette-row" title="Only draw tip shapes on tips that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="tip-shapes-filter" disabled><option value="">— always —</option></select></div>
-      <div id="tip-shape-detail" class="pt-detail pt-sub-controls">
-        <div class="pt-palette-row" title="Fill colour of tip node circles"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="tip-shape-color" value="#888888" /></div>
-        <div class="pt-palette-row" title="Colour tip circles by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="tip-colour-by" disabled><option value="user_colour">user colour</option></select></div>
-        <div class="pt-palette-row" id="tip-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="tip-configure-btn">Configure</button></div>
-        <div class="pt-palette-row" title="Background halo width around each tip circle"><span class="pt-palette-label">Halo <i class="bi bi-arrow-up-right-circle form-label-sm"></i></span><input type="range" class="form-range" id="tip-halo-slider" min="0" max="8" value="2" /><span class="pt-val" id="tip-halo-value">2</span></div>
-        <div class="pt-palette-row" title="Halo colour behind each tip circle"><span class="pt-palette-label">Halo col. <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="tip-shape-bg-color" value="#02292e" /></div>
-      </div>`,
+    rows: [
+      {
+        kind: 'range',
+        id: 'tip-size-slider',
+        min: 0,
+        max: 24,
+        value: 3,
+        valueId: 'tip-size-value',
+        valueText: '3',
+        title: 'Radius of the circle drawn at each tip node',
+        label: 'Size',
+        labelIcon: 'bi bi-arrow-up-right-circle-fill form-label-sm',
+      },
+      {
+        kind: 'select',
+        id: 'tip-shapes-filter',
+        disabled: true,
+        title: 'Only draw tip shapes on tips that pass this filter',
+        label: 'Filter',
+        labelIcon: 'bi bi-funnel form-label-sm',
+        options: [{ value: '', label: '— always —' }],
+      },
+    ],
+    items: [
+      {
+        type: 'group',
+        id: 'tip-shape-detail',
+        className: 'pt-detail pt-sub-controls',
+        items: [
+          {
+            type: 'row',
+            kind: 'color',
+            id: 'tip-shape-color',
+            value: '#888888',
+            title: 'Fill colour of tip node circles',
+            label: 'Colour',
+            labelIcon: 'bi bi-palette form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'tip-colour-by',
+            disabled: true,
+            title: 'Colour tip circles by an annotation attribute',
+            label: 'Colour by',
+            labelIcon: 'bi bi-paint-bucket form-label-sm',
+            options: [{ value: 'user_colour', label: 'user colour' }],
+          },
+          {
+            type: 'row',
+            rowId: 'tip-configure-row',
+            rowStyle: 'display:none',
+            kind: 'button',
+            id: 'tip-configure-btn',
+            buttonText: 'Configure',
+            label: 'Palette',
+            labelIcon: 'bi bi-palette2 form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'tip-halo-slider',
+            min: 0,
+            max: 8,
+            value: 2,
+            valueId: 'tip-halo-value',
+            valueText: '2',
+            title: 'Background halo width around each tip circle',
+            label: 'Halo',
+            labelIcon: 'bi bi-arrow-up-right-circle form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'color',
+            id: 'tip-shape-bg-color',
+            value: '#02292e',
+            title: 'Halo colour behind each tip circle',
+            label: 'Halo col.',
+            labelIcon: 'bi bi-palette form-label-sm',
+          },
+        ],
+      },
+    ],
   });
 }
 
@@ -707,48 +900,307 @@ function _sectionNodeShapes() {
   return window.buildPaletteSectionHTML({
     icon: 'bi bi-record-circle',
     title: 'Node Shapes',
-    bodyHTML: `
-      <div class="pt-palette-row" title="Radius of the circle drawn at each internal node"><span class="pt-palette-label">Size <i class="bi bi-arrow-up-right-circle-fill form-label-sm"></i></span><input type="range" class="form-range" id="node-size-slider" min="0" max="24" value="0" /><span class="pt-val" id="node-size-value">0</span></div>
-      <div class="pt-palette-row" title="Only draw node shapes on nodes that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="node-shapes-filter" disabled><option value="">— always —</option></select></div>
-      <div id="node-shape-detail" class="pt-detail pt-sub-controls">
-        <div class="pt-palette-row" title="Fill colour of internal node circles"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="node-shape-color" value="#888888" /></div>
-        <div class="pt-palette-row" title="Colour node circles by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="node-colour-by" disabled><option value="user_colour">user colour</option></select></div>
-        <div class="pt-palette-row" id="node-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="node-configure-btn">Configure</button></div>
-        <div class="pt-palette-row" title="Background halo width around each node circle"><span class="pt-palette-label">Halo <i class="bi bi-arrow-up-right-circle form-label-sm"></i></span><input type="range" class="form-range" id="node-halo-slider" min="0" max="8" value="2" /><span class="pt-val" id="node-halo-value">2</span></div>
-        <div class="pt-palette-row" title="Halo colour behind each node circle"><span class="pt-palette-label">Halo col. <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="node-shape-bg-color" value="#02292e" /></div>
-      </div>`,
+    rows: [
+      {
+        kind: 'range',
+        id: 'node-size-slider',
+        min: 0,
+        max: 24,
+        value: 0,
+        valueId: 'node-size-value',
+        valueText: '0',
+        title: 'Radius of the circle drawn at each internal node',
+        label: 'Size',
+        labelIcon: 'bi bi-arrow-up-right-circle-fill form-label-sm',
+      },
+      {
+        kind: 'select',
+        id: 'node-shapes-filter',
+        disabled: true,
+        title: 'Only draw node shapes on nodes that pass this filter',
+        label: 'Filter',
+        labelIcon: 'bi bi-funnel form-label-sm',
+        options: [{ value: '', label: '— always —' }],
+      },
+    ],
+    items: [
+      {
+        type: 'group',
+        id: 'node-shape-detail',
+        className: 'pt-detail pt-sub-controls',
+        items: [
+          {
+            type: 'row',
+            kind: 'color',
+            id: 'node-shape-color',
+            value: '#888888',
+            title: 'Fill colour of internal node circles',
+            label: 'Colour',
+            labelIcon: 'bi bi-palette form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'node-colour-by',
+            disabled: true,
+            title: 'Colour node circles by an annotation attribute',
+            label: 'Colour by',
+            labelIcon: 'bi bi-paint-bucket form-label-sm',
+            options: [{ value: 'user_colour', label: 'user colour' }],
+          },
+          {
+            type: 'row',
+            rowId: 'node-configure-row',
+            rowStyle: 'display:none',
+            kind: 'button',
+            id: 'node-configure-btn',
+            buttonText: 'Configure',
+            label: 'Palette',
+            labelIcon: 'bi bi-palette2 form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'node-halo-slider',
+            min: 0,
+            max: 8,
+            value: 2,
+            valueId: 'node-halo-value',
+            valueText: '2',
+            title: 'Background halo width around each node circle',
+            label: 'Halo',
+            labelIcon: 'bi bi-arrow-up-right-circle form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'color',
+            id: 'node-shape-bg-color',
+            value: '#02292e',
+            title: 'Halo colour behind each node circle',
+            label: 'Halo col.',
+            labelIcon: 'bi bi-palette form-label-sm',
+          },
+        ],
+      },
+    ],
   });
 }
 
 function _sectionBranchShapes() {
+  const shapeOptions = [
+    { value: 'off', label: 'Off' },
+    { value: 'rectangle', label: 'Rectangle' },
+    { value: 'ellipse', label: 'Ellipse' },
+  ];
+
   return window.buildPaletteSectionHTML({
     icon: 'bi bi-diagram-2',
     title: 'Branch Shapes',
-    bodyHTML: `
-      <div class="pt-palette-row" title="Shape drawn along each branch"><span class="pt-palette-label">Shape</span><select class="pt-palette-select" id="branch-shape"><option value="off">Off</option><option value="rectangle">Rectangle</option><option value="ellipse">Ellipse</option></select></div>
-      <div class="pt-palette-row" title="Only draw branch shapes on branches that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="branch-shapes-filter" disabled><option value="">— always —</option></select></div>
-      <div id="branch-shape-detail" class="pt-detail pt-sub-controls">
-        <div class="pt-palette-row" title="Shape height as a percentage of tip spacing"><span class="pt-palette-label">Height <i class="bi bi-arrows-vertical form-label-sm"></i></span><input type="range" class="form-range" id="branch-shape-height-slider" min="1" max="100" step="1" value="50" /><span class="pt-val" id="branch-shape-height-value">50</span></div>
-        <div class="pt-palette-row" title="Shape width as a multiple of shape height (non-linear scale, 1.0 at midpoint)"><span class="pt-palette-label">Width <i class="bi bi-arrows-expand form-label-sm"></i></span><input type="range" class="form-range" id="branch-shape-width-slider" min="0" max="100" step="1" value="50" /><span class="pt-val" id="branch-shape-width-value">1</span></div>
-        <div class="pt-palette-row" title="Horizontal alignment of shape groups along the branch"><span class="pt-palette-label">Align <i class="bi bi-distribute-horizontal form-label-sm"></i></span><select class="pt-palette-select" id="branch-shape-align"><option value="center">Centre</option><option value="left">Left</option><option value="right">Right</option></select></div>
-        <div class="pt-palette-row" title="Gap between shapes and branch-edge padding in pixels"><span class="pt-palette-label">Spacing <i class="bi bi-arrows form-label-sm"></i></span><input type="range" class="form-range" id="branch-shape-spacing-slider" min="0" max="30" step="1" value="3" /><span class="pt-val" id="branch-shape-spacing-value">3</span></div>
-        <div class="pt-palette-row" title="Fill colour of branch shapes"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="branch-shape-color" value="#aaaaaa" /></div>
-        <div class="pt-palette-row" title="Colour branch shapes by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="branch-shape-colour-by" disabled><option value="user_colour">user colour</option></select></div>
-        <div class="pt-palette-row" id="branch-shape-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="branch-shape-configure-btn">Configure</button></div>
-        <div class="pt-palette-row" title="Integer annotation key controlling shapes per branch (0–99)"><span class="pt-palette-label">No. <i class="bi bi-123 form-label-sm"></i></span><select class="pt-palette-select" id="branch-shape-count-by" disabled><option value="">Fixed 1</option></select></div>
-        <div class="pt-palette-row" title="Halo width around branch shapes in pixels"><span class="pt-palette-label">Halo <i class="bi bi-bounding-box form-label-sm"></i></span><input type="range" class="form-range" id="branch-shape-halo-slider" min="0" max="8" step="1" value="0" /><span class="pt-val" id="branch-shape-halo-value">0</span></div>
-        <div class="pt-palette-row" title="Halo colour behind branch shapes"><span class="pt-palette-label">Halo col. <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="branch-shape-halo-color" value="#02292e" /></div>
-      </div>
-      ${[2,3,4].map(n => `
-      <div id="branch-shape-${n}-section" class="pt-detail">
-        <div class="pt-palette-row" title="Additional branch shape group ${n}"><span class="pt-palette-label">Shape ${n}</span><select class="pt-palette-select" id="branch-shape-${n}"><option value="off">Off</option><option value="rectangle">Rectangle</option><option value="ellipse">Ellipse</option></select></div>
-        <div id="branch-shape-${n}-detail" class="pt-detail pt-sub-controls">
-          <div class="pt-palette-row" title="Fill colour for branch shape group ${n}"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="branch-shape-${n}-color" value="#aaaaaa" /></div>
-          <div class="pt-palette-row" title="Colour branch shape group ${n} by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="branch-shape-${n}-colour-by" disabled><option value="user_colour">user colour</option></select></div>
-          <div class="pt-palette-row" id="branch-shape-${n}-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="branch-shape-${n}-configure-btn">Configure</button></div>
-          <div class="pt-palette-row" title="Integer annotation key controlling number of shapes in group ${n} (0–99)"><span class="pt-palette-label">No. <i class="bi bi-123 form-label-sm"></i></span><select class="pt-palette-select" id="branch-shape-${n}-count-by" disabled><option value="">Fixed 1</option></select></div>
-        </div>
-      </div>`).join('')}`,
+    rows: [
+      {
+        kind: 'select',
+        id: 'branch-shape',
+        title: 'Shape drawn along each branch',
+        label: 'Shape',
+        options: shapeOptions,
+      },
+      {
+        kind: 'select',
+        id: 'branch-shapes-filter',
+        disabled: true,
+        title: 'Only draw branch shapes on branches that pass this filter',
+        label: 'Filter',
+        labelIcon: 'bi bi-funnel form-label-sm',
+        options: [{ value: '', label: '— always —' }],
+      },
+    ],
+    items: [
+      {
+        type: 'group',
+        id: 'branch-shape-detail',
+        className: 'pt-detail pt-sub-controls',
+        items: [
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'branch-shape-height-slider',
+            min: 1,
+            max: 100,
+            step: 1,
+            value: 50,
+            valueId: 'branch-shape-height-value',
+            valueText: '50',
+            title: 'Shape height as a percentage of tip spacing',
+            label: 'Height',
+            labelIcon: 'bi bi-arrows-vertical form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'branch-shape-width-slider',
+            min: 0,
+            max: 100,
+            step: 1,
+            value: 50,
+            valueId: 'branch-shape-width-value',
+            valueText: '1',
+            title: 'Shape width as a multiple of shape height (non-linear scale, 1.0 at midpoint)',
+            label: 'Width',
+            labelIcon: 'bi bi-arrows-expand form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'branch-shape-align',
+            title: 'Horizontal alignment of shape groups along the branch',
+            label: 'Align',
+            labelIcon: 'bi bi-distribute-horizontal form-label-sm',
+            options: [
+              { value: 'center', label: 'Centre' },
+              { value: 'left', label: 'Left' },
+              { value: 'right', label: 'Right' },
+            ],
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'branch-shape-spacing-slider',
+            min: 0,
+            max: 30,
+            step: 1,
+            value: 3,
+            valueId: 'branch-shape-spacing-value',
+            valueText: '3',
+            title: 'Gap between shapes and branch-edge padding in pixels',
+            label: 'Spacing',
+            labelIcon: 'bi bi-arrows form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'color',
+            id: 'branch-shape-color',
+            value: '#aaaaaa',
+            title: 'Fill colour of branch shapes',
+            label: 'Colour',
+            labelIcon: 'bi bi-palette form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'branch-shape-colour-by',
+            disabled: true,
+            title: 'Colour branch shapes by an annotation attribute',
+            label: 'Colour by',
+            labelIcon: 'bi bi-paint-bucket form-label-sm',
+            options: [{ value: 'user_colour', label: 'user colour' }],
+          },
+          {
+            type: 'row',
+            rowId: 'branch-shape-configure-row',
+            rowStyle: 'display:none',
+            kind: 'button',
+            id: 'branch-shape-configure-btn',
+            buttonText: 'Configure',
+            label: 'Palette',
+            labelIcon: 'bi bi-palette2 form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'branch-shape-count-by',
+            disabled: true,
+            title: 'Integer annotation key controlling shapes per branch (0–99)',
+            label: 'No.',
+            labelIcon: 'bi bi-123 form-label-sm',
+            options: [{ value: '', label: 'Fixed 1' }],
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'branch-shape-halo-slider',
+            min: 0,
+            max: 8,
+            step: 1,
+            value: 0,
+            valueId: 'branch-shape-halo-value',
+            valueText: '0',
+            title: 'Halo width around branch shapes in pixels',
+            label: 'Halo',
+            labelIcon: 'bi bi-bounding-box form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'color',
+            id: 'branch-shape-halo-color',
+            value: '#02292e',
+            title: 'Halo colour behind branch shapes',
+            label: 'Halo col.',
+            labelIcon: 'bi bi-palette form-label-sm',
+          },
+        ],
+      },
+      ...[2, 3, 4].map((n) => ({
+        type: 'group',
+        id: `branch-shape-${n}-section`,
+        className: 'pt-detail',
+        items: [
+          {
+            type: 'row',
+            kind: 'select',
+            id: `branch-shape-${n}`,
+            title: `Additional branch shape group ${n}`,
+            label: `Shape ${n}`,
+            options: shapeOptions,
+          },
+          {
+            type: 'group',
+            id: `branch-shape-${n}-detail`,
+            className: 'pt-detail pt-sub-controls',
+            items: [
+              {
+                type: 'row',
+                kind: 'color',
+                id: `branch-shape-${n}-color`,
+                value: '#aaaaaa',
+                title: `Fill colour for branch shape group ${n}`,
+                label: 'Colour',
+                labelIcon: 'bi bi-palette form-label-sm',
+              },
+              {
+                type: 'row',
+                kind: 'select',
+                id: `branch-shape-${n}-colour-by`,
+                disabled: true,
+                title: `Colour branch shape group ${n} by an annotation attribute`,
+                label: 'Colour by',
+                labelIcon: 'bi bi-paint-bucket form-label-sm',
+                options: [{ value: 'user_colour', label: 'user colour' }],
+              },
+              {
+                type: 'row',
+                rowId: `branch-shape-${n}-configure-row`,
+                rowStyle: 'display:none',
+                kind: 'button',
+                id: `branch-shape-${n}-configure-btn`,
+                buttonText: 'Configure',
+                label: 'Palette',
+                labelIcon: 'bi bi-palette2 form-label-sm',
+              },
+              {
+                type: 'row',
+                kind: 'select',
+                id: `branch-shape-${n}-count-by`,
+                disabled: true,
+                title: `Integer annotation key controlling number of shapes in group ${n} (0–99)`,
+                label: 'No.',
+                labelIcon: 'bi bi-123 form-label-sm',
+                options: [{ value: '', label: 'Fixed 1' }],
+              },
+            ],
+          },
+        ],
+      })),
+    ],
   });
 }
 
@@ -757,20 +1209,124 @@ function _sectionNodeBars() {
     id: 'node-bars-section',
     icon: 'bi bi-bar-chart-steps bi-rotate-180',
     title: 'Node Bars',
-    bodyHTML: `
-      <div id="node-bars-unavail" style="display:block;font-size:0.78rem;color:var(--pt-text-muted);font-style:italic;padding:2px 0 4px;">Requires BEAST tree with height HPD</div>
-      <div id="node-bars-controls" class="pt-palette-grid" style="display:none">
-        <div class="pt-palette-row" title="Show confidence interval bars (e.g. 95% HPD) on nodes"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="node-bars-show"><option value="off">Off</option><option value="on">On</option></select></div>
-        <div class="pt-palette-row" title="Only draw bars on nodes that pass this filter"><span class="pt-palette-label">Filter <i class="bi bi-funnel form-label-sm"></i></span><select class="pt-palette-select" id="node-bars-filter" disabled><option value="">— always —</option></select></div>
-        <div id="node-bars-detail" class="pt-detail pt-sub-controls">
-          <div class="pt-palette-row" title="Draw a vertical line at the mean or median of each bar"><span class="pt-palette-label">Line <i class="bi bi-vr form-label-sm"></i></span><select class="pt-palette-select" id="node-bars-median"><option value="off">(none)</option><option value="mean">Mean</option><option value="median">Median</option></select></div>
-          <div class="pt-palette-row" title="Show or hide range values as text labels on each bar"><span class="pt-palette-label">Range <i class="bi bi-cursor-text form-label-sm bi-rotate-90"></i></span><select class="pt-palette-select" id="node-bars-range"><option value="off">Hide</option><option value="on">Show</option></select></div>
-          <div class="pt-palette-row" title="Bar height in screen pixels"><span class="pt-palette-label">Size <i class="bi bi-arrows-expand form-label-sm"></i></span><input type="range" class="form-range" id="node-bars-width-slider" min="2" max="30" step="1" value="6" /><span class="pt-val" id="node-bars-width-value">6</span></div>
-          <div class="pt-palette-row" title="Colour of the confidence bars"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="node-bars-color" value="#2aa198" /></div>
-          <div class="pt-palette-row" title="Opacity of the confidence bar fill"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="node-bars-fill-opacity" min="0" max="1" step="0.05" value="0.22" /><span class="pt-val" id="node-bars-fill-opacity-value">0.22</span></div>
-          <div class="pt-palette-row" title="Opacity of the confidence bar border"><span class="pt-palette-label">Stroke <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="node-bars-stroke-opacity" min="0" max="1" step="0.05" value="0.55" /><span class="pt-val" id="node-bars-stroke-opacity-value">0.55</span></div>
-        </div>
-      </div>`,
+    items: [
+      {
+        type: 'html',
+        html: '<div id="node-bars-unavail" style="display:block;font-size:0.78rem;color:var(--pt-text-muted);font-style:italic;padding:2px 0 4px;">Requires BEAST tree with height HPD</div>',
+      },
+      {
+        type: 'group',
+        id: 'node-bars-controls',
+        className: 'pt-palette-grid',
+        style: 'display:none',
+        items: [
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'node-bars-show',
+            title: 'Show confidence interval bars (e.g. 95% HPD) on nodes',
+            label: 'Show',
+            options: [
+              { value: 'off', label: 'Off' },
+              { value: 'on', label: 'On' },
+            ],
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'node-bars-filter',
+            disabled: true,
+            title: 'Only draw bars on nodes that pass this filter',
+            label: 'Filter',
+            labelIcon: 'bi bi-funnel form-label-sm',
+            options: [{ value: '', label: '— always —' }],
+          },
+          {
+            type: 'group',
+            id: 'node-bars-detail',
+            className: 'pt-detail pt-sub-controls',
+            items: [
+              {
+                type: 'row',
+                kind: 'select',
+                id: 'node-bars-median',
+                title: 'Draw a vertical line at the mean or median of each bar',
+                label: 'Line',
+                labelIcon: 'bi bi-vr form-label-sm',
+                options: [
+                  { value: 'off', label: '(none)' },
+                  { value: 'mean', label: 'Mean' },
+                  { value: 'median', label: 'Median' },
+                ],
+              },
+              {
+                type: 'row',
+                kind: 'select',
+                id: 'node-bars-range',
+                title: 'Show or hide range values as text labels on each bar',
+                label: 'Range',
+                labelIcon: 'bi bi-cursor-text form-label-sm bi-rotate-90',
+                options: [
+                  { value: 'off', label: 'Hide' },
+                  { value: 'on', label: 'Show' },
+                ],
+              },
+              {
+                type: 'row',
+                kind: 'range',
+                id: 'node-bars-width-slider',
+                min: 2,
+                max: 30,
+                step: 1,
+                value: 6,
+                valueId: 'node-bars-width-value',
+                valueText: '6',
+                title: 'Bar height in screen pixels',
+                label: 'Size',
+                labelIcon: 'bi bi-arrows-expand form-label-sm',
+              },
+              {
+                type: 'row',
+                kind: 'color',
+                id: 'node-bars-color',
+                value: '#2aa198',
+                title: 'Colour of the confidence bars',
+                label: 'Colour',
+                labelIcon: 'bi bi-palette form-label-sm',
+              },
+              {
+                type: 'row',
+                kind: 'range',
+                id: 'node-bars-fill-opacity',
+                min: 0,
+                max: 1,
+                step: 0.05,
+                value: 0.22,
+                valueId: 'node-bars-fill-opacity-value',
+                valueText: '0.22',
+                title: 'Opacity of the confidence bar fill',
+                label: 'Opacity',
+                labelIcon: 'bi bi-droplet-half form-label-sm',
+              },
+              {
+                type: 'row',
+                kind: 'range',
+                id: 'node-bars-stroke-opacity',
+                min: 0,
+                max: 1,
+                step: 0.05,
+                value: 0.55,
+                valueId: 'node-bars-stroke-opacity-value',
+                valueText: '0.55',
+                title: 'Opacity of the confidence bar border',
+                label: 'Stroke',
+                labelIcon: 'bi bi-droplet-half form-label-sm',
+              },
+            ],
+          },
+        ],
+      },
+    ],
   });
 }
 
@@ -779,16 +1335,114 @@ function _sectionCladeHighlights() {
     id: 'clade-highlights-section',
     icon: 'bi bi-highlighter',
     title: 'Clade Highlights',
-    bodyHTML: `
-      <div class="pt-palette-row" title="Shape of the left edge of clade highlight boxes"><span class="pt-palette-label">Left edge <i class="bi bi-arrow-left-square form-label-sm"></i></span><select class="pt-palette-select" id="clade-highlight-left-edge"><option value="atRoot">Rectangle</option><option value="outlineNodes">Outline subtree</option></select></div>
-      <div class="pt-palette-row" title="Extent of the right edge of clade highlight boxes"><span class="pt-palette-label">Right edge <i class="bi bi-arrow-right-square form-label-sm"></i></span><select class="pt-palette-select" id="clade-highlight-right-edge"><option value="atTips">At tip</option><option value="atLabels">At label left</option><option value="atLabelsRight">At label right</option><option value="outlineTips">Outline tips</option></select></div>
-      <div class="pt-palette-row" title="Padding around each highlighted clade in pixels"><span class="pt-palette-label">Padding <i class="bi bi-arrow-bar-right form-label-sm"></i></span><input type="range" class="form-range" id="clade-highlight-padding" min="0" max="40" step="1" value="4" /><span class="pt-val" id="clade-highlight-padding-value">4</span></div>
-      <div class="pt-palette-row" title="Corner rounding radius of the highlight rectangle"><span class="pt-palette-label">Corners <i class="bi bi-radar form-label-sm"></i></span><input type="range" class="form-range" id="clade-highlight-radius" min="0" max="24" step="1" value="4" /><span class="pt-val" id="clade-highlight-radius-value">4</span></div>
-      <div class="pt-palette-row" title="Colour clade highlights by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="clade-highlight-colour-by"><option value="user_colour">User colour</option></select></div>
-      <div class="pt-palette-row" id="clade-highlight-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="clade-highlight-configure-btn">Configure</button></div>
-      <div class="pt-palette-row" title="Opacity of the clade highlight fill"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="clade-highlight-fill-opacity" min="0" max="1" step="0.05" value="0.15" /><span class="pt-val" id="clade-highlight-fill-opacity-value">0.15</span></div>
-      <div class="pt-palette-row" title="Border line width of clade highlights"><span class="pt-palette-label">Stroke <i class="bi bi-border-width form-label-sm"></i></span><input type="range" class="form-range" id="clade-highlight-stroke-width" min="0" max="6" step="0.5" value="1" /><span class="pt-val" id="clade-highlight-stroke-width-value">1</span></div>
-      <div class="pt-palette-row" title="Opacity of the clade highlight border"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="clade-highlight-stroke-opacity" min="0" max="1" step="0.05" value="0.7" /><span class="pt-val" id="clade-highlight-stroke-opacity-value">0.7</span></div>`,
+    rows: [
+      {
+        kind: 'select',
+        id: 'clade-highlight-left-edge',
+        title: 'Shape of the left edge of clade highlight boxes',
+        label: 'Left edge',
+        labelIcon: 'bi bi-arrow-left-square form-label-sm',
+        options: [
+          { value: 'atRoot', label: 'Rectangle' },
+          { value: 'outlineNodes', label: 'Outline subtree' },
+        ],
+      },
+      {
+        kind: 'select',
+        id: 'clade-highlight-right-edge',
+        title: 'Extent of the right edge of clade highlight boxes',
+        label: 'Right edge',
+        labelIcon: 'bi bi-arrow-right-square form-label-sm',
+        options: [
+          { value: 'atTips', label: 'At tip' },
+          { value: 'atLabels', label: 'At label left' },
+          { value: 'atLabelsRight', label: 'At label right' },
+          { value: 'outlineTips', label: 'Outline tips' },
+        ],
+      },
+      {
+        kind: 'range',
+        id: 'clade-highlight-padding',
+        min: 0,
+        max: 40,
+        step: 1,
+        value: 4,
+        valueId: 'clade-highlight-padding-value',
+        valueText: '4',
+        title: 'Padding around each highlighted clade in pixels',
+        label: 'Padding',
+        labelIcon: 'bi bi-arrow-bar-right form-label-sm',
+      },
+      {
+        kind: 'range',
+        id: 'clade-highlight-radius',
+        min: 0,
+        max: 24,
+        step: 1,
+        value: 4,
+        valueId: 'clade-highlight-radius-value',
+        valueText: '4',
+        title: 'Corner rounding radius of the highlight rectangle',
+        label: 'Corners',
+        labelIcon: 'bi bi-radar form-label-sm',
+      },
+      {
+        kind: 'select',
+        id: 'clade-highlight-colour-by',
+        title: 'Colour clade highlights by an annotation attribute',
+        label: 'Colour by',
+        labelIcon: 'bi bi-paint-bucket form-label-sm',
+        options: [{ value: 'user_colour', label: 'User colour' }],
+      },
+      {
+        rowId: 'clade-highlight-configure-row',
+        rowStyle: 'display:none',
+        kind: 'button',
+        id: 'clade-highlight-configure-btn',
+        buttonText: 'Configure',
+        label: 'Palette',
+        labelIcon: 'bi bi-palette2 form-label-sm',
+      },
+      {
+        kind: 'range',
+        id: 'clade-highlight-fill-opacity',
+        min: 0,
+        max: 1,
+        step: 0.05,
+        value: 0.15,
+        valueId: 'clade-highlight-fill-opacity-value',
+        valueText: '0.15',
+        title: 'Opacity of the clade highlight fill',
+        label: 'Opacity',
+        labelIcon: 'bi bi-droplet-half form-label-sm',
+      },
+      {
+        kind: 'range',
+        id: 'clade-highlight-stroke-width',
+        min: 0,
+        max: 6,
+        step: 0.5,
+        value: 1,
+        valueId: 'clade-highlight-stroke-width-value',
+        valueText: '1',
+        title: 'Border line width of clade highlights',
+        label: 'Stroke',
+        labelIcon: 'bi bi-border-width form-label-sm',
+      },
+      {
+        kind: 'range',
+        id: 'clade-highlight-stroke-opacity',
+        min: 0,
+        max: 1,
+        step: 0.05,
+        value: 0.7,
+        valueId: 'clade-highlight-stroke-opacity-value',
+        valueText: '0.7',
+        title: 'Opacity of the clade highlight border',
+        label: 'Opacity',
+        labelIcon: 'bi bi-droplet-half form-label-sm',
+      },
+    ],
   });
 }
 
@@ -797,63 +1451,303 @@ function _sectionCollapsedClades() {
     id: 'collapsed-clades-section',
     icon: 'bi bi-triangle bi-rotate-270',
     title: 'Collapsed Clades',
-    bodyHTML: `
-      <div class="pt-palette-row" title="Height of the clade triangle base in tip-row units"><span class="pt-palette-label">Span <i class="bi bi-arrows-vertical form-label-sm"></i></span><input type="range" class="form-range" id="collapsed-height-n-slider" min="1" max="20" step="1" value="3" /><span class="pt-val" id="collapsed-height-n-value">3</span></div>
-      <div class="pt-palette-row" title="Colour collapsed clade triangles by an annotation attribute"><span class="pt-palette-label">Colour by <i class="bi bi-paint-bucket form-label-sm"></i></span><select class="pt-palette-select" id="collapsed-clade-colour-by"><option value="user_colour">User colour</option></select></div>
-      <div class="pt-palette-row" id="collapsed-clade-configure-row" style="display:none"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="collapsed-clade-configure-btn">Configure</button></div>
-      <div class="pt-palette-row" title="Fill opacity of collapsed clade triangles"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="collapsed-opacity-slider" min="0" max="1" step="0.05" value="0.25" /><span class="pt-val" id="collapsed-opacity-value">0.25</span></div>
-      <div class="pt-palette-row" title="Stroke width of collapsed clade triangle outline"><span class="pt-palette-label">Stroke <i class="bi bi-border-width form-label-sm"></i></span><input type="range" class="form-range" id="collapsed-stroke-width-slider" min="0" max="6" step="0.5" value="1" /><span class="pt-val" id="collapsed-stroke-width-value">1</span></div>
-      <div class="pt-palette-row" title="Stroke opacity of collapsed clade triangle outline"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="collapsed-stroke-opacity-slider" min="0" max="1" step="0.05" value="1" /><span class="pt-val" id="collapsed-stroke-opacity-value">1</span></div>
-      <div class="pt-palette-row" title="Font size of the collapsed clade label"><span class="pt-palette-label">Label size <i class="bi bi-fonts form-label-sm"></i></span><input type="range" class="form-range" id="collapsed-clade-font-size-slider" min="6" max="48" step="1" value="11" /><span class="pt-val" id="collapsed-clade-font-size-value">11</span></div>
-      <div class="pt-palette-row" title="Typeface for collapsed clade labels"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" id="collapsed-clade-typeface-select">${_TYPEFACES}</select></div>
-      <div class="pt-palette-row" title="Font style for collapsed clade labels"><span class="pt-palette-label">Style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" id="collapsed-clade-typeface-style-select"><option value="">Theme</option></select></div>`,
+    rows: [
+      {
+        kind: 'range',
+        id: 'collapsed-height-n-slider',
+        min: 1,
+        max: 20,
+        step: 1,
+        value: 3,
+        valueId: 'collapsed-height-n-value',
+        valueText: '3',
+        title: 'Height of the clade triangle base in tip-row units',
+        label: 'Span',
+        labelIcon: 'bi bi-arrows-vertical form-label-sm',
+      },
+      {
+        kind: 'select',
+        id: 'collapsed-clade-colour-by',
+        title: 'Colour collapsed clade triangles by an annotation attribute',
+        label: 'Colour by',
+        labelIcon: 'bi bi-paint-bucket form-label-sm',
+        options: [{ value: 'user_colour', label: 'User colour' }],
+      },
+      {
+        rowId: 'collapsed-clade-configure-row',
+        rowStyle: 'display:none',
+        kind: 'button',
+        id: 'collapsed-clade-configure-btn',
+        buttonText: 'Configure',
+        label: 'Palette',
+        labelIcon: 'bi bi-palette2 form-label-sm',
+      },
+      {
+        kind: 'range',
+        id: 'collapsed-opacity-slider',
+        min: 0,
+        max: 1,
+        step: 0.05,
+        value: 0.25,
+        valueId: 'collapsed-opacity-value',
+        valueText: '0.25',
+        title: 'Fill opacity of collapsed clade triangles',
+        label: 'Opacity',
+        labelIcon: 'bi bi-droplet-half form-label-sm',
+      },
+      {
+        kind: 'range',
+        id: 'collapsed-stroke-width-slider',
+        min: 0,
+        max: 6,
+        step: 0.5,
+        value: 1,
+        valueId: 'collapsed-stroke-width-value',
+        valueText: '1',
+        title: 'Stroke width of collapsed clade triangle outline',
+        label: 'Stroke',
+        labelIcon: 'bi bi-border-width form-label-sm',
+      },
+      {
+        kind: 'range',
+        id: 'collapsed-stroke-opacity-slider',
+        min: 0,
+        max: 1,
+        step: 0.05,
+        value: 1,
+        valueId: 'collapsed-stroke-opacity-value',
+        valueText: '1',
+        title: 'Stroke opacity of collapsed clade triangle outline',
+        label: 'Opacity',
+        labelIcon: 'bi bi-droplet-half form-label-sm',
+      },
+      {
+        kind: 'range',
+        id: 'collapsed-clade-font-size-slider',
+        min: 6,
+        max: 48,
+        step: 1,
+        value: 11,
+        valueId: 'collapsed-clade-font-size-value',
+        valueText: '11',
+        title: 'Font size of the collapsed clade label',
+        label: 'Label size',
+        labelIcon: 'bi bi-fonts form-label-sm',
+      },
+      {
+        kind: 'select',
+        id: 'collapsed-clade-typeface-select',
+        optionsHTML: _TYPEFACES,
+        title: 'Typeface for collapsed clade labels',
+        label: 'Typeface',
+        labelIcon: 'bi bi-type form-label-sm',
+      },
+      {
+        kind: 'select',
+        id: 'collapsed-clade-typeface-style-select',
+        title: 'Font style for collapsed clade labels',
+        label: 'Style',
+        labelIcon: 'bi bi-type-italic form-label-sm',
+        options: [{ value: '', label: 'Theme' }],
+      },
+    ],
   });
 }
 
 function _sectionLegend() {
+  const decimalPlaceOptions = [
+    { value: '', label: 'Auto' },
+    { value: '0', label: '0' },
+    { value: '1', label: '1' },
+    { value: '2', label: '2' },
+    { value: '3', label: '3' },
+    { value: '4', label: '4' },
+    { value: '5', label: '5' },
+    { value: '6', label: '6' },
+  ];
+
   return window.buildPaletteSectionHTML({
     icon: 'bi bi-card-list',
     title: 'Legend',
-    bodyHTML: `
-      <div class="pt-palette-row" title="Choose an annotation to display as a colour legend"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="legend-annotation" disabled><option value="">Off</option></select></div>
-      <div id="legend-detail" class="pt-detail pt-sub-controls">
-        <div class="pt-palette-row" id="legend-configure-row" style="display:none" title="Configure palette for legend annotation"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="legend-configure-btn">Configure</button></div>
-        <div class="pt-palette-row" id="legend-dp-row" style="display:none" title="Decimal places for numeric legend labels"><span class="pt-palette-label">d.p. <i class="bi bi-three-dots form-label-sm"></i></span><select class="pt-palette-select" id="legend-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
-        <div class="pt-palette-row" title="Height of the primary legend as a percentage of canvas height"><span class="pt-palette-label">Span <i class="bi bi-arrows-expand form-label-sm"></i></span><input type="range" class="form-range" id="legend-height-pct-slider" min="10" max="100" step="5" value="100" /><span class="pt-val" id="legend-height-pct-value">100%</span></div>
-        <div class="pt-palette-row" title="Primary legend text colour"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="legend-text-color" value="#f7eeca" /></div>
-        <div class="pt-palette-row" title="Font size of legend text"><span class="pt-palette-label">Size <i class="bi bi-fonts form-label-sm"></i></span><input type="range" class="form-range" id="legend-font-size-slider" min="6" max="48" value="11" /><span class="pt-val" id="legend-font-size-value">11</span></div>
-        <div class="pt-palette-row" title="Spacing between stacked legend rows and between legend columns"><span class="pt-palette-label">Spacing <i class="bi bi-arrows form-label-sm"></i></span><input type="range" class="form-range" id="legend-spacing-slider" min="0" max="50" step="1" value="0" /><span class="pt-val" id="legend-spacing-value">0</span></div>
-        <div class="pt-palette-row" title="Typeface for legend text"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" id="legend-font-family-select">${_TYPEFACES}</select></div>
-        <div class="pt-palette-row" title="Font style for legend text"><span class="pt-palette-label">Style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" id="legend-typeface-style-select"><option value="">Theme</option></select></div>
-      </div>
-      <div id="legend2-section" class="pt-detail">
-        <div class="pt-palette-row" title="Choose a second annotation legend"><span class="pt-palette-label">Show 2</span><select class="pt-palette-select" id="legend-annotation-2"><option value="">Off</option></select></div>
-        <div id="legend2-detail" class="pt-detail pt-sub-controls">
-          <div class="pt-palette-row" id="legend2-configure-row" style="display:none" title="Configure palette for legend annotation 2"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="legend2-configure-btn">Configure</button></div>
-          <div class="pt-palette-row" id="legend2-dp-row" style="display:none" title="Decimal places for numeric legend labels"><span class="pt-palette-label">d.p. <i class="bi bi-three-dots form-label-sm"></i></span><select class="pt-palette-select" id="legend2-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
-          <div class="pt-palette-row" title="Position of the second legend relative to the first"><span class="pt-palette-label">Position <i class="bi bi-box-arrow-down-right form-label-sm"></i></span><select class="pt-palette-select" id="legend2-show"><option value="right">Right</option><option value="below">Below</option></select></div>
-          <div class="pt-palette-row" title="Height of the second legend as a percentage of canvas height"><span class="pt-palette-label">Span <i class="bi bi-arrows-expand form-label-sm"></i></span><input type="range" class="form-range" id="legend2-height-pct-slider" min="10" max="100" step="5" value="50" /><span class="pt-val" id="legend2-height-pct-value">50%</span></div>
-        </div>
-      </div>
-      <div id="legend3-section" class="pt-detail">
-        <div class="pt-palette-row" title="Choose a third annotation legend"><span class="pt-palette-label">Show 3</span><select class="pt-palette-select" id="legend-annotation-3"><option value="">Off</option></select></div>
-        <div id="legend3-detail" class="pt-detail pt-sub-controls">
-          <div class="pt-palette-row" id="legend3-configure-row" style="display:none" title="Configure palette for legend annotation 3"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="legend3-configure-btn">Configure</button></div>
-          <div class="pt-palette-row" id="legend3-dp-row" style="display:none" title="Decimal places for numeric legend labels"><span class="pt-palette-label">d.p. <i class="bi bi-three-dots form-label-sm"></i></span><select class="pt-palette-select" id="legend3-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
-          <div class="pt-palette-row" title="Position of the third legend"><span class="pt-palette-label">Position <i class="bi bi-box-arrow-down-right form-label-sm"></i></span><select class="pt-palette-select" id="legend3-show"><option value="right">Right</option><option value="below">Below</option></select></div>
-          <div class="pt-palette-row" title="Height of the third legend as a percentage of canvas height"><span class="pt-palette-label">Span <i class="bi bi-arrows-expand form-label-sm"></i></span><input type="range" class="form-range" id="legend3-height-pct-slider" min="10" max="100" step="5" value="50" /><span class="pt-val" id="legend3-height-pct-value">50%</span></div>
-        </div>
-      </div>
-      <div id="legend4-section" class="pt-detail">
-        <div class="pt-palette-row" title="Choose a fourth annotation legend"><span class="pt-palette-label">Show 4</span><select class="pt-palette-select" id="legend-annotation-4"><option value="">Off</option></select></div>
-        <div id="legend4-detail" class="pt-detail pt-sub-controls">
-          <div class="pt-palette-row" id="legend4-configure-row" style="display:none" title="Configure palette for legend annotation 4"><span class="pt-palette-label">Palette <i class="bi bi-palette2 form-label-sm"></i></span><button class="btn btn-sm btn-outline-secondary pt-configure-btn" id="legend4-configure-btn">Configure</button></div>
-          <div class="pt-palette-row" id="legend4-dp-row" style="display:none" title="Decimal places for numeric legend labels"><span class="pt-palette-label">d.p. <i class="bi bi-three-dots form-label-sm"></i></span><select class="pt-palette-select" id="legend4-decimal-places"><option value="">Auto</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
-          <div class="pt-palette-row" title="Position of the fourth legend"><span class="pt-palette-label">Position <i class="bi bi-box-arrow-down-right form-label-sm"></i></span><select class="pt-palette-select" id="legend4-show"><option value="right">Right</option><option value="below">Below</option></select></div>
-          <div class="pt-palette-row" title="Height of the fourth legend as a percentage of canvas height"><span class="pt-palette-label">Span <i class="bi bi-arrows-expand form-label-sm"></i></span><input type="range" class="form-range" id="legend4-height-pct-slider" min="10" max="100" step="5" value="50" /><span class="pt-val" id="legend4-height-pct-value">50%</span></div>
-        </div>
-
-        </div>`,
+    rows: [
+      {
+        kind: 'select',
+        id: 'legend-annotation',
+        disabled: true,
+        title: 'Choose an annotation to display as a colour legend',
+        label: 'Show',
+        options: [{ value: '', label: 'Off' }],
+      },
+    ],
+    items: [
+      {
+        type: 'group',
+        id: 'legend-detail',
+        className: 'pt-detail pt-sub-controls',
+        items: [
+          {
+            type: 'row',
+            rowId: 'legend-configure-row',
+            rowStyle: 'display:none',
+            kind: 'button',
+            id: 'legend-configure-btn',
+            buttonText: 'Configure',
+            title: 'Configure palette for legend annotation',
+            label: 'Palette',
+            labelIcon: 'bi bi-palette2 form-label-sm',
+          },
+          {
+            type: 'row',
+            rowId: 'legend-dp-row',
+            rowStyle: 'display:none',
+            kind: 'select',
+            id: 'legend-decimal-places',
+            title: 'Decimal places for numeric legend labels',
+            label: 'd.p.',
+            labelIcon: 'bi bi-three-dots form-label-sm',
+            options: decimalPlaceOptions,
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'legend-height-pct-slider',
+            min: 10,
+            max: 100,
+            step: 5,
+            value: 100,
+            valueId: 'legend-height-pct-value',
+            valueText: '100%',
+            title: 'Height of the primary legend as a percentage of canvas height',
+            label: 'Span',
+            labelIcon: 'bi bi-arrows-expand form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'color',
+            id: 'legend-text-color',
+            value: '#f7eeca',
+            title: 'Primary legend text colour',
+            label: 'Colour',
+            labelIcon: 'bi bi-palette form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'legend-font-size-slider',
+            min: 6,
+            max: 48,
+            value: 11,
+            valueId: 'legend-font-size-value',
+            valueText: '11',
+            title: 'Font size of legend text',
+            label: 'Size',
+            labelIcon: 'bi bi-fonts form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'legend-spacing-slider',
+            min: 0,
+            max: 50,
+            step: 1,
+            value: 0,
+            valueId: 'legend-spacing-value',
+            valueText: '0',
+            title: 'Spacing between stacked legend rows and between legend columns',
+            label: 'Spacing',
+            labelIcon: 'bi bi-arrows form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'legend-font-family-select',
+            optionsHTML: _TYPEFACES,
+            title: 'Typeface for legend text',
+            label: 'Typeface',
+            labelIcon: 'bi bi-type form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'legend-typeface-style-select',
+            title: 'Font style for legend text',
+            label: 'Style',
+            labelIcon: 'bi bi-type-italic form-label-sm',
+            options: [{ value: '', label: 'Theme' }],
+          },
+        ],
+      },
+      ...[2, 3, 4].map((n) => ({
+        type: 'group',
+        id: `legend${n}-section`,
+        className: 'pt-detail',
+        items: [
+          {
+            type: 'row',
+            kind: 'select',
+            id: `legend-annotation-${n}`,
+            title: `Choose a ${n === 2 ? 'second' : n === 3 ? 'third' : 'fourth'} annotation legend`,
+            label: `Show ${n}`,
+            options: [{ value: '', label: 'Off' }],
+          },
+          {
+            type: 'group',
+            id: `legend${n}-detail`,
+            className: 'pt-detail pt-sub-controls',
+            items: [
+              {
+                type: 'row',
+                rowId: `legend${n}-configure-row`,
+                rowStyle: 'display:none',
+                kind: 'button',
+                id: `legend${n}-configure-btn`,
+                buttonText: 'Configure',
+                title: `Configure palette for legend annotation ${n}`,
+                label: 'Palette',
+                labelIcon: 'bi bi-palette2 form-label-sm',
+              },
+              {
+                type: 'row',
+                rowId: `legend${n}-dp-row`,
+                rowStyle: 'display:none',
+                kind: 'select',
+                id: `legend${n}-decimal-places`,
+                title: 'Decimal places for numeric legend labels',
+                label: 'd.p.',
+                labelIcon: 'bi bi-three-dots form-label-sm',
+                options: decimalPlaceOptions,
+              },
+              {
+                type: 'row',
+                kind: 'select',
+                id: `legend${n}-show`,
+                title: `Position of the ${n === 2 ? 'second' : n === 3 ? 'third' : 'fourth'} legend${n === 2 ? ' relative to the first' : ''}`,
+                label: 'Position',
+                labelIcon: 'bi bi-box-arrow-down-right form-label-sm',
+                options: [
+                  { value: 'right', label: 'Right' },
+                  { value: 'below', label: 'Below' },
+                ],
+              },
+              {
+                type: 'row',
+                kind: 'range',
+                id: `legend${n}-height-pct-slider`,
+                min: 10,
+                max: 100,
+                step: 5,
+                value: 50,
+                valueId: `legend${n}-height-pct-value`,
+                valueText: '50%',
+                title: `Height of the ${n === 2 ? 'second' : n === 3 ? 'third' : 'fourth'} legend as a percentage of canvas height`,
+                label: 'Span',
+                labelIcon: 'bi bi-arrows-expand form-label-sm',
+              },
+            ],
+          },
+        ],
+      })),
+    ],
       });
 }
 
@@ -861,21 +1755,174 @@ function _sectionAxis() {
   return window.buildPaletteSectionHTML({
     icon: 'bi bi-rulers bi-rotate-270',
     title: 'Axis',
-    bodyHTML: `
-      <div class="pt-palette-row" title="Show a scale axis; choose direction or time-calibrated mode"><span class="pt-palette-label">Show</span><select class="pt-palette-select" id="axis-show"><option value="off">Off</option><option value="forward">Forward</option><option value="reverse">Reverse</option><option value="time">Time</option></select></div>
-      <div id="axis-detail" class="pt-detail pt-sub-controls">
-        <div class="pt-palette-row" title="Axis lines and tick label colour"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="axis-color" value="#f2f1e6" /></div>
-        <div class="pt-palette-row" title="Font size of axis tick labels"><span class="pt-palette-label">Size <i class="bi bi-fonts form-label-sm"></i></span><input type="range" class="form-range" id="axis-font-size-slider" min="6" max="48" value="9" /><span class="pt-val" id="axis-font-size-value">9</span></div>
-        <div class="pt-palette-row" title="Typeface for axis tick labels"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" id="axis-font-family-select">${_TYPEFACES}</select></div>
-        <div class="pt-palette-row" title="Font style for axis tick labels"><span class="pt-palette-label">Style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" id="axis-typeface-style-select"><option value="">Theme</option></select></div>
-        <div class="pt-palette-row" title="Axis line width in screen pixels"><span class="pt-palette-label">Line <i class="bi bi-border-width form-label-sm"></i></span><input type="range" class="form-range" id="axis-line-width-slider" min="0.5" max="4" step="0.5" value="1" /><span class="pt-val" id="axis-line-width-value">1</span></div>
-        <div class="pt-palette-row" id="axis-date-format-row" style="display:none" title="Date format for time-calibrated axis labels"><span class="pt-palette-label">Format <i class="bi bi-calendar-check form-label-sm"></i></span><select class="pt-palette-select" id="axis-date-format"><option value="yyyy-MM-dd">1977-05-04</option><option value="yyyy-MMM-dd">1977-May-04</option><option value="dd MMM yyyy">04 May 1977</option><option value="dd MMMM yyyy">04 May 1977 (long month)</option><option value="MMM dd, yyyy">May 04, 1977</option><option value="MMMM dd, yyyy">May 04, 1977 (long month)</option><option value="MMM-dd-yyyy">May-04-1977</option></select></div>
-        <div class="pt-palette-row" id="axis-major-interval-row" style="display:none" title="Spacing between major labelled axis ticks"><span class="pt-palette-label">Major ticks <i class="bi bi-text-left form-label-sm bi-rotate-90 bi-flip-vertical"></i></span><select class="pt-palette-select" id="axis-major-interval"><option value="auto">Auto</option><option value="millennia">Millennia</option><option value="centuries">Centuries</option><option value="decades">Decades</option><option value="years">Years</option><option value="quarters">Quarters</option><option value="months">Months</option><option value="weeks">Weeks</option><option value="days">Days</option></select></div>
-        <div class="pt-palette-row" id="axis-minor-interval-row" style="display:none" title="Spacing between minor unlabelled axis ticks"><span class="pt-palette-label">Minor ticks <i class="bi bi-text-left form-label-sm bi-rotate-90"></i></span><select class="pt-palette-select" id="axis-minor-interval"><option value="off">Off</option></select></div>
-        <div class="pt-palette-row" id="axis-major-label-row" style="display:none" title="Label format for major axis ticks"><span class="pt-palette-label">Major labels <i class="bi bi-tags form-label-sm"></i></span><select class="pt-palette-select" id="axis-major-label"><option value="component">Component</option><option value="partial">Partial</option><option value="full">Full</option><option value="off">Off</option></select></div>
-        <div class="pt-palette-row" id="axis-minor-label-row" style="display:none" title="Label format for minor axis ticks"><span class="pt-palette-label">Minor labels <i class="bi bi-tag form-label-sm"></i></span><select class="pt-palette-select" id="axis-minor-label"><option value="component">Component</option><option value="partial">Partial</option><option value="full">Full</option><option value="off">Off</option></select></div>
-        <div class="pt-palette-row" id="axis-range-row" title="Set the range of the axis; leave blank or 'auto' for automatic ranging. For time axis enter dates (e.g. 2020-01-15) or decimal years. For forward/reverse enter numbers."><span class="pt-palette-label">Range <i class="bi bi-arrows-expand form-label-sm"></i></span><div style="grid-column:2/-1;display:flex;gap:4px;align-items:center"><input type="text" id="axis-range-left" class="pt-palette-select" placeholder="auto" style="flex:1;min-width:0" /><input type="text" id="axis-range-right" class="pt-palette-select" placeholder="auto" style="flex:1;min-width:0" /></div></div>
-        </div>`,
+    rows: [
+      {
+        kind: 'select',
+        id: 'axis-show',
+        title: 'Show a scale axis; choose direction or time-calibrated mode',
+        label: 'Show',
+        options: [
+          { value: 'off', label: 'Off' },
+          { value: 'forward', label: 'Forward' },
+          { value: 'reverse', label: 'Reverse' },
+          { value: 'time', label: 'Time' },
+        ],
+      },
+    ],
+    items: [
+      {
+        type: 'group',
+        id: 'axis-detail',
+        className: 'pt-detail pt-sub-controls',
+        items: [
+          {
+            type: 'row',
+            kind: 'color',
+            id: 'axis-color',
+            value: '#f2f1e6',
+            title: 'Axis lines and tick label colour',
+            label: 'Colour',
+            labelIcon: 'bi bi-palette form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'axis-font-size-slider',
+            min: 6,
+            max: 48,
+            value: 9,
+            valueId: 'axis-font-size-value',
+            valueText: '9',
+            title: 'Font size of axis tick labels',
+            label: 'Size',
+            labelIcon: 'bi bi-fonts form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'axis-font-family-select',
+            optionsHTML: _TYPEFACES,
+            title: 'Typeface for axis tick labels',
+            label: 'Typeface',
+            labelIcon: 'bi bi-type form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'axis-typeface-style-select',
+            title: 'Font style for axis tick labels',
+            label: 'Style',
+            labelIcon: 'bi bi-type-italic form-label-sm',
+            options: [{ value: '', label: 'Theme' }],
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: 'axis-line-width-slider',
+            min: 0.5,
+            max: 4,
+            step: 0.5,
+            value: 1,
+            valueId: 'axis-line-width-value',
+            valueText: '1',
+            title: 'Axis line width in screen pixels',
+            label: 'Line',
+            labelIcon: 'bi bi-border-width form-label-sm',
+          },
+          {
+            type: 'row',
+            rowId: 'axis-date-format-row',
+            rowStyle: 'display:none',
+            kind: 'select',
+            id: 'axis-date-format',
+            title: 'Date format for time-calibrated axis labels',
+            label: 'Format',
+            labelIcon: 'bi bi-calendar-check form-label-sm',
+            options: [
+              { value: 'yyyy-MM-dd', label: '1977-05-04' },
+              { value: 'yyyy-MMM-dd', label: '1977-May-04' },
+              { value: 'dd MMM yyyy', label: '04 May 1977' },
+              { value: 'dd MMMM yyyy', label: '04 May 1977 (long month)' },
+              { value: 'MMM dd, yyyy', label: 'May 04, 1977' },
+              { value: 'MMMM dd, yyyy', label: 'May 04, 1977 (long month)' },
+              { value: 'MMM-dd-yyyy', label: 'May-04-1977' },
+            ],
+          },
+          {
+            type: 'row',
+            rowId: 'axis-major-interval-row',
+            rowStyle: 'display:none',
+            kind: 'select',
+            id: 'axis-major-interval',
+            title: 'Spacing between major labelled axis ticks',
+            label: 'Major ticks',
+            labelIcon: 'bi bi-text-left form-label-sm bi-rotate-90 bi-flip-vertical',
+            options: [
+              { value: 'auto', label: 'Auto' },
+              { value: 'millennia', label: 'Millennia' },
+              { value: 'centuries', label: 'Centuries' },
+              { value: 'decades', label: 'Decades' },
+              { value: 'years', label: 'Years' },
+              { value: 'quarters', label: 'Quarters' },
+              { value: 'months', label: 'Months' },
+              { value: 'weeks', label: 'Weeks' },
+              { value: 'days', label: 'Days' },
+            ],
+          },
+          {
+            type: 'row',
+            rowId: 'axis-minor-interval-row',
+            rowStyle: 'display:none',
+            kind: 'select',
+            id: 'axis-minor-interval',
+            title: 'Spacing between minor unlabelled axis ticks',
+            label: 'Minor ticks',
+            labelIcon: 'bi bi-text-left form-label-sm bi-rotate-90',
+            options: [{ value: 'off', label: 'Off' }],
+          },
+          {
+            type: 'row',
+            rowId: 'axis-major-label-row',
+            rowStyle: 'display:none',
+            kind: 'select',
+            id: 'axis-major-label',
+            title: 'Label format for major axis ticks',
+            label: 'Major labels',
+            labelIcon: 'bi bi-tags form-label-sm',
+            options: [
+              { value: 'component', label: 'Component' },
+              { value: 'partial', label: 'Partial' },
+              { value: 'full', label: 'Full' },
+              { value: 'off', label: 'Off' },
+            ],
+          },
+          {
+            type: 'row',
+            rowId: 'axis-minor-label-row',
+            rowStyle: 'display:none',
+            kind: 'select',
+            id: 'axis-minor-label',
+            title: 'Label format for minor axis ticks',
+            label: 'Minor labels',
+            labelIcon: 'bi bi-tag form-label-sm',
+            options: [
+              { value: 'component', label: 'Component' },
+              { value: 'partial', label: 'Partial' },
+              { value: 'full', label: 'Full' },
+              { value: 'off', label: 'Off' },
+            ],
+          },
+          {
+            type: 'row',
+            rowId: 'axis-range-row',
+            title: "Set the range of the axis; leave blank or 'auto' for automatic ranging. For time axis enter dates (e.g. 2020-01-15) or decimal years. For forward/reverse enter numbers.",
+            label: 'Range',
+            labelIcon: 'bi bi-arrows-expand form-label-sm',
+            controlHTML: '<div style="grid-column:2/-1;display:flex;gap:4px;align-items:center"><input type="text" id="axis-range-left" class="pt-palette-select" placeholder="auto" style="flex:1;min-width:0" /><input type="text" id="axis-range-right" class="pt-palette-select" placeholder="auto" style="flex:1;min-width:0" /></div>',
+          },
+        ],
+      },
+    ],
       });
 }
 
@@ -884,36 +1931,331 @@ function _sectionRtt() {
     id: 'rtt-section',
     icon: 'bi bi-graph-up',
     title: 'Root-to-tip',
-    bodyHTML: `
-      <div class="pt-palette-row" title="Starting point of the root-to-tip X axis"><span class="pt-palette-label">X-axis origin <i class="bi bi-arrow-down-left form-label-sm"></i></span><select class="pt-palette-select" id="rtt-x-origin"><option value="data">data range</option><option value="root">root age</option><option value="interval">interval range</option></select></div>
-      <div class="pt-palette-row" title="Aspect ratio of the root-to-tip chart panel"><span class="pt-palette-label">Aspect ratio <i class="bi bi-aspect-ratio form-label-sm"></i></span><select class="pt-palette-select" id="rtt-aspect-ratio"><option value="fit">fit panel</option><option value="1:1">1 : 1 (square)</option><option value="4:3">4 : 3</option><option value="3:2">3 : 2</option><option value="16:9">16 : 9</option></select></div>
-      <div class="pt-palette-row" title="Grid lines to show on the root-to-tip chart"><span class="pt-palette-label">Grid lines <i class="bi bi-border-inner form-label-sm"></i></span><select class="pt-palette-select" id="rtt-grid-lines"><option value="both">both</option><option value="horizontal">horizontal</option><option value="vertical">vertical</option><option value="off">off</option></select></div>
-      <div class="pt-palette-subhead">Regression line</div>
-      <div class="pt-palette-row" title="Line style of the regression line"><span class="pt-palette-label">Style <i class="bi bi-border-style form-label-sm"></i></span><select class="pt-palette-select" id="rtt-regression-style"><option value="solid">Solid</option><option value="bigdash">Big dash</option><option value="dash">Dash</option><option value="dots">Dots</option></select></div>
-      <div class="pt-palette-row" title="Colour of the regression line"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="rtt-regression-color" value="#f2f1e6" /></div>
-      <div class="pt-palette-row" title="Width of the regression line in pixels"><span class="pt-palette-label">Width <i class="bi bi-border-width form-label-sm"></i></span><input type="range" class="form-range" id="rtt-regression-width-slider" min="0.5" max="6" step="0.5" value="1.5" /><span class="pt-val" id="rtt-regression-width-value">1.5</span></div>
-      <div class="pt-palette-subhead">Interval band</div>
-      <div class="pt-palette-row" title="Show band around regression line: ±2σ residual lines or 95% confidence interval for the mean"><span class="pt-palette-label">Band <i class="bi bi-file-bar-graph form-label-sm"></i></span><select class="pt-palette-select" id="rtt-resid-band-show"><option value="off">Off</option><option value="residual">±2σ residual</option><option value="ci">95% CI</option></select></div>
-      <div class="pt-palette-row" title="Style of the interval band boundary lines"><span class="pt-palette-label">Style <i class="bi bi-border-style form-label-sm"></i></span><select class="pt-palette-select" id="rtt-resid-band-style"><option value="solid">Solid</option><option value="bigdash">Big dash</option><option value="dash">Dash</option><option value="dots">Dots</option></select></div>
-      <div class="pt-palette-row" title="Colour of the interval band boundary lines"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="rtt-resid-band-color" value="#f2f1e6" /></div>
-      <div class="pt-palette-row" title="Width of the interval band boundary lines in pixels"><span class="pt-palette-label">Width <i class="bi bi-border-width form-label-sm"></i></span><input type="range" class="form-range" id="rtt-resid-band-width-slider" min="0" max="6" step="0.5" value="1" /><span class="pt-val" id="rtt-resid-band-width-value">1</span></div>
-      <div class="pt-palette-row" title="Fill colour of the interval band area"><span class="pt-palette-label">Fill <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="rtt-resid-band-fill-color" value="#f2f1e6" /></div>
-      <div class="pt-palette-row" title="Opacity of the interval band fill"><span class="pt-palette-label">Opacity <i class="bi bi-circle-half form-label-sm"></i></span><input type="range" class="form-range" id="rtt-resid-band-fill-opacity-slider" min="0" max="1" step="0.05" value="0.1" /><span class="pt-val" id="rtt-resid-band-fill-opacity-value">0.1</span></div>
-      <div class="pt-palette-subhead">Statistics box</div>
-      <div class="pt-palette-row" title="Background colour of the statistics summary box"><span class="pt-palette-label">Background <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="rtt-stats-bg-color" value="#081c22" /></div>
-      <div class="pt-palette-row" title="Text colour of the statistics summary box"><span class="pt-palette-label">Text <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="rtt-stats-text-color" value="#f2f1e6" /></div>
-      <div class="pt-palette-row" title="Font size of the statistics summary box"><span class="pt-palette-label">Size <i class="bi bi-fonts form-label-sm"></i></span><input type="range" class="form-range" id="rtt-stats-font-size-slider" min="6" max="32" value="11" /><span class="pt-val" id="rtt-stats-font-size-value">11</span></div>
-      <div class="pt-palette-subhead">Axes</div>
-      <div class="pt-palette-row" title="Root-to-tip chart axis colour"><span class="pt-palette-label">Colour <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="rtt-axis-color" value="#f2f1e6" /></div>
-      <div class="pt-palette-row" title="Font size of root-to-tip axis labels"><span class="pt-palette-label">Size <i class="bi bi-fonts form-label-sm"></i></span><input type="range" class="form-range" id="rtt-axis-font-size-slider" min="6" max="48" value="9" /><span class="pt-val" id="rtt-axis-font-size-value">9</span></div>
-      <div class="pt-palette-row" title="Root-to-tip axis line width in pixels"><span class="pt-palette-label">Width <i class="bi bi-border-width form-label-sm"></i></span><input type="range" class="form-range" id="rtt-axis-line-width-slider" min="0.5" max="4" step="0.5" value="1" /><span class="pt-val" id="rtt-axis-line-width-value">1</span></div>
-      <div class="pt-palette-row" title="Typeface for root-to-tip axis labels"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" id="rtt-axis-font-family-select">${_TYPEFACES}</select></div>
-      <div class="pt-palette-row" title="Font style for root-to-tip axis labels"><span class="pt-palette-label">Style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" id="rtt-axis-typeface-style-select"><option value="">Theme</option></select></div>
-      <div class="pt-palette-row" id="rtt-date-format-row" style="display:none" title="Date format for time-calibrated root-to-tip axis"><span class="pt-palette-label">Format <i class="bi bi-calendar-check form-label-sm"></i></span><select class="pt-palette-select" id="rtt-date-format"><option value="yyyy-MM-dd">1977-05-04</option><option value="yyyy-MMM-dd">1977-May-04</option><option value="dd MMM yyyy">04 May 1977</option><option value="dd MMMM yyyy">04 May 1977 (long month)</option><option value="MMM dd, yyyy">May 04, 1977</option><option value="MMMM dd, yyyy">May 04, 1977 (long month)</option><option value="MMM-dd-yyyy">May-04-1977</option></select></div>
-      <div class="pt-palette-row" id="rtt-major-interval-row" style="display:none" title="Spacing between major labelled root-to-tip axis ticks"><span class="pt-palette-label">Major ticks <i class="bi bi-text-left form-label-sm bi-rotate-90 bi-flip-vertical"></i></span><select class="pt-palette-select" id="rtt-major-interval"><option value="auto">Auto</option><option value="millennia">Millennia</option><option value="centuries">Centuries</option><option value="decades">Decades</option><option value="years">Years</option><option value="quarters">Quarters</option><option value="months">Months</option><option value="weeks">Weeks</option><option value="days">Days</option></select></div>
-      <div class="pt-palette-row" id="rtt-minor-interval-row" style="display:none" title="Spacing between minor root-to-tip axis ticks"><span class="pt-palette-label">Minor ticks <i class="bi bi-text-left form-label-sm bi-rotate-90"></i></span><select class="pt-palette-select" id="rtt-minor-interval"><option value="off">Off</option></select></div>
-      <div class="pt-palette-row" id="rtt-major-label-row" style="display:none" title="Label format for major root-to-tip ticks"><span class="pt-palette-label">Major labels <i class="bi bi-tags form-label-sm"></i></span><select class="pt-palette-select" id="rtt-major-label"><option value="component">Component</option><option value="partial">Partial</option><option value="full">Full</option><option value="off">Off</option></select></div>
-        <div class="pt-palette-row" id="rtt-minor-label-row" style="display:none" title="Label format for minor root-to-tip ticks"><span class="pt-palette-label">Minor labels <i class="bi bi-tag form-label-sm"></i></span><select class="pt-palette-select" id="rtt-minor-label"><option value="component">Component</option><option value="partial">Partial</option><option value="full">Full</option><option value="off">Off</option></select></div>`,
+    rows: [
+      {
+        kind: 'select',
+        id: 'rtt-x-origin',
+        title: 'Starting point of the root-to-tip X axis',
+        label: 'X-axis origin',
+        labelIcon: 'bi bi-arrow-down-left form-label-sm',
+        options: [
+          { value: 'data', label: 'data range' },
+          { value: 'root', label: 'root age' },
+          { value: 'interval', label: 'interval range' },
+        ],
+      },
+      {
+        kind: 'select',
+        id: 'rtt-aspect-ratio',
+        title: 'Aspect ratio of the root-to-tip chart panel',
+        label: 'Aspect ratio',
+        labelIcon: 'bi bi-aspect-ratio form-label-sm',
+        options: [
+          { value: 'fit', label: 'fit panel' },
+          { value: '1:1', label: '1 : 1 (square)' },
+          { value: '4:3', label: '4 : 3' },
+          { value: '3:2', label: '3 : 2' },
+          { value: '16:9', label: '16 : 9' },
+        ],
+      },
+      {
+        kind: 'select',
+        id: 'rtt-grid-lines',
+        title: 'Grid lines to show on the root-to-tip chart',
+        label: 'Grid lines',
+        labelIcon: 'bi bi-border-inner form-label-sm',
+        options: [
+          { value: 'both', label: 'both' },
+          { value: 'horizontal', label: 'horizontal' },
+          { value: 'vertical', label: 'vertical' },
+          { value: 'off', label: 'off' },
+        ],
+      },
+    ],
+    items: [
+      { type: 'subhead', text: 'Regression line' },
+      {
+        type: 'row',
+        kind: 'select',
+        id: 'rtt-regression-style',
+        title: 'Line style of the regression line',
+        label: 'Style',
+        labelIcon: 'bi bi-border-style form-label-sm',
+        options: [
+          { value: 'solid', label: 'Solid' },
+          { value: 'bigdash', label: 'Big dash' },
+          { value: 'dash', label: 'Dash' },
+          { value: 'dots', label: 'Dots' },
+        ],
+      },
+      {
+        type: 'row',
+        kind: 'color',
+        id: 'rtt-regression-color',
+        value: '#f2f1e6',
+        title: 'Colour of the regression line',
+        label: 'Colour',
+        labelIcon: 'bi bi-palette form-label-sm',
+      },
+      {
+        type: 'row',
+        kind: 'range',
+        id: 'rtt-regression-width-slider',
+        min: 0.5,
+        max: 6,
+        step: 0.5,
+        value: 1.5,
+        valueId: 'rtt-regression-width-value',
+        valueText: '1.5',
+        title: 'Width of the regression line in pixels',
+        label: 'Width',
+        labelIcon: 'bi bi-border-width form-label-sm',
+      },
+      { type: 'subhead', text: 'Interval band' },
+      {
+        type: 'row',
+        kind: 'select',
+        id: 'rtt-resid-band-show',
+        title: 'Show band around regression line: ±2σ residual lines or 95% confidence interval for the mean',
+        label: 'Band',
+        labelIcon: 'bi bi-file-bar-graph form-label-sm',
+        options: [
+          { value: 'off', label: 'Off' },
+          { value: 'residual', label: '±2σ residual' },
+          { value: 'ci', label: '95% CI' },
+        ],
+      },
+      {
+        type: 'row',
+        kind: 'select',
+        id: 'rtt-resid-band-style',
+        title: 'Style of the interval band boundary lines',
+        label: 'Style',
+        labelIcon: 'bi bi-border-style form-label-sm',
+        options: [
+          { value: 'solid', label: 'Solid' },
+          { value: 'bigdash', label: 'Big dash' },
+          { value: 'dash', label: 'Dash' },
+          { value: 'dots', label: 'Dots' },
+        ],
+      },
+      {
+        type: 'row',
+        kind: 'color',
+        id: 'rtt-resid-band-color',
+        value: '#f2f1e6',
+        title: 'Colour of the interval band boundary lines',
+        label: 'Colour',
+        labelIcon: 'bi bi-palette form-label-sm',
+      },
+      {
+        type: 'row',
+        kind: 'range',
+        id: 'rtt-resid-band-width-slider',
+        min: 0,
+        max: 6,
+        step: 0.5,
+        value: 1,
+        valueId: 'rtt-resid-band-width-value',
+        valueText: '1',
+        title: 'Width of the interval band boundary lines in pixels',
+        label: 'Width',
+        labelIcon: 'bi bi-border-width form-label-sm',
+      },
+      {
+        type: 'row',
+        kind: 'color',
+        id: 'rtt-resid-band-fill-color',
+        value: '#f2f1e6',
+        title: 'Fill colour of the interval band area',
+        label: 'Fill',
+        labelIcon: 'bi bi-palette form-label-sm',
+      },
+      {
+        type: 'row',
+        kind: 'range',
+        id: 'rtt-resid-band-fill-opacity-slider',
+        min: 0,
+        max: 1,
+        step: 0.05,
+        value: 0.1,
+        valueId: 'rtt-resid-band-fill-opacity-value',
+        valueText: '0.1',
+        title: 'Opacity of the interval band fill',
+        label: 'Opacity',
+        labelIcon: 'bi bi-circle-half form-label-sm',
+      },
+      { type: 'subhead', text: 'Statistics box' },
+      {
+        type: 'row',
+        kind: 'color',
+        id: 'rtt-stats-bg-color',
+        value: '#081c22',
+        title: 'Background colour of the statistics summary box',
+        label: 'Background',
+        labelIcon: 'bi bi-palette form-label-sm',
+      },
+      {
+        type: 'row',
+        kind: 'color',
+        id: 'rtt-stats-text-color',
+        value: '#f2f1e6',
+        title: 'Text colour of the statistics summary box',
+        label: 'Text',
+        labelIcon: 'bi bi-palette form-label-sm',
+      },
+      {
+        type: 'row',
+        kind: 'range',
+        id: 'rtt-stats-font-size-slider',
+        min: 6,
+        max: 32,
+        value: 11,
+        valueId: 'rtt-stats-font-size-value',
+        valueText: '11',
+        title: 'Font size of the statistics summary box',
+        label: 'Size',
+        labelIcon: 'bi bi-fonts form-label-sm',
+      },
+      { type: 'subhead', text: 'Axes' },
+      {
+        type: 'row',
+        kind: 'color',
+        id: 'rtt-axis-color',
+        value: '#f2f1e6',
+        title: 'Root-to-tip chart axis colour',
+        label: 'Colour',
+        labelIcon: 'bi bi-palette form-label-sm',
+      },
+      {
+        type: 'row',
+        kind: 'range',
+        id: 'rtt-axis-font-size-slider',
+        min: 6,
+        max: 48,
+        value: 9,
+        valueId: 'rtt-axis-font-size-value',
+        valueText: '9',
+        title: 'Font size of root-to-tip axis labels',
+        label: 'Size',
+        labelIcon: 'bi bi-fonts form-label-sm',
+      },
+      {
+        type: 'row',
+        kind: 'range',
+        id: 'rtt-axis-line-width-slider',
+        min: 0.5,
+        max: 4,
+        step: 0.5,
+        value: 1,
+        valueId: 'rtt-axis-line-width-value',
+        valueText: '1',
+        title: 'Root-to-tip axis line width in pixels',
+        label: 'Width',
+        labelIcon: 'bi bi-border-width form-label-sm',
+      },
+      {
+        type: 'row',
+        kind: 'select',
+        id: 'rtt-axis-font-family-select',
+        optionsHTML: _TYPEFACES,
+        title: 'Typeface for root-to-tip axis labels',
+        label: 'Typeface',
+        labelIcon: 'bi bi-type form-label-sm',
+      },
+      {
+        type: 'row',
+        kind: 'select',
+        id: 'rtt-axis-typeface-style-select',
+        title: 'Font style for root-to-tip axis labels',
+        label: 'Style',
+        labelIcon: 'bi bi-type-italic form-label-sm',
+        options: [{ value: '', label: 'Theme' }],
+      },
+      {
+        type: 'row',
+        rowId: 'rtt-date-format-row',
+        rowStyle: 'display:none',
+        kind: 'select',
+        id: 'rtt-date-format',
+        title: 'Date format for time-calibrated root-to-tip axis',
+        label: 'Format',
+        labelIcon: 'bi bi-calendar-check form-label-sm',
+        options: [
+          { value: 'yyyy-MM-dd', label: '1977-05-04' },
+          { value: 'yyyy-MMM-dd', label: '1977-May-04' },
+          { value: 'dd MMM yyyy', label: '04 May 1977' },
+          { value: 'dd MMMM yyyy', label: '04 May 1977 (long month)' },
+          { value: 'MMM dd, yyyy', label: 'May 04, 1977' },
+          { value: 'MMMM dd, yyyy', label: 'May 04, 1977 (long month)' },
+          { value: 'MMM-dd-yyyy', label: 'May-04-1977' },
+        ],
+      },
+      {
+        type: 'row',
+        rowId: 'rtt-major-interval-row',
+        rowStyle: 'display:none',
+        kind: 'select',
+        id: 'rtt-major-interval',
+        title: 'Spacing between major labelled root-to-tip axis ticks',
+        label: 'Major ticks',
+        labelIcon: 'bi bi-text-left form-label-sm bi-rotate-90 bi-flip-vertical',
+        options: [
+          { value: 'auto', label: 'Auto' },
+          { value: 'millennia', label: 'Millennia' },
+          { value: 'centuries', label: 'Centuries' },
+          { value: 'decades', label: 'Decades' },
+          { value: 'years', label: 'Years' },
+          { value: 'quarters', label: 'Quarters' },
+          { value: 'months', label: 'Months' },
+          { value: 'weeks', label: 'Weeks' },
+          { value: 'days', label: 'Days' },
+        ],
+      },
+      {
+        type: 'row',
+        rowId: 'rtt-minor-interval-row',
+        rowStyle: 'display:none',
+        kind: 'select',
+        id: 'rtt-minor-interval',
+        title: 'Spacing between minor root-to-tip axis ticks',
+        label: 'Minor ticks',
+        labelIcon: 'bi bi-text-left form-label-sm bi-rotate-90',
+        options: [{ value: 'off', label: 'Off' }],
+      },
+      {
+        type: 'row',
+        rowId: 'rtt-major-label-row',
+        rowStyle: 'display:none',
+        kind: 'select',
+        id: 'rtt-major-label',
+        title: 'Label format for major root-to-tip ticks',
+        label: 'Major labels',
+        labelIcon: 'bi bi-tags form-label-sm',
+        options: [
+          { value: 'component', label: 'Component' },
+          { value: 'partial', label: 'Partial' },
+          { value: 'full', label: 'Full' },
+          { value: 'off', label: 'Off' },
+        ],
+      },
+      {
+        type: 'row',
+        rowId: 'rtt-minor-label-row',
+        rowStyle: 'display:none',
+        kind: 'select',
+        id: 'rtt-minor-label',
+        title: 'Label format for minor root-to-tip ticks',
+        label: 'Minor labels',
+        labelIcon: 'bi bi-tag form-label-sm',
+        options: [
+          { value: 'component', label: 'Component' },
+          { value: 'partial', label: 'Partial' },
+          { value: 'full', label: 'Full' },
+          { value: 'off', label: 'Off' },
+        ],
+      },
+    ],
       });
 }
 
@@ -921,19 +2263,57 @@ function _sectionTheme() {
   return window.buildPaletteSectionHTML({
     icon: 'bi bi-palette2',
     title: 'Theme',
-    bodyHTML: `
-      <div class="pt-palette-row--span"><select class="pt-palette-select" id="theme-select"></select></div>
-      <div class="pt-palette-row--span" style="gap:6px">
-        <button id="btn-store-theme" class="pt-theme-btn" style="flex:1" title="Save current settings as a named theme" disabled>Store</button>
-        <button id="btn-default-theme" class="pt-theme-btn" style="flex:1" title="Set selected theme as the default" disabled>Default</button>
-        <button id="btn-remove-theme" class="pt-theme-btn" style="flex:1" title="Remove this user-saved theme" disabled>Remove</button>
-      </div>
-      <div class="pt-palette-row--span" style="gap:6px">
-        <button id="btn-export-theme" class="pt-theme-btn" style="flex:1" title="Export theme as a JSON file">Export</button>
-        <button id="btn-import-theme" class="pt-theme-btn" style="flex:1" title="Import a theme from a JSON file">Import</button>
-      </div>
-        <div class="pt-palette-row" title="Default typeface used throughout the tree (overridable per section)"><span class="pt-palette-label">Typeface <i class="bi bi-type form-label-sm"></i></span><select class="pt-palette-select" id="font-family-select"><option value="Monospace">Monospace</option><option value="Sans-serif">Sans-serif</option><option value="Serif">Serif</option><option value="Courier New">Courier New</option><option value="Helvetica">Helvetica</option><option value="Helvetica Neue">Helvetica Neue</option><option value="Georgia">Georgia</option><option value="Times New Roman">Times New Roman</option><option value="System UI">System UI</option><option value="Menlo">Menlo</option></select></div>
-        <div class="pt-palette-row" title="Default font style used throughout the tree"><span class="pt-palette-label">Style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" id="font-typeface-style-select"><option value="Regular">Regular</option></select></div>`,
+    items: [
+      {
+        type: 'row',
+        rowClass: 'pt-palette-row--span',
+        hideLabel: true,
+        controlHTML: '<select class="pt-palette-select" id="theme-select"></select>',
+      },
+      {
+        type: 'row',
+        rowClass: 'pt-palette-row--span',
+        rowStyle: 'gap:6px',
+        hideLabel: true,
+        controlHTML: '<button id="btn-store-theme" class="pt-theme-btn" style="flex:1" title="Save current settings as a named theme" disabled>Store</button><button id="btn-default-theme" class="pt-theme-btn" style="flex:1" title="Set selected theme as the default" disabled>Default</button><button id="btn-remove-theme" class="pt-theme-btn" style="flex:1" title="Remove this user-saved theme" disabled>Remove</button>',
+      },
+      {
+        type: 'row',
+        rowClass: 'pt-palette-row--span',
+        rowStyle: 'gap:6px',
+        hideLabel: true,
+        controlHTML: '<button id="btn-export-theme" class="pt-theme-btn" style="flex:1" title="Export theme as a JSON file">Export</button><button id="btn-import-theme" class="pt-theme-btn" style="flex:1" title="Import a theme from a JSON file">Import</button>',
+      },
+      {
+        type: 'row',
+        kind: 'select',
+        id: 'font-family-select',
+        title: 'Default typeface used throughout the tree (overridable per section)',
+        label: 'Typeface',
+        labelIcon: 'bi bi-type form-label-sm',
+        options: [
+          { value: 'Monospace', label: 'Monospace' },
+          { value: 'Sans-serif', label: 'Sans-serif' },
+          { value: 'Serif', label: 'Serif' },
+          { value: 'Courier New', label: 'Courier New' },
+          { value: 'Helvetica', label: 'Helvetica' },
+          { value: 'Helvetica Neue', label: 'Helvetica Neue' },
+          { value: 'Georgia', label: 'Georgia' },
+          { value: 'Times New Roman', label: 'Times New Roman' },
+          { value: 'System UI', label: 'System UI' },
+          { value: 'Menlo', label: 'Menlo' },
+        ],
+      },
+      {
+        type: 'row',
+        kind: 'select',
+        id: 'font-typeface-style-select',
+        title: 'Default font style used throughout the tree',
+        label: 'Style',
+        labelIcon: 'bi bi-type-italic form-label-sm',
+        options: [{ value: 'Regular', label: 'Regular' }],
+      },
+    ],
       });
 }
 
@@ -942,40 +2322,158 @@ function _sectionSelectionHover() {
     id: 'selection-hover-section',
     icon: 'bi bi-cursor-fill',
     title: 'Selection & Hover',
-    bodyHTML: `
-      <div class="pt-palette-subhead">Selected Tips</div>
-      <div class="pt-palette-row" title="Font style applied to labels of selected tips"><span class="pt-palette-label">Label style <i class="bi bi-type-italic form-label-sm"></i></span><select class="pt-palette-select" id="selected-label-style"><option value="bold">Bold</option><option value="italic">Italic</option><option value="bold italic">Bold + Italic</option><option value="normal">Normal</option></select></div>
-      <div class="pt-palette-row" title="Growth factor applied to tip circle radius when selected"><span class="pt-palette-label">Size <i class="bi bi-arrow-up-right-circle form-label-sm"></i></span><input type="range" class="form-range" id="selected-tip-growth" min="1" max="5" step="0.1" value="2" /><span class="pt-val" id="selected-tip-growth-value">2</span></div>
-      <div class="pt-palette-row" title="Fill colour of the selection circle on tips"><span class="pt-palette-label">Fill <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="selected-tip-fill" value="#888888" /></div>
-      <div class="pt-palette-row" title="Minimum diameter of the selection circle on tips in pixels"><span class="pt-palette-label">Fill <i class="bi bi-arrow-up-right-circle form-label-sm"></i></span><input type="range" class="form-range" id="selected-tip-min-size" min="0" max="20" step="0.5" value="6" /><span class="pt-val" id="selected-tip-min-size-value">6</span></div>
-      <div class="pt-palette-row" title="Opacity of the selected tip fill circle"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="selected-tip-fill-opacity" min="0" max="1" step="0.05" value="0.5" /><span class="pt-val" id="selected-tip-fill-opacity-value">0.5</span></div>
-      <div class="pt-palette-row" title="Stroke colour of the selection circle on tips"><span class="pt-palette-label">Stroke <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="selected-tip-stroke" value="#e06961" /></div>
-      <div class="pt-palette-row" title="Stroke width of the selection circle on tips"><span class="pt-palette-label">Stroke <i class="bi bi-record-circle form-label-sm"></i></span><input type="range" class="form-range" id="selected-tip-stroke-width" min="0.5" max="10" step="0.5" value="3" /><span class="pt-val" id="selected-tip-stroke-width-value">3</span></div>
-      <div class="pt-palette-row" title="Opacity of the selected tip stroke"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="selected-tip-stroke-opacity" min="0" max="1" step="0.05" value="1" /><span class="pt-val" id="selected-tip-stroke-opacity-value">1</span></div>
-      <div class="pt-palette-subhead">MRCA Node</div>
-      <div class="pt-palette-row" title="Growth factor applied to the MRCA node circle radius when selected"><span class="pt-palette-label">Size <i class="bi bi-box-arrow-up-right form-label-sm"></i></span><input type="range" class="form-range" id="selected-node-growth" min="1" max="5" step="0.1" value="2" /><span class="pt-val" id="selected-node-growth-value">2</span></div>
-      <div class="pt-palette-row" title="Fill colour of the MRCA node selection circle"><span class="pt-palette-label">Fill <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="selected-node-fill" value="#19a699" /></div>
-      <div class="pt-palette-row" title="Minimum diameter of the MRCA node selection circle in pixels"><span class="pt-palette-label">Fill <i class="bi bi-arrow-up-right-circle form-label-sm"></i></span><input type="range" class="form-range" id="selected-node-min-size" min="0" max="20" step="0.5" value="6" /><span class="pt-val" id="selected-node-min-size-value">6</span></div>
-      <div class="pt-palette-row" title="Opacity of the MRCA node fill circle"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="selected-node-fill-opacity" min="0" max="1" step="0.05" value="0.5" /><span class="pt-val" id="selected-node-fill-opacity-value">0.5</span></div>
-      <div class="pt-palette-row" title="Stroke colour of the MRCA node selection circle"><span class="pt-palette-label">Stroke <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="selected-node-stroke" value="#19a699" /></div>
-      <div class="pt-palette-row" title="Stroke width of the MRCA node selection circle"><span class="pt-palette-label">Stroke <i class="bi bi-record-circle form-label-sm"></i></span><input type="range" class="form-range" id="selected-node-stroke-width" min="0.5" max="10" step="0.5" value="3" /><span class="pt-val" id="selected-node-stroke-width-value">3</span></div>
-      <div class="pt-palette-row" title="Opacity of the MRCA node stroke"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="selected-node-stroke-opacity" min="0" max="1" step="0.05" value="1" /><span class="pt-val" id="selected-node-stroke-opacity-value">1</span></div>
-      <div class="pt-palette-subhead">Tip Hover</div>
-      <div class="pt-palette-row" title="Growth factor applied to the tip circle radius on hover"><span class="pt-palette-label">Size <i class="bi bi-box-arrow-up-right form-label-sm"></i></span><input type="range" class="form-range" id="tip-hover-growth" min="1" max="5" step="0.1" value="1.5" /><span class="pt-val" id="tip-hover-growth-value">1.5</span></div>
-      <div class="pt-palette-row" title="Fill colour of the tip hover circle"><span class="pt-palette-label">Fill <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="tip-hover-fill" value="#bf4b43" /></div>
-      <div class="pt-palette-row" title="Minimum diameter of the tip hover circle in pixels"><span class="pt-palette-label">Fill <i class="bi bi-arrow-up-right-circle form-label-sm"></i></span><input type="range" class="form-range" id="tip-hover-min-size" min="0" max="20" step="0.5" value="6" /><span class="pt-val" id="tip-hover-min-size-value">6</span></div>
-      <div class="pt-palette-row" title="Opacity of the tip hover fill circle"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="tip-hover-fill-opacity" min="0" max="1" step="0.05" value="0.6" /><span class="pt-val" id="tip-hover-fill-opacity-value">0.6</span></div>
-      <div class="pt-palette-row" title="Stroke colour of the tip hover circle"><span class="pt-palette-label">Stroke <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="tip-hover-stroke" value="#7b2820" /></div>
-      <div class="pt-palette-row" title="Stroke width of the tip hover circle"><span class="pt-palette-label">Stroke <i class="bi bi-record-circle form-label-sm"></i></span><input type="range" class="form-range" id="tip-hover-stroke-width" min="0.5" max="10" step="0.5" value="2" /><span class="pt-val" id="tip-hover-stroke-width-value">2</span></div>
-      <div class="pt-palette-row" title="Opacity of the tip hover stroke"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half-label-sm"></i></span><input type="range" class="form-range" id="tip-hover-stroke-opacity" min="0" max="1" step="0.05" value="1" /><span class="pt-val" id="tip-hover-stroke-opacity-value">1</span></div>
-      <div class="pt-palette-subhead">Node Hover</div>
-      <div class="pt-palette-row" title="Growth factor applied to the node circle radius on hover"><span class="pt-palette-label">Size <i class="bi bi-box-arrow-up-right form-label-sm"></i></span><input type="range" class="form-range" id="node-hover-growth" min="1" max="5" step="0.1" value="1.5" /><span class="pt-val" id="node-hover-growth-value">1.5</span></div>
-      <div class="pt-palette-row" title="Fill colour of the node hover circle"><span class="pt-palette-label">Fill <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="node-hover-fill" value="#19a699" /></div>
-      <div class="pt-palette-row" title="Minimum diameter of the node hover circle in pixels"><span class="pt-palette-label">Fill <i class="bi bi-arrow-up-right-circle form-label-sm"></i></span><input type="range" class="form-range" id="node-hover-min-size" min="0" max="20" step="0.5" value="6" /><span class="pt-val" id="node-hover-min-size-value">6</span></div>
-      <div class="pt-palette-row" title="Opacity of the node hover fill circle"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="node-hover-fill-opacity" min="0" max="1" step="0.05" value="0.6" /><span class="pt-val" id="node-hover-fill-opacity-value">0.6</span></div>
-      <div class="pt-palette-row" title="Stroke colour of the node hover circle"><span class="pt-palette-label">Stroke <i class="bi bi-palette form-label-sm"></i></span><input type="color" class="pt-palette-color" id="node-hover-stroke" value="#0d6560" /></div>
-      <div class="pt-palette-row" title="Stroke width of the node hover circle"><span class="pt-palette-label">Stroke <i class="bi bi-record-circle form-label-sm"></i></span><input type="range" class="form-range" id="node-hover-stroke-width" min="0.5" max="10" step="0.5" value="2" /><span class="pt-val" id="node-hover-stroke-width-value">2</span></div>
-        <div class="pt-palette-row" title="Opacity of the node hover stroke"><span class="pt-palette-label">Opacity <i class="bi bi-droplet-half form-label-sm"></i></span><input type="range" class="form-range" id="node-hover-stroke-opacity" min="0" max="1" step="0.05" value="1" /><span class="pt-val" id="node-hover-stroke-opacity-value">1</span></div>`,
+    items: [
+      { type: 'subhead', text: 'Selected Tips' },
+      {
+        type: 'row',
+        kind: 'select',
+        id: 'selected-label-style',
+        title: 'Font style applied to labels of selected tips',
+        label: 'Label style',
+        labelIcon: 'bi bi-type-italic form-label-sm',
+        options: [
+          { value: 'bold', label: 'Bold' },
+          { value: 'italic', label: 'Italic' },
+          { value: 'bold italic', label: 'Bold + Italic' },
+          { value: 'normal', label: 'Normal' },
+        ],
+      },
+      {
+        type: 'row', kind: 'range', id: 'selected-tip-growth', min: 1, max: 5, step: 0.1, value: 2,
+        valueId: 'selected-tip-growth-value', valueText: '2', title: 'Growth factor applied to tip circle radius when selected',
+        label: 'Size', labelIcon: 'bi bi-arrow-up-right-circle form-label-sm',
+      },
+      {
+        type: 'row', kind: 'color', id: 'selected-tip-fill', value: '#888888', title: 'Fill colour of the selection circle on tips',
+        label: 'Fill', labelIcon: 'bi bi-palette form-label-sm',
+      },
+      {
+        type: 'row', kind: 'range', id: 'selected-tip-min-size', min: 0, max: 20, step: 0.5, value: 6,
+        valueId: 'selected-tip-min-size-value', valueText: '6', title: 'Minimum diameter of the selection circle on tips in pixels',
+        label: 'Fill', labelIcon: 'bi bi-arrow-up-right-circle form-label-sm',
+      },
+      {
+        type: 'row', kind: 'range', id: 'selected-tip-fill-opacity', min: 0, max: 1, step: 0.05, value: 0.5,
+        valueId: 'selected-tip-fill-opacity-value', valueText: '0.5', title: 'Opacity of the selected tip fill circle',
+        label: 'Opacity', labelIcon: 'bi bi-droplet-half form-label-sm',
+      },
+      {
+        type: 'row', kind: 'color', id: 'selected-tip-stroke', value: '#e06961', title: 'Stroke colour of the selection circle on tips',
+        label: 'Stroke', labelIcon: 'bi bi-palette form-label-sm',
+      },
+      {
+        type: 'row', kind: 'range', id: 'selected-tip-stroke-width', min: 0.5, max: 10, step: 0.5, value: 3,
+        valueId: 'selected-tip-stroke-width-value', valueText: '3', title: 'Stroke width of the selection circle on tips',
+        label: 'Stroke', labelIcon: 'bi bi-record-circle form-label-sm',
+      },
+      {
+        type: 'row', kind: 'range', id: 'selected-tip-stroke-opacity', min: 0, max: 1, step: 0.05, value: 1,
+        valueId: 'selected-tip-stroke-opacity-value', valueText: '1', title: 'Opacity of the selected tip stroke',
+        label: 'Opacity', labelIcon: 'bi bi-droplet-half form-label-sm',
+      },
+      { type: 'subhead', text: 'MRCA Node' },
+      {
+        type: 'row', kind: 'range', id: 'selected-node-growth', min: 1, max: 5, step: 0.1, value: 2,
+        valueId: 'selected-node-growth-value', valueText: '2', title: 'Growth factor applied to the MRCA node circle radius when selected',
+        label: 'Size', labelIcon: 'bi bi-box-arrow-up-right form-label-sm',
+      },
+      {
+        type: 'row', kind: 'color', id: 'selected-node-fill', value: '#19a699', title: 'Fill colour of the MRCA node selection circle',
+        label: 'Fill', labelIcon: 'bi bi-palette form-label-sm',
+      },
+      {
+        type: 'row', kind: 'range', id: 'selected-node-min-size', min: 0, max: 20, step: 0.5, value: 6,
+        valueId: 'selected-node-min-size-value', valueText: '6', title: 'Minimum diameter of the MRCA node selection circle in pixels',
+        label: 'Fill', labelIcon: 'bi bi-arrow-up-right-circle form-label-sm',
+      },
+      {
+        type: 'row', kind: 'range', id: 'selected-node-fill-opacity', min: 0, max: 1, step: 0.05, value: 0.5,
+        valueId: 'selected-node-fill-opacity-value', valueText: '0.5', title: 'Opacity of the MRCA node fill circle',
+        label: 'Opacity', labelIcon: 'bi bi-droplet-half form-label-sm',
+      },
+      {
+        type: 'row', kind: 'color', id: 'selected-node-stroke', value: '#19a699', title: 'Stroke colour of the MRCA node selection circle',
+        label: 'Stroke', labelIcon: 'bi bi-palette form-label-sm',
+      },
+      {
+        type: 'row', kind: 'range', id: 'selected-node-stroke-width', min: 0.5, max: 10, step: 0.5, value: 3,
+        valueId: 'selected-node-stroke-width-value', valueText: '3', title: 'Stroke width of the MRCA node selection circle',
+        label: 'Stroke', labelIcon: 'bi bi-record-circle form-label-sm',
+      },
+      {
+        type: 'row', kind: 'range', id: 'selected-node-stroke-opacity', min: 0, max: 1, step: 0.05, value: 1,
+        valueId: 'selected-node-stroke-opacity-value', valueText: '1', title: 'Opacity of the MRCA node stroke',
+        label: 'Opacity', labelIcon: 'bi bi-droplet-half form-label-sm',
+      },
+      { type: 'subhead', text: 'Tip Hover' },
+      {
+        type: 'row', kind: 'range', id: 'tip-hover-growth', min: 1, max: 5, step: 0.1, value: 1.5,
+        valueId: 'tip-hover-growth-value', valueText: '1.5', title: 'Growth factor applied to the tip circle radius on hover',
+        label: 'Size', labelIcon: 'bi bi-box-arrow-up-right form-label-sm',
+      },
+      {
+        type: 'row', kind: 'color', id: 'tip-hover-fill', value: '#bf4b43', title: 'Fill colour of the tip hover circle',
+        label: 'Fill', labelIcon: 'bi bi-palette form-label-sm',
+      },
+      {
+        type: 'row', kind: 'range', id: 'tip-hover-min-size', min: 0, max: 20, step: 0.5, value: 6,
+        valueId: 'tip-hover-min-size-value', valueText: '6', title: 'Minimum diameter of the tip hover circle in pixels',
+        label: 'Fill', labelIcon: 'bi bi-arrow-up-right-circle form-label-sm',
+      },
+      {
+        type: 'row', kind: 'range', id: 'tip-hover-fill-opacity', min: 0, max: 1, step: 0.05, value: 0.6,
+        valueId: 'tip-hover-fill-opacity-value', valueText: '0.6', title: 'Opacity of the tip hover fill circle',
+        label: 'Opacity', labelIcon: 'bi bi-droplet-half form-label-sm',
+      },
+      {
+        type: 'row', kind: 'color', id: 'tip-hover-stroke', value: '#7b2820', title: 'Stroke colour of the tip hover circle',
+        label: 'Stroke', labelIcon: 'bi bi-palette form-label-sm',
+      },
+      {
+        type: 'row', kind: 'range', id: 'tip-hover-stroke-width', min: 0.5, max: 10, step: 0.5, value: 2,
+        valueId: 'tip-hover-stroke-width-value', valueText: '2', title: 'Stroke width of the tip hover circle',
+        label: 'Stroke', labelIcon: 'bi bi-record-circle form-label-sm',
+      },
+      {
+        type: 'row', kind: 'range', id: 'tip-hover-stroke-opacity', min: 0, max: 1, step: 0.05, value: 1,
+        valueId: 'tip-hover-stroke-opacity-value', valueText: '1', title: 'Opacity of the tip hover stroke',
+        label: 'Opacity', labelIcon: 'bi bi-droplet-half-label-sm',
+      },
+      { type: 'subhead', text: 'Node Hover' },
+      {
+        type: 'row', kind: 'range', id: 'node-hover-growth', min: 1, max: 5, step: 0.1, value: 1.5,
+        valueId: 'node-hover-growth-value', valueText: '1.5', title: 'Growth factor applied to the node circle radius on hover',
+        label: 'Size', labelIcon: 'bi bi-box-arrow-up-right form-label-sm',
+      },
+      {
+        type: 'row', kind: 'color', id: 'node-hover-fill', value: '#19a699', title: 'Fill colour of the node hover circle',
+        label: 'Fill', labelIcon: 'bi bi-palette form-label-sm',
+      },
+      {
+        type: 'row', kind: 'range', id: 'node-hover-min-size', min: 0, max: 20, step: 0.5, value: 6,
+        valueId: 'node-hover-min-size-value', valueText: '6', title: 'Minimum diameter of the node hover circle in pixels',
+        label: 'Fill', labelIcon: 'bi bi-arrow-up-right-circle form-label-sm',
+      },
+      {
+        type: 'row', kind: 'range', id: 'node-hover-fill-opacity', min: 0, max: 1, step: 0.05, value: 0.6,
+        valueId: 'node-hover-fill-opacity-value', valueText: '0.6', title: 'Opacity of the node hover fill circle',
+        label: 'Opacity', labelIcon: 'bi bi-droplet-half form-label-sm',
+      },
+      {
+        type: 'row', kind: 'color', id: 'node-hover-stroke', value: '#0d6560', title: 'Stroke colour of the node hover circle',
+        label: 'Stroke', labelIcon: 'bi bi-palette form-label-sm',
+      },
+      {
+        type: 'row', kind: 'range', id: 'node-hover-stroke-width', min: 0.5, max: 10, step: 0.5, value: 2,
+        valueId: 'node-hover-stroke-width-value', valueText: '2', title: 'Stroke width of the node hover circle',
+        label: 'Stroke', labelIcon: 'bi bi-record-circle form-label-sm',
+      },
+      {
+        type: 'row', kind: 'range', id: 'node-hover-stroke-opacity', min: 0, max: 1, step: 0.05, value: 1,
+        valueId: 'node-hover-stroke-opacity-value', valueText: '1', title: 'Opacity of the node hover stroke',
+        label: 'Opacity', labelIcon: 'bi bi-droplet-half form-label-sm',
+      },
+    ],
       });
 }
 
