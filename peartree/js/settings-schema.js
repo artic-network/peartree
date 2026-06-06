@@ -87,38 +87,6 @@ export const SETTINGS_SCHEMA = [
     min: 0, max: 20, step: 1,
     desc: 'Root stem length as a percentage of the tree age (0–20).',
   },
-  {
-    key: 'spacingLeft',
-    label: 'Spacing left (px)',
-    group: 'Tree',
-    type: 'number',
-    min: 0, max: 100, step: 1,
-    desc: 'Left spacing in pixels.',
-  },
-  {
-    key: 'spacingRight',
-    label: 'Spacing right (px)',
-    group: 'Tree',
-    type: 'number',
-    min: 0, max: 100, step: 1,
-    desc: 'Right spacing in pixels.',
-  },
-  {
-    key: 'spacingTop',
-    label: 'Spacing top (px)',
-    group: 'Tree',
-    type: 'number',
-    min: 0, max: 100, step: 1,
-    desc: 'Top spacing in pixels.',
-  },
-  {
-    key: 'spacingBottom',
-    label: 'Spacing bottom (px)',
-    group: 'Tree',
-    type: 'number',
-    min: 0, max: 100, step: 1,
-    desc: 'Bottom spacing in pixels.',
-  },
 
   // ── Tip labels ─────────────────────────────────────────────────────────
   {

@@ -78,9 +78,13 @@ export function viewportDims({ canvas, axisCanvas, legendRightCanvas }) {
 export function compositeViewPng(ctx, targetW, targetH, fullTree = false, transparent = false) {
   const { renderer, canvas, axisCanvas, legendRightCanvas } = ctx;
   const { totalW, lrW, ttW, ttH, axH, lrVisible, axVisible } = viewportDims(ctx);
+  const scaleY = Number.isFinite(renderer.scaleY) ? renderer.scaleY : 1;
+  const maxY = Number.isFinite(renderer.maxY) ? renderer.maxY : 0;
+  const topPad = Number.isFinite(renderer.treePaddingTop) ? renderer.treePaddingTop : 0;
+  const bottomPad = Number.isFinite(renderer.treePaddingBottom) ? renderer.treePaddingBottom : 0;
   // Full tree: panel height is determined by current scaleY over all tips.
   const ttH_eff    = fullTree
-    ? (renderer.spacingTop + renderer.spacingBottom + (renderer.maxY + 1) * renderer.scaleY)
+    ? (topPad + bottomPad + (maxY + 1) * scaleY)
     : ttH;
   const totalH_eff = ttH_eff + (axVisible ? axH : 0);
   const sx = targetW / totalW;
@@ -162,13 +166,18 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     lr2W = legend2RightCanvas?.clientWidth ?? 0;
   const totalW = baseW + lr2W;
 
+  const scaleY = Number.isFinite(renderer.scaleY) ? renderer.scaleY : 1;
+  const maxY = Number.isFinite(renderer.maxY) ? renderer.maxY : 0;
+  const topPad = Number.isFinite(renderer.treePaddingTop) ? renderer.treePaddingTop : 0;
+  const bottomPad = Number.isFinite(renderer.treePaddingBottom) ? renderer.treePaddingBottom : 0;
+
   const sx  = renderer.scaleX,  ox = renderer.offsetX;
   // Full tree: keep current scaleY so zoom level is preserved; shift oy so root sits at top.
-  const sy  = renderer.scaleY;
-  const oy  = fullTree ? renderer.spacingTop + renderer.scaleY * 0.5 : renderer.offsetY;
+  const sy  = scaleY;
+  const oy  = fullTree ? topPad + scaleY * 0.5 : renderer.offsetY;
   // Effective tree-panel height and total SVG height.
   const ttH_eff    = fullTree
-    ? Math.round(renderer.spacingTop + renderer.spacingBottom + (renderer.maxY + 1) * renderer.scaleY)
+    ? Math.round(topPad + bottomPad + (maxY + 1) * scaleY)
     : ttH;
   const totalH_eff = ttH_eff + (axVisible ? axH : 0);
   const bg  = renderer.bgColor;

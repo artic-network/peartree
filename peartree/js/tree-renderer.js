@@ -142,7 +142,7 @@ export class TreeRenderer {
 
     // X scale: always fills the viewport width – recomputed on resize / font change.
     this.scaleX = 1;
-    this.offsetX = this.treePaddingLeft;      // animated x origin (normally = spacingLeft)
+    this.offsetX = this.treePaddingLeft;      // animated x origin (normally = treePaddingLeft)
     this._targetOffsetX = this.treePaddingLeft;
 
     // Y scale: user-adjustable vertical zoom.
@@ -196,7 +196,7 @@ export class TreeRenderer {
     this._onNavChange          = null;   // callback(canBack, canFwd)
     this._onBranchSelectChange = null;   // callback(hasSelection)
     this._onNodeSelectChange   = null;   // callback(hasSelection)
-    this._onViewChange         = null;   // callback(scaleX, offsetX, spacingLeft, labelRightPad, bgColor, fontSize, dpr)
+    this._onViewChange         = null;   // callback(scaleX, offsetX, treePaddingLeft, labelRightPad, bgColor, fontSize, dpr)
     this._onLayoutChange       = null;   // callback(maxX, viewSubtreeRootId) – fired on navigate into/out of subtree
     this._globalHeightMap      = new Map(); // id → (fullMaxX - node.x) from most recent full-tree layout
     this._rttResidualsMap      = null;       // id → residual (from regression or mean) — set by peartree.js
@@ -237,7 +237,7 @@ export class TreeRenderer {
     // Root-shift animation (when effective visual root moves deeper/shallower after hide/show)
     this._rootShiftAlpha  = 1;    // 0→1; 1 = not animating
     this._rootShiftFromX  = 0;    // starting offsetX
-    this._rootShiftToX    = 0;    // target offsetX (spacingLeft)
+    this._rootShiftToX    = 0;    // target offsetX (treePaddingLeft)
 
     // Cross-fade animation (used on midpoint-root and similar wholesale tree changes)
     this._crossfadeSnapshot = null;   // OffscreenCanvas capturing old frame
@@ -1778,7 +1778,7 @@ export class TreeRenderer {
     // Seed the animation START so the new root appears at the old screen position.
     const newRoot = this.nodes.find(n => !n.parentId);
     if (newRoot) {
-      this.offsetX = px_old;                            // starts at old x, lerps to spacingLeft
+      this.offsetX = px_old;                            // starts at old x, lerps to treePaddingLeft
       this.offsetY = py_old - newRoot.y * this.scaleY; // old scaleY still in effect
     }
     this._animating = true;
@@ -1964,7 +1964,7 @@ export class TreeRenderer {
     if (curRootId) {
       const restoredNode = this.nodeMap.get(curRootId);
       if (restoredNode) {
-        // x: start displaced so old root still appears at spacingLeft, animate to spacingLeft
+        // x: start displaced so old root still appears at treePaddingLeft, animate to treePaddingLeft
         this._rootShiftFromX = this.treePaddingLeft - restoredNode.x * this.scaleX;
         this._rootShiftToX   = this.treePaddingLeft; // = _targetOffsetX
         this._rootShiftAlpha = 0;
@@ -2274,7 +2274,7 @@ export class TreeRenderer {
     } else if (this.tipLabelAlign === 'off' && this._tipLabelWidths?.size > 0) {
       // Non-aligned labels: each tip's label starts at its own branch-tip x.
       // Binding constraint per tip:
-      //   spacingLeft + (barPad + stemWorld + x_i) * scaleX + overhead + lw_i = W
+      //   treePaddingLeft + (barPad + stemWorld + x_i) * scaleX + overhead + lw_i = W
       // Take the minimum across all tips (O(n), closed-form).
       // During the intro animation n.x is temporarily 0; use _introFinalX (the
       // real final positions) so the scale is computed correctly from frame one.
@@ -2586,7 +2586,7 @@ export class TreeRenderer {
     this._dirty = true;
   }
 
-  // X is anchored to offsetX (animated during navigation, otherwise == spacingLeft).
+  // X is anchored to offsetX (animated during navigation, otherwise == treePaddingLeft).
   _wx(worldX) { return this.offsetX + worldX * this.scaleX; }
 
   /** World Y → screen Y, with animated hyperbolic fisheye blend. */

@@ -80,9 +80,13 @@ export function createExportController({
     getFullDims: () => {
       const r = getRenderer();
       const d = viewportDims({ canvas, axisCanvas, legendRightCanvas });
+      const scaleY = Number.isFinite(r.scaleY) ? r.scaleY : 1;
+      const maxY = Number.isFinite(r.maxY) ? r.maxY : 0;
+      const topPad = Number.isFinite(r.treePaddingTop) ? r.treePaddingTop : 0;
+      const bottomPad = Number.isFinite(r.treePaddingBottom) ? r.treePaddingBottom : 0;
       return {
         width:  d.totalW,
-        height: (r.maxY + 1) * r.scaleY + (d.axVisible ? d.axH : 0),
+        height: topPad + bottomPad + (maxY + 1) * scaleY + (d.axVisible ? d.axH : 0),
       };
     },
     buildSvg: ({ fullView, transparent }) => buildGraphicSVG(

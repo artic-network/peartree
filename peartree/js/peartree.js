@@ -2931,8 +2931,8 @@ async function _initCore(root = document) {
   // dataTableRenderer is declared early (see hoist above); initialised below
   // after the panel DOM is ready via createDataTableRenderer().
 
-  renderer._onViewChange = (scaleX, offsetX, spacingLeft, labelRightPad, bgColor, fontSize, dpr) => {
-    axisRenderer.update(scaleX, offsetX, spacingLeft, labelRightPad, bgColor, fontSize, dpr);
+  renderer._onViewChange = (scaleX, offsetX, treePaddingLeft, labelRightPad, bgColor, fontSize, dpr) => {
+    axisRenderer.update(scaleX, offsetX, treePaddingLeft, labelRightPad, bgColor, fontSize, dpr);
     // Fill any subpixel gap between the tree canvas and axis canvas with the
     // canvas background colour rather than the page background.
     _syncCanvasWrapperBg(bgColor);
@@ -5445,7 +5445,7 @@ async function _initCore(root = document) {
      * If the visual root changes after a hide/show (because one side of the
      * root was collapsed away), seed renderer.offsetX so the effective root
      * node starts at its OLD screen position, then let the existing _animating
-     * lerp slide it to spacingLeft.  Call this AFTER setDataAnimated but
+    * lerp slide it to treePaddingLeft.  Call this AFTER setDataAnimated but
      * BEFORE fitToWindow.
      *
      * @param {object|null} oldRoot    - the old layout root node (may be null)
@@ -5459,22 +5459,22 @@ async function _initCore(root = document) {
       if (!newRoot || !oldRoot || newRoot.id === oldRoot.id) return;
 
       const curScaleX  = renderer.scaleX;   // still old value (lerp hasn't ticked yet)
-      const curOffsetX = renderer.offsetX;  // still spacingLeft from old layout
+      const curOffsetX = renderer.offsetX;  // still treePaddingLeft from old layout
 
       if (direction === 'in') {
         // Root moved deeper: new root was at oldX > 0 in the old layout.
-        // Slide from that displaced position in to spacingLeft.
+        // Slide from that displaced position in to treePaddingLeft.
         const oldNode = oldNodeMap?.get(newRoot.id);
         if (!oldNode) return;
         renderer._rootShiftFromX = curOffsetX + oldNode.x * curScaleX;
       } else {
         // Root moved toward real root: old effective root is somewhere down the new layout.
-        // Slide from that negative-offset position out to spacingLeft.
+        // Slide from that negative-offset position out to treePaddingLeft.
         const newOldRootNode = renderer.nodeMap?.get(oldRoot.id);
         if (!newOldRootNode) return;
         renderer._rootShiftFromX = curOffsetX - newOldRootNode.x * curScaleX;
       }
-      renderer._rootShiftToX   = renderer._targetOffsetX;   // = spacingLeft
+      renderer._rootShiftToX   = renderer._targetOffsetX;   // = treePaddingLeft
       renderer._rootShiftAlpha = 0;
       renderer.offsetX  = renderer._rootShiftFromX;   // snap to start position immediately
       renderer._animating = true;
