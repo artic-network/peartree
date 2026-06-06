@@ -220,3 +220,69 @@ jobs:
             -H "Content-Type: application/gzip" \
             --data-binary @peartree-webapp.tgz \
             "https://uploads.github.com/repos/${{ github.repository }}/releases/${RELEASE_ID}/assets?name=peartree-webapp.tgz"
+
+  reorder-release-assets:
+    # Build jobs upload assets in parallel, so ordering in the release page is non-deterministic.
+    # Re-upload assets in a deterministic, user-first order:
+    # mac dmg → windows exe/msi → linux deb/rpm/AppImage → webapp tgz → bundle js → updater/other assets.
+    needs: [create-release, patch-updater-json, bundle-embed]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Reorder release assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          RELEASE_ID: ${{ needs.create-release.outputs.release_id }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p .release-assets
+          gh api \
+            /repos/${{ github.repository }}/releases/${RELEASE_ID}/assets \
+            > .release-assets/assets.json
+
+          # Build ordered id list by preferred user-download categories, then append all remaining assets.
+          jq -r '
+            def sorted_ids($pred): [ .[] | select($pred) ] | sort_by(.name) | .[] | .id;
+            def selected_ids:
+              [ sorted_ids(.name | test("\\.dmg$"; "i")),
+                sorted_ids(.name | test("\\.exe$"; "i")),
+                sorted_ids(.name | test("\\.msi$"; "i")),
+                sorted_ids(.name | test("\\.deb$"; "i")),
+                sorted_ids(.name | test("\\.rpm$"; "i")),
+                sorted_ids(.name | test("\\.AppImage$"; "i")),
+                sorted_ids(.name == "peartree-webapp.tgz"),
+                sorted_ids(.name == "peartree.bundle.min.js") ]
+              | add;
+            (selected_ids) as $sel
+            | ($sel + ([ .[] | select(($sel | index(.id)) | not) ] | sort_by(.name) | .[] | .id))[]
+          ' .release-assets/assets.json > .release-assets/ordered_ids.txt
+
+          # Download all existing assets first (safe for draft releases; auth required).
+          while IFS= read -r id; do
+            name=$(jq -r --argjson id "$id" '.[] | select(.id == $id) | .name' .release-assets/assets.json)
+            curl -sSfL \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H "Accept: application/octet-stream" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/assets/${id}" \
+              -o ".release-assets/${name}"
+          done < .release-assets/ordered_ids.txt
+
+          # Remove existing assets so re-uploads define the displayed order.
+          jq -r '.[].id' .release-assets/assets.json | while IFS= read -r id; do
+            gh api --method DELETE /repos/${{ github.repository }}/releases/assets/${id}
+          done
+
+          # Re-upload in the selected order.
+          while IFS= read -r id; do
+            name=$(jq -r --argjson id "$id" '.[] | select(.id == $id) | .name' .release-assets/assets.json)
+            ctype=$(jq -r --argjson id "$id" '.[] | select(.id == $id) | .content_type // "application/octet-stream"' .release-assets/assets.json)
+            name_q=$(jq -rn --arg v "$name" '$v|@uri')
+            curl -sSfL \
+              -X POST \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H "Content-Type: ${ctype}" \
+              --data-binary @".release-assets/${name}" \
+              "https://uploads.github.com/repos/${{ github.repository }}/releases/${RELEASE_ID}/assets?name=${name_q}"
+          done < .release-assets/ordered_ids.txt
