@@ -2889,31 +2889,7 @@ function _buildModals() {
     </div>
   </div>
 </div>
-<div id="parse-tips-overlay" class="pt-modal-overlay" style="z-index:1060">
-  <div class="pt-modal" style="width:460px;max-width:calc(100vw - 40px)">
-    <div class="pt-modal-header">
-      <h5 class="modal-title"><i class="bi bi-scissors me-2"></i>Parse Tip Names</h5>
-      <button class="pt-modal-close-btn" id="parse-tips-close" title="Close">&times;</button>
-    </div>
-    <div class="pt-modal-body">
-      <p style="font-size:0.82rem;color:var(--pt-text-subdued);margin-bottom:14px">Extract an annotation from tip names by splitting on a delimiter.</p>
-      <div class="ca-row" style="margin-bottom:10px"><label class="ca-row-lbl" style="width:80px">Name</label><input type="text" id="parse-tips-name" class="ca-num-input" style="flex:1;width:auto" placeholder="annotation name"></div>
-      <div class="ca-row" style="margin-bottom:10px"><label class="ca-row-lbl" style="width:80px">Delimiter</label><input type="text" id="parse-tips-delim" class="ca-num-input" style="width:70px;font-family:monospace" value="|" placeholder="|"><span class="ca-hint" style="margin-left:8px">character(s) used to split tip names</span></div>
-      <div class="ca-row" style="margin-bottom:10px"><label class="ca-row-lbl" style="width:80px">Field</label><input type="number" id="parse-tips-field" class="ca-num-input" style="width:70px" value="1" step="1"><span class="ca-hint" style="margin-left:8px">1 = first · −1 = last</span></div>
-      <div class="ca-row" style="margin-bottom:10px"><label class="ca-row-lbl" style="width:80px">Type</label><select id="parse-tips-type" class="ca-sel"><option value="auto">Auto-detect</option><option value="categorical">Categorical</option><option value="integer">Integer</option><option value="real">Real</option><option value="date">Date</option></select></div>
-      <div class="ca-row" style="margin-bottom:10px"><label class="ca-row-lbl" style="width:80px">Missing</label><input type="text" id="parse-tips-missing" class="ca-num-input" style="width:70px" value="?" placeholder="none"><span class="ca-hint" style="margin-left:8px">field value treated as missing data</span></div>
-      <p id="parse-tips-error" class="ca-warn" style="display:none;margin-top:8px"></p>
-      <div id="parse-tips-examples" style="margin-top:14px;display:none">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--pt-text-muted);margin-bottom:6px">Example tip labels</div>
-        <div id="parse-tips-examples-list" style="font-family:monospace;font-size:0.78rem;color:var(--pt-text-bright);line-height:1.7"></div>
-      </div>
-    </div>
-    <div class="pt-modal-footer">
-      <button id="parse-tips-cancel" class="btn btn-sm btn-secondary">Cancel</button>
-      <button id="parse-tips-ok" class="btn btn-sm btn-primary">Add Annotation</button>
-    </div>
-  </div>
-</div>
+${window.buildParseLabelDialogHTML({ title: 'Parse Tip Names', subjectLabel: 'tip names' })}
 <div id="import-annot-overlay" class="pt-modal-overlay">
   <div class="pt-modal">
     <div class="pt-modal-header">

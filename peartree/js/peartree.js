@@ -3339,6 +3339,7 @@ async function _initCore(root = document) {
   const annotCurator = createAnnotCurator({
     getGraph: () => graph,
     isTip: n => n.adjacents.length === 1,
+    subjectLabel: 'tip names',
     onApply: (schema) => {
       _refreshAnnotationUIs(schema);
       renderer.setAnnotationSchema(schema);
