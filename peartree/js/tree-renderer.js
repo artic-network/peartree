@@ -819,6 +819,10 @@ export class TreeRenderer {
     if (val === true  || val === 'on')  val = 'aligned';
     if (val === false || val === null)  val = 'off';
     this.tipLabelAlign = val;
+    if (this.nodes) {
+      this._measureLabels();
+      this._updateScaleX(false);   // animate, never snap mid-load
+    }
     this._dirty = true;
   }
 
