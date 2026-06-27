@@ -2,40 +2,85 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+
+  <!--
+    UTExportedTypeDeclarations
+    ─────────────────────────────────────────────────────────────────────────
+    Exporting these UTIs lets macOS register them system-wide when PearTree
+    is installed.  
+  -->
+  <key>UTExportedTypeDeclarations</key>
+  <array>
+
+    <!-- .tree / .tre / .treefile ──────────────────────────────────────── -->
+    <dict>
+      <key>UTTypeIdentifier</key>
+      <string>network.artic.tree-file</string>
+      <key>UTTypeDescription</key>
+      <string>Phylogenetic Tree</string>
+      <key>UTTypeConformsTo</key>
+      <array>
+        <string>public.plain-text</string>
+        <string>public.text</string>
+      </array>
+      <key>UTTypeTagSpecification</key>
+      <dict>
+        <key>public.filename-extension</key>
+        <array>
+          <string>tree</string>
+          <string>tre</string>
+          <string>treefile</string>
+        </array>
+      </dict>
+    </dict>
+
+    <!-- .nwk / .newick ────────────────────────────────────────────────── -->
+    <dict>
+      <key>UTTypeIdentifier</key>
+      <string>network.artic.newick-file</string>
+      <key>UTTypeDescription</key>
+      <string>Newick Tree</string>
+      <key>UTTypeConformsTo</key>
+      <array>
+        <string>public.plain-text</string>
+        <string>public.text</string>
+      </array>
+      <key>UTTypeTagSpecification</key>
+      <dict>
+        <key>public.filename-extension</key>
+        <array>
+          <string>nwk</string>
+          <string>newick</string>
+        </array>
+      </dict>
+    </dict>
+
+  </array>
+
   <key>CFBundleDocumentTypes</key>
   <array>
     <dict>
       <key>CFBundleTypeName</key>
-      <string>NEXUS Tree File</string>
+      <string>Phylogenetic Tree</string>
       <key>CFBundleTypeRole</key>
       <string>Editor</string>
       <key>LSHandlerRank</key>
       <string>Owner</string>
-      <key>CFBundleTypeExtensions</key>
+      <key>LSItemContentTypes</key>
       <array>
-        <string>nex</string>
-        <string>nexus</string>
-        <string>tre</string>
-        <string>tree</string>
-        <string>treefile</string>
+        <string>network.artic.tree-file</string>
+        <string>network.artic.newick-file</string>
       </array>
-    </dict>
-    <dict>
-      <key>CFBundleTypeName</key>
-      <string>Newick Tree File</string>
-      <key>CFBundleTypeRole</key>
-      <string>Editor</string>
-      <key>LSHandlerRank</key>
-      <string>Owner</string>
       <key>CFBundleTypeExtensions</key>
       <array>
+        <string>tree</string>
+        <string>tre</string>
+        <string>treefile</string>
         <string>nwk</string>
         <string>newick</string>
-        <string>tre</string>
-        <string>tree</string>
-        <string>treefile</string>
       </array>
     </dict>
   </array>
+
 </dict>
 </plist>
