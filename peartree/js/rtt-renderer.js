@@ -918,7 +918,8 @@ export class RTTRenderer {
       this._renderedPts.push({ id: p.id, px: p.px, py: p.py });
     }
 
-    // Pass 3: selection indicators
+    // Pass 3: selection indicators. Match TreeRenderer layering and radius
+    // calculation so selected RTT points follow the same Selected Tips style.
     for (const p of pts) {
       if (!sel.has(p.id)) continue;
       const mr = Math.max(tipR * this.selectedTipGrowthFactor, this.selectedTipMinSize * d);
@@ -926,13 +927,16 @@ export class RTTRenderer {
       ctx.strokeStyle = this.selectedTipStrokeColor;
       ctx.lineWidth   = this.selectedTipStrokeWidth * d;
       ctx.beginPath(); ctx.arc(p.px, p.py, mr, 0, 2 * Math.PI); ctx.stroke();
-      ctx.globalAlpha = this.selectedTipFillOpacity;
-      ctx.fillStyle   = this.selectedTipFillColor;
-      ctx.beginPath(); ctx.arc(p.px, p.py, mr, 0, 2 * Math.PI); ctx.fill();
-      // Re-draw the original dot on top of the selection ring
+
+      // Re-draw the original dot above the ring, below the selected fill.
       ctx.globalAlpha = 1;
       ctx.fillStyle   = p.colour ?? this.tipShapeColor;
       ctx.beginPath(); ctx.arc(p.px, p.py, tipR, 0, 2 * Math.PI); ctx.fill();
+
+      // Apply the selected tip fill on top, matching tree tip selection.
+      ctx.globalAlpha = this.selectedTipFillOpacity;
+      ctx.fillStyle   = this.selectedTipFillColor;
+      ctx.beginPath(); ctx.arc(p.px, p.py, mr, 0, 2 * Math.PI); ctx.fill();
     }
 
     // Pass 4: hover indicator

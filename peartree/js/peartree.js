@@ -6851,6 +6851,7 @@ async function _initCore(root = document) {
     _markCustomTheme();
     renderer.setSelectedTipStrokeColor(selectedTipStrokeEl.value);
     saveSettings();
+    rttChart?.notifyStyleChange?.();
   });
 
   optionsController.on('selected-node-stroke', ({ type }) => {
@@ -6865,6 +6866,7 @@ async function _initCore(root = document) {
     _markCustomTheme();
     renderer.setTipHoverFillColor(tipHoverFillEl.value);
     saveSettings();
+    rttChart?.notifyStyleChange?.();
   });
 
   optionsController.on('node-hover-fill', ({ type }) => {
@@ -6879,6 +6881,7 @@ async function _initCore(root = document) {
     _markCustomTheme();
     renderer.setSelectedTipFillColor(selectedTipFillEl.value);
     saveSettings();
+    rttChart?.notifyStyleChange?.();
   });
 
   optionsController.on('selected-tip-growth', ({ type }) => {
@@ -6887,6 +6890,7 @@ async function _initCore(root = document) {
     $('selected-tip-growth-value').textContent = selectedTipGrowthSlider.value;
     renderer.setSelectedTipGrowthFactor(parseFloat(selectedTipGrowthSlider.value));
     saveSettings();
+    rttChart?.notifyStyleChange?.();
   });
 
   optionsController.on('selected-tip-min-size', ({ type }) => {
@@ -6895,6 +6899,7 @@ async function _initCore(root = document) {
     $('selected-tip-min-size-value').textContent = selectedTipMinSizeSlider.value;
     renderer.setSelectedTipMinSize(parseFloat(selectedTipMinSizeSlider.value));
     saveSettings();
+    rttChart?.notifyStyleChange?.();
   });
 
   optionsController.on('selected-tip-fill-opacity', ({ type }) => {
@@ -6903,6 +6908,7 @@ async function _initCore(root = document) {
     $('selected-tip-fill-opacity-value').textContent = selectedTipFillOpacitySlider.value;
     renderer.setSelectedTipFillOpacity(parseFloat(selectedTipFillOpacitySlider.value));
     saveSettings();
+    rttChart?.notifyStyleChange?.();
   });
 
   optionsController.on('selected-tip-stroke-width', ({ type }) => {
@@ -6911,6 +6917,7 @@ async function _initCore(root = document) {
     $('selected-tip-stroke-width-value').textContent = selectedTipStrokeWidthSlider.value;
     renderer.setSelectedTipStrokeWidth(parseFloat(selectedTipStrokeWidthSlider.value));
     saveSettings();
+    rttChart?.notifyStyleChange?.();
   });
 
   optionsController.on('selected-tip-stroke-opacity', ({ type }) => {
@@ -6919,6 +6926,7 @@ async function _initCore(root = document) {
     $('selected-tip-stroke-opacity-value').textContent = selectedTipStrokeOpacitySlider.value;
     renderer.setSelectedTipStrokeOpacity(parseFloat(selectedTipStrokeOpacitySlider.value));
     saveSettings();
+    rttChart?.notifyStyleChange?.();
   });
 
   optionsController.on('selected-node-fill', ({ type }) => {
@@ -6973,6 +6981,7 @@ async function _initCore(root = document) {
     _markCustomTheme();
     renderer.setTipHoverStrokeColor(tipHoverStrokeEl.value);
     saveSettings();
+    rttChart?.notifyStyleChange?.();
   });
 
   optionsController.on('tip-hover-growth', ({ type }) => {
@@ -6981,6 +6990,7 @@ async function _initCore(root = document) {
     $('tip-hover-growth-value').textContent = tipHoverGrowthSlider.value;
     renderer.setTipHoverGrowthFactor(parseFloat(tipHoverGrowthSlider.value));
     saveSettings();
+    rttChart?.notifyStyleChange?.();
   });
 
   optionsController.on('tip-hover-min-size', ({ type }) => {
@@ -6989,6 +6999,7 @@ async function _initCore(root = document) {
     $('tip-hover-min-size-value').textContent = tipHoverMinSizeSlider.value;
     renderer.setTipHoverMinSize(parseFloat(tipHoverMinSizeSlider.value));
     saveSettings();
+    rttChart?.notifyStyleChange?.();
   });
 
   optionsController.on('tip-hover-fill-opacity', ({ type }) => {
@@ -6997,6 +7008,7 @@ async function _initCore(root = document) {
     $('tip-hover-fill-opacity-value').textContent = tipHoverFillOpacitySlider.value;
     renderer.setTipHoverFillOpacity(parseFloat(tipHoverFillOpacitySlider.value));
     saveSettings();
+    rttChart?.notifyStyleChange?.();
   });
 
   optionsController.on('tip-hover-stroke-width', ({ type }) => {
@@ -7005,6 +7017,7 @@ async function _initCore(root = document) {
     $('tip-hover-stroke-width-value').textContent = tipHoverStrokeWidthSlider.value;
     renderer.setTipHoverStrokeWidth(parseFloat(tipHoverStrokeWidthSlider.value));
     saveSettings();
+    rttChart?.notifyStyleChange?.();
   });
 
   optionsController.on('tip-hover-stroke-opacity', ({ type }) => {
@@ -7013,6 +7026,7 @@ async function _initCore(root = document) {
     $('tip-hover-stroke-opacity-value').textContent = tipHoverStrokeOpacitySlider.value;
     renderer.setTipHoverStrokeOpacity(parseFloat(tipHoverStrokeOpacitySlider.value));
     saveSettings();
+    rttChart?.notifyStyleChange?.();
   });
 
   optionsController.on('node-hover-stroke', ({ type }) => {
