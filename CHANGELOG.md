@@ -1,5 +1,10 @@
 # Change Log
 
+## v1.3.0
+
+- Add per-annotation palette reverse flags, with a Reverse toggle in the Configure Palette dialog.
+- Keep RTT selected points visually in sync with Selected Tips styles from Selection & Hover controls.
+
 ## v1.2.0
 
 - Add per-legend spacing controls for stacked and side-by-side legends.
