@@ -439,6 +439,7 @@ export class TreeRenderer {
     this.tipHoverFillColor       = s.tipHoverFillColor;
     this.tipHoverStrokeColor     = s.tipHoverStrokeColor;
     this.tipHoverGrowthFactor    = s.tipHoverGrowthFactor;
+    this.tipHoverGrowth          = +(s.tipHoverGrowth ?? 0);
     this.tipHoverMinSize         = s.tipHoverMinSize;
     this.tipHoverFillOpacity     = s.tipHoverFillOpacity;
     this.tipHoverStrokeWidth     = s.tipHoverStrokeWidth;
@@ -446,6 +447,7 @@ export class TreeRenderer {
     this.nodeHoverFillColor      = s.nodeHoverFillColor;
     this.nodeHoverStrokeColor    = s.nodeHoverStrokeColor;
     this.nodeHoverGrowthFactor   = s.nodeHoverGrowthFactor;
+    this.nodeHoverGrowth         = +(s.nodeHoverGrowth ?? 0);
     this.nodeHoverMinSize        = s.nodeHoverMinSize;
     this.nodeHoverFillOpacity    = s.nodeHoverFillOpacity;
     this.nodeHoverStrokeWidth    = s.nodeHoverStrokeWidth;
@@ -455,6 +457,7 @@ export class TreeRenderer {
     this.selectedTipStrokeColor   = s.selectedTipStrokeColor;
     this.selectedTipFillColor     = s.selectedTipFillColor;
     this.selectedTipGrowthFactor  = s.selectedTipGrowthFactor;
+    this.selectedTipGrowth        = +(s.selectedTipGrowth ?? 0);
     this.selectedTipMinSize       = s.selectedTipMinSize;
     this.selectedTipFillOpacity   = s.selectedTipFillOpacity;
     this.selectedTipStrokeWidth   = s.selectedTipStrokeWidth;
@@ -462,6 +465,7 @@ export class TreeRenderer {
     this.selectedNodeStrokeColor   = s.selectedNodeStrokeColor;
     this.selectedNodeFillColor     = s.selectedNodeFillColor;
     this.selectedNodeGrowthFactor  = s.selectedNodeGrowthFactor;
+    this.selectedNodeGrowth        = +(s.selectedNodeGrowth ?? 0);
     this.selectedNodeMinSize       = s.selectedNodeMinSize;
     this.selectedNodeFillOpacity   = s.selectedNodeFillOpacity;
     this.selectedNodeStrokeWidth   = s.selectedNodeStrokeWidth;
@@ -1171,6 +1175,8 @@ export class TreeRenderer {
   setTipHoverStrokeColor(c)        { this.tipHoverStrokeColor = c;        this._dirty = true; }
   /** Growth factor (marker radius = max(tipRadius × factor, minSize)). */
   setTipHoverGrowthFactor(f)       { this.tipHoverGrowthFactor = f;       this._dirty = true; }
+  /** Additional radius (px) added after tip-hover growth-factor scaling. */
+  setTipHoverGrowth(n)             { this.tipHoverGrowth = n;             this._dirty = true; }
   /** Minimum radius (px) of the hover indicator for tips. */
   setTipHoverMinSize(n)            { this.tipHoverMinSize = n;            this._dirty = true; }
   /** Opacity (0–1) of the filled circle for tip hover. */
@@ -1184,6 +1190,8 @@ export class TreeRenderer {
   setNodeHoverStrokeColor(c)       { this.nodeHoverStrokeColor = c;       this._dirty = true; }
   /** Growth factor for the node hover indicator. */
   setNodeHoverGrowthFactor(f)      { this.nodeHoverGrowthFactor = f;      this._dirty = true; }
+  /** Additional radius (px) added after node-hover growth-factor scaling. */
+  setNodeHoverGrowth(n)            { this.nodeHoverGrowth = n;            this._dirty = true; }
   /** Minimum radius (px) of the hover indicator for internal nodes. */
   setNodeHoverMinSize(n)           { this.nodeHoverMinSize = n;           this._dirty = true; }
   /** Opacity (0–1) of the filled circle for node hover. */
@@ -1197,6 +1205,8 @@ export class TreeRenderer {
   setSelectedTipFillColor(c)       { this.selectedTipFillColor = c;       this._dirty = true; }
   /** Growth factor for the selected-tip indicator. */
   setSelectedTipGrowthFactor(f)    { this.selectedTipGrowthFactor = f;    this._dirty = true; }
+  /** Additional radius (px) added after selected-tip growth-factor scaling. */
+  setSelectedTipGrowth(n)          { this.selectedTipGrowth = n;          this._dirty = true; }
   /** Minimum radius (px) of the selected-tip indicator. */
   setSelectedTipMinSize(n)         { this.selectedTipMinSize = n;         this._dirty = true; }
   /** Opacity (0–1) of the filled circle for selected tips. */
@@ -1210,6 +1220,8 @@ export class TreeRenderer {
   setSelectedNodeFillColor(c)      { this.selectedNodeFillColor = c;      this._dirty = true; }
   /** Growth factor for the selected-node / MRCA indicator. */
   setSelectedNodeGrowthFactor(f)   { this.selectedNodeGrowthFactor = f;   this._dirty = true; }
+  /** Additional radius (px) added after selected-node growth-factor scaling. */
+  setSelectedNodeGrowth(n)         { this.selectedNodeGrowth = n;         this._dirty = true; }
   /** Minimum radius (px) of the MRCA indicator. */
   setSelectedNodeMinSize(n)        { this.selectedNodeMinSize = n;        this._dirty = true; }
   /** Opacity (0–1) of the filled circle for selected/MRCA node. */
@@ -4331,7 +4343,7 @@ export class TreeRenderer {
     if (this._selectedTipIds.size > 0) {
       const gf      = this.selectedTipGrowthFactor;
       const minR    = this.selectedTipMinSize;
-      const markerR = Math.max(r * gf, minR);
+      const markerR = Math.max(r * gf + this.selectedTipGrowth, minR);
       const sw      = this.selectedTipStrokeWidth;
 
       // Ring (drawn first, underneath everything)
@@ -4394,7 +4406,7 @@ export class TreeRenderer {
         const mny     = this._wy(mn.y);
         const gf      = this.selectedNodeGrowthFactor;
         const minR    = this.selectedNodeMinSize;
-        const markerR = Math.max(nodeR * gf, minR);
+        const markerR = Math.max(nodeR * gf + this.selectedNodeGrowth, minR);
         const sw      = this.selectedNodeStrokeWidth;
 
         // Ring (drawn first, underneath everything)
@@ -4434,7 +4446,8 @@ export class TreeRenderer {
         const baseR        = hn.isTip ? r : nodeR;
         const gf           = hn.isTip ? this.tipHoverGrowthFactor   : this.nodeHoverGrowthFactor;
         const minR         = hn.isTip ? this.tipHoverMinSize        : this.nodeHoverMinSize;
-        const hr           = Math.max(baseR * gf, minR);
+        const addR         = hn.isTip ? this.tipHoverGrowth : this.nodeHoverGrowth;
+        const hr           = Math.max(baseR * gf + addR, minR);
         const fillColor    = hn.isTip ? this.tipHoverFillColor      : this.nodeHoverFillColor;
         const fillOpacity  = hn.isTip ? this.tipHoverFillOpacity    : this.nodeHoverFillOpacity;
         const ringColor    = hn.isTip ? this.tipHoverStrokeColor    : this.nodeHoverStrokeColor;
@@ -4481,7 +4494,7 @@ export class TreeRenderer {
     // Pass 5 – branches mode: draw hover and/or selection marker on branch
     if (this._mode === 'branches') {
       const gf  = this.selectedNodeGrowthFactor;
-      const br  = Math.max(nodeR * gf, this.selectedNodeMinSize);
+      const br  = Math.max(nodeR * gf + this.selectedNodeGrowth, this.selectedNodeMinSize);
       const sw  = this.selectedNodeStrokeWidth;
 
       const drawBranchMarker = (node, worldX, fillAlpha, strokeAlpha) => {

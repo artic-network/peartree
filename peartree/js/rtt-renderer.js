@@ -85,7 +85,8 @@ export class RTTRenderer {
     // Selected-tip indicator style
     this.selectedTipStrokeColor   = 'rgba(220,200,80,0.9)';
     this.selectedTipFillColor     = 'rgba(220,200,80,0.3)';
-    this.selectedTipGrowthFactor  = 1.5;
+    this.selectedTipGrowthFactor  = 1.0;
+    this.selectedTipGrowth        = 0;
     this.selectedTipMinSize       = 8;
     this.selectedTipStrokeWidth   = 2;
     this.selectedTipStrokeOpacity = 0.9;
@@ -94,7 +95,8 @@ export class RTTRenderer {
     // Hover indicator style
     this.tipHoverStrokeColor      = 'rgba(255,255,255,0.9)';
     this.tipHoverFillColor        = 'rgba(255,255,255,0.2)';
-    this.tipHoverGrowthFactor     = 1.4;
+    this.tipHoverGrowthFactor     = 1.0;
+    this.tipHoverGrowth           = 0;
     this.tipHoverMinSize          = 6;
     this.tipHoverStrokeWidth      = 1.5;
     this.tipHoverStrokeOpacity    = 0.8;
@@ -922,7 +924,7 @@ export class RTTRenderer {
     // calculation so selected RTT points follow the same Selected Tips style.
     for (const p of pts) {
       if (!sel.has(p.id)) continue;
-      const mr = Math.max(tipR * this.selectedTipGrowthFactor, this.selectedTipMinSize * d);
+      const mr = Math.max(tipR * this.selectedTipGrowthFactor + this.selectedTipGrowth * d, this.selectedTipMinSize * d);
       ctx.globalAlpha = this.selectedTipStrokeOpacity;
       ctx.strokeStyle = this.selectedTipStrokeColor;
       ctx.lineWidth   = this.selectedTipStrokeWidth * d;
@@ -942,7 +944,7 @@ export class RTTRenderer {
     // Pass 4: hover indicator
     const hovPt = pts.find(p => p.id === hov);
     if (hovPt) {
-      const hr = Math.max(tipR * this.tipHoverGrowthFactor, this.tipHoverMinSize * d);
+      const hr = Math.max(tipR * this.tipHoverGrowthFactor + this.tipHoverGrowth * d, this.tipHoverMinSize * d);
       ctx.globalAlpha = this.tipHoverStrokeOpacity;
       ctx.strokeStyle = this.tipHoverStrokeColor;
       ctx.lineWidth   = this.tipHoverStrokeWidth * d;

@@ -433,6 +433,10 @@ async function _initCore(root = document) {
   const nodeHoverFillOpacitySlider       = $('node-hover-fill-opacity');
   const nodeHoverStrokeWidthSlider       = $('node-hover-stroke-width');
   const nodeHoverStrokeOpacitySlider     = $('node-hover-stroke-opacity');
+  let selectedTipGrowthFactorValue = parseFloat(DEFAULT_THEME.selectedTipGrowthFactor ?? '1');
+  let selectedNodeGrowthFactorValue = parseFloat(DEFAULT_THEME.selectedNodeGrowthFactor ?? '1');
+  let tipHoverGrowthFactorValue = parseFloat(DEFAULT_THEME.tipHoverGrowthFactor ?? '1');
+  let nodeHoverGrowthFactorValue = parseFloat(DEFAULT_THEME.nodeHoverGrowthFactor ?? '1');
   const nodeShapeColorEl  = $('node-shape-color');
   const nodeShapeBgEl     = $('node-shape-bg-color');
   const nodeBarsShowEl      = $('node-bars-show');
@@ -963,14 +967,16 @@ async function _initCore(root = document) {
       // Hover colours
       tipHoverFillColor:         tipHoverFillEl.value,
       tipHoverStrokeColor:       tipHoverStrokeEl.value,
-      tipHoverGrowthFactor:      tipHoverGrowthSlider.value,
+      tipHoverGrowthFactor:      String(tipHoverGrowthFactorValue),
+      tipHoverGrowth:            tipHoverGrowthSlider.value,
       tipHoverMinSize:           tipHoverMinSizeSlider.value,
       tipHoverFillOpacity:       tipHoverFillOpacitySlider.value,
       tipHoverStrokeWidth:       tipHoverStrokeWidthSlider.value,
       tipHoverStrokeOpacity:     tipHoverStrokeOpacitySlider.value,
       nodeHoverFillColor:        nodeHoverFillEl.value,
       nodeHoverStrokeColor:      nodeHoverStrokeEl.value,
-      nodeHoverGrowthFactor:     nodeHoverGrowthSlider.value,
+      nodeHoverGrowthFactor:     String(nodeHoverGrowthFactorValue),
+      nodeHoverGrowth:           nodeHoverGrowthSlider.value,
       nodeHoverMinSize:          nodeHoverMinSizeSlider.value,
       nodeHoverFillOpacity:      nodeHoverFillOpacitySlider.value,
       nodeHoverStrokeWidth:      nodeHoverStrokeWidthSlider.value,
@@ -978,14 +984,16 @@ async function _initCore(root = document) {
       // Selected colours
       selectedTipFillColor:      selectedTipFillEl.value,
       selectedTipStrokeColor:    selectedTipStrokeEl.value,
-      selectedTipGrowthFactor:   selectedTipGrowthSlider.value,
+      selectedTipGrowthFactor:   String(selectedTipGrowthFactorValue),
+      selectedTipGrowth:         selectedTipGrowthSlider.value,
       selectedTipMinSize:        selectedTipMinSizeSlider.value,
       selectedTipFillOpacity:    selectedTipFillOpacitySlider.value,
       selectedTipStrokeWidth:    selectedTipStrokeWidthSlider.value,
       selectedTipStrokeOpacity:  selectedTipStrokeOpacitySlider.value,
       selectedNodeFillColor:     selectedNodeFillEl.value,
       selectedNodeStrokeColor:   selectedNodeStrokeEl.value,
-      selectedNodeGrowthFactor:  selectedNodeGrowthSlider.value,
+      selectedNodeGrowthFactor:  String(selectedNodeGrowthFactorValue),
+      selectedNodeGrowth:        selectedNodeGrowthSlider.value,
       selectedNodeMinSize:       selectedNodeMinSizeSlider.value,
       selectedNodeFillOpacity:   selectedNodeFillOpacitySlider.value,
       selectedNodeStrokeWidth:   selectedNodeStrokeWidthSlider.value,
@@ -1295,8 +1303,11 @@ async function _initCore(root = document) {
     if (s.nodeHoverFillColor)    nodeHoverFillEl.value = s.nodeHoverFillColor;
     if (s.selectedTipFillColor)  selectedTipFillEl.value = s.selectedTipFillColor;
     if (s.selectedTipGrowthFactor != null) {
-      selectedTipGrowthSlider.value = s.selectedTipGrowthFactor;
-      $('selected-tip-growth-value').textContent = s.selectedTipGrowthFactor;
+      selectedTipGrowthFactorValue = parseFloat(s.selectedTipGrowthFactor);
+    }
+    if (s.selectedTipGrowth != null) {
+      selectedTipGrowthSlider.value = s.selectedTipGrowth;
+      $('selected-tip-growth-value').textContent = s.selectedTipGrowth;
     }
     if (s.selectedTipMinSize != null) {
       selectedTipMinSizeSlider.value = s.selectedTipMinSize;
@@ -1316,8 +1327,11 @@ async function _initCore(root = document) {
     }
     if (s.selectedNodeFillColor) selectedNodeFillEl.value = s.selectedNodeFillColor;
     if (s.selectedNodeGrowthFactor != null) {
-      selectedNodeGrowthSlider.value = s.selectedNodeGrowthFactor;
-      $('selected-node-growth-value').textContent = s.selectedNodeGrowthFactor;
+      selectedNodeGrowthFactorValue = parseFloat(s.selectedNodeGrowthFactor);
+    }
+    if (s.selectedNodeGrowth != null) {
+      selectedNodeGrowthSlider.value = s.selectedNodeGrowth;
+      $('selected-node-growth-value').textContent = s.selectedNodeGrowth;
     }
     if (s.selectedNodeMinSize != null) {
       selectedNodeMinSizeSlider.value = s.selectedNodeMinSize;
@@ -1337,8 +1351,11 @@ async function _initCore(root = document) {
     }
     if (s.tipHoverStrokeColor)   tipHoverStrokeEl.value = s.tipHoverStrokeColor;
     if (s.tipHoverGrowthFactor != null) {
-      tipHoverGrowthSlider.value = s.tipHoverGrowthFactor;
-      $('tip-hover-growth-value').textContent = s.tipHoverGrowthFactor;
+      tipHoverGrowthFactorValue = parseFloat(s.tipHoverGrowthFactor);
+    }
+    if (s.tipHoverGrowth != null) {
+      tipHoverGrowthSlider.value = s.tipHoverGrowth;
+      $('tip-hover-growth-value').textContent = s.tipHoverGrowth;
     }
     if (s.tipHoverMinSize != null) {
       tipHoverMinSizeSlider.value = s.tipHoverMinSize;
@@ -1358,8 +1375,11 @@ async function _initCore(root = document) {
     }
     if (s.nodeHoverStrokeColor)  nodeHoverStrokeEl.value = s.nodeHoverStrokeColor;
     if (s.nodeHoverGrowthFactor != null) {
-      nodeHoverGrowthSlider.value = s.nodeHoverGrowthFactor;
-      $('node-hover-growth-value').textContent = s.nodeHoverGrowthFactor;
+      nodeHoverGrowthFactorValue = parseFloat(s.nodeHoverGrowthFactor);
+    }
+    if (s.nodeHoverGrowth != null) {
+      nodeHoverGrowthSlider.value = s.nodeHoverGrowth;
+      $('node-hover-growth-value').textContent = s.nodeHoverGrowth;
     }
     if (s.nodeHoverMinSize != null) {
       nodeHoverMinSizeSlider.value = s.nodeHoverMinSize;
@@ -1949,28 +1969,32 @@ async function _initCore(root = document) {
       rootStemPct:      parseFloat(rootStemPctSlider.value),
       tipHoverFillColor:      tipHoverFillEl.value,
       tipHoverStrokeColor:    tipHoverStrokeEl.value,
-      tipHoverGrowthFactor:   parseFloat(tipHoverGrowthSlider.value),
+      tipHoverGrowthFactor:   tipHoverGrowthFactorValue,
+      tipHoverGrowth:         parseFloat(tipHoverGrowthSlider.value),
       tipHoverMinSize:        parseFloat(tipHoverMinSizeSlider.value),
       tipHoverFillOpacity:    parseFloat(tipHoverFillOpacitySlider.value),
       tipHoverStrokeWidth:    parseFloat(tipHoverStrokeWidthSlider.value),
       tipHoverStrokeOpacity:  parseFloat(tipHoverStrokeOpacitySlider.value),
       nodeHoverFillColor:     nodeHoverFillEl.value,
       nodeHoverStrokeColor:   nodeHoverStrokeEl.value,
-      nodeHoverGrowthFactor:  parseFloat(nodeHoverGrowthSlider.value),
+      nodeHoverGrowthFactor:  nodeHoverGrowthFactorValue,
+      nodeHoverGrowth:        parseFloat(nodeHoverGrowthSlider.value),
       nodeHoverMinSize:       parseFloat(nodeHoverMinSizeSlider.value),
       nodeHoverFillOpacity:   parseFloat(nodeHoverFillOpacitySlider.value),
       nodeHoverStrokeWidth:   parseFloat(nodeHoverStrokeWidthSlider.value),
       nodeHoverStrokeOpacity: parseFloat(nodeHoverStrokeOpacitySlider.value),
       selectedTipStrokeColor:    selectedTipStrokeEl.value,
       selectedTipFillColor:      selectedTipFillEl.value,
-      selectedTipGrowthFactor:   parseFloat(selectedTipGrowthSlider.value),
+      selectedTipGrowthFactor:   selectedTipGrowthFactorValue,
+      selectedTipGrowth:         parseFloat(selectedTipGrowthSlider.value),
       selectedTipMinSize:        parseFloat(selectedTipMinSizeSlider.value),
       selectedTipFillOpacity:    parseFloat(selectedTipFillOpacitySlider.value),
       selectedTipStrokeWidth:    parseFloat(selectedTipStrokeWidthSlider.value),
       selectedTipStrokeOpacity:  parseFloat(selectedTipStrokeOpacitySlider.value),
       selectedNodeStrokeColor:   selectedNodeStrokeEl.value,
       selectedNodeFillColor:     selectedNodeFillEl.value,
-      selectedNodeGrowthFactor:  parseFloat(selectedNodeGrowthSlider.value),
+      selectedNodeGrowthFactor:  selectedNodeGrowthFactorValue,
+      selectedNodeGrowth:        parseFloat(selectedNodeGrowthSlider.value),
       selectedNodeMinSize:       parseFloat(selectedNodeMinSizeSlider.value),
       selectedNodeFillOpacity:   parseFloat(selectedNodeFillOpacitySlider.value),
       selectedNodeStrokeWidth:   parseFloat(selectedNodeStrokeWidthSlider.value),
@@ -2177,23 +2201,27 @@ async function _initCore(root = document) {
     nodeShapeColorEl.value  = t.nodeShapeColor;
     nodeShapeBgEl.value     = t.nodeShapeBgColor;
     // Hover state
-    tipHoverGrowthSlider.value    = t.tipHoverGrowthFactor;    $('tip-hover-growth-value').textContent    = t.tipHoverGrowthFactor;
+    tipHoverGrowthFactorValue     = parseFloat(t.tipHoverGrowthFactor ?? '1');
+    tipHoverGrowthSlider.value    = t.tipHoverGrowth ?? 0;    $('tip-hover-growth-value').textContent    = t.tipHoverGrowth ?? 0;
     tipHoverMinSizeSlider.value   = t.tipHoverMinSize;         $('tip-hover-min-size-value').textContent  = t.tipHoverMinSize;
     tipHoverFillOpacitySlider.value   = t.tipHoverFillOpacity;    $('tip-hover-fill-opacity-value').textContent    = t.tipHoverFillOpacity;
     tipHoverStrokeWidthSlider.value   = t.tipHoverStrokeWidth;    $('tip-hover-stroke-width-value').textContent    = t.tipHoverStrokeWidth;
     tipHoverStrokeOpacitySlider.value = t.tipHoverStrokeOpacity;  $('tip-hover-stroke-opacity-value').textContent  = t.tipHoverStrokeOpacity;
-    nodeHoverGrowthSlider.value   = t.nodeHoverGrowthFactor;   $('node-hover-growth-value').textContent   = t.nodeHoverGrowthFactor;
+    nodeHoverGrowthFactorValue    = parseFloat(t.nodeHoverGrowthFactor ?? '1');
+    nodeHoverGrowthSlider.value   = t.nodeHoverGrowth ?? 0;   $('node-hover-growth-value').textContent   = t.nodeHoverGrowth ?? 0;
     nodeHoverMinSizeSlider.value  = t.nodeHoverMinSize;        $('node-hover-min-size-value').textContent = t.nodeHoverMinSize;
     nodeHoverFillOpacitySlider.value   = t.nodeHoverFillOpacity;   $('node-hover-fill-opacity-value').textContent   = t.nodeHoverFillOpacity;
     nodeHoverStrokeWidthSlider.value   = t.nodeHoverStrokeWidth;   $('node-hover-stroke-width-value').textContent   = t.nodeHoverStrokeWidth;
     nodeHoverStrokeOpacitySlider.value = t.nodeHoverStrokeOpacity; $('node-hover-stroke-opacity-value').textContent = t.nodeHoverStrokeOpacity;
     // Selected state
-    selectedTipGrowthSlider.value   = t.selectedTipGrowthFactor;  $('selected-tip-growth-value').textContent   = t.selectedTipGrowthFactor;
+    selectedTipGrowthFactorValue  = parseFloat(t.selectedTipGrowthFactor ?? '1');
+    selectedTipGrowthSlider.value   = t.selectedTipGrowth ?? 0;  $('selected-tip-growth-value').textContent   = t.selectedTipGrowth ?? 0;
     selectedTipMinSizeSlider.value  = t.selectedTipMinSize;       $('selected-tip-min-size-value').textContent = t.selectedTipMinSize;
     selectedTipFillOpacitySlider.value   = t.selectedTipFillOpacity;   $('selected-tip-fill-opacity-value').textContent   = t.selectedTipFillOpacity;
     selectedTipStrokeWidthSlider.value   = t.selectedTipStrokeWidth;   $('selected-tip-stroke-width-value').textContent   = t.selectedTipStrokeWidth;
     selectedTipStrokeOpacitySlider.value = t.selectedTipStrokeOpacity; $('selected-tip-stroke-opacity-value').textContent = t.selectedTipStrokeOpacity;
-    selectedNodeGrowthSlider.value  = t.selectedNodeGrowthFactor; $('selected-node-growth-value').textContent  = t.selectedNodeGrowthFactor;
+    selectedNodeGrowthFactorValue = parseFloat(t.selectedNodeGrowthFactor ?? '1');
+    selectedNodeGrowthSlider.value  = t.selectedNodeGrowth ?? 0; $('selected-node-growth-value').textContent  = t.selectedNodeGrowth ?? 0;
     selectedNodeMinSizeSlider.value = t.selectedNodeMinSize;      $('selected-node-min-size-value').textContent = t.selectedNodeMinSize;
     selectedNodeFillOpacitySlider.value   = t.selectedNodeFillOpacity;   $('selected-node-fill-opacity-value').textContent   = t.selectedNodeFillOpacity;
     selectedNodeStrokeWidthSlider.value   = t.selectedNodeStrokeWidth;   $('selected-node-stroke-width-value').textContent   = t.selectedNodeStrokeWidth;
@@ -2373,8 +2401,11 @@ async function _initCore(root = document) {
   if (_saved.nodeHoverFillColor)   nodeHoverFillEl.value = _saved.nodeHoverFillColor;
   if (_saved.selectedTipFillColor)  selectedTipFillEl.value = _saved.selectedTipFillColor;
   if (_saved.selectedTipGrowthFactor != null) {
-    selectedTipGrowthSlider.value = _saved.selectedTipGrowthFactor;
-    $('selected-tip-growth-value').textContent = _saved.selectedTipGrowthFactor;
+    selectedTipGrowthFactorValue = parseFloat(_saved.selectedTipGrowthFactor);
+  }
+  if (_saved.selectedTipGrowth != null) {
+    selectedTipGrowthSlider.value = _saved.selectedTipGrowth;
+    $('selected-tip-growth-value').textContent = _saved.selectedTipGrowth;
   }
   if (_saved.selectedTipMinSize != null) {
     selectedTipMinSizeSlider.value = _saved.selectedTipMinSize;
@@ -2394,8 +2425,11 @@ async function _initCore(root = document) {
   }
   if (_saved.selectedNodeFillColor) selectedNodeFillEl.value = _saved.selectedNodeFillColor;
   if (_saved.selectedNodeGrowthFactor != null) {
-    selectedNodeGrowthSlider.value = _saved.selectedNodeGrowthFactor;
-    $('selected-node-growth-value').textContent = _saved.selectedNodeGrowthFactor;
+    selectedNodeGrowthFactorValue = parseFloat(_saved.selectedNodeGrowthFactor);
+  }
+  if (_saved.selectedNodeGrowth != null) {
+    selectedNodeGrowthSlider.value = _saved.selectedNodeGrowth;
+    $('selected-node-growth-value').textContent = _saved.selectedNodeGrowth;
   }
   if (_saved.selectedNodeMinSize != null) {
     selectedNodeMinSizeSlider.value = _saved.selectedNodeMinSize;
@@ -2415,8 +2449,11 @@ async function _initCore(root = document) {
   }
   if (_saved.tipHoverStrokeColor)   tipHoverStrokeEl.value = _saved.tipHoverStrokeColor;
   if (_saved.tipHoverGrowthFactor != null) {
-    tipHoverGrowthSlider.value = _saved.tipHoverGrowthFactor;
-    $('tip-hover-growth-value').textContent = _saved.tipHoverGrowthFactor;
+    tipHoverGrowthFactorValue = parseFloat(_saved.tipHoverGrowthFactor);
+  }
+  if (_saved.tipHoverGrowth != null) {
+    tipHoverGrowthSlider.value = _saved.tipHoverGrowth;
+    $('tip-hover-growth-value').textContent = _saved.tipHoverGrowth;
   }
   if (_saved.tipHoverMinSize != null) {
     tipHoverMinSizeSlider.value = _saved.tipHoverMinSize;
@@ -2436,8 +2473,11 @@ async function _initCore(root = document) {
   }
   if (_saved.nodeHoverStrokeColor)  nodeHoverStrokeEl.value = _saved.nodeHoverStrokeColor;
   if (_saved.nodeHoverGrowthFactor != null) {
-    nodeHoverGrowthSlider.value = _saved.nodeHoverGrowthFactor;
-    $('node-hover-growth-value').textContent = _saved.nodeHoverGrowthFactor;
+    nodeHoverGrowthFactorValue = parseFloat(_saved.nodeHoverGrowthFactor);
+  }
+  if (_saved.nodeHoverGrowth != null) {
+    nodeHoverGrowthSlider.value = _saved.nodeHoverGrowth;
+    $('node-hover-growth-value').textContent = _saved.nodeHoverGrowth;
   }
   if (_saved.nodeHoverMinSize != null) {
     nodeHoverMinSizeSlider.value = _saved.nodeHoverMinSize;
@@ -6888,7 +6928,7 @@ async function _initCore(root = document) {
     if (type !== 'input') return;
     _markCustomTheme();
     $('selected-tip-growth-value').textContent = selectedTipGrowthSlider.value;
-    renderer.setSelectedTipGrowthFactor(parseFloat(selectedTipGrowthSlider.value));
+    renderer.setSelectedTipGrowth(parseFloat(selectedTipGrowthSlider.value));
     saveSettings();
     rttChart?.notifyStyleChange?.();
   });
@@ -6940,7 +6980,7 @@ async function _initCore(root = document) {
     if (type !== 'input') return;
     _markCustomTheme();
     $('selected-node-growth-value').textContent = selectedNodeGrowthSlider.value;
-    renderer.setSelectedNodeGrowthFactor(parseFloat(selectedNodeGrowthSlider.value));
+    renderer.setSelectedNodeGrowth(parseFloat(selectedNodeGrowthSlider.value));
     saveSettings();
   });
 
@@ -6988,7 +7028,7 @@ async function _initCore(root = document) {
     if (type !== 'input') return;
     _markCustomTheme();
     $('tip-hover-growth-value').textContent = tipHoverGrowthSlider.value;
-    renderer.setTipHoverGrowthFactor(parseFloat(tipHoverGrowthSlider.value));
+    renderer.setTipHoverGrowth(parseFloat(tipHoverGrowthSlider.value));
     saveSettings();
     rttChart?.notifyStyleChange?.();
   });
@@ -7040,7 +7080,7 @@ async function _initCore(root = document) {
     if (type !== 'input') return;
     _markCustomTheme();
     $('node-hover-growth-value').textContent = nodeHoverGrowthSlider.value;
-    renderer.setNodeHoverGrowthFactor(parseFloat(nodeHoverGrowthSlider.value));
+    renderer.setNodeHoverGrowth(parseFloat(nodeHoverGrowthSlider.value));
     saveSettings();
   });
 

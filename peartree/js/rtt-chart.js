@@ -424,7 +424,7 @@ export function createRTTChart({
     for (const p of pts) {
       const px = xToS(p.x), py = yToS(p.y);
       if (sel.has(p.id)) {
-        const mr = Math.max(tipR * rtt.selectedTipGrowthFactor, rtt.selectedTipMinSize);
+        const mr = Math.max(tipR * rtt.selectedTipGrowthFactor + rtt.selectedTipGrowth, rtt.selectedTipMinSize);
         selCircles.push(
           `<circle cx="${f(px)}" cy="${f(py)}" r="${mr}"` +
           ` stroke="${esc(rtt.selectedTipStrokeColor)}" stroke-width="${rtt.selectedTipStrokeWidth}"` +
@@ -582,6 +582,7 @@ export function createRTTChart({
       selectedTipStrokeColor:   tr.selectedTipStrokeColor,
       selectedTipFillColor:     tr.selectedTipFillColor,
       selectedTipGrowthFactor:  tr.selectedTipGrowthFactor,
+      selectedTipGrowth:        tr.selectedTipGrowth,
       selectedTipMinSize:       tr.selectedTipMinSize,
       selectedTipStrokeWidth:   tr.selectedTipStrokeWidth,
       selectedTipStrokeOpacity: tr.selectedTipStrokeOpacity,
@@ -590,6 +591,7 @@ export function createRTTChart({
       tipHoverStrokeColor:      tr.tipHoverStrokeColor,
       tipHoverFillColor:        tr.tipHoverFillColor,
       tipHoverGrowthFactor:     tr.tipHoverGrowthFactor,
+      tipHoverGrowth:           tr.tipHoverGrowth,
       tipHoverMinSize:          tr.tipHoverMinSize,
       tipHoverStrokeWidth:      tr.tipHoverStrokeWidth,
       tipHoverStrokeOpacity:    tr.tipHoverStrokeOpacity,

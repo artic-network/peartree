@@ -2339,8 +2339,8 @@ function _sectionSelectionHover() {
         ],
       },
       {
-        type: 'row', kind: 'range', id: 'selected-tip-growth', min: 1, max: 5, step: 0.1, value: 2,
-        valueId: 'selected-tip-growth-value', valueText: '2', title: 'Growth factor applied to tip circle radius when selected',
+        type: 'row', kind: 'range', id: 'selected-tip-growth', min: 0, max: 20, step: 0.5, value: 0,
+        valueId: 'selected-tip-growth-value', valueText: '0', title: 'Additional size added to the tip circle radius after selected-tip growth-factor scaling',
         label: 'Size', labelIcon: 'bi bi-arrow-up-right-circle form-label-sm',
       },
       {
@@ -2373,8 +2373,8 @@ function _sectionSelectionHover() {
       },
       { type: 'subhead', text: 'MRCA Node' },
       {
-        type: 'row', kind: 'range', id: 'selected-node-growth', min: 1, max: 5, step: 0.1, value: 2,
-        valueId: 'selected-node-growth-value', valueText: '2', title: 'Growth factor applied to the MRCA node circle radius when selected',
+        type: 'row', kind: 'range', id: 'selected-node-growth', min: 0, max: 20, step: 0.5, value: 0,
+        valueId: 'selected-node-growth-value', valueText: '0', title: 'Additional size added to the MRCA node circle radius after selected-node growth-factor scaling',
         label: 'Size', labelIcon: 'bi bi-box-arrow-up-right form-label-sm',
       },
       {
@@ -2407,8 +2407,8 @@ function _sectionSelectionHover() {
       },
       { type: 'subhead', text: 'Tip Hover' },
       {
-        type: 'row', kind: 'range', id: 'tip-hover-growth', min: 1, max: 5, step: 0.1, value: 1.5,
-        valueId: 'tip-hover-growth-value', valueText: '1.5', title: 'Growth factor applied to the tip circle radius on hover',
+        type: 'row', kind: 'range', id: 'tip-hover-growth', min: 0, max: 20, step: 0.5, value: 0,
+        valueId: 'tip-hover-growth-value', valueText: '0', title: 'Additional size added to the tip circle radius after hover growth-factor scaling',
         label: 'Size', labelIcon: 'bi bi-box-arrow-up-right form-label-sm',
       },
       {
@@ -2441,8 +2441,8 @@ function _sectionSelectionHover() {
       },
       { type: 'subhead', text: 'Node Hover' },
       {
-        type: 'row', kind: 'range', id: 'node-hover-growth', min: 1, max: 5, step: 0.1, value: 1.5,
-        valueId: 'node-hover-growth-value', valueText: '1.5', title: 'Growth factor applied to the node circle radius on hover',
+        type: 'row', kind: 'range', id: 'node-hover-growth', min: 0, max: 20, step: 0.5, value: 0,
+        valueId: 'node-hover-growth-value', valueText: '0', title: 'Additional size added to the node circle radius after hover growth-factor scaling',
         label: 'Size', labelIcon: 'bi bi-box-arrow-up-right form-label-sm',
       },
       {

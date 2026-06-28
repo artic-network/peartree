@@ -113,16 +113,16 @@ export const REQUIRED_THEME_KEYS = [
   'typeface', 'typefaceStyle',
   // Selection & Hover: selected tips
   'selectedLabelStyle',
-  'selectedTipGrowthFactor', 'selectedTipFillColor', 'selectedTipMinSize',
+  'selectedTipGrowthFactor', 'selectedTipGrowth', 'selectedTipFillColor', 'selectedTipMinSize',
   'selectedTipFillOpacity', 'selectedTipStrokeColor', 'selectedTipStrokeWidth', 'selectedTipStrokeOpacity',
   // Selection & Hover: MRCA node
-  'selectedNodeGrowthFactor', 'selectedNodeFillColor', 'selectedNodeMinSize',
+  'selectedNodeGrowthFactor', 'selectedNodeGrowth', 'selectedNodeFillColor', 'selectedNodeMinSize',
   'selectedNodeFillOpacity', 'selectedNodeStrokeColor', 'selectedNodeStrokeWidth', 'selectedNodeStrokeOpacity',
   // Selection & Hover: tip hover
-  'tipHoverGrowthFactor', 'tipHoverFillColor', 'tipHoverMinSize',
+  'tipHoverGrowthFactor', 'tipHoverGrowth', 'tipHoverFillColor', 'tipHoverMinSize',
   'tipHoverFillOpacity', 'tipHoverStrokeColor', 'tipHoverStrokeWidth', 'tipHoverStrokeOpacity',
   // Selection & Hover: node hover
-  'nodeHoverGrowthFactor', 'nodeHoverFillColor', 'nodeHoverMinSize',
+  'nodeHoverGrowthFactor', 'nodeHoverGrowth', 'nodeHoverFillColor', 'nodeHoverMinSize',
   'nodeHoverFillOpacity', 'nodeHoverStrokeColor', 'nodeHoverStrokeWidth', 'nodeHoverStrokeOpacity',
 ];
 
