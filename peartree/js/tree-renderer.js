@@ -4,9 +4,9 @@
 
 import { computeLayoutFromGraph } from './tree-utils.js';
 import { dateToDecimalYear, isNumericType, TreeCalibration } from './phylograph.js';
-import { getSequentialPalette, lerpSequential,
+import { getSequentialPalette, getCategoricalPalette, lerpSequential,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
-         MISSING_DATA_COLOUR, buildCategoricalColourMap } from '@artic-network/pearcore/palettes.js';
+         MISSING_DATA_COLOUR } from '@artic-network/pearcore/palettes.js';
 import { formatNumericAnnotationValue } from '@artic-network/pearcore/utils.js';
 import { buildFont, TYPEFACES } from '@artic-network/pearcore/typefaces.js';
 import { CircleShapeRenderer }  from './shape-renderer.js';
@@ -245,6 +245,7 @@ export class TreeRenderer {
     // Annotation colouring
     this._annotationSchema          = null;   // Map<name, AnnotationDef> from buildAnnotationSchema
     this._annotationPaletteOverrides = new Map(); // annotKey → paletteName string
+    this._annotationPaletteReverses = new Map(); // annotKey → boolean
     this._annotationScaleModes        = new Map(); // annotKey → 'symmetric-zero'|'zero-positive'|'zero-one'|''
     this._tipColourBy      = null;   // annotation key or null
     this._tipColourScale   = null;   // Map<value, CSS colour> | null
@@ -1305,6 +1306,7 @@ export class TreeRenderer {
     }
     this._legendRenderer?.setAnnotationSchema(schema);
     this._legendRenderer?.setPaletteOverrides(this._annotationPaletteOverrides);
+    this._legendRenderer?.setPaletteReverseOverrides(this._annotationPaletteReverses);
     this._legendRenderer?.setScaleModeOverrides(this._annotationScaleModes);
     this._pushLiveRangesToLegend();
     this._dirty = true;
@@ -1432,11 +1434,13 @@ export class TreeRenderer {
    * @param {string}      key          Annotation name
    * @param {string|null} paletteName  Name from CATEGORICAL_PALETTES or SEQUENTIAL_PALETTES, or null to revert to default
    */
-  setAnnotationPalette(key, paletteName) {
+  setAnnotationPalette(key, paletteName, reversed = null) {
     if (paletteName) {
       this._annotationPaletteOverrides.set(key, paletteName);
+      if (reversed != null) this._annotationPaletteReverses.set(key, !!reversed);
     } else {
       this._annotationPaletteOverrides.delete(key);
+      this._annotationPaletteReverses.delete(key);
     }
     // Rebuild any colour scale that references this annotation key.
     if (this._tipColourBy            === key) this._tipColourScale            = this._buildColourScale(key);
@@ -1456,6 +1460,7 @@ export class TreeRenderer {
     }
     // Propagate to legend so it redraws with the new palette.
     this._legendRenderer?.setPaletteOverrides(this._annotationPaletteOverrides);
+    this._legendRenderer?.setPaletteReverseOverrides(this._annotationPaletteReverses);
     this._pushLiveRangesToLegend();
     this._dirty = true;
   }
@@ -1510,13 +1515,17 @@ export class TreeRenderer {
     const scale = new Map();
     if (def.dataType === 'categorical' || def.dataType === 'ordinal') {
       const paletteName = this._annotationPaletteOverrides.get(key);
-      const colourMap = buildCategoricalColourMap(def.values || [], paletteName);
+      const palette = getCategoricalPalette(paletteName);
+      const colours = this._annotationPaletteReverses.get(key) ? [...palette].reverse() : palette;
+      const colourMap = new Map();
+      (def.values || []).forEach((v, i) => colourMap.set(v, colours[i % colours.length]));
       for (const [v, c] of colourMap) scale.set(v, c);
     } else if (def.dataType === 'date') {
       // Sequential scale; values are ISO date strings converted to decimal years at draw time.
       scale.set('__min__',    dateToDecimalYear(def.min));
       scale.set('__max__',    dateToDecimalYear(def.max));
       scale.set('__palette__', this._annotationPaletteOverrides.get(key) ?? null);
+      scale.set('__reverse__', !!this._annotationPaletteReverses.get(key));
       scale.set('__isDate__', true);
     } else if (isNumericType(def.dataType)) {
       // Compute live min/max from currently visible, non-collapsed nodes,
@@ -1568,6 +1577,7 @@ export class TreeRenderer {
       scale.set('__liveMin__', liveMin);
       scale.set('__liveMax__', liveMax);
       scale.set('__palette__', this._annotationPaletteOverrides.get(key) ?? null);
+      scale.set('__reverse__', !!this._annotationPaletteReverses.get(key));
     }
     return scale;
   }
@@ -1644,7 +1654,8 @@ export class TreeRenderer {
       const rawValue = scale.get('__isDate__') ? dateToDecimalYear(value) : value;
       const min  = scale.get('__min__');
       const max  = scale.get('__max__');
-      const t    = max > min ? (rawValue - min) / (max - min) : 0.5;
+      let t      = max > min ? (rawValue - min) / (max - min) : 0.5;
+      if (scale.get('__reverse__')) t = 1 - t;
       return lerpSequential(t, getSequentialPalette(scale.get('__palette__')));
     }
     // Value not found in categorical scale — treat as missing.

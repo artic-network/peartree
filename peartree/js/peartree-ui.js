@@ -2963,6 +2963,13 @@ ${window.buildParseLabelDialogHTML({ title: 'Parse Tip Names', subjectLabel: 'ti
         <span class="pt-palette-label">Palette <i class="bi bi-rainbow form-label-sm"></i></span>
         <select class="pt-palette-select" id="annot-config-palette-select"></select>
       </div>
+      <div class="pt-palette-row">
+        <span class="pt-palette-label">Reverse <i class="bi bi-arrow-left-right form-label-sm"></i></span>
+        <label style="display:flex;align-items:center;gap:8px;margin:0;color:var(--pt-text-muted)">
+          <input type="checkbox" id="annot-config-palette-reverse" />
+          <span>Apply palette in reverse order</span>
+        </label>
+      </div>
       <div id="annot-config-palette-preview" style="margin-top:8px;min-height:14px"></div>
     </div>
     <div class="pt-modal-footer">

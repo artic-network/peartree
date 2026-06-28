@@ -18,8 +18,9 @@
  *   draw()                             — explicit repaint
  */
 import { getSequentialPalette,
+         getCategoricalPalette,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
-         MISSING_DATA_COLOUR, buildCategoricalColourMap } from '@artic-network/pearcore/palettes.js';
+         MISSING_DATA_COLOUR } from '@artic-network/pearcore/palettes.js';
 import { dateToDecimalYear, isNumericType } from './phylograph.js';
 import { formatNumericAnnotationValue, formatDateLabelISO } from '@artic-network/pearcore/utils.js';
 import { buildFont, TYPEFACES } from '@artic-network/pearcore/typefaces.js';
@@ -42,6 +43,7 @@ export class LegendRenderer {
     this._annotation = null;   // annotation key string | null
     this._schema     = null;   // Map<string, AnnotationDef>
     this._paletteOverrides = null; // Map<annotKey, paletteName> from TreeRenderer
+    this._paletteReverseOverrides = null; // Map<annotKey, boolean> from TreeRenderer
 
     this._annotation2  = null;    // second legend annotation key | null
     this._position2    = 'right'; // 'right' (beside L1) | 'below' (stacked under L1)
@@ -208,6 +210,16 @@ export class LegendRenderer {
    */
   setPaletteOverrides(overrides) {
     this._paletteOverrides = overrides;
+    this.draw();
+  }
+
+  /**
+   * Receive per-annotation palette reverse flags from TreeRenderer.
+   * Triggers a redraw so legend colours update immediately.
+   * @param {Map<string,boolean>|null} overrides
+   */
+  setPaletteReverseOverrides(overrides) {
+    this._paletteReverseOverrides = overrides;
     this.draw();
   }
 
@@ -651,7 +663,11 @@ export class LegendRenderer {
 
     if (def.dataType === 'categorical' || def.dataType === 'ordinal') {
       const paletteName = this._paletteOverrides?.get(key);
-      const colourMap   = buildCategoricalColourMap(def.values || [], paletteName);
+      const isReversed  = !!this._paletteReverseOverrides?.get(key);
+      const values      = def.values || [];
+      const basePalette = getCategoricalPalette(paletteName);
+      const palette     = isReversed ? [...basePalette].reverse() : basePalette;
+      const colourMap   = new Map(values.map((v, i) => [v, palette[i % palette.length]]));
       const SWATCH   = Math.max(8, lfs);
       const ROW_H    = Math.max(SWATCH + 4, lfs + 4);
       const vals     = def.values || [];
@@ -705,7 +721,8 @@ export class LegendRenderer {
       const BAR_Y = y;
       const BAR_H = Math.max(40, maxY - y);
       const grad  = ctx.createLinearGradient(0, BAR_Y, 0, BAR_Y + BAR_H);
-      const stops = getSequentialPalette(this._paletteOverrides?.get(key));
+      const baseStops = getSequentialPalette(this._paletteOverrides?.get(key));
+      const stops = !!this._paletteReverseOverrides?.get(key) ? [...baseStops].reverse() : baseStops;
       const ns = stops.length;
       for (let i = 0; i < ns; i++) grad.addColorStop(i / (ns - 1), stops[ns - 1 - i]);
       ctx.fillStyle = grad;
@@ -733,7 +750,8 @@ export class LegendRenderer {
       const BAR_Y = y;
       const BAR_H = Math.max(40, maxY - y);
       const grad  = ctx.createLinearGradient(0, BAR_Y, 0, BAR_Y + BAR_H);
-      const stops = getSequentialPalette(this._paletteOverrides?.get(key));
+      const baseStops = getSequentialPalette(this._paletteOverrides?.get(key));
+      const stops = !!this._paletteReverseOverrides?.get(key) ? [...baseStops].reverse() : baseStops;
       const ns = stops.length;
       for (let i = 0; i < ns; i++) grad.addColorStop(i / (ns - 1), stops[ns - 1 - i]);
       ctx.fillStyle = grad;

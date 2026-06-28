@@ -559,6 +559,7 @@ async function _initCore(root = document) {
   const annotConfigTitle         = $('annot-config-title');
   const annotConfigInfo          = $('annot-config-info');
   const annotConfigPaletteSelect = $('annot-config-palette-select');
+  const annotConfigPaletteReverse = $('annot-config-palette-reverse');
   const annotConfigPalettePreview = $('annot-config-palette-preview');
   const annotConfigScaleRow      = $('annot-config-scale-row');
   const annotConfigScaleSelect   = $('annot-config-scale-select');
@@ -807,6 +808,9 @@ async function _initCore(root = document) {
   /** Per-annotation palette override: annotationKey → palette name string. */
   const annotationPalettes = new Map();
 
+  /** Per-annotation palette reverse flag: annotationKey → boolean. */
+  const annotationPaletteReverses = new Map();
+
   /** Per-annotation scale mode: annotationKey → 'symmetric-zero'|'zero-positive'|'' */
   const annotationScaleModes = new Map();
 
@@ -853,6 +857,7 @@ async function _initCore(root = document) {
       const palettes = isCat ? allCategoricalPalettes() : allSequentialPalettes();
       const defPal   = isCat ? DEFAULT_CATEGORICAL_PALETTE : DEFAULT_SEQUENTIAL_PALETTE;
       const stored   = annotationPalettes.get(key) ?? defPal;
+      const isRev    = !!annotationPaletteReverses.get(key);
       annotConfigPaletteSelect.innerHTML = '';
       for (const name of Object.keys(palettes)) {
         const opt = document.createElement('option');
@@ -860,6 +865,7 @@ async function _initCore(root = document) {
         annotConfigPaletteSelect.appendChild(opt);
       }
       annotConfigPaletteSelect.value = [...annotConfigPaletteSelect.options].some(o => o.value === stored) ? stored : defPal;
+      if (annotConfigPaletteReverse) annotConfigPaletteReverse.checked = isRev;
     }
     // Show/populate scale mode row only for numeric annotations
     if (annotConfigScaleRow && annotConfigScaleSelect) {
@@ -873,7 +879,7 @@ async function _initCore(root = document) {
     // Render palette preview
     {
       const isCat = def?.dataType === 'categorical' || def?.dataType === 'ordinal';
-      _renderAnnotConfigPreview(annotConfigPaletteSelect?.value ?? '', isCat);
+      _renderAnnotConfigPreview(annotConfigPaletteSelect?.value ?? '', isCat, !!annotConfigPaletteReverse?.checked);
     }
     annotConfigOverlay?.classList.add('open');
   }
@@ -907,18 +913,20 @@ async function _initCore(root = document) {
    * @param {string} paletteName
    * @param {boolean} isCat  true → categorical, false → sequential
    */
-  function _renderAnnotConfigPreview(paletteName, isCat) {
+  function _renderAnnotConfigPreview(paletteName, isCat, isReversed = false) {
     if (!annotConfigPalettePreview) return;
     if (isCat) {
       const colours = getCategoricalPalette(paletteName);
-      annotConfigPalettePreview.innerHTML = colours.slice(0, 12).map(c =>
+      const show = isReversed ? [...colours].reverse() : colours;
+      annotConfigPalettePreview.innerHTML = show.slice(0, 12).map(c =>
         `<span class="pm-mini-swatch" style="background:${c}"></span>`
       ).join('');
     } else {
       const stops = getSequentialPalette(paletteName);
+      const show = isReversed ? [...stops].reverse() : stops;
       const grad  = stops.length === 1
-        ? stops[0]
-        : `linear-gradient(to right, ${stops.join(', ')})`;
+        ? show[0]
+        : `linear-gradient(to right, ${show.join(', ')})`;
       annotConfigPalettePreview.innerHTML =
         `<span class="pm-mini-gradient" style="background:${grad};width:100%;display:block;height:14px;border-radius:3px;border:1px solid rgba(255,255,255,0.12)"></span>`;
     }
@@ -1040,6 +1048,7 @@ async function _initCore(root = document) {
       nodeColourBy:     nodeColourBy.value,
       labelColourBy:    labelColourBy.value,
       annotationPalettes: Object.fromEntries(annotationPalettes),
+      annotationPaletteReverses: Object.fromEntries(annotationPaletteReverses),
       annotationScaleModes: Object.fromEntries(annotationScaleModes),
       legendAnnotation:  legendAnnotEl.value,
       legendSpacing: legendSpacingSlider.value,
@@ -2367,6 +2376,9 @@ async function _initCore(root = document) {
   if (_saved.annotationPalettes) {
     for (const [k, v] of Object.entries(_saved.annotationPalettes)) annotationPalettes.set(k, v);
   }
+  if (_saved.annotationPaletteReverses) {
+    for (const [k, v] of Object.entries(_saved.annotationPaletteReverses)) annotationPaletteReverses.set(k, !!v);
+  }
   // Restore per-annotation scale mode choices.
   if (_saved.annotationScaleModes) {
     for (const [k, v] of Object.entries(_saved.annotationScaleModes)) annotationScaleModes.set(k, v);
@@ -3402,7 +3414,7 @@ async function _initCore(root = document) {
     getAnnotationPalette: (key) => annotationPalettes.get(key) ?? null,
     onPaletteChange: (key, paletteName) => {
       annotationPalettes.set(key, paletteName);
-      renderer.setAnnotationPalette(key, paletteName);
+      renderer.setAnnotationPalette(key, paletteName, !!annotationPaletteReverses.get(key));
       _syncPaletteSelects(key, paletteName);
       renderer._dirty = true;
     },
@@ -4806,8 +4818,13 @@ async function _initCore(root = document) {
           annotationPalettes.set(k, v);
         }
       }
+      if (_eff.annotationPaletteReverses) {
+        for (const [k, v] of Object.entries(_eff.annotationPaletteReverses)) {
+          annotationPaletteReverses.set(k, !!v);
+        }
+      }
       for (const [k, v] of annotationPalettes) {
-        renderer.setAnnotationPalette(k, v);
+        renderer.setAnnotationPalette(k, v, !!annotationPaletteReverses.get(k));
       }
       // Apply any per-annotation scale mode overrides.
       if (_eff.annotationScaleModes) {
@@ -7406,7 +7423,7 @@ async function _initCore(root = document) {
   annotConfigPaletteSelect?.addEventListener('change', () => {
     if (!_annotConfigKey || _annotConfigKey === 'user_colour') return;
     annotationPalettes.set(_annotConfigKey, annotConfigPaletteSelect.value);
-    renderer?.setAnnotationPalette(_annotConfigKey, annotConfigPaletteSelect.value);
+    renderer?.setAnnotationPalette(_annotConfigKey, annotConfigPaletteSelect.value, !!annotationPaletteReverses.get(_annotConfigKey));
     legendRenderer?.draw();
     saveSettings();
     rttChart?.notifyStyleChange?.();
@@ -7414,7 +7431,20 @@ async function _initCore(root = document) {
     const schema = renderer?._annotationSchema;
     const def    = schema?.get(_annotConfigKey);
     const isCat  = def?.dataType === 'categorical' || def?.dataType === 'ordinal';
-    _renderAnnotConfigPreview(annotConfigPaletteSelect.value, isCat);
+    _renderAnnotConfigPreview(annotConfigPaletteSelect.value, isCat, !!annotationPaletteReverses.get(_annotConfigKey));
+  });
+
+  annotConfigPaletteReverse?.addEventListener('change', () => {
+    if (!_annotConfigKey || _annotConfigKey === 'user_colour') return;
+    annotationPaletteReverses.set(_annotConfigKey, !!annotConfigPaletteReverse.checked);
+    renderer?.setAnnotationPalette(_annotConfigKey, annotConfigPaletteSelect?.value || null, !!annotConfigPaletteReverse.checked);
+    legendRenderer?.draw();
+    saveSettings();
+    rttChart?.notifyStyleChange?.();
+    const schema = renderer?._annotationSchema;
+    const def    = schema?.get(_annotConfigKey);
+    const isCat  = def?.dataType === 'categorical' || def?.dataType === 'ordinal';
+    _renderAnnotConfigPreview(annotConfigPaletteSelect?.value ?? '', isCat, !!annotConfigPaletteReverse.checked);
   });
 
   annotConfigScaleSelect?.addEventListener('change', () => {
