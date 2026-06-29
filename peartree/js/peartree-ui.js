@@ -2317,10 +2317,15 @@ function _sectionTheme() {
       },
       {
         type: 'row',
-        title: 'Application UI theme family (applies to panels, toolbar, dialogs, controls)',
-        label: 'UI Theme',
-        labelIcon: 'bi bi-circle-half form-label-sm',
-        controlHTML: '<button id="btn-ui-theme-family" class="pt-palette-select pt-ui-theme-select" type="button" title="Choose UI Theme"><span id="ui-theme-family-current">PearTree</span><i class="bi bi-caret-down-fill"></i></button>',
+        rowClass: 'pt-palette-row--span',
+        hideLabel: true,
+        controlHTML: '<hr class="pt-cp-divider" style="width:100%;margin:10px 0 6px" />',
+      },
+      {
+        type: 'row',
+        rowClass: 'pt-palette-row--span',
+        hideLabel: true,
+        controlHTML: '<button id="btn-ui-theme-family" type="button" title="Choose UI Theme"><i class="bi bi-circle-half me-1"></i>UI Theme</button>',
       },
     ],
       });

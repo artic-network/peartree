@@ -29,7 +29,7 @@ import { createPeartreeOptionsPanelProfile } from './options-panel-profile.js';
 import { createToolbarColourPicker, upgradeAllPaletteColourPickers } from '@artic-network/pearcore/colorpicker.js';
 import { createThemeManager, resolveEmbedConfig, initSectionAccordion,
          ensureStylesheet, loadScript, resolveAssetBases,
-         createSidePanelStackManager,
+         createSidePanelStackManager, createUIThemeFamilyManager, UI_THEME_FAMILIES,
          createDeclarativeOptionsController } from '@artic-network/pearcore/pearcore-app.js';
 
 /**
@@ -679,6 +679,8 @@ async function _initCore(root = document) {
   const btnRemoveTheme         = $('btn-remove-theme');
   const btnExportTheme         = $('btn-export-theme');
   const btnImportTheme         = $('btn-import-theme');
+  const btnUiThemeFamily       = $('btn-ui-theme-family');
+  const uiThemeFamilyCurrentEl = $('ui-theme-family-current');
   const btnFit                 = $('btn-fit');
   const btnResetSettings       = $('btn-reset-settings');
   const btnImportAnnot         = $('btn-import-annot');
@@ -804,6 +806,7 @@ async function _initCore(root = document) {
   // Theme manager created later (needs saveSettings which needs _buildSnapshot).
   // Forward-declared; assigned after _buildSnapshot and applyTheme are defined.
   let themeManager = null;
+  let uiThemeManager = null;
 
   /** Per-annotation palette override: annotationKey → palette name string. */
   const annotationPalettes = new Map();
@@ -2343,6 +2346,28 @@ async function _initCore(root = document) {
   btnExportTheme?.addEventListener('click', exportTheme);
   btnImportTheme?.addEventListener('click', importTheme);
 
+  function _renderUiThemeFamilyLabel() {
+    if (!uiThemeFamilyCurrentEl || !uiThemeManager) return;
+    const active = uiThemeManager.getActiveFamily();
+    const meta = uiThemeManager.families.find(f => f.id === active);
+    uiThemeFamilyCurrentEl.textContent = meta?.label ?? active;
+  }
+
+  async function _openUiThemeFamilyDialog() {
+    if (!uiThemeManager || typeof window.showThemeFamilyDialog !== 'function') return;
+    const selected = await window.showThemeFamilyDialog({
+      title: 'UI Theme',
+      message: 'Choose a UI theme family for app panels and controls.',
+      families: uiThemeManager.families,
+      currentFamily: uiThemeManager.getActiveFamily(),
+    });
+    if (!selected) return;
+    uiThemeManager.setActiveFamily(selected);
+    _renderUiThemeFamilyLabel();
+  }
+
+  btnUiThemeFamily?.addEventListener('click', _openUiThemeFamilyDialog);
+
   // Bootstrap theme registry and select options before restoring saved state.
   // Create the theme manager now that applyTheme, _buildSnapshot, saveSettings are defined.
   themeManager = createThemeManager({
@@ -2361,6 +2386,20 @@ async function _initCore(root = document) {
     downloadBlob: _downloadBlob,
     appName: 'PearTree',
   });
+
+  const _uiThemeStorageKey = _cfg.storageKey === null
+    ? null
+    : `${_cfg.storageKey || SETTINGS_KEY}-ui`;
+  const _uiThemeRoot = root === document
+    ? document.documentElement
+    : (root.closest?.('.pt-embed-wrap') ?? root);
+  uiThemeManager = createUIThemeFamilyManager({
+    families: UI_THEME_FAMILIES,
+    defaultFamily: 'peartree',
+    storageKey: _uiThemeStorageKey,
+    root: _uiThemeRoot,
+  });
+  _renderUiThemeFamilyLabel();
 
   // Restore the per-instance default theme from saved settings.
   const _preSaved = loadSettings();
