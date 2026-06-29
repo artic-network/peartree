@@ -2266,9 +2266,11 @@ function _sectionTheme() {
     items: [
       {
         type: 'row',
-        rowClass: 'pt-palette-row--span',
-        hideLabel: true,
-        controlHTML: '<select class="pt-palette-select" id="theme-select"></select>',
+        kind: 'select',
+        id: 'theme-select',
+        title: 'Tree visual theme',
+        label: 'Tree Theme',
+        labelIcon: 'bi bi-palette form-label-sm',
       },
       {
         type: 'row',
@@ -2312,6 +2314,13 @@ function _sectionTheme() {
         label: 'Style',
         labelIcon: 'bi bi-type-italic form-label-sm',
         options: [{ value: 'Regular', label: 'Regular' }],
+      },
+      {
+        type: 'row',
+        title: 'Application UI theme family (applies to panels, toolbar, dialogs, controls)',
+        label: 'UI Theme',
+        labelIcon: 'bi bi-circle-half form-label-sm',
+        controlHTML: '<button id="btn-ui-theme-family" class="pt-palette-select pt-ui-theme-select" type="button" title="Choose UI Theme"><span id="ui-theme-family-current">PearTree</span><i class="bi bi-caret-down-fill"></i></button>',
       },
     ],
       });

@@ -432,7 +432,11 @@ fn new_window(app: tauri::AppHandle, file_path: Option<String>) -> Result<(), St
     let label = format!("window-{n}");
 
     if let Some(path) = file_path {
-        app.state::<PendingFiles>().0.lock().unwrap().insert(label.clone(), path);
+        if let Ok(mut pending) = app.state::<PendingFiles>().0.lock() {
+            pending.insert(label.clone(), path);
+        } else {
+            eprintln!("[PearTree] Failed to lock PendingFiles while creating a new window");
+        }
     }
 
     let win = tauri::WebviewWindowBuilder::new(
@@ -452,14 +456,18 @@ fn new_window(app: tauri::AppHandle, file_path: Option<String>) -> Result<(), St
         let lbl   = label.clone();
         win.on_window_event(move |event| {
             if let tauri::WindowEvent::Focused(true) = event {
-                *app_h.state::<LastFocusedWindow>().0.lock().unwrap() = lbl.clone();
+                if let Ok(mut last) = app_h.state::<LastFocusedWindow>().0.lock() {
+                    *last = lbl.clone();
+                }
             }
         });
     }
 
     // New windows start focused — record immediately so a menu click before
     // any focus-change event still routes to this window.
-    *app.state::<LastFocusedWindow>().0.lock().unwrap() = label.clone();
+    if let Ok(mut last) = app.state::<LastFocusedWindow>().0.lock() {
+        *last = label.clone();
+    }
 
     Ok(())
 }
@@ -468,10 +476,10 @@ fn new_window(app: tauri::AppHandle, file_path: Option<String>) -> Result<(), St
 /// If the file was already captured as the cold-start pending file for `main`,
 /// skip creating a duplicate window.
 fn open_path_in_new_window(app: &tauri::AppHandle, path_str: String) {
-    let is_main_startup_file = {
-        let pending_state = app.state::<PendingFiles>();
-        let pending = pending_state.0.lock().unwrap();
+    let is_main_startup_file = if let Ok(pending) = app.state::<PendingFiles>().0.lock() {
         pending.get("main").map(|p| p == &path_str).unwrap_or(false)
+    } else {
+        false
     };
     if is_main_startup_file {
         return;
@@ -506,7 +514,11 @@ fn take_pending_file(
     window: tauri::WebviewWindow,
 ) -> Option<String> {
     let label = window.label();
-    app.state::<PendingFiles>().0.lock().unwrap().remove(label)
+    if let Ok(mut pending) = app.state::<PendingFiles>().0.lock() {
+        pending.remove(label)
+    } else {
+        None
+    }
 }
 
 /// Triggers the native OS print dialog for the calling window.
@@ -542,7 +554,9 @@ async fn check_for_updates(app: tauri::AppHandle) -> Result<Option<serde_json::V
         "body":    u.body,
         "current": env!("CARGO_PKG_VERSION"),
     }));
-    *app.state::<PendingUpdate>().0.lock().unwrap() = update;
+    if let Ok(mut pending_update) = app.state::<PendingUpdate>().0.lock() {
+        *pending_update = update;
+    }
     Ok(info)
 }
 
@@ -550,7 +564,11 @@ async fn check_for_updates(app: tauri::AppHandle) -> Result<Option<serde_json::V
 /// On all platforms, restarts the app after a successful install.
 #[tauri::command]
 async fn install_update(app: tauri::AppHandle) -> Result<(), String> {
-    let update = app.state::<PendingUpdate>().0.lock().unwrap().take();
+    let update = if let Ok(mut pending_update) = app.state::<PendingUpdate>().0.lock() {
+        pending_update.take()
+    } else {
+        None
+    };
     if let Some(update) = update {
         update
             .download_and_install(|_chunk, _total| {}, || {})
@@ -598,7 +616,9 @@ pub fn run() {
                 let app_h = app.handle().clone();
                 main_win.on_window_event(move |event| {
                     if let tauri::WindowEvent::Focused(true) = event {
-                        *app_h.state::<LastFocusedWindow>().0.lock().unwrap() = "main".to_string();
+                        if let Ok(mut last) = app_h.state::<LastFocusedWindow>().0.lock() {
+                            *last = "main".to_string();
+                        }
                     }
                 });
             }
@@ -606,8 +626,12 @@ pub fn run() {
             // Route all menu events to the last-focused window.
             {
                 app.on_menu_event(move |app2, event| {
-                    let id     = event.id().as_ref().to_string();
-                    let target = app2.state::<LastFocusedWindow>().0.lock().unwrap().clone();
+                    let id = event.id().as_ref().to_string();
+                    let target = if let Ok(last) = app2.state::<LastFocusedWindow>().0.lock() {
+                        last.clone()
+                    } else {
+                        "main".to_string()
+                    };
                     if id == "open-manual" {
                         tauri_plugin_opener::open_url("https://peartree.live/manual", None::<&str>).ok();
                         return;
@@ -639,8 +663,9 @@ pub fn run() {
                 if let Some(url) = urls.into_iter().next() {
                     if let Ok(path) = url.to_file_path() {
                         let path_str = path.to_string_lossy().to_string();
-                        app.state::<PendingFiles>().0.lock().unwrap()
-                            .insert("main".to_string(), path_str);
+                        if let Ok(mut pending) = app.state::<PendingFiles>().0.lock() {
+                            pending.insert("main".to_string(), path_str);
+                        }
                     }
                 }
             }
@@ -653,25 +678,26 @@ pub fn run() {
             #[cfg(target_os = "windows")]
             {
                 let pending_state = app.state::<PendingFiles>();
-                let mut pending = pending_state.0.lock().unwrap();
-                if !pending.contains_key("main") {
-                    if let Some(arg) = std::env::args().nth(1) {
-                        // Validate and normalize the path before storing
-                        let path = std::path::Path::new(&arg);
-                        if path.is_file() {
-                            // Convert to absolute path and normalize (handles ., .., \\?\, etc.)
-                            if let Ok(canonical) = path.canonicalize() {
-                                if let Some(path_str) = canonical.to_str() {
-                                    eprintln!("[Windows] Storing pending file: {}", path_str);
-                                    pending.insert("main".to_string(), path_str.to_string());
+                if let Ok(mut pending) = pending_state.0.lock() {
+                    if !pending.contains_key("main") {
+                        if let Some(arg) = std::env::args().nth(1) {
+                            // Validate and normalize the path before storing
+                            let path = std::path::Path::new(&arg);
+                            if path.is_file() {
+                                // Convert to absolute path and normalize (handles ., .., \\?\, etc.)
+                                if let Ok(canonical) = path.canonicalize() {
+                                    if let Some(path_str) = canonical.to_str() {
+                                        eprintln!("[Windows] Storing pending file: {}", path_str);
+                                        pending.insert("main".to_string(), path_str.to_string());
+                                    } else {
+                                        eprintln!("[Windows] Warning: file path contains invalid UTF-8: {:?}", canonical);
+                                    }
                                 } else {
-                                    eprintln!("[Windows] Warning: file path contains invalid UTF-8: {:?}", canonical);
+                                    eprintln!("[Windows] Warning: failed to canonicalize path: {}", arg);
                                 }
                             } else {
-                                eprintln!("[Windows] Warning: failed to canonicalize path: {}", arg);
+                                eprintln!("[Windows] Ignoring non-file argument: {}", arg);
                             }
-                        } else {
-                            eprintln!("[Windows] Ignoring non-file argument: {}", arg);
                         }
                     }
                 }
