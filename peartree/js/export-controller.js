@@ -50,6 +50,13 @@ export function createExportController({
 }) {
   const $ = id => root.querySelector('#' + id);
 
+  const _tipNameForSelection = (node, sel) => {
+    const renderer = getRenderer();
+    if (sel === '__as_displayed__') return renderer._tipLabelCopyName?.(node) ?? node.name ?? node.id ?? '';
+    if (sel === 'name' || sel === 'names') return node.name ?? node.id ?? '';
+    return renderer._labelText?.(node, sel, renderer._tipLabelDecimalPlaces ?? null, null) ?? '';
+  };
+
   // ── Save-handler slot for tree export ──────────────────────────────────────
   let _exportSaveHandler = null;
 
@@ -273,12 +280,6 @@ export function createExportController({
         else if (node.children) node.children.forEach(c => stack.push(c));
       }
       return tips.filter(n => subtreeSet.has(n.id));
-    };
-
-    const _tipNameForSelection = (node, sel) => {
-      if (sel === '__as_displayed__') return renderer._tipLabelCopyName?.(node) ?? node.name ?? node.id ?? '';
-      if (sel === 'name' || sel === 'names') return node.name ?? node.id ?? '';
-      return renderer._labelText?.(node, sel, renderer._tipLabelDecimalPlaces ?? null, null) ?? '';
     };
 
     const _syncWarningForSelector = (selectorId, warnId, csvOnly = false) => {

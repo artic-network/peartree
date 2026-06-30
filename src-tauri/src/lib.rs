@@ -2,13 +2,12 @@ use tauri::{
     menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu},
     Emitter, EventTarget, Manager,
 };
-use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_dialog::DialogExt;
 use base64::engine::{Engine as _, general_purpose::STANDARD as BASE64};
 use std::collections::HashMap;
 use std::sync::{
     atomic::{AtomicU32, Ordering},
-    Mutex,
+    Mutex, OnceLock,
 };
 
 /// Managed state: maps command-id strings to their live MenuItem handles.
@@ -30,6 +29,13 @@ struct PendingUpdate(Mutex<Option<tauri_plugin_updater::Update>>);
 /// Updated in Rust via win.on_window_event(Focused(true)) so it fires on
 /// native OS window activation (reliable on macOS, unlike JS onFocusChanged).
 struct LastFocusedWindow(Mutex<String>);
+
+/// Paths received from macOS OpenDocuments before managed state is ready.
+static EARLY_OPENED_PATHS: OnceLock<Mutex<Vec<String>>> = OnceLock::new();
+
+fn early_opened_paths() -> &'static Mutex<Vec<String>> {
+    EARLY_OPENED_PATHS.get_or_init(|| Mutex::new(Vec::new()))
+}
 
 /// Build the application menu and return a (Menu, item-map) pair.
 /// On macOS the menu is app-wide (window.set_menu is unsupported),
@@ -472,30 +478,34 @@ fn new_window(app: tauri::AppHandle, file_path: Option<String>) -> Result<(), St
     Ok(())
 }
 
-/// Open a file in a fresh PearTree window (multi-document behaviour).
-/// If the file was already captured as the cold-start pending file for `main`,
-/// skip creating a duplicate window.
-fn open_path_in_new_window(app: &tauri::AppHandle, path_str: String) {
-    let is_main_startup_file = if let Ok(pending) = app.state::<PendingFiles>().0.lock() {
-        pending.get("main").map(|p| p == &path_str).unwrap_or(false)
-    } else {
-        false
-    };
-    if is_main_startup_file {
-        return;
-    }
-    if let Err(e) = new_window(app.clone(), Some(path_str)) {
-        eprintln!("[PearTree] Failed to open window for file: {e}");
-    }
-}
-
 #[cfg(target_os = "macos")]
 fn run_app_event_loop(app: tauri::App) {
     app.run(|app_handle, event| {
         if let tauri::RunEvent::Opened { urls } = event {
             for url in urls {
                 if let Ok(path) = url.to_file_path() {
-                    open_path_in_new_window(app_handle, path.to_string_lossy().to_string());
+                    let path_str = path.to_string_lossy().to_string();
+                    // Queue the path for JS-side pickup via take_pending_file().
+                    // This avoids emitting into webviews from OpenDocuments
+                    // handling, which can race during startup on macOS.
+                    let mut target = "main".to_string();
+                    if let Some(last_state) = app_handle.try_state::<LastFocusedWindow>() {
+                        if let Ok(last) = last_state.0.lock() {
+                            target = last.clone();
+                        }
+                    }
+
+                    if app_handle.get_webview_window(&target).is_none() {
+                        target = "main".to_string();
+                    }
+
+                    if let Some(pending_state) = app_handle.try_state::<PendingFiles>() {
+                        if let Ok(mut pending) = pending_state.0.lock() {
+                            pending.insert(target, path_str);
+                        }
+                    } else if let Ok(mut early) = early_opened_paths().lock() {
+                        early.push(path_str);
+                    }
                 }
             }
         }
@@ -585,7 +595,6 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![set_menu_item_enabled, set_menu_item_text, pick_tree_file, pick_annot_file, save_file, read_file_content, new_window, take_pending_file, trigger_print, check_for_updates, install_update])
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             // ── Main window + app-wide menu (macOS) ─────────────────────────
@@ -610,6 +619,18 @@ pub fn run() {
             app.manage(PendingUpdate(Mutex::new(None)));
             app.manage(MenuItems(Mutex::new(item_map)));
             app.manage(LastFocusedWindow(Mutex::new("main".to_string())));
+
+            // Drain macOS OpenDocuments paths captured before state was ready.
+            if let Ok(mut early) = early_opened_paths().lock() {
+                if !early.is_empty() {
+                    if let Ok(mut pending) = app.state::<PendingFiles>().0.lock() {
+                        for path in early.drain(..) {
+                            // Last one wins if multiple files arrive during startup.
+                            pending.insert("main".to_string(), path);
+                        }
+                    }
+                }
+            }
 
             // Track focus on the main window.
             {
@@ -653,28 +674,9 @@ pub fn run() {
                     }
                 });
             }
-            // Check whether the app was launched by opening a file (drag-to-icon,
-            // "Open With", double-click).  get_current() reads the launch URL
-            // synchronously in setup — before the window's JS has a chance to call
-            // take_pending_file — so this is the only race-free place to capture it.
-            // We store it in PendingFiles["main"] so the startup take_pending_file
-            // invocation in peartree-tauri.js picks it up.
-            if let Ok(Some(urls)) = app.deep_link().get_current() {
-                if let Some(url) = urls.into_iter().next() {
-                    if let Ok(path) = url.to_file_path() {
-                        let path_str = path.to_string_lossy().to_string();
-                        if let Ok(mut pending) = app.state::<PendingFiles>().0.lock() {
-                            pending.insert("main".to_string(), path_str);
-                        }
-                    }
-                }
-            }
-
             // Windows file associations launch a fresh process with the file path
             // as the first command-line argument (e.g. `peartree.exe file.tree`).
-            // The deep-link plugin does not intercept this, so we read args() here
-            // as a fallback.  Only store the path when PendingFiles["main"] was not
-            // already populated by the deep-link handler above.
+            // Capture that path as a fallback startup file for the main window.
             #[cfg(target_os = "windows")]
             {
                 let pending_state = app.state::<PendingFiles>();
@@ -700,7 +702,7 @@ pub fn run() {
                             }
                         }
                     }
-                }
+                };
             }
 
             Ok(())

@@ -25,6 +25,7 @@ import { setupTauriAdapter } from '@artic-network/pearcore/pearcore-tauri.js';
 
   const app      = window.peartree;
   const registry = app.commands;
+  let pendingFileLoadInProgress = false;
 
   // ── Generic Tauri adapter: save dialogs, print, menu sync, updates ─────
   const { invoke, currentWindow } = await setupTauriAdapter({
@@ -71,37 +72,48 @@ import { setupTauriAdapter } from '@artic-network/pearcore/pearcore-tauri.js';
     }
   };
 
-  // ─── Pending file (new window opened for a specific file) ───────────────
-  // When Rust creates a new window to open a file it stores the path
-  // server-side keyed by window label. We retrieve and load it on startup.
-  try {
-    const pending = await invoke('take_pending_file');
-    if (pending) {
-      try {
-        const content = await invoke('read_file_content', { path: pending });
-        const name = pending.split(/[\\/]/).pop() || 'tree';
-        // Close modal if it was opened, hide empty state
-        app.closeModal();
-        const emptyState = document.getElementById('empty-state');
-        if (emptyState) emptyState.classList.add('hidden');
-        await app.loadTree(content, name);
-      } catch (fileErr) {
-        console.error('Failed to read pending file:', fileErr);
-        // Ensure UI is in a recoverable state
-        app.closeModal();
-        const emptyState = document.getElementById('empty-state');
-        if (emptyState) emptyState.classList.remove('hidden');
-        // Show error to user
-        const errorMsg = fileErr.message ?? String(fileErr);
-        app.showErrorDialog(`Failed to open file: ${errorMsg}`);
-      }
+  const handleIncomingFilePath = async (filePath) => {
+    if (!filePath) return;
+    if (app.hasTree) {
+      invoke('new_window', { filePath }).catch(err => console.error('new_window failed:', err));
+      return;
     }
-  } catch (err) {
-    console.error('Failed to load pending file:', err);
-    // Non-file-reading errors (e.g., take_pending_file failed) - recoverable
-    const emptyState = document.getElementById('empty-state');
-    if (emptyState) emptyState.classList.remove('hidden');
-  }
+
+    try {
+      app.closeModal();
+      const emptyState = document.getElementById('empty-state');
+      if (emptyState) emptyState.classList.add('hidden');
+
+      const content = await invoke('read_file_content', { path: filePath });
+      const name = filePath.split(/[\\/]/).pop() || 'tree';
+      await app.loadTree(content, name);
+    } catch (err) {
+      const emptyState = document.getElementById('empty-state');
+      if (emptyState) emptyState.classList.remove('hidden');
+      app.showErrorDialog(err.message ?? String(err));
+    }
+  };
+
+  const consumePendingFile = async () => {
+    if (pendingFileLoadInProgress) return;
+    pendingFileLoadInProgress = true;
+    try {
+      const pending = await invoke('take_pending_file');
+      await handleIncomingFilePath(pending);
+    } catch (err) {
+      console.error('Failed to load pending file:', err);
+      const emptyState = document.getElementById('empty-state');
+      if (emptyState) emptyState.classList.remove('hidden');
+    } finally {
+      pendingFileLoadInProgress = false;
+    }
+  };
+
+  // Pick up startup and subsequent pending files queued by Rust.
+  await consumePendingFile();
+  setInterval(() => {
+    consumePendingFile();
+  }, 1200);
 
   // ── Drag-drop onto the window (Tauri intercepts drag events before WebView) ──
   // When a file is dragged onto a Tauri window, WKWebView never sees the HTML5
@@ -141,28 +153,6 @@ import { setupTauriAdapter } from '@artic-network/pearcore/pearcore-tauri.js';
   // so each window only handles events targeted at it (not all windows).
   await currentWindow.listen('open-file', async (event) => {
     const filePath = event.payload;
-    if (!filePath) return;
-
-    if (app.hasTree) {
-      // Open the file in a fresh window.
-      invoke('new_window', { filePath }).catch(err => console.error('new_window failed:', err));
-      return;
-    }
-
-    try {
-      // Close modal if open, hide empty state before loading
-      app.closeModal();
-      const emptyState = document.getElementById('empty-state');
-      if (emptyState) emptyState.classList.add('hidden');
-      
-      const content = await invoke('read_file_content', { path: filePath });
-      const name = filePath.split(/[\\/]/).pop() || 'tree';
-      await app.loadTree(content, name);
-    } catch (err) {
-      // Restore empty state on error
-      const emptyState = document.getElementById('empty-state');
-      if (emptyState) emptyState.classList.remove('hidden');
-      app.showErrorDialog(err.message ?? String(err));
-    }
+    await handleIncomingFilePath(filePath);
   });
 })();

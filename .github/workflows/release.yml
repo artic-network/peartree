@@ -92,13 +92,14 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-          # macOS code signing & notarization – set these secrets in GitHub repo settings.
-          # Without them the macOS build will still succeed but will be unsigned.
+          # macOS code signing certificate (used when present).
           APPLE_CERTIFICATE: ${{ secrets.PROD_MACOS_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.PROD_MACOS_CERTIFICATE_PWD }}
-          APPLE_ID: ${{ secrets.PROD_MACOS_NOTARIZATION_APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.PROD_MACOS_NOTARIZATION_PWD }}
-          APPLE_TEAM_ID: ${{ secrets.PROD_MACOS_NOTARIZATION_TEAM_ID }}
+          # macOS notarization can be toggled with a repository variable:
+          # NOTARIZE_MACOS=true|false (default false when unset).
+          APPLE_ID: ${{ vars.NOTARIZE_MACOS == 'true' && secrets.PROD_MACOS_NOTARIZATION_APPLE_ID || '' }}
+          APPLE_PASSWORD: ${{ vars.NOTARIZE_MACOS == 'true' && secrets.PROD_MACOS_NOTARIZATION_PWD || '' }}
+          APPLE_TEAM_ID: ${{ vars.NOTARIZE_MACOS == 'true' && secrets.PROD_MACOS_NOTARIZATION_TEAM_ID || '' }}
           # Tauri updater signing – generate keys with: npx tauri signer generate
           # Add the private key + password as GitHub secrets.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
