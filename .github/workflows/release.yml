@@ -89,11 +89,33 @@ jobs:
         run: node scripts/set-version.js ${{ github.ref_name }}
 
       - name: Build and upload
+        if: matrix.platform != 'macos-latest' || vars.ENABLE_MACOS_NOTARIZATION != 'true'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-          # macOS code signing & notarization – set these secrets in GitHub repo settings.
-          # Without them the macOS build will still succeed but will be unsigned.
+          # Keep macOS code signing enabled when the certificate is present, but make
+          # notarization opt-in. Apple's notarization API can reject otherwise valid
+          # release builds when developer-account agreements expire, which should not
+          # make the universal macOS build fail in CI.
+          APPLE_CERTIFICATE: ${{ secrets.PROD_MACOS_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.PROD_MACOS_CERTIFICATE_PWD }}
+          # Tauri updater signing – generate keys with: npx tauri signer generate
+          # Add the private key + password as GitHub secrets.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # Passed to Rust via option_env!() so the About box shows the full tag.
+          PEARTREE_VERSION_TAG: ${{ github.ref_name }}
+        with:
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+          args: ${{ matrix.args }}
+
+      - name: Build and upload with notarization
+        if: matrix.platform == 'macos-latest' && vars.ENABLE_MACOS_NOTARIZATION == 'true'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          # Enable notarization explicitly with ENABLE_MACOS_NOTARIZATION=true once the
+          # Apple developer account agreements are current again.
           APPLE_CERTIFICATE: ${{ secrets.PROD_MACOS_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.PROD_MACOS_CERTIFICATE_PWD }}
           APPLE_ID: ${{ secrets.PROD_MACOS_NOTARIZATION_APPLE_ID }}
