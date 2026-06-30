@@ -30,6 +30,16 @@ struct PendingUpdate(Mutex<Option<tauri_plugin_updater::Update>>);
 /// native OS window activation (reliable on macOS, unlike JS onFocusChanged).
 struct LastFocusedWindow(Mutex<String>);
 
+#[cfg(target_os = "windows")]
+fn with_pending_files<T>(
+    app: &tauri::AppHandle,
+    f: impl FnOnce(&mut HashMap<String, String>) -> T,
+) -> Option<T> {
+    let state = app.try_state::<PendingFiles>()?;
+    let mut pending = state.0.lock().ok()?;
+    Some(f(&mut pending))
+}
+
 /// Paths received from macOS OpenDocuments before managed state is ready.
 static EARLY_OPENED_PATHS: OnceLock<Mutex<Vec<String>>> = OnceLock::new();
 
@@ -679,8 +689,7 @@ pub fn run() {
             // Capture that path as a fallback startup file for the main window.
             #[cfg(target_os = "windows")]
             {
-                let pending_state = app.state::<PendingFiles>();
-                if let Ok(mut pending) = pending_state.0.lock() {
+                let _ = with_pending_files(app.handle(), |pending| {
                     if !pending.contains_key("main") {
                         if let Some(arg) = std::env::args().nth(1) {
                             // Validate and normalize the path before storing
@@ -702,7 +711,7 @@ pub fn run() {
                             }
                         }
                     }
-                };
+                });
             }
 
             Ok(())
