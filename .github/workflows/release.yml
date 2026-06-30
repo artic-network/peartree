@@ -125,10 +125,21 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
           RELEASE_ID: ${{ needs.create-release.outputs.release_id }}
         run: |
+          set -euo pipefail
+
           # Find the latest.json asset that tauri-action uploaded
           ASSET_ID=$(gh api \
             /repos/${{ github.repository }}/releases/${RELEASE_ID}/assets \
             --jq '.[] | select(.name == "latest.json") | .id')
+
+          if [ -z "${ASSET_ID}" ]; then
+            echo "latest.json not found on release ${RELEASE_ID}. Available assets:" >&2
+            gh api \
+              /repos/${{ github.repository }}/releases/${RELEASE_ID}/assets \
+              --jq '.[] | "- " + .name' >&2 || true
+            echo "Skipping darwin-universal patch because latest.json is missing." >&2
+            exit 0
+          fi
 
           # Download it (auth required for draft releases)
           curl -sSfL \
