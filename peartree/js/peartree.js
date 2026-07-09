@@ -4709,6 +4709,26 @@ async function _initCore(root = document) {
       tipLabelShow.disabled = false;
       tipLabelControlsEl.style.display = tipLabelShow.value === 'off' ? 'none' : '';
 
+      // Extra tip label shows (Labels 2-4): option[0]='off', option[1]='name',
+      // then dynamic tip annotations.
+      {
+        const _extraEls = [tipLabel2ShowEl, tipLabel3ShowEl, tipLabel4ShowEl];
+        for (const _el of _extraEls) {
+          if (!_el) continue;
+          while (_el.options.length > 2) _el.remove(2);
+          for (const [name, def] of schema) {
+            if (name === 'user_colour') continue;
+            if (def.dataType === 'list') continue;
+            if (def.groupMember) continue;
+            if (!def.onTips) continue;
+            const opt = document.createElement('option');
+            opt.value = name; opt.textContent = def.label ?? name;
+            _el.appendChild(opt);
+          }
+          _el.disabled = false;
+        }
+      }
+
       // Node-label-show: first option is '' (none); then all node annotations.
       while (nodeLabelShowEl.options.length > 1) nodeLabelShowEl.remove(1);
       for (const [name, def] of schema) {
@@ -4828,6 +4848,24 @@ async function _initCore(root = document) {
       legend4AnnotEl.value       = _hasOpt(legend4AnnotEl,       _eff.legendAnnotation4)     ? _eff.legendAnnotation4     : '';
       tipLabelShow.value  = _normalizeTipNameValue(_hasOpt(tipLabelShow,  _eff.tipLabelShow) ? _eff.tipLabelShow : 'name');
       tipLabelControlsEl.style.display = tipLabelShow.value === 'off' ? 'none' : '';
+      {
+        const _extraShows = [tipLabel2ShowEl, tipLabel3ShowEl, tipLabel4ShowEl];
+        const _extraSettings = Array.isArray(_eff.tipLabelsExtra) ? _eff.tipLabelsExtra : [];
+        _extraShows.forEach((el, i) => {
+          if (!el) return;
+          const raw = _extraSettings[i];
+          const key = _normalizeTipNameValue(raw);
+          el.value = _hasOpt(el, key) ? key : 'off';
+        });
+      }
+      {
+        const _layoutEls = [tipLabel2LayoutEl, tipLabel3LayoutEl, tipLabel4LayoutEl];
+        const _layoutSettings = Array.isArray(_eff.tipLabelsExtraLayouts) ? _eff.tipLabelsExtraLayouts : [];
+        _layoutEls.forEach((el, i) => {
+          if (!el || !_layoutSettings[i]) return;
+          el.value = _layoutSettings[i];
+        });
+      }
       nodeLabelShowEl.value = _hasOpt(nodeLabelShowEl, _eff.nodeLabelAnnotation) ? _eff.nodeLabelAnnotation : '';
       branchLabelShowEl.value = _hasOpt(branchLabelShowEl, _eff.branchLabelAnnotation) ? _eff.branchLabelAnnotation : '';
       if (nodeLabelColourBy)   nodeLabelColourBy.value   = _hasOpt(nodeLabelColourBy,   _eff.nodeLabelColourBy)   ? _eff.nodeLabelColourBy   : 'user_colour';
