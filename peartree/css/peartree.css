@@ -115,6 +115,22 @@
   align-items: stretch;
   overflow: hidden;
 }
+/* Inner wrapper holds tree + legend canvases together.
+   margin-left/right track pinned side-panel widths via CSS vars set by the
+   stack manager, so both tree and legend shift inward as one unit. */
+#canvas-inner-wrapper {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  overflow: hidden;
+  margin-right: var(--pt-side-right-w, 0px);
+  margin-left: var(--pt-side-left-w, 0px);
+  transition: margin-left 0.22s cubic-bezier(.4,0,.2,1),
+              margin-right 0.22s cubic-bezier(.4,0,.2,1);
+}
 #tree-wrapper {
   flex: 1;
   position: relative;
@@ -214,8 +230,8 @@ canvas.grabbing   { cursor: grabbing; }
   overflow: hidden;
   min-width: 0;
   position: relative;
-  transition: padding-left 0.22s cubic-bezier(.4,0,.2,1),
-              padding-right 0.22s cubic-bezier(.4,0,.2,1);
+  /* padding-left/right transitions removed: side-panel offset is now handled
+     by #canvas-inner-wrapper margin-left/right. */
 }
 #legend-right-wrapper {
   display: none;

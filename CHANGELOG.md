@@ -1,5 +1,10 @@
 # Change Log
 
+## v1.3.1
+
+- Fixed issue with not loading secondary tip label choices
+- Fixed issue with RTT panel obscuring legend when pinned
+
 ## v1.3.0
 
 - Add per-annotation palette reverse flags, with a Reverse toggle in the Configure Palette dialog.

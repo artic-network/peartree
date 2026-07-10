@@ -2750,33 +2750,35 @@ function _buildToolbar(tbSections) {
 function _buildCanvasContainer() {
   return `
 <div id="canvas-container">
-  <div id="tree-axis-wrapper">
-    <div id="tree-wrapper">
-      <div id="empty-state">
-        <div style="text-align:center">
-          <img src="img/peartree.svg" class="pt-empty-icon" alt="PearTree">
-          <p class="pt-empty-title">No tree loaded</p>
-          <p class="pt-empty-hint" id="empty-state-hint">Drag a NEXUS or Newick file here</p>
-          <p id="empty-state-error" style="display:none;color:var(--pt-red);font-size:0.85rem;margin:0.5rem 1rem 0"></p>
-          <button class="btn btn-sm btn-outline-primary" id="empty-state-open-btn"><i class="bi bi-folder2-open me-1"></i>Open…</button>
-          <button class="btn btn-sm btn-outline-secondary ms-2" id="empty-state-example-btn"><i class="bi bi-tree me-1"></i>Example…</button>
+  <div id="canvas-inner-wrapper">
+    <div id="tree-axis-wrapper">
+      <div id="tree-wrapper">
+        <div id="empty-state">
+          <div style="text-align:center">
+            <img src="img/peartree.svg" class="pt-empty-icon" alt="PearTree">
+            <p class="pt-empty-title">No tree loaded</p>
+            <p class="pt-empty-hint" id="empty-state-hint">Drag a NEXUS or Newick file here</p>
+            <p id="empty-state-error" style="display:none;color:var(--pt-red);font-size:0.85rem;margin:0.5rem 1rem 0"></p>
+            <button class="btn btn-sm btn-outline-primary" id="empty-state-open-btn"><i class="bi bi-folder2-open me-1"></i>Open…</button>
+            <button class="btn btn-sm btn-outline-secondary ms-2" id="empty-state-example-btn"><i class="bi bi-tree me-1"></i>Example…</button>
+          </div>
         </div>
+        <div id="loading" class="hidden"><div class="pt-spinner"></div><p id="loading-msg">Fetching tree file…</p></div>
+        <div id="error"></div>
+        <canvas id="tree-canvas"></canvas>
+        <div id="tooltip"></div>
       </div>
-      <div id="loading" class="hidden"><div class="pt-spinner"></div><p id="loading-msg">Fetching tree file…</p></div>
-      <div id="error"></div>
-      <canvas id="tree-canvas"></canvas>
-      <div id="tooltip"></div>
+      <div id="tree-scroll-y"><div id="tree-scroll-y-thumb"></div></div>
+      <div id="axis-wrapper">
+        <canvas id="axis-canvas"></canvas>
+      </div>
     </div>
-    <div id="tree-scroll-y"><div id="tree-scroll-y-thumb"></div></div>
-    <div id="axis-wrapper">
-      <canvas id="axis-canvas"></canvas>
+    <div id="legend-right-wrapper">
+      <canvas id="legend-right-canvas" class="pt-legend-canvas right"></canvas>
+      <canvas id="legend2-right-canvas" class="pt-legend-canvas right"></canvas>
+      <canvas id="legend3-right-canvas" class="pt-legend-canvas right"></canvas>
+      <canvas id="legend4-right-canvas" class="pt-legend-canvas right"></canvas>
     </div>
-  </div>
-  <div id="legend-right-wrapper">
-    <canvas id="legend-right-canvas" class="pt-legend-canvas right"></canvas>
-    <canvas id="legend2-right-canvas" class="pt-legend-canvas right"></canvas>
-    <canvas id="legend3-right-canvas" class="pt-legend-canvas right"></canvas>
-    <canvas id="legend4-right-canvas" class="pt-legend-canvas right"></canvas>
   </div>
   <div id="data-table-panel">
     <div id="data-table-resize-handle"></div>

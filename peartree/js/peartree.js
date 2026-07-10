@@ -2141,9 +2141,9 @@ async function _initCore(root = document) {
     const caw = $('tree-axis-wrapper');
     if (caw) {
       caw.style.paddingTop    = _px(s.treePaddingTop);
-      caw.style.paddingRight  = `calc(${_pxOr0(s.treePaddingRight)} + var(--pt-side-right-w, 0px))`;
+      caw.style.paddingRight  = _px(s.treePaddingRight);
       caw.style.paddingBottom = _px(s.treePaddingBottom);
-      caw.style.paddingLeft   = `calc(${_pxOr0(s.treePaddingLeft)} + var(--pt-side-left-w, 0px))`;
+      caw.style.paddingLeft   = _px(s.treePaddingLeft);
     }
     const lrw = $('legend-right-wrapper');
     if (lrw) {
@@ -3579,7 +3579,14 @@ async function _initCore(root = document) {
     },
     onAutoResize: () => _resizeDuringTransition(),
     onWidthChange: () => {
+      // Suppress the CSS margin transition on #canvas-inner-wrapper so the
+      // canvas snaps instantly to the new size after a drag-handle resize.
+      const _ciw = $('canvas-inner-wrapper');
+      if (_ciw) _ciw.style.transition = 'none';
       _syncSidePanelStack();
+      void _ciw?.offsetWidth; // force layout reflow with updated margin
+      renderer?._resize?.();
+      requestAnimationFrame(() => { if (_ciw) _ciw.style.transition = ''; });
       saveSettings();
     },
     onRowSelect: (selectedIds) => {
@@ -3815,7 +3822,14 @@ async function _initCore(root = document) {
       saveSettings();
     },
     onWidthChange: () => {
+      // Suppress the CSS margin transition on #canvas-inner-wrapper so the
+      // canvas snaps instantly to the new size after a drag-handle resize.
+      const _ciw = $('canvas-inner-wrapper');
+      if (_ciw) _ciw.style.transition = 'none';
       _syncSidePanelStack();
+      void _ciw?.offsetWidth; // force layout reflow with updated margin
+      renderer?._resize?.();
+      requestAnimationFrame(() => { if (_ciw) _ciw.style.transition = ''; });
       saveSettings();
     },
     onStatsBoxCornerChange: () => saveSettings(),
