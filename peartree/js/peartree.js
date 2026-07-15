@@ -4397,7 +4397,9 @@ async function _initCore(root = document) {
         }
       } else {
         const trimmed = text.trim();
-        if (trimmed.startsWith('(')) {
+        // Accept a bare Newick string that starts with '(' directly, or one
+        // that has a leading [&R] / [&r] rooted flag before the opening '('.
+        if (trimmed.startsWith('(') || /^\[&[Rr]\]/.test(trimmed)) {
           parsedRoot = parseNewick(trimmed);
         } else {
           throw new Error('No trees found. File must be in NEXUS or Newick format.');
