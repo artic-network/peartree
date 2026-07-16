@@ -2011,7 +2011,8 @@ async function _initCore(root = document) {
       selectedNodeFillOpacity:   parseFloat(selectedNodeFillOpacitySlider.value),
       selectedNodeStrokeWidth:   parseFloat(selectedNodeStrokeWidthSlider.value),
       selectedNodeStrokeOpacity: parseFloat(selectedNodeStrokeOpacitySlider.value),
-      nodeBarsEnabled:    nodeBarsShowEl.value === 'on',
+      nodeBarsEnabled:    nodeBarsShowEl.value !== 'off',
+      nodeBarsHpdKey:     nodeBarsShowEl.value !== 'off' ? nodeBarsShowEl.value : null,
       nodeBarsColor:      nodeBarsColorEl.value,
       nodeBarsWidth:      parseInt(nodeBarsWidthSlider.value),
       nodeBarsFillOpacity:   parseFloat(nodeBarsFillOpacitySlider.value),
@@ -4078,6 +4079,37 @@ async function _initCore(root = document) {
   }
 
   /** Repopulate annotation dropdowns (tipColourBy, nodeColourBy, legendAnnotEl) after schema change. */
+  /**
+   * Repopulate the node-bars Show dropdown with one option per available HPD
+   * interval (from the height annotation group's hpds array), plus a static
+   * "Off" entry.  `preferred` is the value to restore: an HPD annotation key,
+   * 'off', or the legacy 'on' (mapped to the first/preferred HPD for compat).
+   */
+  function _populateNodeBarsShowOptions(schema, preferred) {
+    if (!nodeBarsShowEl) return;
+    const prev = preferred ?? nodeBarsShowEl.value;
+    // Remove all options after 'Off' (index 0).
+    while (nodeBarsShowEl.options.length > 1) nodeBarsShowEl.remove(1);
+    const hpdDef = schema?.get('height');
+    if (hpdDef?.group?.hpds?.length) {
+      for (const { pct, key } of hpdDef.group.hpds) {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = `${pct}% HPD`;
+        nodeBarsShowEl.appendChild(opt);
+      }
+    }
+    // Restore: valid key wins; legacy 'on' maps to first HPD; otherwise 'off'.
+    const hasOpt = (v) => [...nodeBarsShowEl.options].some(o => o.value === v);
+    if (hasOpt(prev)) {
+      nodeBarsShowEl.value = prev;
+    } else if (prev === 'on' && nodeBarsShowEl.options.length > 1) {
+      nodeBarsShowEl.value = nodeBarsShowEl.options[1].value;  // preferred HPD
+    } else {
+      nodeBarsShowEl.value = 'off';
+    }
+  }
+
   function _refreshAnnotationUIs(schema, { autoSelectDate = true } = {}) {
     // Re-inject built-in geometric stats so they reflect the current tree and
     // calibration state.  This is idempotent — removes old entries first.
@@ -4293,7 +4325,8 @@ async function _initCore(root = document) {
     const hasNodeBars = !!(heightDef && heightDef.group && heightDef.group.hpd);
     if (nodeBarsControlsEl) nodeBarsControlsEl.style.display = hasNodeBars ? '' : 'none';
     if (nodeBarsUnavailEl)  nodeBarsUnavailEl.style.display  = hasNodeBars ? 'none' : 'block';
-    if (!hasNodeBars && nodeBarsShowEl.value === 'on') {
+    _populateNodeBarsShowOptions(schema);
+    if (!hasNodeBars && nodeBarsShowEl.value !== 'off') {
       nodeBarsShowEl.value = 'off';
       if (renderer) { renderer.setSettings(_buildRendererSettings()); renderer._dirty = true; }
     }
@@ -4397,7 +4430,9 @@ async function _initCore(root = document) {
         }
       } else {
         const trimmed = text.trim();
-        if (trimmed.startsWith('(')) {
+        // Accept a bare Newick string that starts with '(' directly, or one
+        // that has a leading [&R] / [&r] rooted flag before the opening '('.
+        if (trimmed.startsWith('(') || /^\[&[Rr]\]/.test(trimmed)) {
           parsedRoot = parseNewick(trimmed);
         } else {
           throw new Error('No trees found. File must be in NEXUS or Newick format.');
@@ -4900,7 +4935,8 @@ async function _initCore(root = document) {
         const _hasNB = !!(_hDef && _hDef.group && _hDef.group.hpd);
         if (nodeBarsControlsEl) nodeBarsControlsEl.style.display = _hasNB ? '' : 'none';
         if (nodeBarsUnavailEl)  nodeBarsUnavailEl.style.display  = _hasNB ? 'none' : 'block';
-        if (!_hasNB && nodeBarsShowEl && nodeBarsShowEl.value === 'on') nodeBarsShowEl.value = 'off';
+        _populateNodeBarsShowOptions(schema, _eff.nodeBarsEnabled);
+        if (!_hasNB) nodeBarsShowEl.value = 'off';
       }
       // Apply any per-annotation palette overrides from file settings first,
       // then from the persistent in-memory map (file settings take priority).
@@ -6565,14 +6601,44 @@ async function _initCore(root = document) {
       if (annotEntries.length > 0) {
         rows.push([null, null]); // divider
         // Helper: format a single annotation value for display.
-        function fmtAnnot(v) {
+        function fmtAnnot(v, def) {
           if (v === null || v === undefined) return '—';
           if (Array.isArray(v)) {
+            // Interval: [lower, upper] pair — show as bracket notation.
+            if ((def?.dataType === 'interval') && v.length === 2 &&
+                typeof v[0] === 'number' && typeof v[1] === 'number') {
+              return `[${v[0].toFixed(4)}, ${v[1].toFixed(4)}]`;
+            }
             return '{' + v.map(x => (typeof x === 'number' ? x.toFixed(6) : String(x))).join(', ') + '}';
           } else if (typeof v === 'number') {
             return v.toFixed(6);
           }
           return String(v);
+        }
+        // Helper: emit sub-rows for a BEAST annotation group.
+        function emitGroupRows(def, annots, emitted) {
+          const SUB_LABELS = { median: 'median', range: 'range', mean: 'mean', lower: 'lower', upper: 'upper' };
+          for (const [groupKey, subAnnotName] of Object.entries(def.group)) {
+            // 'hpds' is a metadata array and 'hpd' is the preferred-key shortcut — skip both.
+            if (groupKey === 'hpds' || groupKey === 'hpd') continue;
+            if (typeof subAnnotName !== 'string') continue;
+            if (Object.prototype.hasOwnProperty.call(annots, subAnnotName)) {
+              const subDef = schema?.get(subAnnotName);
+              const label = SUB_LABELS[groupKey] || subDef?.label || groupKey;
+              rows.push(['__sub__', [label, fmtAnnot(annots[subAnnotName], subDef)]]);
+              emitted.add(subAnnotName);
+            }
+          }
+          // Show each HPD interval as its own sub-row using the percentage label.
+          if (Array.isArray(def.group.hpds)) {
+            for (const { key } of def.group.hpds) {
+              if (Object.prototype.hasOwnProperty.call(annots, key)) {
+                const subDef = schema?.get(key);
+                rows.push(['__sub__', [subDef?.label ?? key, fmtAnnot(annots[key], subDef)]]);
+                emitted.add(key);
+              }
+            }
+          }
         }
         // Track emitted keys so group members aren't repeated after their base.
         const emitted = new Set();
@@ -6583,23 +6649,16 @@ async function _initCore(root = document) {
           if (def && def.groupMember) continue;
           // 'Name' annotation for internal nodes is shown at the top as an editable field.
           if (k === 'Name' && (!node.isTip || node.isCollapsed)) continue;
-          rows.push([def?.label ?? k, fmtAnnot(v)]);
+          rows.push([def?.label ?? k, fmtAnnot(v, def)]);
           emitted.add(k);
           // If this is a BEAST base annotation, show grouped sub-metrics indented.
           if (def && def.group) {
-            const SUB_LABELS = { median: 'median', hpd: '95% HPD', range: 'range', mean: 'mean', lower: 'lower', upper: 'upper' };
-            for (const [groupKey, subAnnotName] of Object.entries(def.group)) {
-              if (Object.prototype.hasOwnProperty.call(annots, subAnnotName)) {
-                rows.push(['__sub__', [SUB_LABELS[groupKey] || groupKey, fmtAnnot(annots[subAnnotName])]]);
-                emitted.add(subAnnotName);
-              }
-            }
+            emitGroupRows(def, annots, emitted);
           }
         }
         // Second pass: handle synthetic base keys (e.g. 'height' promoted from
         // 'height_mean') that are in the schema but not directly in node.annotations.
         if (schema) {
-          const SUB_LABELS = { median: 'median', hpd: '95% HPD', range: 'range', mean: 'mean', lower: 'lower', upper: 'upper' };
           for (const [k, def] of schema) {
             if (emitted.has(k)) continue;
             if (def.groupMember) continue;   // only base entries
@@ -6608,14 +6667,10 @@ async function _initCore(root = document) {
             // Use the _mean member's value as the primary displayed value.
             const meanKey = def.group.mean;
             if (!meanKey || !Object.prototype.hasOwnProperty.call(annots, meanKey)) continue;
-            rows.push([def?.label ?? k, fmtAnnot(annots[meanKey])]);
+            const meanDef = schema.get(meanKey);
+            rows.push([def?.label ?? k, fmtAnnot(annots[meanKey], meanDef)]);
             emitted.add(k);
-            for (const [groupKey, subAnnotName] of Object.entries(def.group)) {
-              if (Object.prototype.hasOwnProperty.call(annots, subAnnotName)) {
-                rows.push(['__sub__', [SUB_LABELS[groupKey] || groupKey, fmtAnnot(annots[subAnnotName])]]);
-                emitted.add(subAnnotName);
-              }
-            }
+            emitGroupRows(def, annots, emitted);
           }
         }
       }

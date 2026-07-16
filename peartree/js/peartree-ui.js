@@ -1228,7 +1228,7 @@ function _sectionNodeBars() {
             label: 'Show',
             options: [
               { value: 'off', label: 'Off' },
-              { value: 'on', label: 'On' },
+              // HPD interval options are added dynamically after tree load
             ],
           },
           {

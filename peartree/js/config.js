@@ -182,7 +182,7 @@ export const DEFAULT_SETTINGS = {
 
   // ── Node Bars ───────────────────────────────────────────────────────────────────────
   // (only shown when tree has 'height' group from BEAST)
-  nodeBarsEnabled:    'off',   // 'off' | 'on'
+  nodeBarsEnabled:    'off',   // 'off' | HPD annotation key (e.g. 'height_95%_HPD')
   nodeBarsLine:       'off',   // 'off' | 'mean' | 'median'
   nodeBarsRange:      'off',   // 'off' | 'on'
 

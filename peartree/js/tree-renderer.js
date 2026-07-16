@@ -2280,15 +2280,16 @@ export class TreeRenderer {
     const treeLeftPad   = barPad + stemWorld;
     const treeRightExt  = this.maxX;
 
-    // If axis bounds are explicitly provided, honor them directly on each side.
-    // Otherwise fall back to tree-derived auto bounds.
+    // If axis bounds are explicitly provided, honour them on each side.
+    // The tree's own bar/stem left-pad always takes precedence on the left so
+    // that node bars and the root stem are never clipped regardless of the
+    // axis range setting (e.g. forward-mode default left = 0).
     const hasAxisLeft   = this._axisWorldLeft  != null;
     const hasAxisRight  = this._axisWorldRight != null;
-    const effectiveLeftPad  = hasAxisLeft
-      ? Math.max(0, -this._axisWorldLeft)
-      : treeLeftPad;
+    const axisDerivedLeftPad = hasAxisLeft ? Math.max(0, -this._axisWorldLeft) : 0;
+    const effectiveLeftPad  = Math.max(treeLeftPad, axisDerivedLeftPad);
     const effectiveRightExt = hasAxisRight
-      ? Math.max(0, this._axisWorldRight)
+      ? Math.max(treeRightExt, this._axisWorldRight)
       : treeRightExt;
     const effectiveSpan = effectiveRightExt + effectiveLeftPad;
     const treeSpan = treeRightExt + treeLeftPad;
@@ -2345,8 +2346,8 @@ export class TreeRenderer {
   _nodeBarsLeftPad() {
     if (!this.nodes || !this._annotationSchema) return 0;
     const heightDef = this._annotationSchema.get('height');
-    if (!heightDef?.group?.hpd) return 0;
-    const hpdKey   = heightDef.group.hpd;
+    const hpdKey = this.nodeBarsHpdKey ?? heightDef?.group?.hpd;
+    if (!hpdKey) return 0;
     const rangeKey = (this.nodeBarsRange && heightDef.group.range) ? heightDef.group.range : null;
     // Use the absolute height of the layout root as the reference for HPD values.
     // For the full tree this equals this.maxX (min tip height = 0).
@@ -3686,9 +3687,8 @@ export class TreeRenderer {
     const schema = this._annotationSchema;
     if (!schema) return;
     const heightDef = schema.get('height');
-    if (!heightDef || !heightDef.group || !heightDef.group.hpd) return;
-
-    const hpdKey    = heightDef.group.hpd;     // e.g. 'height_95%_HPD'
+    const hpdKey = this.nodeBarsHpdKey ?? heightDef?.group?.hpd;
+    if (!heightDef || !hpdKey) return;
     const medianKey = heightDef.group.median;  // e.g. 'height_median'
     const rangeKey  = heightDef.group.range;   // e.g. 'height_range'
     // Use the absolute height of the layout root, not this.maxX, so that HPD
