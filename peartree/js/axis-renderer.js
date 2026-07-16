@@ -35,6 +35,7 @@ export class AxisRenderer {
     this._fontFamily    = 'monospace';
     this._typefaceKey   = null;
     this._typefaceStyle = null;
+    this._spacingRight  = 0;
 
     // Date-mode calibration: provided as a TreeCalibration instance via setCalibration().
     // _viewMinTipH tracks the minimum tip height in the current view (updated by setSubtreeParams).
@@ -63,6 +64,7 @@ export class AxisRenderer {
     this._axisFontSizeManual = false;  // true once setFontSize() has been called
     this._heightFormatter    = null;   // (v:number)=>string from annotation def.fmt, for non-date ticks
     this._spacingTop         = 3;      // gap (px) above the baseline line
+    this._layoutDebug        = false;
 
     // Shared axis math core (domain, transforms, tick proposals).
     this._axis = new Axis({ orientation: 'x', type: 'continuous' });
@@ -186,7 +188,7 @@ export class AxisRenderer {
    * Called every animation frame (from renderer._onViewChange).
    * Redraws if view state has changed.
    */
-  update(scaleX, offsetX, spacingLeft, labelRightPad, bgColor, fontSize, dpr = 1) {
+  update(scaleX, offsetX, spacingLeft, spacingRight, labelRightPad, bgColor, fontSize, dpr = 1) {
     if (!this._visible) return;
     const W = (this._canvas.parentElement?.clientWidth ?? this._canvas.clientWidth) || 0;
     if (W === 0) return;
@@ -212,13 +214,14 @@ export class AxisRenderer {
       this._ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${spacingLeft}|${labelRightPad}|${bgColor}|${this._fontSize}|${this._fontFamily}|${this._typefaceKey ?? ''}|${this._typefaceStyle ?? ''}|${this._axisColor ?? ''}|${this._axisLineWidth}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._calibration?.anchorDecYear ?? ''}|${this._calibration?.anchorH ?? ''}|${this._calibration?.rate ?? ''}|${this._viewMinTipH}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}|${this._dateFormat}|${this._direction}|${this._rangeLeft ?? ''}|${this._rangeRight ?? ''}`;
+    const hash = `${scaleX.toFixed(4)}|${offsetX.toFixed(2)}|${spacingLeft}|${spacingRight}|${labelRightPad}|${bgColor}|${this._fontSize}|${this._fontFamily}|${this._typefaceKey ?? ''}|${this._typefaceStyle ?? ''}|${this._axisColor ?? ''}|${this._axisLineWidth}|${W}|${H}|${this._timed}|${this._dateMode}|${this._rootHeight}|${this._calibration?.anchorDecYear ?? ''}|${this._calibration?.anchorH ?? ''}|${this._calibration?.rate ?? ''}|${this._viewMinTipH}|${this._majorInterval}|${this._minorInterval}|${this._majorLabelFormat}|${this._minorLabelFormat}|${this._dateFormat}|${this._direction}|${this._rangeLeft ?? ''}|${this._rangeRight ?? ''}|${this._layoutDebug}`;
     if (hash === this._lastHash) return;
     this._lastHash = hash;
 
     this._scaleX       = scaleX;
     this._offsetX      = offsetX;
     this._spacingLeft  = spacingLeft;
+    this._spacingRight = spacingRight;
     this._labelRightPad = labelRightPad;
     this._bgColor      = bgColor;
     this._W            = W;
@@ -270,6 +273,11 @@ export class AxisRenderer {
   setColor(hex) {
     this._axisColor = hex || null;
     this._lastHash  = '';
+  }
+
+  setLayoutDebug(enabled) {
+    this._layoutDebug = !!enabled;
+    this._lastHash = '';
   }
 
   /** Set the stroke width for ticks and the baseline (default 1). */
@@ -345,19 +353,20 @@ export class AxisRenderer {
     const scaleX      = view.scaleX      ?? this._scaleX;
     const offsetX     = view.offsetX     ?? this._offsetX;
     const spacingLeft = view.spacingLeft ?? this._spacingLeft;
+    const spacingRight = view.spacingRight ?? this._spacingRight;
     const fontSize    = view.fontSize    ?? this._fontSize;
-    if (!scaleX || !isFinite(scaleX) || !isFinite(offsetX) || !isFinite(spacingLeft)) {
+    if (!scaleX || !isFinite(scaleX) || !isFinite(offsetX) || !isFinite(spacingLeft) || !isFinite(spacingRight)) {
       return { left: 0, right: 0, top: 0, bottom: 0 };
     }
 
     this._scaleX = scaleX;
     this._offsetX = offsetX;
     this._spacingLeft = spacingLeft;
+    this._spacingRight = spacingRight;
     this._syncAxisCoreState();
 
-    const { leftVal, rightVal } = this._axis.getValueDomain();
-    const plotLeft  = this._valToScreenX(leftVal);
-    const plotRight = this._valToScreenX(rightVal);
+    const plotLeft  = spacingLeft;
+    const plotRight = W - spacingRight;
     if (!isFinite(plotLeft) || !isFinite(plotRight) || plotRight <= plotLeft) {
       return { left: 0, right: 0, top: 0, bottom: 0 };
     }
@@ -381,6 +390,22 @@ export class AxisRenderer {
       ? TreeCalibration.inferMajorInterval(minorTicks)
       : this._minorInterval;
 
+    const majorLabelZones = [];
+    if (showMinorLabel && showMajorLabel) {
+      ctx.font = this._font(fs);
+      for (const val of majorTicks) {
+        const sx = this._valToScreenX(val);
+        if (sx < plotLeft - 1 || sx > plotRight + 1) continue;
+        const label = this._dateMode
+          ? this._calibration?.decYearToString(val, majorLabelFmt === 'auto' ? 'partial' : majorLabelFmt, this._dateFormat, effMajorInterval)
+          : Axis.formatValue(val, majorStep);
+        if (!label) continue;
+        const tw = ctx.measureText(label).width;
+        const lx = sx;
+        majorLabelZones.push([lx - tw / 2 - 4, lx + tw / 2 + 4]);
+      }
+    }
+
     let overLeft = 0;
     let overRight = 0;
     let majorLabelRight = -Infinity;
@@ -393,8 +418,9 @@ export class AxisRenderer {
         if (sx < plotLeft - 1 || sx > plotRight + 1) continue;
         const label = this._calibration.decYearToString(val, minorLabelFmt, this._dateFormat, effMinorInterval);
         const tw = ctx.measureText(label).width;
-        const lx = Math.max(plotLeft + tw / 2 + 1, Math.min(plotRight - tw / 2 - 1, sx));
+        const lx = sx;
         if (lx - tw / 2 <= minorLabelRight + 2) continue;
+        if (overlapsZones(lx - tw / 2, lx + tw / 2, majorLabelZones)) continue;
         minorLabelRight = lx + tw / 2;
         overLeft = Math.max(overLeft, plotLeft - (lx - tw / 2));
         overRight = Math.max(overRight, (lx + tw / 2) - plotRight);
@@ -415,7 +441,7 @@ export class AxisRenderer {
             )
           : Axis.formatValue(val, majorStep);
         const tw = ctx.measureText(label).width;
-        const lx = Math.max(plotLeft + tw / 2 + 1, Math.min(W - tw / 2 - 2, sx));
+        const lx = sx;
         if (lx - tw / 2 <= majorLabelRight + 2) continue;
         majorLabelRight = lx + tw / 2;
         overLeft = Math.max(overLeft, plotLeft - (lx - tw / 2));
@@ -446,13 +472,8 @@ export class AxisRenderer {
 
     this._syncAxisCoreState();
     const { leftVal, rightVal } = this._axis.getValueDomain();
-
-    // The baseline runs exactly from the left range endpoint to the right range endpoint.
-    // In auto mode _valueDomain() already includes bar/stem overhang via extraH.
-    const rangeScreenLeft  = this._valToScreenX(leftVal);
-    const rangeScreenRight = this._valToScreenX(rightVal);
-    const plotLeft  = rangeScreenLeft;
-    const plotRight = rangeScreenRight;
+    const plotLeft  = this._spacingLeft;
+    const plotRight = W - this._spacingRight;
 
     if (plotRight <= plotLeft) return;
     const minVal = Math.min(leftVal, rightVal);
@@ -517,7 +538,7 @@ export class AxisRenderer {
           : Axis.formatValue(val, _majorStep);
         if (!label) continue;
         const tw = ctx.measureText(label).width;
-        const lx = Math.max(plotLeft + tw / 2 + 1, Math.min(W - tw / 2 - 2, sx));
+        const lx = sx;
         majorLabelZones.push([lx - tw / 2 - 4, lx + tw / 2 + 4]);
       }
     }
@@ -538,7 +559,7 @@ export class AxisRenderer {
       if (showMinorLabel) {
         const label = this._calibration.decYearToString(val, minorLabelFmt, this._dateFormat, effMinorInterval);
         const tw    = ctx.measureText(label).width;
-        const lx    = Math.max(plotLeft + tw / 2 + 1, Math.min(plotRight - tw / 2 - 1, sx));
+        const lx    = sx;
         if (lx - tw / 2 > minorLabelRight + 2 && !overlapsZones(lx - tw / 2, lx + tw / 2, majorLabelZones)) {
           ctx.fillStyle = TEXT_DIM;
           ctx.fillText(label, lx, Y_BASE + 1 + MINOR_H + 2);
@@ -572,9 +593,7 @@ export class AxisRenderer {
           label = Axis.formatValue(val, _majorStep);
         }
         const tw = ctx.measureText(label).width;
-        // Allow labels to extend to the canvas edge (W) rather than being hard-clamped
-        // at plotRight, so the terminal tick label on a divergence axis is never clipped.
-        const lx = Math.max(plotLeft + tw / 2 + 1, Math.min(W - tw / 2 - 2, sx));
+        const lx = sx;
         if (lx - tw / 2 > majorLabelRight + 2) {
           ctx.fillStyle = TEXT_COLOR;
           ctx.fillText(label, lx, Y_BASE + 1 + MAJOR_H + 2);
@@ -582,6 +601,76 @@ export class AxisRenderer {
         }
       }
     }
+
+    if (this._layoutDebug) {
+      this._drawLayoutDebugOverlay(ctx, W, H, plotLeft, plotRight, Y_BASE, MAJOR_H);
+    }
+  }
+
+  _drawLayoutDebugOverlay(ctx, W, H, plotLeft, plotRight, baselineY, majorTickHeight) {
+    const plotWidth = Math.max(0, plotRight - plotLeft);
+    const leftPadWidth = Math.max(0, plotLeft);
+    const rightPadWidth = Math.max(0, W - plotRight);
+    const spanTop = Math.max(0, baselineY - 3);
+    const spanBottom = Math.min(H, baselineY + majorTickHeight + this._fontSize + 5);
+    const spanHeight = Math.max(0, spanBottom - spanTop);
+
+    ctx.save();
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(0.5, 0.5, Math.max(0, W - 1), Math.max(0, H - 1));
+
+    if (leftPadWidth > 0) {
+      ctx.fillStyle = 'rgba(255,120,40,0.18)';
+      ctx.fillRect(0, 0, leftPadWidth, H);
+    }
+    if (rightPadWidth > 0) {
+      ctx.fillStyle = 'rgba(255,120,40,0.18)';
+      ctx.fillRect(plotRight, 0, rightPadWidth, H);
+    }
+
+    ctx.strokeStyle = 'rgba(20,180,255,0.9)';
+    ctx.setLineDash([6, 3]);
+    ctx.strokeRect(
+      Math.round(plotLeft) + 0.5,
+      0.5,
+      Math.max(0, Math.round(plotWidth) - 1),
+      Math.max(0, H - 1),
+    );
+
+    ctx.strokeStyle = 'rgba(255,180,40,0.95)';
+    ctx.setLineDash([]);
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(
+      Math.round(plotLeft) + 0.5,
+      Math.round(spanTop) + 0.5,
+      Math.max(0, Math.round(plotWidth) - 1),
+      Math.max(0, Math.round(spanHeight) - 1),
+    );
+
+    const lines = [
+      'layout debug axis',
+      `pad L${Math.round(this._spacingLeft)} R${Math.round(this._spacingRight)}`,
+      `plot x=${Math.round(plotLeft)}..${Math.round(plotRight)} w=${Math.round(plotWidth)}`,
+      `baseline y=${Math.round(baselineY)}`,
+    ];
+
+    const pad = 5;
+    const lh = 12;
+    const boxW = 210;
+    const boxH = lines.length * lh + pad * 2;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(8, 8, boxW, boxH);
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.font = '10px Menlo, monospace';
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], 8 + pad, 8 + pad + (i + 1) * lh - 3);
+    }
+
+    ctx.restore();
   }
 
   /** Returns {leftVal, rightVal} = the axis values at the range endpoints (auto or user-set). */

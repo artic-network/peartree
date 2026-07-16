@@ -204,7 +204,7 @@ export class TreeRenderer {
     this._onNavChange          = null;   // callback(canBack, canFwd)
     this._onBranchSelectChange = null;   // callback(hasSelection)
     this._onNodeSelectChange   = null;   // callback(hasSelection)
-    this._onViewChange         = null;   // callback(scaleX, offsetX, treePaddingLeft, labelRightPad, bgColor, fontSize, dpr)
+    this._onViewChange         = null;   // callback(scaleX, offsetX, treePaddingLeft, treePaddingRight, labelRightPad, bgColor, fontSize, dpr)
     this._axisDecorationOverflowProvider = null; // callback(view)->{left,right,top,bottom}
     this._onLayoutChange       = null;   // callback(maxX, viewSubtreeRootId) – fired on navigate into/out of subtree
     this._globalHeightMap      = new Map(); // id → (fullMaxX - node.x) from most recent full-tree layout
@@ -2311,7 +2311,7 @@ export class TreeRenderer {
 
   /**
    * Provide an axis-overhang callback used by the layout solver.
-   * Callback signature: ({scaleX, offsetX, spacingLeft, labelRightPad, bgColor, fontSize, dpr})
+  * Callback signature: ({scaleX, offsetX, spacingLeft, spacingRight, labelRightPad, bgColor, fontSize, dpr})
    *   => {left,right,top,bottom} in CSS pixels.
    */
   setAxisDecorationOverflowProvider(fn) {
@@ -2369,7 +2369,6 @@ export class TreeRenderer {
     const treePaddingRight = basePad.right + Math.max(0, pad.right | 0);
 
     const yScale = evalScaleY ?? this._targetScaleY ?? this.scaleY;
-    const labelsVisible = yScale >= this.fontSize * 0.5 || this._hypFocusScreenY !== null;
 
     const ext = this._treeWorldExtent();
     const rightLimit = W - treePaddingRight;
@@ -2385,6 +2384,7 @@ export class TreeRenderer {
       treePaddingRight,
       targetScaleX,
       targetOffsetX,
+      evalScaleY: yScale,
     };
   }
 
@@ -2414,7 +2414,7 @@ export class TreeRenderer {
     top = Math.max(top, Math.ceil(branchStrokeHalf));
     bottom = Math.max(bottom, Math.ceil(branchStrokeHalf));
 
-    const yScale = this._targetScaleY ?? this.scaleY;
+    const yScale = view.evalScaleY ?? this._targetScaleY ?? this.scaleY;
     const labelsVisible = yScale >= this.fontSize * 0.5 || this._hypFocusScreenY !== null;
     const tipLabelsShown = labelsVisible && !this._tipLabelsOff;
     if (tipLabelsShown) {
@@ -2610,6 +2610,7 @@ export class TreeRenderer {
           scaleX: view.targetScaleX,
           offsetX: view.targetOffsetX,
           spacingLeft: view.treePaddingLeft,
+          spacingRight: view.treePaddingRight,
           labelRightPad: this.labelRightPad,
           bgColor: this.bgColor,
           fontSize: this.fontSize,
@@ -3346,7 +3347,7 @@ export class TreeRenderer {
     }
     if (this._onViewChange && (this._animating || this._reorderAlpha < 1 || this._rootShiftAlpha < 1 || this._crossfadeAlpha > 0 || this._introPhase !== null || !this._lastViewHash || this._lastViewHash !== this._viewHash())) {
       this._lastViewHash = this._viewHash();
-      this._onViewChange(this.scaleX, this.offsetX, this.treePaddingLeft, this.labelRightPad, this.bgColor, this.fontSize, window.devicePixelRatio || 1);
+      this._onViewChange(this.scaleX, this.offsetX, this.treePaddingLeft, this.treePaddingRight, this.labelRightPad, this.bgColor, this.fontSize, window.devicePixelRatio || 1);
     }
     this._rafId = requestAnimationFrame(() => this._loop());
   }

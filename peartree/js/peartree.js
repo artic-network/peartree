@@ -2836,7 +2836,7 @@ async function _initCore(root = document) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   const renderer = new TreeRenderer(canvas, _buildRendererSettings());
-  {
+  const layoutDebugEnabled = (() => {
     const dbgCfg = !!(window.peartreeConfig?.debug?.layoutSolver);
     const dbgUrl = (() => {
       try {
@@ -2846,8 +2846,9 @@ async function _initCore(root = document) {
         return false;
       }
     })();
-    renderer.setLayoutSolverDebug(dbgCfg || dbgUrl);
-  }
+    return dbgCfg || dbgUrl;
+  })();
+  renderer.setLayoutSolverDebug(layoutDebugEnabled);
 
   // ── Status-bar transient messages ─────────────────────────────────────────
   const _statusMsgEl = $('status-message');
@@ -3082,6 +3083,7 @@ async function _initCore(root = document) {
     lineWidth:  parseFloat(axisLineWidthSlider.value),
     spacingTop: parseInt(DEFAULT_SETTINGS.axisSpacingTop),
   });
+  axisRenderer.setLayoutDebug(layoutDebugEnabled);
 
   // Shared time-calibration state for the current tree.
   // setAnchor() is called when the tree is loaded or the annotation selection changes.
@@ -3122,8 +3124,8 @@ async function _initCore(root = document) {
   // dataTableRenderer is declared early (see hoist above); initialised below
   // after the panel DOM is ready via createDataTableRenderer().
 
-  renderer._onViewChange = (scaleX, offsetX, treePaddingLeft, labelRightPad, bgColor, fontSize, dpr) => {
-    axisRenderer.update(scaleX, offsetX, treePaddingLeft, labelRightPad, bgColor, fontSize, dpr);
+  renderer._onViewChange = (scaleX, offsetX, treePaddingLeft, treePaddingRight, labelRightPad, bgColor, fontSize, dpr) => {
+    axisRenderer.update(scaleX, offsetX, treePaddingLeft, treePaddingRight, labelRightPad, bgColor, fontSize, dpr);
     // Fill any subpixel gap between the tree canvas and axis canvas with the
     // canvas background colour rather than the page background.
     _syncCanvasWrapperBg(bgColor);
@@ -3903,7 +3905,7 @@ async function _initCore(root = document) {
       if (renderer) renderer.setCalibration(calibration.isActive ? calibration : null, axisDateFmtEl.value);
       if (axisShowEl.value === 'time') {
         axisRenderer.setCalibration(calibration.isActive ? calibration : null);
-        axisRenderer.update(renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft,
+        axisRenderer.update(renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft, renderer.treePaddingRight,
                             renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
                             window.devicePixelRatio || 1);
       }
@@ -8145,6 +8147,7 @@ async function _initCore(root = document) {
       }
       axisRenderer.update(
         renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft,
+        renderer.treePaddingRight,
         renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
         window.devicePixelRatio || 1,
       );
@@ -8186,6 +8189,7 @@ async function _initCore(root = document) {
       // Draw immediately with current view state.
       axisRenderer.update(
         renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft,
+        renderer.treePaddingRight,
         renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
         window.devicePixelRatio || 1,
       );
@@ -8246,7 +8250,7 @@ async function _initCore(root = document) {
     // Axis label content can change horizontal overflow; rerun decoration-fit solve.
     renderer?._applyOverheadChange?.();
     axisRenderer.update(
-      renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft,
+      renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft, renderer.treePaddingRight,
       renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
       window.devicePixelRatio || 1,
     );
@@ -8262,7 +8266,7 @@ async function _initCore(root = document) {
     renderer?._applyOverheadChange?.();
     const prevAxisCanvasHeight = axisCanvas.style.height || '';
     axisRenderer.update(
-      renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft,
+      renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft, renderer.treePaddingRight,
       renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
       window.devicePixelRatio || 1,
     );
@@ -8271,7 +8275,7 @@ async function _initCore(root = document) {
       // Axis font-size/typeface can change axis canvas height; resize tree canvas to match.
       renderer?._resize?.();
       axisRenderer.update(
-        renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft,
+        renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft, renderer.treePaddingRight,
         renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
         window.devicePixelRatio || 1,
       );
@@ -8995,6 +8999,7 @@ async function _initCore(root = document) {
     /** Enable/disable layout solver debug overlay and logs. */
     setLayoutDebug: (enabled = true) => {
       renderer?.setLayoutSolverDebug(!!enabled);
+      axisRenderer?.setLayoutDebug(!!enabled);
       if (renderer) renderer._dirty = true;
     },
 

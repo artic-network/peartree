@@ -1184,7 +1184,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     }
 
     // Baseline
-    axisParts.push(`<line x1="${f(AX)}" y1="${f(AY + Y_BASE + 0.5)}" x2="${f(AX + ttW)}" y2="${f(AY + Y_BASE + 0.5)}" stroke="${TICK_C}" stroke-width="${f(lw)}"/>`);
+    axisParts.push(`<line x1="${f(plotLeft + AX)}" y1="${f(AY + Y_BASE + 0.5)}" x2="${f(plotRight + AX)}" y2="${f(AY + Y_BASE + 0.5)}" stroke="${TICK_C}" stroke-width="${f(lw)}"/>`);
 
     const minorLabelFmt  = ar._dateMode ? ar._minorLabelFormat : 'off';
     const showMinorLabel = minorLabelFmt !== 'off';
@@ -1238,7 +1238,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
           : Axis.formatValue(val, _majorStep);
         if (!label) continue;
         const tw = approxW(label, afs);
-        const lx = Math.max(plotLeft + AX + tw / 2 + 1, Math.min(axisCanvasRight - tw / 2 - 2, sx));
+        const lx = sx;
         majorLabelZones.push([lx - tw / 2 - 4, lx + tw / 2 + 4]);
       }
     }
@@ -1254,13 +1254,13 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
       if (showMajorLabel) {
         let label;
         if (ar._dateMode) {
-          const effMajorFmt = majorLabelFmt === 'auto' ? 'partial' : majorLabelFmt;
+        const lx2   = sx;
           label = ar._calibration.decYearToString(val, effMajorFmt, ar._dateFormat, effMajorInterval);
         } else {
           label = Axis.formatValue(val, _majorStep);
         }
         const tw  = approxW(label, afs);
-        const lx2 = Math.max(plotLeft + AX + tw / 2 + 1, Math.min(axisCanvasRight - tw / 2 - 2, sx));
+        const lx2 = sx;
         if (lx2 - tw / 2 > majorLabelRight + 2) {
           axisParts.push(svgTextEl({
             x: f(lx2),
