@@ -2527,12 +2527,17 @@ export class TreeRenderer {
     const s_sy = this.scaleY, s_oy = this.offsetY;
     const s_hyp = this._hypFocusScreenY;
     const s_str = this._hypStrength;
+    const s_dpr = this.dpr;
+    const s_pendingW = this._pendingBitmapW;
+    const s_pendingH = this._pendingBitmapH;
     this._hypFocusScreenY = null;  // no fisheye distortion in exports
     this._hypStrength     = 0;
 
     // Install temporary state pointing at the offscreen canvas.
     this.ctx    = offscreenCanvas.getContext('2d');
-    this.canvas = { clientWidth: targetW, clientHeight: targetH };
+    // Offscreen export dimensions are already physical pixels: draw 1:1.
+    this.dpr    = 1;
+    this.canvas = { clientWidth: targetW, clientHeight: targetH, width: targetW, height: targetH };
     this.scaleX = sx;  this.offsetX = ox;
     this.scaleY = sy;  this.offsetY = oy;
     this._skipBg = skipBg;
@@ -2542,10 +2547,13 @@ export class TreeRenderer {
     this._skipBg = false;
     // Restore.
     this.ctx    = s_ctx;  this.canvas = s_canvas;
+    this.dpr    = s_dpr;
     this.scaleX = s_sx;   this.offsetX = s_ox;
     this.scaleY = s_sy;   this.offsetY = s_oy;
     this._hypFocusScreenY = s_hyp;
     this._hypStrength     = s_str;
+    this._pendingBitmapW  = s_pendingW;
+    this._pendingBitmapH  = s_pendingH;
   }
 
   /**
@@ -2557,18 +2565,26 @@ export class TreeRenderer {
     const s_ctx = this.ctx, s_canvas = this.canvas;
     const s_hyp = this._hypFocusScreenY;
     const s_str = this._hypStrength;
+    const s_dpr = this.dpr;
+    const s_pendingW = this._pendingBitmapW;
+    const s_pendingH = this._pendingBitmapH;
     this._hypFocusScreenY = null;  // no fisheye in viewport exports
     this._hypStrength     = 0;
     const W = s_canvas.clientWidth, H = s_canvas.clientHeight;
     this.ctx    = oc.getContext('2d');
-    this.canvas = { clientWidth: W, clientHeight: H };
+    // Offscreen export dimensions are already physical pixels: draw 1:1.
+    this.dpr    = 1;
+    this.canvas = { clientWidth: W, clientHeight: H, width: W, height: H };
     this._skipBg = skipBg;
     this._draw();
     this._skipBg = false;
     this.ctx    = s_ctx;
     this.canvas = s_canvas;
+    this.dpr    = s_dpr;
     this._hypFocusScreenY = s_hyp;
     this._hypStrength     = s_str;
+    this._pendingBitmapW  = s_pendingW;
+    this._pendingBitmapH  = s_pendingH;
   }
 
   /**
