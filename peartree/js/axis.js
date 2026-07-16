@@ -82,9 +82,14 @@ export class Axis {
   }
 
   getValueDomain() {
-    // Do not derive domain span from screen transform. That coupling can explode
-    // ranges when scale is small and causes unstable forward/reverse/time axes.
-    const extra = 0;
+    // `extra` = how far in world/height units the tree rectangle extends to the
+    // left of the root (world-x = 0).  This equals the screen gap between
+    // spacingLeft (tree-rect left edge) and offsetX (root screen position),
+    // converted back to world units.  Non-zero when node bars protrude past the
+    // root — the axis baseline must span to spacingLeft, not just to the root.
+    const extra = (this._scale > 0 && this._spacingLeft < this._offset)
+      ? (this._offset - this._spacingLeft) / this._scale
+      : 0;
 
     let leftVal;
     let rightVal;
@@ -94,7 +99,7 @@ export class Axis {
       leftVal = this._calibration.heightToDecYear(rootV + extra);
       rightVal = this._calibration.heightToDecYear(this._viewMinValue);
     } else if (this._direction === 'forward') {
-      leftVal = 0;
+      leftVal = -extra;   // extend left of root by the bar overhang
       rightVal = this._maxValue;
     } else {
       const span = this._maxValue;

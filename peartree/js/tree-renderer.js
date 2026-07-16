@@ -483,6 +483,7 @@ export class TreeRenderer {
 
     // ── Node bars (95% HPD intervals drawn behind branches) ─────────────────
     this.nodeBarsEnabled    = s.nodeBarsEnabled    ?? false;
+    this.nodeBarsHpdKey     = 'nodeBarsHpdKey' in s ? (s.nodeBarsHpdKey ?? null) : (this.nodeBarsHpdKey ?? null);
     this.nodeBarsColor      = s.nodeBarsColor      ?? '#2aa198';
     this.nodeBarsWidth      = s.nodeBarsWidth      ?? 6;
     this.nodeBarsLine = s.nodeBarsLine ?? 'off';
@@ -1126,8 +1127,10 @@ export class TreeRenderer {
     const stemWorld = (this._viewSubtreeRootId === null)
       ? (this.rootStemPct ?? 0) / 100 * this.maxX
       : 0;
+    // Bars and root stem are alternative left overhangs from the same origin.
+    const treeLeftPad = Math.max(barPad, stemWorld);
     return {
-      worldLeft: -(barPad + stemWorld),
+      worldLeft: -treeLeftPad,
       worldRight: this.maxX,
     };
   }
@@ -2307,7 +2310,8 @@ export class TreeRenderer {
       ? (this.rootStemPct ?? 0) / 100 * this.maxX
       : 0;
 
-    const treeLeftPad = barPad + stemWorld;
+    // Bars and root stem both extend left from x=0; take the farther one.
+    const treeLeftPad = Math.max(barPad, stemWorld);
     const treeRightExt = this.maxX;
 
     const hasAxisLeft   = this._axisWorldLeft  != null;
