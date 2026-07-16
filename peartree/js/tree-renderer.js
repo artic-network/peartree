@@ -197,6 +197,7 @@ export class TreeRenderer {
     this._onBranchSelectChange = null;   // callback(hasSelection)
     this._onNodeSelectChange   = null;   // callback(hasSelection)
     this._onViewChange         = null;   // callback(scaleX, offsetX, treePaddingLeft, labelRightPad, bgColor, fontSize, dpr)
+    this._axisDecorationOverflowProvider = null; // callback(view)->{left,right,top,bottom}
     this._onLayoutChange       = null;   // callback(maxX, viewSubtreeRootId) – fired on navigate into/out of subtree
     this._globalHeightMap      = new Map(); // id → (fullMaxX - node.x) from most recent full-tree layout
     this._rttResidualsMap      = null;       // id → residual (from regression or mean) — set by peartree.js
@@ -296,6 +297,14 @@ export class TreeRenderer {
 
     this._rafId = null;
     this._dirty = true;
+
+    // Extra pixel paddings requested by decoration overhang measurement.
+    this._layoutDecorationPad = { left: 0, right: 0, top: 0, bottom: 0 };
+    this._layoutSolverEnabled = true;
+    this._layoutSolverMaxIter = 6;
+    this._layoutSolverDebug = false;
+    this._layoutSolvedScaleY = null;
+    this._layoutSolverLastLogKey = '';
 
     this._setupEvents();
     this._loop();
@@ -617,7 +626,7 @@ export class TreeRenderer {
       this._updateMinScaleY();       // recomputes this.minScaleY
       const plotH     = this.canvas.clientHeight - this.treePaddingTop - this.treePaddingBottom;
       const landingY  = Math.max(this.minScaleY, plotH / 500);  // show ~500 rows
-      const offsetY   = this.treePaddingTop + landingY * 0.5;
+      const offsetY   = this.treePaddingTop - landingY;
       // Set _targetScaleY first so _updateScaleX evaluates label visibility at
       // landingY (immediate=true also snaps scaleY = landingY directly).
       this._setTarget(offsetY, landingY, /*immediate*/ true);
@@ -703,7 +712,7 @@ export class TreeRenderer {
       // pre-jump to the final scale before the first animation frame, causing a
       // visible one-frame flash and making subsequent drags start from the wrong
       // position because the "from" snapshot would pick up the pre-jumped value).
-      const rawOffsetY           = this.treePaddingTop + this.minScaleY * 0.5;
+      const rawOffsetY           = this.treePaddingTop - this.minScaleY;
       this._reorderToScaleY      = Math.max(this.minScaleY, this.minScaleY);  // = minScaleY
       this._reorderToOffsetY     = this._clampedOffsetY(rawOffsetY, this._reorderToScaleY);
       // Keep the spring target in sync so it doesn't re-animate after the
@@ -923,18 +932,21 @@ export class TreeRenderer {
 
   setNodeLabelAnnotation(key) {
     this.nodeLabelAnnotation = key || null;
+    if (this.nodes) this._applyOverheadChange();
     this._dirty = true;
   }
 
   setNodeLabelPosition(pos) {
     this.nodeLabelPosition = pos;
     this._syncNodeLabelRenderer();
+    if (this.nodes) this._applyOverheadChange();
     this._dirty = true;
   }
 
   setNodeLabelFontSize(sz) {
     this.nodeLabelFontSize = +sz;
     this._syncNodeLabelRenderer();
+    if (this.nodes) this._applyOverheadChange();
     this._dirty = true;
   }
 
@@ -944,26 +956,38 @@ export class TreeRenderer {
     this._dirty = true;
   }
 
+  setNodeLabelTypeface(key, style = null) {
+    this._nodeLabelTypefaceKey = key || null;
+    this._nodeLabelTypefaceStyle = style || null;
+    this._syncNodeLabelRenderer();
+    if (this.nodes) this._applyOverheadChange();
+    this._dirty = true;
+  }
+
   setNodeLabelSpacing(n) {
     this.nodeLabelSpacing = +n;
     this._syncNodeLabelRenderer();
+    if (this.nodes) this._applyOverheadChange();
     this._dirty = true;
   }
 
   setBranchLabelAnnotation(key) {
     this.branchLabelAnnotation = key || null;
+    if (this.nodes) this._applyOverheadChange();
     this._dirty = true;
   }
 
   setBranchLabelPosition(pos) {
     this.branchLabelPosition = pos;
     this._syncBranchLabelRenderer();
+    if (this.nodes) this._applyOverheadChange();
     this._dirty = true;
   }
 
   setBranchLabelFontSize(sz) {
     this.branchLabelFontSize = +sz;
     this._syncBranchLabelRenderer();
+    if (this.nodes) this._applyOverheadChange();
     this._dirty = true;
   }
 
@@ -973,9 +997,18 @@ export class TreeRenderer {
     this._dirty = true;
   }
 
+  setBranchLabelTypeface(key, style = null) {
+    this._branchLabelTypefaceKey = key || null;
+    this._branchLabelTypefaceStyle = style || null;
+    this._syncBranchLabelRenderer();
+    if (this.nodes) this._applyOverheadChange();
+    this._dirty = true;
+  }
+
   setBranchLabelSpacing(n) {
     this.branchLabelSpacing = +n;
     this._syncBranchLabelRenderer();
+    if (this.nodes) this._applyOverheadChange();
     this._dirty = true;
   }
 
@@ -1125,6 +1158,7 @@ export class TreeRenderer {
 
   setBranchWidth(w) {
     this.branchWidth = w;
+    if (this.nodes) this._applyOverheadChange();
     this._dirty = true;
   }
 
@@ -1799,7 +1833,7 @@ export class TreeRenderer {
     // Compute new layout rooted at this node (x = 0).
     this._computeAndInstallLayout(layoutNodeId);
     const newScaleY  = Math.max(this.minScaleY, this._targetScaleY);
-    const newOffsetY = this.treePaddingTop + newScaleY * 0.5;
+    const newOffsetY = this.treePaddingTop - newScaleY;
     this._setTarget(newOffsetY, newScaleY, false);
 
     // Seed the animation START so the new root appears at the old screen position.
@@ -1929,7 +1963,7 @@ export class TreeRenderer {
 
     this._computeAndInstallLayout(null);
     // Fit the whole tree into view.
-    const newOffsetY = this.treePaddingTop + this.minScaleY * 0.5;
+    const newOffsetY = this.treePaddingTop - this.minScaleY;
     this._setTarget(newOffsetY, this.minScaleY, false);
 
     // Seed animation: the node we were rooted at slides from its current screen
@@ -1984,7 +2018,7 @@ export class TreeRenderer {
     this._mrcaNodeId = null;
 
     this._computeAndInstallLayout(newSubtreeRootId);
-    const newOffsetY = this.treePaddingTop + this.minScaleY * 0.5;
+    const newOffsetY = this.treePaddingTop - this.minScaleY;
     this._setTarget(newOffsetY, this.minScaleY, false);
 
     // Seed animation: old root slides rightward to its natural x in the new layout.
@@ -2244,46 +2278,38 @@ export class TreeRenderer {
     this.labelRightPad  = this._maxLabelWidth + this._labelOverhead;
   }
 
-  /** Recompute scaleX so the tree always fills the full viewport width.
-   *  immediate=true (default) snaps instantly; false animates via _targetScaleX. */
-  _updateScaleX(immediate = true) {
-    const W = this.canvas.clientWidth;
-    // Reserve left-side pixel clearance:
-    // • Root node circle extends nodeOuterR px left of the root (world x = 0).
-    // • Subtree view shows a fixed-pixel ancestor stub; whole-tree stem is in
-    //   world units (stemWorld) and already in effectiveLeftPad.
-    const nodeOuterR = this.nodeRadius > 0 ? this.nodeRadius + (this.nodeHaloSize ?? 0) : 0;
+  /**
+   * Provide an axis-overhang callback used by the layout solver.
+   * Callback signature: ({scaleX, offsetX, spacingLeft, labelRightPad, bgColor, fontSize, dpr})
+   *   => {left,right,top,bottom} in CSS pixels.
+   */
+  setAxisDecorationOverflowProvider(fn) {
+    this._axisDecorationOverflowProvider = (typeof fn === 'function') ? fn : null;
+  }
+
+  /** Enable/disable layout solver debug logging. */
+  setLayoutSolverDebug(enabled) {
+    this._layoutSolverDebug = !!enabled;
+  }
+
+  _baseHorizontalPaddingPx() {
     const subtreeStubPx = this._viewSubtreeRootId !== null ? (this.rootStubLength ?? 0) : 0;
-    this.treePaddingLeft = nodeOuterR + subtreeStubPx;
-    // Reserve right-side pixel clearance for tip circles / halos, which extend
-    // tipOuterR px to the right of the rightmost tip's world position.
-    const tipOuterR = this.tipRadius > 0 ? this.tipRadius + (this.tipHaloSize ?? 0) : 0;
-    this.treePaddingRight = tipOuterR;
-    // Use the TARGET scaleY (where the animation is heading) rather than the
-    // current (mid-animation) scaleY.  This ensures that callers such as
-    // fitToWindow() and setData(), which set _targetScaleY before calling here,
-    // always get the correct label-visibility decision without needing to
-    // temporarily override this.scaleY.
-    const evalScaleY    = this._targetScaleY ?? this.scaleY;
-    const labelsVisible = evalScaleY >= this.fontSize * 0.5 || this._hypFocusScreenY !== null;
-    // Extra world-units needed to the left of the root for node bars / whiskers.
+    return {
+      // Subtree ancestry stub is a fixed UI affordance, independent of decorations.
+      left: subtreeStubPx,
+      right: 0,
+    };
+  }
+
+  _treeWorldExtent() {
     const barPad = this.nodeBarsEnabled ? this._nodeBarsLeftPad() : 0;
-    // Root stem: only applied to the whole-tree view (not subtree navigation).
     const stemWorld = (this._viewSubtreeRootId === null)
       ? (this.rootStemPct ?? 0) / 100 * this.maxX
       : 0;
-    // Available plot width when labels are hidden: full canvas minus spacing only.
-    const plotWNoLabels = W - this.treePaddingLeft - (this.treePaddingRight ?? 10);
 
-    // Axis range override: extend the effective span if the user-set range
-    // extends beyond the tree, so the tree scales down to fit the full range.
-    const treeLeftPad   = barPad + stemWorld;
-    const treeRightExt  = this.maxX;
+    const treeLeftPad = barPad + stemWorld;
+    const treeRightExt = this.maxX;
 
-    // If axis bounds are explicitly provided, honour them on each side.
-    // The tree's own bar/stem left-pad always takes precedence on the left so
-    // that node bars and the root stem are never clipped regardless of the
-    // axis range setting (e.g. forward-mode default left = 0).
     const hasAxisLeft   = this._axisWorldLeft  != null;
     const hasAxisRight  = this._axisWorldRight != null;
     const axisDerivedLeftPad = hasAxisLeft ? Math.max(0, -this._axisWorldLeft) : 0;
@@ -2291,46 +2317,333 @@ export class TreeRenderer {
     const effectiveRightExt = hasAxisRight
       ? Math.max(treeRightExt, this._axisWorldRight)
       : treeRightExt;
-    const effectiveSpan = effectiveRightExt + effectiveLeftPad;
-    const treeSpan = treeRightExt + treeLeftPad;
 
-    let targetScaleX;
-    if (!labelsVisible) {
-      // Labels are hidden at this zoom level — fill the full plot width so the
-      // tree uses all available space without reserving label room.
-      targetScaleX = plotWNoLabels / effectiveSpan;
-    } else if (this.tipLabelAlign === 'off' && this._tipLabelWidths?.size > 0) {
-      // Non-aligned labels: each tip's label starts at its own branch-tip x.
-      // Binding constraint per tip:
-      //   treePaddingLeft + (barPad + stemWorld + x_i) * scaleX + overhead + lw_i = W
-      // Take the minimum across all tips (O(n), closed-form).
-      // During the intro animation n.x is temporarily 0; use _introFinalX (the
-      // real final positions) so the scale is computed correctly from frame one.
-      const overhead = this._labelOverhead ?? (this.labelRightPad - this._maxLabelWidth);
-      const base = W - this.treePaddingLeft;
-      let minScale = Infinity;
-      for (const n of this.nodes) {
-        if (!n.isTip) continue;
-        const nx = this._introFinalX ? (this._introFinalX.get(n.id) ?? n.x) : n.x;
-        if (nx <= 0) continue;
-        const lw = this._tipLabelWidths.get(n.id) ?? 0;
-        if (lw === 0) continue;
-        const s = (base - overhead - lw) / (treeLeftPad + nx);
-        if (s < minScale) minScale = s;
-      }
-      targetScaleX = isFinite(minScale) ? minScale : plotWNoLabels / treeSpan;
-      // Axis range provides an upper bound on scale; keep label-fit as lower bound.
-      const axisRangeScaleX = plotWNoLabels / effectiveSpan;
-      if (axisRangeScaleX < targetScaleX) targetScaleX = axisRangeScaleX;
-    } else {
-      // Aligned labels all land at the same right-hand column — use the
-      // maxLabelWidth-based labelRightPad which is exact for this case.
-      const plotW = W - this.treePaddingLeft - this.labelRightPad;
-      targetScaleX = plotW / effectiveSpan;
+    return {
+      treeLeftPad,
+      treeRightExt,
+      effectiveLeftPad,
+      effectiveRightExt,
+      effectiveSpan: effectiveRightExt + effectiveLeftPad,
+      treeSpan: treeRightExt + treeLeftPad,
+    };
+  }
+
+  _computeHorizontalLayoutForPadding(decPad = null, evalScaleY = null) {
+    const W = this.canvas.clientWidth;
+    const pad = decPad || this._layoutDecorationPad || { left: 0, right: 0, top: 0, bottom: 0 };
+    const basePad = this._baseHorizontalPaddingPx();
+
+    const treePaddingLeft = basePad.left + Math.max(0, pad.left | 0);
+    const treePaddingRight = basePad.right + Math.max(0, pad.right | 0);
+
+    const yScale = evalScaleY ?? this._targetScaleY ?? this.scaleY;
+    const labelsVisible = yScale >= this.fontSize * 0.5 || this._hypFocusScreenY !== null;
+
+    const ext = this._treeWorldExtent();
+    const rightLimit = W - treePaddingRight;
+    const plotWNoLabels = rightLimit - treePaddingLeft;
+
+    // Tip labels are treated as decorations via _localDecorationOverflowPx(),
+    // so horizontal scale fitting only uses tree rectangle + solved decoration pad.
+    const targetScaleX = plotWNoLabels / ext.effectiveSpan;
+
+    const targetOffsetX = treePaddingLeft + ext.effectiveLeftPad * targetScaleX;
+    return {
+      treePaddingLeft,
+      treePaddingRight,
+      targetScaleX,
+      targetOffsetX,
+    };
+  }
+
+  _localDecorationOverflowPx(view) {
+    let left = 0;
+    let right = 0;
+    let top = 0;
+    let bottom = 0;
+
+    const tipOuterR = this.tipRadius > 0 ? this.tipRadius + (this.tipHaloSize ?? 0) : 0;
+    const nodeOuterR = this.nodeRadius > 0 ? this.nodeRadius + (this.nodeHaloSize ?? 0) : 0;
+    const barsHalfH = this.nodeBarsEnabled ? (this.nodeBarsWidth ?? 0) / 2 : 0;
+    const branchStrokeHalf = Math.max(0, (this.branchWidth ?? 1) / 2);
+    const outlineR = Math.max(tipOuterR, 5);
+    const tipLabelSpacing = this.tipLabelSpacing ?? 3;
+    const tipMaxSX = view.targetOffsetX + this.maxX * view.targetScaleX;
+    const treeRightSX = tipMaxSX;
+
+    // Core shape clearances are treated as decoration overhang (not structural margins).
+    left = Math.max(left, Math.ceil(nodeOuterR));
+    right = Math.max(right, Math.ceil(tipOuterR));
+    top = Math.max(top, Math.ceil(Math.max(tipOuterR, nodeOuterR, barsHalfH)));
+    bottom = Math.max(bottom, Math.ceil(Math.max(tipOuterR, nodeOuterR, barsHalfH)));
+    // Reserve half stroke width so boundary branches are not clipped.
+    left = Math.max(left, Math.ceil(branchStrokeHalf));
+    right = Math.max(right, Math.ceil(branchStrokeHalf));
+    top = Math.max(top, Math.ceil(branchStrokeHalf));
+    bottom = Math.max(bottom, Math.ceil(branchStrokeHalf));
+
+    const yScale = this._targetScaleY ?? this.scaleY;
+    const labelsVisible = yScale >= this.fontSize * 0.5 || this._hypFocusScreenY !== null;
+    const tipLabelsShown = labelsVisible && !this._tipLabelsOff;
+    if (tipLabelsShown) {
+      // textBaseline='middle': reserve half text box above/below the tip row.
+      const tipLabelHalfH = Math.max(0, Math.ceil(this.fontSize / 2 + 2));
+      top = Math.max(top, tipLabelHalfH);
+      bottom = Math.max(bottom, tipLabelHalfH);
     }
-    this._targetScaleX  = targetScaleX;
-    // Shift the origin right so bars/stem (and any axis left-overhang) remain visible.
-    this._targetOffsetX = this.treePaddingLeft + effectiveLeftPad * this._targetScaleX;
+
+    if (this._tipLabelShape !== 'off') {
+      // Tip-label shapes are drawn even when labels are dense/hidden.
+      const activeShapes = [this._tipLabelShape];
+      for (const s of (this._tipLabelShapesExtra ?? [])) {
+        if (s === 'off') break;
+        activeShapes.push(s);
+      }
+      let maxShapeHalfH = 0;
+      for (const shape of activeShapes) {
+        const sh = this._shapeSize(this._tipLabelShapeSize, shape);
+        const halfH = (shape === 'block') ? Math.ceil(yScale / 2) : Math.ceil(sh / 2);
+        if (halfH > maxShapeHalfH) maxShapeHalfH = halfH;
+      }
+      top = Math.max(top, maxShapeHalfH);
+      bottom = Math.max(bottom, maxShapeHalfH);
+    }
+
+    if (tipLabelsShown && this._tipLabelWidths?.size > 0) {
+      if (this.tipLabelAlign === 'off') {
+        const overhead = this._labelOverhead ?? (this.labelRightPad - this._maxLabelWidth);
+        let maxOver = 0;
+        for (const n of this.nodes || []) {
+          if (!n?.isTip) continue;
+          const lw = this._tipLabelWidths.get(n.id) ?? 0;
+          if (lw <= 0) continue;
+          const nx = this._introFinalX ? (this._introFinalX.get(n.id) ?? n.x) : n.x;
+          const dxFromRightTip = (nx - this.maxX) * view.targetScaleX;
+          const over = dxFromRightTip + overhead + lw;
+          if (over > maxOver) maxOver = over;
+        }
+        right = Math.max(right, Math.ceil(Math.max(0, maxOver)));
+      } else {
+        // In aligned/connector modes all tips share the right-side label column.
+        right = Math.max(right, Math.ceil(this.labelRightPad ?? 0));
+      }
+    }
+
+    if (this.nodeLabelAnnotation) {
+      const fs = this.nodeLabelFontSize ?? this.fontSize;
+      const sp = this.nodeLabelSpacing ?? 0;
+      // Estimate horizontal extent by sampling visible candidate labels.
+      let maxNodeLabelW = 0;
+      const sample = this._vInner?.length ? this._vInner : this.nodes;
+      const sampleLimit = Math.min(sample?.length ?? 0, 200);
+      if (sampleLimit > 0) {
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.font = this._font(fs, this._nodeLabelTypefaceKey, this._nodeLabelTypefaceStyle);
+        let nSeen = 0;
+        for (const n of sample) {
+          if (!n || n.isTip) continue;
+          if (!this._passesFilter(this._nodeLabelsFilterId, n)) continue;
+          const t = this._nodeLabelText(n);
+          if (!t) continue;
+          const w = ctx.measureText(t).width;
+          if (w > maxNodeLabelW) maxNodeLabelW = w;
+          nSeen++;
+          if (nSeen >= sampleLimit) break;
+        }
+        ctx.restore();
+      }
+      const anchorGap = (this.nodeRadius ?? 0) + sp;
+      if (this.nodeLabelPosition === 'above-left' || this.nodeLabelPosition === 'below-left') {
+        left = Math.max(left, Math.ceil(maxNodeLabelW + anchorGap));
+      }
+      if (this.nodeLabelPosition === 'right') {
+        right = Math.max(right, Math.ceil(maxNodeLabelW + anchorGap));
+      }
+      if (this.nodeLabelPosition === 'above-left') {
+        top = Math.max(top, Math.ceil(fs + sp));
+      } else if (this.nodeLabelPosition === 'below-left') {
+        bottom = Math.max(bottom, Math.ceil(fs + sp));
+      }
+    }
+
+    if (this.branchLabelAnnotation) {
+      const fs = this.branchLabelFontSize ?? this.fontSize;
+      let maxBranchW = 0;
+      const sample = this._vAll?.length ? this._vAll : this.nodes;
+      const sampleLimit = Math.min(sample?.length ?? 0, 240);
+      if (sampleLimit > 0) {
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.font = this._font(fs, this._branchLabelTypefaceKey, this._branchLabelTypefaceStyle);
+        let nSeen = 0;
+        for (const n of sample) {
+          if (!n || !n.parentId) continue;
+          if (!this._passesFilter(this._branchLabelsFilterId, n)) continue;
+          const t = this._branchLabelText(n);
+          if (!t) continue;
+          const w = ctx.measureText(t).width;
+          if (w > maxBranchW) maxBranchW = w;
+          nSeen++;
+          if (nSeen >= sampleLimit) break;
+        }
+        ctx.restore();
+      }
+      const half = Math.ceil(maxBranchW / 2);
+      left = Math.max(left, half);
+      right = Math.max(right, half);
+      const v = Math.ceil((this.branchLabelFontSize ?? fs) + (this.branchLabelSpacing ?? 0));
+      top = Math.max(top, v);
+      bottom = Math.max(bottom, v);
+    }
+
+    // Clade highlight envelopes can extend beyond the tree rectangle.
+    if (this._cladeHighlights?.size) {
+      const pad = this.cladeHighlightPadding ?? 0;
+      const sw2 = (this.cladeHighlightStrokeWidth ?? 1) / 2;
+      const shapeW = (() => {
+        if (this._tipLabelShape === 'off') return 0;
+        let w = (this._tipLabelShapeMarginLeft ?? 0) + this._shapeSize(this._tipLabelShapeSize, this._tipLabelShape);
+        const extra = [];
+        for (const s of (this._tipLabelShapesExtra ?? [])) { if (s === 'off') break; extra.push(s); }
+        if (extra.length > 0) w += this._tipLabelShapeSpacing ?? 0;
+        for (let i = 0; i < extra.length; i++) {
+          w += this._shapeSize(this._tipLabelShapeSize, extra[i]);
+          if (i < extra.length - 1) w += this._tipLabelShapeSpacing ?? 0;
+        }
+        return w;
+      })();
+
+      left = Math.max(left, Math.ceil(pad + sw2));
+      top = Math.max(top, Math.ceil(pad + sw2));
+      bottom = Math.max(bottom, Math.ceil(pad + sw2));
+
+      const rm = this.cladeHighlightRightEdge;
+      if (rm === 'atLabels') {
+        right = Math.max(right, Math.ceil(outlineR + sw2));
+      } else if (rm === 'atLabelsRight') {
+        right = Math.max(right, Math.ceil(sw2));
+      } else if (rm === 'atTips' || rm === 'outlineTips') {
+        right = Math.max(right, Math.ceil(outlineR + pad + sw2));
+      } else {
+        right = Math.max(right, Math.ceil(outlineR + tipLabelSpacing + shapeW + pad + sw2));
+      }
+    }
+
+    if (this._collapsedCladeFontSize) {
+      const c = Math.ceil(this._collapsedCladeFontSize * 0.8);
+      top = Math.max(top, c);
+      bottom = Math.max(bottom, c);
+
+      if (!this._tipLabelsOff && this.tipLabelAnnotation === null) {
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.font = this._font(this._collapsedCladeFontSize, this._collapsedCladeTypefaceKey, this._collapsedCladeTypefaceStyle);
+        let maxCollapsedW = 0;
+        let maxDigits = 1;
+        for (const n of this.nodes || []) {
+          if (!n?.isCollapsed) continue;
+          const t = n.annotations?.Name?.trim() || `${n.collapsedRealTips} tips`;
+          if (t.length > 0) {
+            const w = ctx.measureText(t).width;
+            if (w > maxCollapsedW) maxCollapsedW = w;
+          }
+          const d = String(Math.max(0, n.collapsedRealTips || 0)).length;
+          if (d > maxDigits) maxDigits = d;
+        }
+        // Ensure count labels are represented even when no collapsed node currently exists.
+        if (maxCollapsedW === 0) {
+          maxCollapsedW = ctx.measureText(`${'8'.repeat(maxDigits)} tips`).width;
+        }
+        ctx.restore();
+
+        // labelRightPad is built from regular tip-label widths/font; collapsed labels
+        // can exceed it when collapsed font size is larger.
+        const extraRight = Math.max(0, Math.ceil(maxCollapsedW - (this._maxLabelWidth ?? 0)));
+        // Also ensure right overflow if label anchor is based on collapsedMaxX at tips.
+        const baseTextStart = treeRightSX + outlineR + tipLabelSpacing;
+        const projectedEnd = baseTextStart + maxCollapsedW;
+        const baselineEnd = treeRightSX + (this.labelRightPad ?? 0);
+        right = Math.max(right, extraRight, Math.ceil(Math.max(0, projectedEnd - baselineEnd)));
+      }
+    }
+
+    return { left, right, top, bottom };
+  }
+
+  _measureDecorationOverflowPx(view) {
+    const local = this._localDecorationOverflowPx(view);
+    const axis = (this._axisDecorationOverflowProvider)
+      ? (this._axisDecorationOverflowProvider({
+          scaleX: view.targetScaleX,
+          offsetX: view.targetOffsetX,
+          spacingLeft: view.treePaddingLeft,
+          labelRightPad: this.labelRightPad,
+          bgColor: this.bgColor,
+          fontSize: this.fontSize,
+          dpr: this.dpr,
+        }) || {})
+      : {};
+    return {
+      left: Math.max(local.left, axis.left || 0),
+      right: Math.max(local.right, axis.right || 0),
+      top: Math.max(local.top, axis.top || 0),
+      bottom: Math.max(local.bottom, axis.bottom || 0),
+    };
+  }
+
+  _solveDecorationPadding(evalScaleY = null) {
+    if (!this._layoutSolverEnabled || !this.nodes) return this._layoutDecorationPad;
+
+    let pad = {
+      left: this._layoutDecorationPad?.left || 0,
+      right: this._layoutDecorationPad?.right || 0,
+      top: this._layoutDecorationPad?.top || 0,
+      bottom: this._layoutDecorationPad?.bottom || 0,
+    };
+
+    let iterCount = 0;
+    for (let i = 0; i < this._layoutSolverMaxIter; i++) {
+      iterCount = i + 1;
+      const view = this._computeHorizontalLayoutForPadding(pad, evalScaleY);
+      const over = this._measureDecorationOverflowPx(view);
+      const next = {
+        left: Math.max(0, Math.ceil(over.left || 0)),
+        right: Math.max(0, Math.ceil(over.right || 0)),
+        top: Math.max(0, Math.ceil(over.top || 0)),
+        bottom: Math.max(0, Math.ceil(over.bottom || 0)),
+      };
+      if (next.left === pad.left && next.right === pad.right &&
+          next.top === pad.top && next.bottom === pad.bottom) {
+        if (this._layoutSolverDebug) {
+          const k = `${this.canvas.clientWidth}|${this.canvas.clientHeight}|${this.maxX}|${this.maxY}|${(evalScaleY ?? this.scaleY).toFixed(3)}|${next.left},${next.right},${next.top},${next.bottom}|${iterCount}`;
+          if (k !== this._layoutSolverLastLogKey) {
+            this._layoutSolverLastLogKey = k;
+            console.debug('[TreeRenderer.layoutSolver] converged', { iterations: iterCount, padding: next });
+          }
+        }
+        return next;
+      }
+      pad = next;
+    }
+    if (this._layoutSolverDebug) {
+      console.debug('[TreeRenderer.layoutSolver] max-iter reached', { iterations: iterCount, padding: pad });
+    }
+    return pad;
+  }
+
+  /** Recompute scaleX so the tree always fills the full viewport width.
+   *  immediate=true (default) snaps instantly; false animates via _targetScaleX. */
+  _updateScaleX(immediate = true) {
+    const evalScaleY = this._targetScaleY ?? this.scaleY;
+    this._layoutDecorationPad = this._solveDecorationPadding(evalScaleY);
+    this._layoutSolvedScaleY = evalScaleY;
+    const view = this._computeHorizontalLayoutForPadding(this._layoutDecorationPad, evalScaleY);
+
+    this.treePaddingLeft  = view.treePaddingLeft;
+    this.treePaddingRight = view.treePaddingRight;
+    this._targetScaleX    = view.targetScaleX;
+    this._targetOffsetX   = view.targetOffsetX;
     if (immediate) {
       this.scaleX  = this._targetScaleX;
       this.offsetX = this._targetOffsetX;
@@ -2390,33 +2703,37 @@ export class TreeRenderer {
       : this.maxX;
   }
 
+  /** Vertical span of the tree rectangle in tip-row units. */
+  _tipRowSpan() {
+    return Math.max(1, (this.maxY || 1) - 1);
+  }
+
   /**
    * Pixel overhead (px) needed above/below the first/last tip row to keep
    * shapes, node bars, and branch labels within the canvas bounds.
    */
   _vertOverheadPx() {
-    const tipOuterR  = this.tipRadius  > 0 ? this.tipRadius  + (this.tipHaloSize  ?? 0) : 0;
-    const nodeOuterR = this.nodeRadius > 0 ? this.nodeRadius + (this.nodeHaloSize ?? 0) : 0;
-    const barsHalfH  = this.nodeBarsEnabled ? (this.nodeBarsWidth ?? 0) / 2 : 0;
-    // Branch labels at 'N' (above) or 'S' (below) extend by fontSize + spacing.
-    const branchLblH = this.branchLabelAnnotation
-      ? this.branchLabelFontSize + this.branchLabelSpacing
-      : 0;
-    return Math.ceil(Math.max(tipOuterR, nodeOuterR, barsHalfH, branchLblH));
+    // Vertical clearance is solved by _layoutDecorationPad; keep structural overhead at zero.
+    return 0;
   }
 
   /** Recompute the minimum scaleY (tree fits the viewport vertically). */
   _updateMinScaleY() {
     const H = this.canvas.clientHeight;
+    const evalScaleY = this._targetScaleY ?? this.scaleY;
+    if (!Number.isFinite(this._layoutSolvedScaleY) || Math.abs(this._layoutSolvedScaleY - evalScaleY) > 1e-6) {
+      this._layoutDecorationPad = this._solveDecorationPadding(evalScaleY);
+      this._layoutSolvedScaleY = evalScaleY;
+    }
     // Reserve pixel margins for shapes and labels above/below the tip rows.
     // Setting treePaddingTop/Bottom ensures all callers (fitToWindow,
     // _clampedOffsetY, setData, etc.) automatically preserve this margin.
     const extra = this._vertOverheadPx();
-    this.treePaddingTop    = extra;
-    this.treePaddingBottom = extra;
-    const plotH = Math.max(0, H - 2 * extra);
-    // tips sit at world y = 1 … maxY; add 1 unit of spacing total
-    this.minScaleY = plotH / (this.maxY + 1);
+    this.treePaddingTop    = extra + (this._layoutDecorationPad?.top ?? 0);
+    this.treePaddingBottom = extra + (this._layoutDecorationPad?.bottom ?? 0);
+    const plotH = Math.max(0, H - this.treePaddingTop - this.treePaddingBottom);
+    // The tree rectangle spans tip rows 1 … maxY; decorations live in padding.
+    this.minScaleY = plotH / this._tipRowSpan();
   }
 
   /**
@@ -2440,7 +2757,7 @@ export class TreeRenderer {
     if (!this.nodes) return;
     this._fitLabelsMode = false;
     this._updateMinScaleY();
-    const newOffsetY = this.treePaddingTop + this.minScaleY * 0.5;
+    const newOffsetY = this.treePaddingTop - this.minScaleY;
     // Set _targetScaleY BEFORE calling _updateScaleX so that the label-
     // visibility check inside _updateScaleX evaluates the landing zoom level
     // (minScaleY) rather than the current mid-animation scaleY.
@@ -2514,18 +2831,12 @@ export class TreeRenderer {
    */
   renderFull(offscreenCanvas, targetW, targetH, skipBg = false) {
     if (!this.nodes) return;
-    const plotW = targetW - this.treePaddingLeft - this.labelRightPad;
-    const plotH = targetH - this.treePaddingTop  - this.treePaddingBottom;
-    const stemWorld = (this.rootStemPct ?? 0) / 100 * (this.maxX || 1);
-    const sx = plotW / ((this.maxX || 1) + stemWorld);
-    const sy = plotH / ((this.maxY || 1) + 1);
-    const ox = this.treePaddingLeft + stemWorld * sx;
-    const oy = this.treePaddingTop + sy * 0.5;
-
     // Stash current rendering state.
     const s_ctx = this.ctx, s_canvas = this.canvas;
     const s_sx = this.scaleX, s_ox = this.offsetX;
     const s_sy = this.scaleY, s_oy = this.offsetY;
+    const s_padL = this.treePaddingLeft,  s_padR = this.treePaddingRight;
+    const s_padT = this.treePaddingTop,   s_padB = this.treePaddingBottom;
     const s_hyp = this._hypFocusScreenY;
     const s_str = this._hypStrength;
     const s_dpr = this.dpr;
@@ -2534,11 +2845,34 @@ export class TreeRenderer {
     this._hypFocusScreenY = null;  // no fisheye distortion in exports
     this._hypStrength     = 0;
 
-    // Install temporary state pointing at the offscreen canvas.
-    this.ctx    = offscreenCanvas.getContext('2d');
-    // Offscreen export dimensions are already physical pixels: draw 1:1.
-    this.dpr    = 1;
+    // Install temporary canvas dimensions before solving decoration padding,
+    // so export layout uses the same solver semantics as on-screen rendering.
     this.canvas = { clientWidth: targetW, clientHeight: targetH, width: targetW, height: targetH };
+    this.dpr = 1;
+
+    // Solve decoration padding for the export canvas. Iterate a few times because
+    // label visibility/overflow can depend on the resulting vertical scale.
+    let sy = Math.max(0, (targetH - (this.treePaddingTop + this.treePaddingBottom)) / this._tipRowSpan());
+    let pad = this._layoutDecorationPad || { left: 0, right: 0, top: 0, bottom: 0 };
+    for (let i = 0; i < 3; i++) {
+      pad = this._solveDecorationPadding(sy);
+      const top = Math.max(0, pad.top | 0);
+      const bottom = Math.max(0, pad.bottom | 0);
+      const plotH = Math.max(1, targetH - top - bottom);
+      sy = plotH / this._tipRowSpan();
+    }
+    const view = this._computeHorizontalLayoutForPadding(pad, sy);
+    this.treePaddingLeft = view.treePaddingLeft;
+    this.treePaddingRight = view.treePaddingRight;
+    this.treePaddingTop = Math.max(0, pad.top | 0);
+    this.treePaddingBottom = Math.max(0, pad.bottom | 0);
+
+    const sx = view.targetScaleX;
+    const ox = view.targetOffsetX;
+    const oy = this.treePaddingTop - sy;
+
+    // Install temporary state pointing at the offscreen canvas.
+    this.ctx = offscreenCanvas.getContext('2d');
     this.scaleX = sx;  this.offsetX = ox;
     this.scaleY = sy;  this.offsetY = oy;
     this._skipBg = skipBg;
@@ -2551,6 +2885,8 @@ export class TreeRenderer {
     this.dpr    = s_dpr;
     this.scaleX = s_sx;   this.offsetX = s_ox;
     this.scaleY = s_sy;   this.offsetY = s_oy;
+    this.treePaddingLeft = s_padL; this.treePaddingRight = s_padR;
+    this.treePaddingTop  = s_padT; this.treePaddingBottom = s_padB;
     this._hypFocusScreenY = s_hyp;
     this._hypStrength     = s_str;
     this._pendingBitmapW  = s_pendingW;
@@ -2594,8 +2930,8 @@ export class TreeRenderer {
    */
   _clampedOffsetY(offsetY, scaleY) {
     const H = this.canvas.clientHeight;
-    const maxOY = this.treePaddingTop - scaleY * 0.5;
-    const minOY = (H - this.treePaddingBottom) - (this.maxY + 0.5) * scaleY;
+    const maxOY = this.treePaddingTop - scaleY;
+    const minOY = (H - this.treePaddingBottom) - this.maxY * scaleY;
     if (minOY > maxOY) return (minOY + maxOY) / 2; // tree fits – centre it
     return Math.min(maxOY, Math.max(minOY, offsetY));
   }
@@ -2664,8 +3000,8 @@ export class TreeRenderer {
     if (magFactor <= 1) return sy;  // already at or above fit-labels zoom
 
     const d      = sy - cy;
-    const sy_top = this.offsetY + 0.5 * this.scaleY;
-    const sy_bot = this.offsetY + (this.maxY + 0.5) * this.scaleY;
+    const sy_top = this.offsetY + this.scaleY;
+    const sy_bot = this.offsetY + this.maxY * this.scaleY;
 
     // Asymmetric flat-zone half-widths: clamped so the flat section can never
     // push output beyond the tree bounds (available_space / magFactor).
@@ -2705,8 +3041,8 @@ export class TreeRenderer {
     const sy_lin = this.offsetY + worldY * this.scaleY;
     const cy     = this._hypFocusScreenY;
     const W_req  = this._hypMagMult * this.scaleY;
-    const sy_top = this.offsetY + 0.5 * this.scaleY;
-    const sy_bot = this.offsetY + (this.maxY + 0.5) * this.scaleY;
+    const sy_top = this.offsetY + this.scaleY;
+    const sy_bot = this.offsetY + this.maxY * this.scaleY;
     const d      = sy_lin - cy;
     const W      = d < 0
       ? Math.min(W_req, Math.max(0, cy - sy_top) / magFactor)
@@ -2847,9 +3183,9 @@ export class TreeRenderer {
     if (this._reorderAlpha < 1) {
       const EASE = 0.05;   // ~20 frames ≈ 330 ms at 60 fps (matches root-shift animation)
       this._reorderAlpha = Math.min(1, this._reorderAlpha + EASE);
-      // Ease-in-out curve
       const t = this._reorderAlpha;
       const a = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
       for (const node of this.nodes) {
         const fy = this._reorderFromY.get(node.id);
         const ty = this._reorderToY.get(node.id);
@@ -2864,11 +3200,7 @@ export class TreeRenderer {
           }
         }
       }
-      // Lerp viewport in sync when requested.
-      if (this._reorderFromScaleY !== null) {
-        this.scaleY  = this._reorderFromScaleY  + (this._reorderToScaleY  - this._reorderFromScaleY)  * a;
-        this.offsetY = this._reorderFromOffsetY + (this._reorderToOffsetY - this._reorderFromOffsetY) * a;
-      }
+
       if (this._reorderAlpha >= 1) {
         // Snap to final positions
         for (const node of this.nodes) {
@@ -3028,6 +3360,101 @@ export class TreeRenderer {
       ctx.drawImage(this._crossfadeSnapshot, 0, 0, cW, cH);
       ctx.globalAlpha = 1;
     }
+
+    if (this._layoutSolverDebug) {
+      this._drawLayoutDebugOverlay(ctx, W, H);
+    }
+  }
+
+  _drawLayoutDebugOverlay(ctx, W, H) {
+    if (!this.nodes) return;
+
+    const ext = this._treeWorldExtent();
+    const rectLeft = this.offsetX - ext.effectiveLeftPad * this.scaleX;
+    const rectRight = this.offsetX + ext.effectiveRightExt * this.scaleX;
+    const rectTop = this._wy(1);
+    const rectBottom = this._wy(this.maxY);
+    const rectW = rectRight - rectLeft;
+    const rectH = rectBottom - rectTop;
+
+    const safeLeft = this.treePaddingLeft;
+    const safeTop = this.treePaddingTop;
+    const safeRight = W - this.treePaddingRight;
+    const safeBottom = H - this.treePaddingBottom;
+
+    const dec = this._layoutDecorationPad || { left: 0, right: 0, top: 0, bottom: 0 };
+
+    ctx.save();
+
+    // Full canvas border
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(0.5, 0.5, Math.max(0, W - 1), Math.max(0, H - 1));
+
+    // Safe region (after paddings)
+    ctx.strokeStyle = 'rgba(20,180,255,0.9)';
+    ctx.setLineDash([6, 3]);
+    ctx.strokeRect(
+      Math.round(safeLeft) + 0.5,
+      Math.round(safeTop) + 0.5,
+      Math.max(0, Math.round(safeRight - safeLeft) - 1),
+      Math.max(0, Math.round(safeBottom - safeTop) - 1),
+    );
+
+    // Tree rectangle
+    ctx.strokeStyle = 'rgba(255,180,40,0.95)';
+    ctx.setLineDash([]);
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(
+      Math.round(rectLeft) + 0.5,
+      Math.round(rectTop) + 0.5,
+      Math.max(0, Math.round(rectW) - 1),
+      Math.max(0, Math.round(rectH) - 1),
+    );
+
+    // Visualize decoration pads in the safe region.
+    if (dec.left > 0) {
+      ctx.fillStyle = 'rgba(255,120,40,0.18)';
+      ctx.fillRect(this.treePaddingLeft - dec.left, safeTop, dec.left, Math.max(0, safeBottom - safeTop));
+    }
+    if (dec.right > 0) {
+      ctx.fillStyle = 'rgba(255,120,40,0.18)';
+      ctx.fillRect(safeRight, safeTop, dec.right, Math.max(0, safeBottom - safeTop));
+    }
+    if (dec.top > 0) {
+      ctx.fillStyle = 'rgba(255,120,40,0.16)';
+      ctx.fillRect(safeLeft, this.treePaddingTop - dec.top, Math.max(0, safeRight - safeLeft), dec.top);
+    }
+    if (dec.bottom > 0) {
+      ctx.fillStyle = 'rgba(255,120,40,0.16)';
+      ctx.fillRect(safeLeft, safeBottom, Math.max(0, safeRight - safeLeft), dec.bottom);
+    }
+
+    const lines = [
+      `layout debug`,
+      `scaleX=${this.scaleX.toFixed(3)} scaleY=${this.scaleY.toFixed(3)}`,
+      `pad L${this.treePaddingLeft} R${this.treePaddingRight} T${this.treePaddingTop} B${this.treePaddingBottom}`,
+      `dec L${dec.left|0} R${dec.right|0} T${dec.top|0} B${dec.bottom|0}`,
+      `treeRect x=${Math.round(rectLeft)}..${Math.round(rectRight)} y=${Math.round(rectTop)}..${Math.round(rectBottom)}`,
+    ];
+
+    const pad = 6;
+    const lh = 13;
+    const boxW = 380;
+    const boxH = lines.length * lh + pad * 2;
+    const bx = 8;
+    const by = 8;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(bx, by, boxW, boxH);
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.font = '11px Menlo, monospace';
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], bx + pad, by + pad + (i + 1) * lh - 3);
+    }
+
+    ctx.restore();
   }
 
   // ── Sub-renderer sync helpers ─────────────────────────────────────────────
@@ -3805,8 +4232,10 @@ export class TreeRenderer {
     const nodeMap = this.nodeMap;
     const er      = this.elbowRadius;
 
+    ctx.save();
     ctx.lineWidth   = this.branchWidth;
     ctx.strokeStyle = this.branchColor;
+    ctx.lineCap     = 'round';
 
     // Draw branches: horizontal segments.  Start each one 'er' px away from the
     // corner (in the branch direction) so the arc pass can fill the gap.
@@ -3914,6 +4343,7 @@ export class TreeRenderer {
       ctx.lineTo(nx, ny_bot - cer_bot); // just above bottommost child's arc start
     }
     ctx.stroke();
+    ctx.restore();
   }
 
   /** Draw collapsed-clade triangles over the branches. */
@@ -5118,8 +5548,8 @@ export class TreeRenderer {
                          hy >= 0 && hy <= this.canvas.clientHeight;
         if (inCanvas) {
           // Clamp focus to the screen range spanned by the tree's tips.
-          const sy_top    = this.offsetY + 0.5 * this.scaleY;
-          const sy_bot    = this.offsetY + (this.maxY + 0.5) * this.scaleY;
+          const sy_top    = this.offsetY + this.scaleY;
+          const sy_bot    = this.offsetY + this.maxY * this.scaleY;
           const clampedHy = Math.min(sy_bot, Math.max(sy_top, hy));
           if (clampedHy !== this._hypFocusScreenY || this._hypTarget !== 1) {
             const wasOff = this._hypTarget !== 1;

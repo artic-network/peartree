@@ -2749,6 +2749,18 @@ async function _initCore(root = document) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   const renderer = new TreeRenderer(canvas, _buildRendererSettings());
+  {
+    const dbgCfg = !!(window.peartreeConfig?.debug?.layoutSolver);
+    const dbgUrl = (() => {
+      try {
+        const v = new URLSearchParams(location.search).get('layoutDebug');
+        return v === '1' || v === 'true' || v === 'on';
+      } catch {
+        return false;
+      }
+    })();
+    renderer.setLayoutSolverDebug(dbgCfg || dbgUrl);
+  }
 
   // ── Status-bar transient messages ─────────────────────────────────────────
   const _statusMsgEl = $('status-message');
@@ -3033,6 +3045,8 @@ async function _initCore(root = document) {
     _updateScrollY();
   };
 
+  renderer.setAxisDecorationOverflowProvider((view) => axisRenderer.getDecorationOverflow(view));
+
   // ── Vertical scrollbar ────────────────────────────────────────────────────
 
   function _updateScrollY() {
@@ -3040,8 +3054,8 @@ async function _initCore(root = document) {
     if (!sb || !renderer.nodes || !_cfg.showScrollBar) { sb?.style && (sb.style.display = 'none'); return; }
     const H      = renderer.canvas.clientHeight;
     const scaleY = renderer.scaleY;
-    const maxOY  = renderer.treePaddingTop    - scaleY * 0.5;
-    const minOY  = (H - renderer.treePaddingBottom) - (renderer.maxY + 0.5) * scaleY;
+    const maxOY  = renderer.treePaddingTop    - scaleY;
+    const minOY  = (H - renderer.treePaddingBottom) - renderer.maxY * scaleY;
     const range  = maxOY - minOY;
     if (range <= 1) { sb.style.display = 'none'; return; }
     const tw = $('tree-wrapper');
@@ -3050,7 +3064,7 @@ async function _initCore(root = document) {
     sb.style.height = renderer.canvas.clientHeight + 'px';
     const trackH  = sb.clientHeight;
     const viewH   = H - renderer.treePaddingTop - renderer.treePaddingBottom;
-    const totalH  = (renderer.maxY + 1) * scaleY;
+    const totalH  = Math.max(1, renderer.maxY - 1) * scaleY;
     const thumbH  = Math.max(20, Math.round(Math.min(trackH, trackH * viewH / totalH)));
     const scrollableTrack = trackH - thumbH;
     const fraction = scrollableTrack > 0 ? (maxOY - renderer.offsetY) / range : 0;
@@ -3079,13 +3093,13 @@ async function _initCore(root = document) {
       const dy = e.clientY - _dragStartClientY;
       const H      = renderer.canvas.clientHeight;
       const scaleY = renderer._targetScaleY;
-      const maxOY  = renderer.treePaddingTop    - scaleY * 0.5;
-      const minOY  = (H - renderer.treePaddingBottom) - (renderer.maxY + 0.5) * scaleY;
+      const maxOY  = renderer.treePaddingTop    - scaleY;
+      const minOY  = (H - renderer.treePaddingBottom) - renderer.maxY * scaleY;
       const range  = maxOY - minOY;
       if (range <= 0) return;
       const trackH = sb.clientHeight;
       const viewH  = H - renderer.treePaddingTop - renderer.treePaddingBottom;
-      const totalH = (renderer.maxY + 1) * scaleY;
+      const totalH = Math.max(1, renderer.maxY - 1) * scaleY;
       const thumbH = Math.max(20, Math.round(Math.min(trackH, trackH * viewH / totalH)));
       const scrollableTrack = trackH - thumbH;
       if (scrollableTrack <= 0) return;
@@ -3106,12 +3120,12 @@ async function _initCore(root = document) {
       const trackH = rect.height;
       const H      = renderer.canvas.clientHeight;
       const scaleY = renderer._targetScaleY;
-      const maxOY  = renderer.treePaddingTop    - scaleY * 0.5;
-      const minOY  = (H - renderer.treePaddingBottom) - (renderer.maxY + 0.5) * scaleY;
+      const maxOY  = renderer.treePaddingTop    - scaleY;
+      const minOY  = (H - renderer.treePaddingBottom) - renderer.maxY * scaleY;
       const range  = maxOY - minOY;
       if (range <= 0) return;
       const viewH  = H - renderer.treePaddingTop - renderer.treePaddingBottom;
-      const totalH = (renderer.maxY + 1) * scaleY;
+      const totalH = Math.max(1, renderer.maxY - 1) * scaleY;
       const thumbH = Math.max(20, Math.round(Math.min(trackH, trackH * viewH / totalH)));
       const scrollableTrack = trackH - thumbH;
       const fraction = scrollableTrack > 0 ? (clickY - thumbH / 2) / scrollableTrack : 0;
@@ -7015,12 +7029,12 @@ async function _initCore(root = document) {
     _markCustomTheme();
     const nKey = nodeLabelTypefaceEl.value || fontFamilyEl.value;
     _populateStyleSelect(nKey, nodeLabelTypefaceStyleEl, '', true);
-    renderer.setSettings(_buildRendererSettings());
+    renderer?.setNodeLabelTypeface(nodeLabelTypefaceEl.value || null, nodeLabelTypefaceStyleEl.value || null);
     saveSettings();
   });
   optionsController.on('node-label-typeface-style-select', () => {
     _markCustomTheme();
-    renderer.setSettings(_buildRendererSettings());
+    renderer?.setNodeLabelTypeface(nodeLabelTypefaceEl.value || null, nodeLabelTypefaceStyleEl.value || null);
     saveSettings();
   });
   optionsController.on('collapsed-clade-typeface-select', () => {
@@ -7478,12 +7492,12 @@ async function _initCore(root = document) {
 
   optionsController.on('branch-label-typeface-select', () => {
     _populateStyleSelect(branchLabelTypefaceEl.value || fontFamilyEl.value, branchLabelTypefaceStyleEl, '', true);
-    renderer?.setSettings(_buildRendererSettings());
+    renderer?.setBranchLabelTypeface(branchLabelTypefaceEl.value || null, branchLabelTypefaceStyleEl.value || null);
     saveSettings(); _markCustomTheme();
   });
 
   optionsController.on('branch-label-typeface-style-select', () => {
-    renderer?.setSettings(_buildRendererSettings());
+    renderer?.setBranchLabelTypeface(branchLabelTypefaceEl.value || null, branchLabelTypefaceStyleEl.value || null);
     saveSettings(); _markCustomTheme();
   });
 
@@ -8130,6 +8144,8 @@ async function _initCore(root = document) {
       majorLabelFormat: axisMajorLabelEl.value,
       minorLabelFormat: axisMinorLabelEl.value,
     });
+    // Axis label content can change horizontal overflow; rerun decoration-fit solve.
+    renderer?._applyOverheadChange?.();
     axisRenderer.update(
       renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft,
       renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
@@ -8143,11 +8159,24 @@ async function _initCore(root = document) {
     axisRenderer.setLineWidth(parseFloat(axisLineWidthSlider.value));
     axisRenderer.setFontSize(parseInt(axisFontSizeSlider.value));
     _applyAxisTypeface();
+    // Axis font/style changes affect measured axis decoration overflow.
+    renderer?._applyOverheadChange?.();
+    const prevAxisCanvasHeight = axisCanvas.style.height || '';
     axisRenderer.update(
       renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft,
       renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
       window.devicePixelRatio || 1,
     );
+    const nextAxisCanvasHeight = axisCanvas.style.height || '';
+    if (prevAxisCanvasHeight !== nextAxisCanvasHeight) {
+      // Axis font-size/typeface can change axis canvas height; resize tree canvas to match.
+      renderer?._resize?.();
+      axisRenderer.update(
+        renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft,
+        renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
+        window.devicePixelRatio || 1,
+      );
+    }
     rttChart?.notifyStyleChange?.();
     saveSettings();
   }
@@ -8829,6 +8858,12 @@ async function _initCore(root = document) {
      * @returns {object}
      */
     getSettings: () => _buildSnapshot(),
+
+    /** Enable/disable layout solver debug overlay and logs. */
+    setLayoutDebug: (enabled = true) => {
+      renderer?.setLayoutSolverDebug(!!enabled);
+      if (renderer) renderer._dirty = true;
+    },
 
     /**
      * Apply a named built-in or user theme by name.

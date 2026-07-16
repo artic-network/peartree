@@ -325,6 +325,112 @@ export class AxisRenderer {
     return this._axis.getScaleFactorForTreeRange(treeWorldLeft, treeWorldRight);
   }
 
+  /**
+   * Measure axis label overhang beyond the tree rectangle endpoints.
+   *
+   * Returned values are in CSS pixels and represent only overflow beyond
+   * the baseline span [plotLeft, plotRight], not beyond canvas edges.
+   *
+   * @param {object} [view]
+   * @returns {{left:number,right:number,top:number,bottom:number}}
+   */
+  getDecorationOverflow(view = {}) {
+    if (!this._visible) return { left: 0, right: 0, top: 0, bottom: 0 };
+
+    const W = (this._canvas.parentElement?.clientWidth ?? this._canvas.clientWidth) || 0;
+    if (W === 0 || !this._maxX || this._maxX === 0) {
+      return { left: 0, right: 0, top: 0, bottom: 0 };
+    }
+
+    const scaleX      = view.scaleX      ?? this._scaleX;
+    const offsetX     = view.offsetX     ?? this._offsetX;
+    const spacingLeft = view.spacingLeft ?? this._spacingLeft;
+    const fontSize    = view.fontSize    ?? this._fontSize;
+    if (!scaleX || !isFinite(scaleX) || !isFinite(offsetX) || !isFinite(spacingLeft)) {
+      return { left: 0, right: 0, top: 0, bottom: 0 };
+    }
+
+    this._scaleX = scaleX;
+    this._offsetX = offsetX;
+    this._spacingLeft = spacingLeft;
+    this._syncAxisCoreState();
+
+    const { leftVal, rightVal } = this._axis.getValueDomain();
+    const plotLeft  = this._valToScreenX(leftVal);
+    const plotRight = this._valToScreenX(rightVal);
+    if (!isFinite(plotLeft) || !isFinite(plotRight) || plotRight <= plotLeft) {
+      return { left: 0, right: 0, top: 0, bottom: 0 };
+    }
+
+    const ctx = this._ctx;
+    const fs = Math.max(6, fontSize);
+    const targetMajor = Math.max(2, Math.round((plotRight - plotLeft) / 90));
+    const { majorTicks, minorTicks } = this._axis.getTicks(targetMajor);
+
+    const majorLabelFmt  = this._dateMode ? this._majorLabelFormat : 'auto';
+    const showMajorLabel = majorLabelFmt !== 'off';
+    const minorLabelFmt  = this._dateMode ? this._minorLabelFormat : 'off';
+    const showMinorLabel = minorLabelFmt !== 'off';
+
+    const majorStep = majorTicks.length >= 2
+      ? Math.abs(majorTicks[1] - majorTicks[0]) : 0;
+    const effMajorInterval = (this._dateMode && this._majorInterval === 'auto')
+      ? TreeCalibration.inferMajorInterval(majorTicks)
+      : this._majorInterval;
+    const effMinorInterval = (this._dateMode && this._minorInterval === 'auto')
+      ? TreeCalibration.inferMajorInterval(minorTicks)
+      : this._minorInterval;
+
+    let overLeft = 0;
+    let overRight = 0;
+    let majorLabelRight = -Infinity;
+    let minorLabelRight = -Infinity;
+
+    if (showMinorLabel && this._dateMode) {
+      ctx.font = this._font(Math.max(6, fs - 2));
+      for (const val of minorTicks) {
+        const sx = this._valToScreenX(val);
+        if (sx < plotLeft - 1 || sx > plotRight + 1) continue;
+        const label = this._calibration.decYearToString(val, minorLabelFmt, this._dateFormat, effMinorInterval);
+        const tw = ctx.measureText(label).width;
+        const lx = Math.max(plotLeft + tw / 2 + 1, Math.min(plotRight - tw / 2 - 1, sx));
+        if (lx - tw / 2 <= minorLabelRight + 2) continue;
+        minorLabelRight = lx + tw / 2;
+        overLeft = Math.max(overLeft, plotLeft - (lx - tw / 2));
+        overRight = Math.max(overRight, (lx + tw / 2) - plotRight);
+      }
+    }
+
+    if (showMajorLabel) {
+      ctx.font = this._font(fs);
+      for (const val of majorTicks) {
+        const sx = this._valToScreenX(val);
+        if (sx < plotLeft - 1 || sx > plotRight + 1) continue;
+        const label = this._dateMode
+          ? this._calibration.decYearToString(
+              val,
+              (majorLabelFmt === 'auto') ? 'partial' : majorLabelFmt,
+              this._dateFormat,
+              effMajorInterval,
+            )
+          : Axis.formatValue(val, majorStep);
+        const tw = ctx.measureText(label).width;
+        const lx = Math.max(plotLeft + tw / 2 + 1, Math.min(W - tw / 2 - 2, sx));
+        if (lx - tw / 2 <= majorLabelRight + 2) continue;
+        majorLabelRight = lx + tw / 2;
+        overLeft = Math.max(overLeft, plotLeft - (lx - tw / 2));
+        overRight = Math.max(overRight, (lx + tw / 2) - plotRight);
+      }
+    }
+
+    return {
+      left: Math.max(0, Math.ceil(overLeft)),
+      right: Math.max(0, Math.ceil(overRight)),
+      top: 0,
+      bottom: 0,
+    };
+  }
+
   // ── Drawing ──────────────────────────────────────────────────────────────
 
   _draw() {

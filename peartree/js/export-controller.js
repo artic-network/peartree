@@ -93,7 +93,7 @@ export function createExportController({
       const bottomPad = Number.isFinite(r.treePaddingBottom) ? r.treePaddingBottom : 0;
       return {
         width:  d.totalW,
-        height: topPad + bottomPad + (maxY + 1) * scaleY + (d.axVisible ? d.axH : 0),
+        height: topPad + bottomPad + Math.max(1, maxY - 1) * scaleY + (d.axVisible ? d.axH : 0),
       };
     },
     buildSvg: ({ fullView, transparent }) => buildGraphicSVG(

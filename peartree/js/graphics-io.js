@@ -84,7 +84,7 @@ export function compositeViewPng(ctx, targetW, targetH, fullTree = false, transp
   const bottomPad = Number.isFinite(renderer.treePaddingBottom) ? renderer.treePaddingBottom : 0;
   // Full tree: panel height is determined by current scaleY over all tips.
   const ttH_eff    = fullTree
-    ? (topPad + bottomPad + (maxY + 1) * scaleY)
+    ? (topPad + bottomPad + Math.max(1, maxY - 1) * scaleY)
     : ttH;
   const totalH_eff = ttH_eff + (axVisible ? axH : 0);
   const sx = targetW / totalW;
