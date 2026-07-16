@@ -65,7 +65,7 @@ export function createPeartreeOptionsPanelProfile({
     { control: 'tip-label-show', notEquals: 'off', target: filterRow(tipLabelsFilterEl), mode: 'row' },
     { control: 'node-label-show', notEquals: '', target: filterRow(nodeLabelsFilterEl), mode: 'row' },
     { control: 'branch-label-show', notEquals: '', target: filterRow(branchLabelsFilterEl), mode: 'row' },
-    { control: 'node-bars-show', equals: 'on', target: filterRow(nodeBarsFilterEl), mode: 'row' },
+    { control: 'node-bars-show', notEquals: 'off', target: filterRow(nodeBarsFilterEl), mode: 'row' },
     { control: 'branch-shape', notEquals: 'off', target: filterRow(branchShapesFilterEl), mode: 'row' },
 
     { control: 'tip-size-slider', when: (v) => parseInt(v, 10) > 0, target: tipShapeDetailEl, mode: 'detail' },
@@ -107,7 +107,7 @@ export function createPeartreeOptionsPanelProfile({
 
     { control: 'node-label-show', notEquals: '', target: nodeLabelDetailEl, mode: 'detail' },
     { control: 'branch-label-show', notEquals: '', target: branchLabelDetailEl, mode: 'detail' },
-    { control: 'node-bars-show', equals: 'on', target: nodeBarsDetailEl, mode: 'detail' },
+    { control: 'node-bars-show', notEquals: 'off', target: nodeBarsDetailEl, mode: 'detail' },
 
     { control: 'legend-annotation', notEquals: '', target: legendDetailEl, mode: 'detail' },
     { control: 'legend-annotation', notEquals: '', target: legend2SectionEl, mode: 'detail' },

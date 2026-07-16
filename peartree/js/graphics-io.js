@@ -480,7 +480,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     const schema    = renderer._annotationSchema;
     const heightDef = schema?.get('height');
     if (heightDef?.group?.hpd) {
-      const hpdKey    = heightDef.group.hpd;
+      const hpdKey    = renderer.nodeBarsHpdKey ?? heightDef.group.hpd;
       const medianKey = heightDef.group.median;
       const rangeKey  = heightDef.group.range;
       const maxX      = renderer.maxX;
