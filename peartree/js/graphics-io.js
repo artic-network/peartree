@@ -4,7 +4,7 @@
 
 import { AxisRenderer } from './axis-renderer.js';
 import { Axis } from './axis.js';
-import { isNumericType, TreeCalibration } from './phylograph.js';
+import { dateToDecimalYear, isNumericType, TreeCalibration } from './phylograph.js';
 import {
   traceRoundedRectPath,
   traceCladeTopPath,
@@ -17,7 +17,7 @@ import { getSequentialPalette,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
          MISSING_DATA_COLOUR, buildCategoricalColourMap } from '@artic-network/pearcore/palettes.js';
 import { TYPEFACES } from '@artic-network/pearcore/typefaces.js';
-import { htmlEsc as esc, overlapsZones } from '@artic-network/pearcore/utils.js';
+import { formatDateLabelISO, htmlEsc as esc, overlapsZones } from '@artic-network/pearcore/utils.js';
 
 /** @private SVG text-content escaper (no quot needed here). */
 function svgTextEsc(s) {
@@ -152,16 +152,25 @@ function svgTextEl({
  * @param {HTMLCanvasElement} ctx.canvas
  * @param {HTMLCanvasElement} ctx.axisCanvas
  * @param {HTMLCanvasElement} ctx.legendRightCanvas
+ * @param {HTMLCanvasElement} [ctx.legend2RightCanvas]
+ * @param {HTMLCanvasElement} [ctx.legend3RightCanvas]
+ * @param {HTMLCanvasElement} [ctx.legend4RightCanvas]
  */
-export function viewportDims({ canvas, axisCanvas, legendRightCanvas }) {
+export function viewportDims({ canvas, axisCanvas, legendRightCanvas, legend2RightCanvas, legend3RightCanvas, legend4RightCanvas }) {
   const lrVisible = legendRightCanvas.style.display !== 'none';
+  const lr2Visible = legend2RightCanvas?.style.display !== 'none';
+  const lr3Visible = legend3RightCanvas?.style.display !== 'none';
+  const lr4Visible = legend4RightCanvas?.style.display !== 'none';
   const axVisible = axisCanvas.style.display        !== 'none';
   const lrW = lrVisible ? legendRightCanvas.clientWidth : 0;
+  const lr2W = lr2Visible ? (legend2RightCanvas?.clientWidth ?? 0) : 0;
+  const lr3W = lr3Visible ? (legend3RightCanvas?.clientWidth ?? 0) : 0;
+  const lr4W = lr4Visible ? (legend4RightCanvas?.clientWidth ?? 0) : 0;
   const ttW = canvas.clientWidth;
   const ttH = canvas.clientHeight;
   const axH = axVisible ? axisCanvas.clientHeight : 0;
-  return { totalW: ttW + lrW, totalH: ttH + axH,
-           llW: 0, lrW, ttW, ttH, axH, llVisible: false, lrVisible, axVisible };
+  return { totalW: ttW + lrW + lr2W + lr3W + lr4W, totalH: ttH + axH,
+           llW: 0, lrW, lr2W, lr3W, lr4W, ttW, ttH, axH, llVisible: false, lrVisible, lr2Visible, lr3Visible, lr4Visible, axVisible };
 }
 
 /**
@@ -175,8 +184,8 @@ export function viewportDims({ canvas, axisCanvas, legendRightCanvas }) {
  * @returns {OffscreenCanvas}
  */
 export function compositeViewPng(ctx, targetW, targetH, fullTree = false, transparent = false) {
-  const { renderer, canvas, axisCanvas, legendRightCanvas } = ctx;
-  const { totalW, lrW, ttW, ttH, axH, lrVisible, axVisible } = viewportDims(ctx);
+  const { renderer, canvas, axisCanvas, legendRightCanvas, legend2RightCanvas, legend3RightCanvas, legend4RightCanvas } = ctx;
+  const { totalW, lrW, lr2W, lr3W, lr4W, ttW, ttH, axH, lrVisible, lr2Visible, lr3Visible, lr4Visible, axVisible } = viewportDims(ctx);
   const scaleY = Number.isFinite(renderer.scaleY) ? renderer.scaleY : 1;
   const maxY = Number.isFinite(renderer.maxY) ? renderer.maxY : 0;
   const topPad = Number.isFinite(renderer.treePaddingTop) ? renderer.treePaddingTop : 0;
@@ -235,6 +244,21 @@ export function compositeViewPng(ctx, targetW, targetH, fullTree = false, transp
       renderer._drawLegend();
     }
   }
+  if (lr2Visible && legend2RightCanvas) {
+    oCtx.drawImage(legend2RightCanvas,
+      Math.round((ttW + lrW) * sx), 0,
+      Math.round(lr2W * sx), Math.round(ttH_eff * sy));
+  }
+  if (lr3Visible && legend3RightCanvas) {
+    oCtx.drawImage(legend3RightCanvas,
+      Math.round((ttW + lrW + lr2W) * sx), 0,
+      Math.round(lr3W * sx), Math.round(ttH_eff * sy));
+  }
+  if (lr4Visible && legend4RightCanvas) {
+    oCtx.drawImage(legend4RightCanvas,
+      Math.round((ttW + lrW + lr2W + lr3W) * sx), 0,
+      Math.round(lr4W * sx), Math.round(ttH_eff * sy));
+  }
   return oc;
 }
 
@@ -250,20 +274,12 @@ export function compositeViewPng(ctx, targetW, targetH, fullTree = false, transp
  */
 export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   const { renderer, legendRenderer, axisRenderer,
-          legend2RightCanvas } = ctx;
+          legend2RightCanvas, legend3RightCanvas, legend4RightCanvas } = ctx;
   const nm = renderer.nodeMap;
   if (!nm || !nm.size) return null;
 
-  const { totalW: baseW, llW, lrW, ttW, ttH, axH, llVisible, lrVisible, axVisible } = viewportDims(ctx);
-  // ── Second-legend beside column ──────────────────────────────────────
-  const lr2Key    = legendRenderer?._annotation2 ?? null;
-  const lr2Pos    = legendRenderer?._position2;   // 'right' (beside own canvas) | 'below'
-  const lr2Beside = !!lr2Key && lr2Pos !== 'below';
-
-  let lr2W = 0;
-  if (lr2Beside && legend2RightCanvas?.style.display !== 'none')
-    lr2W = legend2RightCanvas?.clientWidth ?? 0;
-  const totalW = baseW + lr2W;
+  const { llW, lrW, lr2W, lr3W, lr4W, ttW, ttH, axH, llVisible, lrVisible, axVisible } = viewportDims(ctx);
+  const totalW = ttW + lrW + lr2W + lr3W + lr4W;
 
   const scaleY = Number.isFinite(renderer.scaleY) ? renderer.scaleY : 1;
   const maxY = Number.isFinite(renderer.maxY) ? renderer.maxY : 0;
@@ -317,28 +333,48 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   // Helper: appends one legend block's SVG elements into `out`.
   // lx = left edge in SVG coords; legendH = usable height; yOffset = top offset.
   // gradId = unique linearGradient id prefix (must differ across both legends).
-  const _appendLegendBlock = (out, key, lx, legendH, yOffset = 0, gradId = 'lgrd') => {
+  const _appendLegendBlock = (out, key, lx, legendH, yOffset = 0, gradId = 'lgrd', legendW = lrW) => {
     if (!key || !legendSchema) return;
     const def = legendSchema.get(key);
     if (!def) return;
     const lfs   = lr.fontSize ?? fs;
     const ltc   = lr.textColor ?? '#F7EECA';
     const lfont = lr._fontFamily ?? 'monospace';
-    const PAD   = 12;
-    let   ly    = yOffset + PAD;
-    const maxY  = yOffset + legendH - PAD;
+    const ltype = resolveSvgTypeface(lr, lr._typefaceKey || null, lr._typefaceStyle || null);
+    const L = lr._paddingLeft ?? 0;
+    const R = lr._paddingRight ?? 0;
+    const T = lr._paddingTop ?? 0;
+    const B = lr._paddingBottom ?? 0;
+    const TITLE_TOP_GAP = 6;
+    const TITLE_CONTENT_GAP = 4;
+    const PAD = Math.max(12, L);
+    let ly = yOffset + T + TITLE_TOP_GAP;
+    const maxY = yOffset + legendH - B;
+    const approxW = (txt, sizePx) => String(txt).length * sizePx * 0.57;
+    const truncateForWidth = (txt, sizePx, maxWidthPx) => {
+      const s = String(txt ?? '');
+      if (maxWidthPx <= 0) return '';
+      if (approxW(s, sizePx) <= maxWidthPx) return s;
+      let outTxt = s;
+      while (outTxt.length > 1 && approxW(`${outTxt}…`, sizePx) > maxWidthPx) {
+        outTxt = outTxt.slice(0, -1);
+      }
+      return `${outTxt}…`;
+    };
+    const titleText = truncateForWidth(def.label ?? key, lfs, Math.max(0, legendW - L - R));
 
     out.push(svgTextEl({
-      x: lx + PAD,
+      x: lx + L,
       y: ly,
-      text: key,
-      baseline: 'hanging',
+      text: titleText,
+      baseline: 'top',
       family: lfont,
       sizePx: lfs,
+      style: 'normal',
       weight: 700,
-      fill: '#b58900',
+      fill: ltc,
     }));
-    ly += lfs + 10;
+    ly += lfs + TITLE_CONTENT_GAP;
 
     if (def.dataType === 'categorical' || def.dataType === 'ordinal') {
       const paletteName = lr._paletteOverrides?.get(key);
@@ -348,14 +384,17 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
       (def.values || []).forEach((val) => {
         if (ly + SWATCH > maxY) return;
         const colour = colourMap.get(val) ?? MISSING_DATA_COLOUR;
-        out.push(`<rect x="${lx + PAD}" y="${ly}" width="${SWATCH}" height="${SWATCH}" fill="${esc(colour)}"/>`);
+        out.push(`<rect x="${lx + L}" y="${ly}" width="${SWATCH}" height="${SWATCH}" fill="${esc(colour)}"/>`);
+        const labelAvail = Math.max(0, legendW - L - R - SWATCH - 6);
         out.push(svgTextEl({
-          x: lx + PAD + SWATCH + 6,
+          x: lx + L + SWATCH + 6,
           y: ly + SWATCH / 2,
-          text: String(val),
+          text: truncateForWidth(String(val), lfs, labelAvail),
           baseline: 'central',
-          family: lfont,
+          family: ltype.family,
           sizePx: lfs,
+          style: ltype.fontStyle,
+          weight: ltype.weight,
           fill: ltc,
         }));
         ly += ROW_H;
@@ -363,23 +402,44 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     } else if (def.dataType === 'date' || isNumericType(def.dataType)) {
       // Vertical gradient bar (top = max, bottom = min) — matches canvas rendering.
       const BAR_W    = 14;
+      const BAR_X    = lx + L;
       const BAR_H    = Math.max(40, maxY - ly);
       const gid      = gradId;
-      const seqStops = getSequentialPalette(lr._paletteOverrides?.get(key));
-      const ns       = seqStops.length;
+      const baseStops = getSequentialPalette(lr._paletteOverrides?.get(key));
+      const stops = !!lr._paletteReverseOverrides?.get(key) ? [...baseStops].reverse() : baseStops;
+      const ns       = stops.length;
       // Vertical gradient: stop 0 = top = max colour (last stop), stop 1 = bottom = min colour.
-      const stopMarkup = seqStops.map((c, i) =>
-        `<stop offset="${(ns === 1 ? 0 : i / (ns - 1) * 100).toFixed(1)}%" stop-color="${esc(seqStops[ns - 1 - i])}"/>`
+      const stopMarkup = stops.map((c, i) =>
+        `<stop offset="${(ns === 1 ? 0 : i / (ns - 1) * 100).toFixed(1)}%" stop-color="${esc(stops[ns - 1 - i])}"/>`
       ).join('');
       defs.push(`<linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">${stopMarkup}</linearGradient>`);
-      out.push(`<rect x="${lx + PAD}" y="${ly}" width="${BAR_W}" height="${BAR_H}" fill="url(#${gid})"/>`);
+      out.push(`<rect x="${BAR_X}" y="${ly}" width="${BAR_W}" height="${BAR_H}" fill="url(#${gid})"/>`);
 
       // Tick labels spread evenly from top (max) to bottom (min).
-      const LABEL_X  = lx + PAD + BAR_W + 6;
+      const LABEL_X  = BAR_X + BAR_W + 6;
       const tickCount = Math.max(2, Math.min(6, Math.floor(BAR_H / (lfs + 6))));
-      const min = def.min ?? 0, max = def.max ?? 1;
-      const range = (def.dataType === 'date')
-        ? (new Date(max).getFullYear() - new Date(min).getFullYear() || 1)
+      let min = def.min ?? 0;
+      let max = def.max ?? 1;
+      if (isNumericType(def.dataType)) {
+        const mode = lr._scaleModeOverrides?.get(key) ?? '';
+        const live = lr._liveRanges?.get(key);
+        let effMin = live?.min ?? def.min ?? 0;
+        let effMax = live?.max ?? def.max ?? 1;
+        if (mode === 'symmetric-zero') {
+          const maxAbs = Math.max(Math.abs(effMin), Math.abs(effMax));
+          effMin = -maxAbs;
+          effMax = +maxAbs;
+        } else if (mode === 'zero-positive') {
+          effMin = 0;
+        } else if (mode === 'zero-one') {
+          effMin = Math.min(effMin, 0);
+          effMax = Math.max(effMax, 1);
+        }
+        min = effMin;
+        max = effMax;
+      }
+      const range = def.dataType === 'date'
+        ? ((dateToDecimalYear(max) - dateToDecimalYear(min)) || 1)
         : ((max - min) || 1);
       const fmt = def.fmt ?? (v => String(v));
       for (let i = 0; i < tickCount; i++) {
@@ -388,26 +448,30 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
         const val   = def.dataType === 'date' ? null : (max - t * range);
         const label = (def.dataType === 'date')
           ? (() => {
-              const targetDec = max - t * range;
-              let best = (def.values || [])[0] ?? String(max);
+              const maxDec = dateToDecimalYear(max);
+              const targetDec = maxDec - t * range;
+              let best = (def.values || [])[0] ?? String(maxDec);
               let bestDist = Infinity;
               for (const v of (def.values || [])) {
-                const d = Math.abs(new Date(v).getFullYear() - targetDec);
+                const d = Math.abs(dateToDecimalYear(v) - targetDec);
                 if (d < bestDist) { bestDist = d; best = v; }
               }
-              return best;
+              return formatDateLabelISO(best);
             })()
           : fmt(val);
         // Tick mark
-        out.push(`<rect x="${lx + PAD + BAR_W}" y="${f(tickY - 0.5)}" width="4" height="1" fill="${esc(ltc)}"/>`);
+        out.push(`<rect x="${BAR_X + BAR_W}" y="${f(tickY - 0.5)}" width="4" height="1" fill="${esc(ltc)}"/>`);
         const baseline = i === 0 ? 'hanging' : (i === tickCount - 1 ? 'auto' : 'central');
+        const labelAvail = Math.max(0, legendW - (L + BAR_W + 6) - R);
         out.push(svgTextEl({
           x: LABEL_X,
           y: f(tickY),
-          text: String(label),
+          text: truncateForWidth(String(label), lfs, labelAvail),
           baseline,
-          family: lfont,
+          family: ltype.family,
           sizePx: lfs,
+          style: ltype.fontStyle,
+          weight: ltype.weight,
           fill: ltc,
         }));
       }
@@ -415,32 +479,64 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   };
 
   if (legendPos && legendKey && legendSchema) {
-    const lx = llW + ttW;  // legend is always on the right
-    // Compute h1/h2 when second legend is stacked below legend 1.
-    const below = !!lr2Key && lr2Pos === 'below';
-    let h1 = ttH, h2 = 0;
-    if (below) {
-      const pct1 = Math.max(1, lr._heightPct  ?? 100);
-      const pct2 = Math.max(1, lr._heightPct2 ?? 50);
-      if (pct1 + pct2 < 100) {
-        h1 = Math.round(ttH * pct1 / 100);
-        h2 = Math.round(ttH * pct2 / 100);
+    const colWidths = [lrW, lr2W, lr3W, lr4W];
+    const colX = [
+      llW + ttW,
+      llW + ttW + lrW,
+      llW + ttW + lrW + lr2W,
+      llW + ttW + lrW + lr2W + lr3W,
+    ];
+
+    // Same column assignment as LegendRenderer._resolveColumns().
+    const col2 = lr._position2 === 'right' ? 1 : 0;
+    const col3 = lr._position3 === 'right' ? Math.min(col2 + 1, 3) : col2;
+    const col4 = lr._position4 === 'right' ? Math.min(col3 + 1, 3) : col3;
+
+    const legendSpecs = [
+      { col: 0, key: legendKey, pct: lr._heightPct ?? 100, legendN: 1 },
+      { col: col2, key: lr._annotation2 ?? null, pct: lr._heightPct2 ?? 50, legendN: 2 },
+      { col: col3, key: lr._annotation3 ?? null, pct: lr._heightPct3 ?? 50, legendN: 3 },
+      { col: col4, key: lr._annotation4 ?? null, pct: lr._heightPct4 ?? 50, legendN: 4 },
+    ];
+
+    const gapPx = Math.max(0, lr._layoutSpacing || 0);
+    const computeHeights = (entries) => {
+      const pcts = entries.map(e => Math.max(1, e.pct));
+      const active = pcts.filter(p => p > 0).length;
+      const totalGap = Math.max(0, active - 1) * gapPx;
+      const usableH = Math.max(0, ttH - totalGap);
+      const sumPct = pcts.reduce((a, b) => a + b, 0);
+      if (sumPct === 0) return entries.map(() => 0);
+      let heights;
+      if (sumPct < 100) {
+        heights = pcts.map(p => Math.round(usableH * p / 100));
       } else {
-        h1 = Math.round(ttH * pct1 / (pct1 + pct2));
-        h2 = ttH - h1;
+        heights = pcts.map(p => Math.round(usableH * p / sumPct));
+        const sumH = heights.reduce((a, b) => a + b, 0);
+        if (sumH !== usableH) {
+          for (let i = heights.length - 1; i >= 0; i--) {
+            if (heights[i] > 0) { heights[i] += usableH - sumH; break; }
+          }
+        }
+      }
+      return heights;
+    };
+
+    for (let c = 0; c <= 3; c++) {
+      const specs = legendSpecs.filter(s => s.col === c && !!s.key);
+      const wCol = colWidths[c] ?? 0;
+      if (specs.length === 0 || wCol <= 0) continue;
+      const heights = computeHeights(specs);
+      let offsetY = 0;
+      for (let i = 0; i < specs.length; i++) {
+        const h = heights[i];
+        if (h <= 0) continue;
+        const spec = specs[i];
+        _appendLegendBlock(legendParts, spec.key, colX[c], h, offsetY, `lgrd${spec.legendN}`, wCol);
+        offsetY += h;
+        if (i < specs.length - 1) offsetY += gapPx;
       }
     }
-    _appendLegendBlock(legendParts, legendKey, lx, h1, 0, 'lgrd');
-    if (below && lr2Key && h2 > 0) {
-      // Separator line between stacked legends.
-      legendParts.push(`<line x1="${lx}" y1="${h1}" x2="${lx + lrW}" y2="${h1}" stroke="${esc(lr.textColor ?? '#ffffff')}44" stroke-width="1"/>`);
-      _appendLegendBlock(legendParts, lr2Key, lx, h2, h1, 'lgrd2');
-    }
-  }
-  // Second legend — 'beside' mode: drawn in its own outermost-right panel.
-  if (lr2Beside && lr2Key && legendSchema) {
-    const lx2 = llW + ttW + lrW;
-    _appendLegendBlock(legendParts, lr2Key, lx2, ttH, 0, 'lgrd2');
   }
 
   // ── Clade highlights (vector, drawn before branches) ─────────────────
@@ -1088,7 +1184,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     }
 
     // Baseline
-    axisParts.push(`<line x1="${f(plotLeft + AX)}" y1="${f(AY + Y_BASE + 0.5)}" x2="${f(plotRight + AX)}" y2="${f(AY + Y_BASE + 0.5)}" stroke="${TICK_C}" stroke-width="${f(lw)}"/>`);
+    axisParts.push(`<line x1="${f(AX)}" y1="${f(AY + Y_BASE + 0.5)}" x2="${f(AX + ttW)}" y2="${f(AY + Y_BASE + 0.5)}" stroke="${TICK_C}" stroke-width="${f(lw)}"/>`);
 
     const minorLabelFmt  = ar._dateMode ? ar._minorLabelFormat : 'off';
     const showMinorLabel = minorLabelFmt !== 'off';

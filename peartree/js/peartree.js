@@ -4112,7 +4112,7 @@ async function _initCore(root = document) {
     getGraph:            () => graph,
     getRenderer:         () => renderer,
     getLegendRenderer:   () => legendRenderer,
-    canvas, axisCanvas, legendRightCanvas, legend2RightCanvas,
+    canvas, axisCanvas, legendRightCanvas, legend2RightCanvas, legend3RightCanvas, legend4RightCanvas,
     axisRenderer,
     getSettingsSnapshot: () => { const s = _buildSnapshot(); delete s.paintColour; Object.assign(s, _getAxisRangeSettings()); return s; }, // tree-only keys added via TREE_ONLY_SETTING_KEYS
     getConfigSnapshot:   () => ({

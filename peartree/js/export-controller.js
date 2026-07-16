@@ -22,6 +22,8 @@ import { APP_SETTINGS_KEY } from './config.js';
  * @param {HTMLCanvasElement} opts.axisCanvas
  * @param {HTMLCanvasElement} opts.legendRightCanvas
  * @param {HTMLCanvasElement} opts.legend2RightCanvas
+ * @param {HTMLCanvasElement} opts.legend3RightCanvas
+ * @param {HTMLCanvasElement} opts.legend4RightCanvas
  * @param {Object}      opts.axisRenderer        – AxisRenderer instance
  * @param {Function}    opts.getSettingsSnapshot  – () => settings snapshot object
  *
@@ -43,6 +45,8 @@ export function createExportController({
   axisCanvas,
   legendRightCanvas,
   legend2RightCanvas,
+  legend3RightCanvas,
+  legend4RightCanvas,
   axisRenderer,
   getSettingsSnapshot,
   getConfigSnapshot = null,
@@ -81,12 +85,12 @@ export function createExportController({
     fullViewLabel:   'Full tree',
     hasContent:      () => !!getGraph(),
     getViewportDims: () => {
-      const d = viewportDims({ canvas, axisCanvas, legendRightCanvas });
+      const d = viewportDims({ canvas, axisCanvas, legendRightCanvas, legend2RightCanvas, legend3RightCanvas, legend4RightCanvas });
       return { width: d.totalW, height: d.totalH };
     },
     getFullDims: () => {
       const r = getRenderer();
-      const d = viewportDims({ canvas, axisCanvas, legendRightCanvas });
+      const d = viewportDims({ canvas, axisCanvas, legendRightCanvas, legend2RightCanvas, legend3RightCanvas, legend4RightCanvas });
       const scaleY = Number.isFinite(r.scaleY) ? r.scaleY : 1;
       const maxY = Number.isFinite(r.maxY) ? r.maxY : 0;
       const topPad = Number.isFinite(r.treePaddingTop) ? r.treePaddingTop : 0;
@@ -98,12 +102,12 @@ export function createExportController({
     },
     buildSvg: ({ fullView, transparent }) => buildGraphicSVG(
       { renderer: getRenderer(), legendRenderer: getLegendRenderer(),
-        canvas, axisCanvas, legendRightCanvas, legend2RightCanvas, axisRenderer },
+        canvas, axisCanvas, legendRightCanvas, legend2RightCanvas, legend3RightCanvas, legend4RightCanvas, axisRenderer },
       fullView, transparent,
     ),
     buildPngCanvas: ({ width, height, fullView, transparent }) =>
       compositeViewPng(
-        { renderer: getRenderer(), canvas, axisCanvas, legendRightCanvas, axisRenderer },
+        { renderer: getRenderer(), canvas, axisCanvas, legendRightCanvas, legend2RightCanvas, legend3RightCanvas, legend4RightCanvas, axisRenderer },
         width, height, fullView, transparent,
       ),
   });
