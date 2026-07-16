@@ -11,6 +11,14 @@ import { formatNumericAnnotationValue } from '@artic-network/pearcore/utils.js';
 import { buildFont, TYPEFACES } from '@artic-network/pearcore/typefaces.js';
 import { CircleShapeRenderer }  from './shape-renderer.js';
 import { AnnotationLabelRenderer } from './label-renderer.js';
+import {
+  traceRoundedRectPath,
+  traceCladeTopPath,
+  traceCladeBottomPath,
+  traceCladeRightPath,
+} from './clade-highlight-geometry.js';
+import { buildNodeBarPrimitives } from './node-bars-geometry.js';
+import { buildBranchPrimitives } from './branch-geometry.js';
 
 // Sentinel annotation keys for calendar-date synthetic node/tip labels.
 // peartree.js imports these to populate the label dropdowns.
@@ -3912,21 +3920,7 @@ export class TreeRenderer {
    * External corners use `r`; path is always closed by the caller.
    */
   _roundedRectPath(ctx, x, y, w, h, r) {
-    const br = Math.min(r, w / 2, h / 2);
-    if (br <= 0) {
-      ctx.rect(x, y, w, h);
-      return;
-    }
-    ctx.moveTo(x + br, y);
-    ctx.lineTo(x + w - br, y);
-    ctx.arcTo(x + w, y,     x + w, y + br,     br);
-    ctx.lineTo(x + w, y + h - br);
-    ctx.arcTo(x + w, y + h, x + w - br, y + h, br);
-    ctx.lineTo(x + br, y + h);
-    ctx.arcTo(x, y + h,     x, y + h - br,     br);
-    ctx.lineTo(x, y + br);
-    ctx.arcTo(x, y,         x + br, y,          br);
-    ctx.closePath();
+    traceRoundedRectPath(ctx, x, y, w, h, r);
   }
 
   /**
@@ -3942,43 +3936,21 @@ export class TreeRenderer {
    * Caller then appends the right edge and calls _addBotCladeOutlinePath().
    */
   _buildCladeOutlinePath(ctx, rootNode, pad, r, leftPad = pad, topPadY = null) {
-    // Helper: topmost child node of n (min world y), or null if tip.
-    const topChild = n => {
+    const topChild = (n) => {
       if (n.isTip || !n.children?.length) return null;
       return n.children.map(id => this.nodeMap.get(id)).filter(Boolean)
         .reduce((best, c) => c.y < best.y ? c : best);
     };
-
-    ctx.moveTo(this._wx(rootNode.x) - leftPad, this._wy(rootNode.y));
-
-    let cur   = rootNode;
-    let prevY = this._wy(rootNode.y); // y of the last point placed on the path
-    while (true) {
-      const child = topChild(cur);
-      if (!child) break;
-      const cx  = this._wx(cur.x)   - leftPad;  // convex corner x
-      // Clamp shoulder y to topPadY so no horizontal line goes above the top boundary.
-      const cy_raw = this._wy(child.y) - pad;
-      const cy  = topPadY !== null ? Math.max(cy_raw, topPadY) : cy_raw;
-      const nx  = this._wx(child.x) - leftPad;  // concave corner x
-      // Clamp radius to half the vertical approach and half the horizontal departure.
-      // If the corner was clamped to the boundary, suppress the arc entirely so
-      // the boundary edge stays flat (no protrusion into the shape).
-      const wasClamped = topPadY !== null && cy_raw < topPadY;
-      const vd  = prevY - cy;               // > 0: arriving from below
-      const hd  = nx - cx;                  // > 0: leaving rightward
-      const cr  = (wasClamped || r <= 0) ? 0 : Math.min(r, vd > 0 ? vd * 0.45 : r, hd > 0 ? hd * 0.45 : r);
-      if (cr > 0) {
-        ctx.lineTo(cx, cy + cr);             // approach convex corner from below
-        ctx.arcTo(cx, cy, nx, cy, cr);       // round: UP → RIGHT
-      } else {
-        ctx.lineTo(cx, cy);
-      }
-      ctx.lineTo(nx, cy);                   // concave corner — sharp
-      prevY = cy;
-      cur   = child;
-    }
-    // Cursor is now at (topTip.x − pad, topTip.y − pad).
+    traceCladeTopPath(ctx, {
+      rootNode,
+      pad,
+      radius: r,
+      leftPad,
+      topPadY,
+      getTopChild: topChild,
+      toX: x => this._wx(x),
+      toY: y => this._wy(y),
+    });
   }
 
   /**
@@ -3993,47 +3965,21 @@ export class TreeRenderer {
    * Ends at (root.x − pad, root.y).  Caller calls closePath().
    */
   _addBotCladeOutlinePath(ctx, rootNode, pad, r, leftPad = pad, botPadY = null) {
-    // Helper: bottommost child node of n (max world y), or null if tip.
-    const botChild = n => {
+    const botChild = (n) => {
       if (n.isTip || !n.children?.length) return null;
       return n.children.map(id => this.nodeMap.get(id)).filter(Boolean)
         .reduce((best, c) => c.y > best.y ? c : best);
     };
-
-    // Build the spine root → botTip, then reverse to walk tip → root.
-    const spine = [];
-    let cur = rootNode;
-    while (cur) { spine.push(cur); cur = botChild(cur); }
-    spine.reverse(); // [botTip, ..., root]
-
-    for (let i = 0; i < spine.length - 1; i++) {
-      const child      = spine[i];
-      const parent     = spine[i + 1];
-      const isLastStep = (i === spine.length - 2); // parent is the clade root
-      const cornerX = this._wx(parent.x) - leftPad;  // convex corner x
-      // Clamp shoulder y to botPadY so no horizontal line goes below the bottom boundary.
-      const cornerY_raw = this._wy(child.y) + pad;
-      const cornerY = botPadY !== null ? Math.min(cornerY_raw, botPadY) : cornerY_raw;
-      // Clamp nextY too: for internal steps, parent.y + pad can also fall below botPadY,
-      // which would cause a zig-zag back down below the boundary before recovering.
-      const nextY_raw  = this._wy(parent.y) + (isLastStep ? 0 : pad);
-      const nextY = (!isLastStep && botPadY !== null) ? Math.min(nextY_raw, botPadY) : nextY_raw;
-      // Clamp radius to half the horizontal approach and half the vertical departure.
-      // If the corner was clamped to the boundary, suppress the arc entirely so
-      // the boundary edge stays flat (no protrusion into the shape).
-      const wasClamped = botPadY !== null && cornerY_raw > botPadY;
-      const hd = this._wx(child.x) - this._wx(parent.x); // > 0: arriving from right
-      const vd = cornerY - nextY;                         // > 0: leaving upward
-      const cr = (wasClamped || r <= 0) ? 0 : Math.min(r, hd > 0 ? hd * 0.45 : r, vd > 0 ? vd * 0.45 : r);
-      if (cr > 0) {
-        ctx.lineTo(cornerX + cr, cornerY);             // approach convex corner from right
-        ctx.arcTo(cornerX, cornerY, cornerX, nextY, cr); // round: LEFT → UP
-      } else {
-        ctx.lineTo(cornerX, cornerY);
-      }
-      ctx.lineTo(cornerX, nextY);                    // concave corner (or root) — sharp
-    }
-    // Cursor is now at (root.x − pad, root.y).
+    traceCladeBottomPath(ctx, {
+      rootNode,
+      pad,
+      radius: r,
+      leftPad,
+      botPadY,
+      getBottomChild: botChild,
+      toX: x => this._wx(x),
+      toY: y => this._wy(y),
+    });
   }
 
   /**
@@ -4046,63 +3992,18 @@ export class TreeRenderer {
    * @param {number} endY    Screen y at the bottom of the last tip (e.g. botTip.y + pad)
    */
   _addRightOutlinePath(ctx, tipNodes, startY, endY, pad, r, outlineR) {
-    const tips = [...tipNodes]; // top to bottom (already sorted by y)
-    // Pre-compute right-edge x for every tip.
-    // For collapsed clade nodes use collapsedMaxX so the staircase reaches the
-    // right tip of the triangle shape, not just the clade-root node position.
-    const sxArr = tips.map(t => this._wx(t.collapsedMaxX ?? t.x) + pad);
-    // Helper: half the y-extent of a collapsed clade (0 for regular tips).
     const _hN = t => (t.isCollapsed && t.collapsedTipCount) ? t.collapsedTipCount / 2 : 0;
-
-    for (let i = 0; i < tips.length; i++) {
-      const sx       = sxArr[i];
-      const prevSX   = i > 0 ? sxArr[i - 1] : null;
-      const nextSX   = i < tips.length - 1 ? sxArr[i + 1] : null;
-      // Use effective top/bottom extents for midpoint computation so the step
-      // for each collapsed clade spans its full triangle height.
-      const prevMidY = i === 0
-        ? startY
-        : (this._wy(tips[i - 1].y + _hN(tips[i - 1])) + this._wy(tips[i].y - _hN(tips[i]))) / 2;
-      const nextMidY = i < tips.length - 1
-        ? (this._wy(tips[i].y + _hN(tips[i])) + this._wy(tips[i + 1].y - _hN(tips[i + 1]))) / 2
-        : endY;
-      const vd = nextMidY - prevMidY; // vertical span of this step (> 0)
-
-      // ── TOP corner at (sx, prevMidY): horizontal → vertical ──────────────
-      // Convex (RIGHT→DOWN) when arriving from left (sx >= prevSX).
-      // Concave (LEFT→DOWN) when arriving from right — keep sharp.
-      const topConvex = prevSX === null || sx >= prevSX;
-      const cr_top = (r > 0 && topConvex)
-        ? Math.min(r,
-            vd  > 0 ? vd  * 0.45 : r,
-            prevSX !== null ? Math.abs(sx - prevSX) * 0.45 : r)
-        : 0;
-
-      if (cr_top > 0) {
-        ctx.lineTo(sx - cr_top, prevMidY);
-        ctx.arcTo(sx, prevMidY, sx, prevMidY + cr_top, cr_top); // RIGHT → DOWN
-      } else {
-        ctx.lineTo(sx, prevMidY);
-      }
-
-      // ── BOTTOM corner at (sx, nextMidY): vertical → horizontal ───────────
-      // Convex (DOWN→LEFT) when leaving leftward (nextSX < sx) OR at the last tip
-      // (where the path turns left toward _addBotCladeOutlinePath).
-      // Concave (DOWN→RIGHT) when leaving rightward — keep sharp.
-      const botConvex = nextSX === null || nextSX < sx;
-      const cr_bot = (r > 0 && botConvex)
-        ? Math.min(r,
-            vd > 0 ? vd * 0.45 : r,
-            nextSX !== null ? (sx - nextSX) * 0.45 : r)
-        : 0;
-
-      if (cr_bot > 0) {
-        ctx.lineTo(sx, nextMidY - cr_bot);
-        ctx.arcTo(sx, nextMidY, sx - cr_bot, nextMidY, cr_bot); // DOWN → LEFT
-      } else {
-        ctx.lineTo(sx, nextMidY);
-      }
-    }
+    traceCladeRightPath(ctx, {
+      tipNodes,
+      startY,
+      endY,
+      pad,
+      radius: r,
+      toX: x => this._wx(x),
+      toY: y => this._wy(y),
+      getTipX: t => t.collapsedMaxX ?? t.x,
+      getHalfY: _hN,
+    });
   }
 
   /** Add or update a clade highlight.  `colour` is optional (falls back to cladeHighlightColour). */
@@ -4176,102 +4077,74 @@ export class TreeRenderer {
     // when the subtree does not contain the most-recent tip of the full dataset.
     const maxX      = this._rootHeightRef();
     const ctx       = this.ctx;
-    for (const cfg of configs) {
-      const halfW = cfg.width / 2;
+    const layers = buildNodeBarPrimitives({
+      nodes: this._vInner,
+      configs,
+      maxX,
+      medianKey,
+      rangeKey,
+      lineMode: this.nodeBarsLine,
+      includeRange: this.nodeBarsRange,
+      toX: x => this._wx(x),
+      toY: y => this._wy(y),
+      passFilter: node => this._passesFilter(this._nodeBarsFilterId, node),
+    });
+
+    for (const layer of layers) {
+      const cfg = layer.config;
       const col = cfg.color;
 
-      // ── Pass 1: filled HPD rectangle (translucent) ───────────────────────
-      ctx.fillStyle   = col;
+      // Pass 1: fill
+      ctx.fillStyle = col;
       ctx.globalAlpha = cfg.fillOpacity;
-      for (const node of this._vInner) {
-        if (!this._passesFilter(this._nodeBarsFilterId, node)) continue;
-        const hpd = node.annotations?.[cfg.hpdKey];
-        if (!Array.isArray(hpd) || hpd.length < 2) continue;
-        const xLeft  = this._wx(maxX - hpd[1]);
-        const xRight = this._wx(maxX - hpd[0]);
-        if (xRight <= xLeft) continue;
-        ctx.fillRect(xLeft, this._wy(node.y) - halfW, xRight - xLeft, halfW * 2);
+      for (const r of layer.rects) {
+        ctx.fillRect(r.xLeft, r.cy - r.halfW, r.xRight - r.xLeft, r.halfW * 2);
       }
       ctx.globalAlpha = 1;
 
-      // ── Pass 2: border stroke ─────────────────────────────────────────────
+      // Pass 2: stroke box
       ctx.strokeStyle = col;
-      ctx.lineWidth   = 1;
+      ctx.lineWidth = 1;
       ctx.globalAlpha = cfg.strokeOpacity;
       ctx.beginPath();
-      for (const node of this._vInner) {
-        if (!this._passesFilter(this._nodeBarsFilterId, node)) continue;
-        const hpd = node.annotations?.[cfg.hpdKey];
-        if (!Array.isArray(hpd) || hpd.length < 2) continue;
-        const xLeft  = this._wx(maxX - hpd[1]);
-        const xRight = this._wx(maxX - hpd[0]);
-        if (xRight <= xLeft) continue;
-        ctx.rect(xLeft, this._wy(node.y) - halfW, xRight - xLeft, halfW * 2);
+      for (const r of layer.rects) {
+        ctx.rect(r.xLeft, r.cy - r.halfW, r.xRight - r.xLeft, r.halfW * 2);
       }
       ctx.stroke();
       ctx.globalAlpha = 1;
-      ctx.lineWidth   = 1;
 
-      // ── Pass 3: mean/median line ─────────────────────────────────────────
+      // Pass 3: mean/median line
       if (this.nodeBarsLine !== 'off') {
-        const useMedian = this.nodeBarsLine === 'median';
         ctx.strokeStyle = col;
-        ctx.lineWidth   = 2;
+        ctx.lineWidth = 2;
         ctx.globalAlpha = cfg.strokeOpacity;
         ctx.beginPath();
-        for (const node of this._vInner) {
-          if (!this._passesFilter(this._nodeBarsFilterId, node)) continue;
-          const hpd = node.annotations?.[cfg.hpdKey];
-          if (!Array.isArray(hpd) || hpd.length < 2) continue;
-          let xLine;
-          if (useMedian) {
-            if (!medianKey) continue;
-            const medVal = node.annotations?.[medianKey];
-            if (medVal == null) continue;
-            xLine = this._wx(maxX - medVal);
-          } else {
-            const meanVal = node.annotations?.['height'];
-            if (meanVal == null) continue;
-            xLine = this._wx(maxX - meanVal);
-          }
-          const cy = this._wy(node.y);
-          ctx.moveTo(xLine, cy - halfW);
-          ctx.lineTo(xLine, cy + halfW);
+        for (const l of layer.lines) {
+          ctx.moveTo(l.xLine, l.cy - l.halfW);
+          ctx.lineTo(l.xLine, l.cy + l.halfW);
         }
         ctx.stroke();
-        ctx.lineWidth   = 1;
+        ctx.lineWidth = 1;
         ctx.globalAlpha = 1;
       }
 
-      // ── Pass 4: range whiskers ───────────────────────────────────────────
+      // Pass 4: range whiskers
       if (this.nodeBarsRange && rangeKey) {
-        const capH = halfW * 0.6;
         ctx.strokeStyle = col;
-        ctx.lineWidth   = 1;
+        ctx.lineWidth = 1;
         ctx.globalAlpha = cfg.strokeOpacity;
         ctx.beginPath();
-        for (const node of this._vInner) {
-          if (!this._passesFilter(this._nodeBarsFilterId, node)) continue;
-          const hpd   = node.annotations?.[cfg.hpdKey];
-          const range = node.annotations?.[rangeKey];
-          if (!Array.isArray(hpd) || hpd.length < 2) continue;
-          if (!Array.isArray(range) || range.length < 2) continue;
-          const cy      = this._wy(node.y);
-          const xHpdL   = this._wx(maxX - hpd[1]);
-          const xHpdR   = this._wx(maxX - hpd[0]);
-          const xRangeL = this._wx(maxX - range[1]);
-          const xRangeR = this._wx(maxX - range[0]);
-          ctx.moveTo(xHpdL, cy);
-          ctx.lineTo(xRangeL, cy);
-          ctx.moveTo(xRangeL, cy - capH);
-          ctx.lineTo(xRangeL, cy + capH);
-          ctx.moveTo(xHpdR, cy);
-          ctx.lineTo(xRangeR, cy);
-          ctx.moveTo(xRangeR, cy - capH);
-          ctx.lineTo(xRangeR, cy + capH);
+        for (const w of layer.whiskers) {
+          ctx.moveTo(w.xHpdL, w.cy);
+          ctx.lineTo(w.xRangeL, w.cy);
+          ctx.moveTo(w.xRangeL, w.cy - w.capH);
+          ctx.lineTo(w.xRangeL, w.cy + w.capH);
+          ctx.moveTo(w.xHpdR, w.cy);
+          ctx.lineTo(w.xRangeR, w.cy);
+          ctx.moveTo(w.xRangeR, w.cy - w.capH);
+          ctx.lineTo(w.xRangeR, w.cy + w.capH);
         }
         ctx.stroke();
-        ctx.lineWidth   = 1;
         ctx.globalAlpha = 1;
       }
     }
@@ -4279,119 +4152,60 @@ export class TreeRenderer {
 
   /** Draw all branches: horizontal segments, rounded-elbow arcs, root stub, vertical connectors. */
   _drawBranches(yWorldMin, yWorldMax) {
-    const ctx     = this.ctx;
-    const nodeMap = this.nodeMap;
-    const er      = this.elbowRadius;
+    const ctx = this.ctx;
+    const er = this.elbowRadius;
+    const rootNode = this.nodes?.[0] ?? null;
+    const rootStubLength = rootNode
+      ? ((this._viewSubtreeRootId === null)
+          ? (this.rootStemPct ?? 0) / 100 * this.maxX * this.scaleX
+          : this.rootStubLength)
+      : 0;
+
+    const geom = buildBranchPrimitives({
+      horizontalNodes: this._vAll,
+      verticalNodes: this.nodes,
+      nodeMap: this.nodeMap,
+      toX: x => this._wx(x),
+      toY: y => this._wy(y),
+      elbowRadius: er,
+      yWorldMin,
+      yWorldMax,
+      rootNode,
+      rootStubLength,
+    });
 
     ctx.save();
-    ctx.lineWidth   = this.branchWidth;
+    ctx.lineWidth = this.branchWidth;
     ctx.strokeStyle = this.branchColor;
-    ctx.lineCap     = 'round';
+    ctx.lineCap = 'round';
 
-    // Draw branches: horizontal segments.  Start each one 'er' px away from the
-    // corner (in the branch direction) so the arc pass can fill the gap.
     ctx.beginPath();
-    for (const node of this._vAll) {
-      if (!node.parentId) continue;
-
-      const parent = nodeMap.get(node.parentId);
-      if (!parent) continue;
-
-      const px  = this._wx(parent.x);
-      const nx  = this._wx(node.x);
-      const ny  = this._wy(node.y);
-      const py  = this._wy(parent.y);
-
-      // dir: +1 for normal (rightward) branches, -1 for negative (leftward) branches.
-      const dx  = nx - px;
-      const dir = dx >= 0 ? 1 : -1;
-      const cer = Math.min(er, Math.abs(ny - py) * 0.4, Math.abs(dx) * 0.4);
-
-      ctx.moveTo(px + dir * cer, ny); // leave gap at corner for arc
-      ctx.lineTo(nx, ny);
+    for (const h of geom.horizontals) {
+      ctx.moveTo(h.x1, h.y1);
+      ctx.lineTo(h.x2, h.y2);
     }
     ctx.stroke();
 
-    // Draw rounded-elbow arcs at each branch corner.
     if (er > 0) {
       ctx.beginPath();
-      for (const node of this._vAll) {
-        if (!node.parentId) continue;
-
-        const parent = nodeMap.get(node.parentId);
-        if (!parent) continue;
-
-        const px  = this._wx(parent.x);
-        const nx  = this._wx(node.x);
-        const ny  = this._wy(node.y);
-        const py  = this._wy(parent.y);
-        if (Math.abs(ny - py) < 0.5) continue; // only child – no corner needed
-
-        const dx  = nx - px;
-        const dir = dx >= 0 ? 1 : -1;
-        const cer = Math.max(0, Math.min(er, Math.abs(ny - py) * 0.4, Math.abs(dx) * 0.4));
-        if (cer === 0) continue; // zero-length branch — no corner to draw
-        // Approach the corner from the vertical; leave toward horizontal (direction-aware).
-        const fromY = ny + (ny < py ? cer : -cer);
-        ctx.moveTo(px, fromY);
-        ctx.arcTo(px, ny, px + dir * cer, ny, cer);
+      for (const a of geom.elbows) {
+        ctx.moveTo(a.moveX, a.moveY);
+        ctx.arcTo(a.x1, a.y1, a.x2, a.y2, a.r);
       }
       ctx.stroke();
     }
 
-    // Draw root stub: a short horizontal line to the left of the root node.
-    // nodes[0] is always the layout root (DFS in computeLayoutFromGraph pushes root first).
-    // • Full tree:    use rootStemPct (user-controlled proportion of tree age), may be 0.
-    // • Subtree view: always use the fixed rootStubLength (pixel stub) to signal ancestry.
-    const rootNode = this.nodes[0];
-    if (rootNode) {
-      const rx      = this._wx(rootNode.x);
-      const ry      = this._wy(rootNode.y);
-      const stubLen = (this._viewSubtreeRootId === null)
-        ? (this.rootStemPct ?? 0) / 100 * this.maxX * this.scaleX
-        : this.rootStubLength;
-      if (stubLen > 0) {
-        ctx.beginPath();
-        ctx.moveTo(rx - stubLen, ry);
-        ctx.lineTo(rx, ry);
-        ctx.stroke();
-      }
+    if (geom.rootStub) {
+      ctx.beginPath();
+      ctx.moveTo(geom.rootStub.x1, geom.rootStub.y1);
+      ctx.lineTo(geom.rootStub.x2, geom.rootStub.y2);
+      ctx.stroke();
     }
 
-    // Draw vertical elbow lines per internal node.
-    // Each end is pulled in by the same cer used at that child's arc so the
-    // line abuts the curved segment cleanly.
     ctx.beginPath();
-    for (const node of this.nodes) {
-      if (node.isTip) continue;
-      if (node.children.length === 0) continue;
-
-      const childNodes = node.children.map(cid => nodeMap.get(cid)).filter(Boolean);
-      if (childNodes.length < 2) continue;
-
-      // Single pass to find extreme children — avoids two temporary arrays
-      // and the spread Math.min/Math.max calls.
-      let minY = Infinity, maxY = -Infinity, topChild = null, botChild = null;
-      for (const c of childNodes) {
-        if (c.y < minY) { minY = c.y; topChild = c; }
-        if (c.y > maxY) { maxY = c.y; botChild = c; }
-      }
-
-      if (maxY < yWorldMin || minY > yWorldMax) continue;
-
-      const nx     = this._wx(node.x);
-      const py     = this._wy(node.y);
-
-      const ny_top = this._wy(topChild.y);
-      const ny_bot = this._wy(botChild.y);
-
-      // Use the same cer formula as the arc pass so the line ends exactly where
-      // the arc begins.
-      const cer_top = er > 0 ? Math.min(er, Math.abs(ny_top - py) * 0.4, Math.abs(this._wx(topChild.x) - nx) * 0.4) : 0;
-      const cer_bot = er > 0 ? Math.min(er, Math.abs(ny_bot - py) * 0.4, Math.abs(this._wx(botChild.x) - nx) * 0.4) : 0;
-
-      ctx.moveTo(nx, ny_top + cer_top); // just below topmost child's arc start
-      ctx.lineTo(nx, ny_bot - cer_bot); // just above bottommost child's arc start
+    for (const v of geom.verticals) {
+      ctx.moveTo(v.x1, v.y1);
+      ctx.lineTo(v.x2, v.y2);
     }
     ctx.stroke();
     ctx.restore();
@@ -4596,18 +4410,9 @@ export class TreeRenderer {
           if (!this._passesFilter(this._tipLabelsFilterId, node)) continue;
           if (this._selectedTipIds.has(node.id)) continue;
           if (!this._showLabelAt(node.y)) continue;
-          const _pd = this._tipLabelPartData?.get(node.id) ?? this._tipLabelParts(node);
-          if (_pd.parts.length === 0) continue;
+          const _t = this._tipLabelText(node);
           const _bX = alignLabelX ?? (this._wx(node.x) + outlineR);
-          const _sy = this._wy(node.y);
-          let _px = _tx(_bX);
-          ctx.fillText(_pd.parts[0], _px, _sy);
-          for (let _i = 1; _i < _pd.parts.length; _i++) {
-            const _mode = _pd.modes[_i - 1] ?? 'append';
-            if (_mode === 'align') _px += (this._tipLabelSegmentMax?.[_i - 1] ?? 0) + tipLabelSpacing;
-            else _px += ctx.measureText(_pd.parts[_i - 1]).width + tipLabelSpacing;
-            ctx.fillText(_pd.parts[_i], _px, _sy);
-          }
+          if (_t) ctx.fillText(_t, _tx(_bX), this._wy(node.y));
         }
         // Sub-pass 3b: selected labels in bold + selected colour
         ctx.fillStyle = this.selectedLabelColor;
@@ -4616,18 +4421,9 @@ export class TreeRenderer {
           if (!this._passesFilter(this._tipLabelsFilterId, node)) continue;
           if (!this._selectedTipIds.has(node.id)) continue;
           if (!this._showLabelAt(node.y)) continue;
-          const _pd = this._tipLabelPartData?.get(node.id) ?? this._tipLabelParts(node);
-          if (_pd.parts.length === 0) continue;
+          const _t = this._tipLabelText(node);
           const _bX = alignLabelX ?? (this._wx(node.x) + outlineR);
-          const _sy = this._wy(node.y);
-          let _px = _tx(_bX);
-          ctx.fillText(_pd.parts[0], _px, _sy);
-          for (let _i = 1; _i < _pd.parts.length; _i++) {
-            const _mode = _pd.modes[_i - 1] ?? 'append';
-            if (_mode === 'align') _px += (this._tipLabelSegmentMax?.[_i - 1] ?? 0) + tipLabelSpacing;
-            else _px += ctx.measureText(_pd.parts[_i - 1]).width + tipLabelSpacing;
-            ctx.fillText(_pd.parts[_i], _px, _sy);
-          }
+          if (_t) ctx.fillText(_t, _tx(_bX), this._wy(node.y));
         }
         ctx.font = this._tipFont(this.fontSize);
       } else if (this._labelColourBy && this._labelColourScale) {
@@ -4635,42 +4431,21 @@ export class TreeRenderer {
         for (const node of this._vTips) {
           if (!this._passesFilter(this._tipLabelsFilterId, node)) continue;
           if (!this._showLabelAt(node.y)) continue;
-          const _pd = this._tipLabelPartData?.get(node.id) ?? this._tipLabelParts(node);
-          if (_pd.parts.length === 0) continue;
+          const _t = this._tipLabelText(node);
+          if (!_t) continue;
           const val = this._statValue(node, key);
           const _bX = alignLabelX ?? (this._wx(node.x) + outlineR);
-          const _sy = this._wy(node.y);
           ctx.fillStyle = this._labelColourForValue(val) ?? this.labelColor;
-          let _px = _tx(_bX);
-          ctx.fillText(_pd.parts[0], _px, _sy);
-          if (_pd.parts.length > 1) {
-            ctx.fillStyle = this.labelColor;
-            for (let _i = 1; _i < _pd.parts.length; _i++) {
-              const _mode = _pd.modes[_i - 1] ?? 'append';
-              if (_mode === 'align') _px += (this._tipLabelSegmentMax?.[_i - 1] ?? 0) + tipLabelSpacing;
-              else _px += ctx.measureText(_pd.parts[_i - 1]).width + tipLabelSpacing;
-              ctx.fillText(_pd.parts[_i], _px, _sy);
-            }
-            ctx.fillStyle = this._labelColourForValue(val) ?? this.labelColor;
-          }
+          ctx.fillText(_t, _tx(_bX), this._wy(node.y));
         }
       } else {
         ctx.fillStyle = this.labelColor;
         for (const node of this._vTips) {
           if (!this._passesFilter(this._tipLabelsFilterId, node)) continue;
           if (!this._showLabelAt(node.y)) continue;
-          const _pd = this._tipLabelPartData?.get(node.id) ?? this._tipLabelParts(node);
-          if (_pd.parts.length === 0) continue;
+          const _t = this._tipLabelText(node);
           const _bX = alignLabelX ?? (this._wx(node.x) + outlineR);
-          const _sy = this._wy(node.y);
-          let _px = _tx(_bX);
-          ctx.fillText(_pd.parts[0], _px, _sy);
-          for (let _i = 1; _i < _pd.parts.length; _i++) {
-            const _mode = _pd.modes[_i - 1] ?? 'append';
-            if (_mode === 'align') _px += (this._tipLabelSegmentMax?.[_i - 1] ?? 0) + tipLabelSpacing;
-            else _px += ctx.measureText(_pd.parts[_i - 1]).width + tipLabelSpacing;
-            ctx.fillText(_pd.parts[_i], _px, _sy);
-          }
+          if (_t) ctx.fillText(_t, _tx(_bX), this._wy(node.y));
         }
       }
 
@@ -4840,7 +4615,6 @@ export class TreeRenderer {
       }
     }
   }
-
   /** Draw selection markers, MRCA indicator, hover state, branch-mode hit markers and drag-select rect. */
   _drawSelectionAndHover(yWorldMin, yWorldMax) {
     const ctx   = this.ctx;

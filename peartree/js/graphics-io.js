@@ -5,10 +5,19 @@
 import { AxisRenderer } from './axis-renderer.js';
 import { Axis } from './axis.js';
 import { isNumericType, TreeCalibration } from './phylograph.js';
+import {
+  traceRoundedRectPath,
+  traceCladeTopPath,
+  traceCladeBottomPath,
+  traceCladeRightPath,
+} from './clade-highlight-geometry.js';
+import { buildNodeBarPrimitives } from './node-bars-geometry.js';
+import { buildBranchPrimitives } from './branch-geometry.js';
 import { getSequentialPalette,
          DEFAULT_CATEGORICAL_PALETTE, DEFAULT_SEQUENTIAL_PALETTE,
          MISSING_DATA_COLOUR, buildCategoricalColourMap } from '@artic-network/pearcore/palettes.js';
-import { htmlEsc as esc } from '@artic-network/pearcore/utils.js';
+import { TYPEFACES } from '@artic-network/pearcore/typefaces.js';
+import { htmlEsc as esc, overlapsZones } from '@artic-network/pearcore/utils.js';
 
 /** @private SVG text-content escaper (no quot needed here). */
 function svgTextEsc(s) {
@@ -44,6 +53,96 @@ function makeSvgPath(fmt) {
     closePath() { parts.push('Z'); },
     get d() { return parts.join(' '); },
   };
+}
+
+/** @private Resolve SVG font attributes from renderer typeface settings. */
+function resolveSvgTypeface(renderer, key = null, style = null) {
+  const k = key ?? renderer._typefaceKey ?? null;
+  const fallbackFamily = renderer.fontFamily ?? renderer._fontFamily ?? 'monospace';
+  if (!k) {
+    return {
+      family: fallbackFamily,
+      weight: 400,
+      fontStyle: 'normal',
+      face: null,
+      styleKey: style ?? 'Regular',
+    };
+  }
+  const s = style ?? (key ? (TYPEFACES[k]?.defaultStyle ?? 'Regular') : (renderer._typefaceStyle ?? 'Regular'));
+  const face = TYPEFACES[k];
+  if (!face) {
+    return {
+      family: fallbackFamily || k,
+      weight: 400,
+      fontStyle: 'normal',
+      face: null,
+      styleKey: s,
+    };
+  }
+  const desc = face.styles[s] ?? face.styles[face.defaultStyle] ?? { weight: 400, fontStyle: 'normal' };
+  return {
+    family: face.family,
+    weight: desc.weight ?? 400,
+    fontStyle: desc.fontStyle ?? 'normal',
+    face,
+    styleKey: s,
+  };
+}
+
+/** @private Apply selectedLabelStyle to a resolved typeface, mirroring TreeRenderer._selectedFont. */
+function resolveSelectedSvgTypeface(renderer, baseTypeface) {
+  const sel = renderer.selectedLabelStyle || 'bold';
+  if (sel === 'normal') return baseTypeface;
+
+  const wantBold = sel === 'bold' || sel === 'bold italic';
+  const wantItalic = sel === 'italic' || sel === 'bold italic';
+
+  if (!baseTypeface.face) {
+    return {
+      ...baseTypeface,
+      weight: wantBold ? Math.min((baseTypeface.weight ?? 400) + 300, 900) : (baseTypeface.weight ?? 400),
+      fontStyle: wantItalic ? 'italic' : 'normal',
+    };
+  }
+
+  const baseWeight = baseTypeface.face.styles?.[baseTypeface.styleKey]?.weight ?? 400;
+  const targetWeight = wantBold ? Math.min(baseWeight + 300, 900) : baseWeight;
+  const targetFontStyle = wantItalic ? 'italic' : 'normal';
+
+  let best = null;
+  let bestScore = Infinity;
+  for (const desc of Object.values(baseTypeface.face.styles ?? {})) {
+    const wDiff = Math.abs((desc.weight ?? 400) - targetWeight);
+    const fMatch = (desc.fontStyle ?? 'normal') === targetFontStyle ? 0 : 1;
+    const score = wDiff + fMatch * 200;
+    if (score < bestScore) {
+      bestScore = score;
+      best = desc;
+    }
+  }
+
+  return {
+    ...baseTypeface,
+    weight: best?.weight ?? baseTypeface.weight,
+    fontStyle: best?.fontStyle ?? baseTypeface.fontStyle,
+  };
+}
+
+/** @private Build an SVG <text> element string with consistent escaping. */
+function svgTextEl({
+  x,
+  y,
+  text,
+  baseline = 'central',
+  anchor = null,
+  family = 'monospace',
+  sizePx = 10,
+  style = 'normal',
+  weight = 400,
+  fill = '#000',
+}) {
+  const anchorAttr = anchor ? ` text-anchor="${anchor}"` : '';
+  return `<text x="${x}" y="${y}" dominant-baseline="${baseline}"${anchorAttr} font-family="${esc(family)}" font-size="${sizePx}px" font-style="${style}" font-weight="${weight}" fill="${esc(fill)}">${svgTextEsc(text)}</text>`;
 }
 
 /**
@@ -229,7 +328,16 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     let   ly    = yOffset + PAD;
     const maxY  = yOffset + legendH - PAD;
 
-    out.push(`<text x="${lx + PAD}" y="${ly}" dominant-baseline="hanging" font-family="${lfont}" font-size="${lfs}px" font-weight="700" fill="#b58900">${svgTextEsc(key)}</text>`);
+    out.push(svgTextEl({
+      x: lx + PAD,
+      y: ly,
+      text: key,
+      baseline: 'hanging',
+      family: lfont,
+      sizePx: lfs,
+      weight: 700,
+      fill: '#b58900',
+    }));
     ly += lfs + 10;
 
     if (def.dataType === 'categorical' || def.dataType === 'ordinal') {
@@ -241,7 +349,15 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
         if (ly + SWATCH > maxY) return;
         const colour = colourMap.get(val) ?? MISSING_DATA_COLOUR;
         out.push(`<rect x="${lx + PAD}" y="${ly}" width="${SWATCH}" height="${SWATCH}" fill="${esc(colour)}"/>`);
-        out.push(`<text x="${lx + PAD + SWATCH + 6}" y="${ly + SWATCH / 2}" dominant-baseline="central" font-family="${lfont}" font-size="${lfs}px" fill="${esc(ltc)}">${svgTextEsc(String(val))}</text>`);
+        out.push(svgTextEl({
+          x: lx + PAD + SWATCH + 6,
+          y: ly + SWATCH / 2,
+          text: String(val),
+          baseline: 'central',
+          family: lfont,
+          sizePx: lfs,
+          fill: ltc,
+        }));
         ly += ROW_H;
       });
     } else if (def.dataType === 'date' || isNumericType(def.dataType)) {
@@ -285,7 +401,15 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
         // Tick mark
         out.push(`<rect x="${lx + PAD + BAR_W}" y="${f(tickY - 0.5)}" width="4" height="1" fill="${esc(ltc)}"/>`);
         const baseline = i === 0 ? 'hanging' : (i === tickCount - 1 ? 'auto' : 'central');
-        out.push(`<text x="${LABEL_X}" y="${f(tickY)}" dominant-baseline="${baseline}" font-family="${lfont}" font-size="${lfs}px" fill="${esc(ltc)}">${svgTextEsc(String(label))}</text>`);
+        out.push(svgTextEl({
+          x: LABEL_X,
+          y: f(tickY),
+          text: String(label),
+          baseline,
+          family: lfont,
+          sizePx: lfs,
+          fill: ltc,
+        }));
       }
     }
   };
@@ -324,8 +448,13 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   if (renderer._cladeHighlights?.size && renderer.nodes && nm) {
     const chPad     = renderer.cladeHighlightPadding;
     const chR       = renderer.cladeHighlightRadius;
-    const leftMode  = renderer.cladeHighlightLeftEdge;
-    const rightMode = renderer.cladeHighlightRightEdge;
+    const leftModeRaw  = renderer.cladeHighlightLeftEdge;
+    const rightModeRaw = renderer.cladeHighlightRightEdge;
+    const leftMode = leftModeRaw === 'outline' ? 'outlineNodes' : leftModeRaw;
+    const rightMode = rightModeRaw === 'hardTips' ? 'atTips'
+      : rightModeRaw === 'hardAlign' ? 'atLabels'
+      : rightModeRaw === 'hardLabels' ? 'atLabelsRight'
+      : rightModeRaw;
     const fillOp    = renderer.cladeHighlightFillOpacity;
     const strokeOp  = renderer.cladeHighlightStrokeOpacity;
     const strokeW   = renderer.cladeHighlightStrokeWidth;
@@ -337,87 +466,16 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     const _chRightX = (tipXmax) => {
       const tipSX = toSX(tipXmax);
       switch (rightMode) {
-        case 'hardTips':   return tipSX + chOutR + chPad;
-        case 'hardAlign':  return (renderer.tipLabelAlign && renderer.tipLabelAlign !== 'off')
+        case 'atTips':   return tipSX + chOutR + chPad;
+        case 'atLabels': return (renderer.tipLabelAlign && renderer.tipLabelAlign !== 'off')
           ? toSX(renderer.maxX) + chOutR + chLblSp + chShpW + chPad
           : tipSX + chOutR + chLblSp + chShpW + chPad;
-        default:           return tipSX + chOutR + chLblSp + chShpW + chPad;  // hardLabels
+        case 'atLabelsRight':
+          return ttW - (renderer.treePaddingRight ?? 10);
+        default:
+          return tipSX + chOutR + chLblSp + chShpW + chPad;
       }
     };
-
-    // SVG equivalents of the three canvas outline-path helpers.
-    function _chTopPath(p, rootNode) {
-      const topChild = n => n.isTip || !n.children?.length ? null
-        : n.children.map(id => nm.get(id)).filter(Boolean).reduce((b, c) => c.y < b.y ? c : b);
-      p.moveTo(toSX(rootNode.x) - chPad, toSY(rootNode.y));
-      let cur = rootNode, prevSY_ = toSY(rootNode.y);
-      while (true) {
-        const child = topChild(cur);
-        if (!child) break;
-        const cx_ = toSX(cur.x)   - chPad;
-        const cy_ = toSY(child.y) - chPad;
-        const nx_ = toSX(child.x) - chPad;
-        const vd  = prevSY_ - cy_, hd = nx_ - cx_;
-        const cr  = chR > 0 ? Math.min(chR, vd > 0 ? vd*0.45 : chR, hd > 0 ? hd*0.45 : chR) : 0;
-        if (cr > 0) { p.lineTo(cx_, cy_ + cr); p.arcTo(cx_, cy_, nx_, cy_, cr); }
-        else        { p.lineTo(cx_, cy_); }
-        p.lineTo(nx_, cy_);
-        prevSY_ = cy_; cur = child;
-      }
-    }
-
-    function _chBotPath(p, rootNode) {
-      const botChild = n => n.isTip || !n.children?.length ? null
-        : n.children.map(id => nm.get(id)).filter(Boolean).reduce((b, c) => c.y > b.y ? c : b);
-      const spine = []; let cur = rootNode;
-      while (cur) { spine.push(cur); cur = botChild(cur); }
-      spine.reverse();
-      for (let i = 0; i < spine.length - 1; i++) {
-        const child  = spine[i], parent = spine[i + 1];
-        const isLast = i === spine.length - 2;
-        const cornX  = toSX(parent.x) - chPad;
-        const cornY  = toSY(child.y)  + chPad;
-        const nextY_ = toSY(parent.y) + (isLast ? 0 : chPad);
-        const hd = toSX(child.x) - toSX(parent.x), vd = cornY - nextY_;
-        const cr = chR > 0 ? Math.min(chR, hd > 0 ? hd*0.45 : chR, vd > 0 ? vd*0.45 : chR) : 0;
-        if (cr > 0) { p.lineTo(cornX + cr, cornY); p.arcTo(cornX, cornY, cornX, nextY_, cr); }
-        else        { p.lineTo(cornX, cornY); }
-        p.lineTo(cornX, nextY_);
-      }
-    }
-
-    function _chRightPath(p, tipNodes, startY_, endY_) {
-      const sxArr = tipNodes.map(t => toSX(t.x) + chPad);
-      for (let i = 0; i < tipNodes.length; i++) {
-        const sx       = sxArr[i];
-        const prevSX_  = i > 0 ? sxArr[i - 1] : null;
-        const nextSX_  = i < tipNodes.length - 1 ? sxArr[i + 1] : null;
-        const prevMidY = i === 0 ? startY_ : (toSY(tipNodes[i-1].y) + toSY(tipNodes[i].y)) / 2;
-        const nextMidY = i < tipNodes.length - 1 ? (toSY(tipNodes[i].y) + toSY(tipNodes[i+1].y)) / 2 : endY_;
-        const vd = nextMidY - prevMidY;
-        const topConvex = prevSX_ === null || sx >= prevSX_;
-        const cr_top = chR > 0 && topConvex
-          ? Math.min(chR, vd > 0 ? vd*0.45 : chR, prevSX_ !== null ? Math.abs(sx - prevSX_)*0.45 : chR) : 0;
-        if (cr_top > 0) { p.lineTo(sx - cr_top, prevMidY); p.arcTo(sx, prevMidY, sx, prevMidY + cr_top, cr_top); }
-        else            { p.lineTo(sx, prevMidY); }
-        const botConvex = nextSX_ === null || nextSX_ < sx;
-        const cr_bot = chR > 0 && botConvex
-          ? Math.min(chR, vd > 0 ? vd*0.45 : chR, nextSX_ !== null ? (sx - nextSX_)*0.45 : chR) : 0;
-        if (cr_bot > 0) { p.lineTo(sx, nextMidY - cr_bot); p.arcTo(sx, nextMidY, sx - cr_bot, nextMidY, cr_bot); }
-        else            { p.lineTo(sx, nextMidY); }
-      }
-    }
-
-    function _chRoundedRect(p, x, y, w, h, r) {
-      const br = Math.min(r, w/2, h/2);
-      if (br <= 0) { p.moveTo(x, y); p.lineTo(x+w, y); p.lineTo(x+w, y+h); p.lineTo(x, y+h); p.closePath(); return; }
-      p.moveTo(x + br, y);
-      p.lineTo(x + w - br, y); p.arcTo(x+w, y,   x+w, y+br,   br);
-      p.lineTo(x + w, y + h - br); p.arcTo(x+w, y+h, x+w-br, y+h, br);
-      p.lineTo(x + br, y + h); p.arcTo(x, y+h, x, y+h-br, br);
-      p.lineTo(x, y + br); p.arcTo(x, y, x+br, y, br);
-      p.closePath();
-    }
 
     for (const [nodeId, hlData] of renderer._cladeHighlights) {
       const rootN = nm.get(nodeId);
@@ -436,11 +494,32 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
       const botPadY_ = toSY(maxTipY) + chPad;
 
       const p = makeSvgPath(f);
-      if (leftMode === 'outline' && tipNodes.length > 1) {
-        _chTopPath(p, rootN);
+      if (leftMode === 'outlineNodes' && tipNodes.length > 1) {
+        const topChild = (n) => n.isTip || !n.children?.length ? null
+          : n.children.map(id => nm.get(id)).filter(Boolean).reduce((b, c) => c.y < b.y ? c : b);
+        traceCladeTopPath(p, {
+          rootNode: rootN,
+          pad: chPad,
+          radius: chR,
+          leftPad: chPad,
+          topPadY: null,
+          getTopChild: topChild,
+          toX: toSX,
+          toY: toSY,
+        });
         const rightX_ = _chRightX(maxTipX);
         if (rightMode === 'outlineTips') {
-          _chRightPath(p, tipNodes, topPadY_, botPadY_);
+          traceCladeRightPath(p, {
+            tipNodes,
+            startY: topPadY_,
+            endY: botPadY_,
+            pad: chPad,
+            radius: chR,
+            toX: toSX,
+            toY: toSY,
+            getTipX: t => t.x,
+            getHalfY: () => 0,
+          });
         } else {
           const cr = chR;
           p.lineTo(rightX_ - cr, topPadY_);
@@ -448,21 +527,42 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
           p.lineTo(rightX_, botPadY_ - cr);
           p.arcTo(rightX_, botPadY_, rightX_ - cr, botPadY_, cr);
         }
-        _chBotPath(p, rootN);
+        const botChild = (n) => n.isTip || !n.children?.length ? null
+          : n.children.map(id => nm.get(id)).filter(Boolean).reduce((b, c) => c.y > b.y ? c : b);
+        traceCladeBottomPath(p, {
+          rootNode: rootN,
+          pad: chPad,
+          radius: chR,
+          leftPad: chPad,
+          botPadY: null,
+          getBottomChild: botChild,
+          toX: toSX,
+          toY: toSY,
+        });
         p.closePath();
       } else {
         const leftX_ = toSX(rootN.x) - chPad;
         const cr = Math.min(chR, (botPadY_ - topPadY_) / 2);
         if (rightMode === 'outlineTips' && tipNodes.length > 1) {
           p.moveTo(leftX_ + cr, topPadY_);
-          _chRightPath(p, tipNodes, topPadY_, botPadY_);
+          traceCladeRightPath(p, {
+            tipNodes,
+            startY: topPadY_,
+            endY: botPadY_,
+            pad: chPad,
+            radius: chR,
+            toX: toSX,
+            toY: toSY,
+            getTipX: t => t.x,
+            getHalfY: () => 0,
+          });
           p.lineTo(leftX_ + cr, botPadY_);
           p.arcTo(leftX_, botPadY_, leftX_, botPadY_ - cr, cr);
           p.lineTo(leftX_, topPadY_ + cr);
           p.arcTo(leftX_, topPadY_, leftX_ + cr, topPadY_, cr);
           p.closePath();
         } else {
-          _chRoundedRect(p, leftX_, topPadY_, _chRightX(maxTipX) - leftX_, botPadY_ - topPadY_, cr);
+          traceRoundedRectPath(p, leftX_, topPadY_, _chRightX(maxTipX) - leftX_, botPadY_ - topPadY_, cr);
         }
       }
 
@@ -480,28 +580,9 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     const schema    = renderer._annotationSchema;
     const heightDef = schema?.get('height');
     if (heightDef?.group?.hpd) {
-      const hpdKey    = renderer.nodeBarsHpdKey ?? heightDef.group.hpd;
-      const configs   = [];
-      if (hpdKey) {
-        configs.push({
-          hpdKey,
-          width: renderer.nodeBarsWidth,
-          color: renderer.nodeBarsColor,
-          fillOpacity: renderer.nodeBarsFillOpacity,
-          strokeOpacity: renderer.nodeBarsStrokeOpacity,
-        });
-      }
-      for (let i = 0; i < 3; i += 1) {
-        const k = renderer.nodeBarsExtraHpdKeys?.[i];
-        if (!k) continue;
-        configs.push({
-          hpdKey: k,
-          width: +renderer.nodeBarsExtraWidths?.[i] || 6,
-          color: renderer.nodeBarsExtraColors?.[i] || '#2aa198',
-          fillOpacity: renderer.nodeBarsExtraFillOpacities?.[i] != null ? +renderer.nodeBarsExtraFillOpacities[i] : 0.22,
-          strokeOpacity: renderer.nodeBarsExtraStrokeOpacities?.[i] != null ? +renderer.nodeBarsExtraStrokeOpacities[i] : 0.55,
-        });
-      }
+      const configs = (typeof renderer._nodeBarConfigs === 'function')
+        ? renderer._nodeBarConfigs(heightDef)
+        : [];
       if (!configs.length) {
         // nothing to draw
       } else {
@@ -509,71 +590,38 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
       const rangeKey  = heightDef.group.range;
       const maxX      = renderer._rootHeightRef ? renderer._rootHeightRef() : renderer.maxX;
 
-      for (const cfg of configs) {
-        const halfW = cfg.width / 2;
-        const col = cfg.color;
-
-        // Passes 1 + 2: translucent fill box and border outlined box per HPD interval.
-        for (const [, node] of nm) {
-          if (node.isTip) continue;
-          if (renderer._passesFilter && !renderer._passesFilter(renderer._nodeBarsFilterId, node)) continue;
+      const layers = buildNodeBarPrimitives({
+        nodes: [...nm.values()],
+        configs,
+        maxX,
+        medianKey,
+        rangeKey,
+        lineMode: renderer.nodeBarsLine,
+        includeRange: renderer.nodeBarsRange,
+        toX: toSX,
+        toY: toSY,
+        isVisible: node => {
           const ny = toSY(node.y);
-          if (ny < -MARGIN || ny > ttH_eff + MARGIN) continue;
-          const hpd = node.annotations?.[cfg.hpdKey];
-          if (!Array.isArray(hpd) || hpd.length < 2) continue;
-          const xLeft  = toSX(maxX - hpd[1]);
-          const xRight = toSX(maxX - hpd[0]);
-          if (xRight <= xLeft) continue;
-          nodeBarParts.push(`<rect x="${f(xLeft)}" y="${f(ny - halfW)}" width="${f(xRight - xLeft)}" height="${f(halfW * 2)}" fill="${esc(col)}" opacity="${f(cfg.fillOpacity)}"/>`);
-          nodeBarParts.push(`<rect x="${f(xLeft)}" y="${f(ny - halfW)}" width="${f(xRight - xLeft)}" height="${f(halfW * 2)}" fill="none" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
-        }
+          return ny >= -MARGIN && ny <= ttH_eff + MARGIN;
+        },
+        passFilter: node => (renderer._passesFilter ? renderer._passesFilter(renderer._nodeBarsFilterId, node) : true),
+      });
 
-        // Pass 3: mean or median centre line.
-        if (renderer.nodeBarsLine !== 'off') {
-          const useMedian = renderer.nodeBarsLine === 'median';
-          for (const [, node] of nm) {
-            if (node.isTip) continue;
-            if (renderer._passesFilter && !renderer._passesFilter(renderer._nodeBarsFilterId, node)) continue;
-            const ny = toSY(node.y);
-            if (ny < -MARGIN || ny > ttH_eff + MARGIN) continue;
-            const hpd = node.annotations?.[cfg.hpdKey];
-            if (!Array.isArray(hpd) || hpd.length < 2) continue;
-            let xLine;
-            if (useMedian) {
-              if (!medianKey) continue;
-              const medVal = node.annotations?.[medianKey];
-              if (medVal == null) continue;
-              xLine = toSX(maxX - medVal);
-            } else {
-              const meanVal = node.annotations?.['height'];
-              if (meanVal == null) continue;
-              xLine = toSX(maxX - meanVal);
-            }
-            nodeBarParts.push(`<line x1="${f(xLine)}" y1="${f(ny - halfW)}" x2="${f(xLine)}" y2="${f(ny + halfW)}" stroke="${esc(col)}" stroke-width="2" opacity="${f(cfg.strokeOpacity)}"/>`);
-          }
+      for (const layer of layers) {
+        const cfg = layer.config;
+        const col = cfg.color;
+        for (const r of layer.rects) {
+          nodeBarParts.push(`<rect x="${f(r.xLeft)}" y="${f(r.cy - r.halfW)}" width="${f(r.xRight - r.xLeft)}" height="${f(r.halfW * 2)}" fill="${esc(col)}" opacity="${f(cfg.fillOpacity)}"/>`);
+          nodeBarParts.push(`<rect x="${f(r.xLeft)}" y="${f(r.cy - r.halfW)}" width="${f(r.xRight - r.xLeft)}" height="${f(r.halfW * 2)}" fill="none" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
         }
-
-        // Pass 4: range whiskers (line to full-range extent + end cap).
-        if (renderer.nodeBarsRange && rangeKey) {
-          const capH = halfW * 0.6;
-          for (const [, node] of nm) {
-            if (node.isTip) continue;
-            if (renderer._passesFilter && !renderer._passesFilter(renderer._nodeBarsFilterId, node)) continue;
-            const ny = toSY(node.y);
-            if (ny < -MARGIN || ny > ttH_eff + MARGIN) continue;
-            const hpd   = node.annotations?.[cfg.hpdKey];
-            const range = node.annotations?.[rangeKey];
-            if (!Array.isArray(hpd) || hpd.length < 2) continue;
-            if (!Array.isArray(range) || range.length < 2) continue;
-            const xHpdL   = toSX(maxX - hpd[1]);
-            const xHpdR   = toSX(maxX - hpd[0]);
-            const xRangeL = toSX(maxX - range[1]);
-            const xRangeR = toSX(maxX - range[0]);
-            nodeBarParts.push(`<line x1="${f(xHpdL)}" y1="${f(ny)}" x2="${f(xRangeL)}" y2="${f(ny)}" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
-            nodeBarParts.push(`<line x1="${f(xRangeL)}" y1="${f(ny - capH)}" x2="${f(xRangeL)}" y2="${f(ny + capH)}" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
-            nodeBarParts.push(`<line x1="${f(xHpdR)}" y1="${f(ny)}" x2="${f(xRangeR)}" y2="${f(ny)}" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
-            nodeBarParts.push(`<line x1="${f(xRangeR)}" y1="${f(ny - capH)}" x2="${f(xRangeR)}" y2="${f(ny + capH)}" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
-          }
+        for (const l of layer.lines) {
+          nodeBarParts.push(`<line x1="${f(l.xLine)}" y1="${f(l.cy - l.halfW)}" x2="${f(l.xLine)}" y2="${f(l.cy + l.halfW)}" stroke="${esc(col)}" stroke-width="2" opacity="${f(cfg.strokeOpacity)}"/>`);
+        }
+        for (const w of layer.whiskers) {
+          nodeBarParts.push(`<line x1="${f(w.xHpdL)}" y1="${f(w.cy)}" x2="${f(w.xRangeL)}" y2="${f(w.cy)}" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
+          nodeBarParts.push(`<line x1="${f(w.xRangeL)}" y1="${f(w.cy - w.capH)}" x2="${f(w.xRangeL)}" y2="${f(w.cy + w.capH)}" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
+          nodeBarParts.push(`<line x1="${f(w.xHpdR)}" y1="${f(w.cy)}" x2="${f(w.xRangeR)}" y2="${f(w.cy)}" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
+          nodeBarParts.push(`<line x1="${f(w.xRangeR)}" y1="${f(w.cy - w.capH)}" x2="${f(w.xRangeR)}" y2="${f(w.cy + w.capH)}" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
         }
       }
       }
@@ -596,14 +644,46 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   const nodeBgColor = renderer.nodeShapeBgColor || bg;
 
   const rootNode = [...nm.values()].find(n => n.parentId === null);
-  if (rootNode) {
-    const rx = toSX(rootNode.x), ry = toSY(rootNode.y);
-    const stub = renderer.rootStubLength ?? 20;
-    branchParts.push(`<line x1="${f(rx - stub)}" y1="${f(ry)}" x2="${f(rx)}" y2="${f(ry)}"/>`);
+  const rootStubLength = rootNode
+    ? ((renderer._viewSubtreeRootId === null)
+        ? (renderer.rootStemPct ?? 0) / 100 * renderer.maxX * sx
+        : renderer.rootStubLength)
+    : 0;
+  const branchGeom = buildBranchPrimitives({
+    horizontalNodes: [...nm.values()].filter(n => {
+      const ny = toSY(n.y);
+      return ny > -MARGIN && ny < ttH + MARGIN;
+    }),
+    verticalNodes: [...nm.values()],
+    nodeMap: nm,
+    toX: toSX,
+    toY: toSY,
+    elbowRadius: renderer.elbowRadius ?? 0,
+    yWorldMin: fullTree ? -Infinity : ((-MARGIN - oy) / sy),
+    yWorldMax: fullTree ? Infinity : ((ttH + MARGIN - oy) / sy),
+    rootNode,
+    rootStubLength,
+  });
+  for (const h of branchGeom.horizontals) {
+    branchParts.push(`<line x1="${f(h.x1)}" y1="${f(h.y1)}" x2="${f(h.x2)}" y2="${f(h.y2)}"/>`);
+  }
+  if ((renderer.elbowRadius ?? 0) > 0 && branchGeom.elbows.length) {
+    const bp = makeSvgPath(f);
+    for (const a of branchGeom.elbows) {
+      bp.moveTo(a.moveX, a.moveY);
+      bp.arcTo(a.x1, a.y1, a.x2, a.y2, a.r);
+    }
+    branchParts.push(`<path d="${esc(bp.d)}" fill="none"/>`);
+  }
+  if (branchGeom.rootStub) {
+    branchParts.push(`<line x1="${f(branchGeom.rootStub.x1)}" y1="${f(branchGeom.rootStub.y1)}" x2="${f(branchGeom.rootStub.x2)}" y2="${f(branchGeom.rootStub.y2)}"/>`);
+  }
+  for (const v of branchGeom.verticals) {
+    branchParts.push(`<line x1="${f(v.x1)}" y1="${f(v.y1)}" x2="${f(v.x2)}" y2="${f(v.y2)}"/>`);
   }
 
   // ── Tip-label alignment and shape pre-computation ─────────────────────
-  const outlineR     = tr > 0 ? tr + renderer.tipHaloSize : 0;
+  const outlineR     = Math.max(tr + renderer.tipHaloSize, 5);
   const _align       = renderer.tipLabelAlign;
   const alignLabelX  = (_align && _align !== 'off')
     ? toSX(renderer.maxX) + outlineR
@@ -645,28 +725,25 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   }
   const _svgLblSp = renderer.tipLabelSpacing ?? 3;
   const _svgTxOff = _svgShOff + _svgExtraTotalOff + _svgLblSp;  // total x offset from baseX to text
+  const _svgShowLabels = sy >= fs * 0.5 || renderer._hypFocusScreenY !== null;
+  const _svgPassesFilter = (filterId, node) =>
+    (renderer._passesFilter ? renderer._passesFilter(filterId, node) : true);
+  const _svgShowLabelAt = (worldY) =>
+    (renderer._showLabelAt ? renderer._showLabelAt(worldY) : true);
+  const _svgHasSelection = (renderer._selectedTipIds?.size ?? 0) > 0;
+  const _svgIsSelectedTip = (node) => !!renderer._selectedTipIds?.has?.(node.id);
+  const _svgIsSelectedClade = (node) => renderer._mrcaNodeId === node.id;
+  const _svgTipTypeface = resolveSvgTypeface(renderer, renderer._tipLabelTypefaceKey || null, renderer._tipLabelTypefaceStyle || null);
+  const _svgNodeLabelTypeface = resolveSvgTypeface(renderer, renderer._nodeLabelTypefaceKey || null, renderer._nodeLabelTypefaceStyle || null);
+  const _svgBranchLabelTypeface = resolveSvgTypeface(renderer, renderer._branchLabelTypefaceKey || null, renderer._branchLabelTypefaceStyle || null);
+  const _svgCollapsedCladeTypeface = resolveSvgTypeface(renderer, renderer._collapsedCladeTypefaceKey || null, renderer._collapsedCladeTypefaceStyle || null);
 
   for (const [, node] of nm) {
     const nx = toSX(node.x), ny = toSY(node.y);
 
-    if (node.parentId !== null) {
-      const parent = nm.get(node.parentId);
-      if (parent && ny > -MARGIN && ny < ttH + MARGIN) {
-        branchParts.push(`<line x1="${f(toSX(parent.x))}" y1="${f(ny)}" x2="${f(nx)}" y2="${f(ny)}"/>`);
-      }
-    }
-
-    if (!node.isTip && node.children.length >= 2) {
-      const childYs = node.children.map(cid => { const c = nm.get(cid); return c ? toSY(c.y) : null; }).filter(y => y !== null);
-      if (childYs.length >= 2) {
-        const minY = Math.min(...childYs), maxY = Math.max(...childYs);
-        if (maxY > -MARGIN && minY < ttH + MARGIN)
-          branchParts.push(`<line x1="${f(nx)}" y1="${f(minY)}" x2="${f(nx)}" y2="${f(maxY)}"/>`);
-      }
-    }
-
     if (ny > -MARGIN && ny < ttH + MARGIN) {
       if (node.isTip && tr > 0 && !node.isCollapsed) {
+        if (!_svgPassesFilter(renderer._tipShapesFilterId, node)) continue;
         const fill = (renderer._tipColourBy && renderer._tipColourScale)
           ? (renderer._tipColourForValue(node.annotations?.[renderer._tipColourBy]) ?? renderer.tipShapeColor)
           : renderer.tipShapeColor;
@@ -674,6 +751,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
           bgTipParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${esc(tipBgColor)}" stroke="${esc(tipBgColor)}" stroke-width="${tipHaloSW}"/>`);
         fgTipParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${esc(fill)}"/>`);
       } else if (!node.isTip && nr > 0) {
+        if (!_svgPassesFilter(renderer._nodeShapesFilterId, node)) continue;
         const fill = (renderer._nodeColourBy && renderer._nodeColourScale)
           ? (renderer._nodeColourForValue(node.annotations?.[renderer._nodeColourBy]) ?? renderer.nodeShapeColor)
           : renderer.nodeShapeColor;
@@ -682,10 +760,12 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
         fgNodeParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${esc(fill)}"/>`);
       }
       if (node.isTip && !node.isCollapsed) {
+        const _tipPassesLabelFilter = _svgPassesFilter(renderer._tipLabelsFilterId, node);
+        const _tipLabelVisible = _svgShowLabels && _svgShowLabelAt(node.y);
         const labelText = renderer._tipLabelText ? renderer._tipLabelText(node) : node.name;
         const baseX  = alignLabelX ?? (nx + outlineR);
         // Connector line (dashed / dots / solid aligned modes only — only when labels are shown).
-        if (labelText && alignLabelX !== null && _align !== 'aligned') {
+        if (_tipPassesLabelFilter && _tipLabelVisible && labelText && alignLabelX !== null && _align !== 'aligned') {
           const tipEdgeX = nx + outlineR;
           const lineEndX = alignLabelX + (_svgShOff > 0 ? _svgShML : 0);
           if (lineEndX - tipEdgeX >= 8) {
@@ -696,7 +776,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
           }
         }
         // Shape 1 — rendered independently of label text visibility (mirrors canvas pass 3-shapes).
-        if (_svgShape !== 'off') {
+        if (_svgShape !== 'off' && _svgPassesFilter(renderer._tipShapesFilterId, node)) {
           const shapeX  = baseX + _svgShML;
           const halfSz  = _svgShSz / 2;
           const sFill   = (renderer._tipLabelShapeColourBy && renderer._tipLabelShapeColourScale)
@@ -713,7 +793,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
           }
         }
         // Extra shapes 2..N — rendered independently of label text visibility.
-        {
+        if (_tipPassesLabelFilter) {
           let _xOff = _svgShOff;
           for (let _i = 0; _i < _svgActiveExtras.length; _i++) {
             const _idx  = _svgActiveExtras[_i];
@@ -739,12 +819,31 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
           }
         }
         // Label text.
-        if (labelText) {
+        if (_tipPassesLabelFilter && _tipLabelVisible && labelText) {
           const lx2       = baseX + _svgTxOff;
-          const labelFill = (renderer._labelColourBy && renderer._labelColourScale)
-            ? (renderer._labelColourForValue(node.annotations?.[renderer._labelColourBy]) ?? lc)
-            : lc;
-          labelParts.push(`<text x="${f(lx2)}" y="${f(ny)}" dominant-baseline="central" font-family="monospace" font-size="${fs}px" fill="${esc(labelFill)}">${svgTextEsc(labelText)}</text>`);
+          let labelFill = lc;
+          let labelTypeface = _svgTipTypeface;
+          if (_svgHasSelection) {
+            if (_svgIsSelectedTip(node)) {
+              labelFill = renderer.selectedLabelColor;
+              labelTypeface = resolveSelectedSvgTypeface(renderer, _svgTipTypeface);
+            } else {
+              labelFill = renderer.dimLabelColor;
+            }
+          } else if (renderer._labelColourBy && renderer._labelColourScale) {
+            labelFill = renderer._labelColourForValue(node.annotations?.[renderer._labelColourBy]) ?? lc;
+          }
+          labelParts.push(svgTextEl({
+            x: f(lx2),
+            y: f(ny),
+            text: labelText,
+            baseline: 'central',
+            family: labelTypeface.family,
+            sizePx: fs,
+            style: labelTypeface.fontStyle,
+            weight: labelTypeface.weight,
+            fill: labelFill,
+          }));
         }
       } else if (!node.isTip) {
         const nodeLabel = renderer._nodeLabelText ? renderer._nodeLabelText(node) : null;
@@ -764,7 +863,18 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
             tx = nx - nr - spacing;  ty = ny - spacing;
             baseline = 'auto';      anchor = 'end';
           }
-          labelParts.push(`<text x="${f(tx)}" y="${f(ty)}" dominant-baseline="${baseline}" text-anchor="${anchor}" font-family="monospace" font-size="${nlfs}px" fill="${esc(nlc)}">${svgTextEsc(nodeLabel)}</text>`);
+          labelParts.push(svgTextEl({
+            x: f(tx),
+            y: f(ty),
+            text: nodeLabel,
+            baseline,
+            anchor,
+            family: _svgNodeLabelTypeface.family,
+            sizePx: nlfs,
+            style: _svgNodeLabelTypeface.fontStyle,
+            weight: _svgNodeLabelTypeface.weight,
+            fill: nlc,
+          }));
         }
       }
     }
@@ -789,7 +899,18 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
       if (!fullTree && (ny < -MARGIN || ny > ttH_eff + MARGIN)) continue;
       const mx  = (toSX(parent.x) + nx) / 2;
       const ty  = above ? ny - spacing : ny + spacing;
-      labelParts.push(`<text x="${f(mx)}" y="${f(ty)}" dominant-baseline="${baseline}" text-anchor="${anchor}" font-family="monospace" font-size="${blfs}px" fill="${esc(blc)}">${svgTextEsc(branchLabel)}</text>`);
+      labelParts.push(svgTextEl({
+        x: f(mx),
+        y: f(ty),
+        text: branchLabel,
+        baseline,
+        anchor,
+        family: _svgBranchLabelTypeface.family,
+        sizePx: blfs,
+        style: _svgBranchLabelTypeface.fontStyle,
+        weight: _svgBranchLabelTypeface.weight,
+        fill: blc,
+      }));
     }
   }
 
@@ -820,6 +941,8 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
       if (pixH < ccFontSize) continue;
       const _nodeName = node.annotations?.['Name'];
       const _hasName  = _nodeName?.trim();
+      const _selClade = _svgIsSelectedClade(node);
+      const _dimClade = _svgHasSelection && !_selClade;
       const bX = alignLabelX ?? (baseSX + ccLblSp);
       const labelTX = bX + _svgTxOff;
 
@@ -843,7 +966,30 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
               connectorParts.push(`<line x1="${f(baseSX)}" y1="${f(tipSY)}" x2="${f(lineEndX)}" y2="${f(tipSY)}" stroke="${esc(renderer.dimLabelColor)}" stroke-width="0.35"${dashAttr}/>`);
             }
           }
-          labelParts.push(`<text x="${f(labelTX)}" y="${f(tipSY)}" dominant-baseline="central" font-family="monospace" font-size="${fs}px" fill="${esc(lc)}">${svgTextEsc(tip.name)}</text>`);
+          let tipFill = lc;
+          let tipTypeface = _svgTipTypeface;
+          if (_dimClade) {
+            tipFill = renderer.dimLabelColor;
+          } else if (_selClade) {
+            tipFill = renderer.selectedLabelColor;
+            tipTypeface = resolveSelectedSvgTypeface(renderer, _svgTipTypeface);
+          } else if (renderer._labelColourBy && renderer._labelColourScale) {
+            const tipVal = renderer._statValue
+              ? renderer._statValue(tip, renderer._labelColourBy)
+              : tip.annotations?.[renderer._labelColourBy];
+            tipFill = renderer._labelColourForValue(tipVal) ?? lc;
+          }
+          labelParts.push(svgTextEl({
+            x: f(labelTX),
+            y: f(tipSY),
+            text: tip.name,
+            baseline: 'central',
+            family: tipTypeface.family,
+            sizePx: fs,
+            style: tipTypeface.fontStyle,
+            weight: tipTypeface.weight,
+            fill: tipFill,
+          }));
         }
       } else {
         // Name or count label.
@@ -860,7 +1006,25 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
             connectorParts.push(`<line x1="${f(baseSX)}" y1="${f(labelSY)}" x2="${f(lineEndX)}" y2="${f(labelSY)}" stroke="${esc(renderer.dimLabelColor)}" stroke-width="0.35"${dashAttr}/>`);
           }
         }
-        labelParts.push(`<text x="${f(labelTX)}" y="${f(labelSY)}" dominant-baseline="central" font-family="monospace" font-size="${ccFontSize}px" fill="${esc(lc)}">${svgTextEsc(label)}</text>`);
+        let cladeFill = lc;
+        let cladeTypeface = _svgCollapsedCladeTypeface;
+        if (_dimClade) {
+          cladeFill = renderer.dimLabelColor;
+        } else if (_selClade) {
+          cladeFill = renderer.selectedLabelColor;
+          cladeTypeface = resolveSelectedSvgTypeface(renderer, _svgCollapsedCladeTypeface);
+        }
+        labelParts.push(svgTextEl({
+          x: f(labelTX),
+          y: f(labelSY),
+          text: label,
+          baseline: 'central',
+          family: cladeTypeface.family,
+          sizePx: ccFontSize,
+          style: cladeTypeface.fontStyle,
+          weight: cladeTypeface.weight,
+          fill: cladeFill,
+        }));
       }
     }
   }
@@ -872,17 +1036,21 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     const plotLeft  = ar._offsetX;
     const plotRight = ar._offsetX + ar._maxX * ar._scaleX;
     const AX        = llW;   // SVG x-offset for the axis canvas origin
+    const axisCanvasRight = AX + ttW;
     const AY        = ttH_eff;      // SVG y-offset for the axis canvas origin
-    const Y_BASE    = 3;
+    const Y_BASE    = ar._spacingTop ?? 3;
     const MAJOR_H   = 9;
     const MINOR_H   = 5;
-    const TICK_C    = 'rgba(255,255,255,0.45)';
-    const MINOR_C   = 'rgba(255,255,255,0.25)';
-    const TEXT_C    = 'rgba(242,241,230,0.80)';
-    const TEXT_DIM  = 'rgba(242,241,230,0.45)';
+    const axC       = ar._axisColor;
+    const TICK_C    = axC ? AxisRenderer._hexToRgba(axC, 0.55) : 'rgba(255,255,255,0.45)';
+    const MINOR_C   = axC ? AxisRenderer._hexToRgba(axC, 0.30) : 'rgba(255,255,255,0.25)';
+    const TEXT_C    = axC ? AxisRenderer._hexToRgba(axC, 1.0)  : 'rgba(242,241,230,1.0)';
+    const TEXT_DIM  = axC ? AxisRenderer._hexToRgba(axC, 0.50) : 'rgba(242,241,230,0.45)';
+    const lw        = ar._axisLineWidth ?? 1;
     const afs       = ar._fontSize;
     const afsMinor  = Math.max(6, afs - 2);
-    // Approximate monospace character width for overlap guard
+    const axisTypeface = resolveSvgTypeface(ar, ar._typefaceKey || null, ar._typefaceStyle || null);
+    // Approximate label width for overlap guard.
     const approxW   = (label, fsize) => label.length * fsize * 0.57;
 
     const { leftVal, rightVal } = ar._valueDomain();
@@ -920,7 +1088,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     }
 
     // Baseline
-    axisParts.push(`<line x1="${f(plotLeft + AX)}" y1="${f(AY + Y_BASE + 0.5)}" x2="${f(plotRight + AX)}" y2="${f(AY + Y_BASE + 0.5)}" stroke="${TICK_C}" stroke-width="1"/>`);
+    axisParts.push(`<line x1="${f(plotLeft + AX)}" y1="${f(AY + Y_BASE + 0.5)}" x2="${f(plotRight + AX)}" y2="${f(AY + Y_BASE + 0.5)}" stroke="${TICK_C}" stroke-width="${f(lw)}"/>`);
 
     const minorLabelFmt  = ar._dateMode ? ar._minorLabelFormat : 'off';
     const showMinorLabel = minorLabelFmt !== 'off';
@@ -933,13 +1101,24 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     for (const val of minorTicks) {
       const sx = ar._valToScreenX(val) + AX;
       if (sx < plotLeft + AX - 1 || sx > plotRight + AX + 1) continue;
-      axisParts.push(`<line x1="${f(sx)}" y1="${f(AY + Y_BASE + 1)}" x2="${f(sx)}" y2="${f(AY + Y_BASE + 1 + MINOR_H)}" stroke="${MINOR_C}" stroke-width="1"/>`);
+      axisParts.push(`<line x1="${f(sx)}" y1="${f(AY + Y_BASE + 1)}" x2="${f(sx)}" y2="${f(AY + Y_BASE + 1 + MINOR_H)}" stroke="${MINOR_C}" stroke-width="${f(lw)}"/>`);
       if (showMinorLabel) {
         const label = ar._calibration.decYearToString(val, minorLabelFmt, ar._dateFormat, effMinorInterval);
         const tw    = approxW(label, afsMinor);
         const lx2   = Math.max(plotLeft + AX + tw / 2 + 1, Math.min(plotRight + AX - tw / 2 - 1, sx));
-        if (lx2 - tw / 2 > minorLabelRight + 2) {
-          axisParts.push(`<text x="${f(lx2)}" y="${f(AY + Y_BASE + 1 + MINOR_H + 2)}" dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="${afsMinor}px" fill="${TEXT_DIM}">${svgTextEsc(label)}</text>`);
+        if (lx2 - tw / 2 > minorLabelRight + 2 && !overlapsZones(lx2 - tw / 2, lx2 + tw / 2, majorLabelZones)) {
+          axisParts.push(svgTextEl({
+            x: f(lx2),
+            y: f(AY + Y_BASE + 1 + MINOR_H + 2),
+            text: label,
+            baseline: 'hanging',
+            anchor: 'middle',
+            family: axisTypeface.family,
+            sizePx: afsMinor,
+            style: axisTypeface.fontStyle,
+            weight: axisTypeface.weight,
+            fill: TEXT_DIM,
+          }));
           minorLabelRight = lx2 + tw / 2;
         }
       }
@@ -947,6 +1126,26 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
 
     const majorLabelFmt  = ar._dateMode ? ar._majorLabelFormat : 'auto';
     const showMajorLabel = majorLabelFmt !== 'off';
+    const _majorStep = majorTicks.length >= 2 ? Math.abs(majorTicks[1] - majorTicks[0]) : 0;
+    const majorLabelZones = [];
+    if (showMinorLabel && showMajorLabel) {
+      for (const val of majorTicks) {
+        const sx = ar._valToScreenX(val) + AX;
+        if (sx < plotLeft + AX - 1 || sx > plotRight + AX + 1) continue;
+        const label = ar._dateMode
+          ? ar._calibration?.decYearToString(
+            val,
+            majorLabelFmt === 'auto' ? 'partial' : majorLabelFmt,
+            ar._dateFormat,
+            (ar._dateMode && ar._majorInterval === 'auto') ? TreeCalibration.inferMajorInterval(majorTicks) : ar._majorInterval,
+          )
+          : Axis.formatValue(val, _majorStep);
+        if (!label) continue;
+        const tw = approxW(label, afs);
+        const lx = Math.max(plotLeft + AX + tw / 2 + 1, Math.min(axisCanvasRight - tw / 2 - 2, sx));
+        majorLabelZones.push([lx - tw / 2 - 4, lx + tw / 2 + 4]);
+      }
+    }
     let majorLabelRight  = -Infinity;
     const effMajorInterval = (ar._dateMode && ar._majorInterval === 'auto')
       ? TreeCalibration.inferMajorInterval(majorTicks)
@@ -955,19 +1154,30 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     for (const val of majorTicks) {
       const sx = ar._valToScreenX(val) + AX;
       if (sx < plotLeft + AX - 1 || sx > plotRight + AX + 1) continue;
-      axisParts.push(`<line x1="${f(sx)}" y1="${f(AY + Y_BASE + 1)}" x2="${f(sx)}" y2="${f(AY + Y_BASE + 1 + MAJOR_H)}" stroke="${TICK_C}" stroke-width="1"/>`);
+      axisParts.push(`<line x1="${f(sx)}" y1="${f(AY + Y_BASE + 1)}" x2="${f(sx)}" y2="${f(AY + Y_BASE + 1 + MAJOR_H)}" stroke="${TICK_C}" stroke-width="${f(lw)}"/>`);
       if (showMajorLabel) {
         let label;
         if (ar._dateMode) {
           const effMajorFmt = majorLabelFmt === 'auto' ? 'partial' : majorLabelFmt;
           label = ar._calibration.decYearToString(val, effMajorFmt, ar._dateFormat, effMajorInterval);
         } else {
-          label = Axis.formatValue(val);
+          label = Axis.formatValue(val, _majorStep);
         }
         const tw  = approxW(label, afs);
-        const lx2 = Math.max(plotLeft + AX + tw / 2 + 1, Math.min(plotRight + AX - tw / 2 - 1, sx));
+        const lx2 = Math.max(plotLeft + AX + tw / 2 + 1, Math.min(axisCanvasRight - tw / 2 - 2, sx));
         if (lx2 - tw / 2 > majorLabelRight + 2) {
-          axisParts.push(`<text x="${f(lx2)}" y="${f(AY + Y_BASE + 1 + MAJOR_H + 2)}" dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="${afs}px" fill="${TEXT_C}">${svgTextEsc(label)}</text>`);
+          axisParts.push(svgTextEl({
+            x: f(lx2),
+            y: f(AY + Y_BASE + 1 + MAJOR_H + 2),
+            text: label,
+            baseline: 'hanging',
+            anchor: 'middle',
+            family: axisTypeface.family,
+            sizePx: afs,
+            style: axisTypeface.fontStyle,
+            weight: axisTypeface.weight,
+            fill: TEXT_C,
+          }));
           majorLabelRight = lx2 + tw / 2;
         }
       }
