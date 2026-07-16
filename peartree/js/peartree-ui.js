@@ -1205,6 +1205,83 @@ function _sectionBranchShapes() {
 }
 
 function _sectionNodeBars() {
+  const _extraNodeBars = [2, 3, 4].map((n) => ({
+    type: 'group',
+    id: `node-bars-${n}-section`,
+    className: 'pt-detail',
+    items: [
+      {
+        type: 'row',
+        kind: 'select',
+        id: `node-bars-show-${n}`,
+        title: `Show node bar set ${n} using a second interval on top of bar 1`,
+        label: `Show ${n}`,
+        options: [
+          { value: 'off', label: 'Off' },
+          // HPD interval options are added dynamically after tree load
+        ],
+      },
+      {
+        type: 'group',
+        id: `node-bars-${n}-detail`,
+        className: 'pt-detail pt-sub-controls',
+        items: [
+          {
+            type: 'row',
+            kind: 'range',
+            id: `node-bars-${n}-width-slider`,
+            min: 2,
+            max: 30,
+            step: 1,
+            value: 6,
+            valueId: `node-bars-${n}-width-value`,
+            valueText: '6',
+            title: `Bar ${n} height in screen pixels`,
+            label: 'Size',
+            labelIcon: 'bi bi-arrows-expand form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'color',
+            id: `node-bars-${n}-color`,
+            value: '#2aa198',
+            title: `Colour of confidence bar ${n}`,
+            label: 'Colour',
+            labelIcon: 'bi bi-palette form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: `node-bars-${n}-fill-opacity`,
+            min: 0,
+            max: 1,
+            step: 0.05,
+            value: 0.22,
+            valueId: `node-bars-${n}-fill-opacity-value`,
+            valueText: '0.22',
+            title: `Opacity of confidence bar ${n} fill`,
+            label: 'Opacity',
+            labelIcon: 'bi bi-droplet-half form-label-sm',
+          },
+          {
+            type: 'row',
+            kind: 'range',
+            id: `node-bars-${n}-stroke-opacity`,
+            min: 0,
+            max: 1,
+            step: 0.05,
+            value: 0.55,
+            valueId: `node-bars-${n}-stroke-opacity-value`,
+            valueText: '0.55',
+            title: `Opacity of confidence bar ${n} border`,
+            label: 'Stroke',
+            labelIcon: 'bi bi-droplet-half form-label-sm',
+          },
+        ],
+      },
+    ],
+  }));
+
   return window.buildPaletteSectionHTML({
     id: 'node-bars-section',
     icon: 'bi bi-bar-chart-steps bi-rotate-180',
@@ -1324,6 +1401,7 @@ function _sectionNodeBars() {
               },
             ],
           },
+          ..._extraNodeBars,
         ],
       },
     ],

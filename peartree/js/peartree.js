@@ -444,6 +444,11 @@ async function _initCore(root = document) {
   const nodeBarsWidthSlider = $('node-bars-width-slider');
   const nodeBarsFillOpacitySlider   = $('node-bars-fill-opacity');
   const nodeBarsStrokeOpacitySlider = $('node-bars-stroke-opacity');
+  const nodeBarsExtraShowEls = [2, 3, 4].map(n => $(`node-bars-show-${n}`));
+  const nodeBarsExtraWidthSliders = [2, 3, 4].map(n => $(`node-bars-${n}-width-slider`));
+  const nodeBarsExtraColorEls = [2, 3, 4].map(n => $(`node-bars-${n}-color`));
+  const nodeBarsExtraFillOpacitySliders = [2, 3, 4].map(n => $(`node-bars-${n}-fill-opacity`));
+  const nodeBarsExtraStrokeOpacitySliders = [2, 3, 4].map(n => $(`node-bars-${n}-stroke-opacity`));
   const nodeBarsLineEl      = $('node-bars-median');
   const nodeBarsRangeEl     = $('node-bars-range');
   const nodeBarsControlsEl  = $('node-bars-controls');
@@ -459,6 +464,8 @@ async function _initCore(root = document) {
   const nodeShapeDetailEl   = $('node-shape-detail');
   const nodeLabelDetailEl   = $('node-label-detail');
   const nodeBarsDetailEl    = $('node-bars-detail');
+  const nodeBarsExtraSectionEls = [2, 3, 4].map(n => $(`node-bars-${n}-section`));
+  const nodeBarsExtraDetailEls = [2, 3, 4].map(n => $(`node-bars-${n}-detail`));
   const legendDetailEl      = $('legend-detail');
   const axisDetailEl        = $('axis-detail');
   const rootStemPctSlider    = $('root-stem-pct-slider');
@@ -756,6 +763,12 @@ async function _initCore(root = document) {
     nodeLabelDetailEl,
     branchLabelDetailEl,
     nodeBarsDetailEl,
+    nodeBars2SectionEl: nodeBarsExtraSectionEls[0],
+    nodeBars2DetailEl: nodeBarsExtraDetailEls[0],
+    nodeBars3SectionEl: nodeBarsExtraSectionEls[1],
+    nodeBars3DetailEl: nodeBarsExtraDetailEls[1],
+    nodeBars4SectionEl: nodeBarsExtraSectionEls[2],
+    nodeBars4DetailEl: nodeBarsExtraDetailEls[2],
     legendDetailEl,
     legend2SectionEl,
     legend2DetailEl,
@@ -1096,9 +1109,14 @@ async function _initCore(root = document) {
       rttMajorLabelFormat:  rttMajorLabelEl.value,
       rttMinorLabelFormat:  rttMinorLabelEl.value,
       nodeBarsEnabled:         nodeBarsShowEl.value,
+      nodeBarsExtraEnabled:    nodeBarsExtraShowEls.map(el => el?.value || 'off'),
       nodeBarsWidth:           nodeBarsWidthSlider.value,
+      nodeBarsExtraWidths:     nodeBarsExtraWidthSliders.map(el => el?.value || '6'),
       nodeBarsFillOpacity:     nodeBarsFillOpacitySlider.value,
+      nodeBarsExtraFillOpacities: nodeBarsExtraFillOpacitySliders.map(el => el?.value || '0.22'),
       nodeBarsStrokeOpacity:   nodeBarsStrokeOpacitySlider.value,
+      nodeBarsExtraStrokeOpacities: nodeBarsExtraStrokeOpacitySliders.map(el => el?.value || '0.55'),
+      nodeBarsExtraColors:     nodeBarsExtraColorEls.map(el => el?.value || '#2aa198'),
       nodeBarsLine:             nodeBarsLineEl.value,
       nodeBarsRange:          nodeBarsRangeEl.value,
       collapsedCladeOpacity:  collapsedOpacitySlider.value,
@@ -1551,18 +1569,58 @@ async function _initCore(root = document) {
     // Note: legendAnnotation2/3/4 are annotation-dependent and restored later in loadTree.
     // Node bars settings
     if (s.nodeBarsEnabled)  nodeBarsShowEl.value  = s.nodeBarsEnabled;
+    if (Array.isArray(s.nodeBarsExtraEnabled)) {
+      nodeBarsExtraShowEls.forEach((el, i) => {
+        if (el && s.nodeBarsExtraEnabled[i]) el.value = s.nodeBarsExtraEnabled[i];
+      });
+    }
     if (s.nodeBarsColor)    nodeBarsColorEl.value = s.nodeBarsColor;
+    if (Array.isArray(s.nodeBarsExtraColors)) {
+      nodeBarsExtraColorEls.forEach((el, i) => {
+        if (el && s.nodeBarsExtraColors[i]) el.value = s.nodeBarsExtraColors[i];
+      });
+    }
     if (s.nodeBarsWidth != null) {
       nodeBarsWidthSlider.value = s.nodeBarsWidth;
       $('node-bars-width-value').textContent = s.nodeBarsWidth;
+    }
+    if (Array.isArray(s.nodeBarsExtraWidths)) {
+      nodeBarsExtraWidthSliders.forEach((el, i) => {
+        const v = s.nodeBarsExtraWidths[i];
+        if (el && v != null) {
+          el.value = v;
+          const out = $(`node-bars-${i + 2}-width-value`);
+          if (out) out.textContent = String(v);
+        }
+      });
     }
     if (s.nodeBarsFillOpacity != null) {
       nodeBarsFillOpacitySlider.value = s.nodeBarsFillOpacity;
       $('node-bars-fill-opacity-value').textContent = s.nodeBarsFillOpacity;
     }
+    if (Array.isArray(s.nodeBarsExtraFillOpacities)) {
+      nodeBarsExtraFillOpacitySliders.forEach((el, i) => {
+        const v = s.nodeBarsExtraFillOpacities[i];
+        if (el && v != null) {
+          el.value = v;
+          const out = $(`node-bars-${i + 2}-fill-opacity-value`);
+          if (out) out.textContent = String(v);
+        }
+      });
+    }
     if (s.nodeBarsStrokeOpacity != null) {
       nodeBarsStrokeOpacitySlider.value = s.nodeBarsStrokeOpacity;
       $('node-bars-stroke-opacity-value').textContent = s.nodeBarsStrokeOpacity;
+    }
+    if (Array.isArray(s.nodeBarsExtraStrokeOpacities)) {
+      nodeBarsExtraStrokeOpacitySliders.forEach((el, i) => {
+        const v = s.nodeBarsExtraStrokeOpacities[i];
+        if (el && v != null) {
+          el.value = v;
+          const out = $(`node-bars-${i + 2}-stroke-opacity-value`);
+          if (out) out.textContent = String(v);
+        }
+      });
     }
     if (s.nodeBarsLine) nodeBarsLineEl.value = s.nodeBarsLine;
     if (s.nodeBarsRange)  nodeBarsRangeEl.value  = s.nodeBarsRange;
@@ -1709,8 +1767,32 @@ async function _initCore(root = document) {
     rttMajorLabelEl.value    = DEFAULT_SETTINGS.rttMajorLabelFormat;
     rttMinorLabelEl.value    = DEFAULT_SETTINGS.rttMinorLabelFormat;
     nodeBarsShowEl.value  = DEFAULT_SETTINGS.nodeBarsEnabled;
+    nodeBarsExtraShowEls.forEach((el, i) => {
+      if (el) el.value = DEFAULT_SETTINGS.nodeBarsExtraEnabled?.[i] ?? 'off';
+    });
     nodeBarsLineEl.value = DEFAULT_SETTINGS.nodeBarsLine;
     nodeBarsRangeEl.value  = DEFAULT_SETTINGS.nodeBarsRange;
+    nodeBarsExtraWidthSliders.forEach((el, i) => {
+      const v = DEFAULT_SETTINGS.nodeBarsExtraWidths?.[i] ?? '6';
+      if (el) el.value = v;
+      const out = $(`node-bars-${i + 2}-width-value`);
+      if (out) out.textContent = v;
+    });
+    nodeBarsExtraColorEls.forEach((el, i) => {
+      if (el) el.value = DEFAULT_SETTINGS.nodeBarsExtraColors?.[i] ?? '#2aa198';
+    });
+    nodeBarsExtraFillOpacitySliders.forEach((el, i) => {
+      const v = DEFAULT_SETTINGS.nodeBarsExtraFillOpacities?.[i] ?? '0.22';
+      if (el) el.value = v;
+      const out = $(`node-bars-${i + 2}-fill-opacity-value`);
+      if (out) out.textContent = v;
+    });
+    nodeBarsExtraStrokeOpacitySliders.forEach((el, i) => {
+      const v = DEFAULT_SETTINGS.nodeBarsExtraStrokeOpacities?.[i] ?? '0.55';
+      if (el) el.value = v;
+      const out = $(`node-bars-${i + 2}-stroke-opacity-value`);
+      if (out) out.textContent = v;
+    });
     cladeHighlightLeftEdgeEl.value  = DEFAULT_SETTINGS.cladeHighlightLeftEdge;
     cladeHighlightRightEdgeEl.value = DEFAULT_SETTINGS.cladeHighlightRightEdge;
     cladeHighlightPaddingSlider.value = DEFAULT_SETTINGS.cladeHighlightPadding;
@@ -2013,10 +2095,15 @@ async function _initCore(root = document) {
       selectedNodeStrokeOpacity: parseFloat(selectedNodeStrokeOpacitySlider.value),
       nodeBarsEnabled:    nodeBarsShowEl.value !== 'off',
       nodeBarsHpdKey:     nodeBarsShowEl.value !== 'off' ? nodeBarsShowEl.value : null,
+      nodeBarsExtraHpdKeys: nodeBarsExtraShowEls.map(el => (el?.value && el.value !== 'off') ? el.value : null),
       nodeBarsColor:      nodeBarsColorEl.value,
+      nodeBarsExtraColors: nodeBarsExtraColorEls.map(el => el?.value || '#2aa198'),
       nodeBarsWidth:      parseInt(nodeBarsWidthSlider.value),
+      nodeBarsExtraWidths: nodeBarsExtraWidthSliders.map(el => parseInt(el?.value ?? '6')),
       nodeBarsFillOpacity:   parseFloat(nodeBarsFillOpacitySlider.value),
+      nodeBarsExtraFillOpacities: nodeBarsExtraFillOpacitySliders.map(el => parseFloat(el?.value ?? '0.22')),
       nodeBarsStrokeOpacity: parseFloat(nodeBarsStrokeOpacitySlider.value),
+      nodeBarsExtraStrokeOpacities: nodeBarsExtraStrokeOpacitySliders.map(el => parseFloat(el?.value ?? '0.55')),
       nodeBarsLine: nodeBarsLineEl.value,
       nodeBarsRange:  nodeBarsRangeEl.value  === 'on',
       collapsedCladeOpacity:  parseFloat(collapsedOpacitySlider.value),
@@ -4099,29 +4186,35 @@ async function _initCore(root = document) {
    * "Off" entry.  `preferred` is the value to restore: an HPD annotation key,
    * 'off', or the legacy 'on' (mapped to the first/preferred HPD for compat).
    */
-  function _populateNodeBarsShowOptions(schema, preferred) {
-    if (!nodeBarsShowEl) return;
-    const prev = preferred ?? nodeBarsShowEl.value;
-    // Remove all options after 'Off' (index 0).
-    while (nodeBarsShowEl.options.length > 1) nodeBarsShowEl.remove(1);
+  function _populateNodeBarsShowOptions(schema, preferred = {}) {
+    const controls = [nodeBarsShowEl, ...nodeBarsExtraShowEls].filter(Boolean);
+    if (!controls.length) return;
+    const preferredValues = Array.isArray(preferred)
+      ? preferred
+      : [preferred?.primary ?? preferred, ...(preferred?.extras ?? [])];
+
     const hpdDef = schema?.get('height');
-    if (hpdDef?.group?.hpds?.length) {
-      for (const { pct, key } of hpdDef.group.hpds) {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.textContent = `${pct}% HPD`;
-        nodeBarsShowEl.appendChild(opt);
+    controls.forEach((sel, i) => {
+      const prev = preferredValues[i] ?? sel.value;
+      while (sel.options.length > 1) sel.remove(1);
+      if (hpdDef?.group?.hpds?.length) {
+        for (const { pct, key } of hpdDef.group.hpds) {
+          const opt = document.createElement('option');
+          opt.value = key;
+          opt.textContent = `${pct}% HPD`;
+          sel.appendChild(opt);
+        }
       }
-    }
-    // Restore: valid key wins; legacy 'on' maps to first HPD; otherwise 'off'.
-    const hasOpt = (v) => [...nodeBarsShowEl.options].some(o => o.value === v);
-    if (hasOpt(prev)) {
-      nodeBarsShowEl.value = prev;
-    } else if (prev === 'on' && nodeBarsShowEl.options.length > 1) {
-      nodeBarsShowEl.value = nodeBarsShowEl.options[1].value;  // preferred HPD
-    } else {
-      nodeBarsShowEl.value = 'off';
-    }
+      // Restore: valid key wins; legacy 'on' maps to first HPD; otherwise 'off'.
+      const hasOpt = (v) => [...sel.options].some(o => o.value === v);
+      if (hasOpt(prev)) {
+        sel.value = prev;
+      } else if (prev === 'on' && sel.options.length > 1) {
+        sel.value = sel.options[1].value;
+      } else {
+        sel.value = 'off';
+      }
+    });
   }
 
   function _refreshAnnotationUIs(schema, { autoSelectDate = true } = {}) {
@@ -4949,8 +5042,14 @@ async function _initCore(root = document) {
         const _hasNB = !!(_hDef && _hDef.group && _hDef.group.hpd);
         if (nodeBarsControlsEl) nodeBarsControlsEl.style.display = _hasNB ? '' : 'none';
         if (nodeBarsUnavailEl)  nodeBarsUnavailEl.style.display  = _hasNB ? 'none' : 'block';
-        _populateNodeBarsShowOptions(schema, _eff.nodeBarsEnabled);
-        if (!_hasNB) nodeBarsShowEl.value = 'off';
+        _populateNodeBarsShowOptions(schema, {
+          primary: _eff.nodeBarsEnabled,
+          extras: Array.isArray(_eff.nodeBarsExtraEnabled) ? _eff.nodeBarsExtraEnabled : [],
+        });
+        if (!_hasNB) {
+          nodeBarsShowEl.value = 'off';
+          nodeBarsExtraShowEls.forEach(el => { if (el) el.value = 'off'; });
+        }
       }
       // Apply any per-annotation palette overrides from file settings first,
       // then from the persistent in-memory map (file settings take priority).
@@ -8322,25 +8421,59 @@ async function _initCore(root = document) {
   }
 
   optionsController.on('node-bars-show', applyNodeBars);
+  ['node-bars-show-2', 'node-bars-show-3', 'node-bars-show-4'].forEach(id => {
+    optionsController.on(id, applyNodeBars);
+  });
   optionsController.on('node-bars-color', ({ type }) => {
     if (type !== 'input') return;
     _markCustomTheme();
     applyNodeBars();
+  });
+  ['node-bars-2-color', 'node-bars-3-color', 'node-bars-4-color'].forEach(id => {
+    optionsController.on(id, ({ type }) => {
+      if (type !== 'input') return;
+      _markCustomTheme();
+      applyNodeBars();
+    });
   });
   optionsController.on('node-bars-width-slider', ({ type }) => {
     if (type !== 'input') return;
     $('node-bars-width-value').textContent = nodeBarsWidthSlider.value;
     applyNodeBars();
   });
+  [2, 3, 4].forEach(n => {
+    optionsController.on(`node-bars-${n}-width-slider`, ({ type }) => {
+      if (type !== 'input') return;
+      const out = $(`node-bars-${n}-width-value`);
+      if (out) out.textContent = nodeBarsExtraWidthSliders[n - 2]?.value ?? '6';
+      applyNodeBars();
+    });
+  });
   optionsController.on('node-bars-fill-opacity', ({ type }) => {
     if (type !== 'input') return;
     $('node-bars-fill-opacity-value').textContent = nodeBarsFillOpacitySlider.value;
     applyNodeBars();
   });
+  [2, 3, 4].forEach(n => {
+    optionsController.on(`node-bars-${n}-fill-opacity`, ({ type }) => {
+      if (type !== 'input') return;
+      const out = $(`node-bars-${n}-fill-opacity-value`);
+      if (out) out.textContent = nodeBarsExtraFillOpacitySliders[n - 2]?.value ?? '0.22';
+      applyNodeBars();
+    });
+  });
   optionsController.on('node-bars-stroke-opacity', ({ type }) => {
     if (type !== 'input') return;
     $('node-bars-stroke-opacity-value').textContent = nodeBarsStrokeOpacitySlider.value;
     applyNodeBars();
+  });
+  [2, 3, 4].forEach(n => {
+    optionsController.on(`node-bars-${n}-stroke-opacity`, ({ type }) => {
+      if (type !== 'input') return;
+      const out = $(`node-bars-${n}-stroke-opacity-value`);
+      if (out) out.textContent = nodeBarsExtraStrokeOpacitySliders[n - 2]?.value ?? '0.55';
+      applyNodeBars();
+    });
   });
   optionsController.on('node-bars-median', applyNodeBars);
   optionsController.on('node-bars-range', applyNodeBars);

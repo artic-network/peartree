@@ -481,72 +481,101 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     const heightDef = schema?.get('height');
     if (heightDef?.group?.hpd) {
       const hpdKey    = renderer.nodeBarsHpdKey ?? heightDef.group.hpd;
+      const configs   = [];
+      if (hpdKey) {
+        configs.push({
+          hpdKey,
+          width: renderer.nodeBarsWidth,
+          color: renderer.nodeBarsColor,
+          fillOpacity: renderer.nodeBarsFillOpacity,
+          strokeOpacity: renderer.nodeBarsStrokeOpacity,
+        });
+      }
+      for (let i = 0; i < 3; i += 1) {
+        const k = renderer.nodeBarsExtraHpdKeys?.[i];
+        if (!k) continue;
+        configs.push({
+          hpdKey: k,
+          width: +renderer.nodeBarsExtraWidths?.[i] || 6,
+          color: renderer.nodeBarsExtraColors?.[i] || '#2aa198',
+          fillOpacity: renderer.nodeBarsExtraFillOpacities?.[i] != null ? +renderer.nodeBarsExtraFillOpacities[i] : 0.22,
+          strokeOpacity: renderer.nodeBarsExtraStrokeOpacities?.[i] != null ? +renderer.nodeBarsExtraStrokeOpacities[i] : 0.55,
+        });
+      }
+      if (!configs.length) {
+        // nothing to draw
+      } else {
       const medianKey = heightDef.group.median;
       const rangeKey  = heightDef.group.range;
-      const maxX      = renderer.maxX;
-      const halfW     = renderer.nodeBarsWidth / 2;
-      const col       = renderer.nodeBarsColor;
+      const maxX      = renderer._rootHeightRef ? renderer._rootHeightRef() : renderer.maxX;
 
-      // Passes 1 + 2: translucent fill box and border outlined box per HPD interval.
-      for (const [, node] of nm) {
-        if (node.isTip) continue;
-        const ny = toSY(node.y);
-        if (ny < -MARGIN || ny > ttH_eff + MARGIN) continue;
-        const hpd = node.annotations?.[hpdKey];
-        if (!Array.isArray(hpd) || hpd.length < 2) continue;
-        const xLeft  = toSX(maxX - hpd[1]);
-        const xRight = toSX(maxX - hpd[0]);
-        if (xRight <= xLeft) continue;
-        nodeBarParts.push(`<rect x="${f(xLeft)}" y="${f(ny - halfW)}" width="${f(xRight - xLeft)}" height="${f(halfW * 2)}" fill="${esc(col)}" opacity="0.22"/>`);
-        nodeBarParts.push(`<rect x="${f(xLeft)}" y="${f(ny - halfW)}" width="${f(xRight - xLeft)}" height="${f(halfW * 2)}" fill="none" stroke="${esc(col)}" stroke-width="1" opacity="0.55"/>`);
-      }
+      for (const cfg of configs) {
+        const halfW = cfg.width / 2;
+        const col = cfg.color;
 
-      // Pass 3: mean or median centre line.
-      if (renderer.nodeBarsLine !== 'off') {
-        const useMedian = renderer.nodeBarsLine === 'median';
+        // Passes 1 + 2: translucent fill box and border outlined box per HPD interval.
         for (const [, node] of nm) {
           if (node.isTip) continue;
+          if (renderer._passesFilter && !renderer._passesFilter(renderer._nodeBarsFilterId, node)) continue;
           const ny = toSY(node.y);
           if (ny < -MARGIN || ny > ttH_eff + MARGIN) continue;
-          const hpd = node.annotations?.[hpdKey];
+          const hpd = node.annotations?.[cfg.hpdKey];
           if (!Array.isArray(hpd) || hpd.length < 2) continue;
-          let xLine;
-          if (useMedian) {
-            if (!medianKey) continue;
-            const medVal = node.annotations?.[medianKey];
-            if (medVal == null) continue;
-            xLine = toSX(maxX - medVal);
-          } else {
-            const meanVal = node.annotations?.['height'];
-            if (meanVal == null) continue;
-            xLine = toSX(maxX - meanVal);
+          const xLeft  = toSX(maxX - hpd[1]);
+          const xRight = toSX(maxX - hpd[0]);
+          if (xRight <= xLeft) continue;
+          nodeBarParts.push(`<rect x="${f(xLeft)}" y="${f(ny - halfW)}" width="${f(xRight - xLeft)}" height="${f(halfW * 2)}" fill="${esc(col)}" opacity="${f(cfg.fillOpacity)}"/>`);
+          nodeBarParts.push(`<rect x="${f(xLeft)}" y="${f(ny - halfW)}" width="${f(xRight - xLeft)}" height="${f(halfW * 2)}" fill="none" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
+        }
+
+        // Pass 3: mean or median centre line.
+        if (renderer.nodeBarsLine !== 'off') {
+          const useMedian = renderer.nodeBarsLine === 'median';
+          for (const [, node] of nm) {
+            if (node.isTip) continue;
+            if (renderer._passesFilter && !renderer._passesFilter(renderer._nodeBarsFilterId, node)) continue;
+            const ny = toSY(node.y);
+            if (ny < -MARGIN || ny > ttH_eff + MARGIN) continue;
+            const hpd = node.annotations?.[cfg.hpdKey];
+            if (!Array.isArray(hpd) || hpd.length < 2) continue;
+            let xLine;
+            if (useMedian) {
+              if (!medianKey) continue;
+              const medVal = node.annotations?.[medianKey];
+              if (medVal == null) continue;
+              xLine = toSX(maxX - medVal);
+            } else {
+              const meanVal = node.annotations?.['height'];
+              if (meanVal == null) continue;
+              xLine = toSX(maxX - meanVal);
+            }
+            nodeBarParts.push(`<line x1="${f(xLine)}" y1="${f(ny - halfW)}" x2="${f(xLine)}" y2="${f(ny + halfW)}" stroke="${esc(col)}" stroke-width="2" opacity="${f(cfg.strokeOpacity)}"/>`);
           }
-          nodeBarParts.push(`<line x1="${f(xLine)}" y1="${f(ny - halfW)}" x2="${f(xLine)}" y2="${f(ny + halfW)}" stroke="${esc(col)}" stroke-width="2" opacity="0.85"/>`);
+        }
+
+        // Pass 4: range whiskers (line to full-range extent + end cap).
+        if (renderer.nodeBarsRange && rangeKey) {
+          const capH = halfW * 0.6;
+          for (const [, node] of nm) {
+            if (node.isTip) continue;
+            if (renderer._passesFilter && !renderer._passesFilter(renderer._nodeBarsFilterId, node)) continue;
+            const ny = toSY(node.y);
+            if (ny < -MARGIN || ny > ttH_eff + MARGIN) continue;
+            const hpd   = node.annotations?.[cfg.hpdKey];
+            const range = node.annotations?.[rangeKey];
+            if (!Array.isArray(hpd) || hpd.length < 2) continue;
+            if (!Array.isArray(range) || range.length < 2) continue;
+            const xHpdL   = toSX(maxX - hpd[1]);
+            const xHpdR   = toSX(maxX - hpd[0]);
+            const xRangeL = toSX(maxX - range[1]);
+            const xRangeR = toSX(maxX - range[0]);
+            nodeBarParts.push(`<line x1="${f(xHpdL)}" y1="${f(ny)}" x2="${f(xRangeL)}" y2="${f(ny)}" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
+            nodeBarParts.push(`<line x1="${f(xRangeL)}" y1="${f(ny - capH)}" x2="${f(xRangeL)}" y2="${f(ny + capH)}" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
+            nodeBarParts.push(`<line x1="${f(xHpdR)}" y1="${f(ny)}" x2="${f(xRangeR)}" y2="${f(ny)}" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
+            nodeBarParts.push(`<line x1="${f(xRangeR)}" y1="${f(ny - capH)}" x2="${f(xRangeR)}" y2="${f(ny + capH)}" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
+          }
         }
       }
-
-      // Pass 4: range whiskers (line to full-range extent + end cap).
-      if (renderer.nodeBarsRange && rangeKey) {
-        const capH = halfW * 0.6;
-        for (const [, node] of nm) {
-          if (node.isTip) continue;
-          const ny = toSY(node.y);
-          if (ny < -MARGIN || ny > ttH_eff + MARGIN) continue;
-          const hpd   = node.annotations?.[hpdKey];
-          const range = node.annotations?.[rangeKey];
-          if (!Array.isArray(hpd) || hpd.length < 2) continue;
-          if (!Array.isArray(range) || range.length < 2) continue;
-          const xHpdL   = toSX(maxX - hpd[1]);
-          const xHpdR   = toSX(maxX - hpd[0]);
-          const xRangeL = toSX(maxX - range[1]);
-          const xRangeR = toSX(maxX - range[0]);
-          // Left whisker: horizontal line + end cap
-          nodeBarParts.push(`<line x1="${f(xHpdL)}" y1="${f(ny)}" x2="${f(xRangeL)}" y2="${f(ny)}" stroke="${esc(col)}" stroke-width="1" opacity="0.45"/>`);
-          nodeBarParts.push(`<line x1="${f(xRangeL)}" y1="${f(ny - capH)}" x2="${f(xRangeL)}" y2="${f(ny + capH)}" stroke="${esc(col)}" stroke-width="1" opacity="0.45"/>`);
-          // Right whisker: horizontal line + end cap
-          nodeBarParts.push(`<line x1="${f(xHpdR)}" y1="${f(ny)}" x2="${f(xRangeR)}" y2="${f(ny)}" stroke="${esc(col)}" stroke-width="1" opacity="0.45"/>`);
-          nodeBarParts.push(`<line x1="${f(xRangeR)}" y1="${f(ny - capH)}" x2="${f(xRangeR)}" y2="${f(ny + capH)}" stroke="${esc(col)}" stroke-width="1" opacity="0.45"/>`);
-        }
       }
     }
   }

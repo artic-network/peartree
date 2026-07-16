@@ -486,6 +486,26 @@ export class TreeRenderer {
     this.nodeBarsHpdKey     = 'nodeBarsHpdKey' in s ? (s.nodeBarsHpdKey ?? null) : (this.nodeBarsHpdKey ?? null);
     this.nodeBarsColor      = s.nodeBarsColor      ?? '#2aa198';
     this.nodeBarsWidth      = s.nodeBarsWidth      ?? 6;
+    if (!Array.isArray(this.nodeBarsExtraHpdKeys)) this.nodeBarsExtraHpdKeys = [null, null, null];
+    if (!Array.isArray(this.nodeBarsExtraWidths)) this.nodeBarsExtraWidths = [6, 6, 6];
+    if (!Array.isArray(this.nodeBarsExtraColors)) this.nodeBarsExtraColors = ['#2aa198', '#2aa198', '#2aa198'];
+    if (!Array.isArray(this.nodeBarsExtraFillOpacities)) this.nodeBarsExtraFillOpacities = [0.22, 0.22, 0.22];
+    if (!Array.isArray(this.nodeBarsExtraStrokeOpacities)) this.nodeBarsExtraStrokeOpacities = [0.55, 0.55, 0.55];
+    if ('nodeBarsExtraHpdKeys' in s && Array.isArray(s.nodeBarsExtraHpdKeys)) {
+      this.nodeBarsExtraHpdKeys = [0, 1, 2].map(i => s.nodeBarsExtraHpdKeys[i] ?? null);
+    }
+    if ('nodeBarsExtraWidths' in s && Array.isArray(s.nodeBarsExtraWidths)) {
+      this.nodeBarsExtraWidths = [0, 1, 2].map(i => +s.nodeBarsExtraWidths[i] || 6);
+    }
+    if ('nodeBarsExtraColors' in s && Array.isArray(s.nodeBarsExtraColors)) {
+      this.nodeBarsExtraColors = [0, 1, 2].map(i => s.nodeBarsExtraColors[i] ?? '#2aa198');
+    }
+    if ('nodeBarsExtraFillOpacities' in s && Array.isArray(s.nodeBarsExtraFillOpacities)) {
+      this.nodeBarsExtraFillOpacities = [0, 1, 2].map(i => s.nodeBarsExtraFillOpacities[i] != null ? +s.nodeBarsExtraFillOpacities[i] : 0.22);
+    }
+    if ('nodeBarsExtraStrokeOpacities' in s && Array.isArray(s.nodeBarsExtraStrokeOpacities)) {
+      this.nodeBarsExtraStrokeOpacities = [0, 1, 2].map(i => s.nodeBarsExtraStrokeOpacities[i] != null ? +s.nodeBarsExtraStrokeOpacities[i] : 0.55);
+    }
     this.nodeBarsLine = s.nodeBarsLine ?? 'off';
     this.nodeBarsRange       = s.nodeBarsRange       ?? false;
     this.nodeBarsFillOpacity   = s.nodeBarsFillOpacity   != null ? +s.nodeBarsFillOpacity   : 0.22;
@@ -2660,12 +2680,38 @@ export class TreeRenderer {
    * Return the number of world-units by which node bars or whiskers extend to
    * the LEFT of the root (worldX < 0).  Used to add left padding for the scale.
    */
+  _nodeBarConfigs(heightDef) {
+    const primaryKey = this.nodeBarsHpdKey ?? heightDef?.group?.hpd;
+    const out = [];
+    if (primaryKey) {
+      out.push({
+        hpdKey: primaryKey,
+        width: this.nodeBarsWidth,
+        color: this.nodeBarsColor,
+        fillOpacity: this.nodeBarsFillOpacity,
+        strokeOpacity: this.nodeBarsStrokeOpacity,
+      });
+    }
+    for (let i = 0; i < 3; i += 1) {
+      const key = this.nodeBarsExtraHpdKeys?.[i];
+      if (!key) continue;
+      out.push({
+        hpdKey: key,
+        width: +this.nodeBarsExtraWidths?.[i] || 6,
+        color: this.nodeBarsExtraColors?.[i] || '#2aa198',
+        fillOpacity: this.nodeBarsExtraFillOpacities?.[i] != null ? +this.nodeBarsExtraFillOpacities[i] : 0.22,
+        strokeOpacity: this.nodeBarsExtraStrokeOpacities?.[i] != null ? +this.nodeBarsExtraStrokeOpacities[i] : 0.55,
+      });
+    }
+    return out;
+  }
+
   _nodeBarsLeftPad() {
     if (!this.nodes || !this._annotationSchema) return 0;
     const heightDef = this._annotationSchema.get('height');
-    const hpdKey = this.nodeBarsHpdKey ?? heightDef?.group?.hpd;
-    if (!hpdKey) return 0;
-    const rangeKey = (this.nodeBarsRange && heightDef.group.range) ? heightDef.group.range : null;
+    const configs = this._nodeBarConfigs(heightDef);
+    if (!configs.length) return 0;
+    const rangeKey = (this.nodeBarsRange && heightDef?.group?.range) ? heightDef.group.range : null;
     // Use the absolute height of the layout root as the reference for HPD values.
     // For the full tree this equals this.maxX (min tip height = 0).
     // For subtrees not containing the most-recent tip, heightRef > this.maxX,
@@ -2674,11 +2720,13 @@ export class TreeRenderer {
     let maxLeftward = 0;
     for (const node of this.nodes) {
       if (node.isTip) continue;
-      // HPD upper bound (larger height = further left)
-      const hpd = node.annotations?.[hpdKey];
-      if (Array.isArray(hpd) && hpd.length >= 2) {
-        const excess = hpd[1] - heightRef;   // positive when bar extends past root
-        if (excess > maxLeftward) maxLeftward = excess;
+      for (const cfg of configs) {
+        // HPD upper bound (larger height = further left)
+        const hpd = node.annotations?.[cfg.hpdKey];
+        if (Array.isArray(hpd) && hpd.length >= 2) {
+          const excess = hpd[1] - heightRef;
+          if (excess > maxLeftward) maxLeftward = excess;
+        }
       }
       // Range outer bound (whiskers)
       if (rangeKey) {
@@ -4118,115 +4166,114 @@ export class TreeRenderer {
     const schema = this._annotationSchema;
     if (!schema) return;
     const heightDef = schema.get('height');
-    const hpdKey = this.nodeBarsHpdKey ?? heightDef?.group?.hpd;
-    if (!heightDef || !hpdKey) return;
+    if (!heightDef) return;
+    const configs = this._nodeBarConfigs(heightDef);
+    if (!configs.length) return;
     const medianKey = heightDef.group.median;  // e.g. 'height_median'
     const rangeKey  = heightDef.group.range;   // e.g. 'height_range'
     // Use the absolute height of the layout root, not this.maxX, so that HPD
     // values (always in absolute-height units) map to the correct world-x even
     // when the subtree does not contain the most-recent tip of the full dataset.
     const maxX      = this._rootHeightRef();
-    const halfW     = this.nodeBarsWidth / 2;
     const ctx       = this.ctx;
-    const col       = this.nodeBarsColor;
+    for (const cfg of configs) {
+      const halfW = cfg.width / 2;
+      const col = cfg.color;
 
-    // ── Pass 1: filled HPD rectangle (translucent) ──────────────────────────
-    ctx.fillStyle   = col;
-    ctx.globalAlpha = this.nodeBarsFillOpacity;
-    for (const node of this._vInner) {
-      if (!this._passesFilter(this._nodeBarsFilterId, node)) continue;
-      const hpd = node.annotations?.[hpdKey];
-      if (!Array.isArray(hpd) || hpd.length < 2) continue;
-      // larger height → closer to root → further left on screen
-      const xLeft  = this._wx(maxX - hpd[1]);
-      const xRight = this._wx(maxX - hpd[0]);
-      if (xRight <= xLeft) continue;
-      ctx.fillRect(xLeft, this._wy(node.y) - halfW, xRight - xLeft, halfW * 2);
-    }
-    ctx.globalAlpha = 1;
+      // ── Pass 1: filled HPD rectangle (translucent) ───────────────────────
+      ctx.fillStyle   = col;
+      ctx.globalAlpha = cfg.fillOpacity;
+      for (const node of this._vInner) {
+        if (!this._passesFilter(this._nodeBarsFilterId, node)) continue;
+        const hpd = node.annotations?.[cfg.hpdKey];
+        if (!Array.isArray(hpd) || hpd.length < 2) continue;
+        const xLeft  = this._wx(maxX - hpd[1]);
+        const xRight = this._wx(maxX - hpd[0]);
+        if (xRight <= xLeft) continue;
+        ctx.fillRect(xLeft, this._wy(node.y) - halfW, xRight - xLeft, halfW * 2);
+      }
+      ctx.globalAlpha = 1;
 
-    // ── Pass 2: border stroke ────────────────────────────────────────────────
-    ctx.strokeStyle = col;
-    ctx.lineWidth   = 1;
-    ctx.globalAlpha = this.nodeBarsStrokeOpacity;
-    ctx.beginPath();
-    for (const node of this._vInner) {
-      if (!this._passesFilter(this._nodeBarsFilterId, node)) continue;
-      const hpd = node.annotations?.[hpdKey];
-      if (!Array.isArray(hpd) || hpd.length < 2) continue;
-      const xLeft  = this._wx(maxX - hpd[1]);
-      const xRight = this._wx(maxX - hpd[0]);
-      if (xRight <= xLeft) continue;
-      ctx.rect(xLeft, this._wy(node.y) - halfW, xRight - xLeft, halfW * 2);
-    }
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    ctx.lineWidth   = 1;
-
-    // ── Pass 3: mean/median line ──────────────────────────────────────────────
-    if (this.nodeBarsLine !== 'off') {
-      const useMedian = this.nodeBarsLine === 'median';
+      // ── Pass 2: border stroke ─────────────────────────────────────────────
       ctx.strokeStyle = col;
-      ctx.lineWidth   = 2;
-      ctx.globalAlpha = this.nodeBarsStrokeOpacity;
+      ctx.lineWidth   = 1;
+      ctx.globalAlpha = cfg.strokeOpacity;
       ctx.beginPath();
       for (const node of this._vInner) {
         if (!this._passesFilter(this._nodeBarsFilterId, node)) continue;
-        const hpd = node.annotations?.[hpdKey];
+        const hpd = node.annotations?.[cfg.hpdKey];
         if (!Array.isArray(hpd) || hpd.length < 2) continue;
-        let xLine;
-        if (useMedian) {
-          if (!medianKey) continue;
-          const medVal = node.annotations?.[medianKey];
-          if (medVal == null) continue;
-          xLine = this._wx(maxX - medVal);
-        } else {
-          // mean: use the 'height' annotation value directly
-          const meanVal = node.annotations?.['height'];
-          if (meanVal == null) continue;
-          xLine = this._wx(maxX - meanVal);
+        const xLeft  = this._wx(maxX - hpd[1]);
+        const xRight = this._wx(maxX - hpd[0]);
+        if (xRight <= xLeft) continue;
+        ctx.rect(xLeft, this._wy(node.y) - halfW, xRight - xLeft, halfW * 2);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.lineWidth   = 1;
+
+      // ── Pass 3: mean/median line ─────────────────────────────────────────
+      if (this.nodeBarsLine !== 'off') {
+        const useMedian = this.nodeBarsLine === 'median';
+        ctx.strokeStyle = col;
+        ctx.lineWidth   = 2;
+        ctx.globalAlpha = cfg.strokeOpacity;
+        ctx.beginPath();
+        for (const node of this._vInner) {
+          if (!this._passesFilter(this._nodeBarsFilterId, node)) continue;
+          const hpd = node.annotations?.[cfg.hpdKey];
+          if (!Array.isArray(hpd) || hpd.length < 2) continue;
+          let xLine;
+          if (useMedian) {
+            if (!medianKey) continue;
+            const medVal = node.annotations?.[medianKey];
+            if (medVal == null) continue;
+            xLine = this._wx(maxX - medVal);
+          } else {
+            const meanVal = node.annotations?.['height'];
+            if (meanVal == null) continue;
+            xLine = this._wx(maxX - meanVal);
+          }
+          const cy = this._wy(node.y);
+          ctx.moveTo(xLine, cy - halfW);
+          ctx.lineTo(xLine, cy + halfW);
         }
-        const cy = this._wy(node.y);
-        ctx.moveTo(xLine, cy - halfW);
-        ctx.lineTo(xLine, cy + halfW);
+        ctx.stroke();
+        ctx.lineWidth   = 1;
+        ctx.globalAlpha = 1;
       }
-      ctx.stroke();
-      ctx.lineWidth   = 1;
-      ctx.globalAlpha = 1;
-    }
 
-    // ── Pass 4: range whiskers ────────────────────────────────────────────────
-    if (this.nodeBarsRange && rangeKey) {
-      const capH = halfW * 0.6;  // height of whisker end-cap
-      ctx.strokeStyle = col;
-      ctx.lineWidth   = 1;
-      ctx.globalAlpha = this.nodeBarsStrokeOpacity;
-      ctx.beginPath();
-      for (const node of this._vInner) {
-        if (!this._passesFilter(this._nodeBarsFilterId, node)) continue;
-        const hpd   = node.annotations?.[hpdKey];
-        const range = node.annotations?.[rangeKey];
-        if (!Array.isArray(hpd) || hpd.length < 2) continue;
-        if (!Array.isArray(range) || range.length < 2) continue;
-        const cy      = this._wy(node.y);
-        const xHpdL   = this._wx(maxX - hpd[1]);
-        const xHpdR   = this._wx(maxX - hpd[0]);
-        const xRangeL = this._wx(maxX - range[1]);  // upper range bound → left
-        const xRangeR = this._wx(maxX - range[0]);  // lower range bound → right
-        // Left whisker: line + end cap
-        ctx.moveTo(xHpdL, cy);
-        ctx.lineTo(xRangeL, cy);
-        ctx.moveTo(xRangeL, cy - capH);
-        ctx.lineTo(xRangeL, cy + capH);
-        // Right whisker: line + end cap
-        ctx.moveTo(xHpdR, cy);
-        ctx.lineTo(xRangeR, cy);
-        ctx.moveTo(xRangeR, cy - capH);
-        ctx.lineTo(xRangeR, cy + capH);
+      // ── Pass 4: range whiskers ───────────────────────────────────────────
+      if (this.nodeBarsRange && rangeKey) {
+        const capH = halfW * 0.6;
+        ctx.strokeStyle = col;
+        ctx.lineWidth   = 1;
+        ctx.globalAlpha = cfg.strokeOpacity;
+        ctx.beginPath();
+        for (const node of this._vInner) {
+          if (!this._passesFilter(this._nodeBarsFilterId, node)) continue;
+          const hpd   = node.annotations?.[cfg.hpdKey];
+          const range = node.annotations?.[rangeKey];
+          if (!Array.isArray(hpd) || hpd.length < 2) continue;
+          if (!Array.isArray(range) || range.length < 2) continue;
+          const cy      = this._wy(node.y);
+          const xHpdL   = this._wx(maxX - hpd[1]);
+          const xHpdR   = this._wx(maxX - hpd[0]);
+          const xRangeL = this._wx(maxX - range[1]);
+          const xRangeR = this._wx(maxX - range[0]);
+          ctx.moveTo(xHpdL, cy);
+          ctx.lineTo(xRangeL, cy);
+          ctx.moveTo(xRangeL, cy - capH);
+          ctx.lineTo(xRangeL, cy + capH);
+          ctx.moveTo(xHpdR, cy);
+          ctx.lineTo(xRangeR, cy);
+          ctx.moveTo(xRangeR, cy - capH);
+          ctx.lineTo(xRangeR, cy + capH);
+        }
+        ctx.stroke();
+        ctx.lineWidth   = 1;
+        ctx.globalAlpha = 1;
       }
-      ctx.stroke();
-      ctx.lineWidth   = 1;
-      ctx.globalAlpha = 1;
     }
   }
 

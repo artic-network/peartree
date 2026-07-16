@@ -185,6 +185,12 @@ export const DEFAULT_SETTINGS = {
   nodeBarsEnabled:    'off',   // 'off' | HPD annotation key (e.g. 'height_95%_HPD')
   nodeBarsLine:       'off',   // 'off' | 'mean' | 'median'
   nodeBarsRange:      'off',   // 'off' | 'on'
+  // Extra node bar sets 2-4 (inherit line/range/filter from bar 1)
+  nodeBarsExtraEnabled:         ['off', 'off', 'off'],
+  nodeBarsExtraWidths:          ['6', '6', '6'],
+  nodeBarsExtraColors:          ['#2aa198', '#2aa198', '#2aa198'],
+  nodeBarsExtraFillOpacities:   ['0.22', '0.22', '0.22'],
+  nodeBarsExtraStrokeOpacities: ['0.55', '0.55', '0.55'],
 
   // ── Clade Highlights ────────────────────────────────────────────────────────────────
   cladeHighlightLeftEdge:  'outlineNodes', // 'atRoot' | 'outlineNodes'
