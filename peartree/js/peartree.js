@@ -2863,6 +2863,9 @@ async function _initCore(root = document) {
 
   renderer.onHypActivate   = () => statusMessage('Lens mode active \u2013 press Esc to cancel');
   renderer.onHypDeactivate = () => statusMessage('');
+  renderer.onLabelsHiddenByZoom = (hidden) => {
+    statusMessage(hidden ? 'Tip labels hidden \u2013 zoom in to show' : '');
+  };
 
   const _statusSelectEl = $('status-select');
   function _updateStatusSelect(count) {

@@ -188,6 +188,7 @@ export class TreeRenderer {
     this._onHoverChange   = null;  // callback(id|null) fired when hovered node changes
     this.onHypActivate    = null;  // callback() fired when hyperbolic lens first becomes active
     this.onHypDeactivate  = null;  // callback() fired when hyperbolic lens is dismissed
+    this.onLabelsHiddenByZoom = null;  // callback(hidden:boolean) fired when labels hide/show due to zoom
 
     this._mode             = 'nodes';  // 'nodes' | 'branches'
     this._branchHoverNode  = null;     // node whose horizontal branch is hovered
@@ -3327,6 +3328,11 @@ export class TreeRenderer {
       if (_labelsNowVisible !== this._labelsWereVisible) {
         this._labelsWereVisible = _labelsNowVisible;
         this._updateScaleX(false);
+        // Notify the host when labels become hidden or visible due to zoom level
+        // (only relevant when the user hasn't explicitly turned labels off).
+        if (!this._tipLabelsOff && this.onLabelsHiddenByZoom) {
+          this.onLabelsHiddenByZoom(!_labelsNowVisible);
+        }
       }
     }
 
