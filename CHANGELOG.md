@@ -1,14 +1,38 @@
 # Change Log
 
-## v1.3.1
+## v1.3.0
+
+### Features
+
+- Add branch line colouring by annotation (**Branches → Colour by**), including palette configuration support.
+- Allow stacking multiple node bars / HPD intervals.
+- Add support for Newick trees containing `[&R]` markers.
+- Add status-bar messaging when tips are hidden.
+
+### Fixes
+
+- Fix loading of secondary/extra tip label selections.
+- Fix RTT panel overlap with legend when pinned.
+- Fix PNG export cropping.
+- Fix tree/axis sizing regressions after layout changes.
+- Fix axis overflow drawing issues that could clip labels.
+
+### Internal / maintenance
+
+- Unify canvas and SVG rendering paths so exported SVG output more closely matches on-screen visuals.
+- Overhaul tree/decoration layout and padding solving, including improved handling of axis-label overhang.
+- Clean up and regroup settings definitions for consistency with the side palette.
+
+## v1.2.2
 
 - Fixed issue with not loading secondary tip label choices
 - Fixed issue with RTT panel obscuring legend when pinned
-
-## v1.3.0
-
 - Add per-annotation palette reverse flags, with a Reverse toggle in the Configure Palette dialog.
 - Keep RTT selected points visually in sync with Selected Tips styles from Selection & Hover controls.
+
+## v1.2.1
+
+- Fixed an issue with exporting an SVG graphic of the entire tree
 
 ## v1.2.0
 
