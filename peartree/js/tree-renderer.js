@@ -263,6 +263,8 @@ export class TreeRenderer {
     this._tipColourScale   = null;   // Map<value, CSS colour> | null
     this._nodeColourBy     = null;   // annotation key for internal nodes, or null
     this._nodeColourScale  = null;   // Map<value, CSS colour> | null
+    this._branchColourBy   = null;   // annotation key for branch colouring, or null
+    this._branchColourScale = null;  // Map<value, CSS colour> | null
     this._labelColourBy    = null;   // annotation key for tip labels, or null
     this._labelColourScale = null;   // Map<value, CSS colour> | null
     this._nodeLabelColourBy    = null;   // annotation key for node label colouring, or null
@@ -414,6 +416,10 @@ export class TreeRenderer {
     this._branchShapeHalo      = +(s.branchShapeHalo      ?? 0);
     this._branchShapeHaloColor = s.branchShapeHaloColor ?? '#02292e';
     this._branchShapeCountBy   = s.branchShapeCountBy   || null;
+    this._branchColourBy       = s.branchColourBy       || null;
+    this._branchColourScale    = this._branchColourBy
+      ? this._buildColourScale(this._branchColourBy)
+      : null;
     this._branchShapeColourBy  = s.branchShapeColourBy  || null;
     this._branchShapeColourScale = this._branchShapeColourBy
       ? this._buildColourScale(this._branchShapeColourBy)
@@ -1194,6 +1200,13 @@ export class TreeRenderer {
     this._dirty = true;
   }
 
+  setBranchColourBy(key) {
+    this._branchColourBy    = key || null;
+    this._branchColourScale = this._branchColourBy ? this._buildColourScale(this._branchColourBy) : null;
+    this._aggregateTipValueCache?.clear();
+    this._dirty = true;
+  }
+
   setBranchWidth(w) {
     this.branchWidth = w;
     if (this.nodes) this._applyOverheadChange();
@@ -1363,6 +1376,7 @@ export class TreeRenderer {
     this._annotationSchema = schema;
     if (this._tipColourBy)            this._tipColourScale            = this._buildColourScale(this._tipColourBy);
     if (this._nodeColourBy)           this._nodeColourScale           = this._buildColourScale(this._nodeColourBy);
+    if (this._branchColourBy)         this._branchColourScale         = this._buildColourScale(this._branchColourBy);
     if (this._labelColourBy)          this._labelColourScale          = this._buildColourScale(this._labelColourBy);
     if (this._nodeLabelColourBy)      this._nodeLabelColourScale      = this._buildColourScale(this._nodeLabelColourBy);
     if (this._branchLabelColourBy)    this._branchLabelColourScale    = this._buildColourScale(this._branchLabelColourBy);
@@ -1517,6 +1531,7 @@ export class TreeRenderer {
     // Rebuild any colour scale that references this annotation key.
     if (this._tipColourBy            === key) this._tipColourScale            = this._buildColourScale(key);
     if (this._nodeColourBy           === key) this._nodeColourScale           = this._buildColourScale(key);
+    if (this._branchColourBy         === key) this._branchColourScale         = this._buildColourScale(key);
     if (this._labelColourBy          === key) this._labelColourScale          = this._buildColourScale(key);
     if (this._nodeLabelColourBy      === key) this._nodeLabelColourScale      = this._buildColourScale(key);
     if (this._branchLabelColourBy    === key) this._branchLabelColourScale    = this._buildColourScale(key);
@@ -1551,6 +1566,7 @@ export class TreeRenderer {
     }
     if (this._tipColourBy            === key) this._tipColourScale            = this._buildColourScale(key);
     if (this._nodeColourBy           === key) this._nodeColourScale           = this._buildColourScale(key);
+    if (this._branchColourBy         === key) this._branchColourScale         = this._buildColourScale(key);
     if (this._labelColourBy          === key) this._labelColourScale          = this._buildColourScale(key);
     if (this._nodeLabelColourBy      === key) this._nodeLabelColourScale      = this._buildColourScale(key);
     if (this._branchLabelColourBy    === key) this._branchLabelColourScale    = this._buildColourScale(key);
@@ -1668,6 +1684,7 @@ export class TreeRenderer {
     };
     this._tipColourScale   = rebuild(this._tipColourBy,   this._tipColourScale);
     this._nodeColourScale  = rebuild(this._nodeColourBy,  this._nodeColourScale);
+    this._branchColourScale = rebuild(this._branchColourBy, this._branchColourScale);
     this._labelColourScale = rebuild(this._labelColourBy, this._labelColourScale);
     this._nodeLabelColourScale   = rebuild(this._nodeLabelColourBy,   this._nodeLabelColourScale);
     this._branchLabelColourScale = rebuild(this._branchLabelColourBy, this._branchLabelColourScale);
@@ -1697,6 +1714,7 @@ export class TreeRenderer {
     };
     addRange(this._tipColourBy,           this._tipColourScale);
     addRange(this._nodeColourBy,          this._nodeColourScale);
+    addRange(this._branchColourBy,        this._branchColourScale);
     addRange(this._labelColourBy,         this._labelColourScale);
     addRange(this._nodeLabelColourBy,     this._nodeLabelColourScale);
     addRange(this._branchLabelColourBy,   this._branchLabelColourScale);
@@ -1736,6 +1754,7 @@ export class TreeRenderer {
 
   _tipColourForValue(value)             { return this._colourFromScale(value, this._tipColourScale);   }
   _nodeColourForValue(value)            { return this._colourFromScale(value, this._nodeColourScale);  }
+  _branchColourForValue(value)          { return this._colourFromScale(value, this._branchColourScale); }
   _labelColourForValue(value)           { return this._colourFromScale(value, this._labelColourScale); }
   _nodeLabelColourForValue(value)       { return this._colourFromScale(value, this._nodeLabelColourScale); }
   _branchLabelColourForValue(value)     { return this._colourFromScale(value, this._branchLabelColourScale); }
@@ -4223,35 +4242,94 @@ export class TreeRenderer {
     ctx.strokeStyle = this.branchColor;
     ctx.lineCap = 'round';
 
-    ctx.beginPath();
-    for (const h of geom.horizontals) {
-      ctx.moveTo(h.x1, h.y1);
-      ctx.lineTo(h.x2, h.y2);
-    }
-    ctx.stroke();
-
-    if (er > 0) {
+    const hasColourBy = !!(this._branchColourBy && this._branchColourScale);
+    if (!hasColourBy) {
       ctx.beginPath();
-      for (const a of geom.elbows) {
-        ctx.moveTo(a.moveX, a.moveY);
-        ctx.arcTo(a.x1, a.y1, a.x2, a.y2, a.r);
+      for (const h of geom.horizontals) {
+        ctx.moveTo(h.x1, h.y1);
+        ctx.lineTo(h.x2, h.y2);
       }
       ctx.stroke();
+
+      if (er > 0) {
+        ctx.beginPath();
+        for (const a of geom.elbows) {
+          ctx.moveTo(a.moveX, a.moveY);
+          ctx.arcTo(a.x1, a.y1, a.x2, a.y2, a.r);
+        }
+        ctx.stroke();
+      }
+
+      if (geom.rootStub) {
+        ctx.beginPath();
+        ctx.moveTo(geom.rootStub.x1, geom.rootStub.y1);
+        ctx.lineTo(geom.rootStub.x2, geom.rootStub.y2);
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      for (const v of geom.verticals) {
+        ctx.moveTo(v.x1, v.y1);
+        ctx.lineTo(v.x2, v.y2);
+      }
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
+    const key = this._branchColourBy;
+    const colourForNode = (node) => {
+      if (!node || !key) return this.branchColor;
+      const def = this._annotationSchema?.get(key);
+      const tipOnly = def && !def.onNodes && def.onTips && key !== 'user_colour';
+      const value = tipOnly ? this._aggregateTipValue(node, key) : this._statValue(node, key);
+      return this._branchColourForValue(value) ?? this.branchColor;
+    };
+
+    const strokeGrouped = (items, pathFn) => {
+      const groups = new Map();
+      for (const item of items) {
+        const c = item._color || this.branchColor;
+        if (!groups.has(c)) groups.set(c, []);
+        groups.get(c).push(item);
+      }
+      for (const [color, list] of groups) {
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        for (const item of list) pathFn(item);
+        ctx.stroke();
+      }
+    };
+
+    const colouredHorizontals = geom.horizontals.map(h => ({ ...h, _color: colourForNode(h.node) }));
+    strokeGrouped(colouredHorizontals, h => {
+      ctx.moveTo(h.x1, h.y1);
+      ctx.lineTo(h.x2, h.y2);
+    });
+
+    if (er > 0) {
+      const colouredElbows = geom.elbows.map(a => ({ ...a, _color: colourForNode(a.node) }));
+      strokeGrouped(colouredElbows, a => {
+        ctx.moveTo(a.moveX, a.moveY);
+        ctx.arcTo(a.x1, a.y1, a.x2, a.y2, a.r);
+      });
     }
 
     if (geom.rootStub) {
+      const rootColor = colourForNode(rootNode);
+      ctx.strokeStyle = rootColor;
       ctx.beginPath();
       ctx.moveTo(geom.rootStub.x1, geom.rootStub.y1);
       ctx.lineTo(geom.rootStub.x2, geom.rootStub.y2);
       ctx.stroke();
     }
 
-    ctx.beginPath();
-    for (const v of geom.verticals) {
+    const colouredVerticals = geom.verticals.map(v => ({ ...v, _color: colourForNode(v.node) }));
+    strokeGrouped(colouredVerticals, v => {
       ctx.moveTo(v.x1, v.y1);
       ctx.lineTo(v.x2, v.y2);
-    }
-    ctx.stroke();
+    });
+
     ctx.restore();
   }
 

@@ -507,6 +507,8 @@ The **Tree** and **Branches** sections controls the basic visual look of the tre
 | Control | Effect |
 |---|---|
 | Colour | The colour of the branches of the tree |
+| Colour by | Use an annotation key for per-branch line colour. For node annotations, each branch uses the descendant node value; for tip-only annotations, PearTree uses the descendant-tip average. |
+| Palette | **Configure** button appears when *Colour by* is active |
 | Width | Branch line stroke thickness (0.5–8 px) |
 | Elbow radius | How curvy the corners of the branches are |
 
@@ -707,7 +709,7 @@ In the **Clade Highlights** section of the palette:
 
 ### Colouring by Annotations
 
-Many sections of the Visual Options palette — **Tip Labels**, **Label Shapes**, **Tip Shapes**, **Node Shapes**, **Node Labels**, **Clade Highlights**, and **Legends** — share a common **Colour by** control. This dropdown lets you drive the colour of that element from an annotation rather than a single fixed colour.
+Many sections of the Visual Options palette — **Branches**, **Tip Labels**, **Label Shapes**, **Tip Shapes**, **Node Shapes**, **Node Labels**, **Branch Labels**, **Clade Highlights**, **Collapsed Clades**, and **Legends** — share a common **Colour by** control. This dropdown lets you drive the colour of that element from an annotation rather than a single fixed colour.
 
 When **Colour by** is set to an annotation key, a **Configure** button appears in that section. Click it to open the colour settings for that key:
 

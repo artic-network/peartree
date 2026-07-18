@@ -726,6 +726,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
 
   // ── Tree branches ─────────────────────────────────────────────────────
   const branchParts = [];
+  let branchGroupStroke = esc(bc);
   const bgNodeParts = [];  // background halo circles for node shapes
   const bgTipParts  = [];  // background halo circles for tip shapes
   const fgNodeParts = [];  // foreground fill circles for node shapes
@@ -760,22 +761,76 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     rootNode,
     rootStubLength,
   });
-  for (const h of branchGeom.horizontals) {
-    branchParts.push(`<line x1="${f(h.x1)}" y1="${f(h.y1)}" x2="${f(h.x2)}" y2="${f(h.y2)}"/>`);
-  }
-  if ((renderer.elbowRadius ?? 0) > 0 && branchGeom.elbows.length) {
-    const bp = makeSvgPath(f);
-    for (const a of branchGeom.elbows) {
-      bp.moveTo(a.moveX, a.moveY);
-      bp.arcTo(a.x1, a.y1, a.x2, a.y2, a.r);
+  const hasBranchColourBy = !!(renderer._branchColourBy && renderer._branchColourScale);
+  if (!hasBranchColourBy) {
+    for (const h of branchGeom.horizontals) {
+      branchParts.push(`<line x1="${f(h.x1)}" y1="${f(h.y1)}" x2="${f(h.x2)}" y2="${f(h.y2)}"/>`);
     }
-    branchParts.push(`<path d="${esc(bp.d)}" fill="none"/>`);
-  }
-  if (branchGeom.rootStub) {
-    branchParts.push(`<line x1="${f(branchGeom.rootStub.x1)}" y1="${f(branchGeom.rootStub.y1)}" x2="${f(branchGeom.rootStub.x2)}" y2="${f(branchGeom.rootStub.y2)}"/>`);
-  }
-  for (const v of branchGeom.verticals) {
-    branchParts.push(`<line x1="${f(v.x1)}" y1="${f(v.y1)}" x2="${f(v.x2)}" y2="${f(v.y2)}"/>`);
+    if ((renderer.elbowRadius ?? 0) > 0 && branchGeom.elbows.length) {
+      const bp = makeSvgPath(f);
+      for (const a of branchGeom.elbows) {
+        bp.moveTo(a.moveX, a.moveY);
+        bp.arcTo(a.x1, a.y1, a.x2, a.y2, a.r);
+      }
+      branchParts.push(`<path d="${esc(bp.d)}" fill="none"/>`);
+    }
+    if (branchGeom.rootStub) {
+      branchParts.push(`<line x1="${f(branchGeom.rootStub.x1)}" y1="${f(branchGeom.rootStub.y1)}" x2="${f(branchGeom.rootStub.x2)}" y2="${f(branchGeom.rootStub.y2)}"/>`);
+    }
+    for (const v of branchGeom.verticals) {
+      branchParts.push(`<line x1="${f(v.x1)}" y1="${f(v.y1)}" x2="${f(v.x2)}" y2="${f(v.y2)}"/>`);
+    }
+  } else {
+    branchGroupStroke = null;
+    const key = renderer._branchColourBy;
+    const colourForNode = (node) => {
+      if (!node || !key) return bc;
+      const def = renderer._annotationSchema?.get(key);
+      const tipOnly = def && !def.onNodes && def.onTips && key !== 'user_colour';
+      const value = tipOnly
+        ? renderer._aggregateTipValue(node, key)
+        : renderer._statValue(node, key);
+      return renderer._branchColourForValue(value) ?? bc;
+    };
+
+    const pushLineGroups = (items) => {
+      const groups = new Map();
+      for (const item of items) {
+        const color = colourForNode(item.node) || bc;
+        if (!groups.has(color)) groups.set(color, []);
+        groups.get(color).push(item);
+      }
+      for (const [color, list] of groups) {
+        const lines = list.map(item => `<line x1="${f(item.x1)}" y1="${f(item.y1)}" x2="${f(item.x2)}" y2="${f(item.y2)}"/>`).join('');
+        branchParts.push(`<g stroke="${esc(color)}">${lines}</g>`);
+      }
+    };
+
+    pushLineGroups(branchGeom.horizontals);
+
+    if ((renderer.elbowRadius ?? 0) > 0 && branchGeom.elbows.length) {
+      const elbowGroups = new Map();
+      for (const a of branchGeom.elbows) {
+        const color = colourForNode(a.node) || bc;
+        if (!elbowGroups.has(color)) elbowGroups.set(color, []);
+        elbowGroups.get(color).push(a);
+      }
+      for (const [color, list] of elbowGroups) {
+        const bp = makeSvgPath(f);
+        for (const a of list) {
+          bp.moveTo(a.moveX, a.moveY);
+          bp.arcTo(a.x1, a.y1, a.x2, a.y2, a.r);
+        }
+        branchParts.push(`<path d="${esc(bp.d)}" fill="none" stroke="${esc(color)}"/>`);
+      }
+    }
+
+    if (branchGeom.rootStub) {
+      const rootColor = colourForNode(rootNode);
+      branchParts.push(`<line x1="${f(branchGeom.rootStub.x1)}" y1="${f(branchGeom.rootStub.y1)}" x2="${f(branchGeom.rootStub.x2)}" y2="${f(branchGeom.rootStub.y2)}" stroke="${esc(rootColor)}"/>`);
+    }
+
+    pushLineGroups(branchGeom.verticals);
   }
 
   // ── Tip-label alignment and shape pre-computation ─────────────────────
@@ -1294,7 +1349,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   <g clip-path="url(#tc)">
     ${nodeBarParts.join('\n    ')}
   </g>
-  <g clip-path="url(#tc)" stroke="${esc(bc)}" stroke-width="${bw}" fill="none" stroke-linecap="round">
+  <g clip-path="url(#tc)"${branchGroupStroke ? ` stroke="${branchGroupStroke}"` : ''} stroke-width="${bw}" fill="none" stroke-linecap="round">
     ${branchParts.join('\n    ')}
   </g>
   <g clip-path="url(#tc)">

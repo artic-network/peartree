@@ -482,6 +482,7 @@ async function _initCore(root = document) {
   const rttAxisTypefaceStyleEl = $('rtt-axis-typeface-style-select');
   const tipColourBy       = $('tip-colour-by');
   const nodeColourBy      = $('node-colour-by');
+  const branchColourBy    = $('branch-colour-by');
   const labelColourBy     = $('label-colour-by');
   const tipLabelShow      = $('tip-label-show');
   const tipLabelControlsEl = $('tip-label-controls');
@@ -524,6 +525,7 @@ async function _initCore(root = document) {
   const branchLabelConfigureRow    = $('branch-label-configure-row');
   const tipConfigureRow    = $('tip-configure-row');
   const nodeConfigureRow   = $('node-configure-row');
+  const branchConfigureRow = $('branch-configure-row');
   const labelConfigureRow  = $('label-configure-row');
   const tipLabelShapeEl              = $('tip-label-shape');
   const tipLabelShapeColorEl         = $('tip-label-shape-color');
@@ -1064,6 +1066,7 @@ async function _initCore(root = document) {
       collapsedCladeTypefaceStyle: collapsedCladeTypefaceStyleEl?.value || '',
       tipColourBy:      tipColourBy.value,
       nodeColourBy:     nodeColourBy.value,
+      branchColourBy:   branchColourBy?.value || 'user_colour',
       labelColourBy:    labelColourBy.value,
       annotationPalettes: Object.fromEntries(annotationPalettes),
       annotationPaletteReverses: Object.fromEntries(annotationPaletteReverses),
@@ -1726,6 +1729,7 @@ async function _initCore(root = document) {
     // Reset colour-by dropdowns, legend, and axis controls.
     tipColourBy.value        = 'user_colour';
     nodeColourBy.value       = 'user_colour';
+    if (branchColourBy) branchColourBy.value = 'user_colour';
     labelColourBy.value      = 'user_colour';
     tipLabelShow.value       = DEFAULT_SETTINGS.tipLabelShow;
     tipLabelControlsEl.style.display = '';
@@ -1859,6 +1863,7 @@ async function _initCore(root = document) {
     if (renderer) {
       renderer.setTipColourBy('user_colour');
       renderer.setNodeColourBy('user_colour');
+      renderer.setBranchColourBy('user_colour');
       renderer.setLabelColourBy('user_colour');
       renderer.setTipLabelShapeColourBy('user_colour');
       renderer.setNodeLabelColourBy(null);
@@ -2048,6 +2053,7 @@ async function _initCore(root = document) {
     return {
       bgColor:          canvasBgColorEl.value,
       branchColor:      branchColorEl.value,
+      branchColourBy:   branchColourBy?.value || null,
       branchWidth:      parseFloat(branchWidthSlider.value),
       elbowRadius:      parseFloat(elbowRadiusSlider?.value ?? DEFAULT_THEME.elbowRadius),
       tipLabelFontSize: parseInt(fontSlider.value),
@@ -4303,6 +4309,7 @@ async function _initCore(root = document) {
     }
     repopulate(tipColourBy,          { filter: 'tips'  });
     repopulate(nodeColourBy,         { filter: 'nodesAndTipAvg' });
+    if (branchColourBy) repopulate(branchColourBy, { filter: 'nodesAndTipAvg' });
     repopulate(labelColourBy,        { filter: 'tips'  });
     if (cladeHighlightColourByEl)  repopulate(cladeHighlightColourByEl,  { filter: 'nodesAndTipAvg' });
     if (collapsedCladeColourByEl)  repopulate(collapsedCladeColourByEl,  { filter: 'nodesAndTipAvg' });
@@ -4417,6 +4424,7 @@ async function _initCore(root = document) {
     // Refresh configure-button visibility to match current colour-by selections.
     _updateConfigureBtn(tipConfigureRow,                tipColourBy.value);
     _updateConfigureBtn(nodeConfigureRow,               nodeColourBy.value);
+    if (branchColourBy) _updateConfigureBtn(branchConfigureRow, branchColourBy.value);
     _updateConfigureBtn(labelConfigureRow,              labelColourBy.value);
     _updateConfigureBtn(tipLabelShapeConfigureRow,      tipLabelShapeColourBy.value);
     for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) {
@@ -4772,6 +4780,7 @@ async function _initCore(root = document) {
       }
       _populateColourBy(tipColourBy,          'tips');
       _populateColourBy(nodeColourBy,         'nodesAndTipAvg');
+      if (branchColourBy) _populateColourBy(branchColourBy, 'nodesAndTipAvg');
       _populateColourBy(labelColourBy,        'tips');
       _populateColourBy(tipLabelShapeColourBy, 'tips');
       for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++) _populateColourBy(tipLabelShapeExtraColourBys[_i], 'tips');
@@ -4980,6 +4989,7 @@ async function _initCore(root = document) {
       const _hasOpt = (sel, key) => key && [...sel.options].some(o => o.value === key);
       tipColourBy.value          = _hasOpt(tipColourBy,          _eff.tipColourBy)           ? _eff.tipColourBy           : 'user_colour';
       nodeColourBy.value         = _hasOpt(nodeColourBy,         _eff.nodeColourBy)          ? _eff.nodeColourBy          : 'user_colour';
+      if (branchColourBy) branchColourBy.value = _hasOpt(branchColourBy, _eff.branchColourBy) ? _eff.branchColourBy : 'user_colour';
       labelColourBy.value        = _hasOpt(labelColourBy,        _eff.labelColourBy)         ? _eff.labelColourBy         : 'user_colour';
       tipLabelShapeColourBy.value = _hasOpt(tipLabelShapeColourBy, _eff.tipLabelShapeColourBy) ? _eff.tipLabelShapeColourBy : 'user_colour';
       if (branchShapeColourByEl) {
@@ -5100,6 +5110,7 @@ async function _initCore(root = document) {
       // Show/hide configure buttons for active colour-by annotations.
       _updateConfigureBtn(tipConfigureRow,                tipColourBy.value);
       _updateConfigureBtn(nodeConfigureRow,               nodeColourBy.value);
+      if (branchColourBy) _updateConfigureBtn(branchConfigureRow, branchColourBy.value);
       _updateConfigureBtn(labelConfigureRow,              labelColourBy.value);
       _updateConfigureBtn(tipLabelShapeConfigureRow,      tipLabelShapeColourBy.value);
       for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++)
@@ -7476,6 +7487,17 @@ async function _initCore(root = document) {
     openAnnotConfig(nodeColourBy.value);
   });
 
+  optionsController.on('branch-colour-by', () => {
+    renderer.setBranchColourBy(branchColourBy.value || null);
+    _updateConfigureBtn(branchConfigureRow, branchColourBy.value);
+    saveSettings();
+  });
+
+  optionsController.on('branch-configure-btn', ({ type }) => {
+    if (type !== 'click') return;
+    openAnnotConfig(branchColourBy.value);
+  });
+
   optionsController.on('tip-colour-by', () => {
     renderer.setTipColourBy(tipColourBy.value || null);
     _updateConfigureBtn(tipConfigureRow, tipColourBy.value);
@@ -8952,6 +8974,7 @@ async function _initCore(root = document) {
 
     if (s.nodeLabelAnnotation != null && nodeLabelShowEl)  nodeLabelShowEl.value   = s.nodeLabelAnnotation;
     if (s.branchLabelAnnotation != null && branchLabelShowEl) branchLabelShowEl.value = s.branchLabelAnnotation;
+    if (s.branchColourBy != null && branchColourBy) { branchColourBy.value = s.branchColourBy; renderer?.setBranchColourBy(s.branchColourBy || null); }
     if (s.nodeLabelColourBy   != null && nodeLabelColourBy)   { nodeLabelColourBy.value   = s.nodeLabelColourBy;   renderer?.setNodeLabelColourBy(s.nodeLabelColourBy || null); }
     if (s.branchLabelColourBy != null && branchLabelColourBy) { branchLabelColourBy.value = s.branchLabelColourBy; renderer?.setBranchLabelColourBy(s.branchLabelColourBy || null); }
     if (s.legendTextColor != null && legendTextColorEl) {

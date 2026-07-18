@@ -31,7 +31,7 @@ export function buildBranchPrimitives({
     const dir = dx >= 0 ? 1 : -1;
     const cer = Math.min(er, Math.abs(ny - py) * 0.4, Math.abs(dx) * 0.4);
 
-    horizontals.push({ x1: px + dir * cer, y1: ny, x2: nx, y2: ny });
+    horizontals.push({ x1: px + dir * cer, y1: ny, x2: nx, y2: ny, node, parent });
 
     if (er > 0 && Math.abs(ny - py) >= 0.5) {
       const cerArc = Math.max(0, Math.min(er, Math.abs(ny - py) * 0.4, Math.abs(dx) * 0.4));
@@ -45,6 +45,8 @@ export function buildBranchPrimitives({
           x2: px + dir * cerArc,
           y2: ny,
           r: cerArc,
+          node,
+          parent,
         });
       }
     }
@@ -87,7 +89,7 @@ export function buildBranchPrimitives({
     const cerTop = er > 0 ? Math.min(er, Math.abs(nyTop - py) * 0.4, Math.abs(toX(topChild.x) - nx) * 0.4) : 0;
     const cerBot = er > 0 ? Math.min(er, Math.abs(nyBot - py) * 0.4, Math.abs(toX(botChild.x) - nx) * 0.4) : 0;
 
-    verticals.push({ x1: nx, y1: nyTop + cerTop, x2: nx, y2: nyBot - cerBot });
+    verticals.push({ x1: nx, y1: nyTop + cerTop, x2: nx, y2: nyBot - cerBot, node });
   }
 
   return { horizontals, elbows, verticals, rootStub };

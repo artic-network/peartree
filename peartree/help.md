@@ -423,6 +423,7 @@ SVG export includes all visible elements — branches, tip labels, node/tip shap
 
 The **Visual Options palette** (toggle with **Tab** or the <i class="bi bi-sliders"></i> button) contains organized control sections for all display settings:
 
+- **Branches** — set branch line colour/width/elbow radius, or colour branch lines by annotation
 - **Tip labels** — label/position/style tip names or annotation values; add Labels 2–4 for multi-field display
 - **Node labels** — show internal node values (e.g. bootstrap support)
 - **Branch labels** — show values at branch midpoints
@@ -431,8 +432,22 @@ The **Visual Options palette** (toggle with **Tab** or the <i class="bi bi-slide
 - **Axis** — show a divergence or time scale
 - **Node bars** — show BEAST HPD credible intervals
 - **Legend** — position and style colour-by legends
-- **Theme** — switch color themes and customize palettes
+- **Theme** — switch colour themes and customize palettes
 - **Panel management** — arrange side panels and export options
+
+---
+
+## Branches
+
+The **Branches** section controls the branch-line appearance:
+
+- **Colour** — fixed branch line colour
+- **Colour by** — colour branch lines from an annotation key
+- **Palette** — appears as **Configure** when *Colour by* is active
+- **Width** — branch stroke thickness
+- **Elbow Radius** — branch corner curvature
+
+When **Colour by** is set to a node annotation, each branch uses the annotation value on its descendant node. If you choose a tip-only annotation, PearTree uses the descendant-tip average for each branch.
 
 ---
 

@@ -88,6 +88,40 @@ export const SETTINGS_SCHEMA = [
     desc: 'Root stem length as a percentage of the tree age (0–20).',
   },
 
+  // ── Branches ───────────────────────────────────────────────────────────
+  {
+    key: 'branchColor',
+    label: 'Branch colour',
+    group: 'Branches',
+    type: 'text',
+    placeholder: 'e.g. #f2f1e6',
+    desc: 'Default branch-line colour (CSS colour string).',
+  },
+  {
+    key: 'branchColourBy',
+    label: 'Branch colour-by annotation',
+    group: 'Branches',
+    type: 'text',
+    placeholder: 'e.g. country',
+    desc: 'Annotation key used to colour branch lines. Use user_colour or leave blank for the default branch colour.',
+  },
+  {
+    key: 'branchWidth',
+    label: 'Branch width (px)',
+    group: 'Branches',
+    type: 'number',
+    min: 0.5, max: 8, step: 0.5,
+    desc: 'Branch-line stroke width in pixels.',
+  },
+  {
+    key: 'elbowRadius',
+    label: 'Elbow radius (px)',
+    group: 'Branches',
+    type: 'number',
+    min: 0, max: 20, step: 1,
+    desc: 'Rounded-corner radius for branch elbows in pixels.',
+  },
+
   // ── Tip labels ─────────────────────────────────────────────────────────
   {
     key: 'tipLabelShow',
@@ -205,6 +239,14 @@ export const SETTINGS_SCHEMA = [
     min: 6, max: 48, step: 1,
     desc: 'Font size for branch labels.',
   },
+  {
+    key: 'branchLabelColourBy',
+    label: 'Branch label colour-by annotation',
+    group: 'Branch labels',
+    type: 'text',
+    placeholder: 'e.g. bootstrap',
+    desc: 'Annotation key to colour branch labels by category/value. Leave blank for default label colour.',
+  },
 
   // ── Shapes ──────────────────────────────────────────────────────────────
   {
@@ -275,14 +317,14 @@ export const SETTINGS_SCHEMA = [
   },
   {
     key: 'branchShapeColor',
-    label: 'Branch shape color',
+    label: 'Branch shape colour',
     group: 'Branch shapes',
     type: 'text',
     placeholder: 'e.g. #aaaaaa',
-    desc: 'Default fill colour for branch shapes (CSS color string).',
+    desc: 'Default fill colour for branch shapes (CSS colour string).',
   },
   {
-    key: 'branchShapeColorBy',
+    key: 'branchShapeColourBy',
     label: 'Branch shape colour-by annotation',
     group: 'Branch shapes',
     type: 'text',
@@ -298,7 +340,7 @@ export const SETTINGS_SCHEMA = [
     desc: 'Integer annotation key to control the number of shapes drawn per branch. Leave blank for one shape per branch.',
   },
   {
-    key: 'branchShapeHaloSize',
+    key: 'branchShapeHalo',
     label: 'Branch shape halo (px)',
     group: 'Branch shapes',
     type: 'number',
@@ -307,14 +349,14 @@ export const SETTINGS_SCHEMA = [
   },
   {
     key: 'branchShapeHaloColor',
-    label: 'Branch shape halo color',
+    label: 'Branch shape halo colour',
     group: 'Branch shapes',
     type: 'text',
     placeholder: 'e.g. #ffffff',
-    desc: 'Colour for the shape halo (CSS color string).',
+    desc: 'Colour for the shape halo (CSS colour string).',
   },
   {
-    key: 'branchShapeFilter',
+    key: 'branchShapesFilter',
     label: 'Branch shape filter',
     group: 'Branch shapes',
     type: 'text',
@@ -330,7 +372,7 @@ export const SETTINGS_SCHEMA = [
   },
   {
     key: 'branchShape2Color',
-    label: 'Branch shape 2 color',
+    label: 'Branch shape 2 colour',
     group: 'Branch shapes',
     type: 'text',
     placeholder: 'e.g. #aaaaaa',
@@ -338,7 +380,7 @@ export const SETTINGS_SCHEMA = [
   },
   {
     key: 'branchShape3Color',
-    label: 'Branch shape 3 color',
+    label: 'Branch shape 3 colour',
     group: 'Branch shapes',
     type: 'text',
     placeholder: 'e.g. #aaaaaa',
@@ -346,7 +388,7 @@ export const SETTINGS_SCHEMA = [
   },
   {
     key: 'branchShape4Color',
-    label: 'Branch shape 4 color',
+    label: 'Branch shape 4 colour',
     group: 'Branch shapes',
     type: 'text',
     placeholder: 'e.g. #aaaaaa',
