@@ -136,15 +136,25 @@ export const DEFAULT_SETTINGS = {
   // Options: 'y-then-x' | 'x-then-y' | 'simultaneous' | 'from-bottom' | 'from-top' | 'none'
   introAnimation:  'x-then-y',
 
+  // ── Branches ────────────────────────────────────────────────────────────────────────
+  branchColourBy:  'user_colour',
+
   // ── Tip Labels ───────────────────────────────────────────────────────────────────
   tipLabelShow:    'name',    // 'off' | 'name' | annotation key
   tipLabelAlign:   'off',    // 'off' | 'aligned' | 'dots' | 'dashed' | 'solid'
   tipLabelSpacing: '3',
-  branchColourBy:  'user_colour',
   // Extra tip labels 2–4 (shown immediately to the right of label 1; share label 1's styling)
   tipLabelsExtra:  ['off', 'off', 'off'],  // array of annotation keys or 'off'/'name'
   // Layout mode for extra labels 2–4: append | align | join-space | join-pipe | join-slash | join-underscore | join-dash
   tipLabelsExtraLayouts: ['append', 'append', 'append'],
+
+  // ── Node Labels ───────────────────────────────────────────────────────────────────
+  nodeLabelAnnotation: '',          // '' = off | annotation key
+  nodeLabelPosition:   'right',     // 'right' | 'above-left' | 'below-left'
+
+  // ── Branch Labels ─────────────────────────────────────────────────────────────────
+  branchLabelAnnotation: '',        // '' = off | annotation key
+  branchLabelPosition:   'above',   // 'above' | 'below'
 
   // ── Label Shapes ────────────────────────────────────────────────────────────────────
   tipLabelShape:             'off',     // 'off' | 'square' | 'circle' | 'block'
@@ -154,10 +164,6 @@ export const DEFAULT_SETTINGS = {
   // Extra tip label shapes 2–10 (shown immediately to the right of shape 1; share shape 1's size/colour)
   tipLabelShapesExtra:         ['off', 'off', 'off', 'off', 'off', 'off', 'off', 'off', 'off'],
   tipLabelShapeExtraColourBys: ['user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour', 'user_colour'],
-
-  // ── Node Labels ───────────────────────────────────────────────────────────────────
-  nodeLabelAnnotation: '',          // '' = off | annotation key
-  nodeLabelPosition:   'right',     // 'right' | 'above-left' | 'below-left'
 
   // ── Branch Shapes ────────────────────────────────────────────────────────────────
   branchShape:             'off',      // 'off' | 'rectangle' | 'ellipse'
@@ -176,10 +182,6 @@ export const DEFAULT_SETTINGS = {
   branchShapesExtraColors:   ['#aaaaaa', '#aaaaaa', '#aaaaaa'],
   branchShapesExtraColourBys:['user_colour', 'user_colour', 'user_colour'],
   branchShapesExtraCountBys: ['', '', ''],
-
-  // ── Branch Labels ─────────────────────────────────────────────────────────────────
-  branchLabelAnnotation: '',        // '' = off | annotation key
-  branchLabelPosition:   'above',   // 'above' | 'below'
 
   // ── Node Bars ───────────────────────────────────────────────────────────────────────
   // (only shown when tree has 'height' group from BEAST)
@@ -230,6 +232,15 @@ export const DEFAULT_SETTINGS = {
   axisMajorLabelFormat: 'partial',  // 'component' | 'partial' | 'full' | 'off'
   axisMinorLabelFormat: 'off',      // 'component' | 'partial' | 'full' | 'off'
 
+  // ── Axis range (not persistent — see NON_PERSISTENT_SETTINGS below) ───────────────
+  // '' / null = auto.  Forward left defaults to '0'; reverse right defaults to '0'.
+  axisRangeTimeLeft:     '',
+  axisRangeTimeRight:    '',
+  axisRangeForwardLeft:  '0',
+  axisRangeForwardRight: '',
+  axisRangeReverseLeft:  '',
+  axisRangeReverseRight: '0',
+
   // ── Root-to-tip ──────────────────────────────────────────────────────────────────────
   rttResidBandShow:     'residual',      // 'off' | 'residual' | 'ci'
   rttXOrigin:           'root',     // 'data' | 'root' | 'interval'
@@ -260,15 +271,6 @@ export const DEFAULT_SETTINGS = {
   defaultTheme:  'ARTIC',
   // Last-active theme name; restored on reload. Falls back to defaultTheme.
   selectedTheme: 'ARTIC',
-
-  // ── Axis range (not persistent — see NON_PERSISTENT_SETTINGS below) ───────────────────────
-  // '' / null = auto.  Forward left defaults to '0'; reverse right defaults to '0'.
-  axisRangeTimeLeft:     '',
-  axisRangeTimeRight:    '',
-  axisRangeForwardLeft:  '0',
-  axisRangeForwardRight: '',
-  axisRangeReverseLeft:  '',
-  axisRangeReverseRight: '0',
 };
 
 /**
