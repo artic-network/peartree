@@ -6,6 +6,8 @@
 
 - Add branch line colouring by annotation (**Branches → Colour by**), including palette configuration support.
 - Allow stacking multiple node bars / HPD intervals.
+- Add KDE curve support for node bars (in addition to HPD intervals).
+- Add special filter conditions via **Node** field: `is root`, `is not root`, `is tip`, `is internal`.
 - Add support for Newick trees containing `[&R]` markers.
 - Add status-bar messaging when tips are hidden.
 
