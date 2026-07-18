@@ -6830,9 +6830,30 @@ async function _initCore(root = document) {
       if (annotEntries.length > 0) {
         rows.push([null, null]); // divider
         // Helper: format a single annotation value for display.
+        function summarizeCurve(v) {
+          if (!Array.isArray(v) || v.length === 0 || !Array.isArray(v[0])) return null;
+          let xMin = Infinity;
+          let xMax = -Infinity;
+          let n = 0;
+          for (const pt of v) {
+            if (!Array.isArray(pt) || pt.length < 2) continue;
+            const x = +pt[0];
+            const y = +pt[1];
+            if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+            n += 1;
+            if (x < xMin) xMin = x;
+            if (x > xMax) xMax = x;
+          }
+          if (n === 0) return null;
+          return `${xMin.toFixed(4)} ... ${xMax.toFixed(4)} (${n} values)`;
+        }
+
         function fmtAnnot(v, def) {
           if (v === null || v === undefined) return '—';
           if (Array.isArray(v)) {
+            // KDE curve points: show compact x-range + number of values.
+            const curveSummary = summarizeCurve(v);
+            if (curveSummary) return curveSummary;
             // Interval: [lower, upper] pair — show as bracket notation.
             if ((def?.dataType === 'interval') && v.length === 2 &&
                 typeof v[0] === 'number' && typeof v[1] === 'number') {
