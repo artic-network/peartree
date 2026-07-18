@@ -421,14 +421,14 @@ export const SETTINGS_SCHEMA = [
   // ── Node bars ───────────────────────────────────────────────────────────
   {
     key: 'nodeBarsEnabled',
-    label: 'Node bars (HPD)',
+    label: 'Node bars (HPD / KDE)',
     group: 'Node bars',
     type: 'select',
     options: [
       { value: 'off', label: 'Off (default)' },
       { value: 'on',  label: 'On' },
     ],
-    desc: 'Show BEAST HPD node bars (requires a BEAST tree with height annotations).',
+    desc: 'Show BEAST height node bars (HPD intervals or KDE curves).',
   },
 
   // ── Theme ────────────────────────────────────────────────────────────────

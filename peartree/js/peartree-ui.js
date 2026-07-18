@@ -1233,8 +1233,19 @@ function _sectionNodeBars() {
         type: 'row',
         kind: 'select',
         id: `node-bars-show-${n}`,
-        title: `Show node bar set ${n} using a second interval on top of bar 1`,
+        title: `Show node bar set ${n} using an additional interval or curve on top of bar 1`,
         label: `Show ${n}`,
+        options: [
+          { value: 'off', label: 'Off' },
+          // HPD / curve options are added dynamically after tree load
+        ],
+      },
+      {
+        type: 'row',
+        kind: 'select',
+        id: `node-bars-${n}-clip-to`,
+        title: `Crop curve bar ${n} to a specific interval`,
+        label: 'Clip to',
         options: [
           { value: 'off', label: 'Off' },
           // HPD interval options are added dynamically after tree load
@@ -1308,7 +1319,7 @@ function _sectionNodeBars() {
     items: [
       {
         type: 'html',
-        html: '<div id="node-bars-unavail" style="display:block;font-size:0.78rem;color:var(--pt-text-muted);font-style:italic;padding:2px 0 4px;">Requires BEAST tree with height HPD</div>',
+        html: '<div id="node-bars-unavail" style="display:block;font-size:0.78rem;color:var(--pt-text-muted);font-style:italic;padding:2px 0 4px;">Requires BEAST tree with height HPD or KDE curve annotations</div>',
       },
       {
         type: 'group',
@@ -1322,6 +1333,17 @@ function _sectionNodeBars() {
             id: 'node-bars-show',
             title: 'Show confidence interval bars (e.g. 95% HPD) on nodes',
             label: 'Show',
+            options: [
+              { value: 'off', label: 'Off' },
+              // HPD interval options are added dynamically after tree load
+            ],
+          },
+          {
+            type: 'row',
+            kind: 'select',
+            id: 'node-bars-clip-to',
+            title: 'Crop curve bars to a specific interval',
+            label: 'Clip to',
             options: [
               { value: 'off', label: 'Off' },
               // HPD interval options are added dynamically after tree load

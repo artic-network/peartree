@@ -445,6 +445,8 @@ async function _initCore(root = document) {
   const nodeBarsFillOpacitySlider   = $('node-bars-fill-opacity');
   const nodeBarsStrokeOpacitySlider = $('node-bars-stroke-opacity');
   const nodeBarsExtraShowEls = [2, 3, 4].map(n => $(`node-bars-show-${n}`));
+  const nodeBarsClipToEl = $('node-bars-clip-to');
+  const nodeBarsExtraClipToEls = [2, 3, 4].map(n => $(`node-bars-${n}-clip-to`));
   const nodeBarsExtraWidthSliders = [2, 3, 4].map(n => $(`node-bars-${n}-width-slider`));
   const nodeBarsExtraColorEls = [2, 3, 4].map(n => $(`node-bars-${n}-color`));
   const nodeBarsExtraFillOpacitySliders = [2, 3, 4].map(n => $(`node-bars-${n}-fill-opacity`));
@@ -1115,6 +1117,8 @@ async function _initCore(root = document) {
       rttMinorLabelFormat:  rttMinorLabelEl.value,
       nodeBarsEnabled:         nodeBarsShowEl.value,
       nodeBarsExtraEnabled:    nodeBarsExtraShowEls.map(el => el?.value || 'off'),
+      nodeBarsClipTo:          nodeBarsClipToEl?.value || 'off',
+      nodeBarsExtraClipTo:     nodeBarsExtraClipToEls.map(el => el?.value || 'off'),
       nodeBarsWidth:           nodeBarsWidthSlider.value,
       nodeBarsExtraWidths:     nodeBarsExtraWidthSliders.map(el => el?.value || '6'),
       nodeBarsFillOpacity:     nodeBarsFillOpacitySlider.value,
@@ -1579,6 +1583,12 @@ async function _initCore(root = document) {
         if (el && s.nodeBarsExtraEnabled[i]) el.value = s.nodeBarsExtraEnabled[i];
       });
     }
+    if (s.nodeBarsClipTo) nodeBarsClipToEl.value = s.nodeBarsClipTo;
+    if (Array.isArray(s.nodeBarsExtraClipTo)) {
+      nodeBarsExtraClipToEls.forEach((el, i) => {
+        if (el && s.nodeBarsExtraClipTo[i]) el.value = s.nodeBarsExtraClipTo[i];
+      });
+    }
     if (s.nodeBarsColor)    nodeBarsColorEl.value = s.nodeBarsColor;
     if (Array.isArray(s.nodeBarsExtraColors)) {
       nodeBarsExtraColorEls.forEach((el, i) => {
@@ -1775,6 +1785,10 @@ async function _initCore(root = document) {
     nodeBarsShowEl.value  = DEFAULT_SETTINGS.nodeBarsEnabled;
     nodeBarsExtraShowEls.forEach((el, i) => {
       if (el) el.value = DEFAULT_SETTINGS.nodeBarsExtraEnabled?.[i] ?? 'off';
+    });
+    if (nodeBarsClipToEl) nodeBarsClipToEl.value = DEFAULT_SETTINGS.nodeBarsClipTo ?? 'off';
+    nodeBarsExtraClipToEls.forEach((el, i) => {
+      if (el) el.value = DEFAULT_SETTINGS.nodeBarsExtraClipTo?.[i] ?? 'off';
     });
     nodeBarsLineEl.value = DEFAULT_SETTINGS.nodeBarsLine;
     nodeBarsRangeEl.value  = DEFAULT_SETTINGS.nodeBarsRange;
@@ -2104,6 +2118,8 @@ async function _initCore(root = document) {
       nodeBarsEnabled:    nodeBarsShowEl.value !== 'off',
       nodeBarsHpdKey:     nodeBarsShowEl.value !== 'off' ? nodeBarsShowEl.value : null,
       nodeBarsExtraHpdKeys: nodeBarsExtraShowEls.map(el => (el?.value && el.value !== 'off') ? el.value : null),
+      nodeBarsClipTo: nodeBarsClipToEl?.value && nodeBarsClipToEl.value !== 'off' ? nodeBarsClipToEl.value : null,
+      nodeBarsExtraClipTo: nodeBarsExtraClipToEls.map(el => (el?.value && el.value !== 'off') ? el.value : null),
       nodeBarsColor:      nodeBarsColorEl.value,
       nodeBarsExtraColors: nodeBarsExtraColorEls.map(el => el?.value || '#2aa198'),
       nodeBarsWidth:      parseInt(nodeBarsWidthSlider.value),
@@ -2204,6 +2220,7 @@ async function _initCore(root = document) {
     _updateLabelDpRow(legend2DpRowEl, legend2AnnotEl.value, _schema);
     _updateLabelDpRow(legend3DpRowEl, legend3AnnotEl.value, _schema);
     _updateLabelDpRow(legend4DpRowEl, legend4AnnotEl.value, _schema);
+    _syncNodeBarsClipVisibility(_schema);
   }
 
   /**
@@ -4209,16 +4226,21 @@ async function _initCore(root = document) {
       : [preferred?.primary ?? preferred, ...(preferred?.extras ?? [])];
 
     const hpdDef = schema?.get('height');
+    const options = [];
+    if (hpdDef?.group?.hpds?.length) {
+      options.push(...hpdDef.group.hpds.map(({ pct, key }) => ({ value: key, label: `${pct}% HPD` })));
+    }
+    if (hpdDef?.group?.curves?.length) {
+      options.push(...hpdDef.group.curves.map(({ key, label }) => ({ value: key, label: label ?? 'curve' })));
+    }
     controls.forEach((sel, i) => {
       const prev = preferredValues[i] ?? sel.value;
       while (sel.options.length > 1) sel.remove(1);
-      if (hpdDef?.group?.hpds?.length) {
-        for (const { pct, key } of hpdDef.group.hpds) {
-          const opt = document.createElement('option');
-          opt.value = key;
-          opt.textContent = `${pct}% HPD`;
-          sel.appendChild(opt);
-        }
+      for (const optSpec of options) {
+        const opt = document.createElement('option');
+        opt.value = optSpec.value;
+        opt.textContent = optSpec.label;
+        sel.appendChild(opt);
       }
       // Restore: valid key wins; legacy 'on' maps to first HPD; otherwise 'off'.
       const hasOpt = (v) => [...sel.options].some(o => o.value === v);
@@ -4229,6 +4251,51 @@ async function _initCore(root = document) {
       } else {
         sel.value = 'off';
       }
+    });
+  }
+
+  function _populateNodeBarsClipOptions(schema, preferred = {}) {
+    const controls = [nodeBarsClipToEl, ...nodeBarsExtraClipToEls].filter(Boolean);
+    if (!controls.length) return;
+    const preferredValues = Array.isArray(preferred)
+      ? preferred
+      : [preferred?.primary ?? preferred, ...(preferred?.extras ?? [])];
+
+    const hpdDef = schema?.get('height');
+    const options = [];
+    if (hpdDef?.group?.hpds?.length) {
+      options.push(...hpdDef.group.hpds.map(({ pct, key }) => ({ value: key, label: `${pct}% HPD` })));
+    }
+    controls.forEach((sel, i) => {
+      const prev = preferredValues[i] ?? sel.value;
+      while (sel.options.length > 1) sel.remove(1);
+      for (const optSpec of options) {
+        const opt = document.createElement('option');
+        opt.value = optSpec.value;
+        opt.textContent = optSpec.label;
+        sel.appendChild(opt);
+      }
+      const hasOpt = (v) => [...sel.options].some(o => o.value === v);
+      sel.value = hasOpt(prev) ? prev : 'off';
+    });
+  }
+
+  function _isCurveNodeBarSelection(schema, value) {
+    if (!schema || !value || value === 'off') return false;
+    const heightDef = schema.get('height');
+    if (heightDef?.group?.curve === value) return true;
+    return (heightDef?.group?.curves ?? []).some(curve => curve?.key === value);
+  }
+
+  function _syncNodeBarsClipVisibility(schema) {
+    const heightDef = schema?.get('height');
+    const hasClipOptions = !!heightDef?.group?.hpds?.length;
+    if (nodeBarsClipToEl?.parentElement) {
+      nodeBarsClipToEl.parentElement.style.display = (hasClipOptions && _isCurveNodeBarSelection(schema, nodeBarsShowEl.value)) ? '' : 'none';
+    }
+    nodeBarsExtraClipToEls.forEach((el, i) => {
+      if (!el?.parentElement) return;
+      el.parentElement.style.display = (hasClipOptions && _isCurveNodeBarSelection(schema, nodeBarsExtraShowEls[i]?.value)) ? '' : 'none';
     });
   }
 
@@ -4446,10 +4513,22 @@ async function _initCore(root = document) {
     }
     // Show node-bars controls only when the 'height' annotation group (with HPD) is present.
     const heightDef = schema ? schema.get('height') : null;
-    const hasNodeBars = !!(heightDef && heightDef.group && heightDef.group.hpd);
+    const hasNodeBars = !!(heightDef && heightDef.group && (heightDef.group.hpd || heightDef.group.curve || heightDef.group.hpds?.length || heightDef.group.curves?.length));
     if (nodeBarsControlsEl) nodeBarsControlsEl.style.display = hasNodeBars ? '' : 'none';
     if (nodeBarsUnavailEl)  nodeBarsUnavailEl.style.display  = hasNodeBars ? 'none' : 'block';
-    _populateNodeBarsShowOptions(schema);
+    _populateNodeBarsShowOptions(schema, {
+      primary: renderer?.nodeBarsHpdKey ?? nodeBarsShowEl.value,
+      extras: Array.isArray(renderer?.nodeBarsExtraHpdKeys)
+        ? renderer.nodeBarsExtraHpdKeys
+        : nodeBarsExtraShowEls.map(el => el?.value || 'off'),
+    });
+    _populateNodeBarsClipOptions(schema, {
+      primary: renderer?.nodeBarsClipTo ?? nodeBarsClipToEl?.value,
+      extras: Array.isArray(renderer?.nodeBarsExtraClipTo)
+        ? renderer.nodeBarsExtraClipTo
+        : nodeBarsExtraClipToEls.map(el => el?.value || 'off'),
+    });
+    _syncNodeBarsClipVisibility(schema);
     if (!hasNodeBars && nodeBarsShowEl.value !== 'off') {
       nodeBarsShowEl.value = 'off';
       if (renderer) { renderer.setSettings(_buildRendererSettings()); renderer._dirty = true; }
@@ -5058,16 +5137,33 @@ async function _initCore(root = document) {
       // Show node-bars controls only when a BEAST 'height' annotation with HPD is present.
       {
         const _hDef = schema ? schema.get('height') : null;
-        const _hasNB = !!(_hDef && _hDef.group && _hDef.group.hpd);
+        const _hasNB = !!(_hDef && _hDef.group && (_hDef.group.hpd || _hDef.group.curve || _hDef.group.hpds?.length || _hDef.group.curves?.length));
         if (nodeBarsControlsEl) nodeBarsControlsEl.style.display = _hasNB ? '' : 'none';
         if (nodeBarsUnavailEl)  nodeBarsUnavailEl.style.display  = _hasNB ? 'none' : 'block';
+
+        const _primaryNodeBarKey =
+          (typeof _eff.nodeBarsHpdKey === 'string' && _eff.nodeBarsHpdKey) ? _eff.nodeBarsHpdKey
+            : ((typeof _eff.nodeBarsEnabled === 'string' && _eff.nodeBarsEnabled)
+              ? _eff.nodeBarsEnabled
+              : (_eff.nodeBarsEnabled === true ? 'on' : 'off'));
+        const _extraNodeBarKeys = Array.isArray(_eff.nodeBarsExtraHpdKeys)
+          ? _eff.nodeBarsExtraHpdKeys
+          : (Array.isArray(_eff.nodeBarsExtraEnabled) ? _eff.nodeBarsExtraEnabled : []);
+
         _populateNodeBarsShowOptions(schema, {
-          primary: _eff.nodeBarsEnabled,
-          extras: Array.isArray(_eff.nodeBarsExtraEnabled) ? _eff.nodeBarsExtraEnabled : [],
+          primary: _primaryNodeBarKey,
+          extras: _extraNodeBarKeys,
         });
+        _populateNodeBarsClipOptions(schema, {
+          primary: _eff.nodeBarsClipTo,
+          extras: Array.isArray(_eff.nodeBarsExtraClipTo) ? _eff.nodeBarsExtraClipTo : [],
+        });
+        _syncNodeBarsClipVisibility(schema);
         if (!_hasNB) {
           nodeBarsShowEl.value = 'off';
           nodeBarsExtraShowEls.forEach(el => { if (el) el.value = 'off'; });
+          if (nodeBarsClipToEl) nodeBarsClipToEl.value = 'off';
+          nodeBarsExtraClipToEls.forEach(el => { if (el) el.value = 'off'; });
         }
       }
       // Apply any per-annotation palette overrides from file settings first,
@@ -8502,6 +8598,10 @@ async function _initCore(root = document) {
 
   optionsController.on('node-bars-show', applyNodeBars);
   ['node-bars-show-2', 'node-bars-show-3', 'node-bars-show-4'].forEach(id => {
+    optionsController.on(id, applyNodeBars);
+  });
+  optionsController.on('node-bars-clip-to', applyNodeBars);
+  ['node-bars-2-clip-to', 'node-bars-3-clip-to', 'node-bars-4-clip-to'].forEach(id => {
     optionsController.on(id, applyNodeBars);
   });
   optionsController.on('node-bars-color', ({ type }) => {

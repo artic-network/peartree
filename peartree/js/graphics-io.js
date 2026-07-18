@@ -710,6 +710,17 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
           nodeBarParts.push(`<rect x="${f(r.xLeft)}" y="${f(r.cy - r.halfW)}" width="${f(r.xRight - r.xLeft)}" height="${f(r.halfW * 2)}" fill="${esc(col)}" opacity="${f(cfg.fillOpacity)}"/>`);
           nodeBarParts.push(`<rect x="${f(r.xLeft)}" y="${f(r.cy - r.halfW)}" width="${f(r.xRight - r.xLeft)}" height="${f(r.halfW * 2)}" fill="none" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
         }
+        for (const c of layer.curves) {
+          if (!c?.points?.length) continue;
+          const p = makeSvgPath(f);
+          p.moveTo(c.points[0].x, c.points[0].y);
+          for (let i = 1; i < c.points.length; i++) {
+            p.lineTo(c.points[i].x, c.points[i].y);
+          }
+          p.closePath();
+          nodeBarParts.push(`<path d="${esc(p.d)}" fill="${esc(col)}" fill-opacity="${f(cfg.fillOpacity)}" stroke="none"/>`);
+          nodeBarParts.push(`<path d="${esc(p.d)}" fill="none" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
+        }
         for (const l of layer.lines) {
           nodeBarParts.push(`<line x1="${f(l.xLine)}" y1="${f(l.cy - l.halfW)}" x2="${f(l.xLine)}" y2="${f(l.cy + l.halfW)}" stroke="${esc(col)}" stroke-width="2" opacity="${f(cfg.strokeOpacity)}"/>`);
         }

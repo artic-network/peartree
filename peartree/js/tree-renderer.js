@@ -505,15 +505,20 @@ export class TreeRenderer {
     // ── Node bars (95% HPD intervals drawn behind branches) ─────────────────
     this.nodeBarsEnabled    = s.nodeBarsEnabled    ?? false;
     this.nodeBarsHpdKey     = 'nodeBarsHpdKey' in s ? (s.nodeBarsHpdKey ?? null) : (this.nodeBarsHpdKey ?? null);
+    this.nodeBarsClipTo     = 'nodeBarsClipTo' in s ? (s.nodeBarsClipTo ?? null) : (this.nodeBarsClipTo ?? null);
     this.nodeBarsColor      = s.nodeBarsColor      ?? '#2aa198';
     this.nodeBarsWidth      = s.nodeBarsWidth      ?? 6;
     if (!Array.isArray(this.nodeBarsExtraHpdKeys)) this.nodeBarsExtraHpdKeys = [null, null, null];
+    if (!Array.isArray(this.nodeBarsExtraClipTo)) this.nodeBarsExtraClipTo = [null, null, null];
     if (!Array.isArray(this.nodeBarsExtraWidths)) this.nodeBarsExtraWidths = [6, 6, 6];
     if (!Array.isArray(this.nodeBarsExtraColors)) this.nodeBarsExtraColors = ['#2aa198', '#2aa198', '#2aa198'];
     if (!Array.isArray(this.nodeBarsExtraFillOpacities)) this.nodeBarsExtraFillOpacities = [0.22, 0.22, 0.22];
     if (!Array.isArray(this.nodeBarsExtraStrokeOpacities)) this.nodeBarsExtraStrokeOpacities = [0.55, 0.55, 0.55];
     if ('nodeBarsExtraHpdKeys' in s && Array.isArray(s.nodeBarsExtraHpdKeys)) {
       this.nodeBarsExtraHpdKeys = [0, 1, 2].map(i => s.nodeBarsExtraHpdKeys[i] ?? null);
+    }
+    if ('nodeBarsExtraClipTo' in s && Array.isArray(s.nodeBarsExtraClipTo)) {
+      this.nodeBarsExtraClipTo = [0, 1, 2].map(i => s.nodeBarsExtraClipTo[i] ?? null);
     }
     if ('nodeBarsExtraWidths' in s && Array.isArray(s.nodeBarsExtraWidths)) {
       this.nodeBarsExtraWidths = [0, 1, 2].map(i => +s.nodeBarsExtraWidths[i] || 6);
@@ -2744,11 +2749,12 @@ export class TreeRenderer {
    * the LEFT of the root (worldX < 0).  Used to add left padding for the scale.
    */
   _nodeBarConfigs(heightDef) {
-    const primaryKey = this.nodeBarsHpdKey ?? heightDef?.group?.hpd;
+    const primaryKey = this.nodeBarsHpdKey ?? heightDef?.group?.hpd ?? heightDef?.group?.curve;
     const out = [];
     if (primaryKey) {
       out.push({
         hpdKey: primaryKey,
+        clipTo: this.nodeBarsClipTo ?? null,
         width: this.nodeBarsWidth,
         color: this.nodeBarsColor,
         fillOpacity: this.nodeBarsFillOpacity,
@@ -2760,6 +2766,7 @@ export class TreeRenderer {
       if (!key) continue;
       out.push({
         hpdKey: key,
+        clipTo: this.nodeBarsExtraClipTo?.[i] ?? null,
         width: +this.nodeBarsExtraWidths?.[i] || 6,
         color: this.nodeBarsExtraColors?.[i] || '#2aa198',
         fillOpacity: this.nodeBarsExtraFillOpacities?.[i] != null ? +this.nodeBarsExtraFillOpacities[i] : 0.22,
@@ -2775,6 +2782,29 @@ export class TreeRenderer {
     const configs = this._nodeBarConfigs(heightDef);
     if (!configs.length) return 0;
     const rangeKey = (this.nodeBarsRange && heightDef?.group?.range) ? heightDef.group.range : null;
+    const upperBoundForValue = (value, clipValue = null) => {
+      if (!Array.isArray(value) || value.length === 0) return null;
+      if (Array.isArray(value[0])) {
+        let max = -Infinity;
+        for (const pt of value) {
+          if (!Array.isArray(pt) || pt.length < 2) continue;
+          const x = +pt[0];
+          if (Number.isFinite(x) && x > max) max = x;
+        }
+        if (Array.isArray(clipValue) && clipValue.length >= 2) {
+          const clipHi = +clipValue[1];
+          if (Number.isFinite(clipHi)) max = Math.min(max, clipHi);
+        }
+        return max === -Infinity ? null : max;
+      }
+      const upper = +value[1];
+      if (!Number.isFinite(upper)) return null;
+      if (Array.isArray(clipValue) && clipValue.length >= 2) {
+        const clipHi = +clipValue[1];
+        if (Number.isFinite(clipHi)) return Math.min(upper, clipHi);
+      }
+      return upper;
+    };
     // Use the absolute height of the layout root as the reference for HPD values.
     // For the full tree this equals this.maxX (min tip height = 0).
     // For subtrees not containing the most-recent tip, heightRef > this.maxX,
@@ -2784,10 +2814,12 @@ export class TreeRenderer {
     for (const node of this.nodes) {
       if (node.isTip) continue;
       for (const cfg of configs) {
-        // HPD upper bound (larger height = further left)
-        const hpd = node.annotations?.[cfg.hpdKey];
-        if (Array.isArray(hpd) && hpd.length >= 2) {
-          const excess = hpd[1] - heightRef;
+        // HPD / KDE upper bound (larger height = further left)
+        const annot = node.annotations?.[cfg.hpdKey];
+        const clipAnnot = cfg.clipTo ? node.annotations?.[cfg.clipTo] : null;
+        const upper = upperBoundForValue(annot, clipAnnot);
+        if (upper != null) {
+          const excess = upper - heightRef;
           if (excess > maxLeftward) maxLeftward = excess;
         }
       }
@@ -4177,6 +4209,38 @@ export class TreeRenderer {
       }
       ctx.stroke();
       ctx.globalAlpha = 1;
+
+      // Curves are filled closed shapes, so render the interior separately.
+      if (layer.curves.length > 0) {
+        ctx.fillStyle = col;
+        ctx.globalAlpha = cfg.fillOpacity;
+        for (const c of layer.curves) {
+          if (!c?.points?.length) continue;
+          ctx.beginPath();
+          ctx.moveTo(c.points[0].x, c.points[0].y);
+          for (let i = 1; i < c.points.length; i++) {
+            ctx.lineTo(c.points[i].x, c.points[i].y);
+          }
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = cfg.strokeOpacity;
+        for (const c of layer.curves) {
+          if (!c?.points?.length) continue;
+          ctx.beginPath();
+          ctx.moveTo(c.points[0].x, c.points[0].y);
+          for (let i = 1; i < c.points.length; i++) {
+            ctx.lineTo(c.points[i].x, c.points[i].y);
+          }
+          ctx.closePath();
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
 
       // Pass 3: mean/median line
       if (this.nodeBarsLine !== 'off') {
