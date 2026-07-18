@@ -430,7 +430,7 @@ The **Visual Options palette** (toggle with **Tab** or the <i class="bi bi-slide
 - **Node shapes** — customize tip and internal node marker appearance
 - **Branch shapes** — overlay configurable shapes on branches to represent metadata
 - **Axis** — show a divergence or time scale
-- **Node bars** — show BEAST HPD credible intervals
+- **Node bars** — show BEAST HPD credible intervals, including multiple stacked node bars
 - **Legend** — position and style colour-by legends
 - **Theme** — switch colour themes and customize palettes
 - **Panel management** — arrange side panels and export options

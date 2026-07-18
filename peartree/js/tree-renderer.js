@@ -2331,7 +2331,9 @@ export class TreeRenderer {
     // _labelOverhead: the fixed non-text portion added to every tip's label clearance.
     // treePaddingRight is set dynamically in _updateScaleX (= tipOuterR) and is
     // NOT included here — it is only used for the no-labels plotWNoLabels path.
-    this._labelOverhead = Math.max(tipOuterR, 5) + 5 + this.tipLabelSpacing + shapeExtra + shapesExtraWidth;
+    // Keep overhead in sync with _drawNodesAndLabels() label anchor:
+    // baseX = tipX + outlineR, then text starts at baseX + shape offsets + tipLabelSpacing.
+    this._labelOverhead = Math.max(tipOuterR, 5) + this.tipLabelSpacing + shapeExtra + shapesExtraWidth;
     this.labelRightPad  = this._maxLabelWidth + this._labelOverhead;
   }
 

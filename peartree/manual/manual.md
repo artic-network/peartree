@@ -647,7 +647,7 @@ For phylogenetic support values (e.g., posterior probabilities or bootstrap valu
 
 ### Node Bars
 
-When a BEAST tree carries height HPD (highest posterior density) annotations (e.g. `height_95%_HPD`), the **Node Bars** section appears in the palette. If no such annotations are present it shows an *unavailable* message. At present only `height_95%_HPD` annotation is recognised for use with node bars. If turned on, a horizontal bar will be shown at every node spanning time of the HPDs.
+When a BEAST tree carries height HPD (highest posterior density) annotations (e.g. `height_95%_HPD`, `height_99%_HPD`), the **Node Bars** section appears in the palette. If no such annotations are present it shows an *unavailable* message. Any `height_<percent>%_HPD` interval annotation is recognised; if `height_95%_HPD` is present it is used as the default interval. If turned on, a horizontal bar will be shown at every node spanning time of the HPDs. Multiple node bars can be added and stacked so you can display several intervals at once.
 
 {% include 'figure.html', src: "images/node_bars.png", alt: "Node bars", maxwidth: "80%", bg: "#EAE8E1", legend: "A subclade of the EBOV tree showing height HPD node bars and height range whiskers" %}
 

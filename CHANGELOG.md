@@ -14,7 +14,7 @@
 - Fix loading of secondary/extra tip label selections.
 - Fix RTT panel overlap with legend when pinned.
 - Fix PNG export cropping.
-- Fix tree/axis sizing regressions after layout changes.
+- Fix time axis to span to limits of node bars.
 - Fix axis overflow drawing issues that could clip labels.
 
 ### Internal / maintenance
