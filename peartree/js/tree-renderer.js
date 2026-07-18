@@ -30,7 +30,22 @@ export const CAL_DATE_HPD_ONLY_KEY = '__cal_date_hpd_only__';
 // Filter evaluation helpers (used by TreeRenderer._passesFilter)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function _evalFilterCondition(cond, annotations) {
+function _isRootNode(node) {
+  if (!node) return false;
+  return node.parent == null && node.parentId == null;
+}
+
+function _evalFilterCondition(cond, annotations, node = null) {
+  if (cond.field === '__node__') {
+    const isTip = !!node?.isTip;
+    const isRoot = _isRootNode(node);
+    if (cond.operator === 'is root') return isRoot;
+    if (cond.operator === 'is not root') return !isRoot;
+    if (cond.operator === 'is tip') return isTip;
+    if (cond.operator === 'is internal') return !isTip;
+    return true;
+  }
+
   const raw = annotations?.[cond.field];
   const op  = cond.operator;
   const DATE_OPS = ['before','after','on or before','on or after','in year','not in year','month is','month is not'];
@@ -99,12 +114,12 @@ function _looksLikeDateField(cond, annotations) {
   return false;
 }
 
-function _evalFilterGroup(group, annotations) {
+function _evalFilterGroup(group, annotations, node = null) {
   const isAnd = group.logic !== 'OR';
   for (const item of group.items) {
     const result = item.logic !== undefined
-      ? _evalFilterGroup(item, annotations)
-      : _evalFilterCondition(item, annotations);
+      ? _evalFilterGroup(item, annotations, node)
+      : _evalFilterCondition(item, annotations, node);
     if (isAnd && !result) return false;
     if (!isAnd && result) return true;
   }
@@ -646,7 +661,7 @@ export class TreeRenderer {
       const v = this._statValue(node, k);
       if (v != null) augmented[k] = v;
     }
-    return _evalFilterGroup(f.root, augmented);
+    return _evalFilterGroup(f.root, augmented, node);
   }
 
   setData(nodes, nodeMap, maxX, maxY) {

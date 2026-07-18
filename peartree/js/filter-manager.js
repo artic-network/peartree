@@ -19,8 +19,23 @@ import { dateToDecimalYear, TreeCalibration } from './phylograph.js';
 
 // ── Evaluator ─────────────────────────────────────────────────────────────────
 
+function _isRootNode(node) {
+  if (!node) return false;
+  return node.parent == null && node.parentId == null;
+}
+
 /** Evaluate a condition against a node's annotations. Returns true = passes. */
-function _evalCondition(cond, annotations) {
+function _evalCondition(cond, annotations, node = null) {
+  if (cond.field === '__node__') {
+    const isTip = !!node?.isTip;
+    const isRoot = _isRootNode(node);
+    if (cond.operator === 'is root') return isRoot;
+    if (cond.operator === 'is not root') return !isRoot;
+    if (cond.operator === 'is tip') return isTip;
+    if (cond.operator === 'is internal') return !isTip;
+    return true;
+  }
+
   const raw = annotations?.[cond.field];
   const op  = cond.operator;
 
@@ -109,12 +124,12 @@ const _DATE_OPS = ['before', 'after', 'on or before', 'on or after', '=', '!=', 
 function _isDateOp(op) { return _DATE_OPS.includes(op); }
 
 /** Recursively evaluate a FilterGroup. Short-circuits on AND false / OR true. */
-function _evalGroup(group, annotations) {
+function _evalGroup(group, annotations, node = null) {
   const isAnd = group.logic !== 'OR';
   for (const item of group.items) {
     const result = item.logic !== undefined
-      ? _evalGroup(item, annotations)
-      : _evalCondition(item, annotations);
+      ? _evalGroup(item, annotations, node)
+      : _evalCondition(item, annotations, node);
     if (isAnd && !result) return false;
     if (!isAnd && result) return true;
   }
@@ -127,9 +142,9 @@ function _evalGroup(group, annotations) {
  * Returns true if the node passes (should be shown), false otherwise.
  * An empty filter (no items) passes everything.
  */
-export function evaluateFilter(filter, annotations) {
+export function evaluateFilter(filter, annotations, node = null) {
   if (!filter?.root?.items?.length) return true;
-  return _evalGroup(filter.root, annotations);
+  return _evalGroup(filter.root, annotations, node);
 }
 
 // ── Factory ───────────────────────────────────────────────────────────────────
@@ -367,24 +382,27 @@ export function createFilterManager({ getSchema, onFiltersChange, onSaveRequest,
     _renderEditor(_draft);
   }
 
-  // Synthetic __name__ field descriptor (tip name)
+  // Synthetic fields used by filter conditions.
   const NAME_FIELD = { label: 'Tip Name', dataType: 'text', onTips: true, onNodes: false, groupMember: false };
+  const NODE_FIELD = { label: 'Node', dataType: 'node', onTips: true, onNodes: true, groupMember: false };
 
   /** Build field <option> list: __name__ first, then schema fields. */
   function _buildFieldOpts(cond, schema) {
     const nameOpt = `<option value="__name__"${cond.field === '__name__' ? ' selected' : ''}>Tip Name</option>`;
+    const nodeOpt = `<option value="__node__"${cond.field === '__node__' ? ' selected' : ''}>Node</option>`;
     const rest = schema
       ? [...schema.entries()]
-          .filter(([k, d]) => k !== '__name__' && k !== 'user_colour' && !d.groupMember)
+          .filter(([k, d]) => k !== '__name__' && k !== '__node__' && k !== 'user_colour' && !d.groupMember)
           .map(([k, d]) => `<option value="${esc(k)}"${cond.field === k ? ' selected' : ''}>${esc(d.label ?? k)}</option>`)
           .join('')
-      : (cond.field && cond.field !== '__name__' ? `<option value="${esc(cond.field)}">${esc(cond.field)}</option>` : '');
-    return nameOpt + rest;
+      : (cond.field && cond.field !== '__name__' && cond.field !== '__node__' ? `<option value="${esc(cond.field)}">${esc(cond.field)}</option>` : '');
+    return nameOpt + nodeOpt + rest;
   }
 
   /** Look up field descriptor from schema, falling back to NAME_FIELD for __name__. */
   function _getFieldDef(field, schema) {
     if (field === '__name__') return NAME_FIELD;
+    if (field === '__node__') return NODE_FIELD;
     return schema?.get(field) ?? null;
   }
 
@@ -411,20 +429,29 @@ export function createFilterManager({ getSchema, onFiltersChange, onSaveRequest,
       cond.value    = '';
       delete cond.values;
       delete cond.caseSensitive;
+      if (_isNodeField(_getFieldDef(cond.field, schema))) delete cond.value;
       opSel.innerHTML = _opOptions(cond, schema);
       valWrap.innerHTML = _valueWidget(cond, schema);
       _rewireValueWrap(valWrap, cond, schema);
     });
     opSel.addEventListener('change', () => {
-      const wasString = _isStringOp(cond.operator);
+      const prevOp = cond.operator;
+      const wasString = _isStringOp(prevOp);
       const isString  = _isStringOp(opSel.value);
-      const wasDate   = _isDateOp(cond.operator);
+      const wasDate   = _isDateOp(prevOp);
       const isDate    = _isDateOp(opSel.value);
       cond.operator = opSel.value;
       if (!isString) delete cond.caseSensitive;
+      if (_isNodeField(_getFieldDef(cond.field, schema))) {
+        delete cond.value;
+        delete cond.values;
+        valWrap.innerHTML = _valueWidget(cond, schema);
+        _rewireValueWrap(valWrap, cond, schema);
+        return;
+      }
       // preserve value when staying within date ops (except month/year switches)
       const keptGroups = ['month is,month is not', 'in year,not in year'];
-      const sameGroup  = keptGroups.some(g => g.includes(cond.operator) && g.includes(opSel.value));
+      const sameGroup  = keptGroups.some(g => g.includes(prevOp) && g.includes(opSel.value));
       if (!sameGroup && (!wasDate || !isDate) && (!wasString || !isString)) {
         cond.value = '';
         delete cond.values;
@@ -510,10 +537,15 @@ export function createFilterManager({ getSchema, onFiltersChange, onSaveRequest,
   function _defaultOp(field, schema) {
     const def = _getFieldDef(field, schema);
     if (!def) return '=';
+    if (_isNodeField(def)) return 'is tip';
     if (_isNumericField(def)) return '>=';
     if (_isTextField(def))    return 'contains';
     if (def.dataType === 'date') return 'after';
     return '=';
+  }
+
+  function _isNodeField(def) {
+    return def?.dataType === 'node';
   }
 
   function _isNumericField(def) {
@@ -557,11 +589,15 @@ export function createFilterManager({ getSchema, onFiltersChange, onSaveRequest,
 
   function _opOptions(cond, schema) {
     const def    = _getFieldDef(cond.field, schema);
+    const isNode = _isNodeField(def);
     const isNum  = _isNumericField(def);
     const isDate = def?.dataType === 'date';
     const isText = _isTextField(def);
     let ops, labels;
-    if (isNum) {
+    if (isNode) {
+      ops = ['is root', 'is not root', 'is tip', 'is internal'];
+      labels = null;
+    } else if (isNum) {
       ops = ['>=', '<=', '>', '<', '=', '!='];
       labels = null;
     } else if (isDate) {
@@ -587,6 +623,10 @@ export function createFilterManager({ getSchema, onFiltersChange, onSaveRequest,
 
   function _valueWidget(cond, schema) {
     const op     = cond.operator;
+    const def    = _getFieldDef(cond.field, schema);
+    if (_isNodeField(def)) {
+      return `<span style="color:var(--pt-text-dim)">No value needed</span>`;
+    }
     const isStr  = _isStringOp(op);
     const csChecked = cond.caseSensitive === true ? ' checked' : '';
     const csChk  = isStr
@@ -603,7 +643,6 @@ export function createFilterManager({ getSchema, onFiltersChange, onSaveRequest,
     if (op === 'in year' || op === 'not in year') {
       return `<input type="number" class="fm-val-input" value="${esc(String(cond.value ?? ''))}" placeholder="YYYY" min="1000" max="3000" step="1" autocomplete="off">`;
     }
-    const def   = _getFieldDef(cond.field, schema);
     const isNum = _isNumericField(def);
     const isDate = def?.dataType === 'date';
     if (isDate) {
@@ -710,11 +749,11 @@ export function createFilterManager({ getSchema, onFiltersChange, onSaveRequest,
     getAll,
     setAll,
     /** Evaluate filterId against node annotations. true = passes (show). */
-    evaluateFilter(filterId, annotations) {
+    evaluateFilter(filterId, annotations, node = null) {
       if (!filterId) return true;
       const f = _filters.get(filterId);
       if (!f) return true;
-      return evaluateFilter(f, annotations);
+      return evaluateFilter(f, annotations, node);
     },
   };
 }
