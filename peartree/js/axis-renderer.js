@@ -26,6 +26,8 @@ export class AxisRenderer {
     this._canvas  = canvas;
     this._ctx     = canvas.getContext('2d');
     this._visible = false;
+    this._decorationOverhangSink = null;
+    this._lastDecorationOverflowStats = null;
 
     // Tree geometry
     this._maxX       = 1;
@@ -227,6 +229,12 @@ export class AxisRenderer {
     this._W            = W;
     this._H            = H;
     this._draw();
+    this._decorationOverhangSink?.(this.getDecorationOverflow({
+      scaleX,
+      offsetX,
+      spacingLeft,
+      spacingRight,
+    }));
   }
 
   setVisible(v) {
@@ -236,6 +244,14 @@ export class AxisRenderer {
       const ctx = this._ctx;
       ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
     }
+  }
+
+  setDecorationOverhangSink(fn) {
+    this._decorationOverhangSink = (typeof fn === 'function') ? fn : null;
+  }
+
+  getDecorationOverflowStats() {
+    return this._lastDecorationOverflowStats;
   }
 
   setFontSize(px) {
@@ -342,12 +358,13 @@ export class AxisRenderer {
    * @param {object} [view]
    * @returns {{left:number,right:number,top:number,bottom:number}}
    */
-  getDecorationOverflow(view = {}) {
-    if (!this._visible) return { left: 0, right: 0, top: 0, bottom: 0 };
+  getDecorationOverflow(view = {}, overhang = null) {
+    const out = overhang || { left: 0, right: 0, top: 0, bottom: 0 };
+    if (!this._visible) return out;
 
     const W = (this._canvas.parentElement?.clientWidth ?? this._canvas.clientWidth) || 0;
     if (W === 0 || !this._maxX || this._maxX === 0) {
-      return { left: 0, right: 0, top: 0, bottom: 0 };
+      return out;
     }
 
     const scaleX      = view.scaleX      ?? this._scaleX;
@@ -356,7 +373,7 @@ export class AxisRenderer {
     const spacingRight = view.spacingRight ?? this._spacingRight;
     const fontSize    = view.fontSize    ?? this._fontSize;
     if (!scaleX || !isFinite(scaleX) || !isFinite(offsetX) || !isFinite(spacingLeft) || !isFinite(spacingRight)) {
-      return { left: 0, right: 0, top: 0, bottom: 0 };
+      return out;
     }
 
     this._scaleX = scaleX;
@@ -368,7 +385,7 @@ export class AxisRenderer {
     const plotLeft  = spacingLeft;
     const plotRight = W - spacingRight;
     if (!isFinite(plotLeft) || !isFinite(plotRight) || plotRight <= plotLeft) {
-      return { left: 0, right: 0, top: 0, bottom: 0 };
+      return out;
     }
 
     const ctx = this._ctx;
@@ -390,38 +407,18 @@ export class AxisRenderer {
       ? TreeCalibration.inferMajorInterval(minorTicks)
       : this._minorInterval;
 
-    const majorLabelZones = [];
-    if (showMinorLabel && showMajorLabel) {
-      ctx.font = this._font(fs);
-      for (const val of majorTicks) {
-        const sx = this._valToScreenX(val);
-        if (sx < plotLeft - 1 || sx > plotRight + 1) continue;
-        const label = this._dateMode
-          ? this._calibration?.decYearToString(val, majorLabelFmt === 'auto' ? 'partial' : majorLabelFmt, this._dateFormat, effMajorInterval)
-          : Axis.formatValue(val, majorStep);
-        if (!label) continue;
-        const tw = ctx.measureText(label).width;
-        const lx = sx;
-        majorLabelZones.push([lx - tw / 2 - 4, lx + tw / 2 + 4]);
-      }
-    }
-
     let overLeft = 0;
     let overRight = 0;
-    let majorLabelRight = -Infinity;
-    let minorLabelRight = -Infinity;
 
     if (showMinorLabel && this._dateMode) {
       ctx.font = this._font(Math.max(6, fs - 2));
       for (const val of minorTicks) {
         const sx = this._valToScreenX(val);
-        if (sx < plotLeft - 1 || sx > plotRight + 1) continue;
+        if (sx < -W || sx > plotRight + W) continue;
         const label = this._calibration.decYearToString(val, minorLabelFmt, this._dateFormat, effMinorInterval);
+        if (!label) continue;
         const tw = ctx.measureText(label).width;
         const lx = sx;
-        if (lx - tw / 2 <= minorLabelRight + 2) continue;
-        if (overlapsZones(lx - tw / 2, lx + tw / 2, majorLabelZones)) continue;
-        minorLabelRight = lx + tw / 2;
         overLeft = Math.max(overLeft, plotLeft - (lx - tw / 2));
         overRight = Math.max(overRight, (lx + tw / 2) - plotRight);
       }
@@ -431,7 +428,7 @@ export class AxisRenderer {
       ctx.font = this._font(fs);
       for (const val of majorTicks) {
         const sx = this._valToScreenX(val);
-        if (sx < plotLeft - 1 || sx > plotRight + 1) continue;
+        if (sx < -W || sx > plotRight + W) continue;
         const label = this._dateMode
           ? this._calibration.decYearToString(
               val,
@@ -440,21 +437,30 @@ export class AxisRenderer {
               effMajorInterval,
             )
           : Axis.formatValue(val, majorStep);
+        if (!label) continue;
         const tw = ctx.measureText(label).width;
         const lx = sx;
-        if (lx - tw / 2 <= majorLabelRight + 2) continue;
-        majorLabelRight = lx + tw / 2;
         overLeft = Math.max(overLeft, plotLeft - (lx - tw / 2));
         overRight = Math.max(overRight, (lx + tw / 2) - plotRight);
       }
     }
 
-    return {
-      left: Math.max(0, Math.ceil(overLeft)),
-      right: Math.max(0, Math.ceil(overRight)),
-      top: 0,
-      bottom: 0,
+    out.left = Math.max(out.left, Math.max(0, Math.ceil(overLeft)));
+    out.right = Math.max(out.right, Math.max(0, Math.ceil(overRight)));
+    out.top = Math.max(out.top, 0);
+    out.bottom = Math.max(out.bottom, 0);
+    this._lastDecorationOverflowStats = {
+      plotLeft,
+      plotRight,
+      overLeft: Math.max(0, Math.ceil(overLeft)),
+      overRight: Math.max(0, Math.ceil(overRight)),
+      left: out.left,
+      right: out.right,
+      majorCount: majorTicks.length,
+      minorCount: minorTicks.length,
+      fontSize: fs,
     };
+    return out;
   }
 
   // ── Drawing ──────────────────────────────────────────────────────────────
@@ -649,26 +655,6 @@ export class AxisRenderer {
       Math.max(0, Math.round(plotWidth) - 1),
       Math.max(0, Math.round(spanHeight) - 1),
     );
-
-    const lines = [
-      'layout debug axis',
-      `pad L${Math.round(this._spacingLeft)} R${Math.round(this._spacingRight)}`,
-      `plot x=${Math.round(plotLeft)}..${Math.round(plotRight)} w=${Math.round(plotWidth)}`,
-      `baseline y=${Math.round(baselineY)}`,
-    ];
-
-    const pad = 5;
-    const lh = 12;
-    const boxW = 210;
-    const boxH = lines.length * lh + pad * 2;
-
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.fillRect(8, 8, boxW, boxH);
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
-    ctx.font = '10px Menlo, monospace';
-    for (let i = 0; i < lines.length; i++) {
-      ctx.fillText(lines[i], 8 + pad, 8 + pad + (i + 1) * lh - 3);
-    }
 
     ctx.restore();
   }

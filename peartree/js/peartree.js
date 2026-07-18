@@ -638,6 +638,8 @@ async function _initCore(root = document) {
     reverse: { left: '',  right: '0' },
   };
   let _prevAxisMode = null;  // tracks previous mode so we can save range on switch
+  let _axisRangeApplyTimer = null;
+  const _AXIS_RANGE_APPLY_DELAY_MS = 350;
   const rttXOriginEl           = $('rtt-x-origin');
   const rttGridLinesEl          = $('rtt-grid-lines');
   const rttAspectRatioEl        = $('rtt-aspect-ratio');
@@ -3137,7 +3139,9 @@ async function _initCore(root = document) {
     _updateScrollY();
   };
 
-  renderer.setAxisDecorationOverflowProvider((view) => axisRenderer.getDecorationOverflow(view));
+  renderer.setAxisDecorationOverflowProvider((view, overhang) => axisRenderer.getDecorationOverflow(view, overhang));
+  renderer.setAxisDecorationDebugProvider?.(() => axisRenderer.getDecorationOverflowStats?.());
+  axisRenderer.setDecorationOverhangSink?.((overhang) => renderer._recordDecorationOverhang?.(overhang));
 
   // ── Vertical scrollbar ────────────────────────────────────────────────────
 
@@ -8066,7 +8070,24 @@ async function _initCore(root = document) {
   function _parseAxisRangeValue(str, mode) {
     if (!str || str.trim() === '' || str.trim().toLowerCase() === 'auto') return null;
     if (mode === 'time') {
-      const v = TreeCalibration.parseDateToDecYear(str.trim());
+      const s = str.trim();
+      // For range endpoints, interpret partial dates as period starts.
+      // e.g. "2014" -> 2014-01-01, "2014-05" -> 2014-05-01.
+      const yOnly = /^(-?\d{1,6})$/;
+      const ymOnly = /^(-?\d{1,6})-(\d{1,2})$/;
+      const ym = s.match(ymOnly);
+      if (ym) {
+        const year = +ym[1];
+        const month = +ym[2];
+        if (month >= 1 && month <= 12) return TreeCalibration.dateToDecYear(year, month, 1);
+        return NaN;
+      }
+      const y = s.match(yOnly);
+      if (y) {
+        const year = +y[1];
+        return TreeCalibration.dateToDecYear(year, 1, 1);
+      }
+      const v = TreeCalibration.parseDateToDecYear(s);
       return v != null ? v : NaN;
     }
     const v = parseFloat(str.trim());
@@ -8204,14 +8225,44 @@ async function _initCore(root = document) {
 
   optionsController.on('axis-show', applyAxis);
 
+  function _applyAxisRangeImmediate() {
+    if (_axisRangeApplyTimer) {
+      clearTimeout(_axisRangeApplyTimer);
+      _axisRangeApplyTimer = null;
+    }
+    _saveAxisRangeForMode(axisShowEl.value);
+    _applyAxisRange();
+  }
+
+  function _scheduleAxisRangeApply() {
+    if (_axisRangeApplyTimer) clearTimeout(_axisRangeApplyTimer);
+    _axisRangeApplyTimer = setTimeout(() => {
+      _axisRangeApplyTimer = null;
+      _saveAxisRangeForMode(axisShowEl.value);
+      _applyAxisRange();
+    }, _AXIS_RANGE_APPLY_DELAY_MS);
+  }
+
   // Range inputs: save on change and reapply
   if (axisRangeLeftEl) {
-    optionsController.on('axis-range-left', () => { _saveAxisRangeForMode(axisShowEl.value); _applyAxisRange(); });
-    axisRangeLeftEl.addEventListener('keydown', e => { if (e.key === 'Enter') { _saveAxisRangeForMode(axisShowEl.value); _applyAxisRange(); } });
+    optionsController.on('axis-range-left', () => { _scheduleAxisRangeApply(); });
+    axisRangeLeftEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        _applyAxisRangeImmediate();
+      }
+    });
+    axisRangeLeftEl.addEventListener('blur', () => _applyAxisRangeImmediate());
   }
   if (axisRangeRightEl) {
-    optionsController.on('axis-range-right', () => { _saveAxisRangeForMode(axisShowEl.value); _applyAxisRange(); });
-    axisRangeRightEl.addEventListener('keydown', e => { if (e.key === 'Enter') { _saveAxisRangeForMode(axisShowEl.value); _applyAxisRange(); } });
+    optionsController.on('axis-range-right', () => { _scheduleAxisRangeApply(); });
+    axisRangeRightEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        _applyAxisRangeImmediate();
+      }
+    });
+    axisRangeRightEl.addEventListener('blur', () => _applyAxisRangeImmediate());
   }
 
   // ── Minor-interval options (depend on major) ──────────────────────────────
@@ -8250,13 +8301,13 @@ async function _initCore(root = document) {
       majorLabelFormat: axisMajorLabelEl.value,
       minorLabelFormat: axisMinorLabelEl.value,
     });
-    // Axis label content can change horizontal overflow; rerun decoration-fit solve.
-    renderer?._applyOverheadChange?.();
     axisRenderer.update(
       renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft, renderer.treePaddingRight,
       renderer.labelRightPad, renderer.bgColor, renderer.fontSize,
       window.devicePixelRatio || 1,
     );
+    // Axis label content can change horizontal overflow; rerun decoration-fit solve.
+    renderer?._applyOverheadChange?.();
     saveSettings();
   }
 
@@ -8266,7 +8317,6 @@ async function _initCore(root = document) {
     axisRenderer.setFontSize(parseInt(axisFontSizeSlider.value));
     _applyAxisTypeface();
     // Axis font/style changes affect measured axis decoration overflow.
-    renderer?._applyOverheadChange?.();
     const prevAxisCanvasHeight = axisCanvas.style.height || '';
     axisRenderer.update(
       renderer.scaleX, renderer.offsetX, renderer.treePaddingLeft, renderer.treePaddingRight,
@@ -8283,6 +8333,7 @@ async function _initCore(root = document) {
         window.devicePixelRatio || 1,
       );
     }
+    renderer?._applyOverheadChange?.();
     rttChart?.notifyStyleChange?.();
     saveSettings();
   }

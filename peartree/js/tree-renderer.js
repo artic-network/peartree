@@ -207,6 +207,8 @@ export class TreeRenderer {
     this._onNodeSelectChange   = null;   // callback(hasSelection)
     this._onViewChange         = null;   // callback(scaleX, offsetX, treePaddingLeft, treePaddingRight, labelRightPad, bgColor, fontSize, dpr)
     this._axisDecorationOverflowProvider = null; // callback(view)->{left,right,top,bottom}
+    this._axisDecorationDebugProvider = null; // callback()->axis debug stats
+    this._axisDecorationDebugStats = null;
     this._onLayoutChange       = null;   // callback(maxX, viewSubtreeRootId) – fired on navigate into/out of subtree
     this._globalHeightMap      = new Map(); // id → (fullMaxX - node.x) from most recent full-tree layout
     this._rttResidualsMap      = null;       // id → residual (from regression or mean) — set by peartree.js
@@ -307,10 +309,14 @@ export class TreeRenderer {
     this._rafId = null;
     this._dirty = true;
 
+    // Shared decoration overhang measured during layout passes.
+    // left/right are shared by tree + axis; top/bottom are tree-canvas only.
+    this._decorationOverhang = { left: 0, right: 0, top: 0, bottom: 0 };
+
     // Extra pixel paddings requested by decoration overhang measurement.
     this._layoutDecorationPad = { left: 0, right: 0, top: 0, bottom: 0 };
     this._layoutSolverEnabled = true;
-    this._layoutSolverMaxIter = 6;
+    this._layoutSolverMaxIter = 8;
     this._layoutSolverDebug = false;
     this._layoutSolvedScaleY = null;
     this._layoutSolverLastLogKey = '';
@@ -2319,6 +2325,10 @@ export class TreeRenderer {
     this._axisDecorationOverflowProvider = (typeof fn === 'function') ? fn : null;
   }
 
+  setAxisDecorationDebugProvider(fn) {
+    this._axisDecorationDebugProvider = (typeof fn === 'function') ? fn : null;
+  }
+
   /** Enable/disable layout solver debug logging. */
   setLayoutSolverDebug(enabled) {
     this._layoutSolverDebug = !!enabled;
@@ -2331,6 +2341,25 @@ export class TreeRenderer {
       left: subtreeStubPx,
       right: 0,
     };
+  }
+
+  _resetDecorationOverhang() {
+    const overhang = this._decorationOverhang;
+    overhang.left = 0;
+    overhang.right = 0;
+    overhang.top = 0;
+    overhang.bottom = 0;
+    return overhang;
+  }
+
+  _recordDecorationOverhang(overhang, target = this._decorationOverhang) {
+    if (!target) return this._decorationOverhang;
+    if (!overhang) return target;
+    if (overhang.left   != null) target.left   = Math.max(target.left,   Math.max(0, overhang.left));
+    if (overhang.right  != null) target.right  = Math.max(target.right,  Math.max(0, overhang.right));
+    if (overhang.top    != null) target.top    = Math.max(target.top,    Math.max(0, overhang.top));
+    if (overhang.bottom != null) target.bottom = Math.max(target.bottom, Math.max(0, overhang.bottom));
+    return target;
   }
 
   _treeWorldExtent() {
@@ -2389,11 +2418,8 @@ export class TreeRenderer {
     };
   }
 
-  _localDecorationOverflowPx(view) {
-    let left = 0;
-    let right = 0;
-    let top = 0;
-    let bottom = 0;
+  _localDecorationOverflowPx(view, overhang = this._decorationOverhang) {
+    const out = overhang || this._decorationOverhang;
 
     const tipOuterR = this.tipRadius > 0 ? this.tipRadius + (this.tipHaloSize ?? 0) : 0;
     const nodeOuterR = this.nodeRadius > 0 ? this.nodeRadius + (this.nodeHaloSize ?? 0) : 0;
@@ -2405,15 +2431,15 @@ export class TreeRenderer {
     const treeRightSX = tipMaxSX;
 
     // Core shape clearances are treated as decoration overhang (not structural margins).
-    left = Math.max(left, Math.ceil(nodeOuterR));
-    right = Math.max(right, Math.ceil(tipOuterR));
-    top = Math.max(top, Math.ceil(Math.max(tipOuterR, nodeOuterR, barsHalfH)));
-    bottom = Math.max(bottom, Math.ceil(Math.max(tipOuterR, nodeOuterR, barsHalfH)));
+    out.left = Math.max(out.left, Math.ceil(nodeOuterR));
+    out.right = Math.max(out.right, Math.ceil(tipOuterR));
+    out.top = Math.max(out.top, Math.ceil(Math.max(tipOuterR, nodeOuterR, barsHalfH)));
+    out.bottom = Math.max(out.bottom, Math.ceil(Math.max(tipOuterR, nodeOuterR, barsHalfH)));
     // Reserve half stroke width so boundary branches are not clipped.
-    left = Math.max(left, Math.ceil(branchStrokeHalf));
-    right = Math.max(right, Math.ceil(branchStrokeHalf));
-    top = Math.max(top, Math.ceil(branchStrokeHalf));
-    bottom = Math.max(bottom, Math.ceil(branchStrokeHalf));
+    out.left = Math.max(out.left, Math.ceil(branchStrokeHalf));
+    out.right = Math.max(out.right, Math.ceil(branchStrokeHalf));
+    out.top = Math.max(out.top, Math.ceil(branchStrokeHalf));
+    out.bottom = Math.max(out.bottom, Math.ceil(branchStrokeHalf));
 
     const yScale = view.evalScaleY ?? this._targetScaleY ?? this.scaleY;
     const labelsVisible = yScale >= this.fontSize * 0.5 || this._hypFocusScreenY !== null;
@@ -2421,8 +2447,8 @@ export class TreeRenderer {
     if (tipLabelsShown) {
       // textBaseline='middle': reserve half text box above/below the tip row.
       const tipLabelHalfH = Math.max(0, Math.ceil(this.fontSize / 2 + 2));
-      top = Math.max(top, tipLabelHalfH);
-      bottom = Math.max(bottom, tipLabelHalfH);
+      out.top = Math.max(out.top, tipLabelHalfH);
+      out.bottom = Math.max(out.bottom, tipLabelHalfH);
     }
 
     if (this._tipLabelShape !== 'off') {
@@ -2438,8 +2464,8 @@ export class TreeRenderer {
         const halfH = (shape === 'block') ? Math.ceil(yScale / 2) : Math.ceil(sh / 2);
         if (halfH > maxShapeHalfH) maxShapeHalfH = halfH;
       }
-      top = Math.max(top, maxShapeHalfH);
-      bottom = Math.max(bottom, maxShapeHalfH);
+      out.top = Math.max(out.top, maxShapeHalfH);
+      out.bottom = Math.max(out.bottom, maxShapeHalfH);
     }
 
     if (tipLabelsShown && this._tipLabelWidths?.size > 0) {
@@ -2455,10 +2481,10 @@ export class TreeRenderer {
           const over = dxFromRightTip + overhead + lw;
           if (over > maxOver) maxOver = over;
         }
-        right = Math.max(right, Math.ceil(Math.max(0, maxOver)));
+        out.right = Math.max(out.right, Math.ceil(Math.max(0, maxOver)));
       } else {
         // In aligned/connector modes all tips share the right-side label column.
-        right = Math.max(right, Math.ceil(this.labelRightPad ?? 0));
+        out.right = Math.max(out.right, Math.ceil(this.labelRightPad ?? 0));
       }
     }
 
@@ -2488,15 +2514,15 @@ export class TreeRenderer {
       }
       const anchorGap = (this.nodeRadius ?? 0) + sp;
       if (this.nodeLabelPosition === 'above-left' || this.nodeLabelPosition === 'below-left') {
-        left = Math.max(left, Math.ceil(maxNodeLabelW + anchorGap));
+        out.left = Math.max(out.left, Math.ceil(maxNodeLabelW + anchorGap));
       }
       if (this.nodeLabelPosition === 'right') {
-        right = Math.max(right, Math.ceil(maxNodeLabelW + anchorGap));
+        out.right = Math.max(out.right, Math.ceil(maxNodeLabelW + anchorGap));
       }
       if (this.nodeLabelPosition === 'above-left') {
-        top = Math.max(top, Math.ceil(fs + sp));
+        out.top = Math.max(out.top, Math.ceil(fs + sp));
       } else if (this.nodeLabelPosition === 'below-left') {
-        bottom = Math.max(bottom, Math.ceil(fs + sp));
+        out.bottom = Math.max(out.bottom, Math.ceil(fs + sp));
       }
     }
 
@@ -2523,11 +2549,11 @@ export class TreeRenderer {
         ctx.restore();
       }
       const half = Math.ceil(maxBranchW / 2);
-      left = Math.max(left, half);
-      right = Math.max(right, half);
+      out.left = Math.max(out.left, half);
+      out.right = Math.max(out.right, half);
       const v = Math.ceil((this.branchLabelFontSize ?? fs) + (this.branchLabelSpacing ?? 0));
-      top = Math.max(top, v);
-      bottom = Math.max(bottom, v);
+      out.top = Math.max(out.top, v);
+      out.bottom = Math.max(out.bottom, v);
     }
 
     // Clade highlight envelopes can extend beyond the tree rectangle.
@@ -2547,26 +2573,26 @@ export class TreeRenderer {
         return w;
       })();
 
-      left = Math.max(left, Math.ceil(pad + sw2));
-      top = Math.max(top, Math.ceil(pad + sw2));
-      bottom = Math.max(bottom, Math.ceil(pad + sw2));
+      out.left = Math.max(out.left, Math.ceil(pad + sw2));
+      out.top = Math.max(out.top, Math.ceil(pad + sw2));
+      out.bottom = Math.max(out.bottom, Math.ceil(pad + sw2));
 
       const rm = this.cladeHighlightRightEdge;
       if (rm === 'atLabels') {
-        right = Math.max(right, Math.ceil(outlineR + sw2));
+        out.right = Math.max(out.right, Math.ceil(outlineR + sw2));
       } else if (rm === 'atLabelsRight') {
-        right = Math.max(right, Math.ceil(sw2));
+        out.right = Math.max(out.right, Math.ceil(sw2));
       } else if (rm === 'atTips' || rm === 'outlineTips') {
-        right = Math.max(right, Math.ceil(outlineR + pad + sw2));
+        out.right = Math.max(out.right, Math.ceil(outlineR + pad + sw2));
       } else {
-        right = Math.max(right, Math.ceil(outlineR + tipLabelSpacing + shapeW + pad + sw2));
+        out.right = Math.max(out.right, Math.ceil(outlineR + tipLabelSpacing + shapeW + pad + sw2));
       }
     }
 
     if (this._collapsedCladeFontSize) {
       const c = Math.ceil(this._collapsedCladeFontSize * 0.8);
-      top = Math.max(top, c);
-      bottom = Math.max(bottom, c);
+      out.top = Math.max(out.top, c);
+      out.bottom = Math.max(out.bottom, c);
 
       if (!this._tipLabelsOff && this.tipLabelAnnotation === null) {
         const ctx = this.ctx;
@@ -2597,44 +2623,44 @@ export class TreeRenderer {
         const baseTextStart = treeRightSX + outlineR + tipLabelSpacing;
         const projectedEnd = baseTextStart + maxCollapsedW;
         const baselineEnd = treeRightSX + (this.labelRightPad ?? 0);
-        right = Math.max(right, extraRight, Math.ceil(Math.max(0, projectedEnd - baselineEnd)));
+        out.right = Math.max(out.right, extraRight, Math.ceil(Math.max(0, projectedEnd - baselineEnd)));
       }
     }
 
-    return { left, right, top, bottom };
+    return out;
   }
 
   _measureDecorationOverflowPx(view) {
-    const local = this._localDecorationOverflowPx(view);
-    const axis = (this._axisDecorationOverflowProvider)
-      ? (this._axisDecorationOverflowProvider({
-          scaleX: view.targetScaleX,
-          offsetX: view.targetOffsetX,
-          spacingLeft: view.treePaddingLeft,
-          spacingRight: view.treePaddingRight,
-          labelRightPad: this.labelRightPad,
-          bgColor: this.bgColor,
-          fontSize: this.fontSize,
-          dpr: this.dpr,
-        }) || {})
-      : {};
-    return {
-      left: Math.max(local.left, axis.left || 0),
-      right: Math.max(local.right, axis.right || 0),
-      top: Math.max(local.top, axis.top || 0),
-      bottom: Math.max(local.bottom, axis.bottom || 0),
-    };
+    const overhang = this._resetDecorationOverhang();
+    this._localDecorationOverflowPx(view, overhang);
+    if (this._axisDecorationOverflowProvider) {
+      this._axisDecorationOverflowProvider({
+        scaleX: view.targetScaleX,
+        offsetX: view.targetOffsetX,
+        spacingLeft: view.treePaddingLeft,
+        spacingRight: view.treePaddingRight,
+        labelRightPad: this.labelRightPad,
+        bgColor: this.bgColor,
+        dpr: this.dpr,
+      }, overhang);
+    }
+    this._axisDecorationDebugStats = this._axisDecorationDebugProvider
+      ? (this._axisDecorationDebugProvider() || null)
+      : null;
+    return { ...overhang };
   }
 
   _solveDecorationPadding(evalScaleY = null) {
     if (!this._layoutSolverEnabled || !this.nodes) return this._layoutDecorationPad;
 
-    let pad = {
-      left: this._layoutDecorationPad?.left || 0,
-      right: this._layoutDecorationPad?.right || 0,
-      top: this._layoutDecorationPad?.top || 0,
-      bottom: this._layoutDecorationPad?.bottom || 0,
-    };
+    // Always start from zero so iterations approach the fixed point from below.
+    // Because f(pad) = measuredOverflow(layout(pad)) is monotonically decreasing,
+    // warm-starting from a previously-large pad causes the sequence to oscillate
+    // (0 → large → small → large …) rather than converging in a small number of
+    // steps.  Starting from zero lets the sequence grow monotonically toward the
+    // true minimum on the first step and converge in a few alternating steps after.
+    let pad = { left: 0, right: 0, top: 0, bottom: 0 };
+    let prevPad = null;
 
     let iterCount = 0;
     for (let i = 0; i < this._layoutSolverMaxIter; i++) {
@@ -2642,26 +2668,32 @@ export class TreeRenderer {
       const view = this._computeHorizontalLayoutForPadding(pad, evalScaleY);
       const over = this._measureDecorationOverflowPx(view);
       const next = {
-        left: Math.max(0, Math.ceil(over.left || 0)),
-        right: Math.max(0, Math.ceil(over.right || 0)),
-        top: Math.max(0, Math.ceil(over.top || 0)),
+        left:   Math.max(0, Math.ceil(over.left   || 0)),
+        right:  Math.max(0, Math.ceil(over.right  || 0)),
+        top:    Math.max(0, Math.ceil(over.top    || 0)),
         bottom: Math.max(0, Math.ceil(over.bottom || 0)),
       };
       if (next.left === pad.left && next.right === pad.right &&
           next.top === pad.top && next.bottom === pad.bottom) {
-        if (this._layoutSolverDebug) {
-          const k = `${this.canvas.clientWidth}|${this.canvas.clientHeight}|${this.maxX}|${this.maxY}|${(evalScaleY ?? this.scaleY).toFixed(3)}|${next.left},${next.right},${next.top},${next.bottom}|${iterCount}`;
-          if (k !== this._layoutSolverLastLogKey) {
-            this._layoutSolverLastLogKey = k;
-            console.debug('[TreeRenderer.layoutSolver] converged', { iterations: iterCount, padding: next });
-          }
-        }
         return next;
       }
+      prevPad = pad;
       pad = next;
     }
-    if (this._layoutSolverDebug) {
-      console.debug('[TreeRenderer.layoutSolver] max-iter reached', { iterations: iterCount, padding: pad });
+
+    // Not fully converged: the iteration is oscillating around the fixed point.
+    // Taking max(lastTwo) per side guarantees the decorations fit in the padding
+    // (safe side of the oscillation = the larger value).
+    if (!this._layoutSolverDebug) {
+      console.warn('[TreeRenderer.layoutSolver] decoration padding did not converge after', iterCount, 'iterations – using safe max of last two values', { padding: pad, prevPad });
+    }
+    if (prevPad) {
+      return {
+        left:   Math.max(pad.left,   prevPad.left),
+        right:  Math.max(pad.right,  prevPad.right),
+        top:    Math.max(pad.top,    prevPad.top),
+        bottom: Math.max(pad.bottom, prevPad.bottom),
+      };
     }
     return pad;
   }
@@ -3505,6 +3537,11 @@ export class TreeRenderer {
       `dec L${dec.left|0} R${dec.right|0} T${dec.top|0} B${dec.bottom|0}`,
       `treeRect x=${Math.round(rectLeft)}..${Math.round(rectRight)} y=${Math.round(rectTop)}..${Math.round(rectBottom)}`,
     ];
+    const axisDbg = this._axisDecorationDebugStats;
+    if (axisDbg) {
+      lines.push(`axis pad L${Math.round(axisDbg.plotLeft ?? 0)} R${Math.round(axisDbg.plotRight ?? 0)} font=${Math.round(axisDbg.fontSize ?? 0)}`);
+      lines.push(`axis over L${Math.round(axisDbg.overLeft ?? 0)} R${Math.round(axisDbg.overRight ?? 0)} major=${axisDbg.majorCount ?? 0} minor=${axisDbg.minorCount ?? 0}`);
+    }
 
     const pad = 6;
     const lh = 13;

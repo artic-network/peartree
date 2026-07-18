@@ -1995,7 +1995,7 @@ function _sectionAxis() {
             rowId: 'axis-range-row',
             title: "Set the range of the axis; leave blank or 'auto' for automatic ranging. For time axis enter dates (e.g. 2020-01-15) or decimal years. For forward/reverse enter numbers.",
             label: 'Range',
-            labelIcon: 'bi bi-arrows-expand form-label-sm',
+            labelIcon: 'bi bi-arrows-expand form-label-sm bi-rotate-90',
             controlHTML: '<div style="grid-column:2/-1;display:flex;gap:4px;align-items:center"><input type="text" id="axis-range-left" class="pt-palette-select" placeholder="auto" style="flex:1;min-width:0" /><input type="text" id="axis-range-right" class="pt-palette-select" placeholder="auto" style="flex:1;min-width:0" /></div>',
           },
         ],
