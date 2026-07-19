@@ -1084,21 +1084,23 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
 
     if (ny > -MARGIN && ny < ttH + MARGIN) {
       if (node.isTip && tr > 0 && !node.isCollapsed) {
-        if (!_svgPassesFilter(renderer._tipShapesFilterId, node)) continue;
-        const fill = (renderer._tipColourBy && renderer._tipColourScale)
-          ? (renderer._tipColourForValue(node.annotations?.[renderer._tipColourBy]) ?? renderer.tipShapeColor)
-          : renderer.tipShapeColor;
-        if (tipHaloSW > 0)
-          bgTipParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${esc(tipBgColor)}" stroke="${esc(tipBgColor)}" stroke-width="${tipHaloSW}"/>`);
-        fgTipParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${esc(fill)}"/>`);
+        if (_svgPassesFilter(renderer._tipShapesFilterId, node)) {
+          const fill = (renderer._tipColourBy && renderer._tipColourScale)
+            ? (renderer._tipColourForValue(node.annotations?.[renderer._tipColourBy]) ?? renderer.tipShapeColor)
+            : renderer.tipShapeColor;
+          if (tipHaloSW > 0)
+            bgTipParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${esc(tipBgColor)}" stroke="${esc(tipBgColor)}" stroke-width="${tipHaloSW}"/>`);
+          fgTipParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${esc(fill)}"/>`);
+        }
       } else if (!node.isTip && nr > 0) {
-        if (!_svgPassesFilter(renderer._nodeShapesFilterId, node)) continue;
-        const fill = (renderer._nodeColourBy && renderer._nodeColourScale)
-          ? (renderer._nodeColourForValue(node.annotations?.[renderer._nodeColourBy]) ?? renderer.nodeShapeColor)
-          : renderer.nodeShapeColor;
-        if (nodeHaloSW > 0)
-          bgNodeParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${esc(nodeBgColor)}" stroke="${esc(nodeBgColor)}" stroke-width="${nodeHaloSW}"/>`);
-        fgNodeParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${esc(fill)}"/>`);
+        if (_svgPassesFilter(renderer._nodeShapesFilterId, node)) {
+          const fill = (renderer._nodeColourBy && renderer._nodeColourScale)
+            ? (renderer._nodeColourForValue(node.annotations?.[renderer._nodeColourBy]) ?? renderer.nodeShapeColor)
+            : renderer.nodeShapeColor;
+          if (nodeHaloSW > 0)
+            bgNodeParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${esc(nodeBgColor)}" stroke="${esc(nodeBgColor)}" stroke-width="${nodeHaloSW}"/>`);
+          fgNodeParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${esc(fill)}"/>`);
+        }
       }
       if (node.isTip && !node.isCollapsed) {
         const _tipPassesLabelFilter = _svgPassesFilter(renderer._tipLabelsFilterId, node);
