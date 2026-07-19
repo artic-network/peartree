@@ -28,7 +28,7 @@ export const HELP_MANUAL_ANCHORS = {
   'Exporting the Tree (⌘E)': '#exporting-the-tree-file',
   'Exporting a Graphic (⌘⇧E)': '#exporting-a-graphic',
   'Visual Options Palette': '#visual-options-palette',
-  'Branches': '#branches',
+  'Branches': '#tree-appearance',
   'Tip Labels (multi-label)': '#tip-labels',
   'Branch Shapes': '#branch-shapes',
   'Data Table Panel': '#chapter-13-the-data-table-panel',

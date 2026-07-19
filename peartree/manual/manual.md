@@ -502,6 +502,8 @@ The **Tree** and **Branches** sections controls the basic visual look of the tre
 | Background | The colour of the background canvas of the tree. |
 | Root Len | This determines the length of the root branch 'stem' as a percentage of the whole tree from 0% (hidden) to 20% |
 
+### Branches
+
 {% include 'palette-branches.html', legend: "Branch appearance controls." %}
 
 | Control | Effect |
@@ -531,6 +533,28 @@ These controls determine how the tip labels are presented. The tip labels will o
 | Colour by | Use an annotation key for per-tip label colour. See the Colour by section, below. |
 | Palette | A **Configure** buttoon appears when *Colour by* is active. This button will open a dialog box where a colour palette for this annoation can be selected. |
 
+### Node Labels
+
+Annotation values are displayed as text labels at each internal node — most commonly used for bootstrap support values, posterior probabilities, clade names, or any node-level annotation. Unlike tip labels, node labels have no layout alignment option; they are always anchored to the node point.
+
+{% include 'figure.html', src: "images/node_labels.png", alt: "Node labels showing posterior support values", maxwidth: "80%", bg: "#EAE8E1", legend: "Node labels showing posterior support values to the right of the nodes they refer too." %}
+
+{% include 'palette-node-labels.html', legend: "Node Labels section of the Visual Options palette." %}
+
+| Control | Effect |
+|---|---|
+| Show | *Off* — hide all node labels; or select an annotation key to display its values |
+| Filter | Apply a saved named filter so only matching nodes get labels |
+| d.p. | Decimal places for numeric annotations — *Auto* picks a sensible precision |
+| Position | Where the label sits relative to the node point: *Right*, *Above left*, or *Below left* |
+| Spacing | Horizontal gap between the node point and the label text (px) |
+| Size | Font size (6–48 pt) |
+| Typeface | Font family — *Theme* inherits from the Theme section |
+| Style | Font weight and style — *Theme*, *Regular*, *Bold*, *Italic*, or *Bold Italic* |
+| Colour | Default label text colour |
+| Colour by | Use an annotation key for per-node label colour |
+| Palette | **Configure** button appears when *Colour by* is active |
+
 ### Branch Labels
 
 Branch labels display annotation values at the **midpoint of each branch** rather than at a node. This is particularly suited to branch-level annotations such as branch lengths when they should appear visually *on* the branch itself rather than at the node end. Unlike tip or node labels they are anchored to the branch midpoint and positioned above or below it.
@@ -556,28 +580,6 @@ Branch labels display annotation values at the **midpoint of each branch** rathe
 {% note %}
 Bootstrap support values are **branch annotations** (see [Appendix B](#appendix-b-bootstrap-values-branch-annotations-and-rerooting)): they describe the branch leading from a node toward its parent, not the node itself. Using Branch Labels to display them places the values visually on the branch they belong to.
 {% endnote %}
-
-### Node Labels
-
-Annotation values are displayed as text labels at each internal node — most commonly used for bootstrap support values, posterior probabilities, clade names, or any node-level annotation. Unlike tip labels, node labels have no layout alignment option; they are always anchored to the node point.
-
-{% include 'figure.html', src: "images/node_labels.png", alt: "Node labels showing posterior support values", maxwidth: "80%", bg: "#EAE8E1", legend: "Node labels showing posterior support values to the right of the nodes they refer too." %}
-
-{% include 'palette-node-labels.html', legend: "Node Labels section of the Visual Options palette." %}
-
-| Control | Effect |
-|---|---|
-| Show | *Off* — hide all node labels; or select an annotation key to display its values |
-| Filter | Apply a saved named filter so only matching nodes get labels |
-| d.p. | Decimal places for numeric annotations — *Auto* picks a sensible precision |
-| Position | Where the label sits relative to the node point: *Right*, *Above left*, or *Below left* |
-| Spacing | Horizontal gap between the node point and the label text (px) |
-| Size | Font size (6–48 pt) |
-| Typeface | Font family — *Theme* inherits from the Theme section |
-| Style | Font weight and style — *Theme*, *Regular*, *Bold*, *Italic*, or *Bold Italic* |
-| Colour | Default label text colour |
-| Colour by | Use an annotation key for per-node label colour |
-| Palette | **Configure** button appears when *Colour by* is active |
 
 ### Label Shapes
 
@@ -645,9 +647,38 @@ Node shapes are similar to tip shapes but are drawn on the internal nodes of the
 For phylogenetic support values (e.g., posterior probabilities or bootstrap values), a diverging palette such as *Blue-Black-Red* works well: red = high support, blue = low and black denotes intermediate support. **Configure** opens annotation colour settings dialog which allows the palette to be chosen and the range of the annotation. For a support value such as 'posterior' this should be set to [0, 1]. See [Colouring by Annotations](#colouring-by-annotations) for more information.
 {% endtip %}
 
+### Branch Shapes
+
+Branch Shapes add rectangles or ellipses along branches. Use them to show per-branch annotations or repeated counts along a branch.
+
+{% include 'palette-branch-shapes.html', legend: "Branch Shapes section of the Visual Options palette." %}
+
+| Control | Effect |
+|---|---|
+| Shape | *Off* / *Rectangle* / *Ellipse* |
+| Filter | Apply a saved named filter so only matching branches get shapes |
+| Height | Shape height as a percentage of branch length |
+| Width | Shape width as a multiple of its height |
+| Align | Position shapes *Left*, *Centre*, or *Right* along the branch |
+| Spacing | Gap between shapes and branch-edge padding (pixels) |
+| Colour | Default fill colour |
+| Colour by | Use an annotation key to colour shapes |
+| Palette | **Configure** button appears when *Colour by* is active |
+| No. | Integer annotation key controlling the number of shapes per branch |
+| Halo | Outline width around shapes (pixels) |
+| Halo col. | Halo colour |
+
+Set **Colour by** to an annotation such as `country`, or use **No.** with an integer field to draw multiple shapes per branch. For example, a lineage-specific annotation can colour the branch markers, while an event count can be mapped to **No.** to repeat the shape several times on the same branch.
+
+{% tip %}
+Shape rows 2–4 can be enabled to show several branch annotations at once.
+{% endtip %}
+
 ### Node Bars
 
-When a BEAST tree carries height HPD (highest posterior density) annotations (e.g. `height_95%_HPD`, `height_99%_HPD`), the **Node Bars** section appears in the palette. If no such annotations are present it shows an *unavailable* message. Any `height_<percent>%_HPD` interval annotation is recognised; if `height_95%_HPD` is present it is used as the default interval. If turned on, a horizontal bar will be shown at every node spanning time of the HPDs. Multiple node bars can be added and stacked so you can display several intervals at once.
+When a BEAST tree carries height HPD (highest posterior density) annotations (e.g. `height_95%_HPD`, `height_99%_HPD`), the **Node Bars** section appears in the palette. If no such annotations are present it shows an *unavailable* message. Any `height_<percent>%_HPD` interval annotation is recognised; if `height_95%_HPD` is present it is used as the default interval. Multiple node bars can be added and stacked so you can display several intervals at once.
+
+The **Node Bars** section can also create 'violin plots' on nodes from annotation-embedded probabilty density curves, so the width of the shape reflects the local density around the node rather than just a single interval. The **Clip To** control lets you crop the curve to a chosen HPD interval.
 
 {% include 'figure.html', src: "images/node_bars.png", alt: "Node bars", maxwidth: "80%", bg: "#EAE8E1", legend: "A subclade of the EBOV tree showing height HPD node bars and height range whiskers" %}
 
@@ -669,6 +700,10 @@ The options for node bars are controlled by the **NODE BARS** section of the con
 If the are no height HPDs specified in the annotations then this option is not available:
 
 {% include 'palette-node-bars.html', available: "false" %}
+
+{% tip %}
+If your tree carries several height uncertainty annotations, you can stack node bars on top of each other with increasing size to compare nested HPD intervals. The same approach also works for KDE-derived curves when you want to show the same distribution at different HPD cutoffs. Here, the size would be the same but different colours or opacity would distinguish the different intervals.
+{% endtip %}
 
 ### Clade Highlights
 

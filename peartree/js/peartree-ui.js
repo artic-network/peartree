@@ -3166,6 +3166,40 @@ ${window.buildParseLabelDialogHTML({ title: 'Parse Tip Names', subjectLabel: 'ti
 </div>`;
 }
 
+const _HELP_MANUAL_URL = 'http://peartree.live/manual';
+const _HELP_MANUAL_ANCHORS = {
+  'Interface Overview': '#chapter-1-the-interface-at-a-glance',
+  'Opening a Tree File': '#chapter-2-loading-trees',
+  'Toolbar Buttons': '#toolbar',
+  'Highlighting Clades': '#clade-highlights',
+  'Mouse & Trackpad': '#chapter-4-navigating-the-tree',
+  'Keyboard Shortcuts': '#appendix-a-keyboard-shortcuts',
+  'Hyperbolic Lens': '#chapter-5-the-hyperbolic-lens',
+  'Selection Modes': '#chapter-6-selecting-and-filtering',
+  'Rerooting the Tree': '#chapter-11-rooting-and-rerooting',
+  'Subtree Navigation': '#subtree-navigation',
+  'Hide / Show Subtrees': '#hide-show-subtrees',
+  'Collapse / Expand Clades': '#collapse-expand-clades',
+  'Node Info (⌘I)': '#node-info',
+  'Importing Annotations (⌘⇧A)': '#chapter-3-importing-annotations',
+  'Annotation Manager': '#annotation-manager',
+  'Exporting the Tree (⌘E)': '#exporting-the-tree-file',
+  'Exporting a Graphic (⌘⇧E)': '#exporting-a-graphic',
+  'Visual Options Palette': '#visual-options-palette',
+  'Branches': '#tree-appearance',
+  'Tip Labels (multi-label)': '#tip-labels',
+  'Branch Shapes': '#branch-shapes',
+  'Data Table Panel': '#chapter-13-the-data-table-panel',
+  'Status Bar': '#status-bar',
+  'Settings Persistence': '#chapter-15-settings-and-persistence',
+  'Data Formats': '#data-formats',
+};
+
+window.peartreeConfig = Object.assign({
+  manualUrl: _HELP_MANUAL_URL,
+  helpManualAnchors: _HELP_MANUAL_ANCHORS,
+}, window.peartreeConfig || {});
+
 function _buildHelpAbout() {
   const _ui = window.peartreeConfig?.ui || {};
   const showHelp  = _ui.help  !== false;
@@ -3176,8 +3210,8 @@ function _buildHelpAbout() {
     helpTitle: 'Help',
     aboutTitle: 'About PearTree',
     aboutLogo: '<img src="img/peartree.svg" class="pt-brand-logo me-2" alt="">',
-    helpManualUrl: window.peartreeConfig?.manualUrl,
-    helpManualAnchors: window.peartreeConfig?.helpManualAnchors,
+    helpManualUrl: window.peartreeConfig?.manualUrl || _HELP_MANUAL_URL,
+    helpManualAnchors: window.peartreeConfig?.helpManualAnchors || _HELP_MANUAL_ANCHORS,
   });
 }
 
@@ -3284,6 +3318,8 @@ function initPearTreeUIBindings(root, opts = {}) {
     fetchContent:         (file) => window.peartree.fetchWithFallback(file),
     helpFile:             'help.md',
     aboutFile:            'about.md',
+    helpManualUrl:        _cfg.manualUrl,
+    helpManualAnchors:    _cfg.helpManualAnchors,
     theme:                _ui.theme,
     noStorage:            noStorage,
     keyboardEnabled:      _ui.keyboard !== false,
