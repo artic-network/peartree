@@ -2462,6 +2462,13 @@ export class TreeRenderer {
   _localDecorationOverflowPx(view, overhang = this._decorationOverhang) {
     const out = overhang || this._decorationOverhang;
 
+    // Structural left inset (e.g. Node Bars / axis left extent) is already part of
+    // the tree rectangle. Decorations can occupy this space before requiring extra
+    // solved padding.
+    const ext = this._treeWorldExtent();
+    const structuralLeftPx = Math.max(0, (ext?.effectiveLeftPad ?? 0) * (view?.targetScaleX ?? this.scaleX));
+    const _leftNeed = (px) => Math.max(0, px - structuralLeftPx);
+
     const tipOuterR = this.tipRadius > 0 ? this.tipRadius + (this.tipHaloSize ?? 0) : 0;
     const nodeOuterR = this.nodeRadius > 0 ? this.nodeRadius + (this.nodeHaloSize ?? 0) : 0;
     const barsHalfH = this.nodeBarsEnabled ? (this.nodeBarsWidth ?? 0) / 2 : 0;
@@ -2472,12 +2479,12 @@ export class TreeRenderer {
     const treeRightSX = tipMaxSX;
 
     // Core shape clearances are treated as decoration overhang (not structural margins).
-    out.left = Math.max(out.left, Math.ceil(nodeOuterR));
+    out.left = Math.max(out.left, Math.ceil(_leftNeed(nodeOuterR)));
     out.right = Math.max(out.right, Math.ceil(tipOuterR));
     out.top = Math.max(out.top, Math.ceil(Math.max(tipOuterR, nodeOuterR, barsHalfH)));
     out.bottom = Math.max(out.bottom, Math.ceil(Math.max(tipOuterR, nodeOuterR, barsHalfH)));
     // Reserve half stroke width so boundary branches are not clipped.
-    out.left = Math.max(out.left, Math.ceil(branchStrokeHalf));
+    out.left = Math.max(out.left, Math.ceil(_leftNeed(branchStrokeHalf)));
     out.right = Math.max(out.right, Math.ceil(branchStrokeHalf));
     out.top = Math.max(out.top, Math.ceil(branchStrokeHalf));
     out.bottom = Math.max(out.bottom, Math.ceil(branchStrokeHalf));
@@ -2555,7 +2562,7 @@ export class TreeRenderer {
       }
       const anchorGap = (this.nodeRadius ?? 0) + sp;
       if (this.nodeLabelPosition === 'above-left' || this.nodeLabelPosition === 'below-left') {
-        out.left = Math.max(out.left, Math.ceil(maxNodeLabelW + anchorGap));
+        out.left = Math.max(out.left, Math.ceil(_leftNeed(maxNodeLabelW + anchorGap)));
       }
       if (this.nodeLabelPosition === 'right') {
         out.right = Math.max(out.right, Math.ceil(maxNodeLabelW + anchorGap));
@@ -2590,7 +2597,7 @@ export class TreeRenderer {
         ctx.restore();
       }
       const half = Math.ceil(maxBranchW / 2);
-      out.left = Math.max(out.left, half);
+      out.left = Math.max(out.left, Math.ceil(_leftNeed(half)));
       out.right = Math.max(out.right, half);
       const v = Math.ceil((this.branchLabelFontSize ?? fs) + (this.branchLabelSpacing ?? 0));
       out.top = Math.max(out.top, v);
@@ -2614,7 +2621,7 @@ export class TreeRenderer {
         return w;
       })();
 
-      out.left = Math.max(out.left, Math.ceil(pad + sw2));
+      out.left = Math.max(out.left, Math.ceil(_leftNeed(pad + sw2)));
       out.top = Math.max(out.top, Math.ceil(pad + sw2));
       out.bottom = Math.max(out.bottom, Math.ceil(pad + sw2));
 
