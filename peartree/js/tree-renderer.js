@@ -1941,6 +1941,8 @@ export class TreeRenderer {
   navigateBack() {
     if (!this._navStack.length) return;
 
+    const currentTipCount = this.maxY;
+
     // Remember where the current root appears on screen.
     const curRootLayout = this.nodes ? this.nodes.find(n => !n.parentId) : null;
     const px_cur = this.offsetX;   // current root is always at offsetX (world x = 0)
@@ -1961,7 +1963,9 @@ export class TreeRenderer {
     this._mrcaNodeId         = state.mrcaNodeId || null;
 
     this._computeAndInstallLayout(state.subtreeRootId);
-    const snap = this._disableAnimations || this._shouldDisableIntroReorderBySize(this.maxY);
+    const snap = this._disableAnimations
+      || this._shouldDisableIntroReorderBySize(currentTipCount)
+      || this._shouldDisableIntroReorderBySize(this.maxY);
     if (snap) this._updateScaleX(true);
     this._setTarget(state.offsetY, state.scaleY, snap);
 
@@ -2005,6 +2009,8 @@ export class TreeRenderer {
   navigateForward() {
     if (!this._fwdStack.length) return;
 
+    const currentTipCount = this.maxY;
+
     // Peek at the forward state FIRST so we can find its root node in the
     // current layout (it's an internal node here, just like in navigateInto).
     const state           = this._fwdStack[this._fwdStack.length - 1];
@@ -2021,7 +2027,9 @@ export class TreeRenderer {
     this._mrcaNodeId         = state.mrcaNodeId || null;
 
     this._computeAndInstallLayout(fwdSubtreeRootId);
-    const snap = this._disableAnimations || this._shouldDisableIntroReorderBySize(this.maxY);
+    const snap = this._disableAnimations
+      || this._shouldDisableIntroReorderBySize(currentTipCount)
+      || this._shouldDisableIntroReorderBySize(this.maxY);
     if (snap) this._updateScaleX(true);
     this._setTarget(state.offsetY, state.scaleY, snap);
 
@@ -2046,6 +2054,8 @@ export class TreeRenderer {
   navigateHome() {
     if (!this._viewSubtreeRootId) return; // already showing the full tree
 
+    const currentTipCount = this.maxY;
+
     // Capture screen position of the current subtree root (world x = 0).
     const curRootLayout = this.nodes ? this.nodes.find(n => !n.parentId) : null;
     const px_cur  = this.offsetX;
@@ -2059,7 +2069,9 @@ export class TreeRenderer {
     this._mrcaNodeId = null;
 
     this._computeAndInstallLayout(null);
-    const snap = this._disableAnimations || this._shouldDisableIntroReorderBySize(this.maxY);
+    const snap = this._disableAnimations
+      || this._shouldDisableIntroReorderBySize(currentTipCount)
+      || this._shouldDisableIntroReorderBySize(this.maxY);
     if (snap) this._updateScaleX(true);
     // Fit the whole tree into view.
     const newOffsetY = this.treePaddingTop - this.minScaleY;
