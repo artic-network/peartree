@@ -563,13 +563,11 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
       const tipSX = toSX(tipXmax);
       switch (rightMode) {
         case 'atTips':   return tipSX + chOutR + chPad;
-        case 'atLabels': return (renderer.tipLabelAlign && renderer.tipLabelAlign !== 'off')
-          ? toSX(renderer.maxX) + chOutR + chLblSp + chShpW + chPad
-          : tipSX + chOutR + chLblSp + chShpW + chPad;
+        case 'atLabels': return toSX(renderer.maxX) + chOutR;
         case 'atLabelsRight':
-          return ttW - (renderer.treePaddingRight ?? 10);
+          return llW + ttW - (renderer.treePaddingRight ?? 10);
         default:
-          return tipSX + chOutR + chLblSp + chShpW + chPad;
+          return toSX(renderer.maxX) + chOutR + chLblSp + chShpW + chPad;
       }
     };
 
@@ -583,11 +581,43 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
       const colour   = hlData.colour ?? renderer.cladeHighlightColour;
       const tipNodes = allTipIds.map(id => nm.get(id)).filter(Boolean);
       tipNodes.sort((a, b) => a.y - b.y);
-      const minTipY  = tipNodes[0].y;
-      const maxTipY  = tipNodes[tipNodes.length - 1].y;
-      const maxTipX  = Math.max(...tipNodes.map(n => n.x));
-      const topPadY_ = toSY(minTipY) - chPad;
-      const botPadY_ = toSY(maxTipY) + chPad;
+
+      const _halfNY = (n) => (n.isCollapsed && n.collapsedTipCount) ? n.collapsedTipCount / 2 : 0;
+      const _tipTopY = (n) => n.y - _halfNY(n);
+      const _tipBotY = (n) => n.y + _halfNY(n);
+
+      const minTipY = Math.min(...tipNodes.map(_tipTopY));
+      const maxTipY = Math.max(...tipNodes.map(_tipBotY));
+      const maxTipX = Math.max(...tipNodes.map(n => n.collapsedMaxX ?? n.x));
+
+      const halfRowPx = sy / 2;
+      let topSY = toSY(minTipY) - halfRowPx;
+      let botSY = toSY(maxTipY) + halfRowPx;
+      let prevY = -Infinity;
+      let nextY = Infinity;
+      const allTipIdSet = new Set(allTipIds);
+      for (const n of renderer.nodes) {
+        if (!n?.isTip) continue;
+        if (allTipIdSet.has(n.id)) continue;
+        const nBot = _tipBotY(n);
+        const nTop = _tipTopY(n);
+        if (nBot < minTipY && nBot > prevY) prevY = nBot;
+        if (nTop > maxTipY && nTop < nextY) nextY = nTop;
+      }
+      const gapAbovePx = prevY === -Infinity ? halfRowPx : (minTipY - prevY) * sy * 0.5;
+      const gapBelowPx = nextY === Infinity ? halfRowPx : (nextY - maxTipY) * sy * 0.5;
+      topSY = toSY(minTipY) - gapAbovePx;
+      botSY = toSY(maxTipY) + gapBelowPx;
+
+      const topTipSY = toSY(minTipY);
+      const botTipSY = toSY(maxTipY);
+      const topPadY_ = topTipSY - Math.min(chPad, topTipSY - topSY);
+      const botPadY_ = botTipSY + Math.min(chPad, botSY - botTipSY);
+
+      const rootSX = toSX(rootN.x);
+      const parentN = rootN.parent != null ? nm.get(rootN.parent) : null;
+      const gapLeft = parentN ? (rootSX - toSX(parentN.x)) * 0.5 : chPad;
+      const leftPad = Math.min(chPad, gapLeft);
 
       const p = makeSvgPath(f);
       if (leftMode === 'outlineNodes' && tipNodes.length > 1) {
@@ -597,8 +627,8 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
           rootNode: rootN,
           pad: chPad,
           radius: chR,
-          leftPad: chPad,
-          topPadY: null,
+          leftPad,
+          topPadY: topPadY_,
           getTopChild: topChild,
           toX: toSX,
           toY: toSY,
@@ -613,8 +643,8 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
             radius: chR,
             toX: toSX,
             toY: toSY,
-            getTipX: t => t.x,
-            getHalfY: () => 0,
+            getTipX: t => t.collapsedMaxX ?? t.x,
+            getHalfY: _halfNY,
           });
         } else {
           const cr = chR;
@@ -629,15 +659,15 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
           rootNode: rootN,
           pad: chPad,
           radius: chR,
-          leftPad: chPad,
-          botPadY: null,
+          leftPad,
+          botPadY: botPadY_,
           getBottomChild: botChild,
           toX: toSX,
           toY: toSY,
         });
         p.closePath();
       } else {
-        const leftX_ = toSX(rootN.x) - chPad;
+        const leftX_ = rootSX - leftPad;
         const cr = Math.min(chR, (botPadY_ - topPadY_) / 2);
         if (rightMode === 'outlineTips' && tipNodes.length > 1) {
           p.moveTo(leftX_ + cr, topPadY_);
@@ -649,8 +679,8 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
             radius: chR,
             toX: toSX,
             toY: toSY,
-            getTipX: t => t.x,
-            getHalfY: () => 0,
+            getTipX: t => t.collapsedMaxX ?? t.x,
+            getHalfY: _halfNY,
           });
           p.lineTo(leftX_ + cr, botPadY_);
           p.arcTo(leftX_, botPadY_, leftX_, botPadY_ - cr, cr);
@@ -731,6 +761,118 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
           nodeBarParts.push(`<line x1="${f(w.xRangeR)}" y1="${f(w.cy - w.capH)}" x2="${f(w.xRangeR)}" y2="${f(w.cy + w.capH)}" stroke="${esc(col)}" stroke-width="1" opacity="${f(cfg.strokeOpacity)}"/>`);
         }
       }
+      }
+    }
+  }
+
+  // ── Branch shapes (drawn above branches, below collapsed clades) ──────
+  const branchShapeParts = [];
+  if (renderer._branchShape && renderer._branchShape !== 'off' && renderer.nodes && nm) {
+    const baseShape = renderer._branchShape;
+    const shapeSets = [{
+      shape: baseShape,
+      color: renderer._branchShapeColor,
+      colourBy: renderer._branchShapeColourBy,
+      colourFn: (node) => renderer._branchShapeColourForValue(
+        renderer._statValue(node, renderer._branchShapeColourBy),
+      ),
+      countBy: renderer._branchShapeCountBy,
+    }];
+    for (let i = 0; i < 3; i++) {
+      shapeSets.push({
+        shape: renderer._branchShapesExtra?.[i],
+        color: renderer._branchShapesExtraColors?.[i] ?? renderer._branchShapeColor,
+        colourBy: renderer._branchShapesExtraColourBys?.[i],
+        colourFn: (node) => renderer._branchShapeExtraColourForValue(
+          i,
+          renderer._statValue(node, renderer._branchShapesExtraColourBys?.[i]),
+        ),
+        countBy: renderer._branchShapesExtraCountBys?.[i],
+      });
+    }
+
+    const activeSets = [];
+    for (const set of shapeSets) {
+      if (set.shape === 'off') break;
+      activeSets.push(set);
+    }
+
+    if (activeSets.length > 0) {
+      const shapeH = typeof renderer._branchShapeHeightPx === 'function'
+        ? renderer._branchShapeHeightPx()
+        : Math.max(1, Math.round((renderer.scaleY ?? 1) * ((renderer._branchShapeHeightPct ?? 50) / 100)));
+      const widthFactor = Math.max(0.05, Math.min(5, renderer._branchShapeWidth ?? 1));
+      const shapeW = Math.max(1, Math.round(shapeH * widthFactor));
+      const spacing = Math.max(0, renderer._branchShapeSpacing ?? 0);
+      const halo = Math.max(0, renderer._branchShapeHalo ?? 0);
+      const noGapMode = spacing === 0 && halo === 0;
+
+      for (const node of renderer.nodes) {
+        if (!node.parentId) continue;
+        if (renderer._passesFilter && !renderer._passesFilter(renderer._branchShapesFilterId, node)) continue;
+
+        const ny = toSY(node.y);
+        if (!fullTree && (ny < -MARGIN || ny > ttH_eff + MARGIN)) continue;
+
+        const parent = nm.get(node.parentId);
+        if (!parent) continue;
+
+        const x1 = toSX(parent.x);
+        const x2 = toSX(node.x);
+        const branchMinX = Math.min(x1, x2);
+        const branchMaxX = Math.max(x1, x2);
+        const branchLen = branchMaxX - branchMinX;
+        if (branchLen <= 0) continue;
+
+        const laidOutSets = [];
+        let totalCount = 0;
+        for (const set of activeSets) {
+          const count = typeof renderer._branchShapeCount === 'function'
+            ? renderer._branchShapeCount(node, set.countBy)
+            : 1;
+          if (count <= 0) continue;
+          laidOutSets.push({ ...set, count });
+          totalCount += count;
+        }
+        if (totalCount <= 0) continue;
+
+        const totalSpan = totalCount * shapeW + Math.max(0, totalCount - 1) * spacing;
+        let cursorX;
+        if (renderer._branchShapeAlign === 'left') {
+          cursorX = branchMinX + spacing;
+        } else if (renderer._branchShapeAlign === 'right') {
+          cursorX = branchMaxX - spacing - totalSpan;
+        } else {
+          cursorX = branchMinX + (branchLen - totalSpan) / 2;
+        }
+        if (noGapMode) cursorX = Math.round(cursorX);
+
+        let drawnCount = 0;
+        for (const set of laidOutSets) {
+          const fillColor = (set.colourBy ? (set.colourFn(node) ?? set.color) : set.color) || renderer._branchShapeColor;
+          const top = ny - shapeH / 2;
+
+          for (let i = 0; i < set.count; i++) {
+            const x = cursorX + drawnCount * (shapeW + spacing);
+            if (set.shape === 'ellipse') {
+              const cx = x + shapeW / 2;
+              const rx = shapeW / 2;
+              const ry = shapeH / 2;
+              if (halo > 0) {
+                branchShapeParts.push(`<ellipse cx="${f(cx)}" cy="${f(ny)}" rx="${f(rx)}" ry="${f(ry)}" fill="${esc(fillColor)}" stroke="${esc(renderer._branchShapeHaloColor)}" stroke-width="${f(halo * 2)}"/>`);
+              } else {
+                branchShapeParts.push(`<ellipse cx="${f(cx)}" cy="${f(ny)}" rx="${f(rx)}" ry="${f(ry)}" fill="${esc(fillColor)}"/>`);
+              }
+            } else {
+              if (halo > 0) {
+                branchShapeParts.push(`<rect x="${f(x)}" y="${f(top)}" width="${f(shapeW)}" height="${f(shapeH)}" fill="${esc(fillColor)}" stroke="${esc(renderer._branchShapeHaloColor)}" stroke-width="${f(halo * 2)}"/>`);
+              } else {
+                branchShapeParts.push(`<rect x="${f(x)}" y="${f(top)}" width="${f(shapeW)}" height="${f(shapeH)}" fill="${esc(fillColor)}"/>`);
+              }
+            }
+            drawnCount++;
+          }
+        }
       }
     }
   }
@@ -1008,6 +1150,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
           }));
         }
       } else if (!node.isTip) {
+        if (!_svgPassesFilter(renderer._nodeLabelsFilterId, node)) continue;
         const nodeLabel = renderer._nodeLabelText ? renderer._nodeLabelText(node) : null;
         if (nodeLabel) {
           const nlfs    = renderer.nodeLabelFontSize ?? Math.round(fs * 0.85);
@@ -1052,6 +1195,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     const anchor    = 'middle';
     for (const node of renderer.nodes) {
       if (!node.parentId) continue;
+      if (!_svgPassesFilter(renderer._branchLabelsFilterId, node)) continue;
       const parent = renderer.nodeMap.get(node.parentId);
       if (!parent) continue;
       const branchLabel = renderer._branchLabelText ? renderer._branchLabelText(node) : null;
@@ -1362,6 +1506,9 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   </g>
   <g clip-path="url(#tc)"${branchGroupStroke ? ` stroke="${branchGroupStroke}"` : ''} stroke-width="${bw}" fill="none" stroke-linecap="round">
     ${branchParts.join('\n    ')}
+  </g>
+  <g clip-path="url(#tc)">
+    ${branchShapeParts.join('\n    ')}
   </g>
   <g clip-path="url(#tc)">
     ${collapsedCladeParts.join('\n    ')}
