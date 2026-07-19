@@ -283,17 +283,63 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
 
   const scaleY = Number.isFinite(renderer.scaleY) ? renderer.scaleY : 1;
   const maxY = Number.isFinite(renderer.maxY) ? renderer.maxY : 0;
-  const topPad = Number.isFinite(renderer.treePaddingTop) ? renderer.treePaddingTop : 0;
-  const bottomPad = Number.isFinite(renderer.treePaddingBottom) ? renderer.treePaddingBottom : 0;
+  let topPad = Number.isFinite(renderer.treePaddingTop) ? renderer.treePaddingTop : 0;
+  let bottomPad = Number.isFinite(renderer.treePaddingBottom) ? renderer.treePaddingBottom : 0;
 
-  const sx  = renderer.scaleX,  ox = renderer.offsetX;
-  // Full tree: keep current scaleY so zoom level is preserved; shift oy so root sits at top.
-  const sy  = scaleY;
-  const oy  = fullTree ? topPad + scaleY * 0.5 : renderer.offsetY;
+  let sx  = renderer.scaleX;
+  let ox  = renderer.offsetX;
+  let sy  = scaleY;
+  let oy  = renderer.offsetY;
+  let treePaddingRightForSvg = renderer.treePaddingRight ?? 10;
+
   // Effective tree-panel height and total SVG height.
-  const ttH_eff    = fullTree
-    ? Math.round(topPad + bottomPad + (maxY + 1) * scaleY)
+  let ttH_eff = fullTree
+    ? Math.round(topPad + bottomPad + Math.max(1, maxY - 1) * scaleY)
     : ttH;
+
+  // Match canvas full-export layout logic: solve decoration padding at export size,
+  // then derive scale/offset from the solved padding.
+  if (fullTree && typeof renderer._solveDecorationPadding === 'function' && typeof renderer._computeHorizontalLayoutForPadding === 'function') {
+    const tipRowSpan = typeof renderer._tipRowSpan === 'function'
+      ? renderer._tipRowSpan()
+      : Math.max(1, maxY - 1);
+    const targetW = ttW;
+    const targetH = Math.round(topPad + bottomPad + tipRowSpan * scaleY);
+
+    const s_canvas = renderer.canvas;
+    const s_dpr = renderer.dpr;
+    try {
+      renderer.canvas = { clientWidth: targetW, clientHeight: targetH, width: targetW, height: targetH };
+      renderer.dpr = 1;
+
+      let sySolved = Math.max(0, (targetH - (renderer.treePaddingTop + renderer.treePaddingBottom)) / tipRowSpan);
+      let pad = renderer._layoutDecorationPad || { left: 0, right: 0, top: 0, bottom: 0 };
+      for (let i = 0; i < 3; i++) {
+        pad = renderer._solveDecorationPadding(sySolved);
+        const top = Math.max(0, pad.top | 0);
+        const bottom = Math.max(0, pad.bottom | 0);
+        const plotH = Math.max(1, targetH - top - bottom);
+        sySolved = plotH / tipRowSpan;
+      }
+
+      const view = renderer._computeHorizontalLayoutForPadding(pad, sySolved);
+      sx = view.targetScaleX;
+      ox = view.targetOffsetX;
+      sy = sySolved;
+      topPad = Math.max(0, pad.top | 0);
+      bottomPad = Math.max(0, pad.bottom | 0);
+      treePaddingRightForSvg = view.treePaddingRight ?? treePaddingRightForSvg;
+      oy = topPad - sy;
+      ttH_eff = targetH;
+    } finally {
+      renderer.canvas = s_canvas;
+      renderer.dpr = s_dpr;
+    }
+  }
+
+  if (fullTree && !(typeof renderer._solveDecorationPadding === 'function' && typeof renderer._computeHorizontalLayoutForPadding === 'function')) {
+    oy = topPad + scaleY * 0.5;
+  }
   const totalH_eff = ttH_eff + (axVisible ? axH : 0);
   const bg  = renderer.bgColor;
   const bc  = renderer.branchColor;
@@ -565,7 +611,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
         case 'atTips':   return tipSX + chOutR + chPad;
         case 'atLabels': return toSX(renderer.maxX) + chOutR;
         case 'atLabelsRight':
-          return llW + ttW - (renderer.treePaddingRight ?? 10);
+          return llW + ttW - treePaddingRightForSvg;
         default:
           return toSX(renderer.maxX) + chOutR + chLblSp + chShpW + chPad;
       }
@@ -1368,10 +1414,10 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   const axisParts = [];
   if (axVisible && axisRenderer._visible && axisRenderer._scaleX && axisRenderer._maxX !== 0) {
     const ar        = axisRenderer;
-    const plotLeft  = ar._offsetX;
-    const plotRight = ar._offsetX + ar._maxX * ar._scaleX;
+    const axisW = ar._W ?? ttW;
+    const plotLeft  = ar._spacingLeft ?? 0;
+    const plotRight = axisW - (ar._spacingRight ?? 0);
     const AX        = llW;   // SVG x-offset for the axis canvas origin
-    const axisCanvasRight = AX + ttW;
     const AY        = ttH_eff;      // SVG y-offset for the axis canvas origin
     const Y_BASE    = ar._spacingTop ?? 3;
     const MAJOR_H   = 9;
@@ -1457,7 +1503,8 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     for (const val of minorTicks) {
       const sx = ar._valToScreenX(val) + AX;
       if (sx < plotLeft + AX - 1 || sx > plotRight + AX + 1) continue;
-      axisParts.push(`<line x1="${f(sx)}" y1="${f(AY + Y_BASE + 1)}" x2="${f(sx)}" y2="${f(AY + Y_BASE + 1 + MINOR_H)}" stroke="${MINOR_C}" stroke-width="${f(lw)}"/>`);
+      const sxA = sx + 0.5;
+      axisParts.push(`<line x1="${f(sxA)}" y1="${f(AY + Y_BASE + 1)}" x2="${f(sxA)}" y2="${f(AY + Y_BASE + 1 + MINOR_H)}" stroke="${MINOR_C}" stroke-width="${f(lw)}"/>`);
       if (showMinorLabel) {
         const label = ar._calibration.decYearToString(val, minorLabelFmt, ar._dateFormat, effMinorInterval);
         const tw    = approxW(label, afsMinor);
@@ -1485,7 +1532,8 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     for (const val of majorTicks) {
       const sx = ar._valToScreenX(val) + AX;
       if (sx < plotLeft + AX - 1 || sx > plotRight + AX + 1) continue;
-      axisParts.push(`<line x1="${f(sx)}" y1="${f(AY + Y_BASE + 1)}" x2="${f(sx)}" y2="${f(AY + Y_BASE + 1 + MAJOR_H)}" stroke="${TICK_C}" stroke-width="${f(lw)}"/>`);
+      const sxA = sx + 0.5;
+      axisParts.push(`<line x1="${f(sxA)}" y1="${f(AY + Y_BASE + 1)}" x2="${f(sxA)}" y2="${f(AY + Y_BASE + 1 + MAJOR_H)}" stroke="${TICK_C}" stroke-width="${f(lw)}"/>`);
       if (showMajorLabel) {
         let label;
         if (ar._dateMode) {
