@@ -549,6 +549,13 @@ fn trigger_print(window: tauri::WebviewWindow) -> Result<(), String> {
     window.print().map_err(|e| e.to_string())
 }
 
+/// Opens an external URL in the user's default browser.
+/// Used by the frontend to ensure web links do not navigate inside the app webview.
+#[tauri::command]
+fn open_external_url(url: String) -> Result<(), String> {
+    tauri_plugin_opener::open_url(&url, None::<&str>).map_err(|e| e.to_string())
+}
+
 /// Checks for an available update against the configured GitHub Releases
 /// endpoint.  Returns null if already up to date, or a JSON object with
 /// { version, date, body, current } if a newer release exists.
@@ -602,7 +609,7 @@ async fn install_update(app: tauri::AppHandle) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app = tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![set_menu_item_enabled, set_menu_item_text, pick_tree_file, pick_annot_file, save_file, read_file_content, new_window, take_pending_file, trigger_print, check_for_updates, install_update])
+        .invoke_handler(tauri::generate_handler![set_menu_item_enabled, set_menu_item_text, pick_tree_file, pick_annot_file, save_file, read_file_content, new_window, take_pending_file, trigger_print, open_external_url, check_for_updates, install_update])
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
