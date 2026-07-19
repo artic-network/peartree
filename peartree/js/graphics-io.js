@@ -357,10 +357,8 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   // When drawing full tree all nodes are in range; use Infinity to skip y-culling.
   const MARGIN = fullTree ? Infinity : 20;
 
-  // ── defs: clip paths, gradients ──────────────────────────────────────
+  // ── defs: gradients ──────────────────────────────────────────────────
   const defs = [];
-  // Clip for the main tree area (excludes legend panel)
-  defs.push(`<clipPath id="tc"><rect x="${llW}" y="0" width="${ttW}" height="${ttH_eff}"/></clipPath>`);
 
   // ── Background panels ─────────────────────────────────────────────────
   const bgParts = [];
@@ -1570,46 +1568,47 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg"
+     version="1.1" baseProfile="full"
      width="${totalW}" height="${totalH_eff}" viewBox="0 0 ${totalW} ${totalH_eff}">
   <defs>
     ${defs.join('\n    ')}
   </defs>
   ${bgParts.join('\n  ')}
   ${legendParts.join('\n  ')}
-  <g clip-path="url(#tc)">
+  <g>
     ${cladeHighlightParts.join('\n    ')}
   </g>
-  <g clip-path="url(#tc)">
+  <g>
     ${nodeBarParts.join('\n    ')}
   </g>
-  <g clip-path="url(#tc)"${branchGroupStroke ? ` stroke="${branchGroupStroke}"` : ''} stroke-width="${bw}" fill="none" stroke-linecap="round">
+  <g${branchGroupStroke ? ` stroke="${branchGroupStroke}"` : ''} stroke-width="${bw}" fill="none" stroke-linecap="round">
     ${branchParts.join('\n    ')}
   </g>
-  <g clip-path="url(#tc)">
+  <g>
     ${branchShapeParts.join('\n    ')}
   </g>
-  <g clip-path="url(#tc)">
+  <g>
     ${collapsedCladeParts.join('\n    ')}
   </g>
-  <g clip-path="url(#tc)">
+  <g>
     ${bgNodeParts.join('\n    ')}
   </g>
-  <g clip-path="url(#tc)">
+  <g>
     ${bgTipParts.join('\n    ')}
   </g>
-  <g clip-path="url(#tc)">
+  <g>
     ${fgNodeParts.join('\n    ')}
   </g>
-  <g clip-path="url(#tc)">
+  <g>
     ${fgTipParts.join('\n    ')}
   </g>
-  <g clip-path="url(#tc)">
+  <g>
     ${connectorParts.join('\n    ')}
   </g>
-  <g clip-path="url(#tc)">
+  <g>
     ${shapeParts.join('\n    ')}
   </g>
-  <g clip-path="url(#tc)">
+  <g>
     ${labelParts.join('\n    ')}
   </g>
   ${axisParts.join('\n  ')}
