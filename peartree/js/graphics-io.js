@@ -375,6 +375,14 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   const legendPos    = lr?._position;
   const legendKey    = lr?._annotation;
   const legendSchema = lr?._schema;
+  const _legendSlug = (s) => {
+    const slug = String(s || 'legend')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return slug || 'legend';
+  };
 
   // Helper: appends one legend block's SVG elements into `out`.
   // lx = left edge in SVG coords; legendH = usable height; yOffset = top offset.
@@ -578,7 +586,12 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
         const h = heights[i];
         if (h <= 0) continue;
         const spec = specs[i];
-        _appendLegendBlock(legendParts, spec.key, colX[c], h, offsetY, `lgrd${spec.legendN}`, wCol);
+        const legendBlockParts = [];
+        _appendLegendBlock(legendBlockParts, spec.key, colX[c], h, offsetY, `lgrd${spec.legendN}`, wCol);
+        if (legendBlockParts.length) {
+          const legendId = `Legend-${_legendSlug(spec.key)}-${spec.legendN}`;
+          legendParts.push(`<g id="${legendId}" data-annotation="${esc(spec.key)}">\n      ${legendBlockParts.join('\n      ')}\n    </g>`);
+        }
         offsetY += h;
         if (i < specs.length - 1) offsetY += gapPx;
       }
@@ -930,7 +943,10 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   const bgTipParts  = [];  // background halo circles for tip shapes
   const fgNodeParts = [];  // foreground fill circles for node shapes
   const fgTipParts  = [];  // foreground fill circles for tip shapes
-  const labelParts      = [];
+  const tipLabelParts       = [];
+  const nodeLabelParts      = [];
+  const branchLabelParts    = [];
+  const collapsedLabelParts = [];
   const connectorParts  = [];   // alignment connector lines
   const shapeParts      = [];   // tip-label shape swatches
   // Stroke width for the bg halo: uses renderer.tipHaloSize directly
@@ -1094,7 +1110,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     const pd = _svgPdFor(node);
     if (!pd?.parts?.length) return;
     let x = baseX + _svgTxOff;
-    labelParts.push(svgTextEl({
+    tipLabelParts.push(svgTextEl({
       x: f(x),
       y: f(y),
       text: pd.parts[0],
@@ -1111,7 +1127,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
         ? (_svgTipLabelSegmentMax?.[i - 1] ?? pd.widths?.[i - 1] ?? 0)
         : (pd.widths?.[i - 1] ?? 0);
       x += prevW + _svgLblSp;
-      labelParts.push(svgTextEl({
+      tipLabelParts.push(svgTextEl({
         x: f(x),
         y: f(y),
         text: pd.parts[i],
@@ -1243,7 +1259,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
             tx = nx - nr - spacing;  ty = ny - spacing;
             baseline = 'auto';      anchor = 'end';
           }
-          labelParts.push(svgTextEl({
+          nodeLabelParts.push(svgTextEl({
             x: f(tx),
             y: f(ty),
             text: nodeLabel,
@@ -1280,7 +1296,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
       if (!fullTree && (ny < -MARGIN || ny > ttH_eff + MARGIN)) continue;
       const mx  = (toSX(parent.x) + nx) / 2;
       const ty  = above ? ny - spacing : ny + spacing;
-      labelParts.push(svgTextEl({
+      branchLabelParts.push(svgTextEl({
         x: f(mx),
         y: f(ty),
         text: branchLabel,
@@ -1360,7 +1376,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
               : tip.annotations?.[renderer._labelColourBy];
             tipFill = renderer._labelColourForValue(tipVal) ?? lc;
           }
-          labelParts.push(svgTextEl({
+          collapsedLabelParts.push(svgTextEl({
             x: f(labelTX),
             y: f(tipSY),
             text: tip.name,
@@ -1395,7 +1411,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
           cladeFill = renderer.selectedLabelColor;
           cladeTypeface = resolveSelectedSvgTypeface(renderer, _svgCollapsedCladeTypeface);
         }
-        labelParts.push(svgTextEl({
+        collapsedLabelParts.push(svgTextEl({
           x: f(labelTX),
           y: f(labelSY),
           text: label,
@@ -1573,44 +1589,63 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   <defs>
     ${defs.join('\n    ')}
   </defs>
-  ${bgParts.join('\n  ')}
-  ${legendParts.join('\n  ')}
-  <g>
-    ${cladeHighlightParts.join('\n    ')}
+  <g id="Layer-Background">
+    ${bgParts.join('\n    ')}
   </g>
-  <g>
-    ${nodeBarParts.join('\n    ')}
+  <g id="Layer-Legends">
+    ${legendParts.join('\n    ')}
   </g>
-  <g${branchGroupStroke ? ` stroke="${branchGroupStroke}"` : ''} stroke-width="${bw}" fill="none" stroke-linecap="round">
-    ${branchParts.join('\n    ')}
+  <g id="Layer-Tree">
+    <g id="Tree-CladeHighlights">
+      ${cladeHighlightParts.join('\n      ')}
+    </g>
+    <g id="Tree-NodeBars">
+      ${nodeBarParts.join('\n      ')}
+    </g>
+    <g id="Tree-Branches"${branchGroupStroke ? ` stroke="${branchGroupStroke}"` : ''} stroke-width="${bw}" fill="none" stroke-linecap="round">
+      ${branchParts.join('\n      ')}
+    </g>
+    <g id="Tree-BranchShapes">
+      ${branchShapeParts.join('\n      ')}
+    </g>
+    <g id="Tree-CollapsedClades">
+      ${collapsedCladeParts.join('\n      ')}
+    </g>
+    <g id="Tree-NodeBg">
+      ${bgNodeParts.join('\n      ')}
+    </g>
+    <g id="Tree-TipBg">
+      ${bgTipParts.join('\n      ')}
+    </g>
+    <g id="Tree-NodeFg">
+      ${fgNodeParts.join('\n      ')}
+    </g>
+    <g id="Tree-TipFg">
+      ${fgTipParts.join('\n      ')}
+    </g>
+    <g id="Tree-Connectors">
+      ${connectorParts.join('\n      ')}
+    </g>
+    <g id="Tree-Shapes">
+      ${shapeParts.join('\n      ')}
+    </g>
+    <g id="Tree-Labels">
+      <g id="Labels-Tips">
+        ${tipLabelParts.join('\n        ')}
+      </g>
+      <g id="Labels-Nodes">
+        ${nodeLabelParts.join('\n        ')}
+      </g>
+      <g id="Labels-Branches">
+        ${branchLabelParts.join('\n        ')}
+      </g>
+      <g id="Labels-CollapsedClades">
+        ${collapsedLabelParts.join('\n        ')}
+      </g>
+    </g>
   </g>
-  <g>
-    ${branchShapeParts.join('\n    ')}
+  <g id="Layer-Axis">
+    ${axisParts.join('\n    ')}
   </g>
-  <g>
-    ${collapsedCladeParts.join('\n    ')}
-  </g>
-  <g>
-    ${bgNodeParts.join('\n    ')}
-  </g>
-  <g>
-    ${bgTipParts.join('\n    ')}
-  </g>
-  <g>
-    ${fgNodeParts.join('\n    ')}
-  </g>
-  <g>
-    ${fgTipParts.join('\n    ')}
-  </g>
-  <g>
-    ${connectorParts.join('\n    ')}
-  </g>
-  <g>
-    ${shapeParts.join('\n    ')}
-  </g>
-  <g>
-    ${labelParts.join('\n    ')}
-  </g>
-  ${axisParts.join('\n  ')}
 </svg>`;
 }
