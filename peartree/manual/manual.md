@@ -1350,6 +1350,15 @@ PearTree automatically saves all visual settings to browser **localStorage** (we
 
 Click **Reset to defaults** at the bottom of the Visual Options palette to restore the Artic theme and all factory default values.
 
+### Animation Controls
+
+The **Tree** section includes two global animation controls:
+
+- **No motion**: disables all tree/canvas animated transitions (including the opening intro animation).
+- **Anim limit**: automatically disables intro/reorder animations when the number of **visible tips** is above the configured threshold. Set to **0** to disable this automatic limit.
+
+These settings are saved with your normal app preferences and can also be supplied via startup settings (for example through `configUrl` or `window.peartreeConfig.settings`).
+
 ### Embedding Settings in a NEXUS File
 
 Export a NEXUS file with **Embed settings** ticked (see [Chapter 14](#chapter-14-exporting)) to bundle all current visual settings with the tree data. Opening that file in PearTree on any machine restores the full appearance, making this the recommended way to share a tree with its visual configuration.

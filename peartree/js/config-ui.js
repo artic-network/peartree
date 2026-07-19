@@ -91,6 +91,12 @@ export const DEFAULT_UI_APP = {
 
   // Vertical scrollbar on the tree canvas
   scrollBar:       true,
+
+  // Animation policy defaults (applied through startup config in peartree.js)
+  // disableAnimations: hard-disable tree/canvas transitions
+  // animationTipThreshold: auto-disable intro/reorder above visible-tip count (0 = never)
+  disableAnimations: false,
+  animationTipThreshold: 20000,
 };
 
 // ── embed() ───────────────────────────────────────────────────────────────────

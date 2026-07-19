@@ -80,6 +80,21 @@ export const SETTINGS_SCHEMA = [
     desc: 'Opening animation style when a tree loads.',
   },
   {
+    key: 'disableAnimations',
+    label: 'Disable animations',
+    group: 'Tree',
+    type: 'boolean',
+    desc: 'Disable all tree/canvas animated transitions.',
+  },
+  {
+    key: 'animationTipThreshold',
+    label: 'Animation tip threshold',
+    group: 'Tree',
+    type: 'number',
+    min: 0, max: 500000, step: 100,
+    desc: 'Auto-disable intro/reorder animations when visible tips exceed this value (0 = never).',
+  },
+  {
     key: 'rootStemPct',
     label: 'Root stem length (%)',
     group: 'Tree',

@@ -262,6 +262,9 @@ async function _initCore(root = document) {
         legendPaddingRight:  _ui.legendPaddingRight  ?? DEFAULT_UI_APP.legendPaddingRight,
         legendPaddingBottom: _ui.legendPaddingBottom ?? DEFAULT_UI_APP.legendPaddingBottom,
         legendPaddingLeft:   _ui.legendPaddingLeft   ?? DEFAULT_UI_APP.legendPaddingLeft,
+        // Animation defaults controlled from ui config
+        disableAnimations: _ui.disableAnimations ?? DEFAULT_UI_APP.disableAnimations,
+        animationTipThreshold: _ui.animationTipThreshold ?? DEFAULT_UI_APP.animationTipThreshold,
       };
     },
   });
@@ -294,7 +297,22 @@ async function _initCore(root = document) {
     if (_wcUi.legendPaddingRight  == null && _fetchedUI.legendPaddingRight  != null) _cfg.legendPaddingRight  = _fetchedUI.legendPaddingRight;
     if (_wcUi.legendPaddingBottom == null && _fetchedUI.legendPaddingBottom != null) _cfg.legendPaddingBottom = _fetchedUI.legendPaddingBottom;
     if (_wcUi.legendPaddingLeft   == null && _fetchedUI.legendPaddingLeft   != null) _cfg.legendPaddingLeft   = _fetchedUI.legendPaddingLeft;
+    if (_wcUi.disableAnimations   == null && _fetchedUI.disableAnimations   != null) _cfg.disableAnimations   = _fetchedUI.disableAnimations;
+    if (_wcUi.animationTipThreshold == null && _fetchedUI.animationTipThreshold != null) _cfg.animationTipThreshold = _fetchedUI.animationTipThreshold;
   }
+
+  // Animation policy is controlled from ui config defaults and explicit ui overrides.
+  // Inject these into initSettings so they remain hard-coded by UI mode unless
+  // explicitly changed through a ui object.
+  if (!_isPlainObject(_cfg.initSettings)) _cfg.initSettings = {};
+  const _uiDisableAnimations = _coerceUiFlag(_cfg.disableAnimations, false) === true;
+  const _uiAnimThreshold = (() => {
+    const n = parseInt(_cfg.animationTipThreshold, 10);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  })();
+  _cfg.initSettings.disableAnimations = _uiDisableAnimations;
+  _cfg.initSettings.animationTipThreshold = _uiAnimThreshold;
+
   // Apply canvas border CSS from the UI config before any tree loads.
   _syncCanvasBorder(_cfg);
   // Apply UI restrictions immediately so hidden elements never flash visible.
@@ -473,6 +491,9 @@ async function _initCore(root = document) {
   const legendDetailEl      = $('legend-detail');
   const axisDetailEl        = $('axis-detail');
   const rootStemPctSlider    = $('root-stem-pct-slider');
+  const introAnimationEl     = $('intro-animation');
+  const disableAnimationsEl  = $('disable-animations');
+  const animationTipThresholdSlider = $('animation-tip-threshold-slider');
   const fontFamilyEl        = $('font-family-select');
   const fontTypefaceStyleEl = $('font-typeface-style-select');
   const tipLabelTypefaceEl  = $('typeface-select');
@@ -1136,6 +1157,9 @@ async function _initCore(root = document) {
       collapsedCladeHeightN:  collapsedHeightNSlider.value,
       collapsedCladeFontSize: collapsedCladeFontSizeSlider.value,
       rootStemPct:        rootStemPctSlider.value,
+      introAnimation:     introAnimationEl?.value || DEFAULT_SETTINGS.introAnimation,
+      disableAnimations:  (disableAnimationsEl?.value || 'off') === 'on',
+      animationTipThreshold: animationTipThresholdSlider?.value ?? DEFAULT_SETTINGS.animationTipThreshold,
       tipLabelShow:       tipLabelShow.value,
       tipLabelAlign:      tipLabelAlignEl.value,
       tipLabelSpacing:    tipLabelSpacingSlider.value,
@@ -1665,6 +1689,22 @@ async function _initCore(root = document) {
       rootStemPctSlider.value = s.rootStemPct;
       $('root-stem-pct-value').textContent = s.rootStemPct + '%';
     }
+    if (introAnimationEl && s.introAnimation != null) {
+      introAnimationEl.value = s.introAnimation;
+    }
+    if (disableAnimationsEl && s.disableAnimations != null) {
+      const _on = s.disableAnimations === true
+        || s.disableAnimations === 1
+        || s.disableAnimations === '1'
+        || String(s.disableAnimations).toLowerCase() === 'on'
+        || String(s.disableAnimations).toLowerCase() === 'true';
+      disableAnimationsEl.value = _on ? 'on' : 'off';
+    }
+    if (animationTipThresholdSlider && s.animationTipThreshold != null) {
+      animationTipThresholdSlider.value = s.animationTipThreshold;
+      const out = $('animation-tip-threshold-value');
+      if (out) out.textContent = String(s.animationTipThreshold);
+    }
     // Node label settings (annotation-dependent: nodeLabelAnnotation is applied later in loadTree)
     if (s.nodeLabelPosition)  nodeLabelPositionEl.value   = s.nodeLabelPosition;
     if (s.nodeLabelFontSize != null) {
@@ -1773,6 +1813,13 @@ async function _initCore(root = document) {
     axisMinorIntervalEl.value    = DEFAULT_SETTINGS.axisMinorInterval;
     axisMajorLabelEl.value       = DEFAULT_SETTINGS.axisMajorLabelFormat;
     axisMinorLabelEl.value       = DEFAULT_SETTINGS.axisMinorLabelFormat;
+    if (introAnimationEl) introAnimationEl.value = DEFAULT_SETTINGS.introAnimation;
+    if (disableAnimationsEl) disableAnimationsEl.value = DEFAULT_SETTINGS.disableAnimations ? 'on' : 'off';
+    if (animationTipThresholdSlider) {
+      animationTipThresholdSlider.value = DEFAULT_SETTINGS.animationTipThreshold;
+      const out = $('animation-tip-threshold-value');
+      if (out) out.textContent = String(DEFAULT_SETTINGS.animationTipThreshold);
+    }
     _updateMinorOptions(DEFAULT_SETTINGS.axisMajorInterval, DEFAULT_SETTINGS.axisMinorInterval);
     // RTT date/interval controls — visual RTT appearance is set by applyTheme(defaultTheme) above.
     rttXOriginEl.value       = DEFAULT_SETTINGS.rttXOrigin;
@@ -2189,7 +2236,9 @@ async function _initCore(root = document) {
       branchLabelDecimalPlaces: branchLabelDpEl.value !== '' ? parseInt(branchLabelDpEl.value) : null,
       calCalibration:      calibration?.isActive ? calibration : null,
       calDateFormat:       axisDateFmtEl.value,
-      introAnimation:      _saved.introAnimation ?? DEFAULT_SETTINGS.introAnimation,
+      introAnimation:      introAnimationEl?.value || DEFAULT_SETTINGS.introAnimation,
+      disableAnimations:   (disableAnimationsEl?.value || 'off') === 'on',
+      animationTipThreshold: parseInt(animationTipThresholdSlider?.value ?? DEFAULT_SETTINGS.animationTipThreshold, 10) || 0,
       cladeHighlightLeftEdge:      cladeHighlightLeftEdgeEl?.value ?? DEFAULT_SETTINGS.cladeHighlightLeftEdge,
       cladeHighlightRightEdge:     cladeHighlightRightEdgeEl?.value ?? DEFAULT_SETTINGS.cladeHighlightRightEdge,
       cladeHighlightPadding:       parseFloat(cladeHighlightPaddingSlider?.value ?? DEFAULT_SETTINGS.cladeHighlightPadding),
@@ -2863,6 +2912,21 @@ async function _initCore(root = document) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   const renderer = new TreeRenderer(canvas, _buildRendererSettings());
+  const _canvasContainer = canvas.parentElement;
+  let _resizeRafId = 0;
+  const _requestRendererResize = () => {
+    if (_resizeRafId || !renderer) return;
+    _resizeRafId = requestAnimationFrame(() => {
+      _resizeRafId = 0;
+      renderer._resize();
+    });
+  };
+  const _canvasResizeObserver = typeof ResizeObserver !== 'undefined' && _canvasContainer
+    ? new ResizeObserver(() => _requestRendererResize())
+    : null;
+  _canvasResizeObserver?.observe(_canvasContainer);
+  window.addEventListener('resize', _requestRendererResize);
+  requestAnimationFrame(() => requestAnimationFrame(_requestRendererResize));
   const layoutDebugEnabled = (() => {
     const dbgCfg = !!(window.peartreeConfig?.debug?.layoutSolver);
     const dbgUrl = (() => {
@@ -5225,6 +5289,7 @@ async function _initCore(root = document) {
       _updateConfigureBtn(legend4ConfigureRow, legend4AnnotEl?.value);
       applyLegend();   // rebuild legend with new data (may clear it)
       renderer.setData(layout.nodes, layout.nodeMap, layout.maxX, layout.maxY);
+      requestAnimationFrame(() => requestAnimationFrame(_requestRendererResize));
       // setData() does not fire _onLayoutChange (unlike setDataAnimated), so
       // push the tip list to the data table now so it has data even if the
       // panel was already open from a restored session.
@@ -8723,6 +8788,33 @@ async function _initCore(root = document) {
     renderer.rootStemPct = parseFloat(rootStemPctSlider.value);
     renderer._updateScaleX();
     renderer._dirty = true;
+    saveSettings();
+  });
+
+  optionsController.on('intro-animation', () => {
+    if (renderer) {
+      renderer.setSettings(_buildRendererSettings());
+      renderer._dirty = true;
+    }
+    saveSettings();
+  });
+
+  optionsController.on('disable-animations', () => {
+    if (renderer) {
+      renderer.setSettings(_buildRendererSettings());
+      renderer._dirty = true;
+    }
+    saveSettings();
+  });
+
+  optionsController.on('animation-tip-threshold-slider', ({ type }) => {
+    if (type !== 'input') return;
+    const out = $('animation-tip-threshold-value');
+    if (out) out.textContent = animationTipThresholdSlider.value;
+    if (renderer) {
+      renderer.setSettings(_buildRendererSettings());
+      renderer._dirty = true;
+    }
     saveSettings();
   });
 

@@ -257,6 +257,8 @@ export class TreeRenderer {
     this._introAlpha          = 0;      // 0→1 within current phase
     this._introStyle          = null;   // style name active during current animation
     this._introAnimationStyle = 'y-then-x';  // configured style (from settings)
+    this._disableAnimations   = false;
+    this._animationTipThreshold = 5000;
     this._introFinalX         = null;   // Map<id, finalX>
     this._introFinalY         = null;   // Map<id, finalY>
     this._introRootY          = 0;
@@ -589,6 +591,17 @@ export class TreeRenderer {
 
     // ── Intro animation style — persisted across tree loads. ──────────────
     if (s.introAnimation !== undefined) this._introAnimationStyle = s.introAnimation;
+    if (s.disableAnimations !== undefined) {
+      this._disableAnimations = s.disableAnimations === true
+        || s.disableAnimations === 1
+        || s.disableAnimations === '1'
+        || String(s.disableAnimations).toLowerCase() === 'on'
+        || String(s.disableAnimations).toLowerCase() === 'true';
+    }
+    if (s.animationTipThreshold !== undefined) {
+      const n = parseInt(s.animationTipThreshold, 10);
+      this._animationTipThreshold = Number.isFinite(n) && n >= 0 ? n : 0;
+    }
 
     // ── Collapsed clades ─────────────────────────────────────────────────
     this._collapsedCladeOpacity      = s.collapsedCladeOpacity      != null ? +s.collapsedCladeOpacity      : (this._collapsedCladeOpacity      ?? 0.25);
@@ -677,23 +690,10 @@ export class TreeRenderer {
     this._buildGlobalHeightMap(nodes, maxX);
     this._labelCacheKey = null;  // new node set — remeasure label widths
     this._measureLabels();
-    // For large trees the zoom-in animation stalls: each successive frame must
-    // draw progressively more of the (potentially) 200k nodes as minScaleY is
-    // approached.  Instead of animating, snap instantly to a "landing zoom"
-    // that shows ~500 rows — still readable, avoids a blank screen (minScaleY
-    // for 100k tips ≈ 0.01 px/row, which is invisible).  For smaller trees the
-    // normal animated fit-to-window is fine.
+    // For very large trees, avoid animated intro/fits (costly per-frame redraw).
+    // Snap directly to a true fit-to-window state on first load.
     if (nodes.length > 60000) {
-      this._fitLabelsMode = false;
-      this._updateMinScaleY();       // recomputes this.minScaleY
-      const plotH     = this.canvas.clientHeight - this.treePaddingTop - this.treePaddingBottom;
-      const landingY  = Math.max(this.minScaleY, plotH / 500);  // show ~500 rows
-      const offsetY   = this.treePaddingTop - landingY;
-      // Set _targetScaleY first so _updateScaleX evaluates label visibility at
-      // landingY (immediate=true also snaps scaleY = landingY directly).
-      this._setTarget(offsetY, landingY, /*immediate*/ true);
-      this._updateScaleX();          // immediate snap: scaleX/offsetX fitted
-      this._dirty = true;
+      this.fitToWindow(true);
     } else {
       this.fitToWindow();  // animated
     }
@@ -713,6 +713,9 @@ export class TreeRenderer {
    * in the same animation pass, keeping everything in sync.
    */
   setDataAnimated(nodes, nodeMap, maxX, maxY, { fitViewport = false } = {}) {
+    if (this._disableAnimations || this._shouldDisableIntroReorderBySize(maxY)) {
+      return this.setData(nodes, nodeMap, maxX, maxY);
+    }
     // For very large trees the per-frame node iteration is too expensive.
     // Fall back to an instant update (no reorder animation) above ~30k tips.
     if (nodes.length > 60000) return this.setData(nodes, nodeMap, maxX, maxY);
@@ -796,6 +799,10 @@ export class TreeRenderer {
    * out over the new tree over ~350 ms.
    */
   setDataCrossfade(nodes, nodeMap, maxX, maxY) {
+    if (this._disableAnimations) {
+      this.setData(nodes, nodeMap, maxX, maxY);
+      return;
+    }
     // Snapshot the current rendered frame before installing new data.
     const W = this.canvas.width;   // physical pixels
     const H = this.canvas.height;
@@ -819,11 +826,12 @@ export class TreeRenderer {
    *   'from-bottom' – all nodes slide up from the bottom of the tree space
    *   'from-top'    – all nodes slide down from the top of the tree space
    *   'none'        – no animation
-   * Skipped silently for very large trees (>10 000 nodes).
+   * Skipped when disabled globally or by the visible-tip threshold policy.
    */
   startIntroAnimation() {
     if (!this.nodes || this.nodes.length === 0) return;
-    if (this.nodes.length > 10000) return;  // skip for large trees
+    if (this._disableAnimations) return;
+    if (this._shouldDisableIntroReorderBySize(this.maxY)) return;
 
     const style = this._introAnimationStyle ?? 'y-then-x';
     if (style === 'none') return;
@@ -1909,17 +1917,21 @@ export class TreeRenderer {
 
     // Compute new layout rooted at this node (x = 0).
     this._computeAndInstallLayout(layoutNodeId);
+    const snap = this._disableAnimations || this._shouldDisableIntroReorderBySize(this.maxY);
+    if (snap) this._updateScaleX(true);
     const newScaleY  = Math.max(this.minScaleY, this._targetScaleY);
     const newOffsetY = this.treePaddingTop - newScaleY;
-    this._setTarget(newOffsetY, newScaleY, false);
+    this._setTarget(newOffsetY, newScaleY, snap);
 
     // Seed the animation START so the new root appears at the old screen position.
-    const newRoot = this.nodes.find(n => !n.parentId);
-    if (newRoot) {
-      this.offsetX = px_old;                            // starts at old x, lerps to treePaddingLeft
-      this.offsetY = py_old - newRoot.y * this.scaleY; // old scaleY still in effect
+    if (!snap) {
+      const newRoot = this.nodes.find(n => !n.parentId);
+      if (newRoot) {
+        this.offsetX = px_old;                            // starts at old x, lerps to treePaddingLeft
+        this.offsetY = py_old - newRoot.y * this.scaleY; // old scaleY still in effect
+      }
+      this._animating = true;
     }
-    this._animating = true;
     this._dirty = true;
     if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
     this._notifyStats();
@@ -1949,7 +1961,9 @@ export class TreeRenderer {
     this._mrcaNodeId         = state.mrcaNodeId || null;
 
     this._computeAndInstallLayout(state.subtreeRootId);
-    this._setTarget(state.offsetY, state.scaleY, false);
+    const snap = this._disableAnimations || this._shouldDisableIntroReorderBySize(this.maxY);
+    if (snap) this._updateScaleX(true);
+    this._setTarget(state.offsetY, state.scaleY, snap);
 
     // Seed animation so the transition looks smooth.
     // Case A (undo drill-down): the previous layout's root exists in the
@@ -1957,28 +1971,30 @@ export class TreeRenderer {
     // Case B (undo climb): the previous layout's root is NOT in the restored
     //   layout, but the restored subtree root IS visible in the old layout —
     //   place the new layout's root at that node's old screen position.
-    let seeded = false;
-    if (curRootId) {
-      const restoredNode = this.nodeMap.get(curRootId);
-      if (restoredNode) {
-        this.offsetX = px_cur - restoredNode.x * this.scaleX;
-        this.offsetY = py_cur - restoredNode.y * this.scaleY;
-        seeded = true;
+    if (!snap) {
+      let seeded = false;
+      if (curRootId) {
+        const restoredNode = this.nodeMap.get(curRootId);
+        if (restoredNode) {
+          this.offsetX = px_cur - restoredNode.x * this.scaleX;
+          this.offsetY = py_cur - restoredNode.y * this.scaleY;
+          seeded = true;
+        }
       }
-    }
-    if (!seeded && state.subtreeRootId && oldNodeMap) {
-      const subtreeInOld = oldNodeMap.get(state.subtreeRootId);
-      if (subtreeInOld) {
-        // Screen position of the future-root node in the OLD layout.
-        const px_sub = oldOffsetX + subtreeInOld.x * oldScaleX;
-        const py_sub = oldOffsetY + subtreeInOld.y * oldScaleY;
-        // The new layout's root sits at world x = 0, so offsetX = px_sub.
-        const newRoot = this.nodes.find(n => !n.parentId);
-        this.offsetX = px_sub;
-        this.offsetY = newRoot ? py_sub - newRoot.y * this.scaleY : py_sub;
+      if (!seeded && state.subtreeRootId && oldNodeMap) {
+        const subtreeInOld = oldNodeMap.get(state.subtreeRootId);
+        if (subtreeInOld) {
+          // Screen position of the future-root node in the OLD layout.
+          const px_sub = oldOffsetX + subtreeInOld.x * oldScaleX;
+          const py_sub = oldOffsetY + subtreeInOld.y * oldScaleY;
+          // The new layout's root sits at world x = 0, so offsetX = px_sub.
+          const newRoot = this.nodes.find(n => !n.parentId);
+          this.offsetX = px_sub;
+          this.offsetY = newRoot ? py_sub - newRoot.y * this.scaleY : py_sub;
+        }
       }
+      this._animating = true;
     }
-    this._animating = true;
     this._dirty = true;
     if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
     this._notifyStats();
@@ -2005,16 +2021,20 @@ export class TreeRenderer {
     this._mrcaNodeId         = state.mrcaNodeId || null;
 
     this._computeAndInstallLayout(fwdSubtreeRootId);
-    this._setTarget(state.offsetY, state.scaleY, false);
+    const snap = this._disableAnimations || this._shouldDisableIntroReorderBySize(this.maxY);
+    if (snap) this._updateScaleX(true);
+    this._setTarget(state.offsetY, state.scaleY, snap);
 
     // Mirror navigateInto: seed the animation so the new root starts at the
     // old screen position of the node we're zooming into.
-    const newRoot = this.nodes.find(n => !n.parentId);
-    if (newRoot) {
-      this.offsetX = px_old;
-      this.offsetY = py_old - newRoot.y * this.scaleY;
+    if (!snap) {
+      const newRoot = this.nodes.find(n => !n.parentId);
+      if (newRoot) {
+        this.offsetX = px_old;
+        this.offsetY = py_old - newRoot.y * this.scaleY;
+      }
+      this._animating = true;
     }
-    this._animating = true;
     this._dirty = true;
     if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
     this._notifyStats();
@@ -2039,20 +2059,22 @@ export class TreeRenderer {
     this._mrcaNodeId = null;
 
     this._computeAndInstallLayout(null);
+    const snap = this._disableAnimations || this._shouldDisableIntroReorderBySize(this.maxY);
+    if (snap) this._updateScaleX(true);
     // Fit the whole tree into view.
     const newOffsetY = this.treePaddingTop - this.minScaleY;
-    this._setTarget(newOffsetY, this.minScaleY, false);
+    this._setTarget(newOffsetY, this.minScaleY, snap);
 
     // Seed animation: the node we were rooted at slides from its current screen
     // position to wherever it lives in the full-tree layout.
-    if (curRootId) {
+    if (!snap && curRootId) {
       const restoredNode = this.nodeMap.get(curRootId);
       if (restoredNode) {
         this.offsetX = px_cur - restoredNode.x * this.scaleX;
         this.offsetY = py_cur - restoredNode.y * this.scaleY;
       }
+      this._animating = true;
     }
-    this._animating = true;
     this._dirty = true;
     if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
     this._notifyStats();
@@ -2068,6 +2090,8 @@ export class TreeRenderer {
    */
   navigateClimb() {
     if (!this._viewSubtreeRootId) return; // only valid in subtree view
+
+    const currentTipCount = this.maxY;
 
     const nodeIdx = this.graph.origIdToIdx.get(this._viewSubtreeRootId);
     if (nodeIdx === undefined) return;
@@ -2095,11 +2119,15 @@ export class TreeRenderer {
     this._mrcaNodeId = null;
 
     this._computeAndInstallLayout(newSubtreeRootId);
+    const snap = this._disableAnimations
+      || this._shouldDisableIntroReorderBySize(currentTipCount)
+      || this._shouldDisableIntroReorderBySize(this.maxY);
+    if (snap) this._updateScaleX(true);
     const newOffsetY = this.treePaddingTop - this.minScaleY;
-    this._setTarget(newOffsetY, this.minScaleY, false);
+    this._setTarget(newOffsetY, this.minScaleY, snap);
 
     // Seed animation: old root slides rightward to its natural x in the new layout.
-    if (curRootId) {
+    if (!snap && curRootId) {
       const restoredNode = this.nodeMap.get(curRootId);
       if (restoredNode) {
         // x: start displaced so old root still appears at treePaddingLeft, animate to treePaddingLeft
@@ -2110,8 +2138,8 @@ export class TreeRenderer {
         // y: old root appears at same screen y, then eases to fit-window position
         this.offsetY = py_cur - restoredNode.y * this.scaleY;
       }
+      this._animating = true;
     }
-    this._animating = true;
     this._dirty = true;
     if (this._onLayoutChange) this._onLayoutChange(this.maxX, this._viewSubtreeRootId);
     this._notifyStats();
@@ -2900,7 +2928,10 @@ export class TreeRenderer {
     const extra = this._vertOverheadPx();
     this.treePaddingTop    = extra + (this._layoutDecorationPad?.top ?? 0);
     this.treePaddingBottom = extra + (this._layoutDecorationPad?.bottom ?? 0);
-    const plotH = Math.max(0, H - this.treePaddingTop - this.treePaddingBottom);
+    // Keep a tiny safety margin so extreme fit states do not clip the last row
+    // due to sub-pixel rounding / stroke rasterization.
+    const fitSafetyPx = 1;
+    const plotH = Math.max(0, H - this.treePaddingTop - this.treePaddingBottom - fitSafetyPx);
     // The tree rectangle spans tip rows 1 … maxY; decorations live in padding.
     this.minScaleY = plotH / this._tipRowSpan();
   }
@@ -2926,12 +2957,24 @@ export class TreeRenderer {
     if (!this.nodes) return;
     this._fitLabelsMode = false;
     this._updateMinScaleY();
-    const newOffsetY = this.treePaddingTop - this.minScaleY;
+    if (!immediate && this._shouldDisableIntroReorderBySize(this.maxY)) immediate = true;
+    const firstMinScaleY = this.minScaleY;
+    const newOffsetY = this.treePaddingTop - firstMinScaleY;
     // Set _targetScaleY BEFORE calling _updateScaleX so that the label-
     // visibility check inside _updateScaleX evaluates the landing zoom level
     // (minScaleY) rather than the current mid-animation scaleY.
-    this._setTarget(newOffsetY, this.minScaleY, immediate);
+    this._setTarget(newOffsetY, firstMinScaleY, immediate);
     this._updateScaleX(immediate);
+
+    // Refine once at the actual landing scale. On very large trees this avoids
+    // slight under-fit when the first pass used stale target zoom state.
+    this._updateMinScaleY();
+    if (Math.abs(this.minScaleY - firstMinScaleY) > 1e-6) {
+      const refinedOffsetY = this.treePaddingTop - this.minScaleY;
+      this._setTarget(refinedOffsetY, this.minScaleY, immediate);
+      this._updateScaleX(immediate);
+    }
+
     this._dirty = true;
   }
 
@@ -2946,6 +2989,8 @@ export class TreeRenderer {
     if (!this.nodes) return;
     this._fitLabelsMode = true;
     this._updateMinScaleY();
+    const snap = this._shouldDisableIntroReorderBySize(this.maxY);
+    if (snap) this._updateScaleX(true);
     const labelScaleY = this.fontSize + 2;   // px per world unit – labels just clear each other
     const newScaleY   = Math.max(this.minScaleY, labelScaleY);
     const H           = this.canvas.clientHeight;
@@ -2955,7 +3000,7 @@ export class TreeRenderer {
     const pivotScreenY = lensActive ? this._hypFocusScreenY : H / 2;
     const centreWorldY = this._worldYfromScreen(pivotScreenY);
     const newOffsetY   = H / 2 - centreWorldY * newScaleY;
-    this._setTarget(newOffsetY, newScaleY, /*immediate*/ false);
+    this._setTarget(newOffsetY, newScaleY, /*immediate*/ snap);
     if (lensActive) {
       this._hypTarget = 0;   // animated fade-out; focus Y cleared when strength reaches 0
       if (this.onHypDeactivate) this.onHypDeactivate();
@@ -2967,24 +3012,22 @@ export class TreeRenderer {
     if (!this.nodes) return;
     this._fitLabelsMode = false;
     const centerY = this.canvas.clientHeight / 2;
-    this._setTarget(this._targetOffsetY, this._targetScaleY * 1.5, false, centerY);
+    const snap = this._shouldDisableIntroReorderBySize(this.maxY);
+    this._setTarget(this._targetOffsetY, this._targetScaleY * 1.5, snap, centerY);
   }
 
   zoomOut() {
     if (!this.nodes) return;
     this._fitLabelsMode = false;
     const centerY = this.canvas.clientHeight / 2;
-    this._setTarget(this._targetOffsetY, this._targetScaleY / 1.5, false, centerY);
+    const snap = this._shouldDisableIntroReorderBySize(this.maxY);
+    this._setTarget(this._targetOffsetY, this._targetScaleY / 1.5, snap, centerY);
   }
 
   /** Expand the flat centre zone of the hyperbolic lens by one row. */
   hypMagUp() {
-    this._hypMagMult = Math.min(20, this._hypMagMult + 1);
-    this._dirty = true;
-  }
-
-  /** Contract the flat centre zone of the hyperbolic lens by one row. */
-  hypMagDown() {
+    // For very large trees, avoid animated intro/fits (costly per-frame redraw).
+    // Snap directly to a true fit-to-window state on first load.
     this._hypMagMult = Math.max(0, this._hypMagMult - 1);
     this._dirty = true;
   }
@@ -3125,7 +3168,7 @@ export class TreeRenderer {
     this._targetScaleY  = newScaleY;
     this._targetOffsetY = this._clampedOffsetY(newOffsetY, newScaleY);
 
-    if (immediate) {
+    if (immediate || this._disableAnimations) {
       this.scaleY  = this._targetScaleY;
       this.offsetY = this._targetOffsetY;
       this._animating = false;
@@ -3262,6 +3305,62 @@ export class TreeRenderer {
   }
 
   _loop() {
+    if (this._disableAnimations) {
+      if (this._crossfadeAlpha > 0) {
+        this._crossfadeAlpha = 0;
+        this._crossfadeSnapshot = null;
+        this._dirty = true;
+      }
+      if (this._introPhase !== null) {
+        this._introEnd();
+        this._dirty = true;
+      }
+      if (this._reorderAlpha < 1) {
+        if (this.nodes && this._reorderToY) {
+          for (const node of this.nodes) {
+            const ty = this._reorderToY.get(node.id);
+            if (ty !== undefined) node.y = ty;
+            if (node.isCollapsed && this._reorderToCollapsedN) {
+              const tc = this._reorderToCollapsedN.get(node.id);
+              if (tc !== undefined) node.collapsedTipCount = tc;
+            }
+          }
+        }
+        if (this._reorderFromScaleY !== null) {
+          this.scaleY  = this._reorderToScaleY;
+          this.offsetY = this._reorderToOffsetY;
+        }
+        this._reorderFromY = null;
+        this._reorderToY = null;
+        this._reorderFromCollapsedN = null;
+        this._reorderToCollapsedN = null;
+        this._reorderFromScaleY = null;
+        this._reorderToScaleY = null;
+        this._reorderFromOffsetY = null;
+        this._reorderToOffsetY = null;
+        this._reorderAlpha = 1;
+        this._dirty = true;
+      }
+      if (this._rootShiftAlpha < 1) {
+        this._rootShiftAlpha = 1;
+        this.offsetX = this._rootShiftToX;
+        this._dirty = true;
+      }
+      if (this._animating) {
+        this.offsetY = this._targetOffsetY;
+        this.scaleY  = this._targetScaleY;
+        this.scaleX  = this._targetScaleX;
+        this.offsetX = this._targetOffsetX;
+        this._animating = false;
+        this._dirty = true;
+      }
+      if (this._hypStrength !== this._hypTarget) {
+        this._hypStrength = this._hypTarget;
+        if (this._hypTarget === 0) this._hypFocusScreenY = null;
+        this._dirty = true;
+      }
+    }
+
     // ── Cross-fade overlay animation ──
     if (this._crossfadeAlpha > 0) {
       const EASE = 0.055;   // ~400 ms at 60 fps (1 / 0.055 ≈ 18 frames)
@@ -3463,6 +3562,14 @@ export class TreeRenderer {
       this._onViewChange(this.scaleX, this.offsetX, this.treePaddingLeft, this.treePaddingRight, this.labelRightPad, this.bgColor, this.fontSize, window.devicePixelRatio || 1);
     }
     this._rafId = requestAnimationFrame(() => this._loop());
+  }
+
+  _shouldDisableIntroReorderBySize(visibleTipCount = this.maxY) {
+    const threshold = Number(this._animationTipThreshold);
+    if (!Number.isFinite(threshold) || threshold <= 0) return false;
+    const nTips = Number(visibleTipCount);
+    if (!Number.isFinite(nTips) || nTips <= 0) return false;
+    return nTips > threshold;
   }
 
   _draw() {

@@ -167,6 +167,13 @@ export const DEFAULT_SETTINGS = {
   // Intro animation played when a tree is first loaded.
   // Options: 'y-then-x' | 'x-then-y' | 'simultaneous' | 'from-bottom' | 'from-top' | 'none'
   introAnimation:  'x-then-y',
+  // Global tree/canvas motion switch.
+  // true  = disable all animated transitions (intro, pan/zoom easing, reorder, crossfade, etc.)
+  // false = normal animated behavior
+  disableAnimations: true,
+  // Auto-disable heavy intro/reorder animations when the number of visible tips exceeds this value.
+  // 0 disables threshold-based auto-disable.
+  animationTipThreshold: '1000',
 
   // ── Branches ────────────────────────────────────────────────────────────────────────
   branchColourBy:  'user_colour',
