@@ -1,10 +1,10 @@
-> PearTree is a phylogenetic tree viewer that runs entirely in the browser. No data is ever uploaded to any server — all processing is local.
+> Quick reference for the PearTree interface, options, and hotkeys.
 
 ---
 
 ## Interface Overview
 
-The interface has four main areas:
+PearTree is organised into four main areas:
 
 - **Toolbar** — buttons for files, navigation, zoom, branch ordering, selection, rerooting, hiding, and panels
 - **Visual Options palette** — pop-out panel on the left with all display controls (toggle with **Tab** or the sliders button)
@@ -15,7 +15,9 @@ The interface has four main areas:
 
 ## Opening a Tree File
 
-Click <i class="bi bi-folder2-open"></i> or press **⌘⇧O** to open the *Open Tree File* dialog. Three tabs are available:
+Click <i class="bi bi-folder2-open"></i> or press **⌘⇧O** to open the *Open Tree File* dialog.
+
+Tabs:
 
 | Tab | Description |
 |---|---|
@@ -113,13 +115,18 @@ Supported formats: **NEXUS** (`.nex`, `.nexus`, `.tre`, `.tree`, `.treefile`) an
 
 ## Highlighting Clades
 
-Clade highlighting draws a translucent background behind the descendants of the selected node. This is useful when you want to mark a clade visually without changing its branch order or colouring the tips themselves.
+Use **Highlight clade** {%- include 'btn.html', id: "btn-paint-highlight" %} or **⌘⇧L** to add a clade highlight.
 
-To highlight a clade, select a node or subtree and click **Highlight clade** {%- include 'btn.html', id: "btn-paint-highlight" %} in the toolbar, or use **⌘⇧L**. The highlight stays in place even after you change the current selection.
+Clade Highlights options:
 
-You can set the highlight colour in the **Clade Highlights** section of the Visual Options palette. That section also lets you adjust the edge style, padding, corner radius, opacity, and stroke width. Multiple clade highlights can be active at once.
+- **Colour** — fixed colour or annotation-driven colour
+- **Style** — shape, edge style, and outline behaviour
+- **Padding** — space around the clade
+- **Corner radius** — rounded-corner amount
+- **Opacity** — transparency of the fill
+- **Stroke width** — outline thickness
 
-Use **Remove highlight** to clear the current highlight from the selected clade.
+Use **Remove highlight** to clear the current highlight.
 
 ### Node Info
 
@@ -129,7 +136,7 @@ Use **Remove highlight** to clear the current highlight from the selected clade.
 
 ### Tip Search / Filter
 
-The **Filter tips…** search box in the toolbar searches tip labels as currently displayed — by name, annotation value, date string, or whatever the *Tip Labels → Show* dropdown is set to. 
+The **Filter tips…** search box matches the currently displayed tip labels, annotation values, or dates.
 
 ### Panels
 
@@ -146,12 +153,12 @@ The **Filter tips…** search box in the toolbar searches tip labels as currentl
 
 | Action | Effect |
 |---|---|
-| **Scroll** | Pan the tree vertically |
-| **⌥ + Scroll** | Zoom vertically, anchored at the mouse position |
+| **Scroll** | Pan vertically |
+| **⌥ + Scroll** | Zoom vertically at the pointer |
 | **⌘ + Scroll / Pinch** | Zoom in and out |
 | **Click** (Nodes mode) | Select a tip or internal node |
 | **⌘ + Click** | Add to or remove from the current selection |
-| **Double-click** (Nodes mode) | Navigate into the subtree rooted at that node |
+| **Double-click** (Nodes mode) | Enter the clicked subtree |
 | **Click** (Branches mode) | Place a branch-point marker at the exact clicked position |
 | **Hover** | Highlight nodes or branches and update the status bar |
 
@@ -163,14 +170,14 @@ The **Filter tips…** search box in the toolbar searches tip labels as currentl
 
 | Shortcut | Action |
 |---|---|
-| **⌘O** | Open system file picker directly |
-| **⌘⇧O** | Open *Open Tree* dialog (File / URL / Example tabs) |
+| **⌘O** | Open the file picker |
+| **⌘⇧O** | Open the tree dialog |
 | **⌘N** | New window |
 | **⌘V** | Paste a tree from the clipboard |
-| **⌘⇧C** | Copy the current tree to the clipboard using the exported tip-label naming rules |
+| **⌘⇧C** | Copy the current tree |
 | **⌘C** | Copy displayed tip labels to the clipboard |
 | **⌘⇧A** | Import annotation file |
-| **⌘E** | Export tree file |
+| **⌘E** | Export tree |
 | **⌘⇧E** | Export graphic |
 | **⌘P** | Print |
 | **Tab** | Toggle Visual Options palette |
@@ -235,7 +242,7 @@ The **Filter tips…** search box in the toolbar searches tip labels as currentl
 
 ## Hyperbolic Lens
 
-Hold the **\`** (backtick/tilde) key to activate a fisheye lens that expands the tree around the current cursor position without zooming the whole view. Releasing the key keeps the current expanded view and pressing **Escape** will cancel the fisheye mode.
+Hold **\`** to activate the lens. Release the key to keep the current view; press **Escape** to cancel it.
 
 ---
 
@@ -243,16 +250,16 @@ Hold the **\`** (backtick/tilde) key to activate a fisheye lens that expands the
 
 ### Nodes mode
 
-- **Click a tip** — selects that tip; the status bar shows its name and divergence
-- **Click an internal node** — selects all descendant tips and highlights the MRCA with a teal ring
-- **⌘-click** — adds or removes individual tips from the selection
+- **Click a tip** — select it
+- **Click an internal node** — select its descendant tips
+- **⌘-click** — add or remove individual tips
 - **⌘A** — select all tips in the current view
-- **⌘⇧I** — invert the current selection (all unselected tips become selected and vice versa)
+- **⌘⇧I** — invert the current selection
 - With a selection active, **Reroot**, **Rotate**, **Hide**, and **Node Info** become available
 
 ### Branches mode (⌘B to toggle)
 
-- **Click anywhere on a horizontal branch** — places a marker at that exact position
+- **Click a branch** — place a marker
 - **Reroot** becomes active when a marker is placed
 - Press **⌘B** again (or click the Nodes button) to switch back to Nodes mode
 
@@ -260,63 +267,56 @@ Hold the **\`** (backtick/tilde) key to activate a fisheye lens that expands the
 
 ## Rerooting the Tree
 
-**Using Nodes mode:**
-1. Select a single tip or a set of tips (their MRCA defines the branch)
-2. Click **Reroot** — the new root is placed at the midpoint of the branch above the selection
+**Nodes mode:** select a tip or set of tips, then click **Reroot**.
 
-**Using Branches mode:**
-1. Switch to **Branches** mode (**⌘B**)
-2. Click on any branch to place a marker at the desired position
-3. Click **Reroot** — the root is placed at exactly the clicked position
+**Branches mode:** switch to **Branches** (**⌘B**), click a branch to place a marker, then click **Reroot**.
 
 ### Midpoint Root (⌘M)
-PearTree finds the two tips with the greatest path length and places the root at the exact midpoint:
+Use **Midpoint** to place the root at the midpoint of the longest path.
 
-> **Note:** Explicitly rooted trees (where the root node carries annotations) have rerooting disabled.
+> **Note:** Explicitly rooted trees have rerooting disabled.
 
 ---
 
 ## Subtree Navigation
 
-- **Double-click** an internal node in **Nodes** mode to zoom into that subtree (or use **⌘⇧.**)
-- Use <i class="bi bi-chevron-left"></i> (**⌘[**) to return to the parent view, or **⌘⇧,** to climb one level
-- Use **⌘\\** to jump directly back to the full-tree root view
-- Use <i class="bi bi-chevron-right"></i> (**⌘]**) to move forward through the history
-- Navigation history is preserved across reorderings but cleared on reroot
+- **Double-click** an internal node in **Nodes** mode, or use **⌘⇧.**, to enter that subtree
+- Use <i class="bi bi-chevron-left"></i> (**⌘[**) to go back, or **⌘⇧,** to climb one level
+- Use **⌘\\** to return to the full-tree root view
+- Use <i class="bi bi-chevron-right"></i> (**⌘]**) to go forward
+- Navigation history is preserved across reorderings and cleared on reroot
 
 ---
 
 ## Hide / Show Subtrees
 
-- Select an internal node, then click <i class="bi bi-eye-slash"></i> **Hide** to hide that subtree's branches and tips
-- Hidden nodes are completely invisible — the tree is drawn as if they were pruned
-- Select a visible node that covers hidden descendants and click <i class="bi bi-eye"></i> **Show** to restore them
-- With no selection, <i class="bi bi-eye"></i> **Show** restores *all* hidden nodes in the current view
-- Rerooting and subtree navigation work correctly in the presence of hidden nodes
-- After hiding or showing, the zoom level is preserved (or fit-labels is re-applied) rather than resetting to fit-to-window
+- Select an internal node, then click <i class="bi bi-eye-slash"></i> **Hide** to hide it and its descendants
+- Hidden nodes are not drawn
+- Click <i class="bi bi-eye"></i> **Show** to restore hidden nodes
+- With no selection, **Show** restores all hidden nodes in the current view
 
 ---
 
 ## Collapse / Expand Clades
 
-Collapsing replaces a subtree with a filled **triangle symbol**, keeping it visible as a compact summary rather than hiding it entirely.
+Collapse replaces a subtree with a filled triangle.
 
-1. Select an internal node (or a set of tips — their MRCA is used)
-2. Click the <i class="bi bi-arrows-collapse"></i> **Collapse** button to replace the subtree with a triangle
-3. The triangle's label shows the clade name and tip count
-4. Click the <i class="bi bi-arrows-expand"></i> **Expand** button, or **double-click the triangle**, to restore the full subtree
+1. Select an internal node (or tips whose MRCA defines the clade)
+2. Click the <i class="bi bi-arrows-collapse"></i> **Collapse** button
+3. The triangle label shows the clade name and tip count
+4. Click the <i class="bi bi-arrows-expand"></i> **Expand** button, or double-click the triangle, to restore it
 
-- The triangle **fill colour** defaults to the current theme's tip shape colour. It can be changed by selecting the triangle and using the <i class="bi bi-brush"></i> brush tool.
+- The triangle fill colour defaults to the current theme's tip shape colour.
 
 ## Node Info (⌘I)
 
-With a node selected, click the <i class="bi bi-info-square"></i> **Node Info** button (or press **⌘I**) to open a dialog listing all annotation keys and values for that node. For tips this includes the taxon name; for internal nodes it shows all posterior/support and annotation fields present in the tree file.
+With a node selected, click the <i class="bi bi-info-square"></i> **Node Info** button (or press **⌘I**) to open the annotations dialog.
 
 ---
 
 ## Importing Annotations (⌘⇧A)
 
-Click the <i class="bi bi-table"></i> button (or press **⌘⇧A**) to add extra per-tip data from a CSV or TSV file.
+Click the <i class="bi bi-table"></i> button (or press **⌘⇧A**) to add per-tip data from a CSV or TSV file.
 
 **Phase 1 — Choose file:** Drag-and-drop or browse for a `.csv` or `.tsv` file.
 
@@ -333,33 +333,33 @@ After import, the new annotation keys appear in the **Colour by** dropdowns and 
 
 ## Annotation Manager
 
-Click the <i class="bi bi-tags"></i> button to open the Annotation Curator, which lets you review and fine-tune every annotation key in the loaded tree:
+Click the <i class="bi bi-tags"></i> button to open the Annotation Curator:
 
 - Rename annotation keys
-- Change data types (e.g. promote a numeric key from *real* to *categorical*)
-- Mark a key as a **branch annotation** — telling PearTree the values belong to branches rather than to nodes, which changes how they are shown in Node Info and used in colour-by
+- Change data types
+- Mark a key as a **branch annotation**
 
-After editing, the updated schema is used immediately for all display and export.
+The updated schema is used immediately.
 
 ---
 
 ## Exporting the Tree (⌘E)
 
-Click the <i class="bi bi-file-earmark-arrow-down"></i> button (or press **⌘E**) to save the tree.
+Click the <i class="bi bi-file-earmark-arrow-down"></i> button (or press **⌘E**) to export the tree.
 
 ### Format
 
 | Option | Extension | Notes |
 |---|---|---|
-| **NEXUS** | `.nexus` | Full NEXUS TREES block; supports annotations and embedded settings |
-| **Newick** | `.nwk` | Plain Newick string; annotations are optional but flagged as non-standard |
+| **NEXUS** | `.nexus` | Full NEXUS TREES block |
+| **Newick** | `.nwk` | Plain Newick string |
 
 ### Scope
 
 | Option | Description |
 |---|---|
-| **Entire tree** | Exports the complete tree regardless of the current subtree view |
-| **Current subtree view** | Exports only the visible subtree (enabled when zoomed in) |
+| **Entire tree** | Export the complete tree |
+| **Current subtree view** | Export only the visible subtree |
 
 ### Tip Label
 
@@ -367,9 +367,9 @@ The **Tip Label** selector controls what leaf names are written into exported NE
 
 | Option | Description |
 |---|---|
-| **As displayed** | Uses the first rendered tip-label field exactly as currently displayed. Joined secondary labels are included; non-joined later labels are ignored. |
-| **name** | Uses the original taxon names |
-| **non-numerical tip annotation** | Uses the selected tip annotation value as the exported leaf name |
+| **As displayed** | Use the first rendered tip-label field |
+| **name** | Use the original taxon names |
+| **non-numerical tip annotation** | Use the selected tip annotation value |
 
 If the selected tip label is not unique within the export scope, PearTree shows a warning because many downstream tools expect unique tip names.
 
@@ -379,9 +379,9 @@ When exporting **CSV metadata**, the **ID column** selector controls the first c
 
 | Option | Description |
 |---|---|
-| **As viewed** | Uses the first rendered tip-label field exactly as currently displayed. Joined secondary labels are included; non-joined later labels are ignored. |
-| **name** | Uses the original taxon names |
-| **non-numerical tip annotation** | Uses the selected tip annotation value |
+| **As viewed** | Use the first rendered tip-label field |
+| **name** | Use the original taxon names |
+| **non-numerical tip annotation** | Use the selected tip annotation value |
 
 If the selected ID values are not unique within the export scope, PearTree shows a warning because the CSV ID column is usually used for joins and should be unique.
 
@@ -405,7 +405,7 @@ When this checkbox is ticked (on by default) PearTree appends a `[peartree={…}
 
 ## Exporting a Graphic (⌘⇧E)
 
-Click the <i class="bi bi-image"></i> button (or press **⌘⇧E**) to download an image of the tree.
+Click the <i class="bi bi-image"></i> button (or press **⌘⇧E**) to export an image of the tree.
 
 | Setting | Options |
 |---|---|
@@ -413,7 +413,7 @@ Click the <i class="bi bi-image"></i> button (or press **⌘⇧E**) to download 
 | **Format** | **SVG** (vector, scalable) or **PNG** (raster, 2× resolution) |
 | **View** | **Current view** (what is visible on screen) or **Full tree** (entire height) |
 
-SVG export includes all visible elements — branches, tip labels, node/tip shapes, colour legend, and time axis — as true vectors.
+SVG export includes all visible elements as vectors.
 
 > Selection markers and hover highlights are intentionally excluded from SVG/PNG export.
 
@@ -421,25 +421,25 @@ SVG export includes all visible elements — branches, tip labels, node/tip shap
 
 ## Visual Options Palette
 
-The **Visual Options palette** (toggle with **Tab** or the <i class="bi bi-sliders"></i> button) contains organized control sections for all display settings:
+The **Visual Options palette** (toggle with **Tab** or the <i class="bi bi-sliders"></i> button) contains the display settings:
 
-- **Branches** — set branch line colour/width/elbow radius, or colour branch lines by annotation
-- **Tip labels** — label/position/style tip names or annotation values; add Labels 2–4 for multi-field display
-- **Node labels** — show internal node values (e.g. bootstrap support)
-- **Branch labels** — show values at branch midpoints
-- **Node shapes** — customize tip and internal node marker appearance
-- **Branch shapes** — overlay configurable shapes on branches to represent metadata
+- **Branches** — branch colour, width, and shape
+- **Tip labels** — label tip names or annotations
+- **Node labels** — show internal node values
+- **Branch labels** — show branch-midpoint values
+- **Node shapes** — control tip and node markers
+- **Branch shapes** — add shapes to branches
 - **Axis** — show a divergence or time scale
-- **Node bars** — show BEAST HPD credible intervals, including multiple stacked node bars
-- **Legend** — position and style colour-by legends
-- **Theme** — switch colour themes and customize palettes
+- **Node bars** — show HPD intervals
+- **Legend** — position and style legends
+- **Theme** — switch colour themes and palettes
 - **Panel management** — arrange side panels and export options
 
 ---
 
 ## Branches
 
-The **Branches** section controls the branch-line appearance:
+The **Branches** section controls branch appearance:
 
 - **Colour** — fixed branch line colour
 - **Colour by** — colour branch lines from an annotation key
@@ -453,7 +453,7 @@ When **Colour by** is set to a node annotation, each branch uses the annotation 
 
 ## Tip Labels (multi-label)
 
-The **Tip Labels** section supports displaying up to four annotation fields per tip, stacked horizontally from left to right.
+The **Tip Labels** section supports up to four annotation fields per tip.
 
 ### Label 1 (main)
 
@@ -467,8 +467,8 @@ The primary label is selected with the **Label 1** dropdown. Options:
 
 When Label 1 is on, additional controls appear:
 - **Filter** — restrict labels to tips passing a filter
-- **Alignment** — off (at tip), aligned (right-margin), or aligned with connector (dots/dashed/solid)
-- **Spacing** — gap between the tip node and the first label, and between subsequent labels
+- **Alignment** — off, aligned, or connector styles
+- **Spacing** — gap between labels
 - **Size** — font size
 - **Typeface** / **Style** / **Colour** / **Colour by**
 
@@ -479,13 +479,13 @@ When Label 1 is on, **Label 2**, **Label 3**, and **Label 4** dropdowns appear, 
 All labels share Label 1's font, size, colour, and spacing settings.
 
 **Layout modes for Labels 2–4:**
-- **Append**: place the label to the right of the previous displayed field, using the Spacing value
-- **Align**: start a new aligned column; the left edge is at the longest extent of the previous column plus Spacing
-- **Join with space / | / / / _ / -**: append text directly onto the previous field with that separator; no extra spacing and no new column
+- **Append**: place the label to the right of the previous field
+- **Align**: start a new aligned column
+- **Join with space / | / / / _ / -**: append directly onto the previous field
 
 **Alignment behaviour with multiple labels:**
-- Label 1 still follows the main **Alignment** control (off/aligned/dots/dashed/solid)
-- For each extra label set to **Align**, its column is aligned independently across tips using the previous column's longest width + Spacing
+- Label 1 still follows the main **Alignment** control
+- Each **Align** column is aligned independently
 
 ### Example: Show name + collection date
 
@@ -503,32 +503,32 @@ All labels share Label 1's font, size, colour, and spacing settings.
 
 ## Branch Shapes
 
-Use **Branch Shapes** to overlay geometric markers (rectangles or ellipses) on the tree to visualize metadata values or counts per branch.
+Use **Branch Shapes** to overlay rectangles or ellipses on branches.
 
 ### Main Controls
 
 | Control | Purpose |
 |---|---|
 | **Shape** | Select off, rectangle, or ellipse |
-| **Filter** | Restrict rendering to a subset of branches (optional) |
-| **Height** | Height of shapes as a percentage of branch length (0–100) |
-| **Width** | Width relative to height (0.05–5.0; 1.0 = square) |
-| **Alignment** | Position shapes left, center, or right along the branch |
-| **Spacing** | Gap between adjacent shapes (pixels) |
+| **Filter** | Restrict rendering to a subset of branches |
+| **Height** | Shape height as a percentage of branch length |
+| **Width** | Width relative to height |
+| **Alignment** | Position shapes left, center, or right |
+| **Spacing** | Gap between adjacent shapes |
 | **Colour** | Default fill colour; override with *Colour by* |
-| **Colour by** | Optional annotation key to colour shapes by category |
-| **Count by** | Optional integer annotation to determine the number of shapes per branch |
-| **Halo** | Outline size around shapes (pixels); 0 for no outline |
+| **Colour by** | Colour shapes by annotation |
+| **Count by** | Number of shapes per branch |
+| **Halo** | Outline size around shapes |
 | **Halo colour** | Outline colour |
 
 ### Example Workflows
 
-**Colour shapes by divergence category:**
+**Colour shapes by category:**
 1. Set **Shape** = rectangle, **Height** = 30%
 2. Set **Colour by** = category annotation (e.g. "region")
 3. Shapes now reflect geographic or categorical data per branch
 
-**Show count of tips with a trait below:**
+**Show count of tips with a trait:**
 1. Set **Shape** = ellipse, **Height** = 40%
 2. Set **Count by** = integer annotation (e.g. "num_tips_with_trait")
 3. Each branch draws 0–N shapes representing the count value
@@ -540,19 +540,19 @@ Use **Branch Shapes** to overlay geometric markers (rectangles or ellipses) on t
 
 ### Extra Shapes (2–4)
 
-After configuring the primary shape, you can enable up to three additional shape rows using the expandable detail sections for **Shape 2**, **Shape 3**, and **Shape 4**. Each row supports the same controls and stacks left-to-right. This allows you to simultaneously visualize multiple metadata dimensions per branch.
+After configuring the primary shape, you can enable up to three additional shape rows.
 
 ---
 
 ## Data Table Panel
 
-Click the <i class="bi bi-layout-sidebar-reverse"></i> button in the toolbar to open a scrollable panel listing all visible tips in tree order. The data columns shown can be selected in the Annotations Manager window. Values can be edited by double-clicking the cell.
+Click the <i class="bi bi-layout-sidebar-reverse"></i> button to open the Data Table panel.
 
 ---
 
 ## Status Bar
 
-The status bar at the bottom updates live as you hover over the tree:
+The status bar updates live as you hover over the tree:
 
 | Field | Description |
 |---|---|
@@ -567,9 +567,9 @@ The status bar at the bottom updates live as you hover over the tree:
 
 ## Settings Persistence
 
-All visual settings are automatically saved in **browser localStorage** and restored the next time you open PearTree. This includes theme, typeface, all palette values, colour-by dropdowns, legend and axis configuration, branch order, and selection mode.
+All visual settings are saved in **browser localStorage** and restored automatically.
 
-When a tree is exported with **Embed current visual settings** ticked, those settings travel with the file. Opening that `.nexus` file in PearTree restores the full appearance automatically and saves it to localStorage for future sessions.
+When **Embed current visual settings** is ticked, the settings travel with the file.
 
 ---
 
@@ -585,8 +585,8 @@ PearTree parses the `TREES` block including:
 
 ### Newick
 
-Plain Newick strings with branch lengths (`name:length`) and optional square-bracket annotations are fully supported. The first tree in the file is displayed.
+Plain Newick strings with branch lengths and optional annotations are supported. The first tree is displayed.
 
 ### Annotations
 
-Annotation values are auto-typed as **real**, **integer**, **categorical**, or **list** (comma-separated values inside `{}`). Only non-list annotations are available in the *Colour by* dropdowns. The Annotation Curator lets you override these types if the auto-detection is incorrect.
+Annotation values are auto-typed as **real**, **integer**, **categorical**, or **list**. Only non-list annotations are available in the *Colour by* dropdowns.

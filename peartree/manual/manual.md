@@ -929,11 +929,29 @@ Dates are entered in the ISO `YYYY-MM-DD` format.
 
 The `Year` annotation is a decimal year value automatically generated from the date. This is treated as a numerical annoation for the filters.
 
+#### Node filter options
+
+The special `Node` field allows filtering based on the structure of the tree.
+
+These operators are available:
+
+| Operator | Passes if the current item… |
+|---|---|
+| **is root** | is the root node |
+| **is not root** | is not the root node |
+| **is tip** | is a tip (leaf) |
+| **is internal** | is an internal (non-tip) node |
+
+Use these to target structural parts of the tree, for example:
+
+- show labels only on internal nodes with **Node is internal**;
+- restrict a visual feature to the current root with **Node is root**.
+
 ### Using filters to control the display of visual features of the tree
 
 Saved named filters can be used to restrict *where* a visual feature is drawn, independently of the toolbar selection. 
 
-The following display features have a filtering option: **Tip shapes**, **Tip labels**, **Node shapes**, **Node labels**, **Branch labels** and **Node bars**.
+The following display features have a filtering option: **Tip shapes**, **Tip labels**, **Node shapes**, **Node labels**, **Branch labels**, **Branch shapes** and **Node bars**.
 
 When a **Filter** is selected for a feature the shapes, labels or bars are only shown for tips or nodes that pass the filter conditions.
 
@@ -956,6 +974,14 @@ For a BEAST MCC tree with a `posterior` annotation:
 2. In **Visual Options → Node Bars**, turn bars **On**.
 3. Set **Bar filter** to **High posterior**.
 4. HPD bars are suppressed on nodes with low posterior support, reducing visual clutter.
+
+#### Example — show the HPD bar only for the root node (BEAST trees)
+
+1. Create a named filter **Root** with the condition *node is root*.
+2. In **Visual Options → Node Bars**, turn bars **On**.
+3. Set **Bar filter** to **Root**.
+4. The HPD bar is now only shown for the root node. 
+Note that this is the root of whatever subtree is currently being displayed.
 
 
 ## Chapter 10: The Tree Scale Axis
