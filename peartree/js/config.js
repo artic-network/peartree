@@ -5,6 +5,38 @@ export const EXAMPLE_TREE_PATH = 'data/ebov.tree';
 /** Key used for the embedded settings block in saved NEXUS files: [peartree={...}] */
 export const APP_SETTINGS_KEY = 'peartree';
 
+/** Base URL for the PearTree manual. */
+export const HELP_MANUAL_URL = 'http://peartree.live/manual';
+
+/** Mapping from help panel section titles to manual anchors. */
+export const HELP_MANUAL_ANCHORS = {
+  'Interface Overview': '#chapter-1-the-interface-at-a-glance',
+  'Opening a Tree File': '#chapter-2-loading-trees',
+  'Toolbar Buttons': '#toolbar',
+  'Highlighting Clades': '#clade-highlights',
+  'Mouse & Trackpad': '#chapter-4-navigating-the-tree',
+  'Keyboard Shortcuts': '#appendix-a-keyboard-shortcuts',
+  'Hyperbolic Lens': '#chapter-5-the-hyperbolic-lens',
+  'Selection Modes': '#chapter-6-selecting-and-filtering',
+  'Rerooting the Tree': '#chapter-11-rooting-and-rerooting',
+  'Subtree Navigation': '#subtree-navigation',
+  'Hide / Show Subtrees': '#hide-show-subtrees',
+  'Collapse / Expand Clades': '#collapse-expand-clades',
+  'Node Info (⌘I)': '#node-info',
+  'Importing Annotations (⌘⇧A)': '#chapter-3-importing-annotations',
+  'Annotation Manager': '#annotation-manager',
+  'Exporting the Tree (⌘E)': '#exporting-the-tree-file',
+  'Exporting a Graphic (⌘⇧E)': '#exporting-a-graphic',
+  'Visual Options Palette': '#visual-options-palette',
+  'Branches': '#branches',
+  'Tip Labels (multi-label)': '#tip-labels',
+  'Branch Shapes': '#branch-shapes',
+  'Data Table Panel': '#chapter-13-the-data-table-panel',
+  'Status Bar': '#status-bar',
+  'Settings Persistence': '#chapter-15-settings-and-persistence',
+  'Data Formats': '#data-formats',
+};
+
 /**
  * Fields shown in the Alt/Option-hover node tooltip, in order from top to bottom.
  *

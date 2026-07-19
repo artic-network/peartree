@@ -23,7 +23,7 @@ import { createRTTChart          } from './rtt-chart.js';
 import { createCommands } from '@artic-network/pearcore/commands.js';
 import { COMMAND_DEFS } from './peartree-commands.js';
 import { createExportController } from './export-controller.js';
-import { EXAMPLE_TREE_PATH, EXAMPLE_DATASETS, PEARTREE_BASE_URL, DEFAULT_SETTINGS, REQUIRED_THEME_KEYS, NON_PERSISTENT_SETTINGS, NODE_TOOLTIP_FIELDS, APP_SETTINGS_KEY } from './config.js';
+import { EXAMPLE_TREE_PATH, EXAMPLE_DATASETS, PEARTREE_BASE_URL, DEFAULT_SETTINGS, REQUIRED_THEME_KEYS, NON_PERSISTENT_SETTINGS, NODE_TOOLTIP_FIELDS, APP_SETTINGS_KEY, HELP_MANUAL_URL, HELP_MANUAL_ANCHORS } from './config.js';
 import { DEFAULT_UI_APP, DEFAULT_UI_EMBED, DEFAULT_UI_EMBEDFRAME } from './config-ui.js';
 import { createPeartreeOptionsPanelProfile } from './options-panel-profile.js';
 import { createToolbarColourPicker, upgradeAllPaletteColourPickers } from '@artic-network/pearcore/colorpicker.js';
@@ -172,6 +172,8 @@ async function _initCore(root = document) {
   //     statusBar: boolean  — show/hide the status bar
   //   }
   //   settings: { …settingsOverrides }  — merged on top of stored/default settings
+  //   manualUrl: string                 — base URL for the app manual link
+  //   helpManualAnchors: { … }          — optional section-title to anchor map
   //   storageKey: string | null         — null = no localStorage persistence;
   //                                       string = custom key (default: SETTINGS_KEY)
   //
@@ -9589,6 +9591,8 @@ export async function app(options = {}) {
       paletteSections: options.paletteSections  || window.peartreeConfig?.paletteSections  || 'all',
       appSections:     options.appSections      || window.peartreeConfig?.appSections      || 'all',
       toolbarSections: options.toolbarSections  || window.peartreeConfig?.toolbarSections  || 'all',
+      manualUrl:       options.manualUrl        || window.peartreeConfig?.manualUrl        || HELP_MANUAL_URL,
+      helpManualAnchors: options.helpManualAnchors || window.peartreeConfig?.helpManualAnchors || HELP_MANUAL_ANCHORS,
     }
   );
 
@@ -9873,6 +9877,8 @@ export async function embed(options = {}) {
     rttWidth:         _rttWidth,
     dataTableWidth:   _dataTableWidth,
     dataTableColumns: _dataTableCols,
+    manualUrl:       options.manualUrl ?? window.peartreeConfig?.manualUrl ?? HELP_MANUAL_URL,
+    helpManualAnchors: options.helpManualAnchors ?? window.peartreeConfig?.helpManualAnchors ?? HELP_MANUAL_ANCHORS,
   };
 
   // Resolve core base path (may be overridden via options.coreBase).

@@ -3176,6 +3176,8 @@ function _buildHelpAbout() {
     helpTitle: 'Help',
     aboutTitle: 'About PearTree',
     aboutLogo: '<img src="img/peartree.svg" class="pt-brand-logo me-2" alt="">',
+    helpManualUrl: window.peartreeConfig?.manualUrl,
+    helpManualAnchors: window.peartreeConfig?.helpManualAnchors,
   });
 }
 
