@@ -1041,6 +1041,43 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
   const _svgNodeLabelTypeface = resolveSvgTypeface(renderer, renderer._nodeLabelTypefaceKey || null, renderer._nodeLabelTypefaceStyle || null);
   const _svgBranchLabelTypeface = resolveSvgTypeface(renderer, renderer._branchLabelTypefaceKey || null, renderer._branchLabelTypefaceStyle || null);
   const _svgCollapsedCladeTypeface = resolveSvgTypeface(renderer, renderer._collapsedCladeTypefaceKey || null, renderer._collapsedCladeTypefaceStyle || null);
+  const _svgTipLabelPartData = renderer._tipLabelPartData;
+  const _svgTipLabelSegmentMax = renderer._tipLabelSegmentMax;
+  const _svgPdFor = (node) => _svgTipLabelPartData?.get?.(node.id) ?? renderer._tipLabelParts?.(node) ?? { parts: [] };
+  const _svgDrawTipLabelParts = (node, baseX, y, fill, typeface) => {
+    const pd = _svgPdFor(node);
+    if (!pd?.parts?.length) return;
+    let x = baseX + _svgTxOff;
+    labelParts.push(svgTextEl({
+      x: f(x),
+      y: f(y),
+      text: pd.parts[0],
+      baseline: 'central',
+      family: typeface.family,
+      sizePx: fs,
+      style: typeface.fontStyle,
+      weight: typeface.weight,
+      fill,
+    }));
+    for (let i = 1; i < pd.parts.length; i++) {
+      const mode = pd.modes?.[i - 1] ?? 'append';
+      const prevW = mode === 'align'
+        ? (_svgTipLabelSegmentMax?.[i - 1] ?? pd.widths?.[i - 1] ?? 0)
+        : (pd.widths?.[i - 1] ?? 0);
+      x += prevW + _svgLblSp;
+      labelParts.push(svgTextEl({
+        x: f(x),
+        y: f(y),
+        text: pd.parts[i],
+        baseline: 'central',
+        family: typeface.family,
+        sizePx: fs,
+        style: typeface.fontStyle,
+        weight: typeface.weight,
+        fill,
+      }));
+    }
+  };
 
   for (const [, node] of nm) {
     const nx = toSX(node.x), ny = toSY(node.y);
@@ -1066,10 +1103,11 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
       if (node.isTip && !node.isCollapsed) {
         const _tipPassesLabelFilter = _svgPassesFilter(renderer._tipLabelsFilterId, node);
         const _tipLabelVisible = _svgShowLabels && _svgShowLabelAt(node.y);
-        const labelText = renderer._tipLabelText ? renderer._tipLabelText(node) : node.name;
+        const _tipPd = _svgPdFor(node);
+        const _hasTipLabel = !!(_tipPd?.parts?.length);
         const baseX  = alignLabelX ?? (nx + outlineR);
         // Connector line (dashed / dots / solid aligned modes only — only when labels are shown).
-        if (_tipPassesLabelFilter && _tipLabelVisible && labelText && alignLabelX !== null && _align !== 'aligned') {
+        if (_tipPassesLabelFilter && _tipLabelVisible && _hasTipLabel && alignLabelX !== null && _align !== 'aligned') {
           const tipEdgeX = nx + outlineR;
           const lineEndX = alignLabelX + (_svgShOff > 0 ? _svgShML : 0);
           if (lineEndX - tipEdgeX >= 8) {
@@ -1123,8 +1161,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
           }
         }
         // Label text.
-        if (_tipPassesLabelFilter && _tipLabelVisible && labelText) {
-          const lx2       = baseX + _svgTxOff;
+        if (_tipPassesLabelFilter && _tipLabelVisible && _hasTipLabel) {
           let labelFill = lc;
           let labelTypeface = _svgTipTypeface;
           if (_svgHasSelection) {
@@ -1137,17 +1174,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
           } else if (renderer._labelColourBy && renderer._labelColourScale) {
             labelFill = renderer._labelColourForValue(node.annotations?.[renderer._labelColourBy]) ?? lc;
           }
-          labelParts.push(svgTextEl({
-            x: f(lx2),
-            y: f(ny),
-            text: labelText,
-            baseline: 'central',
-            family: labelTypeface.family,
-            sizePx: fs,
-            style: labelTypeface.fontStyle,
-            weight: labelTypeface.weight,
-            fill: labelFill,
-          }));
+          _svgDrawTipLabelParts(node, baseX, ny, labelFill, labelTypeface);
         }
       } else if (!node.isTip) {
         if (!_svgPassesFilter(renderer._nodeLabelsFilterId, node)) continue;
@@ -1398,6 +1425,27 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
 
     const minorLabelFmt  = ar._dateMode ? ar._minorLabelFormat : 'off';
     const showMinorLabel = minorLabelFmt !== 'off';
+    const majorLabelFmt  = ar._dateMode ? ar._majorLabelFormat : 'auto';
+    const showMajorLabel = majorLabelFmt !== 'off';
+    const _majorStep = majorTicks.length >= 2 ? Math.abs(majorTicks[1] - majorTicks[0]) : 0;
+    const effMajorFmt = majorLabelFmt === 'auto' ? 'partial' : majorLabelFmt;
+    const effMajorInterval = (ar._dateMode && ar._majorInterval === 'auto')
+      ? TreeCalibration.inferMajorInterval(majorTicks)
+      : ar._majorInterval;
+    const majorLabelZones = [];
+    if (showMinorLabel && showMajorLabel) {
+      for (const val of majorTicks) {
+        const sx = ar._valToScreenX(val) + AX;
+        if (sx < plotLeft + AX - 1 || sx > plotRight + AX + 1) continue;
+        const label = ar._dateMode
+          ? ar._calibration?.decYearToString(val, effMajorFmt, ar._dateFormat, effMajorInterval)
+          : Axis.formatValue(val, _majorStep);
+        if (!label) continue;
+        const tw = approxW(label, afs);
+        majorLabelZones.push([sx - tw / 2 - 4, sx + tw / 2 + 4]);
+      }
+    }
+
     let minorLabelRight  = -Infinity;
     // Infer effective minor interval from tick spacing when 'auto'.
     const effMinorInterval = (ar._dateMode && ar._minorInterval === 'auto')
@@ -1430,32 +1478,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
       }
     }
 
-    const majorLabelFmt  = ar._dateMode ? ar._majorLabelFormat : 'auto';
-    const showMajorLabel = majorLabelFmt !== 'off';
-    const _majorStep = majorTicks.length >= 2 ? Math.abs(majorTicks[1] - majorTicks[0]) : 0;
-    const majorLabelZones = [];
-    if (showMinorLabel && showMajorLabel) {
-      for (const val of majorTicks) {
-        const sx = ar._valToScreenX(val) + AX;
-        if (sx < plotLeft + AX - 1 || sx > plotRight + AX + 1) continue;
-        const label = ar._dateMode
-          ? ar._calibration?.decYearToString(
-            val,
-            majorLabelFmt === 'auto' ? 'partial' : majorLabelFmt,
-            ar._dateFormat,
-            (ar._dateMode && ar._majorInterval === 'auto') ? TreeCalibration.inferMajorInterval(majorTicks) : ar._majorInterval,
-          )
-          : Axis.formatValue(val, _majorStep);
-        if (!label) continue;
-        const tw = approxW(label, afs);
-        const lx = sx;
-        majorLabelZones.push([lx - tw / 2 - 4, lx + tw / 2 + 4]);
-      }
-    }
     let majorLabelRight  = -Infinity;
-    const effMajorInterval = (ar._dateMode && ar._majorInterval === 'auto')
-      ? TreeCalibration.inferMajorInterval(majorTicks)
-      : ar._majorInterval;
 
     for (const val of majorTicks) {
       const sx = ar._valToScreenX(val) + AX;
@@ -1464,7 +1487,6 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
       if (showMajorLabel) {
         let label;
         if (ar._dateMode) {
-        const lx2   = sx;
           label = ar._calibration.decYearToString(val, effMajorFmt, ar._dateFormat, effMajorInterval);
         } else {
           label = Axis.formatValue(val, _majorStep);

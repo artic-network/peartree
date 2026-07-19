@@ -4549,6 +4549,21 @@ export class TreeRenderer {
     }
     // Helper: text x position for a given base x (all shapes accounted for).
     const _tx = (baseX) => baseX + _shOffset + _extraTotalOff + tipLabelSpacing;
+    const _pdFor = (node) => this._tipLabelPartData?.get(node.id) ?? this._tipLabelParts(node);
+    const _drawTipLabelParts = (node, baseX, y) => {
+      const pd = _pdFor(node);
+      if (!pd?.parts?.length) return;
+      let x = _tx(baseX);
+      ctx.fillText(pd.parts[0], x, y);
+      for (let i = 1; i < pd.parts.length; i++) {
+        const mode = pd.modes?.[i - 1] ?? 'append';
+        const prevW = mode === 'align'
+          ? (this._tipLabelSegmentMax?.[i - 1] ?? pd.widths?.[i - 1] ?? ctx.measureText(pd.parts[i - 1]).width)
+          : (pd.widths?.[i - 1] ?? ctx.measureText(pd.parts[i - 1]).width);
+        x += prevW + tipLabelSpacing;
+        ctx.fillText(pd.parts[i], x, y);
+      }
+    };
 
     // Pass 3 – labels (two sub-passes when selection active: dim then bright)
     if (showLabels) {
@@ -4613,9 +4628,10 @@ export class TreeRenderer {
           if (!this._passesFilter(this._tipLabelsFilterId, node)) continue;
           if (this._selectedTipIds.has(node.id)) continue;
           if (!this._showLabelAt(node.y)) continue;
-          const _t = this._tipLabelText(node);
+          const _pd = _pdFor(node);
+          if (!_pd?.parts?.length) continue;
           const _bX = alignLabelX ?? (this._wx(node.x) + outlineR);
-          if (_t) ctx.fillText(_t, _tx(_bX), this._wy(node.y));
+          _drawTipLabelParts(node, _bX, this._wy(node.y));
         }
         // Sub-pass 3b: selected labels in bold + selected colour
         ctx.fillStyle = this.selectedLabelColor;
@@ -4624,9 +4640,10 @@ export class TreeRenderer {
           if (!this._passesFilter(this._tipLabelsFilterId, node)) continue;
           if (!this._selectedTipIds.has(node.id)) continue;
           if (!this._showLabelAt(node.y)) continue;
-          const _t = this._tipLabelText(node);
+          const _pd = _pdFor(node);
+          if (!_pd?.parts?.length) continue;
           const _bX = alignLabelX ?? (this._wx(node.x) + outlineR);
-          if (_t) ctx.fillText(_t, _tx(_bX), this._wy(node.y));
+          _drawTipLabelParts(node, _bX, this._wy(node.y));
         }
         ctx.font = this._tipFont(this.fontSize);
       } else if (this._labelColourBy && this._labelColourScale) {
@@ -4634,21 +4651,22 @@ export class TreeRenderer {
         for (const node of this._vTips) {
           if (!this._passesFilter(this._tipLabelsFilterId, node)) continue;
           if (!this._showLabelAt(node.y)) continue;
-          const _t = this._tipLabelText(node);
-          if (!_t) continue;
+          const _pd = _pdFor(node);
+          if (!_pd?.parts?.length) continue;
           const val = this._statValue(node, key);
           const _bX = alignLabelX ?? (this._wx(node.x) + outlineR);
           ctx.fillStyle = this._labelColourForValue(val) ?? this.labelColor;
-          ctx.fillText(_t, _tx(_bX), this._wy(node.y));
+          _drawTipLabelParts(node, _bX, this._wy(node.y));
         }
       } else {
         ctx.fillStyle = this.labelColor;
         for (const node of this._vTips) {
           if (!this._passesFilter(this._tipLabelsFilterId, node)) continue;
           if (!this._showLabelAt(node.y)) continue;
-          const _t = this._tipLabelText(node);
+          const _pd = _pdFor(node);
+          if (!_pd?.parts?.length) continue;
           const _bX = alignLabelX ?? (this._wx(node.x) + outlineR);
-          if (_t) ctx.fillText(_t, _tx(_bX), this._wy(node.y));
+          _drawTipLabelParts(node, _bX, this._wy(node.y));
         }
       }
 
