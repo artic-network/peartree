@@ -140,9 +140,11 @@ function svgTextEl({
   style = 'normal',
   weight = 400,
   fill = '#000',
+  fillOpacity = null,
 }) {
   const anchorAttr = anchor ? ` text-anchor="${anchor}"` : '';
-  return `<text x="${x}" y="${y}" dominant-baseline="${baseline}"${anchorAttr} font-family="${esc(family)}" font-size="${sizePx}px" font-style="${style}" font-weight="${weight}" fill="${esc(fill)}">${svgTextEsc(text)}</text>`;
+  const fillOpacityAttr = fillOpacity == null ? '' : ` fill-opacity="${fillOpacity}"`;
+  return `<text x="${x}" y="${y}" dominant-baseline="${baseline}"${anchorAttr} font-family="${esc(family)}" font-size="${sizePx}px" font-style="${style}" font-weight="${weight}" fill="${esc(fill)}"${fillOpacityAttr}>${svgTextEsc(text)}</text>`;
 }
 
 /**
@@ -1423,10 +1425,12 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     const MAJOR_H   = 9;
     const MINOR_H   = 5;
     const axC       = ar._axisColor;
-    const TICK_C    = axC ? AxisRenderer._hexToRgba(axC, 0.55) : 'rgba(255,255,255,0.45)';
-    const MINOR_C   = axC ? AxisRenderer._hexToRgba(axC, 0.30) : 'rgba(255,255,255,0.25)';
-    const TEXT_C    = axC ? AxisRenderer._hexToRgba(axC, 1.0)  : 'rgba(242,241,230,1.0)';
-    const TEXT_DIM  = axC ? AxisRenderer._hexToRgba(axC, 0.50) : 'rgba(242,241,230,0.45)';
+    const AXIS_LINE_COLOR = axC || '#ffffff';
+    const TEXT_COLOR = axC || '#f2f1e6';
+    const TICK_OPACITY = 0.55;
+    const MINOR_TICK_OPACITY = 0.30;
+    const TEXT_OPACITY = 1.0;
+    const TEXT_DIM_OPACITY = 0.50;
     const lw        = ar._axisLineWidth ?? 1;
     const afs       = ar._fontSize;
     const afsMinor  = Math.max(6, afs - 2);
@@ -1469,7 +1473,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     }
 
     // Baseline
-    axisParts.push(`<line x1="${f(plotLeft + AX)}" y1="${f(AY + Y_BASE + 0.5)}" x2="${f(plotRight + AX)}" y2="${f(AY + Y_BASE + 0.5)}" stroke="${TICK_C}" stroke-width="${f(lw)}"/>`);
+    axisParts.push(`<line x1="${f(plotLeft + AX)}" y1="${f(AY + Y_BASE + 0.5)}" x2="${f(plotRight + AX)}" y2="${f(AY + Y_BASE + 0.5)}" stroke="${AXIS_LINE_COLOR}" stroke-opacity="${TICK_OPACITY}" stroke-width="${f(lw)}"/>`);
 
     const minorLabelFmt  = ar._dateMode ? ar._minorLabelFormat : 'off';
     const showMinorLabel = minorLabelFmt !== 'off';
@@ -1504,7 +1508,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
       const sx = ar._valToScreenX(val) + AX;
       if (sx < plotLeft + AX - 1 || sx > plotRight + AX + 1) continue;
       const sxA = sx + 0.5;
-      axisParts.push(`<line x1="${f(sxA)}" y1="${f(AY + Y_BASE + 1)}" x2="${f(sxA)}" y2="${f(AY + Y_BASE + 1 + MINOR_H)}" stroke="${MINOR_C}" stroke-width="${f(lw)}"/>`);
+      axisParts.push(`<line x1="${f(sxA)}" y1="${f(AY + Y_BASE + 1)}" x2="${f(sxA)}" y2="${f(AY + Y_BASE + 1 + MINOR_H)}" stroke="${AXIS_LINE_COLOR}" stroke-opacity="${MINOR_TICK_OPACITY}" stroke-width="${f(lw)}"/>`);
       if (showMinorLabel) {
         const label = ar._calibration.decYearToString(val, minorLabelFmt, ar._dateFormat, effMinorInterval);
         const tw    = approxW(label, afsMinor);
@@ -1520,7 +1524,8 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
             sizePx: afsMinor,
             style: axisTypeface.fontStyle,
             weight: axisTypeface.weight,
-            fill: TEXT_DIM,
+            fill: TEXT_COLOR,
+            fillOpacity: TEXT_DIM_OPACITY,
           }));
           minorLabelRight = lx2 + tw / 2;
         }
@@ -1533,7 +1538,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
       const sx = ar._valToScreenX(val) + AX;
       if (sx < plotLeft + AX - 1 || sx > plotRight + AX + 1) continue;
       const sxA = sx + 0.5;
-      axisParts.push(`<line x1="${f(sxA)}" y1="${f(AY + Y_BASE + 1)}" x2="${f(sxA)}" y2="${f(AY + Y_BASE + 1 + MAJOR_H)}" stroke="${TICK_C}" stroke-width="${f(lw)}"/>`);
+      axisParts.push(`<line x1="${f(sxA)}" y1="${f(AY + Y_BASE + 1)}" x2="${f(sxA)}" y2="${f(AY + Y_BASE + 1 + MAJOR_H)}" stroke="${AXIS_LINE_COLOR}" stroke-opacity="${TICK_OPACITY}" stroke-width="${f(lw)}"/>`);
       if (showMajorLabel) {
         let label;
         if (ar._dateMode) {
@@ -1554,7 +1559,8 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
             sizePx: afs,
             style: axisTypeface.fontStyle,
             weight: axisTypeface.weight,
-            fill: TEXT_C,
+            fill: TEXT_COLOR,
+            fillOpacity: TEXT_OPACITY,
           }));
           majorLabelRight = lx2 + tw / 2;
         }
