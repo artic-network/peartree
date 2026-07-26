@@ -2802,8 +2802,8 @@ function _tbSectionNodeInfo() {
 
 function _tbSectionPanels() {
   return `
-    <button id="btn-data-table" class="btn btn-sm btn-outline-secondary" disabled title="Data table panel"><i class="bi bi-caret-left"></i><i class="bi bi-layout-sidebar-reverse"></i></button>
-    <button id="btn-rtt" class="btn btn-sm btn-outline-secondary" disabled title="Root-to-tip divergence plot"><i class="bi bi-caret-left"></i><i class="bi bi-graph-up-arrow"></i></button>`;
+    <button id="btn-data-table" class="btn btn-sm btn-outline-secondary" disabled title="Data table panel"><i class="bi bi-layout-sidebar-reverse"></i></button>
+    <button id="btn-rtt" class="btn btn-sm btn-outline-secondary" disabled title="Root-to-tip divergence plot"><i class="bi bi-graph-up-arrow"></i></button>`;
 }
 
 const _TB_SECTION_BUILDERS = {
@@ -2835,7 +2835,7 @@ function _buildToolbar(tbSections) {
   const leftOptional = leftParts.length ? SEP + '\n    ' + leftParts.join('') : '';
   const left = `
   <div class="pt-toolbar-left">
-    <button id="btn-palette" class="btn btn-sm btn-outline-secondary" title="Visual options panel (Tab · ⌥Tab for advanced)"><i class="bi bi-sliders"></i><i class="bi bi-caret-right"></i></button>
+    <button id="btn-palette" class="btn btn-sm btn-outline-secondary" title="Visual options panel (Tab · ⌥Tab for advanced)"><i class="bi bi-sliders"></i></button>
     ${leftOptional}
   </div>`;
 
@@ -2844,7 +2844,15 @@ function _buildToolbar(tbSections) {
   const centreParts = CENTRE_SECTIONS
     .filter(k => keys.includes(k))
     .map(k => _TB_SECTION_BUILDERS[k]());
-  const centreContent = centreParts.join(SEP + '\n    ');
+  const centreKeys = CENTRE_SECTIONS.filter(k => keys.includes(k));
+  const centreContent = centreParts.map((part, idx) => {
+    if (idx === 0) return part;
+    const prevKey = centreKeys[idx - 1];
+    const key = centreKeys[idx];
+    // Keep these two controls visually grouped without a divider.
+    if (prevKey === 'annotations' && key === 'nodeInfo') return part;
+    return SEP + '\n    ' + part;
+  }).join('');
   const centre = `
   <div class="pt-toolbar-center">
     ${centreContent}
