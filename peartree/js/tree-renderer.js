@@ -5841,9 +5841,9 @@ export class TreeRenderer {
         return;
       }
 
-      // Track the backtick/tilde key (~) for hyperbolic stretch — no modifier needed.
-      // Using e.code (physical key) to avoid conflicts with Shift-based hotkeys.
-      if (e.code === 'Backquote') {
+      // Track an unmodified backtick press for hyperbolic stretch.
+      // Using e.code (physical key) avoids layout-dependent e.key values.
+      if (e.code === 'Backquote' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         this._shiftHeld = true;
       }
 
