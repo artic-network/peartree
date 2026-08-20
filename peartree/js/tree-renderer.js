@@ -2517,26 +2517,30 @@ export class TreeRenderer {
     const tipLabelSpacing = this.tipLabelSpacing ?? 3;
     const tipMaxSX = view.targetOffsetX + this.maxX * view.targetScaleX;
     const treeRightSX = tipMaxSX;
+    const yScale = view.evalScaleY ?? this._targetScaleY ?? this.scaleY;
 
     // Core shape clearances are treated as decoration overhang (not structural margins).
     out.left = Math.max(out.left, Math.ceil(_leftNeed(nodeOuterR)));
     out.right = Math.max(out.right, Math.ceil(tipOuterR));
-    out.top = Math.max(out.top, Math.ceil(Math.max(tipOuterR, nodeOuterR, barsHalfH)));
-    out.bottom = Math.max(out.bottom, Math.ceil(Math.max(tipOuterR, nodeOuterR, barsHalfH)));
+    const coreHalfH = Math.max(tipOuterR, nodeOuterR, barsHalfH);
+    const coreOverflowY = Math.max(0, coreHalfH - yScale);
+    out.top = Math.max(out.top, Math.ceil(coreOverflowY));
+    out.bottom = Math.max(out.bottom, Math.ceil(coreOverflowY));
     // Reserve half stroke width so boundary branches are not clipped.
     out.left = Math.max(out.left, Math.ceil(_leftNeed(branchStrokeHalf)));
     out.right = Math.max(out.right, Math.ceil(branchStrokeHalf));
-    out.top = Math.max(out.top, Math.ceil(branchStrokeHalf));
-    out.bottom = Math.max(out.bottom, Math.ceil(branchStrokeHalf));
+    const branchOverflowY = Math.max(0, branchStrokeHalf - yScale);
+    out.top = Math.max(out.top, Math.ceil(branchOverflowY));
+    out.bottom = Math.max(out.bottom, Math.ceil(branchOverflowY));
 
-    const yScale = view.evalScaleY ?? this._targetScaleY ?? this.scaleY;
     const labelsVisible = yScale >= this.fontSize * 0.5 || this._hypFocusScreenY !== null;
     const tipLabelsShown = labelsVisible && !this._tipLabelsOff;
     if (tipLabelsShown) {
       // textBaseline='middle': reserve half text box above/below the tip row.
       const tipLabelHalfH = Math.max(0, Math.ceil(this.fontSize / 2 + 2));
-      out.top = Math.max(out.top, tipLabelHalfH);
-      out.bottom = Math.max(out.bottom, tipLabelHalfH);
+      const tipLabelOverflowY = Math.max(0, tipLabelHalfH - yScale);
+      out.top = Math.max(out.top, tipLabelOverflowY);
+      out.bottom = Math.max(out.bottom, tipLabelOverflowY);
     }
 
     if (this._tipLabelShape !== 'off') {
@@ -2552,8 +2556,9 @@ export class TreeRenderer {
         const halfH = (shape === 'block') ? Math.ceil(yScale / 2) : Math.ceil(sh / 2);
         if (halfH > maxShapeHalfH) maxShapeHalfH = halfH;
       }
-      out.top = Math.max(out.top, maxShapeHalfH);
-      out.bottom = Math.max(out.bottom, maxShapeHalfH);
+      const shapeOverflowY = Math.max(0, maxShapeHalfH - yScale);
+      out.top = Math.max(out.top, shapeOverflowY);
+      out.bottom = Math.max(out.bottom, shapeOverflowY);
     }
 
     if (tipLabelsShown && this._tipLabelWidths?.size > 0) {
@@ -2579,14 +2584,19 @@ export class TreeRenderer {
     if (this.nodeLabelAnnotation) {
       const fs = this.nodeLabelFontSize ?? this.fontSize;
       const sp = this.nodeLabelSpacing ?? 0;
-      // Estimate horizontal extent by sampling visible candidate labels.
+      // Estimate horizontal overflow by sampling visible candidate labels.
       let maxNodeLabelW = 0;
+      let maxNodeLabelLeftOverflow = 0;
+      let maxNodeLabelRightOverflow = 0;
       const sample = this._vInner?.length ? this._vInner : this.nodes;
       const sampleLimit = Math.min(sample?.length ?? 0, 200);
       if (sampleLimit > 0) {
         const ctx = this.ctx;
         ctx.save();
         ctx.font = this._font(fs, this._nodeLabelTypefaceKey, this._nodeLabelTypefaceStyle);
+        const sxScale = view.targetScaleX;
+        const maxTipSX = this.maxX * sxScale;
+        const anchorGap = (this.nodeRadius ?? 0) + sp;
         let nSeen = 0;
         for (const n of sample) {
           if (!n || n.isTip) continue;
@@ -2595,17 +2605,23 @@ export class TreeRenderer {
           if (!t) continue;
           const w = ctx.measureText(t).width;
           if (w > maxNodeLabelW) maxNodeLabelW = w;
+          const nodeSX = (n.x ?? 0) * sxScale;
+          // Left labels anchor at nodeX - anchorGap and extend by text width to the left.
+          const leftOverflow = Math.max(0, w + anchorGap - nodeSX);
+          if (leftOverflow > maxNodeLabelLeftOverflow) maxNodeLabelLeftOverflow = leftOverflow;
+          // Right labels anchor at nodeX + anchorGap and extend by text width to the right.
+          const rightOverflow = Math.max(0, nodeSX + anchorGap + w - maxTipSX);
+          if (rightOverflow > maxNodeLabelRightOverflow) maxNodeLabelRightOverflow = rightOverflow;
           nSeen++;
           if (nSeen >= sampleLimit) break;
         }
         ctx.restore();
       }
-      const anchorGap = (this.nodeRadius ?? 0) + sp;
       if (this.nodeLabelPosition === 'above-left' || this.nodeLabelPosition === 'below-left') {
-        out.left = Math.max(out.left, Math.ceil(_leftNeed(maxNodeLabelW + anchorGap)));
+        out.left = Math.max(out.left, Math.ceil(_leftNeed(maxNodeLabelLeftOverflow)));
       }
       if (this.nodeLabelPosition === 'right') {
-        out.right = Math.max(out.right, Math.ceil(maxNodeLabelW + anchorGap));
+        out.right = Math.max(out.right, Math.ceil(maxNodeLabelRightOverflow));
       }
       if (this.nodeLabelPosition === 'above-left') {
         out.top = Math.max(out.top, Math.ceil(fs + sp));
@@ -2677,17 +2693,18 @@ export class TreeRenderer {
       }
     }
 
-    if (this._collapsedCladeFontSize) {
+    const hasCollapsedNodes = (this.nodes || []).some(n => !!n?.isCollapsed);
+    if (this._collapsedCladeFontSize && hasCollapsedNodes) {
       const c = Math.ceil(this._collapsedCladeFontSize * 0.8);
-      out.top = Math.max(out.top, c);
-      out.bottom = Math.max(out.bottom, c);
+      const collapsedOverflowY = Math.max(0, c - yScale);
+      out.top = Math.max(out.top, collapsedOverflowY);
+      out.bottom = Math.max(out.bottom, collapsedOverflowY);
 
       if (!this._tipLabelsOff && this.tipLabelAnnotation === null) {
         const ctx = this.ctx;
         ctx.save();
         ctx.font = this._font(this._collapsedCladeFontSize, this._collapsedCladeTypefaceKey, this._collapsedCladeTypefaceStyle);
         let maxCollapsedW = 0;
-        let maxDigits = 1;
         for (const n of this.nodes || []) {
           if (!n?.isCollapsed) continue;
           const t = n.annotations?.Name?.trim() || `${n.collapsedRealTips} tips`;
@@ -2695,12 +2712,6 @@ export class TreeRenderer {
             const w = ctx.measureText(t).width;
             if (w > maxCollapsedW) maxCollapsedW = w;
           }
-          const d = String(Math.max(0, n.collapsedRealTips || 0)).length;
-          if (d > maxDigits) maxDigits = d;
-        }
-        // Ensure count labels are represented even when no collapsed node currently exists.
-        if (maxCollapsedW === 0) {
-          maxCollapsedW = ctx.measureText(`${'8'.repeat(maxDigits)} tips`).width;
         }
         ctx.restore();
 
@@ -2940,9 +2951,8 @@ export class TreeRenderer {
     const extra = this._vertOverheadPx();
     this.treePaddingTop    = extra + (this._layoutDecorationPad?.top ?? 0);
     this.treePaddingBottom = extra + (this._layoutDecorationPad?.bottom ?? 0);
-    // Keep a tiny safety margin so extreme fit states do not clip the last row
-    // due to sub-pixel rounding / stroke rasterization.
-    const fitSafetyPx = 1;
+    // Strict mode: no extra fit safety margin beyond solved decoration overflow.
+    const fitSafetyPx = 0;
     const plotH = Math.max(0, H - this.treePaddingTop - this.treePaddingBottom - fitSafetyPx);
     // The tree rectangle spans tip rows 1 … maxY; decorations live in padding.
     this.minScaleY = plotH / this._tipRowSpan();
@@ -5841,9 +5851,9 @@ export class TreeRenderer {
         return;
       }
 
-      // Track the backtick/tilde key (~) for hyperbolic stretch — no modifier needed.
-      // Using e.code (physical key) to avoid conflicts with Shift-based hotkeys.
-      if (e.code === 'Backquote') {
+      // Track an unmodified backtick press for hyperbolic stretch.
+      // Using e.code (physical key) avoids layout-dependent e.key values.
+      if (e.code === 'Backquote' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         this._shiftHeld = true;
       }
 

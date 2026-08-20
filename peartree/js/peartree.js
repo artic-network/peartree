@@ -491,9 +491,13 @@ async function _initCore(root = document) {
   const legendDetailEl      = $('legend-detail');
   const axisDetailEl        = $('axis-detail');
   const rootStemPctSlider    = $('root-stem-pct-slider');
-  const introAnimationEl     = $('intro-animation');
-  const disableAnimationsEl  = $('disable-animations');
-  const animationTipThresholdSlider = $('animation-tip-threshold-slider');
+  // Animation policy is not user-adjustable from the palette; keep values in state.
+  let introAnimationSetting = DEFAULT_SETTINGS.introAnimation;
+  let disableAnimationsSetting = !!DEFAULT_SETTINGS.disableAnimations;
+  let animationTipThresholdSetting = (() => {
+    const n = parseInt(DEFAULT_SETTINGS.animationTipThreshold, 10);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  })();
   const fontFamilyEl        = $('font-family-select');
   const fontTypefaceStyleEl = $('font-typeface-style-select');
   const tipLabelTypefaceEl  = $('typeface-select');
@@ -1157,9 +1161,9 @@ async function _initCore(root = document) {
       collapsedCladeHeightN:  collapsedHeightNSlider.value,
       collapsedCladeFontSize: collapsedCladeFontSizeSlider.value,
       rootStemPct:        rootStemPctSlider.value,
-      introAnimation:     introAnimationEl?.value || DEFAULT_SETTINGS.introAnimation,
-      disableAnimations:  (disableAnimationsEl?.value || 'off') === 'on',
-      animationTipThreshold: animationTipThresholdSlider?.value ?? DEFAULT_SETTINGS.animationTipThreshold,
+      introAnimation:     introAnimationSetting,
+      disableAnimations:  disableAnimationsSetting,
+      animationTipThreshold: animationTipThresholdSetting,
       tipLabelShow:       tipLabelShow.value,
       tipLabelAlign:      tipLabelAlignEl.value,
       tipLabelSpacing:    tipLabelSpacingSlider.value,
@@ -1689,21 +1693,19 @@ async function _initCore(root = document) {
       rootStemPctSlider.value = s.rootStemPct;
       $('root-stem-pct-value').textContent = s.rootStemPct + '%';
     }
-    if (introAnimationEl && s.introAnimation != null) {
-      introAnimationEl.value = s.introAnimation;
+    if (s.introAnimation != null) {
+      introAnimationSetting = s.introAnimation;
     }
-    if (disableAnimationsEl && s.disableAnimations != null) {
-      const _on = s.disableAnimations === true
+    if (s.disableAnimations != null) {
+      disableAnimationsSetting = s.disableAnimations === true
         || s.disableAnimations === 1
         || s.disableAnimations === '1'
         || String(s.disableAnimations).toLowerCase() === 'on'
         || String(s.disableAnimations).toLowerCase() === 'true';
-      disableAnimationsEl.value = _on ? 'on' : 'off';
     }
-    if (animationTipThresholdSlider && s.animationTipThreshold != null) {
-      animationTipThresholdSlider.value = s.animationTipThreshold;
-      const out = $('animation-tip-threshold-value');
-      if (out) out.textContent = String(s.animationTipThreshold);
+    if (s.animationTipThreshold != null) {
+      const n = parseInt(s.animationTipThreshold, 10);
+      animationTipThresholdSetting = Number.isFinite(n) && n >= 0 ? n : 0;
     }
     // Node label settings (annotation-dependent: nodeLabelAnnotation is applied later in loadTree)
     if (s.nodeLabelPosition)  nodeLabelPositionEl.value   = s.nodeLabelPosition;
@@ -1813,12 +1815,11 @@ async function _initCore(root = document) {
     axisMinorIntervalEl.value    = DEFAULT_SETTINGS.axisMinorInterval;
     axisMajorLabelEl.value       = DEFAULT_SETTINGS.axisMajorLabelFormat;
     axisMinorLabelEl.value       = DEFAULT_SETTINGS.axisMinorLabelFormat;
-    if (introAnimationEl) introAnimationEl.value = DEFAULT_SETTINGS.introAnimation;
-    if (disableAnimationsEl) disableAnimationsEl.value = DEFAULT_SETTINGS.disableAnimations ? 'on' : 'off';
-    if (animationTipThresholdSlider) {
-      animationTipThresholdSlider.value = DEFAULT_SETTINGS.animationTipThreshold;
-      const out = $('animation-tip-threshold-value');
-      if (out) out.textContent = String(DEFAULT_SETTINGS.animationTipThreshold);
+    introAnimationSetting = DEFAULT_SETTINGS.introAnimation;
+    disableAnimationsSetting = !!DEFAULT_SETTINGS.disableAnimations;
+    {
+      const n = parseInt(DEFAULT_SETTINGS.animationTipThreshold, 10);
+      animationTipThresholdSetting = Number.isFinite(n) && n >= 0 ? n : 0;
     }
     _updateMinorOptions(DEFAULT_SETTINGS.axisMajorInterval, DEFAULT_SETTINGS.axisMinorInterval);
     // RTT date/interval controls — visual RTT appearance is set by applyTheme(defaultTheme) above.
@@ -2236,9 +2237,9 @@ async function _initCore(root = document) {
       branchLabelDecimalPlaces: branchLabelDpEl.value !== '' ? parseInt(branchLabelDpEl.value) : null,
       calCalibration:      calibration?.isActive ? calibration : null,
       calDateFormat:       axisDateFmtEl.value,
-      introAnimation:      introAnimationEl?.value || DEFAULT_SETTINGS.introAnimation,
-      disableAnimations:   (disableAnimationsEl?.value || 'off') === 'on',
-      animationTipThreshold: parseInt(animationTipThresholdSlider?.value ?? DEFAULT_SETTINGS.animationTipThreshold, 10) || 0,
+      introAnimation:      introAnimationSetting,
+      disableAnimations:   disableAnimationsSetting,
+      animationTipThreshold: animationTipThresholdSetting,
       cladeHighlightLeftEdge:      cladeHighlightLeftEdgeEl?.value ?? DEFAULT_SETTINGS.cladeHighlightLeftEdge,
       cladeHighlightRightEdge:     cladeHighlightRightEdgeEl?.value ?? DEFAULT_SETTINGS.cladeHighlightRightEdge,
       cladeHighlightPadding:       parseFloat(cladeHighlightPaddingSlider?.value ?? DEFAULT_SETTINGS.cladeHighlightPadding),
@@ -8810,33 +8811,6 @@ async function _initCore(root = document) {
     renderer.rootStemPct = parseFloat(rootStemPctSlider.value);
     renderer._updateScaleX();
     renderer._dirty = true;
-    saveSettings();
-  });
-
-  optionsController.on('intro-animation', () => {
-    if (renderer) {
-      renderer.setSettings(_buildRendererSettings());
-      renderer._dirty = true;
-    }
-    saveSettings();
-  });
-
-  optionsController.on('disable-animations', () => {
-    if (renderer) {
-      renderer.setSettings(_buildRendererSettings());
-      renderer._dirty = true;
-    }
-    saveSettings();
-  });
-
-  optionsController.on('animation-tip-threshold-slider', ({ type }) => {
-    if (type !== 'input') return;
-    const out = $('animation-tip-threshold-value');
-    if (out) out.textContent = animationTipThresholdSlider.value;
-    if (renderer) {
-      renderer.setSettings(_buildRendererSettings());
-      renderer._dirty = true;
-    }
     saveSettings();
   });
 

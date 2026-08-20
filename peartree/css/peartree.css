@@ -279,16 +279,6 @@ canvas.grabbing   { cursor: grabbing; }
   color: var(--bs-primary);
   border-color: var(--bs-primary);
 }
-/* Flip carets when the panels are open */
-#btn-palette .bi-caret-right,
-#btn-data-table .bi-caret-left,
-#btn-rtt .bi-caret-left {
-  display: inline-block;
-  transition: transform 0.22s cubic-bezier(.4,0,.2,1);
-}
-#btn-palette.active .bi-caret-right   { transform: scaleX(-1); }
-#btn-data-table.active .bi-caret-left { transform: scaleX(-1); }
-#btn-rtt.active .bi-caret-left        { transform: scaleX(-1); }
 #btn-order-desc .bi-sort-up { display: inline-block; transform: scaleY(-1); }
 
 /* ── Tooltip ── */
