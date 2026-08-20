@@ -1091,7 +1091,7 @@ async function _initCore(root = document) {
       collapsedCladeTypefaceStyle: collapsedCladeTypefaceStyleEl?.value || '',
       tipColourBy:      tipColourBy.value,
       nodeColourBy:     nodeColourBy.value,
-      branchColourBy:   branchColourBy?.value || 'user_colour',
+      branchColourBy:   branchColourBy?.value ?? '',
       labelColourBy:    labelColourBy.value,
       annotationPalettes: Object.fromEntries(annotationPalettes),
       annotationPaletteReverses: Object.fromEntries(annotationPaletteReverses),
@@ -1180,13 +1180,13 @@ async function _initCore(root = document) {
       branchShapeAlign:            branchShapeAlignEl?.value || DEFAULT_SETTINGS.branchShapeAlign,
       branchShapeSpacing:          branchShapeSpacingSlider?.value ?? DEFAULT_SETTINGS.branchShapeSpacing,
       branchShapeColor:            branchShapeColorEl?.value || '#aaaaaa',
-      branchShapeColourBy:         branchShapeColourByEl?.value || 'user_colour',
+      branchShapeColourBy:         branchShapeColourByEl?.value ?? '',
       branchShapeCountBy:          branchShapeCountByEl?.value || '',
       branchShapeHalo:             branchShapeHaloSlider?.value ?? DEFAULT_SETTINGS.branchShapeHalo,
       branchShapeHaloColor:        branchShapeHaloColorEl?.value || '#02292e',
       branchShapesExtra:           branchShapeExtraEls.map(e => e?.value || 'off'),
       branchShapesExtraColors:     branchShapeExtraColors.map(e => e?.value || '#aaaaaa'),
-      branchShapesExtraColourBys:  branchShapeExtraColourBys.map(e => e?.value || 'user_colour'),
+      branchShapesExtraColourBys:  branchShapeExtraColourBys.map(e => e?.value ?? ''),
       branchShapesExtraCountBys:   branchShapeExtraCountBys.map(e => e?.value || ''),
       nodeLabelAnnotation: nodeLabelShowEl.value,
       nodeLabelPosition:   nodeLabelPositionEl.value,
@@ -1511,7 +1511,7 @@ async function _initCore(root = document) {
       $('branch-shape-spacing-value').textContent = s.branchShapeSpacing;
     }
     if (branchShapeColorEl && s.branchShapeColor) branchShapeColorEl.value = s.branchShapeColor;
-    if (branchShapeColourByEl && s.branchShapeColourBy) branchShapeColourByEl.value = s.branchShapeColourBy;
+    if (branchShapeColourByEl && s.branchShapeColourBy != null) branchShapeColourByEl.value = s.branchShapeColourBy;
     if (branchShapeCountByEl && s.branchShapeCountBy != null) branchShapeCountByEl.value = s.branchShapeCountBy;
     if (branchShapeHaloSlider && s.branchShapeHalo != null) {
       branchShapeHaloSlider.value = s.branchShapeHalo;
@@ -1779,10 +1779,10 @@ async function _initCore(root = document) {
     applyTheme(themeManager.defaultTheme);
 
     // Reset colour-by dropdowns, legend, and axis controls.
-    tipColourBy.value        = 'user_colour';
-    nodeColourBy.value       = 'user_colour';
-    if (branchColourBy) branchColourBy.value = 'user_colour';
-    labelColourBy.value      = 'user_colour';
+    tipColourBy.value        = '';
+    nodeColourBy.value       = '';
+    if (branchColourBy) branchColourBy.value = '';
+    labelColourBy.value      = '';
     tipLabelShow.value       = DEFAULT_SETTINGS.tipLabelShow;
     tipLabelControlsEl.style.display = '';
     tipLabelAlignEl.value    = DEFAULT_SETTINGS.tipLabelAlign;
@@ -1876,8 +1876,8 @@ async function _initCore(root = document) {
     $('root-stem-pct-value').textContent = (DEFAULT_SETTINGS.rootStemPct ?? '0') + '%';
     nodeLabelShowEl.value     = DEFAULT_SETTINGS.nodeLabelAnnotation;
     branchLabelShowEl.value   = DEFAULT_SETTINGS.branchLabelAnnotation;
-    if (nodeLabelColourBy)   nodeLabelColourBy.value   = 'user_colour';
-    if (branchLabelColourBy) branchLabelColourBy.value = 'user_colour';
+    if (nodeLabelColourBy)   nodeLabelColourBy.value   = '';
+    if (branchLabelColourBy) branchLabelColourBy.value = '';
     nodeLabelPositionEl.value = DEFAULT_SETTINGS.nodeLabelPosition;
     if (tipLabelTypefaceEl)            tipLabelTypefaceEl.value = '';
     _populateStyleSelect(fontFamilyEl.value, typefaceStyleEl, '', true);
@@ -1887,7 +1887,7 @@ async function _initCore(root = document) {
     if (nodeLabelDpEl)   nodeLabelDpEl.value   = '';
     tipLabelShapeEl.value        = DEFAULT_SETTINGS.tipLabelShape;
     tipLabelShapeColorEl.value   = '#aaaaaa';
-    tipLabelShapeColourBy.value  = 'user_colour';
+    tipLabelShapeColourBy.value  = '';
     tipLabelShapeMarginLeftSlider.value  = DEFAULT_SETTINGS.tipLabelShapeMarginLeft;
     $('tip-label-shape-margin-left-value').textContent  = DEFAULT_SETTINGS.tipLabelShapeMarginLeft;
     tipLabelShapeSpacingSlider.value = DEFAULT_SETTINGS.tipLabelShapeSpacing;
@@ -1895,7 +1895,7 @@ async function _initCore(root = document) {
     tipLabelShapeSizeSlider.value = DEFAULT_SETTINGS.tipLabelShapeSize;
     $('tip-label-shape-size-value').textContent = DEFAULT_SETTINGS.tipLabelShapeSize;
     tipLabelShapeExtraEls.forEach(e => { e.value = 'off'; });
-    tipLabelShapeExtraColourBys.forEach(e => { e.value = 'user_colour'; });
+    tipLabelShapeExtraColourBys.forEach(e => { e.value = ''; });
     if (branchShapeEl) branchShapeEl.value = DEFAULT_SETTINGS.branchShape;
     if (branchShapeHeightSlider) {
       branchShapeHeightSlider.value = DEFAULT_SETTINGS.branchShapeHeightPct;
@@ -1911,7 +1911,7 @@ async function _initCore(root = document) {
       $('branch-shape-spacing-value').textContent = DEFAULT_SETTINGS.branchShapeSpacing;
     }
     if (branchShapeColorEl) branchShapeColorEl.value = DEFAULT_SETTINGS.branchShapeColor;
-    if (branchShapeColourByEl) branchShapeColourByEl.value = DEFAULT_SETTINGS.branchShapeColourBy;
+    if (branchShapeColourByEl) branchShapeColourByEl.value = '';
     if (branchShapeCountByEl) branchShapeCountByEl.value = DEFAULT_SETTINGS.branchShapeCountBy;
     if (branchShapeHaloSlider) {
       branchShapeHaloSlider.value = DEFAULT_SETTINGS.branchShapeHalo;
@@ -1920,15 +1920,15 @@ async function _initCore(root = document) {
     if (branchShapeHaloColorEl) branchShapeHaloColorEl.value = DEFAULT_SETTINGS.branchShapeHaloColor;
     branchShapeExtraEls.forEach(e => { if (e) e.value = 'off'; });
     branchShapeExtraColors.forEach((e, i) => { if (e) e.value = DEFAULT_SETTINGS.branchShapesExtraColors?.[i] || '#aaaaaa'; });
-    branchShapeExtraColourBys.forEach(e => { if (e) e.value = 'user_colour'; });
+    branchShapeExtraColourBys.forEach(e => { if (e) e.value = ''; });
     branchShapeExtraCountBys.forEach(e => { if (e) e.value = ''; });
 
     if (renderer) {
-      renderer.setTipColourBy('user_colour');
-      renderer.setNodeColourBy('user_colour');
-      renderer.setBranchColourBy('user_colour');
-      renderer.setLabelColourBy('user_colour');
-      renderer.setTipLabelShapeColourBy('user_colour');
+      renderer.setTipColourBy(null);
+      renderer.setNodeColourBy(null);
+      renderer.setBranchColourBy(null);
+      renderer.setLabelColourBy(null);
+      renderer.setTipLabelShapeColourBy(null);
       renderer.setNodeLabelColourBy(null);
       renderer.setBranchLabelColourBy(null);
       for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) renderer.setTipLabelShapeExtraColourBy(i, null);
@@ -3606,7 +3606,7 @@ async function _initCore(root = document) {
       renderer.setAnnotationSchema(g.annotationSchema);
       axisRenderer.setHeightFormatter(g.annotationSchema.get('height')?.fmt ?? null);
       // If the imported columns include user_colour, auto-switch tip colour-by
-      // to user_colour (same behaviour as the paintbrush apply button).
+      // to User Colour (same behaviour as the paintbrush apply button).
       if (importedCols.includes('user_colour')) {
         tipColourBy.value = 'user_colour';
       }
@@ -4389,8 +4389,10 @@ async function _initCore(root = document) {
     //         'nodesAndTipAvg' → node annotations first, then tip-only labelled '(tip avg)'
     function repopulate(sel, { isLegend = false, filter = 'all' } = {}) {
       const prev = sel.value;
-      // Remove everything after the first static option (user colour / (none)).
-      while (sel.options.length > 1) sel.remove(1);
+      // Keep static options: legend has one ('(none)'), colour-by has two
+      // ('Theme', 'User Colour').
+      const staticCount = isLegend ? 1 : 2;
+      while (sel.options.length > staticCount) sel.remove(staticCount);
       for (const [name, def] of schema) {
         if (name === 'user_colour') continue; // static first option already in HTML
         if (def.dataType === 'list') continue;
@@ -4415,9 +4417,10 @@ async function _initCore(root = document) {
         }
       }
       sel.disabled = false;
-      // Restore previous selection if still available; legend falls back to '' (none), colour-by to user_colour.
+      // Restore previous selection if still available; legends fall back to
+      // '' (none), colour-by falls back to '' (Theme).
       sel.value = [...sel.options].some(o => o.value === prev) ? prev
-                  : (isLegend ? '' : 'user_colour');
+          : '';
     }
 
     function repopulateCountBy(sel, { filter = 'all' } = {}) {
@@ -4563,10 +4566,10 @@ async function _initCore(root = document) {
     for (let i = 0; i < EXTRA_SHAPE_COUNT; i++) {
       _updateConfigureBtn(tipLabelShapeExtraConfigureRows[i], tipLabelShapeExtraColourBys[i].value);
     }
-    _updateConfigureBtn(branchShapeConfigureRow, branchShapeColourByEl?.value || 'user_colour');
-    branchShapeExtraConfigureRows.forEach((row, i) => _updateConfigureBtn(row, branchShapeExtraColourBys[i]?.value || 'user_colour'));
-    _updateConfigureBtn(cladeHighlightConfigureRow, cladeHighlightColourByEl?.value ?? 'user_colour');
-    _updateConfigureBtn(collapsedCladeConfigureRow, collapsedCladeColourByEl?.value ?? 'user_colour');
+    _updateConfigureBtn(branchShapeConfigureRow, branchShapeColourByEl?.value ?? '');
+    branchShapeExtraConfigureRows.forEach((row, i) => _updateConfigureBtn(row, branchShapeExtraColourBys[i]?.value ?? ''));
+    _updateConfigureBtn(cladeHighlightConfigureRow, cladeHighlightColourByEl?.value ?? '');
+    _updateConfigureBtn(collapsedCladeConfigureRow, collapsedCladeColourByEl?.value ?? '');
     if (nodeLabelColourBy)   _updateConfigureBtn(nodeLabelConfigureRow,   nodeLabelColourBy.value);
     if (branchLabelColourBy) _updateConfigureBtn(branchLabelConfigureRow, branchLabelColourBy.value);
     _updateConfigureBtn(legendConfigureRow,  legendAnnotEl?.value);
@@ -4886,7 +4889,7 @@ async function _initCore(root = document) {
       // before the dropdowns are populated.
       const layout = computeLayoutFromGraph(graph, null, _layoutOptions());
 
-      // Populate the "Colour by" dropdowns. user_colour is always the first option.
+      // Populate the "Colour by" dropdowns.
       const schema = graph.annotationSchema;
       // Inject built-in geometric stats (divergence, age, branch length, tips below)
       // into the schema before populating dropdowns so they appear as options.
@@ -4894,8 +4897,11 @@ async function _initCore(root = document) {
       // filter: 'tips' → only annotations on tips, 'nodes' → only on internals, 'all' → no filter
       function _populateColourBy(sel, filter = 'all') {
         while (sel.options.length > 0) sel.remove(0);
+        const th = document.createElement('option');
+        th.value = ''; th.textContent = 'Theme';
+        sel.appendChild(th);
         const uc = document.createElement('option');
-        uc.value = 'user_colour'; uc.textContent = 'user colour';
+        uc.value = 'user_colour'; uc.textContent = 'User Colour';
         sel.appendChild(uc);
         for (const [name, def] of schema) {
           if (name === 'user_colour') continue;
@@ -4921,7 +4927,7 @@ async function _initCore(root = document) {
           }
         }
         sel.disabled = false;
-        sel.value = 'user_colour';
+        sel.value = '';
       }
       _populateColourBy(tipColourBy,          'tips');
       _populateColourBy(nodeColourBy,         'nodesAndTipAvg');
@@ -4956,8 +4962,11 @@ async function _initCore(root = document) {
       branchShapeExtraCountBys.forEach(sel => _populateCountBy(sel, 'nodesAndTipAvg'));
       if (cladeHighlightColourByEl) {
         while (cladeHighlightColourByEl.options.length > 0) cladeHighlightColourByEl.remove(0);
+        const _chTheme = document.createElement('option');
+        _chTheme.value = ''; _chTheme.textContent = 'Theme';
+        cladeHighlightColourByEl.appendChild(_chTheme);
         const _chUc = document.createElement('option');
-        _chUc.value = 'user_colour'; _chUc.textContent = 'user colour';
+        _chUc.value = 'user_colour'; _chUc.textContent = 'User Colour';
         cladeHighlightColourByEl.appendChild(_chUc);
         // Node annotations first
         for (const [name, def] of schema) {
@@ -4981,13 +4990,16 @@ async function _initCore(root = document) {
           cladeHighlightColourByEl.appendChild(opt);
         }
         cladeHighlightColourByEl.disabled = false;
-        cladeHighlightColourByEl.value = 'user_colour';
+        cladeHighlightColourByEl.value = '';
       }
 
       if (collapsedCladeColourByEl) {
         while (collapsedCladeColourByEl.options.length > 0) collapsedCladeColourByEl.remove(0);
+        const _ccTheme = document.createElement('option');
+        _ccTheme.value = ''; _ccTheme.textContent = 'Theme';
+        collapsedCladeColourByEl.appendChild(_ccTheme);
         const _ccUc = document.createElement('option');
-        _ccUc.value = 'user_colour'; _ccUc.textContent = 'user colour';
+        _ccUc.value = 'user_colour'; _ccUc.textContent = 'User Colour';
         collapsedCladeColourByEl.appendChild(_ccUc);
         // Node annotations first
         for (const [name, def] of schema) {
@@ -5011,7 +5023,7 @@ async function _initCore(root = document) {
           collapsedCladeColourByEl.appendChild(opt);
         }
         collapsedCladeColourByEl.disabled = false;
-        collapsedCladeColourByEl.value = 'user_colour';
+        collapsedCladeColourByEl.value = '';
       }
 
       // Tip-label-show: option[0]='off', option[1]='names', then dynamic annotations.
@@ -5132,27 +5144,27 @@ async function _initCore(root = document) {
       // Uses the same precedence as visual settings.
       const _eff = _treeEffectiveSettings;
       const _hasOpt = (sel, key) => key && [...sel.options].some(o => o.value === key);
-      tipColourBy.value          = _hasOpt(tipColourBy,          _eff.tipColourBy)           ? _eff.tipColourBy           : 'user_colour';
-      nodeColourBy.value         = _hasOpt(nodeColourBy,         _eff.nodeColourBy)          ? _eff.nodeColourBy          : 'user_colour';
-      if (branchColourBy) branchColourBy.value = _hasOpt(branchColourBy, _eff.branchColourBy) ? _eff.branchColourBy : 'user_colour';
-      labelColourBy.value        = _hasOpt(labelColourBy,        _eff.labelColourBy)         ? _eff.labelColourBy         : 'user_colour';
-      tipLabelShapeColourBy.value = _hasOpt(tipLabelShapeColourBy, _eff.tipLabelShapeColourBy) ? _eff.tipLabelShapeColourBy : 'user_colour';
+      tipColourBy.value          = _hasOpt(tipColourBy,          _eff.tipColourBy)           ? _eff.tipColourBy           : '';
+      nodeColourBy.value         = _hasOpt(nodeColourBy,         _eff.nodeColourBy)          ? _eff.nodeColourBy          : '';
+      if (branchColourBy) branchColourBy.value = _hasOpt(branchColourBy, _eff.branchColourBy) ? _eff.branchColourBy : '';
+      labelColourBy.value        = _hasOpt(labelColourBy,        _eff.labelColourBy)         ? _eff.labelColourBy         : '';
+      tipLabelShapeColourBy.value = _hasOpt(tipLabelShapeColourBy, _eff.tipLabelShapeColourBy) ? _eff.tipLabelShapeColourBy : '';
       if (branchShapeColourByEl) {
-        branchShapeColourByEl.value = _hasOpt(branchShapeColourByEl, _eff.branchShapeColourBy) ? _eff.branchShapeColourBy : 'user_colour';
+        branchShapeColourByEl.value = _hasOpt(branchShapeColourByEl, _eff.branchShapeColourBy) ? _eff.branchShapeColourBy : '';
       }
       if (Array.isArray(_eff.tipLabelShapeExtraColourBys)) {
         _eff.tipLabelShapeExtraColourBys.forEach((v, i) => {
           if (tipLabelShapeExtraColourBys[i])
-            tipLabelShapeExtraColourBys[i].value = _hasOpt(tipLabelShapeExtraColourBys[i], v) ? v : 'user_colour';
+            tipLabelShapeExtraColourBys[i].value = _hasOpt(tipLabelShapeExtraColourBys[i], v) ? v : '';
         });
       } else if (_eff.tipLabelShape2ColourBy) {
         // Backward compat: old single tipLabelShape2ColourBy key
-        tipLabelShapeExtraColourBys[0].value = _hasOpt(tipLabelShapeExtraColourBys[0], _eff.tipLabelShape2ColourBy) ? _eff.tipLabelShape2ColourBy : 'user_colour';
+        tipLabelShapeExtraColourBys[0].value = _hasOpt(tipLabelShapeExtraColourBys[0], _eff.tipLabelShape2ColourBy) ? _eff.tipLabelShape2ColourBy : '';
       }
       if (Array.isArray(_eff.branchShapesExtraColourBys)) {
         _eff.branchShapesExtraColourBys.forEach((v, i) => {
           if (branchShapeExtraColourBys[i])
-            branchShapeExtraColourBys[i].value = _hasOpt(branchShapeExtraColourBys[i], v) ? v : 'user_colour';
+            branchShapeExtraColourBys[i].value = _hasOpt(branchShapeExtraColourBys[i], v) ? v : '';
         });
       }
       const _hasCountOpt = (sel, key) => key && [...sel.options].some(o => o.value === key);
@@ -5188,8 +5200,8 @@ async function _initCore(root = document) {
       }
       nodeLabelShowEl.value = _hasOpt(nodeLabelShowEl, _eff.nodeLabelAnnotation) ? _eff.nodeLabelAnnotation : '';
       branchLabelShowEl.value = _hasOpt(branchLabelShowEl, _eff.branchLabelAnnotation) ? _eff.branchLabelAnnotation : '';
-      if (nodeLabelColourBy)   nodeLabelColourBy.value   = _hasOpt(nodeLabelColourBy,   _eff.nodeLabelColourBy)   ? _eff.nodeLabelColourBy   : 'user_colour';
-      if (branchLabelColourBy) branchLabelColourBy.value = _hasOpt(branchLabelColourBy, _eff.branchLabelColourBy) ? _eff.branchLabelColourBy : 'user_colour';
+      if (nodeLabelColourBy)   nodeLabelColourBy.value   = _hasOpt(nodeLabelColourBy,   _eff.nodeLabelColourBy)   ? _eff.nodeLabelColourBy   : '';
+      if (branchLabelColourBy) branchLabelColourBy.value = _hasOpt(branchLabelColourBy, _eff.branchLabelColourBy) ? _eff.branchLabelColourBy : '';
       // Restore node order from per-tree effective settings,
       // not from saved prefs, so it remains a per-tree choice.
       if (_treeEffectiveSettings?.nodeOrder === 'asc' || _treeEffectiveSettings?.nodeOrder === 'desc') {
@@ -5277,12 +5289,12 @@ async function _initCore(root = document) {
       _updateConfigureBtn(tipLabelShapeConfigureRow,      tipLabelShapeColourBy.value);
       for (let _i = 0; _i < EXTRA_SHAPE_COUNT; _i++)
         _updateConfigureBtn(tipLabelShapeExtraConfigureRows[_i], tipLabelShapeExtraColourBys[_i].value);
-      _updateConfigureBtn(branchShapeConfigureRow,      branchShapeColourByEl?.value || 'user_colour');
-      branchShapeExtraConfigureRows.forEach((row, i) => _updateConfigureBtn(row, branchShapeExtraColourBys[i]?.value || 'user_colour'));
+      _updateConfigureBtn(branchShapeConfigureRow,      branchShapeColourByEl?.value ?? '');
+      branchShapeExtraConfigureRows.forEach((row, i) => _updateConfigureBtn(row, branchShapeExtraColourBys[i]?.value ?? ''));
       if (nodeLabelColourBy)   _updateConfigureBtn(nodeLabelConfigureRow,   nodeLabelColourBy.value);
       if (branchLabelColourBy) _updateConfigureBtn(branchLabelConfigureRow, branchLabelColourBy.value);
-      _updateConfigureBtn(cladeHighlightConfigureRow, cladeHighlightColourByEl?.value ?? 'user_colour');
-      _updateConfigureBtn(collapsedCladeConfigureRow, collapsedCladeColourByEl?.value ?? 'user_colour');
+      _updateConfigureBtn(cladeHighlightConfigureRow, cladeHighlightColourByEl?.value ?? '');
+      _updateConfigureBtn(collapsedCladeConfigureRow, collapsedCladeColourByEl?.value ?? '');
       _updateConfigureBtn(legendConfigureRow,  legendAnnotEl?.value);
       _updateConfigureBtn(legend2ConfigureRow, legend2AnnotEl?.value);
       _updateConfigureBtn(legend3ConfigureRow, legend3AnnotEl?.value);
@@ -6412,16 +6424,16 @@ async function _initCore(root = document) {
     // ── Clade Highlights ─────────────────────────────────────────────────────
 
     function _resolveHighlightColour(nodeId = renderer._mrcaNodeId) {
-      const colourBy = cladeHighlightColourByEl?.value ?? 'user_colour';
+      const colourBy = cladeHighlightColourByEl?.value ?? '';
+      if (!colourBy) return null; // Theme default from cladeHighlightColour
       if (colourBy === 'user_colour') {
-        return paintColourPickerEl?.value ?? '#ffaa00';
+        return renderer?._cladeHighlights?.get(nodeId)?.colour ?? null;
       }
-      const fallback = paintColourPickerEl?.value ?? '#ffaa00';
       const def    = renderer?._annotationSchema?.get(colourBy);
-      if (!nodeId || !renderer.nodeMap) return fallback;
+      if (!nodeId || !renderer.nodeMap) return null;
 
       const scale = renderer._buildColourScale?.(colourBy);
-      if (!scale || scale.size === 0) return fallback;
+      if (!scale || scale.size === 0) return null;
 
       let resolvedValue = null;
 
@@ -6436,11 +6448,11 @@ async function _initCore(root = document) {
       if (resolvedValue == null) {
         const node = renderer.nodeMap.get(nodeId);
         resolvedValue = renderer._aggregateTipValue?.(node, colourBy) ?? null;
-        if (resolvedValue == null) return fallback;
+        if (resolvedValue == null) return null;
       }
 
       const colour = renderer._colourFromScale?.(resolvedValue, scale);
-      return colour ?? fallback;
+      return colour ?? null;
     }
 
     function _recolourAllHighlights() {
@@ -6454,8 +6466,8 @@ async function _initCore(root = document) {
     }
 
     function _resolveCollapsedColour(nodeId) {
-      const colourBy = collapsedCladeColourByEl?.value ?? 'user_colour';
-      if (colourBy === 'user_colour') return null; // null → renderer uses tipShapeColor
+      const colourBy = collapsedCladeColourByEl?.value ?? '';
+      if (!colourBy || colourBy === 'user_colour') return null; // null → renderer uses tipShapeColor
       const def  = renderer?._annotationSchema?.get(colourBy);
       const node = renderer.nodeMap?.get(nodeId);
       if (!node) return null;
@@ -6584,6 +6596,10 @@ async function _initCore(root = document) {
     btnPaintHighlight?.addEventListener('click', () => {
       const nodeId = renderer._mrcaNodeId;
       if (!nodeId || !renderer._cladeHighlights.has(nodeId)) return;
+      if (cladeHighlightColourByEl) {
+        cladeHighlightColourByEl.value = 'user_colour';
+        _updateConfigureBtn(cladeHighlightConfigureRow, cladeHighlightColourByEl.value);
+      }
       renderer.setCladeHighlightColour(nodeId, paintColourPickerEl?.value ?? '#ffaa00');
       _refreshHighlightList();
       saveSettings();
@@ -7071,14 +7087,16 @@ async function _initCore(root = document) {
 
     btnNodeInfo?.addEventListener('click', () => showNodeInfo());
 
-    // ── User colour ───────────────────────────────────────────────────────────
+    // ── User Colour ───────────────────────────────────────────────────────────
     function _applyUserColour(colour) {
       if (!graph || renderer._selectedTipIds.size === 0) return;
+      let paintedCollapsedClade = false;
       for (const id of renderer._selectedTipIds) {
         const idx = graph.origIdToIdx.get(id);
         if (idx !== undefined) graph.nodes[idx].annotations['user_colour'] = colour;
         // If this node is a collapsed clade root, update its stored colour too.
         if (graph.collapsedCladeIds?.has(id)) {
+          paintedCollapsedClade = true;
           const info = graph.collapsedCladeIds.get(id);
           graph.collapsedCladeIds.set(id, { ...info, colour });
           // Refresh the collapsed clade's colour in the layout so it redraws immediately.
@@ -7089,9 +7107,13 @@ async function _initCore(root = document) {
       graph.annotationSchema = buildAnnotationSchema(graph.nodes);
       _refreshAnnotationUIs(graph.annotationSchema);
       renderer.setAnnotationSchema(graph.annotationSchema);
-      // Auto-switch tip shape colour-by to user_colour.
+      // Auto-switch tip colour-by to User Colour.
       tipColourBy.value = 'user_colour';
       renderer.setTipColourBy('user_colour');
+      if (paintedCollapsedClade && collapsedCladeColourByEl) {
+        collapsedCladeColourByEl.value = 'user_colour';
+        _updateConfigureBtn(collapsedCladeConfigureRow, collapsedCladeColourByEl.value);
+      }
       renderer._dirty = true;
       saveSettings();
       rttChart?.notifyStyleChange?.();
