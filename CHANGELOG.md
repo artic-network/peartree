@@ -1,5 +1,33 @@
 # Change Log
 
+## v1.3.2
+
+### Fixes
+
+- Fix clipping of tip labels and decorations at the top and bottom of trees when labels or branch decorations are visible.
+- Improve compatibility for older macOS builds of the Tauri app by removing the runtime dependency on import-map-based frontend bootstrapping.
+
+### Internal / maintenance
+
+- Update the Tauri bundling and staging flow to use a bundled app entry for legacy WebKit compatibility.
+
+## v1.3.1
+
+### Fixes
+
+- Fix dynamic padding issues in tree layout and rendering.
+- Fix SVG export parity with the canvas renderer, including axis lines, padding, and layering issues.
+- Fix node-shape filters incorrectly suppressing labels in exported SVG output.
+- Fix padding so it accommodates node bars and other decorations without clipping labels.
+- Improve the toolbar layout and minor UI polish.
+- Fix browser link handling to open external links in the user’s browser.
+
+### Internal / maintenance
+
+- Add a large-tree transition threshold to disable animated transitions for very large tip counts.
+- Improve SVG component layering and export behavior.
+- Refresh help/manual links and related documentation entry points.
+
 ## v1.3.0
 
 ### Features
