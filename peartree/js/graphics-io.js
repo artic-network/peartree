@@ -343,6 +343,10 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
     oy = topPad + scaleY * 0.5;
   }
   const totalH_eff = ttH_eff + (axVisible ? axH : 0);
+  const _svgValue = (node, key) => {
+    if (!node || !key) return null;
+    return renderer._statValue ? (renderer._statValue(node, key) ?? node.annotations?.[key] ?? null) : (node.annotations?.[key] ?? null);
+  };
   const bg  = renderer.bgColor;
   const bc  = renderer.branchColor;
   const bw  = Math.max(0.5, renderer.branchWidth);
@@ -1148,7 +1152,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
       if (node.isTip && tr > 0 && !node.isCollapsed) {
         if (_svgPassesFilter(renderer._tipShapesFilterId, node)) {
           const fill = (renderer._tipColourBy && renderer._tipColourScale)
-            ? (renderer._tipColourForValue(node.annotations?.[renderer._tipColourBy]) ?? renderer.tipShapeColor)
+            ? (renderer._tipColourForValue(_svgValue(node, renderer._tipColourBy)) ?? renderer.tipShapeColor)
             : renderer.tipShapeColor;
           if (tipHaloSW > 0)
             bgTipParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${tr}" fill="${esc(tipBgColor)}" stroke="${esc(tipBgColor)}" stroke-width="${tipHaloSW}"/>`);
@@ -1157,7 +1161,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
       } else if (!node.isTip && nr > 0) {
         if (_svgPassesFilter(renderer._nodeShapesFilterId, node)) {
           const fill = (renderer._nodeColourBy && renderer._nodeColourScale)
-            ? (renderer._nodeColourForValue(node.annotations?.[renderer._nodeColourBy]) ?? renderer.nodeShapeColor)
+            ? (renderer._nodeColourForValue(_svgValue(node, renderer._nodeColourBy)) ?? renderer.nodeShapeColor)
             : renderer.nodeShapeColor;
           if (nodeHaloSW > 0)
             bgNodeParts.push(`<circle cx="${f(nx)}" cy="${f(ny)}" r="${nr}" fill="${esc(nodeBgColor)}" stroke="${esc(nodeBgColor)}" stroke-width="${nodeHaloSW}"/>`);
@@ -1186,7 +1190,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
           const shapeX  = baseX + _svgShML;
           const halfSz  = _svgShSz / 2;
           const sFill   = (renderer._tipLabelShapeColourBy && renderer._tipLabelShapeColourScale)
-            ? (renderer._tipLabelShapeColourForValue(node.annotations?.[renderer._tipLabelShapeColourBy]) ?? renderer._tipLabelShapeColor)
+            ? (renderer._tipLabelShapeColourForValue(_svgValue(node, renderer._tipLabelShapeColourBy)) ?? renderer._tipLabelShapeColor)
             : renderer._tipLabelShapeColor;
           if (_svgShape === 'circle') {
             shapeParts.push(`<circle cx="${f(shapeX + halfSz)}" cy="${f(ny)}" r="${f(halfSz)}" fill="${esc(sFill)}"/>`);
@@ -1209,7 +1213,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
             const _xKey   = renderer._tipLabelShapeExtraColourBys[_idx];
             const _xScl   = renderer._tipLabelShapeExtraColourScales[_idx];
             const _xFill  = (_xKey && _xScl)
-              ? (renderer._tipLabelShapeExtraColourForValue(_idx, node.annotations?.[_xKey]) ?? renderer._tipLabelShapeColor)
+              ? (renderer._tipLabelShapeExtraColourForValue(_idx, _svgValue(node, _xKey)) ?? renderer._tipLabelShapeColor)
               : renderer._tipLabelShapeColor;
             const _shapeXX = baseX + _xOff;
             if (_sType === 'circle') {
@@ -1236,7 +1240,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
               labelFill = renderer.dimLabelColor;
             }
           } else if (renderer._labelColourBy && renderer._labelColourScale) {
-            labelFill = renderer._labelColourForValue(node.annotations?.[renderer._labelColourBy]) ?? lc;
+            labelFill = renderer._labelColourForValue(_svgValue(node, renderer._labelColourBy)) ?? lc;
           }
           _svgDrawTipLabelParts(node, baseX, ny, labelFill, labelTypeface);
         }
@@ -1371,10 +1375,7 @@ export function buildGraphicSVG(ctx, fullTree = false, transparent = false) {
             tipFill = renderer.selectedLabelColor;
             tipTypeface = resolveSelectedSvgTypeface(renderer, _svgTipTypeface);
           } else if (renderer._labelColourBy && renderer._labelColourScale) {
-            const tipVal = renderer._statValue
-              ? renderer._statValue(tip, renderer._labelColourBy)
-              : tip.annotations?.[renderer._labelColourBy];
-            tipFill = renderer._labelColourForValue(tipVal) ?? lc;
+            tipFill = renderer._labelColourForValue(_svgValue(tip, renderer._labelColourBy)) ?? lc;
           }
           collapsedLabelParts.push(svgTextEl({
             x: f(labelTX),

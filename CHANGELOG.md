@@ -1,5 +1,16 @@
 # Change Log
 
+## Unreleased
+
+### Fixes
+
+- Fix time-tree and rooted-state inference so trees only become time trees when supported by the data, while preserving rooted/unrooted state for rerooting and root warnings.
+- Correct the live "Get info" summary to report the actual tree state instead of stale values.
+- Fix EBOV time-tree detection precedence so explicit root-height annotations take priority over correlation-based calibration fallback.
+- Fix console errors in the tree info panel caused by stale calibration-state references.
+- Tighten numeric coercion for imported annotations so values only become numeric when every token is individually coercible, preserving labels such as `123/456` as categorical strings.
+- Fix SVG export so node and tip shapes honour the same annotation-derived palette logic as the on-screen renderer, including built-in stats such as `Tips Below`.
+
 ## v1.3.2
 
 ### Fixes
