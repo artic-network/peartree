@@ -142,13 +142,9 @@ npx tauri build --bundles nsis
 
 ```
 peartree/
-├── ui/                   ← all web assets (frontendDist)
-│   ├── index.html        ← frontend entry point
-│   ├── help.md           ← served as app content
-│   ├── about.md          ← served as app content
-│   ├── data/             ← bundled example tree files
-│   ├── img/              ← images
-│   └── js/               ← frontend ES modules
+├── dist-tauri/           ← staged frontend used by Tauri (generated)
+│   ├── pearcore/         ← copied pearcore assets
+│   └── peartree/         ← copied peartree assets + tauri JS bundle
 ├── src-tauri/
 │   ├── Cargo.toml        ← Rust crate manifest
 │   ├── build.rs          ← Tauri build script
@@ -161,6 +157,10 @@ peartree/
 │       └── lib.rs        ← Tauri app setup
 └── package.json          ← npm manifest (Tauri CLI)
 ```
+
+`scripts/stage-tauri.sh` is run by Tauri before dev/build. It stages assets into `dist-tauri/`
+and builds `peartree/js/peartree-tauri.bundle.min.js` so the Tauri page does not depend on
+runtime import-map support from the host WebKit version.
 
 ---
 

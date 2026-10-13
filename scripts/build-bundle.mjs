@@ -45,6 +45,15 @@ const APP_CONFIGS = {
       '})();',
     ].join(''),
   },
+  'peartree-tauri': {
+    entryModule:  resolve(root, 'peartree', 'js', 'peartree-tauri-entry.js'),
+    cssEntry:     resolve(__dirname, 'bundle-styles-peartree.css'),
+    globalName:   'PearTreeTauri',
+    uiScripts:    [
+      resolve(root, 'peartree', 'js', 'peartree-ui.js'),
+    ],
+    shim: null,
+  },
   demo: {
     entryModule:  resolve(root, 'demo', 'js', 'demo.js'),
     cssEntry:     resolve(__dirname, 'bundle-styles-demo.css'),
