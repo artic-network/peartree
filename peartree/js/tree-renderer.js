@@ -2523,24 +2523,21 @@ export class TreeRenderer {
     out.left = Math.max(out.left, Math.ceil(_leftNeed(nodeOuterR)));
     out.right = Math.max(out.right, Math.ceil(tipOuterR));
     const coreHalfH = Math.max(tipOuterR, nodeOuterR, barsHalfH);
-    const coreOverflowY = Math.max(0, coreHalfH - yScale);
-    out.top = Math.max(out.top, Math.ceil(coreOverflowY));
-    out.bottom = Math.max(out.bottom, Math.ceil(coreOverflowY));
+    out.top = Math.max(out.top, Math.ceil(coreHalfH));
+    out.bottom = Math.max(out.bottom, Math.ceil(coreHalfH));
     // Reserve half stroke width so boundary branches are not clipped.
     out.left = Math.max(out.left, Math.ceil(_leftNeed(branchStrokeHalf)));
     out.right = Math.max(out.right, Math.ceil(branchStrokeHalf));
-    const branchOverflowY = Math.max(0, branchStrokeHalf - yScale);
-    out.top = Math.max(out.top, Math.ceil(branchOverflowY));
-    out.bottom = Math.max(out.bottom, Math.ceil(branchOverflowY));
+    out.top = Math.max(out.top, Math.ceil(branchStrokeHalf));
+    out.bottom = Math.max(out.bottom, Math.ceil(branchStrokeHalf));
 
     const labelsVisible = yScale >= this.fontSize * 0.5 || this._hypFocusScreenY !== null;
     const tipLabelsShown = labelsVisible && !this._tipLabelsOff;
     if (tipLabelsShown) {
       // textBaseline='middle': reserve half text box above/below the tip row.
       const tipLabelHalfH = Math.max(0, Math.ceil(this.fontSize / 2 + 2));
-      const tipLabelOverflowY = Math.max(0, tipLabelHalfH - yScale);
-      out.top = Math.max(out.top, tipLabelOverflowY);
-      out.bottom = Math.max(out.bottom, tipLabelOverflowY);
+      out.top = Math.max(out.top, tipLabelHalfH);
+      out.bottom = Math.max(out.bottom, tipLabelHalfH);
     }
 
     if (this._tipLabelShape !== 'off') {
@@ -2556,9 +2553,8 @@ export class TreeRenderer {
         const halfH = (shape === 'block') ? Math.ceil(yScale / 2) : Math.ceil(sh / 2);
         if (halfH > maxShapeHalfH) maxShapeHalfH = halfH;
       }
-      const shapeOverflowY = Math.max(0, maxShapeHalfH - yScale);
-      out.top = Math.max(out.top, shapeOverflowY);
-      out.bottom = Math.max(out.bottom, shapeOverflowY);
+      out.top = Math.max(out.top, maxShapeHalfH);
+      out.bottom = Math.max(out.bottom, maxShapeHalfH);
     }
 
     if (tipLabelsShown && this._tipLabelWidths?.size > 0) {
@@ -2696,9 +2692,8 @@ export class TreeRenderer {
     const hasCollapsedNodes = (this.nodes || []).some(n => !!n?.isCollapsed);
     if (this._collapsedCladeFontSize && hasCollapsedNodes) {
       const c = Math.ceil(this._collapsedCladeFontSize * 0.8);
-      const collapsedOverflowY = Math.max(0, c - yScale);
-      out.top = Math.max(out.top, collapsedOverflowY);
-      out.bottom = Math.max(out.bottom, collapsedOverflowY);
+      out.top = Math.max(out.top, c);
+      out.bottom = Math.max(out.bottom, c);
 
       if (!this._tipLabelsOff && this.tipLabelAnnotation === null) {
         const ctx = this.ctx;
@@ -3014,15 +3009,28 @@ export class TreeRenderer {
     const snap = this._shouldDisableIntroReorderBySize(this.maxY);
     if (snap) this._updateScaleX(true);
     const labelScaleY = this.fontSize + 2;   // px per world unit – labels just clear each other
-    const newScaleY   = Math.max(this.minScaleY, labelScaleY);
+    const firstScaleY = Math.max(this.minScaleY, labelScaleY);
     const H           = this.canvas.clientHeight;
     // If the lens is active, use its focus position as the zoom pivot so the
     // region the user was inspecting ends up centred in the view.
     const lensActive   = this._hypFocusScreenY !== null && this._hypTarget !== 0;
     const pivotScreenY = lensActive ? this._hypFocusScreenY : H / 2;
     const centreWorldY = this._worldYfromScreen(pivotScreenY);
-    const newOffsetY   = H / 2 - centreWorldY * newScaleY;
-    this._setTarget(newOffsetY, newScaleY, /*immediate*/ snap);
+    const firstOffsetY = H / 2 - centreWorldY * firstScaleY;
+    this._setTarget(firstOffsetY, firstScaleY, /*immediate*/ snap);
+    this._updateScaleX(snap);
+
+    // Re-solve decoration padding at the landing fit-labels scale. Top/bottom
+    // overhang can increase once labels and shapes become visible.
+    this._updateMinScaleY();
+    const refinedScaleY = Math.max(this.minScaleY, labelScaleY);
+    const refinedOffsetY = this._clampedOffsetY(this._targetOffsetY, refinedScaleY);
+    if (Math.abs(refinedScaleY - this._targetScaleY) > 1e-6 ||
+        Math.abs(refinedOffsetY - this._targetOffsetY) > 1e-6) {
+      this._setTarget(refinedOffsetY, refinedScaleY, /*immediate*/ snap);
+      this._updateScaleX(snap);
+    }
+
     if (lensActive) {
       this._hypTarget = 0;   // animated fade-out; focus Y cleared when strength reaches 0
       if (this.onHypDeactivate) this.onHypDeactivate();
