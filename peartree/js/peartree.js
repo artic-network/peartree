@@ -850,12 +850,58 @@ async function _initCore(root = document) {
   let _treeSourceUrl     = null;  // URL the current tree was fetched from (null if loaded from file)
   let _onTitleChange     = null;  // optional callback(filename|null) for platform title updates
   let _axisIsTimedTree   = false;
+  let _treeIsTimeTree    = false;
   let treeLoaded         = false; // declared early — referenced by _syncCanvasWrapperBg before modal init
 
   // Theme manager created later (needs saveSettings which needs _buildSnapshot).
   // Forward-declared; assigned after _buildSnapshot and applyTheme are defined.
   let themeManager = null;
   let uiThemeManager = null;
+
+  function _inferTreeTimeState(layout, schema, rootAnnotations = null) {
+    if (!layout?.nodes || !schema || schema.size === 0) return false;
+
+    // Preferred precedence: an explicit root height annotation (e.g. root
+    // height_mean / height_median / height) should mark the tree as time-based
+    // even before checking tip-date calibration correlation.
+    const rootAnn = rootAnnotations && typeof rootAnnotations === 'object' ? rootAnnotations : {};
+    const rootHeightValue = (() => {
+      const keys = ['height', 'height_mean', 'height_median'];
+      for (const key of keys) {
+        const v = rootAnn[key];
+        const n = Number(v);
+        if (Number.isFinite(n)) return n;
+      }
+      for (const [key, value] of Object.entries(rootAnn)) {
+        if (!/^height(?:_|$)/i.test(key) || /_hpd$/i.test(key) || /_range$/i.test(key)) continue;
+        const n = Number(value);
+        if (Number.isFinite(n)) return n;
+      }
+      return null;
+    })();
+    if (rootHeightValue != null) return true;
+
+    // Fall back to BEAST-style mean-height annotations on tips and a near-perfect
+    // root-to-tip correlation with the calibration when a root height isn’t given.
+    const heightDef = schema.get('height');
+    const preferredHeightKey = heightDef?.group?.mean || 'height';
+    const pts = [];
+    for (const node of layout.nodes) {
+      if (!node.isTip) continue;
+      const raw = node.annotations?.[preferredHeightKey]
+               ?? node.annotations?.height_mean
+               ?? node.annotations?.height_median
+               ?? node.annotations?.height;
+      const height = Number(raw);
+      if (!Number.isFinite(height)) continue;
+      const divergence = Number.isFinite(layout.maxX) ? Math.max(0, layout.maxX - node.x) : 0;
+      if (!Number.isFinite(divergence)) continue;
+      pts.push({ x: height, y: divergence });
+    }
+    if (pts.length < 3) return false;
+    const reg = TreeCalibration.computeOLS(pts);
+    return !!reg && Math.abs(reg.r) >= 0.999;
+  }
 
   /** Per-annotation palette override: annotationKey → palette name string. */
   const annotationPalettes = new Map();
@@ -4798,6 +4844,7 @@ async function _initCore(root = document) {
       }
 
       graph           = fromNestedRoot(parsedRoot);
+      graph.rootedAsLoaded = graph.isRooted;
       renderer.hiddenNodeIds = graph.hiddenNodeIds;  // keep renderer in sync (same Set reference)
       renderer.graph  = graph;
       currentOrder    = null;
@@ -4881,20 +4928,25 @@ async function _initCore(root = document) {
         _applyVisualSettingsFromFile(_treeEffectiveSettings);
       }
       _cachedMidpoint = null;
-      isExplicitlyRooted = graph.rooted;
-
-      // Show/hide the Select + Reroot toolbar sections based on whether the
-      // tree is explicitly rooted. Use a CSS class to avoid WKWebView inline-style issues.
-      $('reroot-controls')?.classList.toggle('visible', !isExplicitlyRooted);
-
-      commands.setEnabled('tree-midpoint', !isExplicitlyRooted);
-      commands.setEnabled('tree-temporal-root', !isExplicitlyRooted);
-      commands.setEnabled('tree-temporal-root-global', !isExplicitlyRooted);
-      commands.setEnabled('tree-reroot',   false); // re-enabled on selection by bindControls
-
       // Compute layout early so injectBuiltinStats() has maxX/maxY/node array
       // before the dropdowns are populated.
       const layout = computeLayoutFromGraph(graph, null, _layoutOptions());
+      graph.isTimeTree = _inferTreeTimeState(layout, graph.annotationSchema, graph.root?.annotations);
+      const hasRootAnnotations = !!graph.root && Object.keys(graph.root.annotations || {}).length > 0;
+      graph.isRooted = !!graph.isRooted || hasRootAnnotations || graph.isTimeTree;
+      isExplicitlyRooted = graph.isRooted;
+      _treeIsTimeTree = !!graph.isTimeTree;
+      _axisIsTimedTree = _treeIsTimeTree;
+
+      // Show/hide the Select + Reroot toolbar sections based on whether the
+      // tree is a time tree. Rooted-but-non-time trees retain reroot controls but
+      // warn before losing their root position.
+      $('reroot-controls')?.classList.toggle('visible', !_treeIsTimeTree);
+
+      commands.setEnabled('tree-midpoint', !_treeIsTimeTree);
+      commands.setEnabled('tree-temporal-root', !_treeIsTimeTree);
+      commands.setEnabled('tree-temporal-root-global', !_treeIsTimeTree);
+      commands.setEnabled('tree-reroot',   false); // re-enabled on selection by bindControls
 
       // Populate the "Colour by" dropdowns.
       const schema = graph.annotationSchema;
@@ -5318,7 +5370,7 @@ async function _initCore(root = document) {
       // Detect time-scaled tree: presence of 'height' in the annotation schema is the
       // canonical signal — BEAST MCC trees annotate internal nodes with height but not
       // always tips, so a node.every() check would incorrectly return false.
-      const _isTimedTree = schema.has('height');
+      const _isTimedTree = !!graph.isTimeTree;
       // For timed trees, root height = layout.maxX (root sits at x=0, most divergent tip at x=maxX).
       const _rootHeight  = _isTimedTree ? layout.maxX : 0;
       axisRenderer.setTreeParams({ maxX: layout.maxX, isTimedTree: _isTimedTree, rootHeight: _rootHeight });
@@ -5589,10 +5641,32 @@ async function _initCore(root = document) {
 
   // ── Rerooting — hoisted so they're callable from the programmatic API ──────
 
+  async function _confirmRerootLoss() {
+    if (!graph || graph.isTimeTree) return true;
+    if (graph.rootedAsLoaded !== true) {
+      graph.isRooted = true;
+      return true;
+    }
+    const confirmed = await showConfirmDialog(
+      'Re-root tree',
+      'This tree was rooted when loaded. Re-rooting will discard the current root position and any annotations stored on the root. Continue?',
+      { okLabel: 'Continue', cancelLabel: 'Cancel' }
+    );
+    if (!confirmed) return false;
+    graph.rootedAsLoaded = false;
+    graph.isRooted = true;
+    isExplicitlyRooted = true;
+    return true;
+  }
+
   /** Apply a reroot operation and refresh the layout. */
-  function applyReroot(childNodeId, distFromParent) {
-    if (!graph) return;
+  async function applyReroot(childNodeId, distFromParent) {
+    if (!graph || graph.isTimeTree) return;
+    const confirmed = await _confirmRerootLoss();
+    if (!confirmed) return;
     rerootOnGraph(graph, childNodeId, distFromParent);
+    graph.isRooted = true;
+    isExplicitlyRooted = true;
     _cachedMidpoint = null;
     if (currentOrder === 'asc')  reorderGraph(graph, true);
     if (currentOrder === 'desc') reorderGraph(graph, false);
@@ -5620,12 +5694,12 @@ async function _initCore(root = document) {
   }
 
   /** Apply a midpoint root and refresh the layout. */
-  function applyMidpointRoot() {
-    if (!graph) return;
+  async function applyMidpointRoot() {
+    if (!graph || graph.isTimeTree) return;
     if (!_cachedMidpoint) _cachedMidpoint = midpointRootGraph(graph);
     const { childNodeId, distFromParent } = _cachedMidpoint;
     _cachedMidpoint = null;
-    applyReroot(childNodeId, distFromParent);
+    await applyReroot(childNodeId, distFromParent);
   }
 
   function _buildTipDates() {
@@ -5643,20 +5717,20 @@ async function _initCore(root = document) {
     return tipDates.size > 0 ? tipDates : null;
   }
 
-  function applyTemporalRoot() {
-    if (!graph) return;
+  async function applyTemporalRoot() {
+    if (!graph || graph.isTimeTree) return;
     const dates = _buildTipDates();
     if (!dates) return;
     const { childNodeId, distFromParent } = optimiseRootEdge(graph, dates);
-    applyReroot(childNodeId, distFromParent);
+    await applyReroot(childNodeId, distFromParent);
   }
 
-  function applyTemporalRootGlobal() {
-    if (!graph) return;
+  async function applyTemporalRootGlobal() {
+    if (!graph || graph.isTimeTree) return;
     const dates = _buildTipDates();
     if (!dates) return;
     const { childNodeId, distFromParent } = temporalRootGraph(graph, dates);
-    applyReroot(childNodeId, distFromParent);
+    await applyReroot(childNodeId, distFromParent);
   }
 
   // ── Control bindings (set up once after the first tree loads) ─────────────
@@ -5854,12 +5928,12 @@ async function _initCore(root = document) {
 
     renderer._onBranchSelectChange = (hasSelection) => {
       if (renderer._mode === 'branches') {
-        commands.setEnabled('tree-reroot', !isExplicitlyRooted && hasSelection);
+        commands.setEnabled('tree-reroot', !(graph?.isTimeTree) && hasSelection);
       }
     };
     renderer._onNodeSelectChange = (hasSelection) => {
       if (renderer._mode === 'nodes') {
-        commands.setEnabled('tree-reroot', !isExplicitlyRooted && hasSelection);
+        commands.setEnabled('tree-reroot', !(graph?.isTimeTree) && hasSelection);
       }
       const canRotate = renderer._mode === 'nodes' && hasSelection;
       commands.setEnabled('view-info',        !!graph);
@@ -6768,31 +6842,33 @@ async function _initCore(root = document) {
           : [];
 
         const rows = [];
+        const _treeRooted = !!graph?.isRooted;
+        const _isTimeTree = !!graph?.isTimeTree;
         if (_loadedFilename)  rows.push(['File',            _loadedFilename]);
         rows.push(['Tips',             totalTips]);
         rows.push(['Internal nodes',   totalInner]);
         if (hiddenCount > 0) rows.push(['Hidden nodes', hiddenCount]);
         if (visibleTips !== totalTips) rows.push(['Visible tips', visibleTips]);
         rows.push(['Root-to-tip span', renderer.maxX.toFixed(6)]);
-        rows.push(['Rooted',           isExplicitlyRooted ? 'Yes' : 'No']);
+        rows.push(['Rooted',           _treeRooted ? 'Yes' : 'No']);
 
         // ── Timing information ────────────────────────────────────────────
-        const _isCalibrated = calibration?.isActive;
-        const _isTimeTree   = _axisIsTimedTree || _isCalibrated;
         rows.push(['Time-scaled', _isTimeTree ? 'Yes' : 'No']);
 
         if (_isTimeTree) {
           rows.push(['__divider__', 'Timing']);
           const calFmt = axisDateFmtEl?.value || 'yyyy-MM-dd';
 
-          if (_axisIsTimedTree && !_isCalibrated) {
+          const isCalibrated = !!calibration?.isActive;
+
+          if (_axisIsTimedTree && !isCalibrated) {
             // BEAST tree with height annotations — report span in height units
             const heightFmt = schema?.get('height')?.fmt;
             const spanStr = heightFmt ? heightFmt(renderer.maxX) : renderer.maxX.toFixed(6) + ' y';
             rows.push(['Tree span', spanStr]);
           }
 
-          if (_isCalibrated) {
+          if (isCalibrated) {
             // Root date (oldest) — root height = maxX
             const rootDate = calibration.heightToDateString(renderer.maxX, 'full', calFmt);
             rows.push(['Root date', rootDate]);
