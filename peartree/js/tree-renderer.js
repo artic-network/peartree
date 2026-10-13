@@ -1791,6 +1791,37 @@ export class TreeRenderer {
   _branchShapeColourForValue(value)     { return this._colourFromScale(value, this._branchShapeColourScale); }
   _branchShapeExtraColourForValue(i, value) { return this._colourFromScale(value, this._branchShapesExtraColourScales[i]); }
 
+  _annotationValue(node, key) {
+    if (!node || !key) return null;
+    return this._statValue ? (this._statValue(node, key) ?? node.annotations?.[key] ?? null) : (node.annotations?.[key] ?? null);
+  }
+
+  _tipShapeColourForNode(node) {
+    if (!node || !(this._tipColourBy && this._tipColourScale)) return this.tipShapeColor;
+    return this._tipColourForValue(this._annotationValue(node, this._tipColourBy)) ?? this.tipShapeColor;
+  }
+
+  _nodeShapeColourForNode(node) {
+    if (!node || !(this._nodeColourBy && this._nodeColourScale)) return this.nodeShapeColor;
+    return this._nodeColourForValue(this._annotationValue(node, this._nodeColourBy)) ?? this.nodeShapeColor;
+  }
+
+  _tipLabelShapeColourForNode(node) {
+    if (!node || !(this._tipLabelShapeColourBy && this._tipLabelShapeColourScale)) return this._tipLabelShapeColor;
+    return this._tipLabelShapeColourForValue(this._annotationValue(node, this._tipLabelShapeColourBy)) ?? this._tipLabelShapeColor;
+  }
+
+  _tipLabelShapeExtraColourForNode(node, idx) {
+    const key = this._tipLabelShapeExtraColourBys?.[idx];
+    if (!node || !key || !this._tipLabelShapeExtraColourScales?.[idx]) return this._tipLabelShapeColor;
+    return this._tipLabelShapeExtraColourForValue(idx, this._annotationValue(node, key)) ?? this._tipLabelShapeColor;
+  }
+
+  _labelColourForNode(node) {
+    if (!node || !(this._labelColourBy && this._labelColourScale)) return this.labelColor;
+    return this._labelColourForValue(this._annotationValue(node, this._labelColourBy)) ?? this.labelColor;
+  }
+
   /**
    * Aggregate descendant tip annotation values for a node (internal or collapsed).
    * Returns the mean (numeric) or modal (categorical) value, or null if none.
