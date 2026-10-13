@@ -833,6 +833,8 @@ async function _initCore(root = document) {
   upgradeAllPaletteColourPickers(root, { palettes: CATEGORICAL_PALETTES });
   let filterControl = null;  // managed by filter-control.js; set in bindControls()
 
+  const _shouldUpdateDocumentTitle = _cfg.documentTitle !== false;
+
   // ── Settings persistence ──────────────────────────────────────────────────
   // SETTINGS_KEY, USER_THEMES_KEY, THEMES, DEFAULT_SETTINGS imported from ./themes.js
 
@@ -4674,7 +4676,9 @@ async function _initCore(root = document) {
     // Clear the source URL — will be set again by the caller if loaded from a URL.
     _treeSourceUrl = null;
     _updateShareUrlBtn();
-    document.title = _loadedFilename ? `${_loadedFilename} — PearTree` : 'PearTree — Phylogenetic Tree Viewer';
+    if (_shouldUpdateDocumentTitle) {
+      document.title = _loadedFilename ? `${_loadedFilename} — PearTree` : 'PearTree — Phylogenetic Tree Viewer';
+    }
     if (_onTitleChange) _onTitleChange(_loadedFilename);
     // Yield to the browser so the spinner renders before heavy parsing
     await new Promise(r => setTimeout(r, 0));
@@ -9681,6 +9685,7 @@ export async function app(options = {}) {
       toolbarSections: options.toolbarSections  || window.peartreeConfig?.toolbarSections  || 'all',
       manualUrl:       options.manualUrl        || window.peartreeConfig?.manualUrl        || HELP_MANUAL_URL,
       helpManualAnchors: options.helpManualAnchors || window.peartreeConfig?.helpManualAnchors || HELP_MANUAL_ANCHORS,
+      documentTitle:   options.documentTitle ?? true,
     }
   );
 
@@ -9967,6 +9972,7 @@ export async function embed(options = {}) {
     dataTableColumns: _dataTableCols,
     manualUrl:       options.manualUrl ?? window.peartreeConfig?.manualUrl ?? HELP_MANUAL_URL,
     helpManualAnchors: options.helpManualAnchors ?? window.peartreeConfig?.helpManualAnchors ?? HELP_MANUAL_ANCHORS,
+    documentTitle:   options.documentTitle ?? false,
   };
 
   // Resolve core base path (may be overridden via options.coreBase).
