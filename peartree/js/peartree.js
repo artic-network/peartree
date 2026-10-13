@@ -15,6 +15,7 @@ import { CATEGORICAL_PALETTES, SEQUENTIAL_PALETTES,
          allCategoricalPalettes, allSequentialPalettes } from '@artic-network/pearcore/palettes.js';
 import { createAnnotImporter } from '@artic-network/pearcore/annotation-io.js';
 import { createAnnotCurator  } from '@artic-network/pearcore/annotation-manager.js';
+import { coerceNumericAnnotationValues, isNumericAnnotationToken } from '@artic-network/pearcore/annotation-utils.js';
 import { createFilterControl } from './filter-control.js';
 import { createFilterManager } from './filter-manager.js';
 import { createPaletteManager } from '@artic-network/pearcore/palette-manager.js';
@@ -4773,7 +4774,8 @@ async function _initCore(root = document) {
         }
         _collectNodeLabels(parsedRoot);
         if (labelledNodes.length > 0) {
-          const allNumeric = labelledNodes.every(n => !isNaN(parseFloat(n.annotations["_node_label"])));
+          const rawLabels = labelledNodes.map(n => n.annotations["_node_label"]);
+          const allNumeric = rawLabels.length > 0 && coerceNumericAnnotationValues(rawLabels) !== null;
           const defaultName = allNumeric ? 'bootstrap' : 'label';
           const _preconfigured = window.peartreeConfig?.nodeLabelName
             || new URLSearchParams(window.location.search).get('nodeLabelName');
@@ -4789,8 +4791,8 @@ async function _initCore(root = document) {
           for (const n of labelledNodes) {
             const raw = n.annotations["_node_label"];
             delete n.annotations["_node_label"];
-            const num = parseFloat(raw);
-            n.annotations[chosen] = !isNaN(num) ? num : raw;
+            const value = allNumeric && isNumericAnnotationToken(raw) ? Number(raw) : raw;
+            n.annotations[chosen] = value;
           }
         }
       }
