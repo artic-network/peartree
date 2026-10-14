@@ -24,6 +24,7 @@ src-tauri/gen/
 .idea/
 .vscode/*
 !.vscode/settings.json
- 
+*.code-workspace
+
 # Any test folders
 test*/
